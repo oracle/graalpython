@@ -189,7 +189,11 @@ public class ParserCallbacksImpl implements ParserCallbacks {
         // text attribute is NONE, then the line is not printed
         Object text = PNone.NONE;
         if (sourceRange.startLine <= source.getLineCount()) {
-            text = toTruffleStringUncached(source.getCharacters(sourceRange.startLine).toString());
+            String lineText = source.getCharacters(sourceRange.startLine).toString();
+            if (lineText.startsWith("\uFEFF")) {
+                lineText = lineText.substring(1);
+            }
+            text = toTruffleStringUncached(lineText);
         }
         excAttrs[SyntaxErrorBuiltins.IDX_MSG] = message;
         excAttrs[SyntaxErrorBuiltins.IDX_TEXT] = text;

@@ -742,16 +742,10 @@ public final class Parser extends AbstractParser {
     // file: statements? $
     public ModTy file_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // statements? $
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] a;
             Token endmarker_var;
             if (
@@ -776,16 +770,10 @@ public final class Parser extends AbstractParser {
     // interactive: statement_newline
     public ModTy interactive_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // statement_newline
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] a;
             if (
                 (a = statement_newline_rule()) != null  // statement_newline
@@ -807,16 +795,10 @@ public final class Parser extends AbstractParser {
     // eval: expressions NEWLINE* $
     public ModTy eval_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // expressions NEWLINE* $
-            if (errorIndicator) {
-                return null;
-            }
             Token[] _loop0_2_var;
             ExprTy a;
             Token endmarker_var;
@@ -844,16 +826,10 @@ public final class Parser extends AbstractParser {
     // func_type: '(' type_expressions? ')' '->' expression NEWLINE* $
     public ModTy func_type_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // '(' type_expressions? ')' '->' expression NEWLINE* $
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Token _literal_2;
@@ -893,15 +869,9 @@ public final class Parser extends AbstractParser {
     // statements: statement+
     public StmtTy[] statements_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // statement+
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] a;
             if (
                 (a = _loop1_5_rule()) != null  // statement+
@@ -919,15 +889,9 @@ public final class Parser extends AbstractParser {
     // statement: compound_stmt | simple_stmts
     public StmtTy[] statement_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // compound_stmt
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy a;
             if (
                 (a = compound_stmt_rule()) != null  // compound_stmt
@@ -939,9 +903,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // simple_stmts
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] a;
             if (
                 (a = (StmtTy[])simple_stmts_rule()) != null  // simple_stmts
@@ -959,16 +920,10 @@ public final class Parser extends AbstractParser {
     // statement_newline: compound_stmt NEWLINE | simple_stmts | NEWLINE | $
     public StmtTy[] statement_newline_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // compound_stmt NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy a;
             Token newline_var;
             if (
@@ -983,9 +938,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // simple_stmts
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] simple_stmts_var;
             if (
                 (simple_stmts_var = simple_stmts_rule()) != null  // simple_stmts
@@ -997,9 +949,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             Token newline_var;
             if (
                 (newline_var = expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
@@ -1015,9 +964,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // $
-            if (errorIndicator) {
-                return null;
-            }
             Token endmarker_var;
             if (
                 (endmarker_var = expect(Token.Kind.ENDMARKER)) != null  // token='ENDMARKER'
@@ -1035,15 +981,9 @@ public final class Parser extends AbstractParser {
     // simple_stmts: simple_stmt !';' NEWLINE | ';'.simple_stmt+ ';'? NEWLINE
     public StmtTy[] simple_stmts_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // simple_stmt !';' NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy a;
             Token newline_var;
             if (
@@ -1060,9 +1000,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ';'.simple_stmt+ ';'? NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             Token _opt_var;
             StmtTy[] a;
             Token newline_var;
@@ -1100,9 +1037,6 @@ public final class Parser extends AbstractParser {
     //     | &'nonlocal' nonlocal_stmt
     public StmtTy simple_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SIMPLE_STMT_ID)) {
@@ -1111,9 +1045,6 @@ public final class Parser extends AbstractParser {
         }
         Token startToken = getAndInitializeToken();
         { // assignment
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy assignment_var;
             if (
                 (assignment_var = assignment_rule()) != null  // assignment
@@ -1126,9 +1057,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &"type" type_alias
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy type_alias_var;
             if (
                 genLookahead_expect_SOFT_KEYWORD(true, "type")
@@ -1143,9 +1071,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy e;
             if (
                 (e = star_expressions_rule()) != null  // star_expressions
@@ -1162,9 +1087,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &'return' return_stmt
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy return_stmt_var;
             if (
                 genLookahead_expect(true, 655)  // token='return'
@@ -1179,9 +1101,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &('import' | 'from') import_stmt
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy import_stmt_var;
             if (
                 genLookahead__tmp_9_rule(true)
@@ -1196,9 +1115,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &'raise' raise_stmt
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy raise_stmt_var;
             if (
                 genLookahead_expect(true, 658)  // token='raise'
@@ -1213,9 +1129,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'pass'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = expect(659)) != null  // token='pass'
@@ -1232,9 +1145,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &'del' del_stmt
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy del_stmt_var;
             if (
                 genLookahead_expect(true, 660)  // token='del'
@@ -1249,9 +1159,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &'yield' yield_stmt
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy yield_stmt_var;
             if (
                 genLookahead_expect(true, 661)  // token='yield'
@@ -1266,9 +1173,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &'assert' assert_stmt
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy assert_stmt_var;
             if (
                 genLookahead_expect(true, 662)  // token='assert'
@@ -1283,9 +1187,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'break'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = expect(663)) != null  // token='break'
@@ -1302,9 +1203,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'continue'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = expect(664)) != null  // token='continue'
@@ -1321,9 +1219,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &'global' global_stmt
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy global_stmt_var;
             if (
                 genLookahead_expect(true, 665)  // token='global'
@@ -1338,9 +1233,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &'nonlocal' nonlocal_stmt
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy nonlocal_stmt_var;
             if (
                 genLookahead_expect(true, 666)  // token='nonlocal'
@@ -1370,15 +1262,9 @@ public final class Parser extends AbstractParser {
     //     | match_stmt
     public StmtTy compound_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // &('def' | '@' | ASYNC) function_def
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy function_def_var;
             if (
                 genLookahead__tmp_10_rule(true)
@@ -1392,9 +1278,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &'if' if_stmt
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy if_stmt_var;
             if (
                 genLookahead_expect(true, 668)  // token='if'
@@ -1408,9 +1291,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &('class' | '@') class_def
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy class_def_var;
             if (
                 genLookahead__tmp_11_rule(true)
@@ -1424,9 +1304,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &('with' | ASYNC) with_stmt
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy with_stmt_var;
             if (
                 genLookahead__tmp_12_rule(true)
@@ -1440,9 +1317,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &('for' | ASYNC) for_stmt
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy for_stmt_var;
             if (
                 genLookahead__tmp_13_rule(true)
@@ -1456,9 +1330,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &'try' try_stmt
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy try_stmt_var;
             if (
                 genLookahead_expect(true, 672)  // token='try'
@@ -1472,9 +1343,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &'while' while_stmt
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy while_stmt_var;
             if (
                 genLookahead_expect(true, 673)  // token='while'
@@ -1488,9 +1356,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // match_stmt
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy match_stmt_var;
             if (
                 (match_stmt_var = match_stmt_rule()) != null  // match_stmt
@@ -1513,16 +1378,10 @@ public final class Parser extends AbstractParser {
     //     | invalid_assignment
     public StmtTy assignment_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // NAME ':' expression ['=' annotated_rhs]
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -1547,9 +1406,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ('(' single_target ')' | single_subscript_attribute_target) ':' expression ['=' annotated_rhs]
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -1574,9 +1430,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] a;
             ExprTy b;
             Token tc;
@@ -1600,9 +1453,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // single_target augassign ~ (yield_expr | star_expressions)
-            if (errorIndicator) {
-                return null;
-            }
             int _cut_var = 0;
             ExprTy a;
             OperatorTy b;
@@ -1630,9 +1480,6 @@ public final class Parser extends AbstractParser {
             }
         }
         if (callInvalidRules) { // invalid_assignment
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_assignment_var;
             if (
                 (invalid_assignment_var = invalid_assignment_rule()) != null  // invalid_assignment
@@ -1650,15 +1497,9 @@ public final class Parser extends AbstractParser {
     // annotated_rhs: yield_expr | star_expressions
     public ExprTy annotated_rhs_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // yield_expr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy yield_expr_var;
             if (
                 (yield_expr_var = yield_expr_rule()) != null  // yield_expr
@@ -1670,9 +1511,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy star_expressions_var;
             if (
                 (star_expressions_var = star_expressions_rule()) != null  // star_expressions
@@ -1703,15 +1541,9 @@ public final class Parser extends AbstractParser {
     //     | '//='
     public OperatorTy augassign_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '+='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = expect(36)) != null  // token='+='
@@ -1723,9 +1555,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '-='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = expect(37)) != null  // token='-='
@@ -1737,9 +1566,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = expect(38)) != null  // token='*='
@@ -1751,9 +1577,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '@='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = expect(50)) != null  // token='@='
@@ -1765,9 +1588,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '/='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = expect(39)) != null  // token='/='
@@ -1779,9 +1599,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '%='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = expect(40)) != null  // token='%='
@@ -1793,9 +1610,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '&='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = expect(41)) != null  // token='&='
@@ -1807,9 +1621,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '|='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = expect(42)) != null  // token='|='
@@ -1821,9 +1632,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '^='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = expect(43)) != null  // token='^='
@@ -1835,9 +1643,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '<<='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = expect(44)) != null  // token='<<='
@@ -1849,9 +1654,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '>>='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = expect(45)) != null  // token='>>='
@@ -1863,9 +1665,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '**='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = expect(46)) != null  // token='**='
@@ -1877,9 +1676,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '//='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = expect(48)) != null  // token='//='
@@ -1897,16 +1693,10 @@ public final class Parser extends AbstractParser {
     // return_stmt: 'return' star_expressions?
     public StmtTy return_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // 'return' star_expressions?
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy a;
             if (
@@ -1931,16 +1721,10 @@ public final class Parser extends AbstractParser {
     // raise_stmt: 'raise' expression ['from' expression] | 'raise'
     public StmtTy raise_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // 'raise' expression ['from' expression]
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy a;
             ExprTy b;
@@ -1962,9 +1746,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'raise'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = expect(658)) != null  // token='raise'
@@ -1986,16 +1767,10 @@ public final class Parser extends AbstractParser {
     // global_stmt: 'global' ','.NAME+
     public StmtTy global_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // 'global' ','.NAME+
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy[] a;
             if (
@@ -2020,16 +1795,10 @@ public final class Parser extends AbstractParser {
     // nonlocal_stmt: 'nonlocal' ','.NAME+
     public StmtTy nonlocal_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // 'nonlocal' ','.NAME+
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy[] a;
             if (
@@ -2054,16 +1823,10 @@ public final class Parser extends AbstractParser {
     // del_stmt: 'del' del_targets &(';' | NEWLINE) | invalid_del_stmt
     public StmtTy del_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // 'del' del_targets &(';' | NEWLINE)
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy[] a;
             if (
@@ -2084,9 +1847,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_del_stmt
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy invalid_del_stmt_var;
             if (
                 (invalid_del_stmt_var = invalid_del_stmt_rule()) != null  // invalid_del_stmt
@@ -2104,16 +1864,10 @@ public final class Parser extends AbstractParser {
     // yield_stmt: yield_expr
     public StmtTy yield_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // yield_expr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy y;
             if (
                 (y = yield_expr_rule()) != null  // yield_expr
@@ -2135,16 +1889,10 @@ public final class Parser extends AbstractParser {
     // assert_stmt: 'assert' expression [',' expression]
     public StmtTy assert_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // 'assert' expression [',' expression]
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy a;
             ExprTy b;
@@ -2172,15 +1920,9 @@ public final class Parser extends AbstractParser {
     // import_stmt: invalid_import | import_name | import_from
     public StmtTy import_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (callInvalidRules) { // invalid_import
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] invalid_import_var;
             if (
                 (invalid_import_var = invalid_import_rule()) != null  // invalid_import
@@ -2192,9 +1934,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // import_name
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy import_name_var;
             if (
                 (import_name_var = import_name_rule()) != null  // import_name
@@ -2206,9 +1945,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // import_from
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy import_from_var;
             if (
                 (import_from_var = import_from_rule()) != null  // import_from
@@ -2226,16 +1962,10 @@ public final class Parser extends AbstractParser {
     // import_name: 'import' dotted_as_names
     public StmtTy import_name_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // 'import' dotted_as_names
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             AliasTy[] a;
             if (
@@ -2262,16 +1992,10 @@ public final class Parser extends AbstractParser {
     //     | 'from' (('.' | '...'))+ 'import' import_from_targets
     public StmtTy import_from_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // 'from' (('.' | '...'))* dotted_name 'import' import_from_targets
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _keyword_1;
             Token[] a;
@@ -2299,9 +2023,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'from' (('.' | '...'))+ 'import' import_from_targets
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _keyword_1;
             Token[] a;
@@ -2336,16 +2057,10 @@ public final class Parser extends AbstractParser {
     //     | invalid_import_from_targets
     public AliasTy[] import_from_targets_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // '(' import_from_as_names ','? ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Token _opt_var;
@@ -2366,9 +2081,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // import_from_as_names !','
-            if (errorIndicator) {
-                return null;
-            }
             AliasTy[] import_from_as_names_var;
             if (
                 (import_from_as_names_var = import_from_as_names_rule()) != null  // import_from_as_names
@@ -2382,9 +2094,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = expect(16)) != null  // token='*'
@@ -2400,9 +2109,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_import_from_targets
-            if (errorIndicator) {
-                return null;
-            }
             AliasTy[] invalid_import_from_targets_var;
             if (
                 (invalid_import_from_targets_var = invalid_import_from_targets_rule()) != null  // invalid_import_from_targets
@@ -2420,15 +2126,9 @@ public final class Parser extends AbstractParser {
     // import_from_as_names: ','.import_from_as_name+
     public AliasTy[] import_from_as_names_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','.import_from_as_name+
-            if (errorIndicator) {
-                return null;
-            }
             AliasTy[] a;
             if (
                 (a = (AliasTy[])_gather_32_rule()) != null  // ','.import_from_as_name+
@@ -2446,16 +2146,10 @@ public final class Parser extends AbstractParser {
     // import_from_as_name: NAME ['as' NAME]
     public AliasTy import_from_as_name_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // NAME ['as' NAME]
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             ExprTy b;
             if (
@@ -2480,15 +2174,9 @@ public final class Parser extends AbstractParser {
     // dotted_as_names: ','.dotted_as_name+
     public AliasTy[] dotted_as_names_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','.dotted_as_name+
-            if (errorIndicator) {
-                return null;
-            }
             AliasTy[] a;
             if (
                 (a = (AliasTy[])_gather_35_rule()) != null  // ','.dotted_as_name+
@@ -2506,16 +2194,10 @@ public final class Parser extends AbstractParser {
     // dotted_as_name: dotted_name ['as' NAME]
     public AliasTy dotted_as_name_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // dotted_name ['as' NAME]
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             ExprTy b;
             if (
@@ -2562,15 +2244,9 @@ public final class Parser extends AbstractParser {
     }
     private ExprTy dotted_name_raw()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // dotted_name '.' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -2588,9 +2264,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // NAME
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy name_var;
             if (
                 (name_var = name_token()) != null  // NAME
@@ -2608,9 +2281,6 @@ public final class Parser extends AbstractParser {
     // block: NEWLINE INDENT statements DEDENT | simple_stmts | invalid_block
     public StmtTy[] block_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, BLOCK_ID)) {
@@ -2618,9 +2288,6 @@ public final class Parser extends AbstractParser {
             return (StmtTy[])_res;
         }
         { // NEWLINE INDENT statements DEDENT
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] a;
             Token dedent_var;
             Token indent_var;
@@ -2642,9 +2309,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // simple_stmts
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] simple_stmts_var;
             if (
                 (simple_stmts_var = simple_stmts_rule()) != null  // simple_stmts
@@ -2657,9 +2321,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_block
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_block_var;
             if (
                 (invalid_block_var = invalid_block_rule()) != null  // invalid_block
@@ -2679,15 +2340,9 @@ public final class Parser extends AbstractParser {
     // decorators: (('@' named_expression NEWLINE))+
     public ExprTy[] decorators_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // (('@' named_expression NEWLINE))+
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] a;
             if (
                 (a = (ExprTy[])_loop1_38_rule()) != null  // (('@' named_expression NEWLINE))+
@@ -2705,16 +2360,10 @@ public final class Parser extends AbstractParser {
     // class_def: decorators class_def_raw | class_def_raw
     public StmtTy class_def_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // decorators class_def_raw
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] a;
             StmtTy b;
             if (
@@ -2733,9 +2382,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // class_def_raw
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy class_def_raw_var;
             if (
                 (class_def_raw_var = class_def_raw_rule()) != null  // class_def_raw
@@ -2755,16 +2401,10 @@ public final class Parser extends AbstractParser {
     //     | 'class' NAME type_params? ['(' arguments? ')'] ':' block
     public StmtTy class_def_raw_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_class_def_raw
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_class_def_raw_var;
             if (
                 (invalid_class_def_raw_var = invalid_class_def_raw_rule()) != null  // invalid_class_def_raw
@@ -2776,9 +2416,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'class' NAME type_params? ['(' arguments? ')'] ':' block
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             ExprTy a;
@@ -2815,15 +2452,9 @@ public final class Parser extends AbstractParser {
     // function_def: decorators function_def_raw | function_def_raw
     public StmtTy function_def_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // decorators function_def_raw
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] d;
             StmtTy f;
             if (
@@ -2838,9 +2469,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // function_def_raw
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy function_def_raw_var;
             if (
                 (function_def_raw_var = function_def_raw_rule()) != null  // function_def_raw
@@ -2861,16 +2489,10 @@ public final class Parser extends AbstractParser {
     //     | ASYNC 'def' NAME type_params? &&'(' params? ')' ['->' expression] &&':' func_type_comment? block
     public StmtTy function_def_raw_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_def_raw
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_def_raw_var;
             if (
                 (invalid_def_raw_var = invalid_def_raw_rule()) != null  // invalid_def_raw
@@ -2882,9 +2504,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'def' NAME type_params? &&'(' params? ')' ['->' expression] &&':' func_type_comment? block
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             Token _literal_1;
@@ -2927,9 +2546,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ASYNC 'def' NAME type_params? &&'(' params? ')' ['->' expression] &&':' func_type_comment? block
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             Token _literal_1;
@@ -2981,15 +2597,9 @@ public final class Parser extends AbstractParser {
     // params: invalid_parameters | parameters
     public ArgumentsTy params_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (callInvalidRules) { // invalid_parameters
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_parameters_var;
             if (
                 (invalid_parameters_var = invalid_parameters_rule()) != null  // invalid_parameters
@@ -3001,9 +2611,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // parameters
-            if (errorIndicator) {
-                return null;
-            }
             ArgumentsTy parameters_var;
             if (
                 (parameters_var = parameters_rule()) != null  // parameters
@@ -3026,15 +2633,9 @@ public final class Parser extends AbstractParser {
     //     | star_etc
     public ArgumentsTy parameters_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // slash_no_default param_no_default* param_with_default* star_etc?
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy[] a;
             ArgTy[] b;
             NameDefaultPair[] c;
@@ -3055,9 +2656,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // slash_with_default param_with_default* star_etc?
-            if (errorIndicator) {
-                return null;
-            }
             SlashWithDefault a;
             NameDefaultPair[] b;
             StarEtc c;
@@ -3075,9 +2673,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // param_no_default+ param_with_default* star_etc?
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy[] a;
             NameDefaultPair[] b;
             StarEtc c;
@@ -3095,9 +2690,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // param_with_default+ star_etc?
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair[] a;
             StarEtc b;
             if (
@@ -3112,9 +2704,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_etc
-            if (errorIndicator) {
-                return null;
-            }
             StarEtc a;
             if (
                 (a = star_etc_rule()) != null  // star_etc
@@ -3132,15 +2721,9 @@ public final class Parser extends AbstractParser {
     // slash_no_default: param_no_default+ '/' ',' | param_no_default+ '/' &')'
     public ArgTy[] slash_no_default_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // param_no_default+ '/' ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ArgTy[] a;
@@ -3158,9 +2741,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // param_no_default+ '/' &')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ArgTy[] a;
             if (
@@ -3185,15 +2765,9 @@ public final class Parser extends AbstractParser {
     //     | param_no_default* param_with_default+ '/' &')'
     public SlashWithDefault slash_with_default_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // param_no_default* param_with_default+ '/' ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ArgTy[] a;
@@ -3214,9 +2788,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // param_no_default* param_with_default+ '/' &')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ArgTy[] a;
             NameDefaultPair[] b;
@@ -3247,15 +2818,9 @@ public final class Parser extends AbstractParser {
     //     | kwds
     public StarEtc star_etc_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (callInvalidRules) { // invalid_star_etc
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_star_etc_var;
             if (
                 (invalid_star_etc_var = invalid_star_etc_rule()) != null  // invalid_star_etc
@@ -3267,9 +2832,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*' param_no_default param_maybe_default* kwds?
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ArgTy a;
             NameDefaultPair[] b;
@@ -3290,9 +2852,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*' param_no_default_star_annotation param_maybe_default* kwds?
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ArgTy a;
             NameDefaultPair[] b;
@@ -3313,9 +2872,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*' ',' param_maybe_default+ kwds?
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             NameDefaultPair[] b;
@@ -3336,9 +2892,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // kwds
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy a;
             if (
                 (a = kwds_rule()) != null  // kwds
@@ -3356,15 +2909,9 @@ public final class Parser extends AbstractParser {
     // kwds: invalid_kwds | '**' param_no_default
     public ArgTy kwds_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (callInvalidRules) { // invalid_kwds
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy invalid_kwds_var;
             if (
                 (invalid_kwds_var = invalid_kwds_rule()) != null  // invalid_kwds
@@ -3376,9 +2923,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '**' param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ArgTy a;
             if (
@@ -3399,15 +2943,9 @@ public final class Parser extends AbstractParser {
     // param_no_default: param ',' TYPE_COMMENT? | param TYPE_COMMENT? &')'
     public ArgTy param_no_default_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // param ',' TYPE_COMMENT?
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ArgTy a;
             Token tc;
@@ -3425,9 +2963,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // param TYPE_COMMENT? &')'
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy a;
             Token tc;
             if (
@@ -3452,15 +2987,9 @@ public final class Parser extends AbstractParser {
     //     | param_star_annotation TYPE_COMMENT? &')'
     public ArgTy param_no_default_star_annotation_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // param_star_annotation ',' TYPE_COMMENT?
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ArgTy a;
             Token tc;
@@ -3478,9 +3007,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // param_star_annotation TYPE_COMMENT? &')'
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy a;
             Token tc;
             if (
@@ -3503,15 +3029,9 @@ public final class Parser extends AbstractParser {
     // param_with_default: param default ',' TYPE_COMMENT? | param default TYPE_COMMENT? &')'
     public NameDefaultPair param_with_default_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // param default ',' TYPE_COMMENT?
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ArgTy a;
             ExprTy c;
@@ -3532,9 +3052,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // param default TYPE_COMMENT? &')'
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy a;
             ExprTy c;
             Token tc;
@@ -3562,15 +3079,9 @@ public final class Parser extends AbstractParser {
     //     | param default? TYPE_COMMENT? &')'
     public NameDefaultPair param_maybe_default_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // param default? ',' TYPE_COMMENT?
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ArgTy a;
             ExprTy c;
@@ -3591,9 +3102,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // param default? TYPE_COMMENT? &')'
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy a;
             ExprTy c;
             Token tc;
@@ -3619,16 +3127,10 @@ public final class Parser extends AbstractParser {
     // param: NAME annotation?
     public ArgTy param_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // NAME annotation?
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             ExprTy b;
             if (
@@ -3653,16 +3155,10 @@ public final class Parser extends AbstractParser {
     // param_star_annotation: NAME star_annotation
     public ArgTy param_star_annotation_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // NAME star_annotation
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             ExprTy b;
             if (
@@ -3687,15 +3183,9 @@ public final class Parser extends AbstractParser {
     // annotation: ':' expression
     public ExprTy annotation_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ':' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -3716,15 +3206,9 @@ public final class Parser extends AbstractParser {
     // star_annotation: ':' star_expression
     public ExprTy star_annotation_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ':' star_expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -3745,15 +3229,9 @@ public final class Parser extends AbstractParser {
     // default: '=' expression | invalid_default
     public ExprTy default_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '=' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -3768,9 +3246,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_default
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_default_var;
             if (
                 (invalid_default_var = invalid_default_rule()) != null  // invalid_default
@@ -3791,16 +3266,10 @@ public final class Parser extends AbstractParser {
     //     | 'if' named_expression ':' block else_block?
     public StmtTy if_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_if_stmt
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy invalid_if_stmt_var;
             if (
                 (invalid_if_stmt_var = invalid_if_stmt_rule()) != null  // invalid_if_stmt
@@ -3812,9 +3281,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'if' named_expression ':' block elif_stmt
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             ExprTy a;
@@ -3842,9 +3308,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'if' named_expression ':' block else_block?
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             ExprTy a;
@@ -3881,16 +3344,10 @@ public final class Parser extends AbstractParser {
     //     | 'elif' named_expression ':' block else_block?
     public StmtTy elif_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_elif_stmt
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy invalid_elif_stmt_var;
             if (
                 (invalid_elif_stmt_var = invalid_elif_stmt_rule()) != null  // invalid_elif_stmt
@@ -3902,9 +3359,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'elif' named_expression ':' block elif_stmt
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             ExprTy a;
@@ -3932,9 +3386,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'elif' named_expression ':' block else_block?
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             ExprTy a;
@@ -3968,15 +3419,9 @@ public final class Parser extends AbstractParser {
     // else_block: invalid_else_stmt | 'else' &&':' block
     public StmtTy[] else_block_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (callInvalidRules) { // invalid_else_stmt
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_else_stmt_var;
             if (
                 (invalid_else_stmt_var = invalid_else_stmt_rule()) != null  // invalid_else_stmt
@@ -3988,9 +3433,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'else' &&':' block
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             StmtTy[] b;
@@ -4014,16 +3456,10 @@ public final class Parser extends AbstractParser {
     // while_stmt: invalid_while_stmt | 'while' named_expression ':' block else_block?
     public StmtTy while_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_while_stmt
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy invalid_while_stmt_var;
             if (
                 (invalid_while_stmt_var = invalid_while_stmt_rule()) != null  // invalid_while_stmt
@@ -4035,9 +3471,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'while' named_expression ':' block else_block?
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             ExprTy a;
@@ -4075,16 +3508,10 @@ public final class Parser extends AbstractParser {
     //     | invalid_for_target
     public StmtTy for_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_for_stmt
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy invalid_for_stmt_var;
             if (
                 (invalid_for_stmt_var = invalid_for_stmt_rule()) != null  // invalid_for_stmt
@@ -4096,9 +3523,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'for' star_targets 'in' ~ star_expressions ':' TYPE_COMMENT? block else_block?
-            if (errorIndicator) {
-                return null;
-            }
             int _cut_var = 0;
             Token _keyword;
             Token _keyword_1;
@@ -4141,9 +3565,6 @@ public final class Parser extends AbstractParser {
             }
         }
         { // ASYNC 'for' star_targets 'in' ~ star_expressions ':' TYPE_COMMENT? block else_block?
-            if (errorIndicator) {
-                return null;
-            }
             int _cut_var = 0;
             Token _keyword;
             Token _keyword_1;
@@ -4189,9 +3610,6 @@ public final class Parser extends AbstractParser {
             }
         }
         if (callInvalidRules) { // invalid_for_target
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy invalid_for_target_var;
             if (
                 (invalid_for_target_var = invalid_for_target_rule()) != null  // invalid_for_target
@@ -4215,16 +3633,10 @@ public final class Parser extends AbstractParser {
     //     | invalid_with_stmt
     public StmtTy with_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_with_stmt_indent
-            if (errorIndicator) {
-                return null;
-            }
             Object[] invalid_with_stmt_indent_var;
             if (
                 (invalid_with_stmt_indent_var = invalid_with_stmt_indent_rule()) != null  // invalid_with_stmt_indent
@@ -4236,9 +3648,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'with' '(' ','.with_item+ ','? ')' ':' block
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             Token _literal_1;
@@ -4272,9 +3681,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'with' ','.with_item+ ':' TYPE_COMMENT? block
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             WithItemTy[] a;
@@ -4302,9 +3708,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ASYNC 'with' '(' ','.with_item+ ','? ')' ':' block
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             Token _literal_1;
@@ -4341,9 +3744,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ASYNC 'with' ','.with_item+ ':' TYPE_COMMENT? block
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             WithItemTy[] a;
@@ -4374,9 +3774,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_with_stmt
-            if (errorIndicator) {
-                return null;
-            }
             Object[] invalid_with_stmt_var;
             if (
                 (invalid_with_stmt_var = invalid_with_stmt_rule()) != null  // invalid_with_stmt
@@ -4397,16 +3794,10 @@ public final class Parser extends AbstractParser {
     //     | expression
     public WithItemTy with_item_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // expression 'as' star_target &(',' | ')' | ':')
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy e;
             ExprTy t;
@@ -4430,9 +3821,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_with_item
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy invalid_with_item_var;
             if (
                 (invalid_with_item_var = invalid_with_item_rule()) != null  // invalid_with_item
@@ -4444,9 +3832,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy e;
             if (
                 (e = expression_rule()) != null  // expression
@@ -4472,16 +3857,10 @@ public final class Parser extends AbstractParser {
     //     | 'try' &&':' block except_star_block+ else_block? finally_block?
     public StmtTy try_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_try_stmt
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_try_stmt_var;
             if (
                 (invalid_try_stmt_var = invalid_try_stmt_rule()) != null  // invalid_try_stmt
@@ -4493,9 +3872,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'try' &&':' block finally_block
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             StmtTy[] b;
@@ -4520,9 +3896,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'try' &&':' block except_block+ else_block? finally_block?
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             StmtTy[] b;
@@ -4553,9 +3926,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'try' &&':' block except_star_block+ else_block? finally_block?
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             StmtTy[] b;
@@ -4596,16 +3966,10 @@ public final class Parser extends AbstractParser {
     //     | invalid_except_stmt
     public ExceptHandlerTy except_block_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_except_stmt_indent
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_except_stmt_indent_var;
             if (
                 (invalid_except_stmt_indent_var = invalid_except_stmt_indent_rule()) != null  // invalid_except_stmt_indent
@@ -4617,9 +3981,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'except' expression ['as' NAME] ':' block
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             StmtTy[] b;
@@ -4647,9 +4008,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'except' ':' block
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             StmtTy[] b;
@@ -4671,9 +4029,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_except_stmt
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_except_stmt_var;
             if (
                 (invalid_except_stmt_var = invalid_except_stmt_rule()) != null  // invalid_except_stmt
@@ -4694,16 +4049,10 @@ public final class Parser extends AbstractParser {
     //     | invalid_except_stmt
     public ExceptHandlerTy except_star_block_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_except_star_stmt_indent
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_except_star_stmt_indent_var;
             if (
                 (invalid_except_star_stmt_indent_var = invalid_except_star_stmt_indent_rule()) != null  // invalid_except_star_stmt_indent
@@ -4715,9 +4064,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'except' '*' expression ['as' NAME] ':' block
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             Token _literal_1;
@@ -4748,9 +4094,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_except_stmt
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_except_stmt_var;
             if (
                 (invalid_except_stmt_var = invalid_except_stmt_rule()) != null  // invalid_except_stmt
@@ -4768,15 +4111,9 @@ public final class Parser extends AbstractParser {
     // finally_block: invalid_finally_stmt | 'finally' &&':' block
     public StmtTy[] finally_block_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (callInvalidRules) { // invalid_finally_stmt
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_finally_stmt_var;
             if (
                 (invalid_finally_stmt_var = invalid_finally_stmt_rule()) != null  // invalid_finally_stmt
@@ -4788,9 +4125,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'finally' &&':' block
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             StmtTy[] a;
@@ -4816,16 +4150,10 @@ public final class Parser extends AbstractParser {
     //     | invalid_match_stmt
     public StmtTy match_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // "match" subject_expr ':' NEWLINE INDENT case_block+ DEDENT
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _keyword;
             Token _literal;
             MatchCaseTy[] cases;
@@ -4859,9 +4187,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_match_stmt
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy invalid_match_stmt_var;
             if (
                 (invalid_match_stmt_var = invalid_match_stmt_rule()) != null  // invalid_match_stmt
@@ -4879,16 +4204,10 @@ public final class Parser extends AbstractParser {
     // subject_expr: star_named_expression ',' star_named_expressions? | named_expression
     public ExprTy subject_expr_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // star_named_expression ',' star_named_expressions?
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy value;
             ExprTy[] values;
@@ -4910,9 +4229,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // named_expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy named_expression_var;
             if (
                 (named_expression_var = named_expression_rule()) != null  // named_expression
@@ -4930,16 +4246,10 @@ public final class Parser extends AbstractParser {
     // case_block: invalid_case_block | "case" patterns guard? ':' block
     public MatchCaseTy case_block_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_case_block
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_case_block_var;
             if (
                 (invalid_case_block_var = invalid_case_block_rule()) != null  // invalid_case_block
@@ -4951,9 +4261,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // "case" patterns guard? ':' block
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _keyword;
             Token _literal;
             StmtTy[] body;
@@ -4987,15 +4294,9 @@ public final class Parser extends AbstractParser {
     // guard: 'if' named_expression
     public ExprTy guard_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'if' named_expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy guard;
             if (
@@ -5016,16 +4317,10 @@ public final class Parser extends AbstractParser {
     // patterns: open_sequence_pattern | pattern
     public PatternTy patterns_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // open_sequence_pattern
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy[] patterns;
             if (
                 (patterns = (PatternTy[])open_sequence_pattern_rule()) != null  // open_sequence_pattern
@@ -5041,9 +4336,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // pattern
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy pattern_var;
             if (
                 (pattern_var = pattern_rule()) != null  // pattern
@@ -5061,15 +4353,9 @@ public final class Parser extends AbstractParser {
     // pattern: as_pattern | or_pattern
     public PatternTy pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // as_pattern
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy as_pattern_var;
             if (
                 (as_pattern_var = as_pattern_rule()) != null  // as_pattern
@@ -5081,9 +4367,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // or_pattern
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy or_pattern_var;
             if (
                 (or_pattern_var = or_pattern_rule()) != null  // or_pattern
@@ -5101,16 +4384,10 @@ public final class Parser extends AbstractParser {
     // as_pattern: or_pattern 'as' pattern_capture_target | invalid_as_pattern
     public PatternTy as_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // or_pattern 'as' pattern_capture_target
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             PatternTy pattern;
             ExprTy target;
@@ -5132,9 +4409,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_as_pattern
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_as_pattern_var;
             if (
                 (invalid_as_pattern_var = invalid_as_pattern_rule()) != null  // invalid_as_pattern
@@ -5152,16 +4426,10 @@ public final class Parser extends AbstractParser {
     // or_pattern: '|'.closed_pattern+
     public PatternTy or_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // '|'.closed_pattern+
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy[] patterns;
             if (
                 (patterns = (PatternTy[])_gather_98_rule()) != null  // '|'.closed_pattern+
@@ -5191,9 +4459,6 @@ public final class Parser extends AbstractParser {
     //     | class_pattern
     public PatternTy closed_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CLOSED_PATTERN_ID)) {
@@ -5201,9 +4466,6 @@ public final class Parser extends AbstractParser {
             return (PatternTy)_res;
         }
         { // literal_pattern
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy literal_pattern_var;
             if (
                 (literal_pattern_var = literal_pattern_rule()) != null  // literal_pattern
@@ -5216,9 +4478,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // capture_pattern
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy capture_pattern_var;
             if (
                 (capture_pattern_var = capture_pattern_rule()) != null  // capture_pattern
@@ -5231,9 +4490,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // wildcard_pattern
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy wildcard_pattern_var;
             if (
                 (wildcard_pattern_var = wildcard_pattern_rule()) != null  // wildcard_pattern
@@ -5246,9 +4502,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // value_pattern
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy value_pattern_var;
             if (
                 (value_pattern_var = value_pattern_rule()) != null  // value_pattern
@@ -5261,9 +4514,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // group_pattern
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy group_pattern_var;
             if (
                 (group_pattern_var = group_pattern_rule()) != null  // group_pattern
@@ -5276,9 +4526,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // sequence_pattern
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy sequence_pattern_var;
             if (
                 (sequence_pattern_var = sequence_pattern_rule()) != null  // sequence_pattern
@@ -5291,9 +4538,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // mapping_pattern
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy mapping_pattern_var;
             if (
                 (mapping_pattern_var = mapping_pattern_rule()) != null  // mapping_pattern
@@ -5306,9 +4550,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // class_pattern
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy class_pattern_var;
             if (
                 (class_pattern_var = class_pattern_rule()) != null  // class_pattern
@@ -5334,16 +4575,10 @@ public final class Parser extends AbstractParser {
     //     | 'False'
     public PatternTy literal_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // signed_number !('+' | '-')
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy value;
             if (
                 (value = signed_number_rule()) != null  // signed_number
@@ -5361,9 +4596,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // complex_number
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy value;
             if (
                 (value = complex_number_rule()) != null  // complex_number
@@ -5379,9 +4611,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // strings
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy value;
             if (
                 (value = strings_rule()) != null  // strings
@@ -5397,9 +4626,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'None'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = expect(680)) != null  // token='None'
@@ -5415,9 +4641,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'True'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = expect(681)) != null  // token='True'
@@ -5433,9 +4656,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'False'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = expect(682)) != null  // token='False'
@@ -5463,16 +4683,10 @@ public final class Parser extends AbstractParser {
     //     | 'False'
     public ExprTy literal_expr_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // signed_number !('+' | '-')
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy signed_number_var;
             if (
                 (signed_number_var = signed_number_rule()) != null  // signed_number
@@ -5486,9 +4700,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // complex_number
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy complex_number_var;
             if (
                 (complex_number_var = complex_number_rule()) != null  // complex_number
@@ -5500,9 +4711,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // strings
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy strings_var;
             if (
                 (strings_var = strings_rule()) != null  // strings
@@ -5514,9 +4722,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'None'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = expect(680)) != null  // token='None'
@@ -5528,9 +4733,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'True'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = expect(681)) != null  // token='True'
@@ -5542,9 +4744,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'False'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = expect(682)) != null  // token='False'
@@ -5564,16 +4763,10 @@ public final class Parser extends AbstractParser {
     //     | signed_real_number '-' imaginary_number
     public ExprTy complex_number_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // signed_real_number '+' imaginary_number
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy imag;
             ExprTy real;
@@ -5595,9 +4788,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // signed_real_number '-' imaginary_number
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy imag;
             ExprTy real;
@@ -5625,16 +4815,10 @@ public final class Parser extends AbstractParser {
     // signed_number: NUMBER | '-' NUMBER
     public ExprTy signed_number_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // NUMBER
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy number_var;
             if (
                 (number_var = number_token()) != null  // NUMBER
@@ -5646,9 +4830,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '-' NUMBER
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy number;
             if (
@@ -5673,16 +4854,10 @@ public final class Parser extends AbstractParser {
     // signed_real_number: real_number | '-' real_number
     public ExprTy signed_real_number_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // real_number
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy real_number_var;
             if (
                 (real_number_var = real_number_rule()) != null  // real_number
@@ -5694,9 +4869,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '-' real_number
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy real;
             if (
@@ -5721,15 +4893,9 @@ public final class Parser extends AbstractParser {
     // real_number: NUMBER
     public ExprTy real_number_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // NUMBER
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy real;
             if (
                 (real = number_token()) != null  // NUMBER
@@ -5747,15 +4913,9 @@ public final class Parser extends AbstractParser {
     // imaginary_number: NUMBER
     public ExprTy imaginary_number_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // NUMBER
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy imag;
             if (
                 (imag = number_token()) != null  // NUMBER
@@ -5773,16 +4933,10 @@ public final class Parser extends AbstractParser {
     // capture_pattern: pattern_capture_target
     public PatternTy capture_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // pattern_capture_target
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy target;
             if (
                 (target = pattern_capture_target_rule()) != null  // pattern_capture_target
@@ -5804,15 +4958,9 @@ public final class Parser extends AbstractParser {
     // pattern_capture_target: !"_" NAME !('.' | '(' | '=')
     public ExprTy pattern_capture_target_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // !"_" NAME !('.' | '(' | '=')
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy name;
             if (
                 genLookahead_expect_SOFT_KEYWORD(false, "_")
@@ -5834,16 +4982,10 @@ public final class Parser extends AbstractParser {
     // wildcard_pattern: "_"
     public PatternTy wildcard_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // "_"
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _keyword;
             if (
                 (_keyword = expect_SOFT_KEYWORD("_")) != null  // soft_keyword='"_"'
@@ -5865,16 +5007,10 @@ public final class Parser extends AbstractParser {
     // value_pattern: attr !('.' | '(' | '=')
     public PatternTy value_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // attr !('.' | '(' | '=')
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy attr;
             if (
                 (attr = attr_rule()) != null  // attr
@@ -5920,16 +5056,10 @@ public final class Parser extends AbstractParser {
     }
     private ExprTy attr_raw()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // name_or_attr '.' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy attr;
             ExprTy value;
@@ -5958,15 +5088,9 @@ public final class Parser extends AbstractParser {
     // name_or_attr: attr | NAME
     public ExprTy name_or_attr_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // attr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy attr_var;
             if (
                 (attr_var = attr_rule()) != null  // attr
@@ -5978,9 +5102,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // NAME
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy name_var;
             if (
                 (name_var = name_token()) != null  // NAME
@@ -5998,15 +5119,9 @@ public final class Parser extends AbstractParser {
     // group_pattern: '(' pattern ')'
     public PatternTy group_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '(' pattern ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             PatternTy pattern;
@@ -6030,16 +5145,10 @@ public final class Parser extends AbstractParser {
     // sequence_pattern: '[' maybe_sequence_pattern? ']' | '(' open_sequence_pattern? ')'
     public PatternTy sequence_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // '[' maybe_sequence_pattern? ']'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             PatternTy[] patterns;
@@ -6061,9 +5170,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '(' open_sequence_pattern? ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             PatternTy[] patterns;
@@ -6091,15 +5197,9 @@ public final class Parser extends AbstractParser {
     // open_sequence_pattern: maybe_star_pattern ',' maybe_sequence_pattern?
     public PatternTy[] open_sequence_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // maybe_star_pattern ',' maybe_sequence_pattern?
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             PatternTy pattern;
             PatternTy[] patterns;
@@ -6123,15 +5223,9 @@ public final class Parser extends AbstractParser {
     // maybe_sequence_pattern: ','.maybe_star_pattern+ ','?
     public PatternTy[] maybe_sequence_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','.maybe_star_pattern+ ','?
-            if (errorIndicator) {
-                return null;
-            }
             Token _opt_var;
             PatternTy[] patterns;
             if (
@@ -6152,15 +5246,9 @@ public final class Parser extends AbstractParser {
     // maybe_star_pattern: star_pattern | pattern
     public PatternTy maybe_star_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_pattern
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy star_pattern_var;
             if (
                 (star_pattern_var = star_pattern_rule()) != null  // star_pattern
@@ -6172,9 +5260,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // pattern
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy pattern_var;
             if (
                 (pattern_var = pattern_rule()) != null  // pattern
@@ -6192,9 +5277,6 @@ public final class Parser extends AbstractParser {
     // star_pattern: '*' pattern_capture_target | '*' wildcard_pattern
     public PatternTy star_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_PATTERN_ID)) {
@@ -6203,9 +5285,6 @@ public final class Parser extends AbstractParser {
         }
         Token startToken = getAndInitializeToken();
         { // '*' pattern_capture_target
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy target;
             if (
@@ -6225,9 +5304,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*' wildcard_pattern
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             PatternTy wildcard_pattern_var;
             if (
@@ -6258,16 +5334,10 @@ public final class Parser extends AbstractParser {
     //     | '{' items_pattern ','? '}'
     public PatternTy mapping_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // '{' '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             if (
@@ -6286,9 +5356,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '{' double_star_pattern ','? '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Token _opt_var;
@@ -6313,9 +5380,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '{' items_pattern ',' double_star_pattern ','? '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Token _literal_2;
@@ -6346,9 +5410,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '{' items_pattern ','? '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Token _opt_var;
@@ -6379,15 +5440,9 @@ public final class Parser extends AbstractParser {
     // items_pattern: ','.key_value_pattern+
     public KeyPatternPair[] items_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','.key_value_pattern+
-            if (errorIndicator) {
-                return null;
-            }
             KeyPatternPair[] _gather_106_var;
             if (
                 (_gather_106_var = (KeyPatternPair[])_gather_106_rule()) != null  // ','.key_value_pattern+
@@ -6405,15 +5460,9 @@ public final class Parser extends AbstractParser {
     // key_value_pattern: (literal_expr | attr) ':' pattern
     public KeyPatternPair key_value_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // (literal_expr | attr) ':' pattern
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy key;
             PatternTy pattern;
@@ -6437,15 +5486,9 @@ public final class Parser extends AbstractParser {
     // double_star_pattern: '**' pattern_capture_target
     public ExprTy double_star_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '**' pattern_capture_target
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy target;
             if (
@@ -6471,16 +5514,10 @@ public final class Parser extends AbstractParser {
     //     | invalid_class_pattern
     public PatternTy class_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // name_or_attr '(' ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy cls;
@@ -6502,9 +5539,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // name_or_attr '(' positional_patterns ','? ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Token _opt_var;
@@ -6532,9 +5566,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // name_or_attr '(' keyword_patterns ','? ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Token _opt_var;
@@ -6562,9 +5593,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Token _literal_2;
@@ -6598,9 +5626,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_class_pattern
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_class_pattern_var;
             if (
                 (invalid_class_pattern_var = invalid_class_pattern_rule()) != null  // invalid_class_pattern
@@ -6618,15 +5643,9 @@ public final class Parser extends AbstractParser {
     // positional_patterns: ','.pattern+
     public PatternTy[] positional_patterns_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','.pattern+
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy[] args;
             if (
                 (args = (PatternTy[])_gather_109_rule()) != null  // ','.pattern+
@@ -6644,15 +5663,9 @@ public final class Parser extends AbstractParser {
     // keyword_patterns: ','.keyword_pattern+
     public KeyPatternPair[] keyword_patterns_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','.keyword_pattern+
-            if (errorIndicator) {
-                return null;
-            }
             KeyPatternPair[] _gather_111_var;
             if (
                 (_gather_111_var = (KeyPatternPair[])_gather_111_rule()) != null  // ','.keyword_pattern+
@@ -6670,15 +5683,9 @@ public final class Parser extends AbstractParser {
     // keyword_pattern: NAME '=' pattern
     public KeyPatternPair keyword_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // NAME '=' pattern
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy arg;
             PatternTy value;
@@ -6702,16 +5709,10 @@ public final class Parser extends AbstractParser {
     // type_alias: "type" NAME type_params? '=' expression
     public StmtTy type_alias_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // "type" NAME type_params? '=' expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _keyword;
             Token _literal;
             ExprTy b;
@@ -6745,15 +5746,9 @@ public final class Parser extends AbstractParser {
     // type_params: '[' type_param_seq ']'
     public TypeParamTy[] type_params_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '[' type_param_seq ']'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             TypeParamTy[] t;
@@ -6777,15 +5772,9 @@ public final class Parser extends AbstractParser {
     // type_param_seq: ','.type_param+ ','?
     public TypeParamTy[] type_param_seq_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','.type_param+ ','?
-            if (errorIndicator) {
-                return null;
-            }
             Token _opt_var;
             TypeParamTy[] a;
             if (
@@ -6811,9 +5800,6 @@ public final class Parser extends AbstractParser {
     //     | '**' NAME
     public TypeParamTy type_param_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, TYPE_PARAM_ID)) {
@@ -6822,9 +5808,6 @@ public final class Parser extends AbstractParser {
         }
         Token startToken = getAndInitializeToken();
         { // NAME type_param_bound?
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             ExprTy b;
             if (
@@ -6844,9 +5827,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*' NAME ':' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             Token colon;
@@ -6868,9 +5848,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -6890,9 +5867,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '**' NAME ':' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             Token colon;
@@ -6914,9 +5888,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '**' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -6943,15 +5914,9 @@ public final class Parser extends AbstractParser {
     // type_param_bound: ':' expression
     public ExprTy type_param_bound_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ':' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy e;
             if (
@@ -6972,16 +5937,10 @@ public final class Parser extends AbstractParser {
     // expressions: expression ((',' expression))+ ','? | expression ',' | expression
     public ExprTy expressions_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // expression ((',' expression))+ ','?
-            if (errorIndicator) {
-                return null;
-            }
             Token _opt_var;
             ExprTy a;
             ExprTy[] b;
@@ -7003,9 +5962,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // expression ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -7024,9 +5980,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy expression_var;
             if (
                 (expression_var = expression_rule()) != null  // expression
@@ -7049,9 +6002,6 @@ public final class Parser extends AbstractParser {
     //     | lambdef
     public ExprTy expression_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, EXPRESSION_ID)) {
@@ -7060,9 +6010,6 @@ public final class Parser extends AbstractParser {
         }
         Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_expression
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_expression_var;
             if (
                 (invalid_expression_var = invalid_expression_rule()) != null  // invalid_expression
@@ -7075,9 +6022,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_legacy_expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy invalid_legacy_expression_var;
             if (
                 (invalid_legacy_expression_var = invalid_legacy_expression_rule()) != null  // invalid_legacy_expression
@@ -7090,9 +6034,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // disjunction 'if' disjunction 'else' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _keyword_1;
             ExprTy a;
@@ -7121,9 +6062,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // disjunction
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy disjunction_var;
             if (
                 (disjunction_var = disjunction_rule()) != null  // disjunction
@@ -7136,9 +6074,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambdef
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy lambdef_var;
             if (
                 (lambdef_var = lambdef_rule()) != null  // lambdef
@@ -7158,16 +6093,10 @@ public final class Parser extends AbstractParser {
     // yield_expr: 'yield' 'from' expression | 'yield' star_expressions?
     public ExprTy yield_expr_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // 'yield' 'from' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _keyword_1;
             ExprTy a;
@@ -7189,9 +6118,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'yield' star_expressions?
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy a;
             if (
@@ -7219,16 +6145,10 @@ public final class Parser extends AbstractParser {
     //     | star_expression
     public ExprTy star_expressions_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // star_expression ((',' star_expression))+ ','?
-            if (errorIndicator) {
-                return null;
-            }
             Token _opt_var;
             ExprTy a;
             ExprTy[] b;
@@ -7250,9 +6170,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_expression ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -7271,9 +6188,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy star_expression_var;
             if (
                 (star_expression_var = star_expression_rule()) != null  // star_expression
@@ -7291,9 +6205,6 @@ public final class Parser extends AbstractParser {
     // star_expression: '*' bitwise_or | expression
     public ExprTy star_expression_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_EXPRESSION_ID)) {
@@ -7302,9 +6213,6 @@ public final class Parser extends AbstractParser {
         }
         Token startToken = getAndInitializeToken();
         { // '*' bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -7324,9 +6232,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy expression_var;
             if (
                 (expression_var = expression_rule()) != null  // expression
@@ -7346,15 +6251,9 @@ public final class Parser extends AbstractParser {
     // star_named_expressions: ','.star_named_expression+ ','?
     public ExprTy[] star_named_expressions_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','.star_named_expression+ ','?
-            if (errorIndicator) {
-                return null;
-            }
             Token _opt_var;
             ExprTy[] a;
             if (
@@ -7375,16 +6274,10 @@ public final class Parser extends AbstractParser {
     // star_named_expression: '*' bitwise_or | named_expression
     public ExprTy star_named_expression_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // '*' bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -7403,9 +6296,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // named_expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy named_expression_var;
             if (
                 (named_expression_var = named_expression_rule()) != null  // named_expression
@@ -7423,16 +6313,10 @@ public final class Parser extends AbstractParser {
     // assignment_expression: NAME ':=' ~ expression
     public ExprTy assignment_expression_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // NAME ':=' ~ expression
-            if (errorIndicator) {
-                return null;
-            }
             int _cut_var = 0;
             Token _literal;
             ExprTy a;
@@ -7451,7 +6335,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = checkVersion(8, "Assignment expressions are", factory.createNamedExp(this.check(this.setExprContext(a, ExprContextTy.Store)), b, startToken.sourceRange.withEnd(endToken.sourceRange)));
+                _res = checkVersion(8, "Assignment expressions are", factory.createNamedExp(this.setExprContext(a, ExprContextTy.Store), b, startToken.sourceRange.withEnd(endToken.sourceRange)));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -7466,15 +6350,9 @@ public final class Parser extends AbstractParser {
     // named_expression: assignment_expression | invalid_named_expression | expression !':='
     public ExprTy named_expression_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // assignment_expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy assignment_expression_var;
             if (
                 (assignment_expression_var = assignment_expression_rule()) != null  // assignment_expression
@@ -7486,9 +6364,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_named_expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy invalid_named_expression_var;
             if (
                 (invalid_named_expression_var = invalid_named_expression_rule()) != null  // invalid_named_expression
@@ -7500,9 +6375,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // expression !':='
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy expression_var;
             if (
                 (expression_var = expression_rule()) != null  // expression
@@ -7522,9 +6394,6 @@ public final class Parser extends AbstractParser {
     // disjunction: conjunction (('or' conjunction))+ | conjunction
     public ExprTy disjunction_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DISJUNCTION_ID)) {
@@ -7533,9 +6402,6 @@ public final class Parser extends AbstractParser {
         }
         Token startToken = getAndInitializeToken();
         { // conjunction (('or' conjunction))+
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             ExprTy[] b;
             if (
@@ -7555,9 +6421,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // conjunction
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy conjunction_var;
             if (
                 (conjunction_var = conjunction_rule()) != null  // conjunction
@@ -7577,9 +6440,6 @@ public final class Parser extends AbstractParser {
     // conjunction: inversion (('and' inversion))+ | inversion
     public ExprTy conjunction_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CONJUNCTION_ID)) {
@@ -7588,9 +6448,6 @@ public final class Parser extends AbstractParser {
         }
         Token startToken = getAndInitializeToken();
         { // inversion (('and' inversion))+
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             ExprTy[] b;
             if (
@@ -7610,9 +6467,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // inversion
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy inversion_var;
             if (
                 (inversion_var = inversion_rule()) != null  // inversion
@@ -7632,9 +6486,6 @@ public final class Parser extends AbstractParser {
     // inversion: 'not' inversion | comparison
     public ExprTy inversion_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVERSION_ID)) {
@@ -7643,9 +6494,6 @@ public final class Parser extends AbstractParser {
         }
         Token startToken = getAndInitializeToken();
         { // 'not' inversion
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy a;
             if (
@@ -7665,9 +6513,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // comparison
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy comparison_var;
             if (
                 (comparison_var = comparison_rule()) != null  // comparison
@@ -7687,16 +6532,10 @@ public final class Parser extends AbstractParser {
     // comparison: bitwise_or compare_op_bitwise_or_pair+ | bitwise_or
     public ExprTy comparison_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // bitwise_or compare_op_bitwise_or_pair+
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             CmpopExprPair[] b;
             if (
@@ -7715,9 +6554,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy bitwise_or_var;
             if (
                 (bitwise_or_var = bitwise_or_rule()) != null  // bitwise_or
@@ -7745,15 +6581,9 @@ public final class Parser extends AbstractParser {
     //     | is_bitwise_or
     public CmpopExprPair compare_op_bitwise_or_pair_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // eq_bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             CmpopExprPair eq_bitwise_or_var;
             if (
                 (eq_bitwise_or_var = eq_bitwise_or_rule()) != null  // eq_bitwise_or
@@ -7765,9 +6595,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // noteq_bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             CmpopExprPair noteq_bitwise_or_var;
             if (
                 (noteq_bitwise_or_var = noteq_bitwise_or_rule()) != null  // noteq_bitwise_or
@@ -7779,9 +6606,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lte_bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             CmpopExprPair lte_bitwise_or_var;
             if (
                 (lte_bitwise_or_var = lte_bitwise_or_rule()) != null  // lte_bitwise_or
@@ -7793,9 +6617,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lt_bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             CmpopExprPair lt_bitwise_or_var;
             if (
                 (lt_bitwise_or_var = lt_bitwise_or_rule()) != null  // lt_bitwise_or
@@ -7807,9 +6628,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // gte_bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             CmpopExprPair gte_bitwise_or_var;
             if (
                 (gte_bitwise_or_var = gte_bitwise_or_rule()) != null  // gte_bitwise_or
@@ -7821,9 +6639,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // gt_bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             CmpopExprPair gt_bitwise_or_var;
             if (
                 (gt_bitwise_or_var = gt_bitwise_or_rule()) != null  // gt_bitwise_or
@@ -7835,9 +6650,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // notin_bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             CmpopExprPair notin_bitwise_or_var;
             if (
                 (notin_bitwise_or_var = notin_bitwise_or_rule()) != null  // notin_bitwise_or
@@ -7849,9 +6661,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // in_bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             CmpopExprPair in_bitwise_or_var;
             if (
                 (in_bitwise_or_var = in_bitwise_or_rule()) != null  // in_bitwise_or
@@ -7863,9 +6672,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // isnot_bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             CmpopExprPair isnot_bitwise_or_var;
             if (
                 (isnot_bitwise_or_var = isnot_bitwise_or_rule()) != null  // isnot_bitwise_or
@@ -7877,9 +6683,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // is_bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             CmpopExprPair is_bitwise_or_var;
             if (
                 (is_bitwise_or_var = is_bitwise_or_rule()) != null  // is_bitwise_or
@@ -7897,15 +6700,9 @@ public final class Parser extends AbstractParser {
     // eq_bitwise_or: '==' bitwise_or
     public CmpopExprPair eq_bitwise_or_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '==' bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -7926,15 +6723,9 @@ public final class Parser extends AbstractParser {
     // noteq_bitwise_or: ('!=') bitwise_or
     public CmpopExprPair noteq_bitwise_or_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ('!=') bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             Token _tmp_129_var;
             ExprTy a;
             if (
@@ -7955,15 +6746,9 @@ public final class Parser extends AbstractParser {
     // lte_bitwise_or: '<=' bitwise_or
     public CmpopExprPair lte_bitwise_or_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '<=' bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -7984,15 +6769,9 @@ public final class Parser extends AbstractParser {
     // lt_bitwise_or: '<' bitwise_or
     public CmpopExprPair lt_bitwise_or_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '<' bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -8013,15 +6792,9 @@ public final class Parser extends AbstractParser {
     // gte_bitwise_or: '>=' bitwise_or
     public CmpopExprPair gte_bitwise_or_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '>=' bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -8042,15 +6815,9 @@ public final class Parser extends AbstractParser {
     // gt_bitwise_or: '>' bitwise_or
     public CmpopExprPair gt_bitwise_or_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '>' bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -8071,15 +6838,9 @@ public final class Parser extends AbstractParser {
     // notin_bitwise_or: 'not' 'in' bitwise_or
     public CmpopExprPair notin_bitwise_or_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'not' 'in' bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _keyword_1;
             ExprTy a;
@@ -8103,15 +6864,9 @@ public final class Parser extends AbstractParser {
     // in_bitwise_or: 'in' bitwise_or
     public CmpopExprPair in_bitwise_or_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'in' bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy a;
             if (
@@ -8132,15 +6887,9 @@ public final class Parser extends AbstractParser {
     // isnot_bitwise_or: 'is' 'not' bitwise_or
     public CmpopExprPair isnot_bitwise_or_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'is' 'not' bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _keyword_1;
             ExprTy a;
@@ -8164,15 +6913,9 @@ public final class Parser extends AbstractParser {
     // is_bitwise_or: 'is' bitwise_or
     public CmpopExprPair is_bitwise_or_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'is' bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy a;
             if (
@@ -8215,16 +6958,10 @@ public final class Parser extends AbstractParser {
     }
     private ExprTy bitwise_or_raw()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // bitwise_or '|' bitwise_xor
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -8246,9 +6983,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // bitwise_xor
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy bitwise_xor_var;
             if (
                 (bitwise_xor_var = bitwise_xor_rule()) != null  // bitwise_xor
@@ -8288,16 +7022,10 @@ public final class Parser extends AbstractParser {
     }
     private ExprTy bitwise_xor_raw()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // bitwise_xor '^' bitwise_and
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -8319,9 +7047,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // bitwise_and
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy bitwise_and_var;
             if (
                 (bitwise_and_var = bitwise_and_rule()) != null  // bitwise_and
@@ -8361,16 +7086,10 @@ public final class Parser extends AbstractParser {
     }
     private ExprTy bitwise_and_raw()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // bitwise_and '&' shift_expr
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -8392,9 +7111,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // shift_expr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy shift_expr_var;
             if (
                 (shift_expr_var = shift_expr_rule()) != null  // shift_expr
@@ -8434,16 +7150,10 @@ public final class Parser extends AbstractParser {
     }
     private ExprTy shift_expr_raw()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // shift_expr '<<' sum
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -8465,9 +7175,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // shift_expr '>>' sum
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -8489,9 +7196,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // sum
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy sum_var;
             if (
                 (sum_var = sum_rule()) != null  // sum
@@ -8531,16 +7235,10 @@ public final class Parser extends AbstractParser {
     }
     private ExprTy sum_raw()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // sum '+' term
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -8562,9 +7260,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // sum '-' term
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -8586,9 +7281,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // term
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy term_var;
             if (
                 (term_var = term_rule()) != null  // term
@@ -8634,16 +7326,10 @@ public final class Parser extends AbstractParser {
     }
     private ExprTy term_raw()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // term '*' factor
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -8665,9 +7351,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // term '/' factor
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -8689,9 +7372,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // term '//' factor
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -8713,9 +7393,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // term '%' factor
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -8737,9 +7414,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // term '@' factor
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -8761,9 +7435,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // factor
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy factor_var;
             if (
                 (factor_var = factor_rule()) != null  // factor
@@ -8781,9 +7452,6 @@ public final class Parser extends AbstractParser {
     // factor: '+' factor | '-' factor | '~' factor | power
     public ExprTy factor_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FACTOR_ID)) {
@@ -8792,9 +7460,6 @@ public final class Parser extends AbstractParser {
         }
         Token startToken = getAndInitializeToken();
         { // '+' factor
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -8814,9 +7479,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '-' factor
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -8836,9 +7498,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '~' factor
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -8858,9 +7517,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // power
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy power_var;
             if (
                 (power_var = power_rule()) != null  // power
@@ -8880,16 +7536,10 @@ public final class Parser extends AbstractParser {
     // power: await_primary '**' factor | await_primary
     public ExprTy power_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // await_primary '**' factor
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -8911,9 +7561,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // await_primary
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy await_primary_var;
             if (
                 (await_primary_var = await_primary_rule()) != null  // await_primary
@@ -8931,9 +7578,6 @@ public final class Parser extends AbstractParser {
     // await_primary: AWAIT primary | primary
     public ExprTy await_primary_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, AWAIT_PRIMARY_ID)) {
@@ -8942,9 +7586,6 @@ public final class Parser extends AbstractParser {
         }
         Token startToken = getAndInitializeToken();
         { // AWAIT primary
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             Token await_var;
             if (
@@ -8964,9 +7605,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // primary
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy primary_var;
             if (
                 (primary_var = primary_rule()) != null  // primary
@@ -9013,16 +7651,10 @@ public final class Parser extends AbstractParser {
     }
     private ExprTy primary_raw()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // primary '.' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -9044,9 +7676,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // primary genexp
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             ExprTy b;
             if (
@@ -9065,9 +7694,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // primary '(' arguments? ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy a;
@@ -9092,9 +7718,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // primary '[' slices ']'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy a;
@@ -9119,9 +7742,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // atom
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy atom_var;
             if (
                 (atom_var = atom_rule()) != null  // atom
@@ -9139,16 +7759,10 @@ public final class Parser extends AbstractParser {
     // slices: slice !',' | ','.(slice | starred_expression)+ ','?
     public ExprTy slices_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // slice !','
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             if (
                 (a = slice_rule()) != null  // slice
@@ -9162,9 +7776,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ','.(slice | starred_expression)+ ','?
-            if (errorIndicator) {
-                return null;
-            }
             Token _opt_var;
             ExprTy[] a;
             if (
@@ -9189,16 +7800,10 @@ public final class Parser extends AbstractParser {
     // slice: expression? ':' expression? [':' expression?] | named_expression
     public ExprTy slice_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // expression? ':' expression? [':' expression?]
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -9223,9 +7828,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // named_expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             if (
                 (a = named_expression_rule()) != null  // named_expression
@@ -9253,16 +7855,10 @@ public final class Parser extends AbstractParser {
     //     | '...'
     public ExprTy atom_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // NAME
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy name_var;
             if (
                 (name_var = name_token()) != null  // NAME
@@ -9274,9 +7870,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'True'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = expect(681)) != null  // token='True'
@@ -9288,9 +7881,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'False'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = expect(682)) != null  // token='False'
@@ -9302,9 +7892,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'None'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = expect(680)) != null  // token='None'
@@ -9316,9 +7903,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &(STRING | FSTRING_START) strings
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy strings_var;
             if (
                 genLookahead__tmp_137_rule(true)
@@ -9332,9 +7916,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // NUMBER
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy number_var;
             if (
                 (number_var = number_token()) != null  // NUMBER
@@ -9346,9 +7927,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &'(' (tuple | group | genexp)
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _tmp_138_var;
             if (
                 genLookahead_expect(true, 7)  // token='('
@@ -9362,9 +7940,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &'[' (list | listcomp)
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _tmp_139_var;
             if (
                 genLookahead_expect(true, 9)  // token='['
@@ -9378,9 +7953,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // &'{' (dict | set | dictcomp | setcomp)
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _tmp_140_var;
             if (
                 genLookahead_expect(true, 25)  // token='{'
@@ -9394,9 +7966,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '...'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = expect(52)) != null  // token='...'
@@ -9414,15 +7983,9 @@ public final class Parser extends AbstractParser {
     // group: '(' (yield_expr | named_expression) ')' | invalid_group
     public ExprTy group_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '(' (yield_expr | named_expression) ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy a;
@@ -9440,9 +8003,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_group
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy invalid_group_var;
             if (
                 (invalid_group_var = invalid_group_rule()) != null  // invalid_group
@@ -9460,16 +8020,10 @@ public final class Parser extends AbstractParser {
     // lambdef: 'lambda' lambda_params? ':' expression
     public ExprTy lambdef_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // 'lambda' lambda_params? ':' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             ArgumentsTy a;
@@ -9500,15 +8054,9 @@ public final class Parser extends AbstractParser {
     // lambda_params: invalid_lambda_parameters | lambda_parameters
     public ArgumentsTy lambda_params_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (callInvalidRules) { // invalid_lambda_parameters
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_lambda_parameters_var;
             if (
                 (invalid_lambda_parameters_var = invalid_lambda_parameters_rule()) != null  // invalid_lambda_parameters
@@ -9520,9 +8068,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_parameters
-            if (errorIndicator) {
-                return null;
-            }
             ArgumentsTy lambda_parameters_var;
             if (
                 (lambda_parameters_var = lambda_parameters_rule()) != null  // lambda_parameters
@@ -9545,15 +8090,9 @@ public final class Parser extends AbstractParser {
     //     | lambda_star_etc
     public ArgumentsTy lambda_parameters_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_slash_no_default lambda_param_no_default* lambda_param_with_default* lambda_star_etc?
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy[] a;
             ArgTy[] b;
             NameDefaultPair[] c;
@@ -9574,9 +8113,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_slash_with_default lambda_param_with_default* lambda_star_etc?
-            if (errorIndicator) {
-                return null;
-            }
             SlashWithDefault a;
             NameDefaultPair[] b;
             StarEtc c;
@@ -9594,9 +8130,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_param_no_default+ lambda_param_with_default* lambda_star_etc?
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy[] a;
             NameDefaultPair[] b;
             StarEtc c;
@@ -9614,9 +8147,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_param_with_default+ lambda_star_etc?
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair[] a;
             StarEtc b;
             if (
@@ -9631,9 +8161,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_star_etc
-            if (errorIndicator) {
-                return null;
-            }
             StarEtc a;
             if (
                 (a = lambda_star_etc_rule()) != null  // lambda_star_etc
@@ -9653,15 +8180,9 @@ public final class Parser extends AbstractParser {
     //     | lambda_param_no_default+ '/' &':'
     public ArgTy[] lambda_slash_no_default_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_param_no_default+ '/' ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ArgTy[] a;
@@ -9679,9 +8200,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_param_no_default+ '/' &':'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ArgTy[] a;
             if (
@@ -9706,15 +8224,9 @@ public final class Parser extends AbstractParser {
     //     | lambda_param_no_default* lambda_param_with_default+ '/' &':'
     public SlashWithDefault lambda_slash_with_default_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_param_no_default* lambda_param_with_default+ '/' ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ArgTy[] a;
@@ -9735,9 +8247,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_param_no_default* lambda_param_with_default+ '/' &':'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ArgTy[] a;
             NameDefaultPair[] b;
@@ -9767,15 +8276,9 @@ public final class Parser extends AbstractParser {
     //     | lambda_kwds
     public StarEtc lambda_star_etc_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (callInvalidRules) { // invalid_lambda_star_etc
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_lambda_star_etc_var;
             if (
                 (invalid_lambda_star_etc_var = invalid_lambda_star_etc_rule()) != null  // invalid_lambda_star_etc
@@ -9787,9 +8290,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*' lambda_param_no_default lambda_param_maybe_default* lambda_kwds?
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ArgTy a;
             NameDefaultPair[] b;
@@ -9810,9 +8310,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*' ',' lambda_param_maybe_default+ lambda_kwds?
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             NameDefaultPair[] b;
@@ -9833,9 +8330,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_kwds
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy a;
             if (
                 (a = lambda_kwds_rule()) != null  // lambda_kwds
@@ -9853,15 +8347,9 @@ public final class Parser extends AbstractParser {
     // lambda_kwds: invalid_lambda_kwds | '**' lambda_param_no_default
     public ArgTy lambda_kwds_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (callInvalidRules) { // invalid_lambda_kwds
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy invalid_lambda_kwds_var;
             if (
                 (invalid_lambda_kwds_var = invalid_lambda_kwds_rule()) != null  // invalid_lambda_kwds
@@ -9873,9 +8361,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '**' lambda_param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ArgTy a;
             if (
@@ -9896,15 +8381,9 @@ public final class Parser extends AbstractParser {
     // lambda_param_no_default: lambda_param ',' | lambda_param &':'
     public ArgTy lambda_param_no_default_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_param ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ArgTy a;
             if (
@@ -9919,9 +8398,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_param &':'
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy a;
             if (
                 (a = lambda_param_rule()) != null  // lambda_param
@@ -9941,15 +8417,9 @@ public final class Parser extends AbstractParser {
     // lambda_param_with_default: lambda_param default ',' | lambda_param default &':'
     public NameDefaultPair lambda_param_with_default_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_param default ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ArgTy a;
             ExprTy c;
@@ -9967,9 +8437,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_param default &':'
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy a;
             ExprTy c;
             if (
@@ -9992,15 +8459,9 @@ public final class Parser extends AbstractParser {
     // lambda_param_maybe_default: lambda_param default? ',' | lambda_param default? &':'
     public NameDefaultPair lambda_param_maybe_default_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_param default? ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ArgTy a;
             ExprTy c;
@@ -10018,9 +8479,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_param default? &':'
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy a;
             ExprTy c;
             if (
@@ -10043,16 +8501,10 @@ public final class Parser extends AbstractParser {
     // lambda_param: NAME
     public ArgTy lambda_param_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // NAME
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             if (
                 (a = name_token()) != null  // NAME
@@ -10074,15 +8526,9 @@ public final class Parser extends AbstractParser {
     // fstring_middle: fstring_replacement_field | FSTRING_MIDDLE
     public ExprTy fstring_middle_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // fstring_replacement_field
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy fstring_replacement_field_var;
             if (
                 (fstring_replacement_field_var = fstring_replacement_field_rule()) != null  // fstring_replacement_field
@@ -10094,9 +8540,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // FSTRING_MIDDLE
-            if (errorIndicator) {
-                return null;
-            }
             Token t;
             if (
                 (t = expect(Token.Kind.FSTRING_MIDDLE)) != null  // token='FSTRING_MIDDLE'
@@ -10116,16 +8559,10 @@ public final class Parser extends AbstractParser {
     //     | invalid_replacement_field
     public ExprTy fstring_replacement_field_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // '{' (yield_expr | star_expressions) '='? fstring_conversion? fstring_full_format_spec? '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ResultTokenWithMetadata conversion;
@@ -10156,9 +8593,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_replacement_field
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_replacement_field_var;
             if (
                 (invalid_replacement_field_var = invalid_replacement_field_rule()) != null  // invalid_replacement_field
@@ -10176,15 +8610,9 @@ public final class Parser extends AbstractParser {
     // fstring_conversion: "!" NAME
     public ResultTokenWithMetadata fstring_conversion_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // "!" NAME
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy conv;
             Token conv_token;
             if (
@@ -10205,16 +8633,10 @@ public final class Parser extends AbstractParser {
     // fstring_full_format_spec: ':' fstring_format_spec*
     public ResultTokenWithMetadata fstring_full_format_spec_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // ':' fstring_format_spec*
-            if (errorIndicator) {
-                return null;
-            }
             Token colon;
             ExprTy[] spec;
             if (
@@ -10239,15 +8661,9 @@ public final class Parser extends AbstractParser {
     // fstring_format_spec: FSTRING_MIDDLE | fstring_replacement_field
     public ExprTy fstring_format_spec_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // FSTRING_MIDDLE
-            if (errorIndicator) {
-                return null;
-            }
             Token t;
             if (
                 (t = expect(Token.Kind.FSTRING_MIDDLE)) != null  // token='FSTRING_MIDDLE'
@@ -10259,9 +8675,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // fstring_replacement_field
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy fstring_replacement_field_var;
             if (
                 (fstring_replacement_field_var = fstring_replacement_field_rule()) != null  // fstring_replacement_field
@@ -10279,15 +8692,9 @@ public final class Parser extends AbstractParser {
     // fstring: FSTRING_START fstring_middle* FSTRING_END
     public ExprTy fstring_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // FSTRING_START fstring_middle* FSTRING_END
-            if (errorIndicator) {
-                return null;
-            }
             Token a;
             ExprTy[] b;
             Token c;
@@ -10311,15 +8718,9 @@ public final class Parser extends AbstractParser {
     // string: STRING
     public ExprTy string_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // STRING
-            if (errorIndicator) {
-                return null;
-            }
             Token s;
             if (
                 (s = (Token)string_token()) != null  // STRING
@@ -10337,9 +8738,6 @@ public final class Parser extends AbstractParser {
     // strings: ((fstring | string))+
     public ExprTy strings_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STRINGS_ID)) {
@@ -10348,9 +8746,6 @@ public final class Parser extends AbstractParser {
         }
         Token startToken = getAndInitializeToken();
         { // ((fstring | string))+
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] a;
             if (
                 (a = (ExprTy[])_loop1_168_rule()) != null  // ((fstring | string))+
@@ -10374,16 +8769,10 @@ public final class Parser extends AbstractParser {
     // list: '[' star_named_expressions? ']'
     public ExprTy list_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // '[' star_named_expressions? ']'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy[] a;
@@ -10411,16 +8800,10 @@ public final class Parser extends AbstractParser {
     // tuple: '(' [star_named_expression ',' star_named_expressions?] ')'
     public ExprTy tuple_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // '(' [star_named_expression ',' star_named_expressions?] ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy[] a;
@@ -10448,16 +8831,10 @@ public final class Parser extends AbstractParser {
     // set: '{' star_named_expressions '}'
     public ExprTy set_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // '{' star_named_expressions '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy[] a;
@@ -10485,16 +8862,10 @@ public final class Parser extends AbstractParser {
     // dict: '{' double_starred_kvpairs? '}' | '{' invalid_double_starred_kvpairs '}'
     public ExprTy dict_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // '{' double_starred_kvpairs? '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             KeyValuePair[] a;
@@ -10516,9 +8887,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '{' invalid_double_starred_kvpairs '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Object invalid_double_starred_kvpairs_var;
@@ -10542,15 +8910,9 @@ public final class Parser extends AbstractParser {
     // double_starred_kvpairs: ','.double_starred_kvpair+ ','?
     public KeyValuePair[] double_starred_kvpairs_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','.double_starred_kvpair+ ','?
-            if (errorIndicator) {
-                return null;
-            }
             Token _opt_var;
             KeyValuePair[] a;
             if (
@@ -10571,15 +8933,9 @@ public final class Parser extends AbstractParser {
     // double_starred_kvpair: '**' bitwise_or | kvpair
     public KeyValuePair double_starred_kvpair_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '**' bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -10594,9 +8950,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // kvpair
-            if (errorIndicator) {
-                return null;
-            }
             KeyValuePair kvpair_var;
             if (
                 (kvpair_var = kvpair_rule()) != null  // kvpair
@@ -10614,15 +8967,9 @@ public final class Parser extends AbstractParser {
     // kvpair: expression ':' expression
     public KeyValuePair kvpair_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // expression ':' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -10646,15 +8993,9 @@ public final class Parser extends AbstractParser {
     // for_if_clauses: for_if_clause+
     public ComprehensionTy[] for_if_clauses_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // for_if_clause+
-            if (errorIndicator) {
-                return null;
-            }
             ComprehensionTy[] a;
             if (
                 (a = (ComprehensionTy[])_loop1_175_rule()) != null  // for_if_clause+
@@ -10675,16 +9016,10 @@ public final class Parser extends AbstractParser {
     //     | invalid_for_target
     public ComprehensionTy for_if_clause_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // ASYNC 'for' star_targets 'in' ~ disjunction (('if' disjunction))*
-            if (errorIndicator) {
-                return null;
-            }
             int _cut_var = 0;
             Token _keyword;
             Token _keyword_1;
@@ -10721,9 +9056,6 @@ public final class Parser extends AbstractParser {
             }
         }
         { // 'for' star_targets 'in' ~ disjunction (('if' disjunction))*
-            if (errorIndicator) {
-                return null;
-            }
             int _cut_var = 0;
             Token _keyword;
             Token _keyword_1;
@@ -10757,9 +9089,6 @@ public final class Parser extends AbstractParser {
             }
         }
         if (callInvalidRules) { // invalid_for_target
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy invalid_for_target_var;
             if (
                 (invalid_for_target_var = invalid_for_target_rule()) != null  // invalid_for_target
@@ -10777,16 +9106,10 @@ public final class Parser extends AbstractParser {
     // listcomp: '[' named_expression for_if_clauses ']' | invalid_comprehension
     public ExprTy listcomp_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // '[' named_expression for_if_clauses ']'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy a;
@@ -10811,9 +9134,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_comprehension
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_comprehension_var;
             if (
                 (invalid_comprehension_var = invalid_comprehension_rule()) != null  // invalid_comprehension
@@ -10831,16 +9151,10 @@ public final class Parser extends AbstractParser {
     // setcomp: '{' named_expression for_if_clauses '}' | invalid_comprehension
     public ExprTy setcomp_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // '{' named_expression for_if_clauses '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy a;
@@ -10865,9 +9179,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_comprehension
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_comprehension_var;
             if (
                 (invalid_comprehension_var = invalid_comprehension_rule()) != null  // invalid_comprehension
@@ -10887,16 +9198,10 @@ public final class Parser extends AbstractParser {
     //     | invalid_comprehension
     public ExprTy genexp_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // '(' (assignment_expression | expression !':=') for_if_clauses ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy a;
@@ -10921,9 +9226,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_comprehension
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_comprehension_var;
             if (
                 (invalid_comprehension_var = invalid_comprehension_rule()) != null  // invalid_comprehension
@@ -10941,16 +9243,10 @@ public final class Parser extends AbstractParser {
     // dictcomp: '{' kvpair for_if_clauses '}' | invalid_dict_comprehension
     public ExprTy dictcomp_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // '{' kvpair for_if_clauses '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             KeyValuePair a;
@@ -10975,9 +9271,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_dict_comprehension
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_dict_comprehension_var;
             if (
                 (invalid_dict_comprehension_var = invalid_dict_comprehension_rule()) != null  // invalid_dict_comprehension
@@ -10995,9 +9288,6 @@ public final class Parser extends AbstractParser {
     // arguments: args ','? &')' | invalid_arguments
     public ExprTy arguments_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ARGUMENTS_ID)) {
@@ -11005,9 +9295,6 @@ public final class Parser extends AbstractParser {
             return (ExprTy)_res;
         }
         { // args ','? &')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _opt_var;
             ExprTy a;
             if (
@@ -11025,9 +9312,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_arguments
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_arguments_var;
             if (
                 (invalid_arguments_var = invalid_arguments_rule()) != null  // invalid_arguments
@@ -11049,16 +9333,10 @@ public final class Parser extends AbstractParser {
     //     | kwargs
     public ExprTy args_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // ','.(starred_expression | (assignment_expression | expression !':=') !'=')+ [',' kwargs]
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] a;
             KeywordOrStarred[] b;
             if (
@@ -11077,9 +9355,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // kwargs
-            if (errorIndicator) {
-                return null;
-            }
             KeywordOrStarred[] a;
             if (
                 (a = kwargs_rule()) != null  // kwargs
@@ -11104,15 +9379,9 @@ public final class Parser extends AbstractParser {
     //     | ','.kwarg_or_double_starred+
     public KeywordOrStarred[] kwargs_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','.kwarg_or_starred+ ',' ','.kwarg_or_double_starred+
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             KeywordOrStarred[] a;
             KeywordOrStarred[] b;
@@ -11130,9 +9399,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ','.kwarg_or_starred+
-            if (errorIndicator) {
-                return null;
-            }
             KeywordOrStarred[] _gather_187_var;
             if (
                 (_gather_187_var = (KeywordOrStarred[])_gather_187_rule()) != null  // ','.kwarg_or_starred+
@@ -11144,9 +9410,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ','.kwarg_or_double_starred+
-            if (errorIndicator) {
-                return null;
-            }
             KeywordOrStarred[] _gather_189_var;
             if (
                 (_gather_189_var = (KeywordOrStarred[])_gather_189_rule()) != null  // ','.kwarg_or_double_starred+
@@ -11164,16 +9427,10 @@ public final class Parser extends AbstractParser {
     // starred_expression: invalid_starred_expression | '*' expression | '*'
     public ExprTy starred_expression_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_starred_expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy invalid_starred_expression_var;
             if (
                 (invalid_starred_expression_var = invalid_starred_expression_rule()) != null  // invalid_starred_expression
@@ -11185,9 +9442,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -11206,9 +9460,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = expect(16)) != null  // token='*'
@@ -11226,16 +9477,10 @@ public final class Parser extends AbstractParser {
     // kwarg_or_starred: invalid_kwarg | NAME '=' expression | starred_expression
     public KeywordOrStarred kwarg_or_starred_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_kwarg
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_kwarg_var;
             if (
                 (invalid_kwarg_var = invalid_kwarg_rule()) != null  // invalid_kwarg
@@ -11247,9 +9492,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // NAME '=' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -11271,9 +9513,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // starred_expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             if (
                 (a = starred_expression_rule()) != null  // starred_expression
@@ -11291,16 +9530,10 @@ public final class Parser extends AbstractParser {
     // kwarg_or_double_starred: invalid_kwarg | NAME '=' expression | '**' expression
     public KeywordOrStarred kwarg_or_double_starred_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_kwarg
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_kwarg_var;
             if (
                 (invalid_kwarg_var = invalid_kwarg_rule()) != null  // invalid_kwarg
@@ -11312,9 +9545,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // NAME '=' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -11336,9 +9566,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '**' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -11363,16 +9590,10 @@ public final class Parser extends AbstractParser {
     // star_targets: star_target !',' | star_target ((',' star_target))* ','?
     public ExprTy star_targets_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // star_target !','
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             if (
                 (a = star_target_rule()) != null  // star_target
@@ -11386,9 +9607,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_target ((',' star_target))* ','?
-            if (errorIndicator) {
-                return null;
-            }
             Token _opt_var;
             ExprTy a;
             ExprTy[] b;
@@ -11416,15 +9634,9 @@ public final class Parser extends AbstractParser {
     // star_targets_list_seq: ','.star_target+ ','?
     public ExprTy[] star_targets_list_seq_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','.star_target+ ','?
-            if (errorIndicator) {
-                return null;
-            }
             Token _opt_var;
             ExprTy[] a;
             if (
@@ -11445,15 +9657,9 @@ public final class Parser extends AbstractParser {
     // star_targets_tuple_seq: star_target ((',' star_target))+ ','? | star_target ','
     public ExprTy[] star_targets_tuple_seq_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_target ((',' star_target))+ ','?
-            if (errorIndicator) {
-                return null;
-            }
             Token _opt_var;
             ExprTy a;
             ExprTy[] b;
@@ -11471,9 +9677,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_target ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -11494,9 +9697,6 @@ public final class Parser extends AbstractParser {
     // star_target: '*' (!'*' star_target) | target_with_star_atom
     public ExprTy star_target_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_TARGET_ID)) {
@@ -11505,9 +9705,6 @@ public final class Parser extends AbstractParser {
         }
         Token startToken = getAndInitializeToken();
         { // '*' (!'*' star_target)
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -11527,9 +9724,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // target_with_star_atom
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy target_with_star_atom_var;
             if (
                 (target_with_star_atom_var = target_with_star_atom_rule()) != null  // target_with_star_atom
@@ -11552,9 +9746,6 @@ public final class Parser extends AbstractParser {
     //     | star_atom
     public ExprTy target_with_star_atom_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, TARGET_WITH_STAR_ATOM_ID)) {
@@ -11563,9 +9754,6 @@ public final class Parser extends AbstractParser {
         }
         Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME !t_lookahead
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -11590,9 +9778,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // t_primary '[' slices ']' !t_lookahead
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy a;
@@ -11620,9 +9805,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_atom
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy star_atom_var;
             if (
                 (star_atom_var = star_atom_rule()) != null  // star_atom
@@ -11646,16 +9828,10 @@ public final class Parser extends AbstractParser {
     //     | '[' star_targets_list_seq? ']'
     public ExprTy star_atom_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // NAME
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             if (
                 (a = name_token()) != null  // NAME
@@ -11667,9 +9843,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '(' target_with_star_atom ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy a;
@@ -11687,9 +9860,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '(' star_targets_tuple_seq? ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy[] a;
@@ -11711,9 +9881,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '[' star_targets_list_seq? ']'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy[] a;
@@ -11741,15 +9908,9 @@ public final class Parser extends AbstractParser {
     // single_target: single_subscript_attribute_target | NAME | '(' single_target ')'
     public ExprTy single_target_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // single_subscript_attribute_target
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy single_subscript_attribute_target_var;
             if (
                 (single_subscript_attribute_target_var = single_subscript_attribute_target_rule()) != null  // single_subscript_attribute_target
@@ -11761,9 +9922,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // NAME
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             if (
                 (a = name_token()) != null  // NAME
@@ -11775,9 +9933,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '(' single_target ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy a;
@@ -11803,16 +9958,10 @@ public final class Parser extends AbstractParser {
     //     | t_primary '[' slices ']' !t_lookahead
     public ExprTy single_subscript_attribute_target_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME !t_lookahead
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -11836,9 +9985,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // t_primary '[' slices ']' !t_lookahead
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy a;
@@ -11898,16 +10044,10 @@ public final class Parser extends AbstractParser {
     }
     private ExprTy t_primary_raw()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME &t_lookahead
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -11931,9 +10071,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // t_primary '[' slices ']' &t_lookahead
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy a;
@@ -11960,9 +10097,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // t_primary genexp &t_lookahead
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             ExprTy b;
             if (
@@ -11983,9 +10117,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // t_primary '(' arguments? ')' &t_lookahead
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy a;
@@ -12012,9 +10143,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // atom &t_lookahead
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             if (
                 (a = atom_rule()) != null  // atom
@@ -12034,15 +10162,9 @@ public final class Parser extends AbstractParser {
     // t_lookahead: '(' | '[' | '.'
     public Token t_lookahead_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '('
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(7)) != null  // token='('
@@ -12054,9 +10176,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '['
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(9)) != null  // token='['
@@ -12068,9 +10187,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '.'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(23)) != null  // token='.'
@@ -12088,15 +10204,9 @@ public final class Parser extends AbstractParser {
     // del_targets: ','.del_target+ ','?
     public ExprTy[] del_targets_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','.del_target+ ','?
-            if (errorIndicator) {
-                return null;
-            }
             Token _opt_var;
             ExprTy[] a;
             if (
@@ -12120,9 +10230,6 @@ public final class Parser extends AbstractParser {
     //     | del_t_atom
     public ExprTy del_target_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DEL_TARGET_ID)) {
@@ -12131,9 +10238,6 @@ public final class Parser extends AbstractParser {
         }
         Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME !t_lookahead
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -12158,9 +10262,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // t_primary '[' slices ']' !t_lookahead
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy a;
@@ -12188,9 +10289,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // del_t_atom
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy del_t_atom_var;
             if (
                 (del_t_atom_var = del_t_atom_rule()) != null  // del_t_atom
@@ -12210,16 +10308,10 @@ public final class Parser extends AbstractParser {
     // del_t_atom: NAME | '(' del_target ')' | '(' del_targets? ')' | '[' del_targets? ']'
     public ExprTy del_t_atom_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         Token startToken = getAndInitializeToken();
         { // NAME
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             if (
                 (a = name_token()) != null  // NAME
@@ -12231,9 +10323,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '(' del_target ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy a;
@@ -12251,9 +10340,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '(' del_targets? ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy[] a;
@@ -12275,9 +10361,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '[' del_targets? ']'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy[] a;
@@ -12312,15 +10395,9 @@ public final class Parser extends AbstractParser {
     //     | ','.expression+
     public ExprTy[] type_expressions_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','.expression+ ',' '*' expression ',' '**' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Token _literal_2;
@@ -12350,9 +10427,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ','.expression+ ',' '*' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy[] a;
@@ -12373,9 +10447,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ','.expression+ ',' '**' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy[] a;
@@ -12396,9 +10467,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*' expression ',' '**' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Token _literal_2;
@@ -12422,9 +10490,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -12439,9 +10504,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '**' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             if (
@@ -12456,9 +10518,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ','.expression+
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] a;
             if (
                 (a = (ExprTy[])_gather_213_rule()) != null  // ','.expression+
@@ -12479,15 +10538,9 @@ public final class Parser extends AbstractParser {
     //     | TYPE_COMMENT
     public Token func_type_comment_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // NEWLINE TYPE_COMMENT &(NEWLINE INDENT)
-            if (errorIndicator) {
-                return null;
-            }
             Token newline_var;
             Token t;
             if (
@@ -12504,9 +10557,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         if (callInvalidRules) { // invalid_double_type_comments
-            if (errorIndicator) {
-                return null;
-            }
             Object invalid_double_type_comments_var;
             if (
                 (invalid_double_type_comments_var = invalid_double_type_comments_rule()) != null  // invalid_double_type_comments
@@ -12518,9 +10568,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // TYPE_COMMENT
-            if (errorIndicator) {
-                return null;
-            }
             Token type_comment_var;
             if (
                 (type_comment_var = expect(Token.Kind.TYPE_COMMENT)) != null  // token='TYPE_COMMENT'
@@ -12545,15 +10592,9 @@ public final class Parser extends AbstractParser {
     //     | args ',' args
     public Object invalid_arguments_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ((','.(starred_expression | (assignment_expression | expression !':=') !'=')+ ',' kwargs) | kwargs) ',' ','.(starred_expression !'=')+
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] _gather_217_var;
             Object _tmp_216_var;
             Token a;
@@ -12571,9 +10612,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // expression for_if_clauses ',' [args | expression for_if_clauses]
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Object _opt_var;
             ExprTy a;
@@ -12594,9 +10632,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // NAME '=' expression for_if_clauses
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             Token b;
             ExprTy expression_var;
@@ -12617,9 +10652,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // [(args ',')] NAME '=' &(',' | ')')
-            if (errorIndicator) {
-                return null;
-            }
             Object _opt_var;
             ExprTy a;
             Token b;
@@ -12639,9 +10671,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // args for_if_clauses
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             ComprehensionTy[] b;
             if (
@@ -12656,9 +10685,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // args ',' expression for_if_clauses
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy args_var;
@@ -12679,9 +10705,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // args ',' args
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy args_var;
@@ -12709,15 +10732,9 @@ public final class Parser extends AbstractParser {
     //     | '**' expression '=' expression
     public Object invalid_kwarg_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ('True' | 'False' | 'None') '='
-            if (errorIndicator) {
-                return null;
-            }
             Token a;
             Token b;
             if (
@@ -12732,9 +10749,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // NAME '=' expression for_if_clauses
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             Token b;
             ExprTy expression_var;
@@ -12755,9 +10769,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // !(NAME '=') expression '='
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             Token b;
             if (
@@ -12774,9 +10785,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '**' expression '=' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             ExprTy b;
@@ -12809,16 +10817,10 @@ public final class Parser extends AbstractParser {
         boolean prevCallInvalidRules = callInvalidRules;
         try {
             callInvalidRules = false;
-            if (errorIndicator) {
-                return null;
-            }
             int _mark = mark();
             Object _res = null;
             Token startToken = getAndInitializeToken();
             { // disjunction 'if' disjunction 'else' expression
-                if (errorIndicator) {
-                    return null;
-                }
                 Token _keyword;
                 Token _keyword_1;
                 ExprTy a;
@@ -12846,9 +10848,6 @@ public final class Parser extends AbstractParser {
                 reset(_mark);
             }
             { // disjunction
-                if (errorIndicator) {
-                    return null;
-                }
                 ExprTy disjunction_var;
                 if (
                     (disjunction_var = disjunction_rule()) != null  // disjunction
@@ -12860,9 +10859,6 @@ public final class Parser extends AbstractParser {
                 reset(_mark);
             }
             { // lambdef
-                if (errorIndicator) {
-                    return null;
-                }
                 ExprTy lambdef_var;
                 if (
                     (lambdef_var = lambdef_rule()) != null  // lambdef
@@ -12883,15 +10879,9 @@ public final class Parser extends AbstractParser {
     // invalid_legacy_expression: NAME !'(' star_expressions
     public ExprTy invalid_legacy_expression_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // NAME !'(' star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             ExprTy b;
             if (
@@ -12917,15 +10907,9 @@ public final class Parser extends AbstractParser {
     //     | 'lambda' lambda_params? ':' &FSTRING_MIDDLE
     public Object invalid_expression_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // !(NAME STRING | SOFT_KEYWORD) disjunction expression_without_invalid
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             ExprTy b;
             if (
@@ -12942,9 +10926,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // disjunction 'if' disjunction !('else' | ':')
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy a;
             ExprTy b;
@@ -12964,9 +10945,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'lambda' lambda_params? ':' &FSTRING_MIDDLE
-            if (errorIndicator) {
-                return null;
-            }
             ArgumentsTy _opt_var;
             Token a;
             Token b;
@@ -12995,9 +10973,6 @@ public final class Parser extends AbstractParser {
     //     | !(list | tuple | genexp | 'True' | 'None' | 'False') bitwise_or '=' bitwise_or !('=' | ':=')
     public ExprTy invalid_named_expression_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_NAMED_EXPRESSION_ID)) {
@@ -13005,9 +10980,6 @@ public final class Parser extends AbstractParser {
             return (ExprTy)_res;
         }
         { // expression ':=' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy expression_var;
@@ -13026,9 +10998,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // NAME '=' bitwise_or !('=' | ':=')
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy b;
@@ -13049,9 +11018,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // !(list | tuple | genexp | 'True' | 'None' | 'False') bitwise_or '=' bitwise_or !('=' | ':=')
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             Token b;
             ExprTy bitwise_or_var;
@@ -13087,15 +11053,9 @@ public final class Parser extends AbstractParser {
     //     | star_expressions augassign (yield_expr | star_expressions)
     public Object invalid_assignment_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // invalid_ann_assign_target ':' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy expression_var;
@@ -13113,9 +11073,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_named_expression ',' star_named_expressions* ':' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy[] _loop0_230_var;
@@ -13139,9 +11096,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // expression ':' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             ExprTy expression_var;
@@ -13159,9 +11113,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ((star_targets '='))* star_expressions '='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Object[] _loop0_231_var;
             ExprTy a;
@@ -13179,9 +11130,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ((star_targets '='))* yield_expr '='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Object[] _loop0_232_var;
             ExprTy a;
@@ -13199,9 +11147,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_expressions augassign (yield_expr | star_expressions)
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _tmp_233_var;
             ExprTy a;
             OperatorTy augassign_var;
@@ -13225,15 +11170,9 @@ public final class Parser extends AbstractParser {
     // invalid_ann_assign_target: list | tuple | '(' invalid_ann_assign_target ')'
     public ExprTy invalid_ann_assign_target_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // list
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy list_var;
             if (
                 (list_var = list_rule()) != null  // list
@@ -13245,9 +11184,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // tuple
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy tuple_var;
             if (
                 (tuple_var = tuple_rule()) != null  // tuple
@@ -13259,9 +11195,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '(' invalid_ann_assign_target ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy a;
@@ -13285,15 +11218,9 @@ public final class Parser extends AbstractParser {
     // invalid_del_stmt: 'del' star_expressions
     public ExprTy invalid_del_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'del' star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy a;
             if (
@@ -13314,15 +11241,9 @@ public final class Parser extends AbstractParser {
     // invalid_block: NEWLINE !INDENT
     public Object invalid_block_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // NEWLINE !INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Token newline_var;
             if (
                 (newline_var = (Token)expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
@@ -13345,15 +11266,9 @@ public final class Parser extends AbstractParser {
     //     | ('[' | '{') star_named_expression ',' for_if_clauses
     public Object invalid_comprehension_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ('[' | '(' | '{') starred_expression for_if_clauses
-            if (errorIndicator) {
-                return null;
-            }
             Token _tmp_234_var;
             ExprTy a;
             ComprehensionTy[] for_if_clauses_var;
@@ -13371,9 +11286,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ('[' | '{') star_named_expression ',' star_named_expressions for_if_clauses
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _tmp_235_var;
             ExprTy a;
@@ -13397,9 +11309,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ('[' | '{') star_named_expression ',' for_if_clauses
-            if (errorIndicator) {
-                return null;
-            }
             Token _tmp_236_var;
             ExprTy a;
             Token b;
@@ -13426,15 +11335,9 @@ public final class Parser extends AbstractParser {
     // invalid_dict_comprehension: '{' '**' bitwise_or for_if_clauses '}'
     public Object invalid_dict_comprehension_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '{' '**' bitwise_or for_if_clauses '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Token a;
@@ -13470,15 +11373,9 @@ public final class Parser extends AbstractParser {
     //     | param_maybe_default+ '/' '*'
     public Object invalid_parameters_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // "/" ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             if (
@@ -13493,9 +11390,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // (slash_no_default | slash_with_default) param_maybe_default* '/'
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair[] _loop0_238_var;
             Object _tmp_237_var;
             Token a;
@@ -13513,9 +11407,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // slash_no_default? param_no_default* invalid_parameters_helper param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy[] _loop0_239_var;
             ArgTy[] _opt_var;
             ArgTy a;
@@ -13536,9 +11427,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // param_no_default* '(' param_no_default+ ','? ')'
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy[] _loop0_240_var;
             ArgTy[] _loop1_241_var;
             Token _opt_var;
@@ -13562,9 +11450,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // [(slash_no_default | slash_with_default)] param_maybe_default* '*' (',' | param_no_default) param_maybe_default* '/'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             NameDefaultPair[] _loop0_243_var;
             NameDefaultPair[] _loop0_245_var;
@@ -13591,9 +11476,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // param_maybe_default+ '/' '*'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             NameDefaultPair[] _loop1_246_var;
             Token a;
@@ -13617,15 +11499,9 @@ public final class Parser extends AbstractParser {
     // invalid_default: '=' &(')' | ',')
     public Object invalid_default_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '=' &(')' | ',')
-            if (errorIndicator) {
-                return null;
-            }
             Token a;
             if (
                 (a = (Token)expect(22)) != null  // token='='
@@ -13649,15 +11525,9 @@ public final class Parser extends AbstractParser {
     //     | '*' (param_no_default | ',') param_maybe_default* '*' (param_no_default | ',')
     public Object invalid_star_etc_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '*' (')' | ',' (')' | '**'))
-            if (errorIndicator) {
-                return null;
-            }
             Object _tmp_248_var;
             Token a;
             if (
@@ -13672,9 +11542,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*' ',' TYPE_COMMENT
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Token type_comment_var;
@@ -13692,9 +11559,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*' param '='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             ArgTy param_var;
@@ -13712,9 +11576,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*' (param_no_default | ',') param_maybe_default* '*' (param_no_default | ',')
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             NameDefaultPair[] _loop0_250_var;
             Object _tmp_249_var;
@@ -13744,15 +11605,9 @@ public final class Parser extends AbstractParser {
     // invalid_kwds: '**' param '=' | '**' param ',' param | '**' param ',' ('*' | '**' | '/')
     public ArgTy invalid_kwds_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '**' param '='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             ArgTy param_var;
@@ -13770,9 +11625,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '**' param ',' param
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ArgTy a;
@@ -13793,9 +11645,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '**' param ',' ('*' | '**' | '/')
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Token a;
@@ -13822,15 +11671,9 @@ public final class Parser extends AbstractParser {
     // invalid_parameters_helper: slash_with_default | param_with_default+
     public Object invalid_parameters_helper_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // slash_with_default
-            if (errorIndicator) {
-                return null;
-            }
             SlashWithDefault a;
             if (
                 (a = (SlashWithDefault)slash_with_default_rule()) != null  // slash_with_default
@@ -13842,9 +11685,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // param_with_default+
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair[] _loop1_253_var;
             if (
                 (_loop1_253_var = (NameDefaultPair[])_loop1_253_rule()) != null  // param_with_default+
@@ -13868,15 +11708,9 @@ public final class Parser extends AbstractParser {
     //     | lambda_param_maybe_default+ '/' '*'
     public Object invalid_lambda_parameters_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // "/" ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             if (
@@ -13891,9 +11725,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // (lambda_slash_no_default | lambda_slash_with_default) lambda_param_maybe_default* '/'
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair[] _loop0_255_var;
             Object _tmp_254_var;
             Token a;
@@ -13911,9 +11742,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_slash_no_default? lambda_param_no_default* invalid_lambda_parameters_helper lambda_param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy[] _loop0_256_var;
             ArgTy[] _opt_var;
             ArgTy a;
@@ -13934,9 +11762,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_param_no_default* '(' ','.lambda_param+ ','? ')'
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy[] _gather_258_var;
             ArgTy[] _loop0_257_var;
             Token _opt_var;
@@ -13960,9 +11785,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // [(lambda_slash_no_default | lambda_slash_with_default)] lambda_param_maybe_default* '*' (',' | lambda_param_no_default) lambda_param_maybe_default* '/'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             NameDefaultPair[] _loop0_261_var;
             NameDefaultPair[] _loop0_263_var;
@@ -13989,9 +11811,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_param_maybe_default+ '/' '*'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             NameDefaultPair[] _loop1_264_var;
             Token a;
@@ -14017,15 +11836,9 @@ public final class Parser extends AbstractParser {
     //     | lambda_param_with_default+
     public Object invalid_lambda_parameters_helper_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_slash_with_default
-            if (errorIndicator) {
-                return null;
-            }
             SlashWithDefault a;
             if (
                 (a = (SlashWithDefault)lambda_slash_with_default_rule()) != null  // lambda_slash_with_default
@@ -14037,9 +11850,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_param_with_default+
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair[] _loop1_265_var;
             if (
                 (_loop1_265_var = (NameDefaultPair[])_loop1_265_rule()) != null  // lambda_param_with_default+
@@ -14060,15 +11870,9 @@ public final class Parser extends AbstractParser {
     //     | '*' (lambda_param_no_default | ',') lambda_param_maybe_default* '*' (lambda_param_no_default | ',')
     public Object invalid_lambda_star_etc_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '*' (':' | ',' (':' | '**'))
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Object _tmp_266_var;
             if (
@@ -14083,9 +11887,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*' lambda_param '='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             ArgTy lambda_param_var;
@@ -14103,9 +11904,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '*' (lambda_param_no_default | ',') lambda_param_maybe_default* '*' (lambda_param_no_default | ',')
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             NameDefaultPair[] _loop0_268_var;
             Object _tmp_267_var;
@@ -14138,15 +11936,9 @@ public final class Parser extends AbstractParser {
     //     | '**' lambda_param ',' ('*' | '**' | '/')
     public ArgTy invalid_lambda_kwds_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '**' lambda_param '='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             ArgTy lambda_param_var;
@@ -14164,9 +11956,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '**' lambda_param ',' lambda_param
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ArgTy a;
@@ -14187,9 +11976,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '**' lambda_param ',' ('*' | '**' | '/')
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Token a;
@@ -14216,15 +12002,9 @@ public final class Parser extends AbstractParser {
     // invalid_double_type_comments: TYPE_COMMENT NEWLINE TYPE_COMMENT NEWLINE INDENT
     public Object invalid_double_type_comments_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // TYPE_COMMENT NEWLINE TYPE_COMMENT NEWLINE INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Token indent_var;
             Token newline_var;
             Token newline_var_1;
@@ -14254,15 +12034,9 @@ public final class Parser extends AbstractParser {
     // invalid_with_item: expression 'as' expression &(',' | ')' | ':')
     public ExprTy invalid_with_item_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // expression 'as' expression &(',' | ')' | ':')
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy a;
             ExprTy expression_var;
@@ -14288,15 +12062,9 @@ public final class Parser extends AbstractParser {
     // invalid_for_target: ASYNC? 'for' star_expressions
     public ExprTy invalid_for_target_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ASYNC? 'for' star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _opt_var;
             ExprTy a;
@@ -14320,15 +12088,9 @@ public final class Parser extends AbstractParser {
     // invalid_group: '(' starred_expression ')' | '(' '**' expression ')'
     public ExprTy invalid_group_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '(' starred_expression ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy a;
@@ -14346,9 +12108,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '(' '**' expression ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Token a;
@@ -14375,15 +12134,9 @@ public final class Parser extends AbstractParser {
     // invalid_import: 'import' ','.dotted_name+ 'from' dotted_name
     public ExprTy[] invalid_import_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'import' ','.dotted_name+ 'from' dotted_name
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] _gather_272_var;
             Token _keyword;
             Token a;
@@ -14410,15 +12163,9 @@ public final class Parser extends AbstractParser {
     // invalid_import_from_targets: import_from_as_names ',' NEWLINE
     public AliasTy[] invalid_import_from_targets_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // import_from_as_names ',' NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             AliasTy[] import_from_as_names_var;
             Token newline_var;
@@ -14444,15 +12191,9 @@ public final class Parser extends AbstractParser {
     //     | ASYNC? 'with' '(' ','.(expressions ['as' star_target])+ ','? ')' NEWLINE
     public Object[] invalid_with_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ASYNC? 'with' ','.(expression ['as' star_target])+ NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             Object[] _gather_275_var;
             Token _keyword;
             Token _opt_var;
@@ -14473,9 +12214,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ASYNC? 'with' '(' ','.(expressions ['as' star_target])+ ','? ')' NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             Object[] _gather_278_var;
             Token _keyword;
             Token _literal;
@@ -14513,15 +12251,9 @@ public final class Parser extends AbstractParser {
     //     | ASYNC? 'with' '(' ','.(expressions ['as' star_target])+ ','? ')' ':' NEWLINE !INDENT
     public Object[] invalid_with_stmt_indent_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ASYNC? 'with' ','.(expression ['as' star_target])+ ':' NEWLINE !INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Object[] _gather_281_var;
             Token _literal;
             Token _opt_var;
@@ -14547,9 +12279,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ASYNC? 'with' '(' ','.(expressions ['as' star_target])+ ','? ')' ':' NEWLINE !INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Object[] _gather_284_var;
             Token _literal;
             Token _literal_1;
@@ -14594,15 +12323,9 @@ public final class Parser extends AbstractParser {
     //     | 'try' ':' block* except_star_block+ 'except' [expression ['as' NAME]] ':'
     public Object invalid_try_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'try' ':' NEWLINE !INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             Token newline_var;
@@ -14622,9 +12345,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'try' ':' block !('except' | 'finally')
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             StmtTy[] block_var;
@@ -14644,9 +12364,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'try' ':' block* except_block+ 'except' '*' expression ['as' NAME] ':'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             Token _literal_1;
@@ -14682,9 +12399,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'try' ':' block* except_star_block+ 'except' [expression ['as' NAME]] ':'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             Token _literal_1;
@@ -14724,15 +12438,9 @@ public final class Parser extends AbstractParser {
     //     | 'except' '*' (NEWLINE | ':')
     public Object invalid_except_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'except' '*'? expression ',' expressions ['as' NAME] ':'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             Token _literal_1;
@@ -14762,9 +12470,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'except' '*'? expression ['as' NAME] NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             Token _opt_var;
             Object _opt_var_1;
             Token a;
@@ -14788,9 +12493,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'except' NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             Token a;
             Token newline_var;
             if (
@@ -14805,9 +12507,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'except' '*' (NEWLINE | ':')
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _tmp_295_var;
             Token a;
@@ -14831,15 +12530,9 @@ public final class Parser extends AbstractParser {
     // invalid_finally_stmt: 'finally' ':' NEWLINE !INDENT
     public Object invalid_finally_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'finally' ':' NEWLINE !INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             Token newline_var;
@@ -14867,15 +12560,9 @@ public final class Parser extends AbstractParser {
     //     | 'except' ':' NEWLINE !INDENT
     public Object invalid_except_stmt_indent_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'except' expression ['as' NAME] ':' NEWLINE !INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Object _opt_var;
             Token a;
@@ -14901,9 +12588,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'except' ':' NEWLINE !INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             Token newline_var;
@@ -14930,15 +12614,9 @@ public final class Parser extends AbstractParser {
     //     | 'except' '*' expression ['as' NAME] ':' NEWLINE !INDENT
     public Object invalid_except_star_stmt_indent_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'except' '*' expression ['as' NAME] ':' NEWLINE !INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Object _opt_var;
@@ -14975,15 +12653,9 @@ public final class Parser extends AbstractParser {
     //     | "match" subject_expr ':' NEWLINE !INDENT
     public ExprTy invalid_match_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // "match" subject_expr NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _keyword;
             Token newline_var;
             ExprTy subject_expr_var;
@@ -15001,9 +12673,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // "match" subject_expr ':' NEWLINE !INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy a;
             Token newline_var;
@@ -15034,15 +12703,9 @@ public final class Parser extends AbstractParser {
     //     | "case" patterns guard? ':' NEWLINE !INDENT
     public Object invalid_case_block_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // "case" patterns guard? NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _keyword;
             ExprTy _opt_var;
             Token newline_var;
@@ -15063,9 +12726,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // "case" patterns guard? ':' NEWLINE !INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy _opt_var;
             ExprTy a;
@@ -15097,15 +12757,9 @@ public final class Parser extends AbstractParser {
     // invalid_as_pattern: or_pattern 'as' "_" | or_pattern 'as' !NAME expression
     public Object invalid_as_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // or_pattern 'as' "_"
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy a;
             PatternTy or_pattern_var;
@@ -15123,9 +12777,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // or_pattern 'as' !NAME expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy a;
             PatternTy or_pattern_var;
@@ -15151,15 +12802,9 @@ public final class Parser extends AbstractParser {
     // invalid_class_pattern: name_or_attr '(' invalid_class_argument_pattern
     public Object invalid_class_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // name_or_attr '(' invalid_class_argument_pattern
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             PatternTy[] a;
             ExprTy name_or_attr_var;
@@ -15184,15 +12829,9 @@ public final class Parser extends AbstractParser {
     //     | [positional_patterns ','] keyword_patterns ',' positional_patterns
     public PatternTy[] invalid_class_argument_pattern_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // [positional_patterns ','] keyword_patterns ',' positional_patterns
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Object _opt_var;
             PatternTy[] a;
@@ -15221,15 +12860,9 @@ public final class Parser extends AbstractParser {
     //     | 'if' named_expression ':' NEWLINE !INDENT
     public ExprTy invalid_if_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'if' named_expression NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy named_expression_var;
             Token newline_var;
@@ -15247,9 +12880,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'if' named_expression ':' NEWLINE !INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             ExprTy a_1;
@@ -15280,15 +12910,9 @@ public final class Parser extends AbstractParser {
     //     | 'elif' named_expression ':' NEWLINE !INDENT
     public ExprTy invalid_elif_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'elif' named_expression NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy named_expression_var;
             Token newline_var;
@@ -15306,9 +12930,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'elif' named_expression ':' NEWLINE !INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             ExprTy named_expression_var;
@@ -15337,15 +12958,9 @@ public final class Parser extends AbstractParser {
     // invalid_else_stmt: 'else' ':' NEWLINE !INDENT
     public Object invalid_else_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'else' ':' NEWLINE !INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             Token newline_var;
@@ -15373,15 +12988,9 @@ public final class Parser extends AbstractParser {
     //     | 'while' named_expression ':' NEWLINE !INDENT
     public ExprTy invalid_while_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'while' named_expression NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy named_expression_var;
             Token newline_var;
@@ -15399,9 +13008,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'while' named_expression ':' NEWLINE !INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             ExprTy named_expression_var;
@@ -15432,15 +13038,9 @@ public final class Parser extends AbstractParser {
     //     | ASYNC? 'for' star_targets 'in' star_expressions ':' NEWLINE !INDENT
     public ExprTy invalid_for_stmt_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ASYNC? 'for' star_targets 'in' star_expressions NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _keyword_1;
             Token _opt_var;
@@ -15467,9 +13067,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ASYNC? 'for' star_targets 'in' star_expressions ':' NEWLINE !INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             Token _literal;
             Token _opt_var;
@@ -15508,15 +13105,9 @@ public final class Parser extends AbstractParser {
     //     | ASYNC? 'def' NAME type_params? '(' params? ')' ['->' expression] ':' NEWLINE !INDENT
     public Object invalid_def_raw_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ASYNC? 'def' NAME type_params? '(' params? ')' ['->' expression] ':' NEWLINE !INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             Token _literal_2;
@@ -15565,15 +13156,9 @@ public final class Parser extends AbstractParser {
     //     | 'class' NAME type_params? ['(' arguments? ')'] ':' NEWLINE !INDENT
     public Object invalid_class_def_raw_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'class' NAME type_params? ['(' arguments? ')'] NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             TypeParamTy[] _opt_var;
             Object _opt_var_1;
@@ -15597,9 +13182,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'class' NAME type_params? ['(' arguments? ')'] ':' NEWLINE !INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             TypeParamTy[] _opt_var;
             Object _opt_var_1;
@@ -15637,15 +13219,9 @@ public final class Parser extends AbstractParser {
     //     | expression ':' &('}' | ',')
     public Object invalid_double_starred_kvpairs_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','.double_starred_kvpair+ ',' invalid_kvpair
-            if (errorIndicator) {
-                return null;
-            }
             KeyValuePair[] _gather_309_var;
             Token _literal;
             ExprTy invalid_kvpair_var;
@@ -15663,9 +13239,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // expression ':' '*' bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             ExprTy bitwise_or_var;
@@ -15686,9 +13259,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // expression ':' &('}' | ',')
-            if (errorIndicator) {
-                return null;
-            }
             Token a;
             ExprTy expression_var;
             if (
@@ -15714,15 +13284,9 @@ public final class Parser extends AbstractParser {
     //     | expression ':' &('}' | ',')
     public ExprTy invalid_kvpair_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // expression !(':')
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy a;
             if (
                 (a = (ExprTy)expression_rule()) != null  // expression
@@ -15736,9 +13300,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // expression ':' '*' bitwise_or
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             ExprTy bitwise_or_var;
@@ -15759,9 +13320,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // expression ':' &('}' | ',')
-            if (errorIndicator) {
-                return null;
-            }
             Token a;
             ExprTy expression_var;
             if (
@@ -15784,15 +13342,9 @@ public final class Parser extends AbstractParser {
     // invalid_starred_expression: '*' expression '=' expression
     public ExprTy invalid_starred_expression_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '*' expression '=' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             ExprTy b;
@@ -15830,15 +13382,9 @@ public final class Parser extends AbstractParser {
     //     | '{' (yield_expr | star_expressions) '='? ['!' NAME] !'}'
     public Object invalid_replacement_field_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '{' '='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             if (
@@ -15853,9 +13399,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '{' '!'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             if (
@@ -15870,9 +13413,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '{' ':'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             if (
@@ -15887,9 +13427,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '{' '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token a;
             if (
@@ -15904,9 +13441,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '{' !(yield_expr | star_expressions)
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(25)) != null  // token='{'
@@ -15920,9 +13454,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '{' (yield_expr | star_expressions) !('=' | '!' | ':' | '}')
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy _tmp_315_var;
             if (
@@ -15939,9 +13470,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '{' (yield_expr | star_expressions) '=' !('!' | ':' | '}')
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy _tmp_317_var;
@@ -15961,9 +13489,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '{' (yield_expr | star_expressions) '='? invalid_conversion_character
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _opt_var;
             ExprTy _tmp_319_var;
@@ -15984,9 +13509,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '{' (yield_expr | star_expressions) '='? ['!' NAME] !(':' | '}')
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _opt_var;
             Object _opt_var_1;
@@ -16009,9 +13531,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '{' (yield_expr | star_expressions) '='? ['!' NAME] ':' fstring_format_spec* !'}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy[] _loop0_325_var;
@@ -16040,9 +13559,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '{' (yield_expr | star_expressions) '='? ['!' NAME] !'}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _opt_var;
             Object _opt_var_1;
@@ -16071,15 +13587,9 @@ public final class Parser extends AbstractParser {
     // invalid_conversion_character: '!' &(':' | '}') | '!' !NAME
     public Object invalid_conversion_character_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '!' &(':' | '}')
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(54)) != null  // token='!'
@@ -16093,9 +13603,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '!' !NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(54)) != null  // token='!'
@@ -16115,15 +13622,9 @@ public final class Parser extends AbstractParser {
     // _tmp_1: statements
     public StmtTy[] _tmp_1_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // statements
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] statements_var;
             if (
                 (statements_var = (StmtTy[])statements_rule()) != null  // statements
@@ -16141,9 +13642,6 @@ public final class Parser extends AbstractParser {
     // _loop0_2: NEWLINE
     public Token[] _loop0_2_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -16151,9 +13649,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             Token newline_var;
             while (
                 (newline_var = (Token)expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
@@ -16177,15 +13672,9 @@ public final class Parser extends AbstractParser {
     // _tmp_3: type_expressions
     public ExprTy[] _tmp_3_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // type_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] type_expressions_var;
             if (
                 (type_expressions_var = (ExprTy[])type_expressions_rule()) != null  // type_expressions
@@ -16203,9 +13692,6 @@ public final class Parser extends AbstractParser {
     // _loop0_4: NEWLINE
     public Token[] _loop0_4_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -16213,9 +13699,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             Token newline_var;
             while (
                 (newline_var = (Token)expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
@@ -16239,9 +13722,6 @@ public final class Parser extends AbstractParser {
     // _loop1_5: statement
     public StmtTy[] _loop1_5_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -16249,9 +13729,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // statement
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] statement_var;
             while (
                 (statement_var = (StmtTy[])statement_rule()) != null  // statement
@@ -16278,9 +13755,6 @@ public final class Parser extends AbstractParser {
     // _loop0_7: ';' simple_stmt
     public StmtTy[] _loop0_7_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -16288,9 +13762,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ';' simple_stmt
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             StmtTy elem;
             while (
@@ -16317,15 +13788,9 @@ public final class Parser extends AbstractParser {
     // _gather_6: simple_stmt _loop0_7
     public StmtTy[] _gather_6_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // simple_stmt _loop0_7
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy elem;
             StmtTy[] seq;
             if (
@@ -16346,15 +13811,9 @@ public final class Parser extends AbstractParser {
     // _tmp_8: ';'
     public Token _tmp_8_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ';'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(13)) != null  // token=';'
@@ -16372,15 +13831,9 @@ public final class Parser extends AbstractParser {
     // _tmp_9: 'import' | 'from'
     public Token _tmp_9_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'import'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = (Token)expect(656)) != null  // token='import'
@@ -16392,9 +13845,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'from'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = (Token)expect(657)) != null  // token='from'
@@ -16412,15 +13862,9 @@ public final class Parser extends AbstractParser {
     // _tmp_10: 'def' | '@' | ASYNC
     public Token _tmp_10_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'def'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = (Token)expect(667)) != null  // token='def'
@@ -16432,9 +13876,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '@'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(49)) != null  // token='@'
@@ -16446,9 +13887,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ASYNC
-            if (errorIndicator) {
-                return null;
-            }
             Token async_var;
             if (
                 (async_var = (Token)expect(Token.Kind.ASYNC)) != null  // token='ASYNC'
@@ -16466,15 +13904,9 @@ public final class Parser extends AbstractParser {
     // _tmp_11: 'class' | '@'
     public Token _tmp_11_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'class'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = (Token)expect(669)) != null  // token='class'
@@ -16486,9 +13918,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '@'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(49)) != null  // token='@'
@@ -16506,15 +13935,9 @@ public final class Parser extends AbstractParser {
     // _tmp_12: 'with' | ASYNC
     public Token _tmp_12_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'with'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = (Token)expect(670)) != null  // token='with'
@@ -16526,9 +13949,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ASYNC
-            if (errorIndicator) {
-                return null;
-            }
             Token async_var;
             if (
                 (async_var = (Token)expect(Token.Kind.ASYNC)) != null  // token='ASYNC'
@@ -16546,15 +13966,9 @@ public final class Parser extends AbstractParser {
     // _tmp_13: 'for' | ASYNC
     public Token _tmp_13_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'for'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = (Token)expect(671)) != null  // token='for'
@@ -16566,9 +13980,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ASYNC
-            if (errorIndicator) {
-                return null;
-            }
             Token async_var;
             if (
                 (async_var = (Token)expect(Token.Kind.ASYNC)) != null  // token='ASYNC'
@@ -16586,15 +13997,9 @@ public final class Parser extends AbstractParser {
     // _tmp_14: '=' annotated_rhs
     public ExprTy _tmp_14_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '=' annotated_rhs
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy d;
             if (
@@ -16615,15 +14020,9 @@ public final class Parser extends AbstractParser {
     // _tmp_15: '(' single_target ')' | single_subscript_attribute_target
     public ExprTy _tmp_15_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '(' single_target ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy b;
@@ -16641,9 +14040,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // single_subscript_attribute_target
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy single_subscript_attribute_target_var;
             if (
                 (single_subscript_attribute_target_var = (ExprTy)single_subscript_attribute_target_rule()) != null  // single_subscript_attribute_target
@@ -16661,15 +14057,9 @@ public final class Parser extends AbstractParser {
     // _tmp_16: '=' annotated_rhs
     public ExprTy _tmp_16_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '=' annotated_rhs
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy d;
             if (
@@ -16690,9 +14080,6 @@ public final class Parser extends AbstractParser {
     // _loop1_17: (star_targets '=')
     public ExprTy[] _loop1_17_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -16700,9 +14087,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // (star_targets '=')
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _tmp_329_var;
             while (
                 (_tmp_329_var = (ExprTy)_tmp_329_rule()) != null  // star_targets '='
@@ -16729,15 +14113,9 @@ public final class Parser extends AbstractParser {
     // _tmp_18: yield_expr | star_expressions
     public ExprTy _tmp_18_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // yield_expr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy yield_expr_var;
             if (
                 (yield_expr_var = (ExprTy)yield_expr_rule()) != null  // yield_expr
@@ -16749,9 +14127,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy star_expressions_var;
             if (
                 (star_expressions_var = (ExprTy)star_expressions_rule()) != null  // star_expressions
@@ -16769,15 +14144,9 @@ public final class Parser extends AbstractParser {
     // _tmp_19: TYPE_COMMENT
     public Token _tmp_19_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // TYPE_COMMENT
-            if (errorIndicator) {
-                return null;
-            }
             Token type_comment_var;
             if (
                 (type_comment_var = (Token)expect(Token.Kind.TYPE_COMMENT)) != null  // token='TYPE_COMMENT'
@@ -16795,15 +14164,9 @@ public final class Parser extends AbstractParser {
     // _tmp_20: yield_expr | star_expressions
     public ExprTy _tmp_20_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // yield_expr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy yield_expr_var;
             if (
                 (yield_expr_var = (ExprTy)yield_expr_rule()) != null  // yield_expr
@@ -16815,9 +14178,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy star_expressions_var;
             if (
                 (star_expressions_var = (ExprTy)star_expressions_rule()) != null  // star_expressions
@@ -16835,15 +14195,9 @@ public final class Parser extends AbstractParser {
     // _tmp_21: star_expressions
     public ExprTy _tmp_21_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy star_expressions_var;
             if (
                 (star_expressions_var = (ExprTy)star_expressions_rule()) != null  // star_expressions
@@ -16861,15 +14215,9 @@ public final class Parser extends AbstractParser {
     // _tmp_22: 'from' expression
     public ExprTy _tmp_22_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'from' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy z;
             if (
@@ -16890,9 +14238,6 @@ public final class Parser extends AbstractParser {
     // _loop0_24: ',' NAME
     public ExprTy[] _loop0_24_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -16900,9 +14245,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy elem;
             while (
@@ -16929,15 +14271,9 @@ public final class Parser extends AbstractParser {
     // _gather_23: NAME _loop0_24
     public ExprTy[] _gather_23_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // NAME _loop0_24
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy elem;
             ExprTy[] seq;
             if (
@@ -16958,9 +14294,6 @@ public final class Parser extends AbstractParser {
     // _loop0_26: ',' NAME
     public ExprTy[] _loop0_26_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -16968,9 +14301,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy elem;
             while (
@@ -16997,15 +14327,9 @@ public final class Parser extends AbstractParser {
     // _gather_25: NAME _loop0_26
     public ExprTy[] _gather_25_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // NAME _loop0_26
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy elem;
             ExprTy[] seq;
             if (
@@ -17026,15 +14350,9 @@ public final class Parser extends AbstractParser {
     // _tmp_27: ';' | NEWLINE
     public Token _tmp_27_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ';'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(13)) != null  // token=';'
@@ -17046,9 +14364,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             Token newline_var;
             if (
                 (newline_var = (Token)expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
@@ -17066,15 +14381,9 @@ public final class Parser extends AbstractParser {
     // _tmp_28: ',' expression
     public ExprTy _tmp_28_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ',' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy z;
             if (
@@ -17095,9 +14404,6 @@ public final class Parser extends AbstractParser {
     // _loop0_29: ('.' | '...')
     public Token[] _loop0_29_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -17105,9 +14411,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ('.' | '...')
-            if (errorIndicator) {
-                return null;
-            }
             Token _tmp_330_var;
             while (
                 (_tmp_330_var = (Token)_tmp_330_rule()) != null  // '.' | '...'
@@ -17131,9 +14434,6 @@ public final class Parser extends AbstractParser {
     // _loop1_30: ('.' | '...')
     public Token[] _loop1_30_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -17141,9 +14441,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ('.' | '...')
-            if (errorIndicator) {
-                return null;
-            }
             Token _tmp_331_var;
             while (
                 (_tmp_331_var = (Token)_tmp_331_rule()) != null  // '.' | '...'
@@ -17170,15 +14467,9 @@ public final class Parser extends AbstractParser {
     // _tmp_31: ','
     public Token _tmp_31_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -17196,9 +14487,6 @@ public final class Parser extends AbstractParser {
     // _loop0_33: ',' import_from_as_name
     public AliasTy[] _loop0_33_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -17206,9 +14494,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' import_from_as_name
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             AliasTy elem;
             while (
@@ -17235,15 +14520,9 @@ public final class Parser extends AbstractParser {
     // _gather_32: import_from_as_name _loop0_33
     public AliasTy[] _gather_32_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // import_from_as_name _loop0_33
-            if (errorIndicator) {
-                return null;
-            }
             AliasTy elem;
             AliasTy[] seq;
             if (
@@ -17264,15 +14543,9 @@ public final class Parser extends AbstractParser {
     // _tmp_34: 'as' NAME
     public ExprTy _tmp_34_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'as' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy z;
             if (
@@ -17293,9 +14566,6 @@ public final class Parser extends AbstractParser {
     // _loop0_36: ',' dotted_as_name
     public AliasTy[] _loop0_36_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -17303,9 +14573,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' dotted_as_name
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             AliasTy elem;
             while (
@@ -17332,15 +14599,9 @@ public final class Parser extends AbstractParser {
     // _gather_35: dotted_as_name _loop0_36
     public AliasTy[] _gather_35_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // dotted_as_name _loop0_36
-            if (errorIndicator) {
-                return null;
-            }
             AliasTy elem;
             AliasTy[] seq;
             if (
@@ -17361,15 +14622,9 @@ public final class Parser extends AbstractParser {
     // _tmp_37: 'as' NAME
     public ExprTy _tmp_37_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'as' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy z;
             if (
@@ -17390,9 +14645,6 @@ public final class Parser extends AbstractParser {
     // _loop1_38: ('@' named_expression NEWLINE)
     public ExprTy[] _loop1_38_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -17400,9 +14652,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ('@' named_expression NEWLINE)
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _tmp_332_var;
             while (
                 (_tmp_332_var = (ExprTy)_tmp_332_rule()) != null  // '@' named_expression NEWLINE
@@ -17429,15 +14678,9 @@ public final class Parser extends AbstractParser {
     // _tmp_39: type_params
     public TypeParamTy[] _tmp_39_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // type_params
-            if (errorIndicator) {
-                return null;
-            }
             TypeParamTy[] type_params_var;
             if (
                 (type_params_var = (TypeParamTy[])type_params_rule()) != null  // type_params
@@ -17455,15 +14698,9 @@ public final class Parser extends AbstractParser {
     // _tmp_40: '(' arguments? ')'
     public ExprTy _tmp_40_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '(' arguments? ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy z;
@@ -17487,15 +14724,9 @@ public final class Parser extends AbstractParser {
     // _tmp_41: type_params
     public TypeParamTy[] _tmp_41_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // type_params
-            if (errorIndicator) {
-                return null;
-            }
             TypeParamTy[] type_params_var;
             if (
                 (type_params_var = (TypeParamTy[])type_params_rule()) != null  // type_params
@@ -17513,15 +14744,9 @@ public final class Parser extends AbstractParser {
     // _tmp_42: params
     public ArgumentsTy _tmp_42_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // params
-            if (errorIndicator) {
-                return null;
-            }
             ArgumentsTy params_var;
             if (
                 (params_var = (ArgumentsTy)params_rule()) != null  // params
@@ -17539,15 +14764,9 @@ public final class Parser extends AbstractParser {
     // _tmp_43: '->' expression
     public ExprTy _tmp_43_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '->' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy z;
             if (
@@ -17568,15 +14787,9 @@ public final class Parser extends AbstractParser {
     // _tmp_44: func_type_comment
     public Token _tmp_44_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // func_type_comment
-            if (errorIndicator) {
-                return null;
-            }
             Token func_type_comment_var;
             if (
                 (func_type_comment_var = (Token)func_type_comment_rule()) != null  // func_type_comment
@@ -17594,15 +14807,9 @@ public final class Parser extends AbstractParser {
     // _tmp_45: type_params
     public TypeParamTy[] _tmp_45_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // type_params
-            if (errorIndicator) {
-                return null;
-            }
             TypeParamTy[] type_params_var;
             if (
                 (type_params_var = (TypeParamTy[])type_params_rule()) != null  // type_params
@@ -17620,15 +14827,9 @@ public final class Parser extends AbstractParser {
     // _tmp_46: params
     public ArgumentsTy _tmp_46_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // params
-            if (errorIndicator) {
-                return null;
-            }
             ArgumentsTy params_var;
             if (
                 (params_var = (ArgumentsTy)params_rule()) != null  // params
@@ -17646,15 +14847,9 @@ public final class Parser extends AbstractParser {
     // _tmp_47: '->' expression
     public ExprTy _tmp_47_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '->' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy z;
             if (
@@ -17675,15 +14870,9 @@ public final class Parser extends AbstractParser {
     // _tmp_48: func_type_comment
     public Token _tmp_48_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // func_type_comment
-            if (errorIndicator) {
-                return null;
-            }
             Token func_type_comment_var;
             if (
                 (func_type_comment_var = (Token)func_type_comment_rule()) != null  // func_type_comment
@@ -17701,9 +14890,6 @@ public final class Parser extends AbstractParser {
     // _loop0_49: param_no_default
     public ArgTy[] _loop0_49_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -17711,9 +14897,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy param_no_default_var;
             while (
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
@@ -17737,9 +14920,6 @@ public final class Parser extends AbstractParser {
     // _loop0_50: param_with_default
     public NameDefaultPair[] _loop0_50_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -17747,9 +14927,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_with_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair param_with_default_var;
             while (
                 (param_with_default_var = (NameDefaultPair)param_with_default_rule()) != null  // param_with_default
@@ -17773,15 +14950,9 @@ public final class Parser extends AbstractParser {
     // _tmp_51: star_etc
     public StarEtc _tmp_51_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_etc
-            if (errorIndicator) {
-                return null;
-            }
             StarEtc star_etc_var;
             if (
                 (star_etc_var = (StarEtc)star_etc_rule()) != null  // star_etc
@@ -17799,9 +14970,6 @@ public final class Parser extends AbstractParser {
     // _loop0_52: param_with_default
     public NameDefaultPair[] _loop0_52_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -17809,9 +14977,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_with_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair param_with_default_var;
             while (
                 (param_with_default_var = (NameDefaultPair)param_with_default_rule()) != null  // param_with_default
@@ -17835,15 +15000,9 @@ public final class Parser extends AbstractParser {
     // _tmp_53: star_etc
     public StarEtc _tmp_53_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_etc
-            if (errorIndicator) {
-                return null;
-            }
             StarEtc star_etc_var;
             if (
                 (star_etc_var = (StarEtc)star_etc_rule()) != null  // star_etc
@@ -17861,9 +15020,6 @@ public final class Parser extends AbstractParser {
     // _loop1_54: param_no_default
     public ArgTy[] _loop1_54_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -17871,9 +15027,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy param_no_default_var;
             while (
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
@@ -17900,9 +15053,6 @@ public final class Parser extends AbstractParser {
     // _loop0_55: param_with_default
     public NameDefaultPair[] _loop0_55_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -17910,9 +15060,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_with_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair param_with_default_var;
             while (
                 (param_with_default_var = (NameDefaultPair)param_with_default_rule()) != null  // param_with_default
@@ -17936,15 +15083,9 @@ public final class Parser extends AbstractParser {
     // _tmp_56: star_etc
     public StarEtc _tmp_56_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_etc
-            if (errorIndicator) {
-                return null;
-            }
             StarEtc star_etc_var;
             if (
                 (star_etc_var = (StarEtc)star_etc_rule()) != null  // star_etc
@@ -17962,9 +15103,6 @@ public final class Parser extends AbstractParser {
     // _loop1_57: param_with_default
     public NameDefaultPair[] _loop1_57_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -17972,9 +15110,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_with_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair param_with_default_var;
             while (
                 (param_with_default_var = (NameDefaultPair)param_with_default_rule()) != null  // param_with_default
@@ -18001,15 +15136,9 @@ public final class Parser extends AbstractParser {
     // _tmp_58: star_etc
     public StarEtc _tmp_58_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_etc
-            if (errorIndicator) {
-                return null;
-            }
             StarEtc star_etc_var;
             if (
                 (star_etc_var = (StarEtc)star_etc_rule()) != null  // star_etc
@@ -18027,9 +15156,6 @@ public final class Parser extends AbstractParser {
     // _loop1_59: param_no_default
     public ArgTy[] _loop1_59_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -18037,9 +15163,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy param_no_default_var;
             while (
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
@@ -18066,9 +15189,6 @@ public final class Parser extends AbstractParser {
     // _loop1_60: param_no_default
     public ArgTy[] _loop1_60_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -18076,9 +15196,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy param_no_default_var;
             while (
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
@@ -18105,9 +15222,6 @@ public final class Parser extends AbstractParser {
     // _loop0_61: param_no_default
     public ArgTy[] _loop0_61_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -18115,9 +15229,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy param_no_default_var;
             while (
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
@@ -18141,9 +15252,6 @@ public final class Parser extends AbstractParser {
     // _loop1_62: param_with_default
     public NameDefaultPair[] _loop1_62_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -18151,9 +15259,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_with_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair param_with_default_var;
             while (
                 (param_with_default_var = (NameDefaultPair)param_with_default_rule()) != null  // param_with_default
@@ -18180,9 +15285,6 @@ public final class Parser extends AbstractParser {
     // _loop0_63: param_no_default
     public ArgTy[] _loop0_63_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -18190,9 +15292,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy param_no_default_var;
             while (
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
@@ -18216,9 +15315,6 @@ public final class Parser extends AbstractParser {
     // _loop1_64: param_with_default
     public NameDefaultPair[] _loop1_64_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -18226,9 +15322,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_with_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair param_with_default_var;
             while (
                 (param_with_default_var = (NameDefaultPair)param_with_default_rule()) != null  // param_with_default
@@ -18255,9 +15348,6 @@ public final class Parser extends AbstractParser {
     // _loop0_65: param_maybe_default
     public NameDefaultPair[] _loop0_65_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -18265,9 +15355,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_maybe_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair param_maybe_default_var;
             while (
                 (param_maybe_default_var = (NameDefaultPair)param_maybe_default_rule()) != null  // param_maybe_default
@@ -18291,15 +15378,9 @@ public final class Parser extends AbstractParser {
     // _tmp_66: kwds
     public ArgTy _tmp_66_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // kwds
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy kwds_var;
             if (
                 (kwds_var = (ArgTy)kwds_rule()) != null  // kwds
@@ -18317,9 +15398,6 @@ public final class Parser extends AbstractParser {
     // _loop0_67: param_maybe_default
     public NameDefaultPair[] _loop0_67_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -18327,9 +15405,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_maybe_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair param_maybe_default_var;
             while (
                 (param_maybe_default_var = (NameDefaultPair)param_maybe_default_rule()) != null  // param_maybe_default
@@ -18353,15 +15428,9 @@ public final class Parser extends AbstractParser {
     // _tmp_68: kwds
     public ArgTy _tmp_68_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // kwds
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy kwds_var;
             if (
                 (kwds_var = (ArgTy)kwds_rule()) != null  // kwds
@@ -18379,9 +15448,6 @@ public final class Parser extends AbstractParser {
     // _loop1_69: param_maybe_default
     public NameDefaultPair[] _loop1_69_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -18389,9 +15455,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_maybe_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair param_maybe_default_var;
             while (
                 (param_maybe_default_var = (NameDefaultPair)param_maybe_default_rule()) != null  // param_maybe_default
@@ -18418,15 +15481,9 @@ public final class Parser extends AbstractParser {
     // _tmp_70: kwds
     public ArgTy _tmp_70_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // kwds
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy kwds_var;
             if (
                 (kwds_var = (ArgTy)kwds_rule()) != null  // kwds
@@ -18444,15 +15501,9 @@ public final class Parser extends AbstractParser {
     // _tmp_71: else_block
     public StmtTy[] _tmp_71_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // else_block
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] else_block_var;
             if (
                 (else_block_var = (StmtTy[])else_block_rule()) != null  // else_block
@@ -18470,15 +15521,9 @@ public final class Parser extends AbstractParser {
     // _tmp_72: else_block
     public StmtTy[] _tmp_72_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // else_block
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] else_block_var;
             if (
                 (else_block_var = (StmtTy[])else_block_rule()) != null  // else_block
@@ -18496,15 +15541,9 @@ public final class Parser extends AbstractParser {
     // _tmp_73: else_block
     public StmtTy[] _tmp_73_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // else_block
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] else_block_var;
             if (
                 (else_block_var = (StmtTy[])else_block_rule()) != null  // else_block
@@ -18522,15 +15561,9 @@ public final class Parser extends AbstractParser {
     // _tmp_74: TYPE_COMMENT
     public Token _tmp_74_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // TYPE_COMMENT
-            if (errorIndicator) {
-                return null;
-            }
             Token type_comment_var;
             if (
                 (type_comment_var = (Token)expect(Token.Kind.TYPE_COMMENT)) != null  // token='TYPE_COMMENT'
@@ -18548,15 +15581,9 @@ public final class Parser extends AbstractParser {
     // _tmp_75: else_block
     public StmtTy[] _tmp_75_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // else_block
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] else_block_var;
             if (
                 (else_block_var = (StmtTy[])else_block_rule()) != null  // else_block
@@ -18574,15 +15601,9 @@ public final class Parser extends AbstractParser {
     // _tmp_76: TYPE_COMMENT
     public Token _tmp_76_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // TYPE_COMMENT
-            if (errorIndicator) {
-                return null;
-            }
             Token type_comment_var;
             if (
                 (type_comment_var = (Token)expect(Token.Kind.TYPE_COMMENT)) != null  // token='TYPE_COMMENT'
@@ -18600,15 +15621,9 @@ public final class Parser extends AbstractParser {
     // _tmp_77: else_block
     public StmtTy[] _tmp_77_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // else_block
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] else_block_var;
             if (
                 (else_block_var = (StmtTy[])else_block_rule()) != null  // else_block
@@ -18626,9 +15641,6 @@ public final class Parser extends AbstractParser {
     // _loop0_79: ',' with_item
     public WithItemTy[] _loop0_79_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -18636,9 +15648,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' with_item
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             WithItemTy elem;
             while (
@@ -18665,15 +15674,9 @@ public final class Parser extends AbstractParser {
     // _gather_78: with_item _loop0_79
     public WithItemTy[] _gather_78_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // with_item _loop0_79
-            if (errorIndicator) {
-                return null;
-            }
             WithItemTy elem;
             WithItemTy[] seq;
             if (
@@ -18694,9 +15697,6 @@ public final class Parser extends AbstractParser {
     // _loop0_81: ',' with_item
     public WithItemTy[] _loop0_81_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -18704,9 +15704,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' with_item
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             WithItemTy elem;
             while (
@@ -18733,15 +15730,9 @@ public final class Parser extends AbstractParser {
     // _gather_80: with_item _loop0_81
     public WithItemTy[] _gather_80_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // with_item _loop0_81
-            if (errorIndicator) {
-                return null;
-            }
             WithItemTy elem;
             WithItemTy[] seq;
             if (
@@ -18762,15 +15753,9 @@ public final class Parser extends AbstractParser {
     // _tmp_82: TYPE_COMMENT
     public Token _tmp_82_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // TYPE_COMMENT
-            if (errorIndicator) {
-                return null;
-            }
             Token type_comment_var;
             if (
                 (type_comment_var = (Token)expect(Token.Kind.TYPE_COMMENT)) != null  // token='TYPE_COMMENT'
@@ -18788,9 +15773,6 @@ public final class Parser extends AbstractParser {
     // _loop0_84: ',' with_item
     public WithItemTy[] _loop0_84_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -18798,9 +15780,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' with_item
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             WithItemTy elem;
             while (
@@ -18827,15 +15806,9 @@ public final class Parser extends AbstractParser {
     // _gather_83: with_item _loop0_84
     public WithItemTy[] _gather_83_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // with_item _loop0_84
-            if (errorIndicator) {
-                return null;
-            }
             WithItemTy elem;
             WithItemTy[] seq;
             if (
@@ -18856,9 +15829,6 @@ public final class Parser extends AbstractParser {
     // _loop0_86: ',' with_item
     public WithItemTy[] _loop0_86_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -18866,9 +15836,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' with_item
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             WithItemTy elem;
             while (
@@ -18895,15 +15862,9 @@ public final class Parser extends AbstractParser {
     // _gather_85: with_item _loop0_86
     public WithItemTy[] _gather_85_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // with_item _loop0_86
-            if (errorIndicator) {
-                return null;
-            }
             WithItemTy elem;
             WithItemTy[] seq;
             if (
@@ -18924,15 +15885,9 @@ public final class Parser extends AbstractParser {
     // _tmp_87: TYPE_COMMENT
     public Token _tmp_87_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // TYPE_COMMENT
-            if (errorIndicator) {
-                return null;
-            }
             Token type_comment_var;
             if (
                 (type_comment_var = (Token)expect(Token.Kind.TYPE_COMMENT)) != null  // token='TYPE_COMMENT'
@@ -18950,15 +15905,9 @@ public final class Parser extends AbstractParser {
     // _tmp_88: ',' | ')' | ':'
     public Token _tmp_88_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -18970,9 +15919,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(8)) != null  // token=')'
@@ -18984,9 +15930,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ':'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(11)) != null  // token=':'
@@ -19004,9 +15947,6 @@ public final class Parser extends AbstractParser {
     // _loop1_89: except_block
     public ExceptHandlerTy[] _loop1_89_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -19014,9 +15954,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // except_block
-            if (errorIndicator) {
-                return null;
-            }
             ExceptHandlerTy except_block_var;
             while (
                 (except_block_var = (ExceptHandlerTy)except_block_rule()) != null  // except_block
@@ -19043,15 +15980,9 @@ public final class Parser extends AbstractParser {
     // _tmp_90: else_block
     public StmtTy[] _tmp_90_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // else_block
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] else_block_var;
             if (
                 (else_block_var = (StmtTy[])else_block_rule()) != null  // else_block
@@ -19069,15 +16000,9 @@ public final class Parser extends AbstractParser {
     // _tmp_91: finally_block
     public StmtTy[] _tmp_91_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // finally_block
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] finally_block_var;
             if (
                 (finally_block_var = (StmtTy[])finally_block_rule()) != null  // finally_block
@@ -19095,9 +16020,6 @@ public final class Parser extends AbstractParser {
     // _loop1_92: except_star_block
     public ExceptHandlerTy[] _loop1_92_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -19105,9 +16027,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // except_star_block
-            if (errorIndicator) {
-                return null;
-            }
             ExceptHandlerTy except_star_block_var;
             while (
                 (except_star_block_var = (ExceptHandlerTy)except_star_block_rule()) != null  // except_star_block
@@ -19134,15 +16053,9 @@ public final class Parser extends AbstractParser {
     // _tmp_93: else_block
     public StmtTy[] _tmp_93_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // else_block
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] else_block_var;
             if (
                 (else_block_var = (StmtTy[])else_block_rule()) != null  // else_block
@@ -19160,15 +16073,9 @@ public final class Parser extends AbstractParser {
     // _tmp_94: finally_block
     public StmtTy[] _tmp_94_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // finally_block
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] finally_block_var;
             if (
                 (finally_block_var = (StmtTy[])finally_block_rule()) != null  // finally_block
@@ -19186,15 +16093,9 @@ public final class Parser extends AbstractParser {
     // _tmp_95: 'as' NAME
     public ExprTy _tmp_95_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'as' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy z;
             if (
@@ -19215,15 +16116,9 @@ public final class Parser extends AbstractParser {
     // _tmp_96: 'as' NAME
     public ExprTy _tmp_96_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'as' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy z;
             if (
@@ -19244,9 +16139,6 @@ public final class Parser extends AbstractParser {
     // _loop1_97: case_block
     public MatchCaseTy[] _loop1_97_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -19254,9 +16146,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // case_block
-            if (errorIndicator) {
-                return null;
-            }
             MatchCaseTy case_block_var;
             while (
                 (case_block_var = (MatchCaseTy)case_block_rule()) != null  // case_block
@@ -19283,9 +16172,6 @@ public final class Parser extends AbstractParser {
     // _loop0_99: '|' closed_pattern
     public PatternTy[] _loop0_99_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -19293,9 +16179,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // '|' closed_pattern
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             PatternTy elem;
             while (
@@ -19322,15 +16205,9 @@ public final class Parser extends AbstractParser {
     // _gather_98: closed_pattern _loop0_99
     public PatternTy[] _gather_98_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // closed_pattern _loop0_99
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy elem;
             PatternTy[] seq;
             if (
@@ -19351,15 +16228,9 @@ public final class Parser extends AbstractParser {
     // _tmp_100: '+' | '-'
     public Token _tmp_100_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '+'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(14)) != null  // token='+'
@@ -19371,9 +16242,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '-'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(15)) != null  // token='-'
@@ -19391,15 +16259,9 @@ public final class Parser extends AbstractParser {
     // _tmp_101: '+' | '-'
     public Token _tmp_101_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '+'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(14)) != null  // token='+'
@@ -19411,9 +16273,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '-'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(15)) != null  // token='-'
@@ -19431,15 +16290,9 @@ public final class Parser extends AbstractParser {
     // _tmp_102: '.' | '(' | '='
     public Token _tmp_102_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '.'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(23)) != null  // token='.'
@@ -19451,9 +16304,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '('
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(7)) != null  // token='('
@@ -19465,9 +16315,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(22)) != null  // token='='
@@ -19485,15 +16332,9 @@ public final class Parser extends AbstractParser {
     // _tmp_103: '.' | '(' | '='
     public Token _tmp_103_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '.'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(23)) != null  // token='.'
@@ -19505,9 +16346,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '('
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(7)) != null  // token='('
@@ -19519,9 +16357,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(22)) != null  // token='='
@@ -19539,9 +16374,6 @@ public final class Parser extends AbstractParser {
     // _loop0_105: ',' maybe_star_pattern
     public PatternTy[] _loop0_105_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -19549,9 +16381,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' maybe_star_pattern
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             PatternTy elem;
             while (
@@ -19578,15 +16407,9 @@ public final class Parser extends AbstractParser {
     // _gather_104: maybe_star_pattern _loop0_105
     public PatternTy[] _gather_104_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // maybe_star_pattern _loop0_105
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy elem;
             PatternTy[] seq;
             if (
@@ -19607,9 +16430,6 @@ public final class Parser extends AbstractParser {
     // _loop0_107: ',' key_value_pattern
     public KeyPatternPair[] _loop0_107_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -19617,9 +16437,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' key_value_pattern
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             KeyPatternPair elem;
             while (
@@ -19646,15 +16463,9 @@ public final class Parser extends AbstractParser {
     // _gather_106: key_value_pattern _loop0_107
     public KeyPatternPair[] _gather_106_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // key_value_pattern _loop0_107
-            if (errorIndicator) {
-                return null;
-            }
             KeyPatternPair elem;
             KeyPatternPair[] seq;
             if (
@@ -19675,15 +16486,9 @@ public final class Parser extends AbstractParser {
     // _tmp_108: literal_expr | attr
     public ExprTy _tmp_108_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // literal_expr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy literal_expr_var;
             if (
                 (literal_expr_var = (ExprTy)literal_expr_rule()) != null  // literal_expr
@@ -19695,9 +16500,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // attr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy attr_var;
             if (
                 (attr_var = (ExprTy)attr_rule()) != null  // attr
@@ -19715,9 +16517,6 @@ public final class Parser extends AbstractParser {
     // _loop0_110: ',' pattern
     public PatternTy[] _loop0_110_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -19725,9 +16524,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' pattern
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             PatternTy elem;
             while (
@@ -19754,15 +16550,9 @@ public final class Parser extends AbstractParser {
     // _gather_109: pattern _loop0_110
     public PatternTy[] _gather_109_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // pattern _loop0_110
-            if (errorIndicator) {
-                return null;
-            }
             PatternTy elem;
             PatternTy[] seq;
             if (
@@ -19783,9 +16573,6 @@ public final class Parser extends AbstractParser {
     // _loop0_112: ',' keyword_pattern
     public KeyPatternPair[] _loop0_112_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -19793,9 +16580,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' keyword_pattern
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             KeyPatternPair elem;
             while (
@@ -19822,15 +16606,9 @@ public final class Parser extends AbstractParser {
     // _gather_111: keyword_pattern _loop0_112
     public KeyPatternPair[] _gather_111_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // keyword_pattern _loop0_112
-            if (errorIndicator) {
-                return null;
-            }
             KeyPatternPair elem;
             KeyPatternPair[] seq;
             if (
@@ -19851,15 +16629,9 @@ public final class Parser extends AbstractParser {
     // _tmp_113: type_params
     public TypeParamTy[] _tmp_113_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // type_params
-            if (errorIndicator) {
-                return null;
-            }
             TypeParamTy[] type_params_var;
             if (
                 (type_params_var = (TypeParamTy[])type_params_rule()) != null  // type_params
@@ -19877,9 +16649,6 @@ public final class Parser extends AbstractParser {
     // _loop0_115: ',' type_param
     public TypeParamTy[] _loop0_115_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -19887,9 +16656,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' type_param
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             TypeParamTy elem;
             while (
@@ -19916,15 +16682,9 @@ public final class Parser extends AbstractParser {
     // _gather_114: type_param _loop0_115
     public TypeParamTy[] _gather_114_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // type_param _loop0_115
-            if (errorIndicator) {
-                return null;
-            }
             TypeParamTy elem;
             TypeParamTy[] seq;
             if (
@@ -19945,15 +16705,9 @@ public final class Parser extends AbstractParser {
     // _tmp_116: ','
     public Token _tmp_116_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -19971,15 +16725,9 @@ public final class Parser extends AbstractParser {
     // _tmp_117: type_param_bound
     public ExprTy _tmp_117_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // type_param_bound
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy type_param_bound_var;
             if (
                 (type_param_bound_var = (ExprTy)type_param_bound_rule()) != null  // type_param_bound
@@ -19997,9 +16745,6 @@ public final class Parser extends AbstractParser {
     // _loop1_118: (',' expression)
     public ExprTy[] _loop1_118_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -20007,9 +16752,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // (',' expression)
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _tmp_334_var;
             while (
                 (_tmp_334_var = (ExprTy)_tmp_334_rule()) != null  // ',' expression
@@ -20036,15 +16778,9 @@ public final class Parser extends AbstractParser {
     // _tmp_119: ','
     public Token _tmp_119_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -20062,15 +16798,9 @@ public final class Parser extends AbstractParser {
     // _tmp_120: star_expressions
     public ExprTy _tmp_120_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy star_expressions_var;
             if (
                 (star_expressions_var = (ExprTy)star_expressions_rule()) != null  // star_expressions
@@ -20088,9 +16818,6 @@ public final class Parser extends AbstractParser {
     // _loop1_121: (',' star_expression)
     public ExprTy[] _loop1_121_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -20098,9 +16825,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // (',' star_expression)
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _tmp_335_var;
             while (
                 (_tmp_335_var = (ExprTy)_tmp_335_rule()) != null  // ',' star_expression
@@ -20127,15 +16851,9 @@ public final class Parser extends AbstractParser {
     // _tmp_122: ','
     public Token _tmp_122_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -20153,9 +16871,6 @@ public final class Parser extends AbstractParser {
     // _loop0_124: ',' star_named_expression
     public ExprTy[] _loop0_124_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -20163,9 +16878,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' star_named_expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy elem;
             while (
@@ -20192,15 +16904,9 @@ public final class Parser extends AbstractParser {
     // _gather_123: star_named_expression _loop0_124
     public ExprTy[] _gather_123_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_named_expression _loop0_124
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy elem;
             ExprTy[] seq;
             if (
@@ -20221,15 +16927,9 @@ public final class Parser extends AbstractParser {
     // _tmp_125: ','
     public Token _tmp_125_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -20247,9 +16947,6 @@ public final class Parser extends AbstractParser {
     // _loop1_126: ('or' conjunction)
     public ExprTy[] _loop1_126_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -20257,9 +16954,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ('or' conjunction)
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _tmp_336_var;
             while (
                 (_tmp_336_var = (ExprTy)_tmp_336_rule()) != null  // 'or' conjunction
@@ -20286,9 +16980,6 @@ public final class Parser extends AbstractParser {
     // _loop1_127: ('and' inversion)
     public ExprTy[] _loop1_127_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -20296,9 +16987,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ('and' inversion)
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _tmp_337_var;
             while (
                 (_tmp_337_var = (ExprTy)_tmp_337_rule()) != null  // 'and' inversion
@@ -20325,9 +17013,6 @@ public final class Parser extends AbstractParser {
     // _loop1_128: compare_op_bitwise_or_pair
     public CmpopExprPair[] _loop1_128_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -20335,9 +17020,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // compare_op_bitwise_or_pair
-            if (errorIndicator) {
-                return null;
-            }
             CmpopExprPair compare_op_bitwise_or_pair_var;
             while (
                 (compare_op_bitwise_or_pair_var = (CmpopExprPair)compare_op_bitwise_or_pair_rule()) != null  // compare_op_bitwise_or_pair
@@ -20364,15 +17046,9 @@ public final class Parser extends AbstractParser {
     // _tmp_129: '!='
     public Token _tmp_129_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '!='
-            if (errorIndicator) {
-                return null;
-            }
             Token tok;
             if (
                 (tok = (Token)expect(28)) != null  // token='!='
@@ -20390,15 +17066,9 @@ public final class Parser extends AbstractParser {
     // _tmp_130: arguments
     public ExprTy _tmp_130_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // arguments
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy arguments_var;
             if (
                 (arguments_var = (ExprTy)arguments_rule()) != null  // arguments
@@ -20416,9 +17086,6 @@ public final class Parser extends AbstractParser {
     // _loop0_132: ',' (slice | starred_expression)
     public ExprTy[] _loop0_132_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -20426,9 +17093,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' (slice | starred_expression)
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy elem;
             while (
@@ -20455,15 +17119,9 @@ public final class Parser extends AbstractParser {
     // _gather_131: (slice | starred_expression) _loop0_132
     public ExprTy[] _gather_131_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // (slice | starred_expression) _loop0_132
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy elem;
             ExprTy[] seq;
             if (
@@ -20484,15 +17142,9 @@ public final class Parser extends AbstractParser {
     // _tmp_133: ','
     public Token _tmp_133_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -20510,15 +17162,9 @@ public final class Parser extends AbstractParser {
     // _tmp_134: expression
     public ExprTy _tmp_134_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy expression_var;
             if (
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
@@ -20536,15 +17182,9 @@ public final class Parser extends AbstractParser {
     // _tmp_135: expression
     public ExprTy _tmp_135_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy expression_var;
             if (
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
@@ -20562,15 +17202,9 @@ public final class Parser extends AbstractParser {
     // _tmp_136: ':' expression?
     public ExprTy _tmp_136_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ':' expression?
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy d;
             if (
@@ -20591,15 +17225,9 @@ public final class Parser extends AbstractParser {
     // _tmp_137: STRING | FSTRING_START
     public Token _tmp_137_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // STRING
-            if (errorIndicator) {
-                return null;
-            }
             Token string_var;
             if (
                 (string_var = (Token)string_token()) != null  // STRING
@@ -20611,9 +17239,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // FSTRING_START
-            if (errorIndicator) {
-                return null;
-            }
             Token fstring_start_var;
             if (
                 (fstring_start_var = (Token)expect(Token.Kind.FSTRING_START)) != null  // token='FSTRING_START'
@@ -20631,15 +17256,9 @@ public final class Parser extends AbstractParser {
     // _tmp_138: tuple | group | genexp
     public ExprTy _tmp_138_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // tuple
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy tuple_var;
             if (
                 (tuple_var = (ExprTy)tuple_rule()) != null  // tuple
@@ -20651,9 +17270,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // group
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy group_var;
             if (
                 (group_var = (ExprTy)group_rule()) != null  // group
@@ -20665,9 +17281,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // genexp
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy genexp_var;
             if (
                 (genexp_var = (ExprTy)genexp_rule()) != null  // genexp
@@ -20685,15 +17298,9 @@ public final class Parser extends AbstractParser {
     // _tmp_139: list | listcomp
     public ExprTy _tmp_139_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // list
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy list_var;
             if (
                 (list_var = (ExprTy)list_rule()) != null  // list
@@ -20705,9 +17312,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // listcomp
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy listcomp_var;
             if (
                 (listcomp_var = (ExprTy)listcomp_rule()) != null  // listcomp
@@ -20725,15 +17329,9 @@ public final class Parser extends AbstractParser {
     // _tmp_140: dict | set | dictcomp | setcomp
     public ExprTy _tmp_140_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // dict
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy dict_var;
             if (
                 (dict_var = (ExprTy)dict_rule()) != null  // dict
@@ -20745,9 +17343,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // set
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy set_var;
             if (
                 (set_var = (ExprTy)set_rule()) != null  // set
@@ -20759,9 +17354,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // dictcomp
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy dictcomp_var;
             if (
                 (dictcomp_var = (ExprTy)dictcomp_rule()) != null  // dictcomp
@@ -20773,9 +17365,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // setcomp
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy setcomp_var;
             if (
                 (setcomp_var = (ExprTy)setcomp_rule()) != null  // setcomp
@@ -20793,15 +17382,9 @@ public final class Parser extends AbstractParser {
     // _tmp_141: yield_expr | named_expression
     public ExprTy _tmp_141_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // yield_expr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy yield_expr_var;
             if (
                 (yield_expr_var = (ExprTy)yield_expr_rule()) != null  // yield_expr
@@ -20813,9 +17396,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // named_expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy named_expression_var;
             if (
                 (named_expression_var = (ExprTy)named_expression_rule()) != null  // named_expression
@@ -20833,15 +17413,9 @@ public final class Parser extends AbstractParser {
     // _tmp_142: lambda_params
     public ArgumentsTy _tmp_142_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_params
-            if (errorIndicator) {
-                return null;
-            }
             ArgumentsTy lambda_params_var;
             if (
                 (lambda_params_var = (ArgumentsTy)lambda_params_rule()) != null  // lambda_params
@@ -20859,9 +17433,6 @@ public final class Parser extends AbstractParser {
     // _loop0_143: lambda_param_no_default
     public ArgTy[] _loop0_143_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -20869,9 +17440,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy lambda_param_no_default_var;
             while (
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
@@ -20895,9 +17463,6 @@ public final class Parser extends AbstractParser {
     // _loop0_144: lambda_param_with_default
     public NameDefaultPair[] _loop0_144_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -20905,9 +17470,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_with_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair lambda_param_with_default_var;
             while (
                 (lambda_param_with_default_var = (NameDefaultPair)lambda_param_with_default_rule()) != null  // lambda_param_with_default
@@ -20931,15 +17493,9 @@ public final class Parser extends AbstractParser {
     // _tmp_145: lambda_star_etc
     public StarEtc _tmp_145_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_star_etc
-            if (errorIndicator) {
-                return null;
-            }
             StarEtc lambda_star_etc_var;
             if (
                 (lambda_star_etc_var = (StarEtc)lambda_star_etc_rule()) != null  // lambda_star_etc
@@ -20957,9 +17513,6 @@ public final class Parser extends AbstractParser {
     // _loop0_146: lambda_param_with_default
     public NameDefaultPair[] _loop0_146_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -20967,9 +17520,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_with_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair lambda_param_with_default_var;
             while (
                 (lambda_param_with_default_var = (NameDefaultPair)lambda_param_with_default_rule()) != null  // lambda_param_with_default
@@ -20993,15 +17543,9 @@ public final class Parser extends AbstractParser {
     // _tmp_147: lambda_star_etc
     public StarEtc _tmp_147_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_star_etc
-            if (errorIndicator) {
-                return null;
-            }
             StarEtc lambda_star_etc_var;
             if (
                 (lambda_star_etc_var = (StarEtc)lambda_star_etc_rule()) != null  // lambda_star_etc
@@ -21019,9 +17563,6 @@ public final class Parser extends AbstractParser {
     // _loop1_148: lambda_param_no_default
     public ArgTy[] _loop1_148_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -21029,9 +17570,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy lambda_param_no_default_var;
             while (
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
@@ -21058,9 +17596,6 @@ public final class Parser extends AbstractParser {
     // _loop0_149: lambda_param_with_default
     public NameDefaultPair[] _loop0_149_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -21068,9 +17603,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_with_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair lambda_param_with_default_var;
             while (
                 (lambda_param_with_default_var = (NameDefaultPair)lambda_param_with_default_rule()) != null  // lambda_param_with_default
@@ -21094,15 +17626,9 @@ public final class Parser extends AbstractParser {
     // _tmp_150: lambda_star_etc
     public StarEtc _tmp_150_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_star_etc
-            if (errorIndicator) {
-                return null;
-            }
             StarEtc lambda_star_etc_var;
             if (
                 (lambda_star_etc_var = (StarEtc)lambda_star_etc_rule()) != null  // lambda_star_etc
@@ -21120,9 +17646,6 @@ public final class Parser extends AbstractParser {
     // _loop1_151: lambda_param_with_default
     public NameDefaultPair[] _loop1_151_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -21130,9 +17653,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_with_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair lambda_param_with_default_var;
             while (
                 (lambda_param_with_default_var = (NameDefaultPair)lambda_param_with_default_rule()) != null  // lambda_param_with_default
@@ -21159,15 +17679,9 @@ public final class Parser extends AbstractParser {
     // _tmp_152: lambda_star_etc
     public StarEtc _tmp_152_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_star_etc
-            if (errorIndicator) {
-                return null;
-            }
             StarEtc lambda_star_etc_var;
             if (
                 (lambda_star_etc_var = (StarEtc)lambda_star_etc_rule()) != null  // lambda_star_etc
@@ -21185,9 +17699,6 @@ public final class Parser extends AbstractParser {
     // _loop1_153: lambda_param_no_default
     public ArgTy[] _loop1_153_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -21195,9 +17706,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy lambda_param_no_default_var;
             while (
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
@@ -21224,9 +17732,6 @@ public final class Parser extends AbstractParser {
     // _loop1_154: lambda_param_no_default
     public ArgTy[] _loop1_154_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -21234,9 +17739,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy lambda_param_no_default_var;
             while (
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
@@ -21263,9 +17765,6 @@ public final class Parser extends AbstractParser {
     // _loop0_155: lambda_param_no_default
     public ArgTy[] _loop0_155_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -21273,9 +17772,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy lambda_param_no_default_var;
             while (
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
@@ -21299,9 +17795,6 @@ public final class Parser extends AbstractParser {
     // _loop1_156: lambda_param_with_default
     public NameDefaultPair[] _loop1_156_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -21309,9 +17802,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_with_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair lambda_param_with_default_var;
             while (
                 (lambda_param_with_default_var = (NameDefaultPair)lambda_param_with_default_rule()) != null  // lambda_param_with_default
@@ -21338,9 +17828,6 @@ public final class Parser extends AbstractParser {
     // _loop0_157: lambda_param_no_default
     public ArgTy[] _loop0_157_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -21348,9 +17835,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy lambda_param_no_default_var;
             while (
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
@@ -21374,9 +17858,6 @@ public final class Parser extends AbstractParser {
     // _loop1_158: lambda_param_with_default
     public NameDefaultPair[] _loop1_158_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -21384,9 +17865,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_with_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair lambda_param_with_default_var;
             while (
                 (lambda_param_with_default_var = (NameDefaultPair)lambda_param_with_default_rule()) != null  // lambda_param_with_default
@@ -21413,9 +17891,6 @@ public final class Parser extends AbstractParser {
     // _loop0_159: lambda_param_maybe_default
     public NameDefaultPair[] _loop0_159_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -21423,9 +17898,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_maybe_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair lambda_param_maybe_default_var;
             while (
                 (lambda_param_maybe_default_var = (NameDefaultPair)lambda_param_maybe_default_rule()) != null  // lambda_param_maybe_default
@@ -21449,15 +17921,9 @@ public final class Parser extends AbstractParser {
     // _tmp_160: lambda_kwds
     public ArgTy _tmp_160_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_kwds
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy lambda_kwds_var;
             if (
                 (lambda_kwds_var = (ArgTy)lambda_kwds_rule()) != null  // lambda_kwds
@@ -21475,9 +17941,6 @@ public final class Parser extends AbstractParser {
     // _loop1_161: lambda_param_maybe_default
     public NameDefaultPair[] _loop1_161_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -21485,9 +17948,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_maybe_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair lambda_param_maybe_default_var;
             while (
                 (lambda_param_maybe_default_var = (NameDefaultPair)lambda_param_maybe_default_rule()) != null  // lambda_param_maybe_default
@@ -21514,15 +17974,9 @@ public final class Parser extends AbstractParser {
     // _tmp_162: lambda_kwds
     public ArgTy _tmp_162_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_kwds
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy lambda_kwds_var;
             if (
                 (lambda_kwds_var = (ArgTy)lambda_kwds_rule()) != null  // lambda_kwds
@@ -21540,15 +17994,9 @@ public final class Parser extends AbstractParser {
     // _tmp_163: yield_expr | star_expressions
     public ExprTy _tmp_163_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // yield_expr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy yield_expr_var;
             if (
                 (yield_expr_var = (ExprTy)yield_expr_rule()) != null  // yield_expr
@@ -21560,9 +18008,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy star_expressions_var;
             if (
                 (star_expressions_var = (ExprTy)star_expressions_rule()) != null  // star_expressions
@@ -21580,15 +18025,9 @@ public final class Parser extends AbstractParser {
     // _tmp_164: fstring_conversion
     public ResultTokenWithMetadata _tmp_164_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // fstring_conversion
-            if (errorIndicator) {
-                return null;
-            }
             ResultTokenWithMetadata fstring_conversion_var;
             if (
                 (fstring_conversion_var = (ResultTokenWithMetadata)fstring_conversion_rule()) != null  // fstring_conversion
@@ -21606,15 +18045,9 @@ public final class Parser extends AbstractParser {
     // _tmp_165: fstring_full_format_spec
     public ResultTokenWithMetadata _tmp_165_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // fstring_full_format_spec
-            if (errorIndicator) {
-                return null;
-            }
             ResultTokenWithMetadata fstring_full_format_spec_var;
             if (
                 (fstring_full_format_spec_var = (ResultTokenWithMetadata)fstring_full_format_spec_rule()) != null  // fstring_full_format_spec
@@ -21632,9 +18065,6 @@ public final class Parser extends AbstractParser {
     // _loop0_166: fstring_format_spec
     public ExprTy[] _loop0_166_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -21642,9 +18072,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // fstring_format_spec
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy fstring_format_spec_var;
             while (
                 (fstring_format_spec_var = (ExprTy)fstring_format_spec_rule()) != null  // fstring_format_spec
@@ -21668,9 +18095,6 @@ public final class Parser extends AbstractParser {
     // _loop0_167: fstring_middle
     public ExprTy[] _loop0_167_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -21678,9 +18102,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // fstring_middle
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy fstring_middle_var;
             while (
                 (fstring_middle_var = (ExprTy)fstring_middle_rule()) != null  // fstring_middle
@@ -21704,9 +18125,6 @@ public final class Parser extends AbstractParser {
     // _loop1_168: (fstring | string)
     public ExprTy[] _loop1_168_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -21714,9 +18132,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // (fstring | string)
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _tmp_340_var;
             while (
                 (_tmp_340_var = (ExprTy)_tmp_340_rule()) != null  // fstring | string
@@ -21743,15 +18158,9 @@ public final class Parser extends AbstractParser {
     // _tmp_169: star_named_expressions
     public ExprTy[] _tmp_169_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_named_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] star_named_expressions_var;
             if (
                 (star_named_expressions_var = (ExprTy[])star_named_expressions_rule()) != null  // star_named_expressions
@@ -21769,15 +18178,9 @@ public final class Parser extends AbstractParser {
     // _tmp_170: star_named_expression ',' star_named_expressions?
     public ExprTy[] _tmp_170_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_named_expression ',' star_named_expressions?
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy y;
             ExprTy[] z;
@@ -21801,15 +18204,9 @@ public final class Parser extends AbstractParser {
     // _tmp_171: double_starred_kvpairs
     public KeyValuePair[] _tmp_171_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // double_starred_kvpairs
-            if (errorIndicator) {
-                return null;
-            }
             KeyValuePair[] double_starred_kvpairs_var;
             if (
                 (double_starred_kvpairs_var = (KeyValuePair[])double_starred_kvpairs_rule()) != null  // double_starred_kvpairs
@@ -21827,9 +18224,6 @@ public final class Parser extends AbstractParser {
     // _loop0_173: ',' double_starred_kvpair
     public KeyValuePair[] _loop0_173_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -21837,9 +18231,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' double_starred_kvpair
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             KeyValuePair elem;
             while (
@@ -21866,15 +18257,9 @@ public final class Parser extends AbstractParser {
     // _gather_172: double_starred_kvpair _loop0_173
     public KeyValuePair[] _gather_172_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // double_starred_kvpair _loop0_173
-            if (errorIndicator) {
-                return null;
-            }
             KeyValuePair elem;
             KeyValuePair[] seq;
             if (
@@ -21895,15 +18280,9 @@ public final class Parser extends AbstractParser {
     // _tmp_174: ','
     public Token _tmp_174_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -21921,9 +18300,6 @@ public final class Parser extends AbstractParser {
     // _loop1_175: for_if_clause
     public ComprehensionTy[] _loop1_175_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -21931,9 +18307,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // for_if_clause
-            if (errorIndicator) {
-                return null;
-            }
             ComprehensionTy for_if_clause_var;
             while (
                 (for_if_clause_var = (ComprehensionTy)for_if_clause_rule()) != null  // for_if_clause
@@ -21960,9 +18333,6 @@ public final class Parser extends AbstractParser {
     // _loop0_176: ('if' disjunction)
     public ExprTy[] _loop0_176_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -21970,9 +18340,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ('if' disjunction)
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _tmp_342_var;
             while (
                 (_tmp_342_var = (ExprTy)_tmp_342_rule()) != null  // 'if' disjunction
@@ -21996,9 +18363,6 @@ public final class Parser extends AbstractParser {
     // _loop0_177: ('if' disjunction)
     public ExprTy[] _loop0_177_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -22006,9 +18370,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ('if' disjunction)
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _tmp_343_var;
             while (
                 (_tmp_343_var = (ExprTy)_tmp_343_rule()) != null  // 'if' disjunction
@@ -22032,15 +18393,9 @@ public final class Parser extends AbstractParser {
     // _tmp_178: assignment_expression | expression !':='
     public ExprTy _tmp_178_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // assignment_expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy assignment_expression_var;
             if (
                 (assignment_expression_var = (ExprTy)assignment_expression_rule()) != null  // assignment_expression
@@ -22052,9 +18407,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // expression !':='
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy expression_var;
             if (
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
@@ -22074,15 +18426,9 @@ public final class Parser extends AbstractParser {
     // _tmp_179: ','
     public Token _tmp_179_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -22100,9 +18446,6 @@ public final class Parser extends AbstractParser {
     // _loop0_181: ',' (starred_expression | (assignment_expression | expression !':=') !'=')
     public ExprTy[] _loop0_181_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -22110,9 +18453,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' (starred_expression | (assignment_expression | expression !':=') !'=')
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy elem;
             while (
@@ -22140,15 +18480,9 @@ public final class Parser extends AbstractParser {
     //     | (starred_expression | (assignment_expression | expression !':=') !'=') _loop0_181
     public ExprTy[] _gather_180_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // (starred_expression | (assignment_expression | expression !':=') !'=') _loop0_181
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy elem;
             ExprTy[] seq;
             if (
@@ -22169,15 +18503,9 @@ public final class Parser extends AbstractParser {
     // _tmp_182: ',' kwargs
     public KeywordOrStarred[] _tmp_182_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ',' kwargs
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             KeywordOrStarred[] k;
             if (
@@ -22198,9 +18526,6 @@ public final class Parser extends AbstractParser {
     // _loop0_184: ',' kwarg_or_starred
     public KeywordOrStarred[] _loop0_184_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -22208,9 +18533,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' kwarg_or_starred
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             KeywordOrStarred elem;
             while (
@@ -22237,15 +18559,9 @@ public final class Parser extends AbstractParser {
     // _gather_183: kwarg_or_starred _loop0_184
     public KeywordOrStarred[] _gather_183_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // kwarg_or_starred _loop0_184
-            if (errorIndicator) {
-                return null;
-            }
             KeywordOrStarred elem;
             KeywordOrStarred[] seq;
             if (
@@ -22266,9 +18582,6 @@ public final class Parser extends AbstractParser {
     // _loop0_186: ',' kwarg_or_double_starred
     public KeywordOrStarred[] _loop0_186_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -22276,9 +18589,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' kwarg_or_double_starred
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             KeywordOrStarred elem;
             while (
@@ -22305,15 +18615,9 @@ public final class Parser extends AbstractParser {
     // _gather_185: kwarg_or_double_starred _loop0_186
     public KeywordOrStarred[] _gather_185_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // kwarg_or_double_starred _loop0_186
-            if (errorIndicator) {
-                return null;
-            }
             KeywordOrStarred elem;
             KeywordOrStarred[] seq;
             if (
@@ -22334,9 +18638,6 @@ public final class Parser extends AbstractParser {
     // _loop0_188: ',' kwarg_or_starred
     public KeywordOrStarred[] _loop0_188_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -22344,9 +18645,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' kwarg_or_starred
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             KeywordOrStarred elem;
             while (
@@ -22373,15 +18671,9 @@ public final class Parser extends AbstractParser {
     // _gather_187: kwarg_or_starred _loop0_188
     public KeywordOrStarred[] _gather_187_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // kwarg_or_starred _loop0_188
-            if (errorIndicator) {
-                return null;
-            }
             KeywordOrStarred elem;
             KeywordOrStarred[] seq;
             if (
@@ -22402,9 +18694,6 @@ public final class Parser extends AbstractParser {
     // _loop0_190: ',' kwarg_or_double_starred
     public KeywordOrStarred[] _loop0_190_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -22412,9 +18701,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' kwarg_or_double_starred
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             KeywordOrStarred elem;
             while (
@@ -22441,15 +18727,9 @@ public final class Parser extends AbstractParser {
     // _gather_189: kwarg_or_double_starred _loop0_190
     public KeywordOrStarred[] _gather_189_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // kwarg_or_double_starred _loop0_190
-            if (errorIndicator) {
-                return null;
-            }
             KeywordOrStarred elem;
             KeywordOrStarred[] seq;
             if (
@@ -22470,9 +18750,6 @@ public final class Parser extends AbstractParser {
     // _loop0_191: (',' star_target)
     public ExprTy[] _loop0_191_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -22480,9 +18757,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // (',' star_target)
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _tmp_345_var;
             while (
                 (_tmp_345_var = (ExprTy)_tmp_345_rule()) != null  // ',' star_target
@@ -22506,15 +18780,9 @@ public final class Parser extends AbstractParser {
     // _tmp_192: ','
     public Token _tmp_192_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -22532,9 +18800,6 @@ public final class Parser extends AbstractParser {
     // _loop0_194: ',' star_target
     public ExprTy[] _loop0_194_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -22542,9 +18807,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' star_target
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy elem;
             while (
@@ -22571,15 +18833,9 @@ public final class Parser extends AbstractParser {
     // _gather_193: star_target _loop0_194
     public ExprTy[] _gather_193_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_target _loop0_194
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy elem;
             ExprTy[] seq;
             if (
@@ -22600,15 +18856,9 @@ public final class Parser extends AbstractParser {
     // _tmp_195: ','
     public Token _tmp_195_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -22626,9 +18876,6 @@ public final class Parser extends AbstractParser {
     // _loop1_196: (',' star_target)
     public ExprTy[] _loop1_196_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -22636,9 +18883,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // (',' star_target)
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _tmp_346_var;
             while (
                 (_tmp_346_var = (ExprTy)_tmp_346_rule()) != null  // ',' star_target
@@ -22665,15 +18909,9 @@ public final class Parser extends AbstractParser {
     // _tmp_197: ','
     public Token _tmp_197_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -22691,15 +18929,9 @@ public final class Parser extends AbstractParser {
     // _tmp_198: !'*' star_target
     public ExprTy _tmp_198_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // !'*' star_target
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy star_target_var;
             if (
                 genLookahead_expect(false, 16)  // token='*'
@@ -22719,15 +18951,9 @@ public final class Parser extends AbstractParser {
     // _tmp_199: star_targets_tuple_seq
     public ExprTy[] _tmp_199_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_targets_tuple_seq
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] star_targets_tuple_seq_var;
             if (
                 (star_targets_tuple_seq_var = (ExprTy[])star_targets_tuple_seq_rule()) != null  // star_targets_tuple_seq
@@ -22745,15 +18971,9 @@ public final class Parser extends AbstractParser {
     // _tmp_200: star_targets_list_seq
     public ExprTy[] _tmp_200_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_targets_list_seq
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] star_targets_list_seq_var;
             if (
                 (star_targets_list_seq_var = (ExprTy[])star_targets_list_seq_rule()) != null  // star_targets_list_seq
@@ -22771,15 +18991,9 @@ public final class Parser extends AbstractParser {
     // _tmp_201: arguments
     public ExprTy _tmp_201_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // arguments
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy arguments_var;
             if (
                 (arguments_var = (ExprTy)arguments_rule()) != null  // arguments
@@ -22797,9 +19011,6 @@ public final class Parser extends AbstractParser {
     // _loop0_203: ',' del_target
     public ExprTy[] _loop0_203_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -22807,9 +19018,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' del_target
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy elem;
             while (
@@ -22836,15 +19044,9 @@ public final class Parser extends AbstractParser {
     // _gather_202: del_target _loop0_203
     public ExprTy[] _gather_202_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // del_target _loop0_203
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy elem;
             ExprTy[] seq;
             if (
@@ -22865,15 +19067,9 @@ public final class Parser extends AbstractParser {
     // _tmp_204: ','
     public Token _tmp_204_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -22891,15 +19087,9 @@ public final class Parser extends AbstractParser {
     // _tmp_205: del_targets
     public ExprTy[] _tmp_205_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // del_targets
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] del_targets_var;
             if (
                 (del_targets_var = (ExprTy[])del_targets_rule()) != null  // del_targets
@@ -22917,15 +19107,9 @@ public final class Parser extends AbstractParser {
     // _tmp_206: del_targets
     public ExprTy[] _tmp_206_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // del_targets
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] del_targets_var;
             if (
                 (del_targets_var = (ExprTy[])del_targets_rule()) != null  // del_targets
@@ -22943,9 +19127,6 @@ public final class Parser extends AbstractParser {
     // _loop0_208: ',' expression
     public ExprTy[] _loop0_208_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -22953,9 +19134,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy elem;
             while (
@@ -22982,15 +19160,9 @@ public final class Parser extends AbstractParser {
     // _gather_207: expression _loop0_208
     public ExprTy[] _gather_207_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // expression _loop0_208
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy elem;
             ExprTy[] seq;
             if (
@@ -23011,9 +19183,6 @@ public final class Parser extends AbstractParser {
     // _loop0_210: ',' expression
     public ExprTy[] _loop0_210_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -23021,9 +19190,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy elem;
             while (
@@ -23050,15 +19216,9 @@ public final class Parser extends AbstractParser {
     // _gather_209: expression _loop0_210
     public ExprTy[] _gather_209_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // expression _loop0_210
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy elem;
             ExprTy[] seq;
             if (
@@ -23079,9 +19239,6 @@ public final class Parser extends AbstractParser {
     // _loop0_212: ',' expression
     public ExprTy[] _loop0_212_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -23089,9 +19246,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy elem;
             while (
@@ -23118,15 +19272,9 @@ public final class Parser extends AbstractParser {
     // _gather_211: expression _loop0_212
     public ExprTy[] _gather_211_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // expression _loop0_212
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy elem;
             ExprTy[] seq;
             if (
@@ -23147,9 +19295,6 @@ public final class Parser extends AbstractParser {
     // _loop0_214: ',' expression
     public ExprTy[] _loop0_214_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -23157,9 +19302,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy elem;
             while (
@@ -23186,15 +19328,9 @@ public final class Parser extends AbstractParser {
     // _gather_213: expression _loop0_214
     public ExprTy[] _gather_213_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // expression _loop0_214
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy elem;
             ExprTy[] seq;
             if (
@@ -23215,15 +19351,9 @@ public final class Parser extends AbstractParser {
     // _tmp_215: NEWLINE INDENT
     public Object _tmp_215_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // NEWLINE INDENT
-            if (errorIndicator) {
-                return null;
-            }
             Token indent_var;
             Token newline_var;
             if (
@@ -23246,15 +19376,9 @@ public final class Parser extends AbstractParser {
     //     | kwargs
     public Object _tmp_216_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // (','.(starred_expression | (assignment_expression | expression !':=') !'=')+ ',' kwargs)
-            if (errorIndicator) {
-                return null;
-            }
             Object _tmp_347_var;
             if (
                 (_tmp_347_var = (Object)_tmp_347_rule()) != null  // ','.(starred_expression | (assignment_expression | expression !':=') !'=')+ ',' kwargs
@@ -23266,9 +19390,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // kwargs
-            if (errorIndicator) {
-                return null;
-            }
             KeywordOrStarred[] kwargs_var;
             if (
                 (kwargs_var = (KeywordOrStarred[])kwargs_rule()) != null  // kwargs
@@ -23286,9 +19407,6 @@ public final class Parser extends AbstractParser {
     // _loop0_218: ',' (starred_expression !'=')
     public ExprTy[] _loop0_218_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -23296,9 +19414,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' (starred_expression !'=')
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy elem;
             while (
@@ -23325,15 +19440,9 @@ public final class Parser extends AbstractParser {
     // _gather_217: (starred_expression !'=') _loop0_218
     public ExprTy[] _gather_217_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // (starred_expression !'=') _loop0_218
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy elem;
             ExprTy[] seq;
             if (
@@ -23354,15 +19463,9 @@ public final class Parser extends AbstractParser {
     // _tmp_219: args | expression for_if_clauses
     public Object _tmp_219_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // args
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy args_var;
             if (
                 (args_var = (ExprTy)args_rule()) != null  // args
@@ -23374,9 +19477,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // expression for_if_clauses
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy expression_var;
             ComprehensionTy[] for_if_clauses_var;
             if (
@@ -23397,15 +19497,9 @@ public final class Parser extends AbstractParser {
     // _tmp_220: args ','
     public Object _tmp_220_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // args ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy args_var;
             if (
@@ -23426,15 +19520,9 @@ public final class Parser extends AbstractParser {
     // _tmp_221: ',' | ')'
     public Token _tmp_221_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -23446,9 +19534,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(8)) != null  // token=')'
@@ -23466,15 +19551,9 @@ public final class Parser extends AbstractParser {
     // _tmp_222: 'True' | 'False' | 'None'
     public Token _tmp_222_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'True'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = (Token)expect(681)) != null  // token='True'
@@ -23486,9 +19565,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'False'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = (Token)expect(682)) != null  // token='False'
@@ -23500,9 +19576,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'None'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = (Token)expect(680)) != null  // token='None'
@@ -23520,15 +19593,9 @@ public final class Parser extends AbstractParser {
     // _tmp_223: NAME '='
     public Object _tmp_223_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // NAME '='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy name_var;
             if (
@@ -23549,15 +19616,9 @@ public final class Parser extends AbstractParser {
     // _tmp_224: NAME STRING | SOFT_KEYWORD
     public Object _tmp_224_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // NAME STRING
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy name_var;
             Token string_var;
             if (
@@ -23572,9 +19633,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // SOFT_KEYWORD
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy soft_keyword_var;
             if (
                 (soft_keyword_var = (ExprTy)soft_keyword_token()) != null  // SOFT_KEYWORD
@@ -23592,15 +19650,9 @@ public final class Parser extends AbstractParser {
     // _tmp_225: 'else' | ':'
     public Token _tmp_225_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'else'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = (Token)expect(676)) != null  // token='else'
@@ -23612,9 +19664,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ':'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(11)) != null  // token=':'
@@ -23632,15 +19681,9 @@ public final class Parser extends AbstractParser {
     // _tmp_226: lambda_params
     public ArgumentsTy _tmp_226_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_params
-            if (errorIndicator) {
-                return null;
-            }
             ArgumentsTy lambda_params_var;
             if (
                 (lambda_params_var = (ArgumentsTy)lambda_params_rule()) != null  // lambda_params
@@ -23658,15 +19701,9 @@ public final class Parser extends AbstractParser {
     // _tmp_227: '=' | ':='
     public Token _tmp_227_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(22)) != null  // token='='
@@ -23678,9 +19715,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ':='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(53)) != null  // token=':='
@@ -23698,15 +19732,9 @@ public final class Parser extends AbstractParser {
     // _tmp_228: list | tuple | genexp | 'True' | 'None' | 'False'
     public Object _tmp_228_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // list
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy list_var;
             if (
                 (list_var = (ExprTy)list_rule()) != null  // list
@@ -23718,9 +19746,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // tuple
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy tuple_var;
             if (
                 (tuple_var = (ExprTy)tuple_rule()) != null  // tuple
@@ -23732,9 +19757,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // genexp
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy genexp_var;
             if (
                 (genexp_var = (ExprTy)genexp_rule()) != null  // genexp
@@ -23746,9 +19768,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'True'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = (Token)expect(681)) != null  // token='True'
@@ -23760,9 +19779,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'None'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = (Token)expect(680)) != null  // token='None'
@@ -23774,9 +19790,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'False'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = (Token)expect(682)) != null  // token='False'
@@ -23794,15 +19807,9 @@ public final class Parser extends AbstractParser {
     // _tmp_229: '=' | ':='
     public Token _tmp_229_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(22)) != null  // token='='
@@ -23814,9 +19821,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ':='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(53)) != null  // token=':='
@@ -23834,9 +19838,6 @@ public final class Parser extends AbstractParser {
     // _loop0_230: star_named_expressions
     public ExprTy[] _loop0_230_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -23844,9 +19845,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // star_named_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] star_named_expressions_var;
             while (
                 (star_named_expressions_var = (ExprTy[])star_named_expressions_rule()) != null  // star_named_expressions
@@ -23870,9 +19868,6 @@ public final class Parser extends AbstractParser {
     // _loop0_231: (star_targets '=')
     public Object[] _loop0_231_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -23880,9 +19875,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // (star_targets '=')
-            if (errorIndicator) {
-                return null;
-            }
             Object _tmp_349_var;
             while (
                 (_tmp_349_var = (Object)_tmp_349_rule()) != null  // star_targets '='
@@ -23906,9 +19898,6 @@ public final class Parser extends AbstractParser {
     // _loop0_232: (star_targets '=')
     public Object[] _loop0_232_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -23916,9 +19905,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // (star_targets '=')
-            if (errorIndicator) {
-                return null;
-            }
             Object _tmp_350_var;
             while (
                 (_tmp_350_var = (Object)_tmp_350_rule()) != null  // star_targets '='
@@ -23942,15 +19928,9 @@ public final class Parser extends AbstractParser {
     // _tmp_233: yield_expr | star_expressions
     public ExprTy _tmp_233_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // yield_expr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy yield_expr_var;
             if (
                 (yield_expr_var = (ExprTy)yield_expr_rule()) != null  // yield_expr
@@ -23962,9 +19942,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy star_expressions_var;
             if (
                 (star_expressions_var = (ExprTy)star_expressions_rule()) != null  // star_expressions
@@ -23982,15 +19959,9 @@ public final class Parser extends AbstractParser {
     // _tmp_234: '[' | '(' | '{'
     public Token _tmp_234_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '['
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(9)) != null  // token='['
@@ -24002,9 +19973,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '('
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(7)) != null  // token='('
@@ -24016,9 +19984,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '{'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(25)) != null  // token='{'
@@ -24036,15 +20001,9 @@ public final class Parser extends AbstractParser {
     // _tmp_235: '[' | '{'
     public Token _tmp_235_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '['
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(9)) != null  // token='['
@@ -24056,9 +20015,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '{'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(25)) != null  // token='{'
@@ -24076,15 +20032,9 @@ public final class Parser extends AbstractParser {
     // _tmp_236: '[' | '{'
     public Token _tmp_236_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '['
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(9)) != null  // token='['
@@ -24096,9 +20046,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '{'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(25)) != null  // token='{'
@@ -24116,15 +20063,9 @@ public final class Parser extends AbstractParser {
     // _tmp_237: slash_no_default | slash_with_default
     public Object _tmp_237_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // slash_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy[] slash_no_default_var;
             if (
                 (slash_no_default_var = (ArgTy[])slash_no_default_rule()) != null  // slash_no_default
@@ -24136,9 +20077,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // slash_with_default
-            if (errorIndicator) {
-                return null;
-            }
             SlashWithDefault slash_with_default_var;
             if (
                 (slash_with_default_var = (SlashWithDefault)slash_with_default_rule()) != null  // slash_with_default
@@ -24156,9 +20094,6 @@ public final class Parser extends AbstractParser {
     // _loop0_238: param_maybe_default
     public NameDefaultPair[] _loop0_238_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -24166,9 +20101,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_maybe_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair param_maybe_default_var;
             while (
                 (param_maybe_default_var = (NameDefaultPair)param_maybe_default_rule()) != null  // param_maybe_default
@@ -24192,9 +20124,6 @@ public final class Parser extends AbstractParser {
     // _loop0_239: param_no_default
     public ArgTy[] _loop0_239_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -24202,9 +20131,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy param_no_default_var;
             while (
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
@@ -24228,9 +20154,6 @@ public final class Parser extends AbstractParser {
     // _loop0_240: param_no_default
     public ArgTy[] _loop0_240_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -24238,9 +20161,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy param_no_default_var;
             while (
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
@@ -24264,9 +20184,6 @@ public final class Parser extends AbstractParser {
     // _loop1_241: param_no_default
     public ArgTy[] _loop1_241_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -24274,9 +20191,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy param_no_default_var;
             while (
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
@@ -24303,15 +20217,9 @@ public final class Parser extends AbstractParser {
     // _tmp_242: slash_no_default | slash_with_default
     public Object _tmp_242_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // slash_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy[] slash_no_default_var;
             if (
                 (slash_no_default_var = (ArgTy[])slash_no_default_rule()) != null  // slash_no_default
@@ -24323,9 +20231,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // slash_with_default
-            if (errorIndicator) {
-                return null;
-            }
             SlashWithDefault slash_with_default_var;
             if (
                 (slash_with_default_var = (SlashWithDefault)slash_with_default_rule()) != null  // slash_with_default
@@ -24343,9 +20248,6 @@ public final class Parser extends AbstractParser {
     // _loop0_243: param_maybe_default
     public NameDefaultPair[] _loop0_243_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -24353,9 +20255,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_maybe_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair param_maybe_default_var;
             while (
                 (param_maybe_default_var = (NameDefaultPair)param_maybe_default_rule()) != null  // param_maybe_default
@@ -24379,15 +20278,9 @@ public final class Parser extends AbstractParser {
     // _tmp_244: ',' | param_no_default
     public Object _tmp_244_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -24399,9 +20292,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy param_no_default_var;
             if (
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
@@ -24419,9 +20309,6 @@ public final class Parser extends AbstractParser {
     // _loop0_245: param_maybe_default
     public NameDefaultPair[] _loop0_245_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -24429,9 +20316,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_maybe_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair param_maybe_default_var;
             while (
                 (param_maybe_default_var = (NameDefaultPair)param_maybe_default_rule()) != null  // param_maybe_default
@@ -24455,9 +20339,6 @@ public final class Parser extends AbstractParser {
     // _loop1_246: param_maybe_default
     public NameDefaultPair[] _loop1_246_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -24465,9 +20346,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_maybe_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair param_maybe_default_var;
             while (
                 (param_maybe_default_var = (NameDefaultPair)param_maybe_default_rule()) != null  // param_maybe_default
@@ -24494,15 +20372,9 @@ public final class Parser extends AbstractParser {
     // _tmp_247: ')' | ','
     public Token _tmp_247_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(8)) != null  // token=')'
@@ -24514,9 +20386,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -24534,15 +20403,9 @@ public final class Parser extends AbstractParser {
     // _tmp_248: ')' | ',' (')' | '**')
     public Object _tmp_248_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(8)) != null  // token=')'
@@ -24554,9 +20417,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ',' (')' | '**')
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _tmp_351_var;
             if (
@@ -24577,15 +20437,9 @@ public final class Parser extends AbstractParser {
     // _tmp_249: param_no_default | ','
     public Object _tmp_249_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy param_no_default_var;
             if (
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
@@ -24597,9 +20451,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -24617,9 +20468,6 @@ public final class Parser extends AbstractParser {
     // _loop0_250: param_maybe_default
     public NameDefaultPair[] _loop0_250_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -24627,9 +20475,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_maybe_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair param_maybe_default_var;
             while (
                 (param_maybe_default_var = (NameDefaultPair)param_maybe_default_rule()) != null  // param_maybe_default
@@ -24653,15 +20498,9 @@ public final class Parser extends AbstractParser {
     // _tmp_251: param_no_default | ','
     public Object _tmp_251_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy param_no_default_var;
             if (
                 (param_no_default_var = (ArgTy)param_no_default_rule()) != null  // param_no_default
@@ -24673,9 +20512,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -24693,15 +20529,9 @@ public final class Parser extends AbstractParser {
     // _tmp_252: '*' | '**' | '/'
     public Token _tmp_252_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '*'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(16)) != null  // token='*'
@@ -24713,9 +20543,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '**'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(35)) != null  // token='**'
@@ -24727,9 +20554,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '/'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(17)) != null  // token='/'
@@ -24747,9 +20571,6 @@ public final class Parser extends AbstractParser {
     // _loop1_253: param_with_default
     public NameDefaultPair[] _loop1_253_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -24757,9 +20578,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // param_with_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair param_with_default_var;
             while (
                 (param_with_default_var = (NameDefaultPair)param_with_default_rule()) != null  // param_with_default
@@ -24786,15 +20604,9 @@ public final class Parser extends AbstractParser {
     // _tmp_254: lambda_slash_no_default | lambda_slash_with_default
     public Object _tmp_254_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_slash_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy[] lambda_slash_no_default_var;
             if (
                 (lambda_slash_no_default_var = (ArgTy[])lambda_slash_no_default_rule()) != null  // lambda_slash_no_default
@@ -24806,9 +20618,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_slash_with_default
-            if (errorIndicator) {
-                return null;
-            }
             SlashWithDefault lambda_slash_with_default_var;
             if (
                 (lambda_slash_with_default_var = (SlashWithDefault)lambda_slash_with_default_rule()) != null  // lambda_slash_with_default
@@ -24826,9 +20635,6 @@ public final class Parser extends AbstractParser {
     // _loop0_255: lambda_param_maybe_default
     public NameDefaultPair[] _loop0_255_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -24836,9 +20642,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_maybe_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair lambda_param_maybe_default_var;
             while (
                 (lambda_param_maybe_default_var = (NameDefaultPair)lambda_param_maybe_default_rule()) != null  // lambda_param_maybe_default
@@ -24862,9 +20665,6 @@ public final class Parser extends AbstractParser {
     // _loop0_256: lambda_param_no_default
     public ArgTy[] _loop0_256_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -24872,9 +20672,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy lambda_param_no_default_var;
             while (
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
@@ -24898,9 +20695,6 @@ public final class Parser extends AbstractParser {
     // _loop0_257: lambda_param_no_default
     public ArgTy[] _loop0_257_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -24908,9 +20702,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy lambda_param_no_default_var;
             while (
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
@@ -24934,9 +20725,6 @@ public final class Parser extends AbstractParser {
     // _loop0_259: ',' lambda_param
     public ArgTy[] _loop0_259_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -24944,9 +20732,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' lambda_param
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ArgTy elem;
             while (
@@ -24973,15 +20758,9 @@ public final class Parser extends AbstractParser {
     // _gather_258: lambda_param _loop0_259
     public ArgTy[] _gather_258_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_param _loop0_259
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy elem;
             ArgTy[] seq;
             if (
@@ -25002,15 +20781,9 @@ public final class Parser extends AbstractParser {
     // _tmp_260: lambda_slash_no_default | lambda_slash_with_default
     public Object _tmp_260_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_slash_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy[] lambda_slash_no_default_var;
             if (
                 (lambda_slash_no_default_var = (ArgTy[])lambda_slash_no_default_rule()) != null  // lambda_slash_no_default
@@ -25022,9 +20795,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_slash_with_default
-            if (errorIndicator) {
-                return null;
-            }
             SlashWithDefault lambda_slash_with_default_var;
             if (
                 (lambda_slash_with_default_var = (SlashWithDefault)lambda_slash_with_default_rule()) != null  // lambda_slash_with_default
@@ -25042,9 +20812,6 @@ public final class Parser extends AbstractParser {
     // _loop0_261: lambda_param_maybe_default
     public NameDefaultPair[] _loop0_261_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -25052,9 +20819,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_maybe_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair lambda_param_maybe_default_var;
             while (
                 (lambda_param_maybe_default_var = (NameDefaultPair)lambda_param_maybe_default_rule()) != null  // lambda_param_maybe_default
@@ -25078,15 +20842,9 @@ public final class Parser extends AbstractParser {
     // _tmp_262: ',' | lambda_param_no_default
     public Object _tmp_262_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -25098,9 +20856,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // lambda_param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy lambda_param_no_default_var;
             if (
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
@@ -25118,9 +20873,6 @@ public final class Parser extends AbstractParser {
     // _loop0_263: lambda_param_maybe_default
     public NameDefaultPair[] _loop0_263_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -25128,9 +20880,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_maybe_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair lambda_param_maybe_default_var;
             while (
                 (lambda_param_maybe_default_var = (NameDefaultPair)lambda_param_maybe_default_rule()) != null  // lambda_param_maybe_default
@@ -25154,9 +20903,6 @@ public final class Parser extends AbstractParser {
     // _loop1_264: lambda_param_maybe_default
     public NameDefaultPair[] _loop1_264_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -25164,9 +20910,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_maybe_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair lambda_param_maybe_default_var;
             while (
                 (lambda_param_maybe_default_var = (NameDefaultPair)lambda_param_maybe_default_rule()) != null  // lambda_param_maybe_default
@@ -25193,9 +20936,6 @@ public final class Parser extends AbstractParser {
     // _loop1_265: lambda_param_with_default
     public NameDefaultPair[] _loop1_265_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -25203,9 +20943,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_with_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair lambda_param_with_default_var;
             while (
                 (lambda_param_with_default_var = (NameDefaultPair)lambda_param_with_default_rule()) != null  // lambda_param_with_default
@@ -25232,15 +20969,9 @@ public final class Parser extends AbstractParser {
     // _tmp_266: ':' | ',' (':' | '**')
     public Object _tmp_266_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ':'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(11)) != null  // token=':'
@@ -25252,9 +20983,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ',' (':' | '**')
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _tmp_352_var;
             if (
@@ -25275,15 +21003,9 @@ public final class Parser extends AbstractParser {
     // _tmp_267: lambda_param_no_default | ','
     public Object _tmp_267_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy lambda_param_no_default_var;
             if (
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
@@ -25295,9 +21017,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -25315,9 +21034,6 @@ public final class Parser extends AbstractParser {
     // _loop0_268: lambda_param_maybe_default
     public NameDefaultPair[] _loop0_268_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -25325,9 +21041,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // lambda_param_maybe_default
-            if (errorIndicator) {
-                return null;
-            }
             NameDefaultPair lambda_param_maybe_default_var;
             while (
                 (lambda_param_maybe_default_var = (NameDefaultPair)lambda_param_maybe_default_rule()) != null  // lambda_param_maybe_default
@@ -25351,15 +21064,9 @@ public final class Parser extends AbstractParser {
     // _tmp_269: lambda_param_no_default | ','
     public Object _tmp_269_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // lambda_param_no_default
-            if (errorIndicator) {
-                return null;
-            }
             ArgTy lambda_param_no_default_var;
             if (
                 (lambda_param_no_default_var = (ArgTy)lambda_param_no_default_rule()) != null  // lambda_param_no_default
@@ -25371,9 +21078,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -25391,15 +21095,9 @@ public final class Parser extends AbstractParser {
     // _tmp_270: '*' | '**' | '/'
     public Token _tmp_270_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '*'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(16)) != null  // token='*'
@@ -25411,9 +21109,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '**'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(35)) != null  // token='**'
@@ -25425,9 +21120,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '/'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(17)) != null  // token='/'
@@ -25445,15 +21137,9 @@ public final class Parser extends AbstractParser {
     // _tmp_271: ',' | ')' | ':'
     public Token _tmp_271_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -25465,9 +21151,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(8)) != null  // token=')'
@@ -25479,9 +21162,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ':'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(11)) != null  // token=':'
@@ -25499,9 +21179,6 @@ public final class Parser extends AbstractParser {
     // _loop0_273: ',' dotted_name
     public ExprTy[] _loop0_273_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -25509,9 +21186,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' dotted_name
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy elem;
             while (
@@ -25538,15 +21212,9 @@ public final class Parser extends AbstractParser {
     // _gather_272: dotted_name _loop0_273
     public ExprTy[] _gather_272_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // dotted_name _loop0_273
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy elem;
             ExprTy[] seq;
             if (
@@ -25567,15 +21235,9 @@ public final class Parser extends AbstractParser {
     // _tmp_274: ASYNC
     public Token _tmp_274_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ASYNC
-            if (errorIndicator) {
-                return null;
-            }
             Token async_var;
             if (
                 (async_var = (Token)expect(Token.Kind.ASYNC)) != null  // token='ASYNC'
@@ -25593,9 +21255,6 @@ public final class Parser extends AbstractParser {
     // _loop0_276: ',' (expression ['as' star_target])
     public Object[] _loop0_276_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -25603,9 +21262,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' (expression ['as' star_target])
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Object elem;
             while (
@@ -25632,15 +21288,9 @@ public final class Parser extends AbstractParser {
     // _gather_275: (expression ['as' star_target]) _loop0_276
     public Object[] _gather_275_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // (expression ['as' star_target]) _loop0_276
-            if (errorIndicator) {
-                return null;
-            }
             Object elem;
             Object[] seq;
             if (
@@ -25661,15 +21311,9 @@ public final class Parser extends AbstractParser {
     // _tmp_277: ASYNC
     public Token _tmp_277_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ASYNC
-            if (errorIndicator) {
-                return null;
-            }
             Token async_var;
             if (
                 (async_var = (Token)expect(Token.Kind.ASYNC)) != null  // token='ASYNC'
@@ -25687,9 +21331,6 @@ public final class Parser extends AbstractParser {
     // _loop0_279: ',' (expressions ['as' star_target])
     public Object[] _loop0_279_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -25697,9 +21338,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' (expressions ['as' star_target])
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Object elem;
             while (
@@ -25726,15 +21364,9 @@ public final class Parser extends AbstractParser {
     // _gather_278: (expressions ['as' star_target]) _loop0_279
     public Object[] _gather_278_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // (expressions ['as' star_target]) _loop0_279
-            if (errorIndicator) {
-                return null;
-            }
             Object elem;
             Object[] seq;
             if (
@@ -25755,15 +21387,9 @@ public final class Parser extends AbstractParser {
     // _tmp_280: ASYNC
     public Token _tmp_280_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ASYNC
-            if (errorIndicator) {
-                return null;
-            }
             Token async_var;
             if (
                 (async_var = (Token)expect(Token.Kind.ASYNC)) != null  // token='ASYNC'
@@ -25781,9 +21407,6 @@ public final class Parser extends AbstractParser {
     // _loop0_282: ',' (expression ['as' star_target])
     public Object[] _loop0_282_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -25791,9 +21414,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' (expression ['as' star_target])
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Object elem;
             while (
@@ -25820,15 +21440,9 @@ public final class Parser extends AbstractParser {
     // _gather_281: (expression ['as' star_target]) _loop0_282
     public Object[] _gather_281_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // (expression ['as' star_target]) _loop0_282
-            if (errorIndicator) {
-                return null;
-            }
             Object elem;
             Object[] seq;
             if (
@@ -25849,15 +21463,9 @@ public final class Parser extends AbstractParser {
     // _tmp_283: ASYNC
     public Token _tmp_283_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ASYNC
-            if (errorIndicator) {
-                return null;
-            }
             Token async_var;
             if (
                 (async_var = (Token)expect(Token.Kind.ASYNC)) != null  // token='ASYNC'
@@ -25875,9 +21483,6 @@ public final class Parser extends AbstractParser {
     // _loop0_285: ',' (expressions ['as' star_target])
     public Object[] _loop0_285_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -25885,9 +21490,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' (expressions ['as' star_target])
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Object elem;
             while (
@@ -25914,15 +21516,9 @@ public final class Parser extends AbstractParser {
     // _gather_284: (expressions ['as' star_target]) _loop0_285
     public Object[] _gather_284_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // (expressions ['as' star_target]) _loop0_285
-            if (errorIndicator) {
-                return null;
-            }
             Object elem;
             Object[] seq;
             if (
@@ -25943,15 +21539,9 @@ public final class Parser extends AbstractParser {
     // _tmp_286: 'except' | 'finally'
     public Token _tmp_286_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'except'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = (Token)expect(678)) != null  // token='except'
@@ -25963,9 +21553,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // 'finally'
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             if (
                 (_keyword = (Token)expect(679)) != null  // token='finally'
@@ -25983,9 +21570,6 @@ public final class Parser extends AbstractParser {
     // _loop0_287: block
     public StmtTy[] _loop0_287_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -25993,9 +21577,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // block
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] block_var;
             while (
                 (block_var = (StmtTy[])block_rule()) != null  // block
@@ -26019,9 +21600,6 @@ public final class Parser extends AbstractParser {
     // _loop1_288: except_block
     public ExceptHandlerTy[] _loop1_288_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -26029,9 +21607,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // except_block
-            if (errorIndicator) {
-                return null;
-            }
             ExceptHandlerTy except_block_var;
             while (
                 (except_block_var = (ExceptHandlerTy)except_block_rule()) != null  // except_block
@@ -26058,15 +21633,9 @@ public final class Parser extends AbstractParser {
     // _tmp_289: 'as' NAME
     public Object _tmp_289_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'as' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy name_var;
             if (
@@ -26087,9 +21656,6 @@ public final class Parser extends AbstractParser {
     // _loop0_290: block
     public StmtTy[] _loop0_290_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -26097,9 +21663,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // block
-            if (errorIndicator) {
-                return null;
-            }
             StmtTy[] block_var;
             while (
                 (block_var = (StmtTy[])block_rule()) != null  // block
@@ -26123,9 +21686,6 @@ public final class Parser extends AbstractParser {
     // _loop1_291: except_star_block
     public ExceptHandlerTy[] _loop1_291_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -26133,9 +21693,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // except_star_block
-            if (errorIndicator) {
-                return null;
-            }
             ExceptHandlerTy except_star_block_var;
             while (
                 (except_star_block_var = (ExceptHandlerTy)except_star_block_rule()) != null  // except_star_block
@@ -26162,15 +21719,9 @@ public final class Parser extends AbstractParser {
     // _tmp_292: expression ['as' NAME]
     public Object _tmp_292_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // expression ['as' NAME]
-            if (errorIndicator) {
-                return null;
-            }
             Object _opt_var;
             ExprTy expression_var;
             if (
@@ -26191,15 +21742,9 @@ public final class Parser extends AbstractParser {
     // _tmp_293: 'as' NAME
     public Object _tmp_293_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'as' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy name_var;
             if (
@@ -26220,15 +21765,9 @@ public final class Parser extends AbstractParser {
     // _tmp_294: 'as' NAME
     public Object _tmp_294_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'as' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy name_var;
             if (
@@ -26249,15 +21788,9 @@ public final class Parser extends AbstractParser {
     // _tmp_295: NEWLINE | ':'
     public Token _tmp_295_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             Token newline_var;
             if (
                 (newline_var = (Token)expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
@@ -26269,9 +21802,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ':'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(11)) != null  // token=':'
@@ -26289,15 +21819,9 @@ public final class Parser extends AbstractParser {
     // _tmp_296: 'as' NAME
     public Object _tmp_296_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'as' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy name_var;
             if (
@@ -26318,15 +21842,9 @@ public final class Parser extends AbstractParser {
     // _tmp_297: 'as' NAME
     public Object _tmp_297_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'as' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy name_var;
             if (
@@ -26347,15 +21865,9 @@ public final class Parser extends AbstractParser {
     // _tmp_298: positional_patterns ','
     public Object _tmp_298_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // positional_patterns ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             PatternTy[] positional_patterns_var;
             if (
@@ -26376,15 +21888,9 @@ public final class Parser extends AbstractParser {
     // _tmp_299: ASYNC
     public Token _tmp_299_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ASYNC
-            if (errorIndicator) {
-                return null;
-            }
             Token async_var;
             if (
                 (async_var = (Token)expect(Token.Kind.ASYNC)) != null  // token='ASYNC'
@@ -26402,15 +21908,9 @@ public final class Parser extends AbstractParser {
     // _tmp_300: ASYNC
     public Token _tmp_300_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ASYNC
-            if (errorIndicator) {
-                return null;
-            }
             Token async_var;
             if (
                 (async_var = (Token)expect(Token.Kind.ASYNC)) != null  // token='ASYNC'
@@ -26428,15 +21928,9 @@ public final class Parser extends AbstractParser {
     // _tmp_301: ASYNC
     public Token _tmp_301_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ASYNC
-            if (errorIndicator) {
-                return null;
-            }
             Token async_var;
             if (
                 (async_var = (Token)expect(Token.Kind.ASYNC)) != null  // token='ASYNC'
@@ -26454,15 +21948,9 @@ public final class Parser extends AbstractParser {
     // _tmp_302: type_params
     public TypeParamTy[] _tmp_302_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // type_params
-            if (errorIndicator) {
-                return null;
-            }
             TypeParamTy[] type_params_var;
             if (
                 (type_params_var = (TypeParamTy[])type_params_rule()) != null  // type_params
@@ -26480,15 +21968,9 @@ public final class Parser extends AbstractParser {
     // _tmp_303: params
     public ArgumentsTy _tmp_303_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // params
-            if (errorIndicator) {
-                return null;
-            }
             ArgumentsTy params_var;
             if (
                 (params_var = (ArgumentsTy)params_rule()) != null  // params
@@ -26506,15 +21988,9 @@ public final class Parser extends AbstractParser {
     // _tmp_304: '->' expression
     public Object _tmp_304_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '->' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy expression_var;
             if (
@@ -26535,15 +22011,9 @@ public final class Parser extends AbstractParser {
     // _tmp_305: type_params
     public TypeParamTy[] _tmp_305_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // type_params
-            if (errorIndicator) {
-                return null;
-            }
             TypeParamTy[] type_params_var;
             if (
                 (type_params_var = (TypeParamTy[])type_params_rule()) != null  // type_params
@@ -26561,15 +22031,9 @@ public final class Parser extends AbstractParser {
     // _tmp_306: '(' arguments? ')'
     public Object _tmp_306_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '(' arguments? ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy _opt_var;
@@ -26593,15 +22057,9 @@ public final class Parser extends AbstractParser {
     // _tmp_307: type_params
     public TypeParamTy[] _tmp_307_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // type_params
-            if (errorIndicator) {
-                return null;
-            }
             TypeParamTy[] type_params_var;
             if (
                 (type_params_var = (TypeParamTy[])type_params_rule()) != null  // type_params
@@ -26619,15 +22077,9 @@ public final class Parser extends AbstractParser {
     // _tmp_308: '(' arguments? ')'
     public Object _tmp_308_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '(' arguments? ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             Token _literal_1;
             ExprTy _opt_var;
@@ -26651,9 +22103,6 @@ public final class Parser extends AbstractParser {
     // _loop0_310: ',' double_starred_kvpair
     public KeyValuePair[] _loop0_310_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -26661,9 +22110,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' double_starred_kvpair
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             KeyValuePair elem;
             while (
@@ -26690,15 +22136,9 @@ public final class Parser extends AbstractParser {
     // _gather_309: double_starred_kvpair _loop0_310
     public KeyValuePair[] _gather_309_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // double_starred_kvpair _loop0_310
-            if (errorIndicator) {
-                return null;
-            }
             KeyValuePair elem;
             KeyValuePair[] seq;
             if (
@@ -26719,15 +22159,9 @@ public final class Parser extends AbstractParser {
     // _tmp_311: '}' | ','
     public Token _tmp_311_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(26)) != null  // token='}'
@@ -26739,9 +22173,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -26759,15 +22190,9 @@ public final class Parser extends AbstractParser {
     // _tmp_312: ':'
     public Token _tmp_312_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ':'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(11)) != null  // token=':'
@@ -26785,15 +22210,9 @@ public final class Parser extends AbstractParser {
     // _tmp_313: '}' | ','
     public Token _tmp_313_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(26)) != null  // token='}'
@@ -26805,9 +22224,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ','
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(12)) != null  // token=','
@@ -26825,15 +22241,9 @@ public final class Parser extends AbstractParser {
     // _tmp_314: yield_expr | star_expressions
     public ExprTy _tmp_314_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // yield_expr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy yield_expr_var;
             if (
                 (yield_expr_var = (ExprTy)yield_expr_rule()) != null  // yield_expr
@@ -26845,9 +22255,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy star_expressions_var;
             if (
                 (star_expressions_var = (ExprTy)star_expressions_rule()) != null  // star_expressions
@@ -26865,15 +22272,9 @@ public final class Parser extends AbstractParser {
     // _tmp_315: yield_expr | star_expressions
     public ExprTy _tmp_315_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // yield_expr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy yield_expr_var;
             if (
                 (yield_expr_var = (ExprTy)yield_expr_rule()) != null  // yield_expr
@@ -26885,9 +22286,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy star_expressions_var;
             if (
                 (star_expressions_var = (ExprTy)star_expressions_rule()) != null  // star_expressions
@@ -26905,15 +22303,9 @@ public final class Parser extends AbstractParser {
     // _tmp_316: '=' | '!' | ':' | '}'
     public Token _tmp_316_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(22)) != null  // token='='
@@ -26925,9 +22317,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '!'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(54)) != null  // token='!'
@@ -26939,9 +22328,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ':'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(11)) != null  // token=':'
@@ -26953,9 +22339,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(26)) != null  // token='}'
@@ -26973,15 +22356,9 @@ public final class Parser extends AbstractParser {
     // _tmp_317: yield_expr | star_expressions
     public ExprTy _tmp_317_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // yield_expr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy yield_expr_var;
             if (
                 (yield_expr_var = (ExprTy)yield_expr_rule()) != null  // yield_expr
@@ -26993,9 +22370,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy star_expressions_var;
             if (
                 (star_expressions_var = (ExprTy)star_expressions_rule()) != null  // star_expressions
@@ -27013,15 +22387,9 @@ public final class Parser extends AbstractParser {
     // _tmp_318: '!' | ':' | '}'
     public Token _tmp_318_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '!'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(54)) != null  // token='!'
@@ -27033,9 +22401,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // ':'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(11)) != null  // token=':'
@@ -27047,9 +22412,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(26)) != null  // token='}'
@@ -27067,15 +22429,9 @@ public final class Parser extends AbstractParser {
     // _tmp_319: yield_expr | star_expressions
     public ExprTy _tmp_319_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // yield_expr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy yield_expr_var;
             if (
                 (yield_expr_var = (ExprTy)yield_expr_rule()) != null  // yield_expr
@@ -27087,9 +22443,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy star_expressions_var;
             if (
                 (star_expressions_var = (ExprTy)star_expressions_rule()) != null  // star_expressions
@@ -27107,15 +22460,9 @@ public final class Parser extends AbstractParser {
     // _tmp_320: yield_expr | star_expressions
     public ExprTy _tmp_320_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // yield_expr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy yield_expr_var;
             if (
                 (yield_expr_var = (ExprTy)yield_expr_rule()) != null  // yield_expr
@@ -27127,9 +22474,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy star_expressions_var;
             if (
                 (star_expressions_var = (ExprTy)star_expressions_rule()) != null  // star_expressions
@@ -27147,15 +22491,9 @@ public final class Parser extends AbstractParser {
     // _tmp_321: '!' NAME
     public Object _tmp_321_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '!' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy name_var;
             if (
@@ -27176,15 +22514,9 @@ public final class Parser extends AbstractParser {
     // _tmp_322: ':' | '}'
     public Token _tmp_322_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ':'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(11)) != null  // token=':'
@@ -27196,9 +22528,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(26)) != null  // token='}'
@@ -27216,15 +22545,9 @@ public final class Parser extends AbstractParser {
     // _tmp_323: yield_expr | star_expressions
     public ExprTy _tmp_323_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // yield_expr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy yield_expr_var;
             if (
                 (yield_expr_var = (ExprTy)yield_expr_rule()) != null  // yield_expr
@@ -27236,9 +22559,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy star_expressions_var;
             if (
                 (star_expressions_var = (ExprTy)star_expressions_rule()) != null  // star_expressions
@@ -27256,15 +22576,9 @@ public final class Parser extends AbstractParser {
     // _tmp_324: '!' NAME
     public Object _tmp_324_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '!' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy name_var;
             if (
@@ -27285,9 +22599,6 @@ public final class Parser extends AbstractParser {
     // _loop0_325: fstring_format_spec
     public ExprTy[] _loop0_325_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -27295,9 +22606,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // fstring_format_spec
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy fstring_format_spec_var;
             while (
                 (fstring_format_spec_var = (ExprTy)fstring_format_spec_rule()) != null  // fstring_format_spec
@@ -27321,15 +22629,9 @@ public final class Parser extends AbstractParser {
     // _tmp_326: yield_expr | star_expressions
     public ExprTy _tmp_326_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // yield_expr
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy yield_expr_var;
             if (
                 (yield_expr_var = (ExprTy)yield_expr_rule()) != null  // yield_expr
@@ -27341,9 +22643,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // star_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy star_expressions_var;
             if (
                 (star_expressions_var = (ExprTy)star_expressions_rule()) != null  // star_expressions
@@ -27361,15 +22660,9 @@ public final class Parser extends AbstractParser {
     // _tmp_327: '!' NAME
     public Object _tmp_327_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '!' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy name_var;
             if (
@@ -27390,15 +22683,9 @@ public final class Parser extends AbstractParser {
     // _tmp_328: ':' | '}'
     public Token _tmp_328_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ':'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(11)) != null  // token=':'
@@ -27410,9 +22697,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '}'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(26)) != null  // token='}'
@@ -27430,15 +22714,9 @@ public final class Parser extends AbstractParser {
     // _tmp_329: star_targets '='
     public ExprTy _tmp_329_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_targets '='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy z;
             if (
@@ -27459,15 +22737,9 @@ public final class Parser extends AbstractParser {
     // _tmp_330: '.' | '...'
     public Token _tmp_330_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '.'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(23)) != null  // token='.'
@@ -27479,9 +22751,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '...'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(52)) != null  // token='...'
@@ -27499,15 +22768,9 @@ public final class Parser extends AbstractParser {
     // _tmp_331: '.' | '...'
     public Token _tmp_331_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '.'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(23)) != null  // token='.'
@@ -27519,9 +22782,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '...'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(52)) != null  // token='...'
@@ -27539,15 +22799,9 @@ public final class Parser extends AbstractParser {
     // _tmp_332: '@' named_expression NEWLINE
     public ExprTy _tmp_332_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // '@' named_expression NEWLINE
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy f;
             Token newline_var;
@@ -27571,15 +22825,9 @@ public final class Parser extends AbstractParser {
     // _tmp_333: arguments
     public ExprTy _tmp_333_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // arguments
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy arguments_var;
             if (
                 (arguments_var = (ExprTy)arguments_rule()) != null  // arguments
@@ -27597,15 +22845,9 @@ public final class Parser extends AbstractParser {
     // _tmp_334: ',' expression
     public ExprTy _tmp_334_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ',' expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy c;
             if (
@@ -27626,15 +22868,9 @@ public final class Parser extends AbstractParser {
     // _tmp_335: ',' star_expression
     public ExprTy _tmp_335_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ',' star_expression
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy c;
             if (
@@ -27655,15 +22891,9 @@ public final class Parser extends AbstractParser {
     // _tmp_336: 'or' conjunction
     public ExprTy _tmp_336_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'or' conjunction
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy c;
             if (
@@ -27684,15 +22914,9 @@ public final class Parser extends AbstractParser {
     // _tmp_337: 'and' inversion
     public ExprTy _tmp_337_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'and' inversion
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy c;
             if (
@@ -27713,15 +22937,9 @@ public final class Parser extends AbstractParser {
     // _tmp_338: slice | starred_expression
     public ExprTy _tmp_338_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // slice
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy slice_var;
             if (
                 (slice_var = (ExprTy)slice_rule()) != null  // slice
@@ -27733,9 +22951,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // starred_expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy starred_expression_var;
             if (
                 (starred_expression_var = (ExprTy)starred_expression_rule()) != null  // starred_expression
@@ -27753,15 +22968,9 @@ public final class Parser extends AbstractParser {
     // _tmp_339: expression
     public ExprTy _tmp_339_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy expression_var;
             if (
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
@@ -27779,15 +22988,9 @@ public final class Parser extends AbstractParser {
     // _tmp_340: fstring | string
     public ExprTy _tmp_340_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // fstring
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy fstring_var;
             if (
                 (fstring_var = (ExprTy)fstring_rule()) != null  // fstring
@@ -27799,9 +23002,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // string
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy string_var;
             if (
                 (string_var = (ExprTy)string_rule()) != null  // string
@@ -27819,15 +23019,9 @@ public final class Parser extends AbstractParser {
     // _tmp_341: star_named_expressions
     public ExprTy[] _tmp_341_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_named_expressions
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] star_named_expressions_var;
             if (
                 (star_named_expressions_var = (ExprTy[])star_named_expressions_rule()) != null  // star_named_expressions
@@ -27845,15 +23039,9 @@ public final class Parser extends AbstractParser {
     // _tmp_342: 'if' disjunction
     public ExprTy _tmp_342_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'if' disjunction
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy z;
             if (
@@ -27874,15 +23062,9 @@ public final class Parser extends AbstractParser {
     // _tmp_343: 'if' disjunction
     public ExprTy _tmp_343_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'if' disjunction
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy z;
             if (
@@ -27903,15 +23085,9 @@ public final class Parser extends AbstractParser {
     // _tmp_344: starred_expression | (assignment_expression | expression !':=') !'='
     public ExprTy _tmp_344_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // starred_expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy starred_expression_var;
             if (
                 (starred_expression_var = (ExprTy)starred_expression_rule()) != null  // starred_expression
@@ -27923,9 +23099,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // (assignment_expression | expression !':=') !'='
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _tmp_360_var;
             if (
                 (_tmp_360_var = (ExprTy)_tmp_360_rule()) != null  // assignment_expression | expression !':='
@@ -27945,15 +23118,9 @@ public final class Parser extends AbstractParser {
     // _tmp_345: ',' star_target
     public ExprTy _tmp_345_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ',' star_target
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy c;
             if (
@@ -27974,15 +23141,9 @@ public final class Parser extends AbstractParser {
     // _tmp_346: ',' star_target
     public ExprTy _tmp_346_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ',' star_target
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy c;
             if (
@@ -28004,15 +23165,9 @@ public final class Parser extends AbstractParser {
     //     | ','.(starred_expression | (assignment_expression | expression !':=') !'=')+ ',' kwargs
     public Object _tmp_347_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ','.(starred_expression | (assignment_expression | expression !':=') !'=')+ ',' kwargs
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy[] _gather_361_var;
             Token _literal;
             KeywordOrStarred[] kwargs_var;
@@ -28036,15 +23191,9 @@ public final class Parser extends AbstractParser {
     // _tmp_348: starred_expression !'='
     public ExprTy _tmp_348_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // starred_expression !'='
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy starred_expression_var;
             if (
                 (starred_expression_var = (ExprTy)starred_expression_rule()) != null  // starred_expression
@@ -28064,15 +23213,9 @@ public final class Parser extends AbstractParser {
     // _tmp_349: star_targets '='
     public Object _tmp_349_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_targets '='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy star_targets_var;
             if (
@@ -28093,15 +23236,9 @@ public final class Parser extends AbstractParser {
     // _tmp_350: star_targets '='
     public Object _tmp_350_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // star_targets '='
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy star_targets_var;
             if (
@@ -28122,15 +23259,9 @@ public final class Parser extends AbstractParser {
     // _tmp_351: ')' | '**'
     public Token _tmp_351_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ')'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(8)) != null  // token=')'
@@ -28142,9 +23273,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '**'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(35)) != null  // token='**'
@@ -28162,15 +23290,9 @@ public final class Parser extends AbstractParser {
     // _tmp_352: ':' | '**'
     public Token _tmp_352_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // ':'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(11)) != null  // token=':'
@@ -28182,9 +23304,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // '**'
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             if (
                 (_literal = (Token)expect(35)) != null  // token='**'
@@ -28202,15 +23321,9 @@ public final class Parser extends AbstractParser {
     // _tmp_353: expression ['as' star_target]
     public Object _tmp_353_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // expression ['as' star_target]
-            if (errorIndicator) {
-                return null;
-            }
             Object _opt_var;
             ExprTy expression_var;
             if (
@@ -28231,15 +23344,9 @@ public final class Parser extends AbstractParser {
     // _tmp_354: expressions ['as' star_target]
     public Object _tmp_354_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // expressions ['as' star_target]
-            if (errorIndicator) {
-                return null;
-            }
             Object _opt_var;
             ExprTy expressions_var;
             if (
@@ -28260,15 +23367,9 @@ public final class Parser extends AbstractParser {
     // _tmp_355: expression ['as' star_target]
     public Object _tmp_355_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // expression ['as' star_target]
-            if (errorIndicator) {
-                return null;
-            }
             Object _opt_var;
             ExprTy expression_var;
             if (
@@ -28289,15 +23390,9 @@ public final class Parser extends AbstractParser {
     // _tmp_356: expressions ['as' star_target]
     public Object _tmp_356_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // expressions ['as' star_target]
-            if (errorIndicator) {
-                return null;
-            }
             Object _opt_var;
             ExprTy expressions_var;
             if (
@@ -28318,15 +23413,9 @@ public final class Parser extends AbstractParser {
     // _tmp_357: 'as' NAME
     public Object _tmp_357_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'as' NAME
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy name_var;
             if (
@@ -28347,15 +23436,9 @@ public final class Parser extends AbstractParser {
     // _tmp_358: arguments
     public ExprTy _tmp_358_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // arguments
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy arguments_var;
             if (
                 (arguments_var = (ExprTy)arguments_rule()) != null  // arguments
@@ -28373,15 +23456,9 @@ public final class Parser extends AbstractParser {
     // _tmp_359: arguments
     public ExprTy _tmp_359_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // arguments
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy arguments_var;
             if (
                 (arguments_var = (ExprTy)arguments_rule()) != null  // arguments
@@ -28399,15 +23476,9 @@ public final class Parser extends AbstractParser {
     // _tmp_360: assignment_expression | expression !':='
     public ExprTy _tmp_360_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // assignment_expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy assignment_expression_var;
             if (
                 (assignment_expression_var = (ExprTy)assignment_expression_rule()) != null  // assignment_expression
@@ -28419,9 +23490,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // expression !':='
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy expression_var;
             if (
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
@@ -28441,9 +23509,6 @@ public final class Parser extends AbstractParser {
     // _loop0_362: ',' (starred_expression | (assignment_expression | expression !':=') !'=')
     public ExprTy[] _loop0_362_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         Object _res = null;
         int _mark = mark();
         int _start_mark = mark();
@@ -28451,9 +23516,6 @@ public final class Parser extends AbstractParser {
         int _children_capacity = 1;
         int _n = 0;
         { // ',' (starred_expression | (assignment_expression | expression !':=') !'=')
-            if (errorIndicator) {
-                return null;
-            }
             Token _literal;
             ExprTy elem;
             while (
@@ -28481,15 +23543,9 @@ public final class Parser extends AbstractParser {
     //     | (starred_expression | (assignment_expression | expression !':=') !'=') _loop0_362
     public ExprTy[] _gather_361_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // (starred_expression | (assignment_expression | expression !':=') !'=') _loop0_362
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy elem;
             ExprTy[] seq;
             if (
@@ -28510,15 +23566,9 @@ public final class Parser extends AbstractParser {
     // _tmp_363: 'as' star_target
     public Object _tmp_363_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'as' star_target
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy star_target_var;
             if (
@@ -28539,15 +23589,9 @@ public final class Parser extends AbstractParser {
     // _tmp_364: 'as' star_target
     public Object _tmp_364_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'as' star_target
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy star_target_var;
             if (
@@ -28568,15 +23612,9 @@ public final class Parser extends AbstractParser {
     // _tmp_365: 'as' star_target
     public Object _tmp_365_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'as' star_target
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy star_target_var;
             if (
@@ -28597,15 +23635,9 @@ public final class Parser extends AbstractParser {
     // _tmp_366: 'as' star_target
     public Object _tmp_366_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // 'as' star_target
-            if (errorIndicator) {
-                return null;
-            }
             Token _keyword;
             ExprTy star_target_var;
             if (
@@ -28626,15 +23658,9 @@ public final class Parser extends AbstractParser {
     // _tmp_367: starred_expression | (assignment_expression | expression !':=') !'='
     public ExprTy _tmp_367_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // starred_expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy starred_expression_var;
             if (
                 (starred_expression_var = (ExprTy)starred_expression_rule()) != null  // starred_expression
@@ -28646,9 +23672,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // (assignment_expression | expression !':=') !'='
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy _tmp_368_var;
             if (
                 (_tmp_368_var = (ExprTy)_tmp_368_rule()) != null  // assignment_expression | expression !':='
@@ -28668,15 +23691,9 @@ public final class Parser extends AbstractParser {
     // _tmp_368: assignment_expression | expression !':='
     public ExprTy _tmp_368_rule()
     {
-        if (errorIndicator) {
-            return null;
-        }
         int _mark = mark();
         Object _res = null;
         { // assignment_expression
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy assignment_expression_var;
             if (
                 (assignment_expression_var = (ExprTy)assignment_expression_rule()) != null  // assignment_expression
@@ -28688,9 +23705,6 @@ public final class Parser extends AbstractParser {
             reset(_mark);
         }
         { // expression !':='
-            if (errorIndicator) {
-                return null;
-            }
             ExprTy expression_var;
             if (
                 (expression_var = (ExprTy)expression_rule()) != null  // expression

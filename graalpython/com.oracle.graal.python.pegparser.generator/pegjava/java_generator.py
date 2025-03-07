@@ -244,7 +244,7 @@ ACTION_MAPPINGS = {
     '_PyAST_Interactive ( a , p -> arena )': (1, 'factory.createInteractiveModule(a, $RANGE)'),
     '_PyAST_Lambda ( ( a ) ? a : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , EXTRA )': (1, 'factory.createLambda(a == null ? factory.emptyArguments() : a, b, $RANGE)'),
     '_PyAST_ListComp ( a , b , EXTRA )': (1, 'factory.createListComprehension(a, b, $RANGE)'),
-    'CHECK_VERSION ( expr_ty , 8 , "Assignment expressions are" , _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA ) )': (1, 'checkVersion(8, "Assignment expressions are", factory.createNamedExp(this.check(this.setExprContext(a, ExprContextTy.Store)), b, $RANGE))'),
+    'CHECK_VERSION ( expr_ty , 8 , "Assignment expressions are" , _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA ) )': (1, 'checkVersion(8, "Assignment expressions are", factory.createNamedExp(this.setExprContext(a, ExprContextTy.Store), b, $RANGE))'),
     '_PyAST_Nonlocal ( CHECK ( asdl_identifier_seq* , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )': (1, 'factory.createNonLocal(extractNames(a), $RANGE)'),
     '_PyAST_Pass ( EXTRA )': (1, 'factory.createPass($RANGE)'),
     '_PyAST_Raise ( NULL , NULL , EXTRA )': (1, 'factory.createRaise(null, null, $RANGE)'),
@@ -1020,13 +1020,6 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.add_return("null")
         self.print("}")
 
-    def _check_for_errors(self) -> None:
-        self.print("if (errorIndicator) {")
-        with self.indent():
-            self.remove_level();
-            self.print("return null;")
-        self.print("}")
-
     def _set_up_rule_memoization(self, node: Rule, result_type: str) -> None:
         self.print("{")
         with self.indent():
@@ -1064,7 +1057,6 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         memoize = self._should_memoize(node)
 
         self.add_level()
-        self._check_for_errors()
         self.print("int _mark = mark();")
         self.print(f"Object _res = null;")
         if memoize:
@@ -1095,7 +1087,6 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         is_repeat1 = node.name.startswith("_loop1")
 
         self.add_level()
-        self._check_for_errors()
         self.print("Object _res = null;")
         self.print("int _mark = mark();")
         if memoize:
@@ -1220,15 +1211,17 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                     f"{self.local_variable_names[0]}, {self.local_variable_names[1]}, {element_type}.class);"
                 )
             else:
+                node_str = str(node).replace('"', '\\"')
                 self.printDebug(
-                    f'debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "{node}");'
+                    f'debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "{node_str}");'
                 )
                 self.print(
                     f"_res = dummyName({', '.join(self.local_variable_names)});"
                 )
         else:
+            node_str = str(node).replace('"', '\\"')
             self.printDebug(
-                f'debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "{node}");'
+                f'debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "{node_str}");'
             )
             self.print(f"_res = {self.local_variable_names[0]};")
 
@@ -1293,7 +1286,6 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         else:
             self.print(f"{{ // {node}")
         with self.indent():
-            self._check_for_errors()
             node_str = str(node).replace('"', '\\"')
             self.printDebug(
                 f'debugMessageln("%d> {rulename}[%d-%d]: %s", level, _mark, mark(), "{node_str}");'
