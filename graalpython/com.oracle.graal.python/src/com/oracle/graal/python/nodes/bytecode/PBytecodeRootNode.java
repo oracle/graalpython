@@ -580,7 +580,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
      * When instrumentation is in use, InstrumentationSupport#bciToHelper node is used instead of
      * this array. Use getChildNodes() to get the right array.
      */
-    @Children private final Node[] adoptedNodes;
+    @Children private Node[] adoptedNodes;
     @Child private CalleeContext calleeContext = CalleeContext.create();
     // TODO: make some of those lazy?
     @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
@@ -590,7 +590,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @CompilationFinal private Object osrMetadata;
 
     @CompilationFinal private boolean usingCachedNodes;
-    @CompilationFinal(dimensions = 1) private final int[] conditionProfiles;
+    @CompilationFinal(dimensions = 1) private int[] conditionProfiles;
 
     @Child private InstrumentationRoot instrumentationRoot = InstrumentationRoot.create();
 
@@ -676,9 +676,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.internal = source.isInternal();
         this.parserErrorCallback = parserErrorCallback;
         this.signature = sign;
-        this.bytecode = PythonUtils.arrayCopyOf(co.code, co.code.length);
-        this.adoptedNodes = new Node[co.code.length];
-        this.conditionProfiles = new int[co.conditionProfileCount];
+        this.bytecode = co.code;
         this.outputCanQuicken = co.outputCanQuicken;
         this.variableShouldUnbox = co.variableShouldUnbox;
         this.generalizeInputsMap = co.generalizeInputsMap;
@@ -767,7 +765,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private Node[] getChildNodes() {
         InstrumentationSupport instrumentation = instrumentationRoot.getInstrumentation();
-        return instrumentation == null ? adoptedNodes : instrumentation.bciToHelperNode;
+        if (instrumentation != null) {
+            return instrumentation.bciToHelperNode;
+        }
+        if (adoptedNodes == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            Lock lock = getLock();
+            lock.lock();
+            try {
+                if (adoptedNodes == null) {
+                    adoptedNodes = new Node[bytecode.length];
+                }
+            } finally {
+                lock.unlock();
+            }
+        }
+        return adoptedNodes;
     }
 
     @FunctionalInterface
@@ -777,48 +790,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @FunctionalInterface
-    private interface NodeFunction<A, T> {
-        T apply(A argument);
-    }
-
-    @FunctionalInterface
     private interface IntNodeFunction<T extends Node> {
         T apply(int argument);
-    }
-
-    @SuppressWarnings("unchecked")
-    private <A, T extends Node> T insertChildNode(Node[] nodes, int nodeIndex, Class<? extends T> cachedClass, NodeFunction<A, T> nodeSupplier, A argument) {
-        Node node = nodes[nodeIndex];
-        if (node != null && node.getClass() == cachedClass) {
-            return CompilerDirectives.castExact(node, cachedClass);
-        }
-        return CompilerDirectives.castExact(doInsertChildNode(nodes, nodeIndex, nodeSupplier, argument), cachedClass);
-    }
-
-    @SuppressWarnings("unchecked")
-    private <A, T extends Node> T doInsertChildNode(Node[] nodes, int nodeIndex, NodeFunction<A, T> nodeSupplier, A argument) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        Lock lock = getLock();
-        lock.lock();
-        try {
-            T newNode = nodeSupplier.apply(argument);
-            doInsertChildNode(nodes, nodeIndex, newNode);
-            return newNode;
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private <A, T extends Node> T insertChildNode(Node[] nodes, int nodeIndex, T uncached, Class<? extends T> cachedClass, NodeFunction<A, T> nodeSupplier, A argument, boolean useCachedNodes) {
-        if (!useCachedNodes) {
-            return uncached;
-        }
-        Node node = nodes[nodeIndex];
-        if (node != null && node.getClass() == cachedClass) {
-            return CompilerDirectives.castExact(node, cachedClass);
-        }
-        return CompilerDirectives.castExact(doInsertChildNode(nodes, nodeIndex, nodeSupplier, argument), cachedClass);
     }
 
     @SuppressWarnings("unchecked")
@@ -898,6 +871,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private boolean profileCondition(boolean value, byte[] localBC, int bci, boolean useCachedNodes) {
         if (!useCachedNodes) {
             return value;
+        }
+        if (conditionProfiles == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            conditionProfiles = new int[co.conditionProfileCount];
         }
         int index = Byte.toUnsignedInt(localBC[bci + 2]) | Byte.toUnsignedInt(localBC[bci + 3]) << 8;
         int t = conditionProfiles[index];
