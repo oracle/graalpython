@@ -62,9 +62,9 @@ public abstract class LockPackagesTask extends AbstractPackagesTask {
     public void exec() throws GradleException {
         checkEmptyPackages();
 
-        Path venvDirectory = getVenvDirectory();
+        Path venvDirectory = getVenvDirectory().get().getAsFile().toPath();
         try {
-            VFSUtils.lockPackages(getVenvDirectory(), getPackages().get(), getLockFilePath(), LOCK_FILE_HEADER, createLauncher(), getPolyglotVersion().get(), getLog());
+            VFSUtils.lockPackages(venvDirectory, getPackages().get(), getLockFilePath(), LOCK_FILE_HEADER, createLauncher(), getPolyglotVersion().get(), getLog());
         } catch (IOException e) {
             throw new GradleException(String.format("failed to lock packages in python virtual environment %s", venvDirectory), e);
         }

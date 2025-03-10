@@ -66,8 +66,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.LAUNCHER_NAME;
-import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
-import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_VENV;
 
 /**
  * This task is responsible installing the dependencies which were requested by the user.
@@ -121,11 +119,6 @@ public abstract class AbstractPackagesTask extends DefaultTask {
                
         """;
 
-    /** @see #getOutput() */
-    @Input
-    @Optional
-    public abstract Property<Boolean> getIncludeVfsRoot();
-
     @Input
     public abstract ListProperty<String> getPackages();
 
@@ -143,19 +136,14 @@ public abstract class AbstractPackagesTask extends DefaultTask {
      */
     @OutputDirectory
     public abstract DirectoryProperty getOutput();
-    
-    /**
-     * The directory where the VFS should be generated within Java resources, i.e., applied only when
-     * {@link #getIncludeVfsRoot()} is set.
-     */
-    @Input
-    @Optional
-    public abstract Property<String> getResourceDirectory();
 
     @InputFiles
     @Optional
     @PathSensitive(PathSensitivity.RELATIVE)
     public abstract RegularFileProperty getGraalPyLockFile();
+
+    @Internal
+    public abstract RegularFileProperty getVenvDirectory();
 
     /**
      * Desired polyglot runtime and GraalPy version.
@@ -190,24 +178,8 @@ public abstract class AbstractPackagesTask extends DefaultTask {
     }
 
     @Internal
-    protected Path getVenvDirectory() {
-        // XXX why not convention?
-        // XXX skip external/resouces dir and set venv dir from task config
-        String path = "";
-        if (getIncludeVfsRoot().getOrElse(true)) {
-            path = getResourceDirectory().getOrElse(VFS_ROOT);
-        }
-
-        return Path.of(getOutput().get().getAsFile().toURI()).resolve(path).resolve(VFS_VENV);
-    }
-
-    @Internal
     protected Path getLockFilePath() {
-        Path rfp = getGraalPyLockFile().get().getAsFile().toPath();
-        if(rfp.isAbsolute()) {
-            return rfp;
-        } else {
-            return getProject().file(getGraalPyLockFile().get()).toPath();
-        }
+        return getGraalPyLockFile().get().getAsFile().toPath();
     }
+
 }
