@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -76,3 +76,39 @@ def test_iterator():
 def test_basics():
     assert sum([[1, 2], [3, 4]], []) == [1, 2, 3, 4]
     assert_raises(TypeError, sum, [1,2,3], None)
+
+
+def test_specializations():
+    # test sumIntIterator
+    assert sum([1, 2, 3]) == 6
+    assert sum([1, 2, 3], 2) == 8
+    assert sum([1, 2 ** 64, 3]) == 2 ** 64 + 4
+    assert sum([2 ** 30, 2 ** 30]) == 2 ** 31
+    # test sumLongIterator
+    assert sum([2 ** 32, 2 ** 32]) == 2 ** 33
+    assert sum([2 ** 31, -(2 ** 30)]) == 2 ** 30
+    assert sum([2 ** 62, 2 ** 62]) == 2 ** 63
+    # test sumDoubleIterator
+    assert sum([1.0, 2.0, 3.1]) == 6.1
+    assert sum([2.1], 1.0) == 3.1
+    assert sum([2.1], 1) == 3.1
+    assert sum([], 2.1) == 2.1
+    l = [2.0]
+    del l[0]  # To obtain an empty list with double storage
+    assert sum(l, 1) == 1
+    assert type(sum(l, 1)) is int
+    # sumGeneric
+    l = ["a", 1, 2]
+    del l[0]  # To obtain a list of integers with object storage
+    assert sum(l) == 3
+    assert sum(l, 1) == 4
+    l = ["a", 1.0, 2.1]
+    del l[0]  # To obtain a list of doubles with object storage
+    assert sum(l) == 3.1
+    assert sum(l, 1) == 4.1
+    assert sum([1, 2.1]) == 3.1
+    assert sum([1, 2.1], 1) == 4.1
+    assert sum([2.1, 1]) == 3.1
+    assert sum([2.1, 1], 1.0) == 4.1
+    assert sum([], 1) == 1
+    assert type(sum([], 1)) is int

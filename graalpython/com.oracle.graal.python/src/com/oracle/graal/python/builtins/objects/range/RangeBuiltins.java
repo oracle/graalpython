@@ -32,7 +32,6 @@ import static com.oracle.graal.python.builtins.objects.common.IndexNodes.checkBo
 import static com.oracle.graal.python.nodes.ErrorMessages.RANGE_OUT_OF_BOUNDS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -71,8 +70,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolB
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
-import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -242,7 +241,7 @@ public final class RangeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -786,23 +785,19 @@ public final class RangeBuiltins extends PythonBuiltins {
         static boolean containsIterator(VirtualFrame frame, PRange self, Object elem,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode nextNode,
+                        @Cached PyIterNextNode nextNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached IsBuiltinObjectProfile errorProfile,
                         @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckExactNode isBuiltin) {
             Object iter = getIter.execute(frame, inliningTarget, self);
             while (true) {
-                try {
-                    Object item = nextNode.execute(frame, iter);
-                    if (eqNode.compare(frame, inliningTarget, elem, item)) {
-                        return true;
-                    }
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
-                    break;
+                Object item = nextNode.execute(frame, inliningTarget, iter);
+                if (PyIterNextNode.isExhausted(item)) {
+                    return false;
+                }
+                if (eqNode.compare(frame, inliningTarget, elem, item)) {
+                    return true;
                 }
             }
-            return false;
         }
 
         @NeverDefault
@@ -888,22 +883,19 @@ public final class RangeBuiltins extends PythonBuiltins {
         @Specialization(guards = "!canBeInteger(elem)")
         static Object containsIterator(VirtualFrame frame, PIntRange self, Object elem,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetNextNode nextNode,
                         @Cached PyObjectGetIter getIter,
+                        @Cached PyIterNextNode nextNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             int idx = 0;
             Object iter = getIter.execute(frame, inliningTarget, self);
             while (true) {
-                try {
-                    Object item = nextNode.execute(frame, iter);
-                    if (eqNode.compare(frame, inliningTarget, elem, item)) {
-                        return idx;
-                    }
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
+                Object item = nextNode.execute(frame, inliningTarget, iter);
+                if (PyIterNextNode.isExhausted(item)) {
                     break;
+                }
+                if (eqNode.compare(frame, inliningTarget, elem, item)) {
+                    return idx;
                 }
                 if (idx == SysModuleBuiltins.MAXSIZE) {
                     throw raiseNode.raiseOverflow(inliningTarget);
@@ -988,27 +980,23 @@ public final class RangeBuiltins extends PythonBuiltins {
         static int doGeneric(VirtualFrame frame, PRange self, Object elem,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode nextNode,
+                        @Cached PyIterNextNode nextNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PRaiseNode raiseNode) {
             int count = 0;
             Object iter = getIter.execute(frame, inliningTarget, self);
             while (true) {
-                try {
-                    Object item = nextNode.execute(frame, iter);
-                    if (eqNode.compare(frame, inliningTarget, elem, item)) {
-                        if (count == SysModuleBuiltins.MAXSIZE) {
-                            throw raiseNode.raiseOverflow(inliningTarget);
-                        }
-                        count = count + 1;
+                Object item = nextNode.execute(frame, inliningTarget, iter);
+                if (PyIterNextNode.isExhausted(item)) {
+                    return count;
+                }
+                if (eqNode.compare(frame, inliningTarget, elem, item)) {
+                    if (count == SysModuleBuiltins.MAXSIZE) {
+                        throw raiseNode.raiseOverflow(inliningTarget);
                     }
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
-                    break;
+                    count = count + 1;
                 }
             }
-            return count;
         }
     }
 }

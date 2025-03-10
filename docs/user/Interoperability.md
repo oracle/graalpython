@@ -1,9 +1,3 @@
----
-layout: docs
-toc_group: python
-link_title: Interoperability
-permalink: /reference-manual/python/Interoperability/
----
 # Interoperability
 
 Besides being primarily recommended to use in your Java application, GraalPy can interoperate with other Graal languages (languages implemented on the [Truffle framework](https://www.graalvm.org/latest/graalvm-as-a-platform/language-implementation-framework/)).
@@ -125,7 +119,7 @@ For example, if you have already configured a Maven project with GraalPy, add th
 <aside markdown="1">
 For Python developers, other languages are only available for the GraalPy JVM distributions after using the `libexec/graalpy-polyglot-get` command from the distribution's root directory.
 To install JavaScript, for example:
-```shell
+```bash
 libexec/graalpy-polyglot-get js
 ```
 </aside>
@@ -181,7 +175,7 @@ libexec/graalpy-polyglot-get js
    md = pattern.exec("Look, we have matching strings! This string was matched by Graal.js")
 
    assert "Graal.js" in md[1]
-    ```
+   ```
 
     This program matches Python strings using the JavaScript regular expression object. Python reads the captured group from the JavaScript result and checks for a substring in it.
 
@@ -363,6 +357,7 @@ class Main {
 }
 ```
 #### Interop Types
+
 The `register_interop_type` API allows the usage of python classes for foreign objects.
 The class of such a foreign object will no longer be `polyglot.ForeignObject` or `polyglot.Foreign*`. 
 Instead, it will be a generated class with the registered python classes and `polyglot.ForeignObject` as super class.
@@ -394,7 +389,6 @@ class MyJavaClass {
 import org.example.MyJavaClass;
         
 class Main {
-   
 
    public static void main(String[] args) {
       MyJavaClass myJavaObject = new MyJavaClass(42, 17);
@@ -449,7 +443,6 @@ Registering classes may be more convenient with `@interop_type`:
 ```python
 import java
 from polyglot import interop_type
-
 
 foreign_class = java.type("org.example.MyJavaClass")
 

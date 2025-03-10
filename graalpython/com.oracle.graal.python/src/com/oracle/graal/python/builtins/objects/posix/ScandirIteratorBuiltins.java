@@ -42,19 +42,20 @@ package com.oracle.graal.python.builtins.objects.posix;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -79,6 +80,8 @@ import com.oracle.truffle.api.nodes.RootNode;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PScandirIterator)
 public final class ScandirIteratorBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = ScandirIteratorBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ScandirIteratorBuiltinsFactory.getFactories();
@@ -95,7 +98,7 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -104,25 +107,24 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    abstract static class NextNode extends PythonUnaryBuiltinNode {
+    abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
-        static PDirEntry next(VirtualFrame frame, PScandirIterator self,
+        static Object next(VirtualFrame frame, PScandirIterator self,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Bind PythonLanguage language,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind PythonLanguage language) {
             if (self.ref.isReleased()) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+                return iteratorExhausted();
             }
             PosixSupport posixSupport = PosixSupport.get(inliningTarget);
             try {
                 Object dirEntryData = posixLib.readdir(posixSupport, self.ref.getReference());
                 if (dirEntryData == null) {
                     self.ref.rewindAndClose(posixLib, posixSupport);
-                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+                    return iteratorExhausted();
                 }
                 return PFactory.createDirEntry(language, dirEntryData, self.path);
             } catch (PosixException e) {

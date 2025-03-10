@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
+import com.oracle.graal.python.runtime.ExecutionContextFactory.CallContextNodeGen;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -60,42 +61,39 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 
 /**
  * An ExecutionContext ensures proper entry and exit for Python calls on both sides of the call, and
  * depending on whether the other side is also a Python frame.
  */
 public abstract class ExecutionContext {
-
-    public static final class CallContext extends Node {
-        @CompilationFinal boolean neededCallerFrame;
-        @CompilationFinal boolean neededExceptionState;
-        private static final CallContext INSTANCE = new CallContext(false);
-
-        @Child private MaterializeFrameNode materializeNode;
-
-        private final boolean adoptable;
-
-        @CompilationFinal private ConditionProfile isPythonFrameProfile;
-
-        private CallContext(boolean adoptable) {
-            this.adoptable = adoptable;
-            this.neededExceptionState = !adoptable;
-            this.neededCallerFrame = !adoptable;
+    @GenerateUncached
+    public abstract static class CallContext extends Node {
+        public static CallContext create() {
+            return CallContextNodeGen.create();
         }
 
         /**
          * Prepare an indirect call from a Python frame to a Python function.
          */
         public void prepareIndirectCall(VirtualFrame frame, Object[] callArguments, Node callNode) {
-            prepareCall(frame, callArguments, callNode, true, true);
+            executePrepareCall(frame, callArguments, callNode, true, true);
         }
 
         /**
@@ -105,101 +103,143 @@ public abstract class ExecutionContext {
             // n.b.: The class cast should always be correct, since this context
             // must only be used when calling from Python to Python
             PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
-            prepareCall(frame, callArguments, callNode, calleeRootNode.needsCallerFrame(), calleeRootNode.needsExceptionState());
+            executePrepareCall(frame, callArguments, callNode, calleeRootNode.needsCallerFrame(), calleeRootNode.needsExceptionState());
         }
 
-        private void prepareCall(VirtualFrame frame, Object[] callArguments, Node callNode, boolean needsCallerFrame, boolean needsExceptionState) {
-            // equivalent to PyPy's ExecutionContext.enter `frame.f_backref =
-            // self.topframeref` we here pass the current top frame reference to
-            // the next frame. An optimization we do is to only pass the frame
-            // info if the caller requested it, otherwise they'll have to deopt
-            // and walk the stack up once.
+        protected abstract void executePrepareCall(VirtualFrame frame, Object[] callArguments, Node callNode, boolean needsCallerFrame, boolean needsExceptionState);
 
-            if (needsCallerFrame) {
-                if (!neededCallerFrame) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    neededCallerFrame = true;
-                }
-                PFrame.Reference thisInfo;
+        /**
+         * Equivalent to PyPy's ExecutionContext.enter `frame.f_backref = self.topframeref` we here
+         * pass the current top frame reference to the next frame. An optimization we do is to only
+         * pass the frame info if the caller requested it, otherwise they'll have to deopt and walk
+         * the stack up once.
+         */
+        @GenerateCached(false)
+        @GenerateUncached
+        @GenerateInline
+        @ImportStatic(PArguments.class)
+        protected abstract static class PassCallerFrameNode extends Node {
+            protected abstract void execute(VirtualFrame frame, Node inliningTarget, Object[] callArguments, Node callNode, boolean needsCallerFrame);
 
-                if (isPythonFrame(frame, callNode)) {
-                    thisInfo = PArguments.getCurrentFrameInfo(frame);
+            @Specialization(guards = "!needsCallerFrame")
+            protected static void dontPassCallerFrame(VirtualFrame frame, Node inliningTarget, Object[] callArguments, Node callNode, boolean needsCallerFrame) {
+            }
 
-                    // We are handing the PFrame of the current frame to the caller, i.e., it does
-                    // not 'escape' since it is still on the stack.Also, force synchronization of
-                    // values
-                    PFrame pyFrame = materialize(frame, callNode, false, true);
-                    assert thisInfo.getPyFrame() == pyFrame;
-                    assert pyFrame.getRef() == thisInfo;
-                } else {
-                    thisInfo = PFrame.Reference.EMPTY;
-                }
-
+            @Specialization(guards = {"needsCallerFrame", "isPythonFrame(frame)"})
+            protected static void passCallerFrame(VirtualFrame frame, Node inliningTarget, Object[] callArguments, Node callNode, boolean needsCallerFrame,
+                            @Cached(inline = false) MaterializeFrameNode materialize) {
+                PFrame.Reference thisInfo = PArguments.getCurrentFrameInfo(frame);
+                // We are handing the PFrame of the current frame to the caller, i.e., it does
+                // not 'escape' since it is still on the stack.Also, force synchronization of
+                // values
+                PFrame pyFrame = materialize.execute(frame, callNode, false, true);
+                assert thisInfo.getPyFrame() == pyFrame;
+                assert pyFrame.getRef() == thisInfo;
                 thisInfo.setCallNode(callNode);
                 PArguments.setCallerFrameInfo(callArguments, thisInfo);
             }
-            if (needsExceptionState) {
-                if (!neededExceptionState) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    neededExceptionState = true;
+
+            @Specialization(guards = {"needsCallerFrame", "!isPythonFrame(frame)"})
+            protected static void passEmptyCallerFrame(VirtualFrame frame, Node inliningTarget, Object[] callArguments, Node callNode, boolean needsCallerFrame) {
+                PArguments.setCallerFrameInfo(callArguments, PFrame.Reference.EMPTY);
+            }
+        }
+
+        @GenerateCached(false)
+        @GenerateUncached
+        @GenerateInline
+        @ImportStatic(PArguments.class)
+        protected abstract static class PassExceptionStateNode extends Node {
+
+            /*
+             * This may seem a bit odd on first sight, but it's straightforward with a bit of
+             * explanation:
+             *
+             * 1. Most callees won't need exception state, so that is the first specialization. We
+             * pass the NO_EXCEPTION marker if we have it though.
+             *
+             * 2. If we call a callee that needs exception state, the first time around we likely do
+             * not have it, so we do a stack walk. If this is a top level function e.g. always
+             * called from a new Python lambda or something like that in an embedding, we will get
+             * stuck in this specialization, but that's the best we can do and it's straight line
+             * code with a boundary call.
+             *
+             * 3. If we come around again in normal Python code, we'll likely have exception state
+             * now because the caller passed it. If this caller is the only one that needs to pass
+             * exception state (maybe all other callers do not trigger code paths that need it) we
+             * will never have to walk the stack again. So we *replace* the specialization that does
+             * the stack walk with one that never does so there are just guards and no full branches
+             * in the compiled code.
+             *
+             * 4. If we get into the situation again that we need to pass exception state, but do
+             * not have it, this means we got invoked from another call site that did not pass the
+             * exception state. We resist the tempation to be fancy here. We'll switch to putting
+             * the stack walk in the compiled code with a profile to inject how probable the stack
+             * walk is. We'll just have to hope the compiler does something decent with it. We also
+             * report this as an expensive specialization using the @Megamorphic annotation, so
+             * Truffle might be more inclined to split.
+             *
+             * 5. The last and least likely scenario is that this is directly a call from an
+             * embedding, e.g. via the #execute interop message. We trivially won't have an active
+             * exception in this case.
+             */
+            protected abstract void execute(VirtualFrame frame, Node inliningTarget, Object[] callArguments, boolean needsExceptionState);
+
+            @Specialization(guards = {"!needsExceptionState"})
+            protected static void dontPassExceptionState(VirtualFrame frame, Node inliningTarget, Object[] callArguments, boolean needsExceptionState,
+                            @Cached InlinedConditionProfile hasNoException) {
+                AbstractTruffleException curExc = PArguments.getException(frame);
+                if (hasNoException.profile(inliningTarget, curExc == PException.NO_EXCEPTION)) {
+                    PArguments.setException(callArguments, curExc);
                 }
-                AbstractTruffleException curExc;
-                if (isPythonFrame(frame, callNode)) {
-                    curExc = PArguments.getException(frame);
-                    if (curExc == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        AbstractTruffleException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
-                        curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
-                        // now, set in our args, such that we won't do this again
-                        PArguments.setException(frame, curExc);
-                    }
-                } else {
-                    // If we're here, it can only be because some top-level call
-                    // inside Python led us here
-                    curExc = PException.NO_EXCEPTION;
+            }
+
+            @Specialization(guards = {"needsExceptionState", "isPythonFrame(frame)", "getException(frame) == null"})
+            protected static void passExceptionStateFromStackWalk(VirtualFrame frame, Node inliningTarget, Object[] callArguments, boolean needsExceptionState) {
+                AbstractTruffleException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
+                if (fromStackWalk == null) {
+                    fromStackWalk = PException.NO_EXCEPTION;
                 }
+                // set it also in our args, such that we won't stack walk again in later calls that
+                // start with this frame
+                PArguments.setException(frame, fromStackWalk);
+                PArguments.setException(callArguments, fromStackWalk);
+            }
+
+            @Specialization(guards = {"needsExceptionState", "isPythonFrame(frame)", "curExc != null"}, replaces = "passExceptionStateFromStackWalk")
+            protected static void passGivenExceptionState(VirtualFrame frame, Node inliningTarget, Object[] callArguments, boolean needsExceptionState,
+                            @Bind("getException(frame)") AbstractTruffleException curExc) {
                 PArguments.setException(callArguments, curExc);
             }
-        }
 
-        private PFrame materialize(VirtualFrame frame, Node callNode, boolean markAsEscaped, boolean forceSync) {
-            if (adoptable) {
-                return ensureMaterializeNode().execute(frame, callNode, markAsEscaped, forceSync);
+            @ReportPolymorphism.Megamorphic
+            @Specialization(guards = {"needsExceptionState", "isPythonFrame(frame)"}, replaces = "passGivenExceptionState")
+            protected static void passExceptionStateFromFrameOrStack(VirtualFrame frame, Node inliningTarget, Object[] callArguments, boolean needsExceptionState,
+                            @Cached InlinedCountingConditionProfile needsStackWalk) {
+                AbstractTruffleException curExc = PArguments.getException(frame);
+                if (needsStackWalk.profile(inliningTarget, curExc == null)) {
+                    passExceptionStateFromStackWalk(frame, inliningTarget, callArguments, needsExceptionState);
+                } else {
+                    passGivenExceptionState(frame, inliningTarget, callArguments, needsExceptionState, curExc);
+                }
             }
-            return MaterializeFrameNode.getUncached().execute(frame, callNode, markAsEscaped, forceSync);
-        }
 
-        private boolean isPythonFrame(VirtualFrame frame, Node callNode) {
-            if (isPythonFrameProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isPythonFrameProfile = ConditionProfile.create();
+            @Specialization(guards = {"needsExceptionState", "!isPythonFrame(frame)"})
+            protected static void passNoExceptionState(VirtualFrame frame, Node inliningTarget, Object[] callArguments, boolean needsExceptionState) {
+                // If we're here, it can only be because some top-level call
+                // inside Python led us here
+                PArguments.setException(callArguments, PException.NO_EXCEPTION);
             }
-            boolean result = isPythonFrameProfile.profile(PArguments.isPythonFrame(frame));
-            assert result || callNode.getRootNode() instanceof TopLevelExceptionHandler : "calling from non-Python or non-top-level frame";
-            return result;
         }
 
-        private MaterializeFrameNode ensureMaterializeNode() {
-            if (materializeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                materializeNode = insert(MaterializeFrameNodeGen.create());
-            }
-            return materializeNode;
-
-        }
-
-        @Override
-        public boolean isAdoptable() {
-            return adoptable;
-        }
-
-        @NeverDefault
-        public static CallContext create() {
-            return new CallContext(true);
-        }
-
-        public static CallContext getUncached() {
-            return INSTANCE;
+        @Specialization
+        protected static void prepareCall(VirtualFrame frame, Object[] callArguments, Node callNode, boolean needsCallerFrame, boolean needsExceptionState,
+                        @Bind Node inliningTarget,
+                        @Cached PassCallerFrameNode passCallerFrame,
+                        @Cached PassExceptionStateNode passExceptionState) {
+            assert PArguments.isPythonFrame(frame) || callNode.getRootNode() instanceof TopLevelExceptionHandler : "calling from non-Python or non-top-level frame";
+            passCallerFrame.execute(frame, inliningTarget, callArguments, callNode, needsCallerFrame);
+            passExceptionState.execute(frame, inliningTarget, callArguments, needsExceptionState);
         }
     }
 

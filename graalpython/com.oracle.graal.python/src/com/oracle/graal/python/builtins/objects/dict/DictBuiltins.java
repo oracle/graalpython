@@ -32,7 +32,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J_VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
@@ -74,9 +73,9 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Binary
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
-import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyDictCheckNode;
 import com.oracle.graal.python.lib.PyDictSetDefault;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -92,8 +91,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -373,7 +370,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -576,19 +573,16 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetIter getIter,
                         @Cached CallNode callCtor,
                         @Cached PyObjectSetItem setItem,
-                        @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinObjectProfile errorProfile) {
+                        @Cached PyIterNextNode nextNode) {
             Object dict = callCtor.execute(frame, cls);
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             Object it = getIter.execute(frame, inliningTarget, iterable);
             while (true) {
-                try {
-                    Object key = nextNode.execute(frame, it);
-                    setItem.execute(frame, inliningTarget, dict, key, val);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
+                Object key = nextNode.execute(frame, inliningTarget, it);
+                if (PyIterNextNode.isExhausted(key)) {
                     break;
                 }
+                setItem.execute(frame, inliningTarget, dict, key, val);
             }
             return dict;
         }

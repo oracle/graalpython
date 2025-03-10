@@ -40,11 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
@@ -52,13 +49,20 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -83,12 +87,14 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PIslice})
 public final class IsliceBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = IsliceBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return IsliceBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -97,57 +103,57 @@ public final class IsliceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization(guards = "isNone(self.getIterable())")
-        static Object next(@SuppressWarnings("unused") PIslice self,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, StopIteration);
+        static Object next(@SuppressWarnings("unused") PIslice self) {
+            return iteratorExhausted();
         }
 
         @Specialization(guards = "!isNone(self.getIterable())")
         static Object next(VirtualFrame frame, PIslice self,
                         @Bind("this") Node inliningTarget,
-                        @Cached BuiltinFunctions.NextNode nextNode,
+                        @Cached GetObjectSlotsNode getSlots,
+                        @Cached CallSlotTpIterNextNode callIterNext,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached InlinedBranchProfile nextExceptionProfile,
-                        @Cached InlinedBranchProfile nextExceptionProfile2,
-                        @Cached InlinedBranchProfile setNextProfile,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached InlinedBranchProfile setNextProfile) {
             Object it = self.getIterable();
+            TpSlot iterNext = getSlots.execute(inliningTarget, it).tp_iternext();
             int stop = self.getStop();
             Object item;
-            while (loopProfile.profile(inliningTarget, self.getCnt() < self.getNext())) {
-                try {
-                    item = nextNode.execute(frame, it, PNone.NO_VALUE);
-                } catch (PException e) {
-                    nextExceptionProfile.enter(inliningTarget);
-                    // C code uses any exception to clear the iterator
+            try {
+                while (loopProfile.profile(inliningTarget, self.getCnt() < self.getNext())) {
+                    item = callIterNext.execute(frame, inliningTarget, iterNext, it);
+                    if (PyIterNextNode.isExhausted(item)) {
+                        self.setIterable(PNone.NONE);
+                        return iteratorExhausted();
+                    }
+                    self.setCnt(self.getCnt() + 1);
+                }
+                if (stop != -1 && self.getCnt() >= stop) {
                     self.setIterable(PNone.NONE);
-                    throw e;
+                    return iteratorExhausted();
+                }
+                item = callIterNext.execute(frame, inliningTarget, iterNext, it);
+                if (PyIterNextNode.isExhausted(item)) {
+                    self.setIterable(PNone.NONE);
+                    return iteratorExhausted();
                 }
                 self.setCnt(self.getCnt() + 1);
-            }
-            if (stop != -1 && self.getCnt() >= stop) {
-                self.setIterable(PNone.NONE);
-                throw raiseNode.raise(inliningTarget, StopIteration);
-            }
-            try {
-                item = nextNode.execute(frame, it, PNone.NO_VALUE);
+                int oldNext = self.getNext();
+                self.setNext(self.getNext() + self.getStep());
+                if (self.getNext() < oldNext || (stop != -1 && self.getNext() > stop)) {
+                    setNextProfile.enter(inliningTarget);
+                    self.setNext(stop);
+                }
+                return item;
             } catch (PException e) {
-                nextExceptionProfile2.enter(inliningTarget);
+                nextExceptionProfile.enter(inliningTarget);
                 self.setIterable(PNone.NONE);
                 throw e;
             }
-            self.setCnt(self.getCnt() + 1);
-            int oldNext = self.getNext();
-            self.setNext(self.getNext() + self.getStep());
-            if (self.getNext() < oldNext || (stop != -1 && self.getNext() > stop)) {
-                setNextProfile.enter(inliningTarget);
-                self.setNext(stop);
-            }
-            return item;
         }
     }
 

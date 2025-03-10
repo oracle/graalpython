@@ -1,9 +1,3 @@
----
-layout: docs
-toc_group: python
-link_title: Tooling Support for Python
-permalink: /reference-manual/python/Tooling/
----
 # Tooling Support for Python
 
 ## Debugging
@@ -49,7 +43,7 @@ You should see output similar to:
 
 {::options parse_block_html="true" /}
 <details><summary markdown="span">CPU Sampler Output (Click to expand)</summary>
-```
+```bash
 --------------------------------------------------------------------------------------------------------------------------------------------------------------
 Sampling Histogram. Recorded 564 samples with period 10ms. Missed 235 samples.
   Self Time: Time spent on the top of the stack.
@@ -81,7 +75,7 @@ You should see output similar to:
 
 {::options parse_block_html="true" /}
 <details><summary markdown="span">CPU Tracer Output (Click to Expand)</summary>
-```
+```bash
 --------------------------------------------------------------------------------------------------------------------
 Tracing Histogram. Counted a total of 1135 element executions.
   Total Count: Number of times the element was executed and percentage of total executions.
@@ -117,7 +111,7 @@ You should see output similar to:
 {::options parse_block_html="true" /}
 
 <details><summary markdown="span">Memory Tracer Output (Click to Expand)</summary>
-```
+```bash
 ----------------------------------------------------------------------------
  Location Histogram with Allocation Counts. Recorded a total of 565 allocations.
    Total Count: Number of allocations during the execution of this element.
@@ -153,7 +147,7 @@ You should see output similar to:
 
 {::options parse_block_html="true" /}
 <details><summary markdown="span">CPU Sampler Output (Click to expand)</summary>
-```
+```bash
 ------------------------------------------------------------------------------------------------------------------------------------------------
 Code coverage histogram.
   Shows what percent of each element was covered during execution
@@ -211,17 +205,17 @@ The standard Python `trace` module is also provided.
 > Note: This works in the same way as CPython.
 The programmatic API also works, with some limitations: it does not currently track calls, only line counts and called functions.
 
-For example, the command
+For example, running this command:
 
 ```bash
 graalpy -m trace -c -s text_styler.py Welcome to GraalPy!
 ```
 
-Give example output
+You should see output similar to:
 
 {::options parse_block_html="true" /}
-<details><summary markdown="span">CPU Sampler Output (Click to expand)</summary>
-```
+<details><summary markdown="span">CPU Tracer Output (Click to Expand)</summary>
+```bash
 _       __     __                             __     
 | |     / /__  / /________  ____ ___  ___     / /_____
 | | /| / / _ \/ / ___/ __ \/ __ `__ \/ _ \   / __/ __ \
@@ -331,7 +325,7 @@ You can use GraalPy in PyCharm to create a virtual environment, install packages
 3. Create, or open, a Python project.
 (For more information, see [Create a Python project](https://www.jetbrains.com/help/pycharm/creating-empty-project.html), or [Open, reopen, and close projects](https://www.jetbrains.com/help/pycharm/open-projects.html), respectively.)
 
-4. Create a new _venv_ virtual environment for your Python project.
+4. Create a new `venv` virtual environment for your Python project.
 (For more information, see [Create a virtualenv environment](https://www.jetbrains.com/help/pycharm/creating-virtual-environment.html#python_create_virtual_env).)
 
 5. Install packages by following the PyCharm instructions.
@@ -346,7 +340,7 @@ You can use GraalPy in Visual Studio (VS) Code to create a virtual environment, 
  
 1. Install `graalpy`. (For more information, see [Installing GraalPy](Python-Runtime.md).)
 
-2. Install VS Code and the Python Extension, following the instructions here: [Install Visual Studio Code and the Python Extension](https://code.visualstudio.com/docs/python/python-tutorial#_install-visual-studio-code-and-the-python-extension).
+2. Install VS Code and the Python Extension, following the instructions here: [Install Visual Studio Code and the Python Extension](https://code.visualstudio.com/docs/python/python-tutorial#_prerequisites).
 
 3. Create, or open, a Python file.
 
@@ -356,9 +350,8 @@ You can use GraalPy in Visual Studio (VS) Code to create a virtual environment, 
 5. Install packages by following the VS Code instructions.
 (For more information, see [Install and use packages](https://code.visualstudio.com/docs/python/python-tutorial#_install-and-use-packages).)
 
-6. Use the VS Code menu items to run your Python application. (For more information, see [Run Hello World](https://code.visualstudio.com/docs/python/python-tutorial#_run-hello-world).)
+6. Use the VS Code menu items to run your Python application. (For more information, see [Run Hello World](https://code.visualstudio.com/docs/python/python-tutorial#_run-python-code).)
 Alternatively, use a VS Code terminal emulator to run the `graalpy` command.
 
 7. You cannot use VS Code to debug your Python application.
 Instead, open a VS Code terminal emulator and follow these instructions: [Debugging a Python Application](#debugging).
-

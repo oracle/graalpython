@@ -40,14 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -55,9 +55,10 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -79,12 +80,14 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PProduct})
 public final class ProductBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = ProductBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ProductBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -93,9 +96,9 @@ public final class ProductBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
 
         @Specialization(guards = {"!self.isStopped()", "!hasLst(self)"})
         static Object next(PProduct self,
@@ -119,8 +122,7 @@ public final class ProductBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile wasStoppedProfile,
                         @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached InlinedBranchProfile doneProfile,
-                        @Bind PythonLanguage language,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind PythonLanguage language) {
             Object[][] gears = self.getGears();
             int x = gears.length - 1;
             if (gearsProfile.profile(inliningTarget, x >= 0)) {
@@ -140,7 +142,7 @@ public final class ProductBuiltins extends PythonBuiltins {
 
             if (self.isStopped()) {
                 wasStoppedProfile.enter(inliningTarget);
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+                return iteratorExhausted();
             }
 
             // the existing lst array can be changed in a following next call
@@ -149,11 +151,9 @@ public final class ProductBuiltins extends PythonBuiltins {
             return PFactory.createTuple(language, ret);
         }
 
-        @SuppressWarnings("unused")
         @Specialization(guards = "self.isStopped()")
-        static Object nextStopped(PProduct self,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.StopIteration);
+        static Object nextStopped(@SuppressWarnings("unused") PProduct self) {
+            return iteratorExhausted();
         }
 
         private static void rotatePreviousGear(Node inliningTarget, PProduct self, InlinedLoopConditionProfile loopProfile, InlinedBranchProfile doneProfile) {

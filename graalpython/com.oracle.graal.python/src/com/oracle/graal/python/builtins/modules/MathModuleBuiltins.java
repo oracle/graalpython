@@ -50,11 +50,10 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyBoolCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyLongAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
@@ -873,37 +872,28 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         static double doIt(VirtualFrame frame, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached("create(Next)") LookupAndCallUnaryNode callNextNode,
+                        @Cached PyIterNextNode nextNode,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Cached IsBuiltinObjectProfile stopProfile,
+                        @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached PRaiseNode raiseNode) {
+            /*
+             * This implementation is taken from CPython. The performance is not good. Should be
+             * faster. It can be easily replace with much simpler code based on BigDecimal:
+             *
+             * BigDecimal result = BigDecimal.ZERO;
+             *
+             * in cycle just: result = result.add(BigDecimal.valueof(x); ... The current
+             * implementation is little bit faster. The testFSum in test_math.py takes in different
+             * implementations: CPython ~0.6s CurrentImpl: ~14.3s Using BigDecimal: ~15.1
+             */
             Object iterator = getIter.execute(frame, inliningTarget, iterable);
-            return fsum(frame, iterator, callNextNode, asDoubleNode, inliningTarget, stopProfile, raiseNode);
-        }
-
-        /*
-         * This implementation is taken from CPython. The performance is not good. Should be faster.
-         * It can be easily replace with much simpler code based on BigDecimal:
-         *
-         * BigDecimal result = BigDecimal.ZERO;
-         *
-         * in cycle just: result = result.add(BigDecimal.valueof(x); ... The current implementation
-         * is little bit faster. The testFSum in test_math.py takes in different implementations:
-         * CPython ~0.6s CurrentImpl: ~14.3s Using BigDecimal: ~15.1
-         */
-        private static double fsum(VirtualFrame frame, Object iterator, LookupAndCallUnaryNode next,
-                        PyFloatAsDoubleNode asDoubleNode, Node inliningTarget, IsBuiltinObjectProfile stopProfile, PRaiseNode raiseNode) {
             double x, y, t, hi, lo = 0, yr, inf_sum = 0, special_sum = 0, sum;
             double xsave;
             int i, j, n = 0, arayLength = 32;
             double[] p = new double[arayLength];
-            while (true) {
-                try {
-                    x = asDoubleNode.execute(frame, inliningTarget, next.executeObject(frame, iterator));
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, stopProfile);
-                    break;
-                }
+            Object next;
+            while (loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, iterator)))) {
+                x = asDoubleNode.execute(frame, inliningTarget, next);
                 xsave = x;
                 for (i = j = 0; j < n; j++) { /* for y in partials */
                     y = p[j];
@@ -2020,7 +2010,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         static Object sumprod(VirtualFrame frame, Object p, Object q,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter pyObjectGetIter,
-                        @Cached GetNextNode getNextNode,
+                        @Cached PyIterNextNode nextNode,
                         @Cached PyLongAsLongAndOverflowNode pyLongAsLongAndOverflowNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyFloatCheckExactNode pyFloatCheckExactNode,
@@ -2042,17 +2032,13 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             Object total = 0L;
             while (true) {
                 Object p_i = null, q_i = null;
-                try {
-                    p_i = getNextNode.execute(frame, p_it);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
+                p_i = nextNode.execute(frame, inliningTarget, p_it);
+                if (PyIterNextNode.isExhausted(p_i)) {
                     p_stopped = true;
                 }
 
-                try {
-                    q_i = getNextNode.execute(frame, q_it);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
+                q_i = nextNode.execute(frame, inliningTarget, q_it);
+                if (PyIterNextNode.isExhausted(q_i)) {
                     q_stopped = true;
                 }
 
@@ -2765,28 +2751,22 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ProdNode extends PythonBuiltinNode {
 
-        @Child private LookupAndCallUnaryNode callNextNode = LookupAndCallUnaryNode.create(SpecialMethodSlot.Next);
-
         @Specialization
         public Object doGeneric(VirtualFrame frame, Object iterable, Object startIn,
                         @Bind("this") Node inliningTarget,
-                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached InlinedConditionProfile startIsNoValueProfile,
                         @Cached PyObjectGetIter getIter,
-                        @Cached PyNumberMultiplyNode multiplyNode) {
+                        @Cached PyIterNextNode nextNode,
+                        @Cached PyNumberMultiplyNode multiplyNode,
+                        @Cached InlinedLoopConditionProfile loopProfile) {
             Object start = startIsNoValueProfile.profile(inliningTarget, PGuards.isNoValue(startIn)) ? 1 : startIn;
             Object iterator = getIter.execute(frame, inliningTarget, iterable);
-            Object value = start;
-            while (true) {
-                Object nextValue;
-                try {
-                    nextValue = callNextNode.executeObject(frame, iterator);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
-                    return value;
-                }
-                value = multiplyNode.execute(frame, inliningTarget, value, nextValue);
+            Object acc = start;
+            Object next;
+            while (loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, iterator)))) {
+                acc = multiplyNode.execute(frame, inliningTarget, acc, next);
             }
+            return acc;
         }
     }
 

@@ -40,11 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
@@ -52,6 +49,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -59,6 +58,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -67,7 +68,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -86,12 +86,14 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PCombinations, PythonBuiltinClassType.PCombinationsWithReplacement})
 public final class CombinationsBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = CombinationsBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CombinationsBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -100,14 +102,14 @@ public final class CombinationsBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isStopped()")
         static Object nextStopped(PAbstractCombinations self,
                         @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, StopIteration);
+            return iteratorExhausted();
         }
 
         @Specialization(guards = {"!self.isStopped()", "isLastResultNull(self)"})
@@ -130,22 +132,20 @@ public final class CombinationsBuiltins extends PythonBuiltins {
         static Object next(PCombinations self,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedLoopConditionProfile indexLoopProfile,
-                        @Shared @Cached InlinedLoopConditionProfile resultLoopProfile,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            return nextInternal(inliningTarget, self, indexLoopProfile, resultLoopProfile, raiseNode);
+                        @Shared @Cached InlinedLoopConditionProfile resultLoopProfile) {
+            return nextInternal(inliningTarget, self, indexLoopProfile, resultLoopProfile);
         }
 
         @Specialization(guards = {"!self.isStopped()", "!isLastResultNull(self)"})
         static Object next(PCombinationsWithReplacement self,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedLoopConditionProfile indexLoopProfile,
-                        @Shared @Cached InlinedLoopConditionProfile resultLoopProfile,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            return nextInternal(inliningTarget, self, indexLoopProfile, resultLoopProfile, raiseNode);
+                        @Shared @Cached InlinedLoopConditionProfile resultLoopProfile) {
+            return nextInternal(inliningTarget, self, indexLoopProfile, resultLoopProfile);
         }
 
         private static Object nextInternal(Node inliningTarget, PAbstractCombinations self, InlinedLoopConditionProfile indexLoopProfile,
-                        InlinedLoopConditionProfile resultLoopProfile, PRaiseNode raiseNode) throws PException {
+                        InlinedLoopConditionProfile resultLoopProfile) {
 
             CompilerAsserts.partialEvaluationConstant(self.getClass());
 
@@ -162,7 +162,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
             // If i is negative, then the indices are all at their maximum value and we're done
             if (i < 0) {
                 self.setStopped(true);
-                throw raiseNode.raise(inliningTarget, StopIteration);
+                return iteratorExhausted();
             }
 
             // Increment the current index which we know is not at its maximum.

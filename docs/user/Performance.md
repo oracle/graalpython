@@ -1,18 +1,10 @@
----
-layout: docs
-toc_group: python
-link_title: Python Performance
-permalink: /reference-manual/python/Performance/
-redirect_from: /reference-manual/python/ParserDetails/
----
-
 # Python Performance
 
 ## Execution Performance
 
 GraalPy uses the state-of-the-art just-in-time (JIT) compiler of GraalVM.
 When JIT compiled, GraalPy runs Python code ~4x faster than CPython on the official [Python Performance Benchmark Suite](https://pyperformance.readthedocs.io/).
-![](assets/performance.svg)
+![](./assets/performance.svg)
 
 These benchmarks can be run by installing the `pyperformance` package and calling `pyperformance run` on each of CPython and GraalPy.
 To get the Jython numbers we adapted the harness and benchmarks because of missing Python 3 support in Jython.
@@ -52,7 +44,8 @@ The magic number is hard-coded in the source of Python and can not be changed by
 
 The developers of GraalPy change the magic number when the bytecode format changes.
 This is an implementation detail, so the magic number does not have to correspond to the version of GraalPy (as in CPython).
-The magic number of `pyc` is a function of the actual Python runtime Java code that is running. Changes to the magic number are communicated in the release notes so that developers or system administrators can delete old _.pyc_ files when upgrading.
+The magic number of `pyc` is a function of the actual Python runtime Java code that is running.
+Changes to the magic number are communicated in the release notes so that developers or system administrators can delete old _.pyc_ files when upgrading.
 
 Note that if you use _.pyc_ files, you must allow write-access to GraalPy at least when switching versions or modifying the original source code file.
 Otherwise, the regeneration of source code files will fail and every import will have the overhead of accessing each old _.pyc_ file, parsing the code, serializing it, and trying (and failing) to write out a new _.pyc_ file.
@@ -74,7 +67,8 @@ top_directory/
 By default, GraalPy creates the _\_\_pycache\_\__ directory on the same directory level as a source code file and in this directory all _.pyc_ files from the same directory are stored.
 This directory may store _.pyc_ files created with different versions of Python (including, for example, CPython), so the user may see files ending in _.cpython3-6.pyc_, for example.
 
-_.pyc_ files are largely managed automatically by GraalPy in a manner compatible with CPython. GraalPy provides options similar to CPython to specify the location of t_.pyc_ files, and if they should be written at all, and both of these options can be changed by guest code.
+_.pyc_ files are largely managed automatically by GraalPy in a manner compatible with CPython.
+GraalPy provides options similar to CPython to specify the location of t_.pyc_ files, and if they should be written at all, and both of these options can be changed by guest code.
 
 The creation of _.pyc_ files can be controlled in the [same way as CPython](https://docs.python.org/3/using/cmdline.html):
 
@@ -93,23 +87,20 @@ The creation of _.pyc_ files can be controlled in the [same way as CPython](http
   * A guest language code can change the attribute `pycache_prefix` of the `sys`
     module at runtime to change the location for subsequent imports.
 
-Because the developer cannot use environment variables or CPython options to
-communicate these options to GraalPy, these options are made available as language options:
+Because the developer cannot use environment variables or CPython options to communicate these options to GraalPy, these options are made available as language options:
 
   * `python.DontWriteBytecodeFlag` - equivalent to `-B` or `PYTHONDONTWRITEBYTECODE`
   * `python.PyCachePrefix` - equivalent to `PYTHONPYCACHEPREFIX`
 
-
 Note that a Python context will not enable writing _.pyc_ files by default.
 The GraalPy launcher enables it by default, but if this is desired in the embedding use case, care should be taken to ensure that the _\_\_pycache\_\__ location is properly managed and the files in that location are secured against manipulation in the same way as the source code files (_.py_) from which they were derived.
 
-Note also that to upgrade the application sources to Oracle GraalPy, old _.pyc_
-files must be removed by the developer as required.
+Note also that to upgrade the application sources to Oracle GraalPy, old _.pyc_ files must be removed by the developer as required.
 
 ### Security Considerations
 
-GraalPy performs all file operations (obtaining the data, timestamps, and writing _.pyc_ files)
-via the [FileSystem API](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/io/FileSystem.html). Developers can modify all of these operations by means of custom (for example, read-only) `FileSystem` implementations.
+GraalPy performs all file operations (obtaining the data, timestamps, and writing _.pyc_ files) via the [FileSystem API](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/io/FileSystem.html).
+Developers can modify all of these operations by means of custom (for example, read-only) `FileSystem` implementations.
 The developer can also effectively disable the creation of _.pyc_ files by disabling I/O permissions for GraalPy.
 
 If _.pyc_ files are not readable, their location is not writable.

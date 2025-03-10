@@ -1,11 +1,3 @@
----
-layout: docs
-toc_group: python
-link_title: Jython Compatibility
-permalink: /reference-manual/python/Modern-Python-on-JVM/
-redirect_from: /reference-manual/python/Jython/
----
-
 # Modern Python for the JVM
 
 For Python version 2 (now EOL), Jython is the _de facto_ means of interfacing Python and Java.
@@ -296,7 +288,7 @@ The other way to use Jython was to embed it into a Java application. There were 
 1. Use the `PythonInterpreter` object that Jython provides.
 Existing code using Jython in this manner depends directly on the Jython package (for example, in the Maven configuration), because the Java code has references to Jython internal classes.
 These classes do not exist in GraalVM, and no equivalent classes are exposed.
-To migrate from this usage, switch to the [GraalVM SDK](https://mvnrepository.com/artifact/org.graalvm.sdk/graal-sdk).
+To migrate from this usage, switch to the [GraalVM SDK](https://central.sonatype.com/artifact/org.graalvm.sdk/graal-sdk).
 Using this SDK, no APIs particular to Python are exposed, everything is achieved via the GraalVM API, with maximum configurability of the Python runtime.
 Refer to the [Getting Started](README.md) documentation for preparing a setup.
 

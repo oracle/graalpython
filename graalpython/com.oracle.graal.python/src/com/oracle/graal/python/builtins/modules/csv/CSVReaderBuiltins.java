@@ -51,32 +51,32 @@ import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState
 import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.START_RECORD;
 import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONE;
 import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONNUMERIC;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -94,13 +94,14 @@ import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CSVReader)
 public final class CSVReaderBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = CSVReaderBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CSVReaderBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class IterReaderNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -109,9 +110,9 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextReaderNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextReaderNode extends TpIterNextBuiltin {
 
         private static final int EOL = -2;
         private static final int NEWLINE_CODEPOINT = '\n';
@@ -122,15 +123,14 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
         static Object nextPos(VirtualFrame frame, CSVReader self,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleStringIterator.NextNode stringNextNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached PyNumberFloatNode pyNumberFloatNode,
                         @Cached AppendNode appendNode,
-                        @Cached GetNextNode getNextNode,
+                        @Cached PyIterNextNode nextNode,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
             PList fields = PFactory.createList(language);
@@ -138,10 +138,8 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
             self.parseReset();
             do {
                 Object lineObj;
-                try {
-                    lineObj = getNextNode.execute(frame, self.inputIter);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, isBuiltinClassProfile);
+                lineObj = nextNode.execute(frame, inliningTarget, self.inputIter);
+                if (PyIterNextNode.isExhausted(lineObj)) {
                     self.fieldLimit = csvModuleBuiltins.fieldLimit;
                     if (!self.field.isEmpty() || self.state == IN_QUOTED_FIELD) {
                         if (self.dialect.strict) {
@@ -150,12 +148,11 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                             try {
                                 parseSaveField(inliningTarget, self, fields, toStringNode, pyNumberFloatNode, appendNode);
                             } catch (AbstractTruffleException ignored) {
-                                throw e;
                             }
                             break;
                         }
                     }
-                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+                    return iteratorExhausted();
                 }
                 self.fieldLimit = csvModuleBuiltins.fieldLimit;
 
@@ -169,7 +166,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                 self.lineNum++;
                 TruffleStringIterator tsi = createCodePointIteratorNode.execute(line, TS_ENCODING);
                 while (tsi.hasNext()) {
-                    final int codepoint = nextNode.execute(tsi);
+                    final int codepoint = stringNextNode.execute(tsi);
                     parseProcessCodePoint(inliningTarget, self, fields, codepoint, appendCodePointNode, toStringNode, pyNumberFloatNode, appendNode, raiseNode);
                 }
                 parseProcessCodePoint(inliningTarget, self, fields, EOL, appendCodePointNode, toStringNode, pyNumberFloatNode, appendNode, raiseNode);

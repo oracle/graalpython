@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_ANEX
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AWAIT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_ADD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_MULTIPLY;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_CONTAINS;
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHODS_FLAGS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
@@ -56,7 +55,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ANEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
@@ -68,13 +66,11 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INSTANCECHECK__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REVERSED__;
@@ -152,8 +148,6 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
 public enum SpecialMethodSlot {
     Dict(T___DICT__),
 
-    Iter(T___ITER__),
-    Next(T___NEXT__),
     Await(T___AWAIT__, AM_AWAIT),
 
     AEnter(T___AENTER__),
@@ -173,7 +167,6 @@ public enum SpecialMethodSlot {
     Enter(T___ENTER__),
 
     LengthHint(T___LENGTH_HINT__),
-    Contains(T___CONTAINS__, SQ_CONTAINS),
     Hash(T___HASH__),
     Str(T___STR__),
     Repr(T___REPR__),
@@ -752,15 +745,7 @@ public enum SpecialMethodSlot {
                     return Dict;
                 }
                 break;
-            case 'i' * 26 + 't':    // it
-                if (eqNode.execute(name, T___ITER__, TS_ENCODING)) {
-                    return Iter;
-                }
-                break;
             case 'n' * 26 + 'e':    // ne
-                if (eqNode.execute(name, T___NEXT__, TS_ENCODING)) {
-                    return Next;
-                }
                 if (eqNode.execute(name, T___NEW__, TS_ENCODING)) {
                     return New;
                 }
@@ -802,11 +787,6 @@ public enum SpecialMethodSlot {
                 }
                 if (eqNode.execute(name, T___LE__, TS_ENCODING)) {
                     return Le;
-                }
-                break;
-            case 'c' * 26 + 'o':    // co
-                if (eqNode.execute(name, T___CONTAINS__, TS_ENCODING)) {
-                    return Contains;
                 }
                 break;
             case 'h' * 26 + 'a':    // ha

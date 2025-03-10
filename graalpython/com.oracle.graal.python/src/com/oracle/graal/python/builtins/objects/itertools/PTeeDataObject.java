@@ -45,9 +45,8 @@ import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_REENTER_TEE_ITE
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -122,7 +121,7 @@ public final class PTeeDataObject extends PythonBuiltinObject {
         return nextlink;
     }
 
-    Object getItem(VirtualFrame frame, Node inliningTarget, int i, BuiltinFunctions.NextNode nextNode, PRaiseNode raiseNode) {
+    Object getItem(VirtualFrame frame, Node inliningTarget, int i, PyIterNextNode nextNode, PRaiseNode raiseNode) {
         assert i < TeeDataObjectBuiltins.LINKCELLS;
         if (i < numread) {
             return values[i];
@@ -133,14 +132,15 @@ public final class PTeeDataObject extends PythonBuiltinObject {
             }
 
             running = true;
-            Object value;
             try {
-                value = nextNode.execute(frame, it, PNone.NO_VALUE);
+                Object value = nextNode.execute(frame, inliningTarget, it);
+                if (!PyIterNextNode.isExhausted(value)) {
+                    values[numread++] = value;
+                }
+                return value;
             } finally {
                 running = false;
             }
-            values[numread++] = value;
-            return value;
         }
     }
 }

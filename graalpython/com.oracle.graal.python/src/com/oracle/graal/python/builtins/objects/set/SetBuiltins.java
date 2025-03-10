@@ -60,7 +60,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -70,10 +70,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -284,17 +282,13 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
                         @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinObjectProfile errorProfile,
+                        @Cached PyIterNextNode nextNode,
                         @Exclusive @Cached HashingStorageSetItem setStorageItem) {
             HashingStorage curStorage = collection.getDictStorage();
             Object iterator = getIter.execute(frame, inliningTarget, other);
             while (true) {
-                Object key;
-                try {
-                    key = nextNode.execute(frame, iterator);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
+                Object key = nextNode.execute(frame, inliningTarget, iterator);
+                if (PyIterNextNode.isExhausted(key)) {
                     collection.setDictStorage(curStorage);
                     return;
                 }

@@ -632,6 +632,10 @@ public final class PCode extends PythonBuiltinObject {
         return callTarget;
     }
 
+    public RootCallTarget getRootCallTargetOrNull() {
+        return callTarget;
+    }
+
     @TruffleBoundary
     synchronized RootCallTarget initializeCallTarget() {
         assert PythonContext.get(null).ownsGil(); // otherwise this is racy

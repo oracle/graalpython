@@ -40,20 +40,22 @@
  */
 package com.oracle.graal.python.builtins.objects.map;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -66,39 +68,51 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMap)
 public final class MapBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = MapBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return MapBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization(guards = "self.getIterators().length == 1")
         Object doOne(VirtualFrame frame, PMap self,
+                        @Bind Node inliningTarget,
                         @Shared @Cached CallVarargsMethodNode callNode,
-                        @Shared @Cached GetNextNode next) {
-            return callNode.execute(frame, self.getFunction(), new Object[]{next.execute(frame, self.getIterators()[0])}, PKeyword.EMPTY_KEYWORDS);
+                        @Shared @Cached PyIterNextNode nextNode) {
+            Object item = nextNode.execute(frame, inliningTarget, self.getIterators()[0]);
+            if (PyIterNextNode.isExhausted(item)) {
+                return iteratorExhausted();
+            }
+            return callNode.execute(frame, self.getFunction(), new Object[]{item}, PKeyword.EMPTY_KEYWORDS);
         }
 
         @Specialization(replaces = "doOne")
         Object doNext(VirtualFrame frame, PMap self,
+                        @Bind Node inliningTarget,
                         @Shared @Cached CallVarargsMethodNode callNode,
-                        @Shared @Cached GetNextNode next) {
+                        @Shared @Cached PyIterNextNode nextNode) {
             Object[] iterators = self.getIterators();
             Object[] arguments = new Object[iterators.length];
             for (int i = 0; i < iterators.length; i++) {
-                arguments[i] = next.execute(frame, iterators[i]);
+                arguments[i] = nextNode.execute(frame, inliningTarget, iterators[i]);
+                if (PyIterNextNode.isExhausted(arguments[i])) {
+                    return iteratorExhausted();
+                }
             }
             return callNode.execute(frame, self.getFunction(), arguments, PKeyword.EMPTY_KEYWORDS);
         }
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 

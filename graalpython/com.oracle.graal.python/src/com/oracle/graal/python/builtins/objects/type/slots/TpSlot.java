@@ -51,7 +51,9 @@ import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
@@ -63,7 +65,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -82,7 +83,6 @@ import com.oracle.truffle.api.utilities.TruffleWeakReference;
  * {@link com.oracle.graal.python.builtins.objects.type.TpSlots} object.
  */
 public abstract class TpSlot {
-    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(TpSlot.class);
 
     /**
      * Transforms the slot object to an interop object that can be sent to native.
@@ -92,6 +92,8 @@ public abstract class TpSlot {
             return defaultValue;
         } else if (slot instanceof TpSlotNative nativeSlot) {
             return nativeSlot.getCallable();
+        } else if (slot == TpSlotIterNext.NEXT_NOT_IMPLEMENTED) {
+            return CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_OBJECT_NEXT_NOT_IMPLEMENTED);
         } else if (slot instanceof TpSlotManaged managedSlot) {
             // This returns PyProcsWrapper, which will, in its toNative message, register the
             // pointer in C API context, such that we can map back from a pointer that we get from C
@@ -104,29 +106,6 @@ public abstract class TpSlot {
         } else {
             throw CompilerDirectives.shouldNotReachHere("TpSlotWrapper should wrap only managed slots. Native slots should go directly to native unwrapped.");
         }
-    }
-
-    /**
-     * If the interop object represents a pointer to existing {@link TpSlot}, then returns that
-     * slot, otherwise {@code null}.
-     */
-    public static TpSlot fromNative(PythonContext ctx, Object ptr, InteropLibrary interop) {
-        if (interop.isPointer(ptr)) {
-            try {
-                Object delegate = ctx.getCApiContext().getClosureDelegate(interop.asPointer(ptr));
-                if (delegate instanceof TpSlot s) {
-                    return s;
-                } else if (delegate != null) {
-                    // This can happen for legacy slots where the delegate would be a PFunction
-                    LOGGER.warning(() -> String.format("Unexpected delegate for slot pointer: %s", delegate));
-                }
-            } catch (UnsupportedMessageException e) {
-                throw new IllegalStateException(e);
-            }
-        } else if (ptr instanceof TpSlotWrapper slotWrapper) {
-            return slotWrapper.getSlot();
-        }
-        return null;
     }
 
     /**
@@ -337,7 +316,7 @@ public abstract class TpSlot {
             RootCallTarget callTarget = createBuiltinCallTarget(core.getLanguage(), signature, factory, name);
             Builtin builtin = ((BuiltinFunctionRootNode) callTarget.getRootNode()).getBuiltin();
             PBuiltinFunction function = PFactory.createWrapperDescriptor(core.getLanguage(), tsName, type, numDefaults(builtin), 0, callTarget, this, wrapper);
-            function.setAttribute(T___DOC__, PNone.NONE);
+            function.setAttribute(T___DOC__, SlotWrapperDocstrings.getDocstring(name));
             return function;
         }
 

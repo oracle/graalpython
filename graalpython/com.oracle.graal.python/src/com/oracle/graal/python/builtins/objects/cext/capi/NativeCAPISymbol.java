@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.IterResult;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.LONG_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
@@ -167,6 +168,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_GRAALPY_GC_COLLECT("GraalPyGC_Collect", Py_ssize_t, Int),
     FUN_SUBTYPE_TRAVERSE("subtype_traverse", Int, PyObject, Pointer, Pointer),
     FUN_GRAALPYOBJECT_GC_NOTIFYOWNERSHIPTRANSFER("_GraalPyObject_GC_NotifyOwnershipTransfer", Void, PyObject),
+    FUN_PY_OBJECT_NEXT_NOT_IMPLEMENTED("_PyObject_NextNotImplemented", IterResult, PyObject),
 
     /* PyDateTime_CAPI */
 

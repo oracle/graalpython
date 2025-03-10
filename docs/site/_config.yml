@@ -1,0 +1,21 @@
+baseurl: "/python"
+url: "https://graalvm.org"
+github: "oracle/graalpython"
+language_version: 24.1.2
+name: GraalPy
+
+permalink: pretty
+
+plugins:
+  - jekyll-relative-links
+  - jekyll-seo-tag
+  - graal-languages-jekyll-theme
+
+theme: graal-languages-jekyll-theme
+
+sass:
+  quiet_deps: true
+
+exclude:
+  - Gemfile
+  - Gemfile.lock

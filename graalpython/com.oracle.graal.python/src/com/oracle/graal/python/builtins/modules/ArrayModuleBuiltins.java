@@ -61,7 +61,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -73,9 +73,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -287,8 +285,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                             @Bind PythonLanguage language,
                             @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
                             @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
-                            @Cached(inline = false) GetNextNode nextNode,
-                            @Cached IsBuiltinObjectProfile errorProfile,
+                            @Cached PyIterNextNode nextNode,
                             @Cached ArrayNodes.SetLengthNode setLengthNode,
                             @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode) {
                 Object iter = getIter.execute(frame, inliningTarget, initializer);
@@ -298,11 +295,8 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
                 int length = 0;
                 while (true) {
-                    Object nextValue;
-                    try {
-                        nextValue = nextNode.execute(frame, iter);
-                    } catch (PException e) {
-                        e.expectStopIteration(inliningTarget, errorProfile);
+                    Object nextValue = nextNode.execute(frame, inliningTarget, iter);
+                    if (PyIterNextNode.isExhausted(nextValue)) {
                         break;
                     }
                     try {

@@ -50,10 +50,10 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -81,10 +81,10 @@ public abstract class MappingToKeywordsNode extends PNodeWithContext {
 
     public abstract PKeyword[] execute(VirtualFrame frame, Node inliningTarget, Object starargs) throws SameDictKeyException, NonMappingException;
 
-    @Specialization(guards = "hasBuiltinDictIter(inliningTarget, starargs, getClassNode, lookupIter)", limit = "1")
+    @Specialization(guards = "hasBuiltinDictIter(inliningTarget, starargs, getClassNode, getSlots)", limit = "1")
     public static PKeyword[] doDict(VirtualFrame frame, Node inliningTarget, PDict starargs,
                     @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
-                    @SuppressWarnings("unused") @Cached(parameters = "Iter", inline = false) LookupCallableSlotInMRONode lookupIter,
+                    @SuppressWarnings("unused") @Cached GetCachedTpSlotsNode getSlots,
                     @Exclusive @Cached HashingStorageToKeywords convert) {
         return convert.execute(frame, inliningTarget, starargs.getDictStorage());
     }
@@ -157,7 +157,6 @@ public abstract class MappingToKeywordsNode extends PNodeWithContext {
 
         @Specialization(guards = {"!isKeywordsStorage(storage)", "!isEmptyStorage(storage)"})
         static PKeyword[] doCached(VirtualFrame frame, Node inliningTarget, HashingStorage storage,
-                        @SuppressWarnings("unused") @Cached(parameters = "Iter", inline = false) LookupCallableSlotInMRONode lookupIter,
                         @Cached(inline = false) AddKeywordNode addKeywordNode,
                         @Cached HashingStorageNodes.HashingStorageForEach forEachNode,
                         @SuppressWarnings("unused") @Cached HashingStorageLen lenNode,

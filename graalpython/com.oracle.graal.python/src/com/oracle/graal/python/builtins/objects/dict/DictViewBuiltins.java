@@ -44,7 +44,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J_ISDISJOINT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
@@ -78,27 +77,23 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.ComparisonOp;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -149,7 +144,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -299,37 +294,10 @@ public final class DictViewBuiltins extends PythonBuiltins {
      * view comparisons dictates that we need to use iteration to compare them in the general case.
      */
     protected abstract static class ContainedInNode extends PNodeWithContext {
-        @Child private GetNextNode next;
-        @Child private LookupAndCallBinaryNode contains;
-        @Child private PyObjectIsTrueNode cast;
         private final boolean checkAll;
 
         public ContainedInNode(boolean checkAll) {
             this.checkAll = checkAll;
-        }
-
-        private GetNextNode getNext() {
-            if (next == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                next = insert(GetNextNode.create());
-            }
-            return next;
-        }
-
-        private LookupAndCallBinaryNode getContains() {
-            if (contains == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                contains = insert(LookupAndCallBinaryNode.create(SpecialMethodSlot.Contains));
-            }
-            return contains;
-        }
-
-        private PyObjectIsTrueNode getCast() {
-            if (cast == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                cast = insert(PyObjectIsTrueNode.create());
-            }
-            return cast;
         }
 
         public abstract boolean execute(VirtualFrame frame, Object self, Object other);
@@ -339,18 +307,21 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedLoopConditionProfile loopConditionProfile,
                         @Cached PyObjectGetIter getIterNode,
-                        @Cached IsBuiltinObjectProfile stopProfile) {
+                        @Cached PyIterNextNode nextNode,
+                        @Cached PySequenceContainsNode containsNode,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
             Object iterator = getIterNode.execute(frame, inliningTarget, self);
             boolean ok = checkAll;
             int i = 0;
             try {
                 while (loopConditionProfile.profile(inliningTarget, checkAll && ok || !checkAll && !ok)) {
-                    Object item = getNext().execute(frame, iterator);
-                    ok = getCast().execute(frame, getContains().executeObject(frame, other, item));
+                    Object item = nextNode.execute(frame, inliningTarget, iterator);
+                    if (PyIterNextNode.isExhausted(item)) {
+                        break;
+                    }
+                    ok = isTrueNode.execute(frame, containsNode.execute(frame, inliningTarget, other, item));
                     i++;
                 }
-            } catch (PException e) {
-                e.expectStopIteration(inliningTarget, stopProfile);
             } finally {
                 LoopNode.reportLoopCount(this, i < 0 ? Integer.MAX_VALUE : i);
             }

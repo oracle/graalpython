@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,13 +54,11 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -215,18 +213,14 @@ public abstract class HashingCollectionNodes {
         @InliningCutoff
         static HashingStorage doIterable(VirtualFrame frame, Node inliningTarget, Object other, Object value,
                         @Cached PyObjectGetIter getIter,
-                        @Cached(inline = false) GetNextNode nextNode,
-                        @Cached IsBuiltinObjectProfile errorProfile,
+                        @Cached PyIterNextNode nextNode,
                         @Exclusive @Cached HashingStorageSetItem setStorageItem) {
             HashingStorage curStorage = EmptyStorage.INSTANCE;
             Object iterator = getIter.execute(frame, inliningTarget, other);
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             while (true) {
-                Object key;
-                try {
-                    key = nextNode.execute(frame, iterator);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
+                Object key = nextNode.execute(frame, inliningTarget, iterator);
+                if (PyIterNextNode.isExhausted(key)) {
                     return curStorage;
                 }
                 curStorage = setStorageItem.execute(frame, inliningTarget, curStorage, key, val);

@@ -52,13 +52,11 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.truffle.api.dsl.Bind;
@@ -127,18 +125,16 @@ public abstract class ExecutePositionalStarargsNode extends Node {
                     @Bind("this") Node inliningTarget,
                     @Cached PRaiseNode raise,
                     @Cached PyObjectGetIter getIter,
-                    @Cached GetNextNode nextNode,
-                    @Cached IsBuiltinObjectProfile errorProfile) {
+                    @Cached PyIterNextNode nextNode) {
         Object iterator = getIter.execute(frame, inliningTarget, object);
         if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
             ArrayBuilder<Object> internalStorage = new ArrayBuilder<>();
             while (true) {
-                try {
-                    internalStorage.add(nextNode.execute(frame, iterator));
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
+                Object next = nextNode.execute(frame, inliningTarget, iterator);
+                if (PyIterNextNode.isExhausted(next)) {
                     return internalStorage.toArray(new Object[0]);
                 }
+                internalStorage.add(next);
             }
         }
         throw raise.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, object);

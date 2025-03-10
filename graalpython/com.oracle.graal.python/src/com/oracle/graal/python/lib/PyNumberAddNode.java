@@ -73,7 +73,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -140,10 +139,6 @@ public abstract class PyNumberAddNode extends PyNumberAddBaseNode {
     public final Object executeCached(VirtualFrame frame, Object v, Object w) {
         return execute(frame, this, v, w);
     }
-
-    public abstract int executeInt(VirtualFrame frame, Node inliningTarget, int left, int right) throws UnexpectedResultException;
-
-    public abstract double executeDouble(VirtualFrame frame, Node inliningTarget, double left, double right) throws UnexpectedResultException;
 
     @Specialization(guards = {"isBuiltinList(left)", "isBuiltinList(right)"})
     static PList doPList(Node inliningTarget, PList left, PList right,

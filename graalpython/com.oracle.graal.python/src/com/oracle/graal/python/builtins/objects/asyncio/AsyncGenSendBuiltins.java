@@ -42,17 +42,19 @@ package com.oracle.graal.python.builtins.objects.asyncio;
 
 import static com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenASend.AwaitableState;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AWAIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.generator.CommonGeneratorBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -72,6 +74,8 @@ import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PAsyncGenASend)
 public final class AsyncGenSendBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = AsyncGenSendBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return AsyncGenSendBuiltinsFactory.getFactories();
@@ -86,9 +90,9 @@ public final class AsyncGenSendBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class Next extends PythonUnaryBuiltinNode {
+    public abstract static class Next extends TpIterNextBuiltin {
         @Specialization
         public Object next(VirtualFrame frame, PAsyncGenASend self,
                         @Cached Send send) {
@@ -201,7 +205,7 @@ public final class AsyncGenSendBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class Iter extends PythonUnaryBuiltinNode {
         @Specialization

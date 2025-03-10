@@ -25,34 +25,35 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -63,29 +64,40 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PZip)
 public final class PZipBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = PZipBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PZipBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
 
         @Specialization(guards = "isEmpty(self.getIterators())")
-        static Object doEmpty(@SuppressWarnings("unused") PZip self,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.StopIteration);
+        static Object doEmpty(@SuppressWarnings("unused") PZip self) {
+            return iteratorExhausted();
         }
 
         @Specialization(guards = {"!isEmpty(self.getIterators())", "!self.isStrict()"})
         static Object doNext(VirtualFrame frame, PZip self,
-                        @Shared @Cached GetNextNode next,
-                        @Bind PythonLanguage language) {
+                        @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached GetObjectSlotsNode getSlots,
+                        @Cached CallSlotTpIterNextNode callIterNext) {
             Object[] iterators = self.getIterators();
             Object[] tupleElements = new Object[iterators.length];
             for (int i = 0; i < iterators.length; i++) {
-                tupleElements[i] = next.execute(frame, iterators[i]);
+                Object it = iterators[i];
+                /*
+                 * Not using PyIterNext because the non-strict version should pass through existing
+                 * StopIteration
+                 */
+                tupleElements[i] = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, it).tp_iternext(), it);
+                if (PyIterNextNode.isExhausted(tupleElements[i])) {
+                    return iteratorExhausted();
+                }
             }
             return PFactory.createTuple(language, tupleElements);
         }
@@ -93,37 +105,32 @@ public final class PZipBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isEmpty(self.getIterators())", "self.isStrict()"})
         static Object doNext(VirtualFrame frame, PZip self,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetNextNode next,
-                        @Cached IsBuiltinObjectProfile classProfile,
                         @Bind PythonLanguage language,
+                        @Cached PyIterNextNode nextNode,
                         @Cached PRaiseNode raiseNode) {
             Object[] iterators = self.getIterators();
             Object[] tupleElements = new Object[iterators.length];
             int i = 0;
-            try {
-                for (; i < iterators.length; i++) {
-                    tupleElements[i] = next.execute(frame, iterators[i]);
-                }
-                return PFactory.createTuple(language, tupleElements);
-            } catch (PException e) {
-                e.expectStopIteration(inliningTarget, classProfile);
-                if (i > 0) {
-                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
-                }
-                for (i = 1; i < iterators.length; i++) {
-                    try {
-                        next.execute(frame, iterators[i]);
-                        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_LONGER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
-                    } catch (PException e2) {
-                        e2.expectStopIteration(inliningTarget, classProfile);
+            for (; i < iterators.length; i++) {
+                tupleElements[i] = nextNode.execute(frame, inliningTarget, iterators[i]);
+                if (PyIterNextNode.isExhausted(tupleElements[i])) {
+                    if (i > 0) {
+                        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
                     }
+                    for (i = 1; i < iterators.length; i++) {
+                        Object next = nextNode.execute(frame, inliningTarget, iterators[i]);
+                        if (!PyIterNextNode.isExhausted(next)) {
+                            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_LONGER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
+                        }
+                    }
+                    return iteratorExhausted();
                 }
-                throw e;
             }
+            return PFactory.createTuple(language, tupleElements);
         }
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 

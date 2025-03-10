@@ -71,7 +71,8 @@ from mx_cmake import CMakeNinjaProject #pylint: disable=unused-import
 from mx_graalpython_gradleproject import GradlePluginProject #pylint: disable=unused-import
 
 from mx_gate import Task
-from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JAVA_DRIVER_BENCHMARKS
+from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JAVA_DRIVER_BENCHMARKS, \
+    HEAP_BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, \
     GraalPythonVm, \
     CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
@@ -82,7 +83,8 @@ from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, C
     CONFIGURATION_NATIVE_INTERPRETER_MULTI, PythonJavaEmbeddingBenchmarkSuite, python_java_embedding_vm_registry, \
     GraalPythonJavaDriverVm, CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED, \
     CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI, CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED, \
-    CONFIGURATION_JAVA_EMBEDDING_MULTI, CONFIGURATION_PANAMA, PythonJMHDistMxBenchmarkSuite
+    CONFIGURATION_JAVA_EMBEDDING_MULTI, CONFIGURATION_PANAMA, PythonJMHDistMxBenchmarkSuite, \
+    PythonHeapBenchmarkSuite
 
 if not sys.modules.get("__main__"):
     # workaround for pdb++
@@ -536,7 +538,7 @@ def find_eclipse():
                                                  for f in os.listdir(pardir)]:
         if os.path.basename(f) == "eclipse" and os.path.isdir(f):
             mx.log("Automatically choosing %s for Eclipse" % f)
-            eclipse_exe = os.path.join(f, "eclipse")
+            eclipse_exe = os.path.join(f, f"eclipse{'.exe' if mx.is_windows() else ''}")
             if os.path.exists(eclipse_exe):
                 os.environ["ECLIPSE_EXE"] = eclipse_exe
                 return
@@ -2101,6 +2103,9 @@ def python_style_checks(args):
 
 
 def python_checkcopyrights(args):
+    if mx.is_windows():
+        # skip, broken with crlf stuff
+        return
     # we wan't to ignore lib-python/3, because that's just crazy
     listfilename = tempfile.mktemp()
     with open(listfilename, "w") as listfile:
@@ -2311,6 +2316,8 @@ def _register_bench_suites(namespace):
     for py_bench_suite in PythonVmWarmupBenchmarkSuite.get_benchmark_suites(WARMUP_BENCHMARKS):
         mx_benchmark.add_bm_suite(py_bench_suite)
     mx_benchmark.add_bm_suite(PythonJMHDistMxBenchmarkSuite())
+    for py_bench_suite in PythonHeapBenchmarkSuite.get_benchmark_suites(HEAP_BENCHMARKS):
+        mx_benchmark.add_bm_suite(py_bench_suite)
 
 
 class CharsetFilteringPariticpant:

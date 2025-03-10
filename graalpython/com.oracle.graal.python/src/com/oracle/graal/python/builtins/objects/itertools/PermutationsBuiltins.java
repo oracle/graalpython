@@ -40,12 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
@@ -53,6 +50,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -61,6 +60,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -87,12 +88,14 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PPermutations})
 public final class PermutationsBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = PermutationsBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PermutationsBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -101,14 +104,13 @@ public final class PermutationsBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization(guards = "self.isStopped()")
-        static Object next(PPermutations self,
-                        @Bind("this") Node inliningTarget) {
+        static Object next(PPermutations self) {
             self.setRaisedStopIteration(true);
-            throw PRaiseNode.raiseStatic(inliningTarget, StopIteration);
+            return iteratorExhausted();
         }
 
         @Specialization(guards = "!self.isStopped()")
@@ -119,8 +121,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                         @Cached InlinedLoopConditionProfile resultLoopProfile,
                         @Cached InlinedLoopConditionProfile mainLoopProfile,
                         @Cached InlinedLoopConditionProfile shiftIndicesProfile,
-                        @Bind PythonLanguage language,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind PythonLanguage language) {
             int r = self.getR();
 
             int[] indices = self.getIndices();
@@ -157,7 +158,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
             self.setStopped(true);
             if (isStartedProfile.profile(inliningTarget, self.isStarted())) {
-                throw raiseNode.raise(inliningTarget, StopIteration);
+                return iteratorExhausted();
             } else {
                 self.setStarted(true);
             }

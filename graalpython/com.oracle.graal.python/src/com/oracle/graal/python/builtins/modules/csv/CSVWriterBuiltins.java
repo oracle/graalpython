@@ -54,7 +54,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
@@ -102,8 +102,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached PyObjectStrAsTruffleStringNode objectStrAsTruffleStringNode,
                         @Cached PyNumberCheckNode pyNumberCheckNode,
-                        @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
+                        @Cached PyIterNextNode nextNode,
                         @Cached PRaiseNode raiseNode) {
             Object iter;
 
@@ -120,51 +119,49 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
             boolean first = true;
             boolean nullField = false;
             while (true) {
-                try {
-                    Object field = getNextNode.execute(frame, iter);
-                    /* If this is not the first field we need a field separator */
-                    if (!first) {
-                        appendStringNode.execute(sb, dialect.delimiter);
-                    } else {
-                        first = false;
-                    }
-                    boolean quoted;
-                    TruffleString str = null;
-
-                    switch (dialect.quoting) {
-                        case QUOTE_NONNUMERIC:
-                            quoted = !pyNumberCheckNode.execute(inliningTarget, field);
-                            break;
-                        case QUOTE_ALL:
-                            quoted = true;
-                            break;
-                        case QUOTE_STRINGS:
-                            str = objectStrAsTruffleStringNode.execute(null, inliningTarget, field);
-                            // if field isn't a String then the above statement will throw.
-                            quoted = true;
-                            break;
-                        case QUOTE_NOTNULL:
-                            quoted = field != PNone.NONE;
-                            break;
-                        default:
-                            quoted = false;
-                            break;
-                    }
-
-                    nullField = field == PNone.NONE;
-                    if (nullField) {
-                        joinAppend(inliningTarget, sb, self, null, quoted,
-                                        raiseNode, appendStringNode, codePointLengthNode, joinAppendData);
-                    } else {
-                        if (str == null) {
-                            str = objectStrAsTruffleStringNode.execute(null, inliningTarget, field);
-                        }
-                        joinAppend(inliningTarget, sb, self, str, quoted,
-                                        raiseNode, appendStringNode, codePointLengthNode, joinAppendData);
-                    }
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, isBuiltinClassProfile);
+                Object field = nextNode.execute(frame, inliningTarget, iter);
+                if (PyIterNextNode.isExhausted(field)) {
                     break;
+                }
+                /* If this is not the first field we need a field separator */
+                if (!first) {
+                    appendStringNode.execute(sb, dialect.delimiter);
+                } else {
+                    first = false;
+                }
+                boolean quoted;
+                TruffleString str = null;
+
+                switch (dialect.quoting) {
+                    case QUOTE_NONNUMERIC:
+                        quoted = !pyNumberCheckNode.execute(inliningTarget, field);
+                        break;
+                    case QUOTE_ALL:
+                        quoted = true;
+                        break;
+                    case QUOTE_STRINGS:
+                        str = objectStrAsTruffleStringNode.execute(null, inliningTarget, field);
+                        // if field isn't a String then the above statement will throw.
+                        quoted = true;
+                        break;
+                    case QUOTE_NOTNULL:
+                        quoted = field != PNone.NONE;
+                        break;
+                    default:
+                        quoted = false;
+                        break;
+                }
+
+                nullField = field == PNone.NONE;
+                if (nullField) {
+                    joinAppend(inliningTarget, sb, self, null, quoted,
+                                    raiseNode, appendStringNode, codePointLengthNode, joinAppendData);
+                } else {
+                    if (str == null) {
+                        str = objectStrAsTruffleStringNode.execute(null, inliningTarget, field);
+                    }
+                    joinAppend(inliningTarget, sb, self, str, quoted,
+                                    raiseNode, appendStringNode, codePointLengthNode, joinAppendData);
                 }
             }
             if (!first && sb.isEmpty()) {
@@ -172,8 +169,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                                 (nullField && (dialect.quoting == QUOTE_STRINGS || dialect.quoting == QUOTE_NOTNULL))) {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.CSVError, ErrorMessages.EMPTY_FIELD_RECORD_MUST_BE_QUOTED);
                 }
-                joinAppend(inliningTarget, sb, self, null, true,
-                                raiseNode, appendStringNode, codePointLengthNode, joinAppendData);
+                joinAppend(inliningTarget, sb, self, null, true, raiseNode, appendStringNode, codePointLengthNode, joinAppendData);
             }
             /*
              * Add line terminator.
@@ -311,21 +307,15 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
         Object doIt(VirtualFrame frame, CSVWriter self, Object seq,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode getNext,
-                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
+                        @Cached PyIterNextNode nextNode,
                         @Cached WriteRowNode writeRow) {
-            Object iter, row;
-
-            iter = getIter.execute(frame, inliningTarget, seq);
-
+            Object iter = getIter.execute(frame, inliningTarget, seq);
             while (true) {
-                try {
-                    row = getNext.execute(frame, iter);
-                    writeRow.execute(frame, self, row);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, isBuiltinClassProfile);
+                Object row = nextNode.execute(frame, inliningTarget, iter);
+                if (PyIterNextNode.isExhausted(row)) {
                     break;
                 }
+                writeRow.execute(frame, self, row);
             }
             return PNone.NONE;
         }

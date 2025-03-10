@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -68,6 +69,8 @@ import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PBatched})
 public final class BatchedBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = BatchedBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

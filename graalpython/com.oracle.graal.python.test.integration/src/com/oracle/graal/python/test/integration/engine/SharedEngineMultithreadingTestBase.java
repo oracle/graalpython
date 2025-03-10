@@ -69,6 +69,7 @@ public class SharedEngineMultithreadingTestBase extends PythonTests {
     protected static final int RUNS_COUNT_FACTOR = Integer.getInteger("com.oracle.graal.python.test.SharedEngineMultithreadingRunCountFactor", 4);
     protected static final int THREADS_COUNT = Runtime.getRuntime().availableProcessors();
     private static final boolean LOG = false;
+    private static final int TIMEOUT = 20;
 
     @Rule public CleanupRule cleanup = new CleanupRule();
 
@@ -117,16 +118,15 @@ public class SharedEngineMultithreadingTestBase extends PythonTests {
         boolean wasTimeout = false;
         for (Future<?> future : futures) {
             try {
-                // Under coverage, some of these tests are almost 10x slower,
-                // so we go with a 15min timeout
-                future.get(15, TimeUnit.MINUTES);
+                // Under coverage, some of these tests are very slow
+                future.get(TIMEOUT, TimeUnit.MINUTES);
             } catch (TimeoutException e) {
                 wasTimeout = true;
             }
         }
         if (wasTimeout) {
             System.err.println(Utils.getThreadDump());
-            throw new AssertionError("One of the tasks did not finish in 2 minutes");
+            throw new AssertionError("One of the tasks did not finish in " + TIMEOUT + " minutes");
         }
         log("All %d futures finished...", tasks.length);
     }

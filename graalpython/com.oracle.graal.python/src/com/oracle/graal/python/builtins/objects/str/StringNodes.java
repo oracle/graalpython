@@ -63,7 +63,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.IsInternedStringNodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.StringMaterializeNodeGen;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
@@ -348,10 +348,8 @@ public abstract class StringNodes {
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raise,
                         @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinObjectProfile errorProfile0,
-                        @Cached IsBuiltinObjectProfile errorProfile1,
-                        @Cached IsBuiltinObjectProfile errorProfile2,
+                        @Cached PyIterNextNode nextNode,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Exclusive @Cached CastToTruffleStringNode castToStringNode,
                         @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
@@ -359,24 +357,21 @@ public abstract class StringNodes {
             try {
                 iterator = getIter.execute(frame, inliningTarget, iterable);
             } catch (PException e) {
-                e.expect(inliningTarget, PythonBuiltinClassType.TypeError, errorProfile0);
+                e.expect(inliningTarget, PythonBuiltinClassType.TypeError, errorProfile);
                 throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_JOIN_ITERABLE);
             }
             try {
                 TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-                try {
-                    appendStringNode.execute(sb, checkItem(inliningTarget, nextNode.execute(frame, iterator), 0, castToStringNode, raise));
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile1);
+                Object next = nextNode.execute(frame, inliningTarget, iterator);
+                if (PyIterNextNode.isExhausted(next)) {
                     return T_EMPTY_STRING;
                 }
+                appendStringNode.execute(sb, checkItem(inliningTarget, next, 0, castToStringNode, raise));
                 int i = 1;
                 while (true) {
                     Object value;
-                    try {
-                        value = nextNode.execute(frame, iterator);
-                    } catch (PException e) {
-                        e.expectStopIteration(inliningTarget, errorProfile2);
+                    value = nextNode.execute(frame, inliningTarget, iterator);
+                    if (PyIterNextNode.isExhausted(value)) {
                         return toStringNode.execute(sb);
                     }
                     appendStringNode.execute(sb, string);

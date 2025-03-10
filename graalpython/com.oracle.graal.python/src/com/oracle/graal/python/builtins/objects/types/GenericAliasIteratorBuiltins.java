@@ -41,19 +41,21 @@
 package com.oracle.graal.python.builtins.objects.types;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ITER;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -68,21 +70,22 @@ import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PGenericAliasIterator)
 public final class GenericAliasIteratorBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = GenericAliasIteratorBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return GenericAliasIteratorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    abstract static class NextNode extends PythonUnaryBuiltinNode {
+    abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(PGenericAliasIterator self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raiseNode,
                         @Bind PythonLanguage language) {
             if (self.isExhausted()) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+                return iteratorExhausted();
             }
             PGenericAlias alias = self.getObj();
             PGenericAlias starredAlias = PFactory.createGenericAlias(language, alias.getOrigin(), alias.getArgs(), true);

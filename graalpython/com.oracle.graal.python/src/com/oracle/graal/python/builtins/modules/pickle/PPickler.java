@@ -90,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -739,7 +740,7 @@ public class PPickler extends PythonBuiltinObject {
             do {
                 // Get first item
                 final Object firstItem = getNextItem(frame, iterator);
-                if (firstItem == null) {
+                if (PyIterNextNode.isExhausted(firstItem)) {
                     // nothing more to add
                     break;
                 }
@@ -747,7 +748,7 @@ public class PPickler extends PythonBuiltinObject {
 
                 // Try to get a second item
                 obj = getNextItem(frame, iterator);
-                if (obj == null) {
+                if (PyIterNextNode.isExhausted(obj)) {
                     // Only one item to write
                     saveItem.accept(firstItem);
                     write(pickler, opcodeOneItem);
@@ -769,7 +770,7 @@ public class PPickler extends PythonBuiltinObject {
                     }
 
                     obj = getNextItem(frame, iterator);
-                    if (obj == null) {
+                    if (PyIterNextNode.isExhausted(obj)) {
                         break;
                     }
                 }
@@ -801,7 +802,7 @@ public class PPickler extends PythonBuiltinObject {
         private void saveIterator(VirtualFrame frame, PPickler pickler, Object iterator, byte opcode, Consumer<Object> itemConsumer) {
             while (true) {
                 Object item = getNextItem(frame, iterator);
-                if (item == null) {
+                if (PyIterNextNode.isExhausted(item)) {
                     break;
                 }
                 itemConsumer.accept(item);
@@ -1495,7 +1496,7 @@ public class PPickler extends PythonBuiltinObject {
                 write(pickler, PickleUtils.OPCODE_MARK);
                 while (true) {
                     Object item = getNextItem(frame, iterator);
-                    if (item == null) {
+                    if (PyIterNextNode.isExhausted(item)) {
                         break;
                     }
                     save(frame, pickler, item, 0);
