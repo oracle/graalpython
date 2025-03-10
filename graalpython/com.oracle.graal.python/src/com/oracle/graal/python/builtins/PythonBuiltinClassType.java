@@ -335,6 +335,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // zlib
     ZlibCompress("Compress", "zlib"),
     ZlibDecompress("Decompress", "zlib"),
+    ZlibDecompressor("_ZlibDecompressor", "zlib"),
 
     // io
     PIOBase("_IOBase", "_io", Flags.PUBLIC_BASE_WDICT),

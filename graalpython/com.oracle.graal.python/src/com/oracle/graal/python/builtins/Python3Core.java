@@ -216,6 +216,7 @@ import com.oracle.graal.python.builtins.modules.pickle.UnpicklerMemoProxyBuiltin
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
+import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressorBuiltins;
 import com.oracle.graal.python.builtins.objects.NoneBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -719,6 +720,7 @@ public abstract class Python3Core {
                         PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZLibModuleBuiltins(),
                         PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZlibCompressBuiltins(),
                         PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZlibDecompressBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZlibDecompressorBuiltins(),
 
                         new MMapModuleBuiltins(),
                         new FcntlModuleBuiltins(),

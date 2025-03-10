@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.modules.pickle.PPicklerMemoProxy;
 import com.oracle.graal.python.builtins.modules.pickle.PUnpickler;
 import com.oracle.graal.python.builtins.modules.pickle.PUnpicklerMemoProxy;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
+import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressorObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGen;
@@ -1224,6 +1225,14 @@ public final class PFactory {
 
     public static ZLibCompObject createNativeZLibCompObject(PythonLanguage language, Object cls, Shape shape, Object zst, NFIZlibSupport zlibSupport) {
         return trace(language, ZLibCompObject.createNative(cls, shape, zst, zlibSupport));
+    }
+
+    public static ZlibDecompressorObject createJavaZlibDecompressorObject(PythonLanguage language, Object stream, int wbits, byte[] zdict) {
+        return trace(language, ZlibDecompressorObject.createJava(PythonBuiltinClassType.ZlibDecompressor, PythonBuiltinClassType.ZlibDecompressor.getInstanceShape(language), stream, wbits, zdict));
+    }
+
+    public static ZlibDecompressorObject createNativeZlibDecompressorObject(PythonLanguage language, Object zst, NFIZlibSupport zlibSupport) {
+        return trace(language, ZlibDecompressorObject.createNative(PythonBuiltinClassType.ZlibDecompressor, PythonBuiltinClassType.ZlibDecompressor.getInstanceShape(language), zst, zlibSupport));
     }
 
     public static LZMAObject.LZMADecompressor createLZMADecompressor(PythonLanguage language, Object cls, Shape shape, boolean isNative) {
