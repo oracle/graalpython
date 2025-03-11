@@ -64,6 +64,7 @@ public class ZlibDecompressorObject extends PythonBuiltinObject {
         super(cls, instanceShape);
         this.compObject = ZLibCompObject.createNative(cls, instanceShape, zst, zlibSupport);
         this.availInReal = 0;
+        this.needsInput = true;
     }
 
     // Java
@@ -71,6 +72,7 @@ public class ZlibDecompressorObject extends PythonBuiltinObject {
         super(cls, instanceShape);
         this.compObject = ZLibCompObject.createJava(cls, instanceShape, stream, wbits, zdict);
         this.availInReal = 0;
+        this.needsInput = true;
     }
 
     public boolean isInitialized() {

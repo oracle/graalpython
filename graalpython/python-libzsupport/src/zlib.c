@@ -1171,7 +1171,7 @@ int zlib_Decompress_copy(zlib_stream *zst, zlib_stream *new_copy) {
 static void
 arrange_input_buffer(z_stream *zst, size_t *remains)
 {
-    zst->avail_in = (uInt)(((size_t)*remains) < UINT_MAX ? UINT_MAX : ((size_t)*remains));
+    zst->avail_in = (uInt)(((size_t)*remains) > UINT_MAX ? UINT_MAX : ((size_t)*remains));
     *remains -= zst->avail_in;
 }
 
@@ -1336,7 +1336,7 @@ int zlib_decompress(zlib_stream *zst, Byte *data,
         if (zst->comp->avail_in_real > 0) {
             zlib_release_buffer(zst->comp->unused_data);
             zst->comp->unused_data = zlib_allocate_buffer(zst->comp->avail_in_real);
-            memcpy(zst->comp->unused_data, (char *)zst->zst.next_in, zst->comp->avail_in_real);
+            memcpy(zst->comp->unused_data->buf, (char *)zst->zst.next_in, zst->comp->avail_in_real);
         }
     }
     else if (zst->comp->avail_in_real == 0) {
