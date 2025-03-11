@@ -84,7 +84,7 @@ class MavenPluginTest(util.BuildToolTestBase):
         os.makedirs(meta_inf_native_image_dir, exist_ok=True)
         shutil.copy(os.path.join(os.path.dirname(__file__), "native-image.properties"), os.path.join(meta_inf_native_image_dir, "native-image.properties"))
 
-    def check_generated_app(self, use_default_vfs_path, use_utils_pkg=False):
+    def check_generated_app(self, use_default_vfs_path):
         with util.TemporaryTestDirectory() as tmpdir:
             target_name = "generated_app_test"
             if use_default_vfs_path:
@@ -103,15 +103,6 @@ class MavenPluginTest(util.BuildToolTestBase):
                 resources_dir = os.path.join(target_dir, 'src', 'main', 'resources')
                 shutil.move(os.path.join(resources_dir, vfs_prefix), os.path.join(resources_dir, util.DEFAULT_VFS_PREFIX))
                 vfs_prefix = util.DEFAULT_VFS_PREFIX
-
-            if use_utils_pkg:
-                assert use_default_vfs_path
-                util.replace_in_file(graalpy_main_src,
-                                     "import org.graalvm.python.embedding.GraalPyResources;",
-                                     "import org.graalvm.python.embedding.utils.GraalPyResources;")
-                util.replace_in_file(graalpy_main_src,
-                                     "import org.graalvm.python.embedding.VirtualFileSystem;",
-                                     "import org.graalvm.python.embedding.utils.VirtualFileSystem;")
 
             mvnw_cmd = util.get_mvn_wrapper(target_dir, self.env)
 
@@ -154,9 +145,6 @@ class MavenPluginTest(util.BuildToolTestBase):
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("hello java", out)
 
-            if use_utils_pkg:
-                return # make that test bit less extensive
-
             #GR-51132 - NoClassDefFoundError when running polyglot app in java mode
             util.check_ouput("java.lang.NoClassDefFoundError", out, False)
 
@@ -172,6 +160,15 @@ class MavenPluginTest(util.BuildToolTestBase):
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("Deleting GraalPy venv due to changed launcher path", out)
             util.check_ouput("hello java", out)
+            util.check_ouput("not compatible with the current platform", out, contains=False)
+            
+            # patch venv/contents file to trigger native extension built on different platform warning
+            util.replace_in_file(os.path.join(target_dir2, "target", "classes", "org.graalvm.python.vfs" if use_default_vfs_path else vfs_prefix, "venv", "contents"), "platform=", "platform=test")
+            cmd = mvnw_cmd2 + ["exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir2)
+            util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput("hello java", out)
+            util.check_ouput("not compatible with the current platform", out)
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_generated_app(self):
@@ -180,10 +177,6 @@ class MavenPluginTest(util.BuildToolTestBase):
     @unittest.skipUnless(util.is_maven_plugin_long_running_test_enabled, "ENABLE_MAVEN_PLUGIN_LONG_RUNNING_UNITTESTS is not true")
     def test_generated_app_with_default_vfs_path(self):
         self.check_generated_app(use_default_vfs_path=True)
-
-    @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
-    def test_generated_app_utils_pkg(self):
-        self.check_generated_app(use_default_vfs_path=True, use_utils_pkg=True)
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_lock_file(self):
