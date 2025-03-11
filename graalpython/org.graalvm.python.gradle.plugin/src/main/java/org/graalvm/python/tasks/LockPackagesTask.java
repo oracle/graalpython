@@ -73,13 +73,12 @@ public abstract class LockPackagesTask extends AbstractPackagesTask {
     private void checkEmptyPackages() throws GradleException {
         List<String> packages = getPackages().get();
         if((packages == null || packages.isEmpty())) {
-            getLog().error("");
-            getLog().error("In order to run the graalpyLockPackages task there have to be python packages declared in the graalpy-gradle-plugin configuration.");
-            getLog().error("");
-            getLog().error("For more information, please refer to https://github.com/oracle/graalpython/blob/master/docs/user/Embedding-Build-Tools.md");
-            getLog().error("");
-
-            throw new GradleException("missing python packages in plugin configuration");
+            String msg = """
+            In order to run the graalPyLockPackages task there have to be python packages declared in the graalpy-gradle-plugin configuration.
+            
+            For more information, please refer to https://github.com/oracle/graalpython/blob/master/docs/user/Embedding-Build-Tools.md
+            """;
+            throw new GradleException(msg);
         }
     }
 }
