@@ -31,6 +31,7 @@ test.test_itertools.TestBasicOps.test_islice @ darwin-arm64,darwin-x86_64,linux-
 test.test_itertools.TestBasicOps.test_map @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_itertools.TestBasicOps.test_pairwise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_itertools.TestBasicOps.test_pairwise_reenter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_itertools.TestBasicOps.test_pairwise_reenter2 @ darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_itertools.TestBasicOps.test_permutations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_itertools.TestBasicOps.test_product @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_itertools.TestBasicOps.test_product_issue_25021 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

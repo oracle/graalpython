@@ -375,6 +375,7 @@ test.test_pathlib.WindowsPathTest.test_expanduser @ win32-AMD64
 test.test_pathlib.WindowsPathTest.test_expanduser_common @ win32-AMD64
 test.test_pathlib.WindowsPathTest.test_glob_dotdot @ win32-AMD64
 test.test_pathlib.WindowsPathTest.test_glob_long_symlink @ win32-AMD64
+test.test_pathlib.WindowsPathTest.test_glob_many_open_files @ win32-AMD64
 test.test_pathlib.WindowsPathTest.test_glob_permissions @ win32-AMD64
 test.test_pathlib.WindowsPathTest.test_is_block_device_false @ win32-AMD64
 test.test_pathlib.WindowsPathTest.test_is_char_device_false @ win32-AMD64
