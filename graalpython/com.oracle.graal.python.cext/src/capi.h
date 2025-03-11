@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -157,7 +157,8 @@ PyAPI_DATA(uint32_t) Py_Truffle_Options;
 
 extern THREAD_LOCAL Py_LOCAL_SYMBOL PyThreadState *tstate_current;
 
-extern Py_LOCAL_SYMBOL int graalpy_finalizing;
+extern Py_LOCAL_SYMBOL int8_t *_graalpy_finalizing;
+#define graalpy_finalizing (_graalpy_finalizing != NULL && *_graalpy_finalizing)
 
 /* Flags definitions representing global (debug) options. */
 static MUST_INLINE int PyTruffle_Trace_Memory() {

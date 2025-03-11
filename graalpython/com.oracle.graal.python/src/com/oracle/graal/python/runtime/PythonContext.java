@@ -2157,7 +2157,8 @@ public final class PythonContext extends Python3Core {
         } catch (PException e) {
             // It was printed already, so just discard
         }
-        for (ShutdownHook h : shutdownHooks) {
+        for (int i = shutdownHooks.size() - 1; i >= 0; i--) {
+            ShutdownHook h = shutdownHooks.get(i);
             h.call(this);
         }
     }

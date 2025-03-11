@@ -1134,6 +1134,11 @@ public final class CApiContext extends CExtContext {
      * know that it's not safe to do upcalls and that native wrappers might have been deallocated.
      * We need to do it in a VM shutdown hook to make sure C atexit won't crash even if our context
      * finalization didn't run.
+     *
+     * The memory of the shared library may have been re-used if the GraalPy context was shut down
+     * (cleanly or not), the sources were collected, and NFI's mechanism for unloading libraries
+     * triggered a dlclose that dropped the refcount of the python-native library to 0. We leak 1
+     * byte of memory and this shutdown hook for each context that ever initialized the C API.
      */
     private void addNativeFinalizer(PythonContext context, Object finalizingPointerObj) {
         final Unsafe unsafe = context.getUnsafe();
@@ -1143,7 +1148,8 @@ public final class CApiContext extends CExtContext {
                 long finalizingPointer = lib.asPointer(finalizingPointerObj);
                 // We are writing off heap memory and registering a VM shutdown hook, there is no
                 // point in creating this thread via Truffle sandbox at this point
-                nativeFinalizerRunnable = () -> unsafe.putInt(finalizingPointer, 1);
+                nativeFinalizerRunnable = () -> unsafe.putByte(finalizingPointer, (byte) 1);
+                context.registerAtexitHook((c) -> nativeFinalizerRunnable.run());
                 nativeFinalizerShutdownHook = new Thread(nativeFinalizerRunnable);
                 Runtime.getRuntime().addShutdownHook(nativeFinalizerShutdownHook);
             } catch (UnsupportedMessageException e) {

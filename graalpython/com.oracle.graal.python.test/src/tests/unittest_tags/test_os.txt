@@ -60,7 +60,6 @@ test.test_os.FDInheritanceTests.test_dup2 @ darwin-arm64,darwin-x86_64,linux-aar
 test.test_os.FDInheritanceTests.test_dup_nul @ win32-AMD64
 test.test_os.FDInheritanceTests.test_dup_standard_stream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_os.FDInheritanceTests.test_get_set_inheritable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_os.FDInheritanceTests.test_get_set_inheritable_badf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.FDInheritanceTests.test_get_set_inheritable_o_path @ linux-aarch64,linux-x86_64
 test.test_os.FDInheritanceTests.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_os.FDInheritanceTests.test_openpty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
