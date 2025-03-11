@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.typing;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_SUBCLASS_AN_INSTANCE_OF_TYPEVARTUPLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.SUBSTITUTION_OF_BARE_TYPEVARTUPLE_IS_NOT_SUPPORTED;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MRO_ENTRIES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
@@ -54,6 +53,8 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.CallTypingF
 import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.UnpackNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -79,6 +81,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTypeVarTuple)
 public final class TypeVarTupleBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = TypeVarTupleBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -104,7 +108,7 @@ public final class TypeVarTupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization

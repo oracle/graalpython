@@ -40,22 +40,20 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
-
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -67,7 +65,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@CoreFunctions(extendClasses = {PythonBuiltinClassType.PBatched})
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PBatched)
 public final class BatchedBuiltins extends PythonBuiltins {
 
     public static final TpSlots SLOTS = BatchedBuiltinsSlotsGen.SLOTS;
@@ -77,7 +75,7 @@ public final class BatchedBuiltins extends PythonBuiltins {
         return BatchedBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -86,15 +84,14 @@ public final class BatchedBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object next(VirtualFrame frame, PBatched bo,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile errorProfile,
-                        @Cached GetNextNode next,
+                        @Cached PyIterNextNode nextNode,
                         @Cached PRaiseNode raiseNode) {
             if (bo.it == null) {
                 throw raiseNode.raiseStopIteration(inliningTarget, null);
@@ -106,16 +103,19 @@ public final class BatchedBuiltins extends PythonBuiltins {
             Object[] items = new Object[n];
             for (i = 0; i < n; i++) {
                 try {
-                    items[i] = next.execute(frame, it);
-                } catch (PException e) {
-                    bo.it = null;
-                    if (i == 0) {
-                        throw e;
+                    items[i] = nextNode.execute(frame, inliningTarget, it);
+                    if (PyIterNextNode.isExhausted(items[i])) {
+                        if (i == 0) {
+                            bo.it = null;
+                            return TpIterNextBuiltin.iteratorExhausted();
+                        }
+                        items = PythonUtils.arrayCopyOf(items, i);
+                        break;
                     }
+                } catch (PException e) {
                     /* Handle input raised an exception other than StopIteration */
-                    e.expectStopIteration(inliningTarget, errorProfile);
-                    items = PythonUtils.arrayCopyOf(items, i);
-                    break;
+                    bo.it = null;
+                    throw e;
                 }
             }
             return PFactory.createTuple(language, items);
