@@ -14,5 +14,6 @@ permalink: docs/
 {% gfm_docs ../user/Embedding-Build-Tools.md %}
 {% gfm_docs ../user/Embedding-Permissions.md %}
 {% gfm_docs ../user/Tooling.md %}
+{% gfm_docs ../user/Troubleshooting.md %}
 
 {% copy_assets ../user/assets %}

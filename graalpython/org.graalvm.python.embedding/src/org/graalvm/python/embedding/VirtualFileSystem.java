@@ -119,10 +119,17 @@ public final class VirtualFileSystem implements AutoCloseable {
          * <p/>
          * User scripts, data files, and other resources that should be accessible in Python should
          * be put into this resource directory, e.g.,
-         * {@code src/main/resources/org.graalvm.python.vfs} for the default value of this option
-         * and assuming the usual layout of a Maven or Gradle project.
+         * {@code src/main/resources/org.graalvm.python.vfs/src} where:
+         * <ul>
+         * <li>assuming the usual layout of a Maven or Gradle project then the
+         * {@code src/main/resources/org.graalvm.python.vfs} prefix is the default value of the
+         * {@code resourceDirectory} option</li>
+         * <li>and the following {@code src} directory is the folder used by {@link GraalPyResources
+         * convention} for Python application files and is configured as the default search path for
+         * Python module files.</i>
+         * </ul>
          * <p/>
-         * When Maven and Gradle GraalPy plugin is used to build the virtual environment, it should
+         * When Maven or Gradle GraalPy plugin is used to build the virtual environment, it should
          * be configured to generate the virtual environment into the same directory using the
          * {@code <resourceDirectory>} tag in Maven or the {@code resourceDirectory} field in
          * Gradle.

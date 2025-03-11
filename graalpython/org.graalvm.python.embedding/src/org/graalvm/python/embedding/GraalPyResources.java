@@ -76,10 +76,12 @@ import java.nio.file.Paths;
  * </p>
  *
  * <p>
- * In order to make this work, it is necessary for those embedded resources to have their <b>root
- * directory</b> set to <code>/org.graalvm.python.vfs</code> which in python code will be mapped to
- * the virtual filesystem <b>mount point</b>, by default <code>/graalpy_vfs</code>. Refer to
- * {@link VirtualFileSystem.Builder} documentation for more details.
+ * In order to make this work, it is necessary for those embedded resources to have a common
+ * <b>resource root directory</b>. The default value is <code>/org.graalvm.python.vfs</code>,
+ * however the recommended convention is to use {@code GRAALPY-VFS/{groupId}/{artifactId}}. This
+ * root directory will then be in python code mapped to the virtual filesystem <b>mount point</b>,
+ * by default <code>/graalpy_vfs</code>. Refer to
+ * {@link VirtualFileSystem.Builder#resourceDirectory(String)} documentation for more details.
  * </p>
  *
  * <h3>External Directory</h3>
@@ -354,7 +356,13 @@ public final class GraalPyResources {
      * <code>/python/venv</code> (python virtual environment)</li>
      * </ul>
      * </p>
-     * 
+     *
+     * <p/>
+     * When Maven or Gradle GraalPy plugin is used to build the virtual environment, it also has to
+     * be configured to generate the virtual environment into the same directory using the
+     * {@code <externalDirectory>} tag in Maven or the {@code externalDirectory} field in Gradle.
+     * <p/>
+     *
      * @param externalResourcesDirectory the root directory with GraalPy specific embedding
      *            resources
      * @return a new {@link org.graalvm.polyglot.Context.Builder} instance
