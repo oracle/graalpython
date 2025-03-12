@@ -727,7 +727,6 @@ _PyErr_ChainExceptions(PyObject *typ, PyObject *val, PyObject *tb)
         _PyErr_Restore(tstate, typ, val, tb);
     }
 }
-#endif // GraalPy change
 
 /* Like PyErr_SetRaisedException(), but if an exception is already set,
    set the context associated with it.
@@ -751,7 +750,6 @@ _PyErr_ChainExceptions1(PyObject *exc)
     }
 }
 
-#if 0 // GraalPy change
 /* Set the currently set exception's context to the given exception.
 
    If the provided exc_info is NULL, then the current Python thread state's

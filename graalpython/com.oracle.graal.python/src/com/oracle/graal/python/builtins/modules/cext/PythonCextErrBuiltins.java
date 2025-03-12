@@ -197,6 +197,31 @@ public final class PythonCextErrBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = Void, args = {PyObject}, call = Direct)
+    abstract static class _PyErr_ChainExceptions1 extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object run(Object exc,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached ExceptionNodes.SetContextNode setContextNode,
+                        @Cached GetEscapedExceptionNode getEscapedExceptionNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            if (exc != PNone.NO_VALUE) {
+                PythonContext.PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, context);
+                if (threadState.getCurrentException() != null) {
+                    AbstractTruffleException currentException = threadState.getCurrentException();
+                    Object currentExceptionObject = getEscapedExceptionNode.execute(inliningTarget, currentException);
+                    setContextNode.execute(inliningTarget, currentExceptionObject, exc);
+                } else {
+                    PException e = PException.fromExceptionInfo(exc, PythonOptions.isPExceptionWithJavaStacktrace(context.getLanguage(inliningTarget)));
+                    transformExceptionToNativeNode.execute(inliningTarget, e, null);
+                }
+            }
+            return PNone.NO_VALUE;
+        }
+    }
+
     @CApiBuiltin(ret = Void, args = {PyObjectPtr, PyObjectPtr, PyObjectPtr}, call = Ignored)
     abstract static class PyTruffleErr_Fetch extends CApiTernaryBuiltinNode {
         @Specialization

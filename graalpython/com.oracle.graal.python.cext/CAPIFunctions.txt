@@ -943,6 +943,7 @@ _PyDict_SetItem_KnownHash;int;PyObject*|PyObject*|PyObject*|Py_hash_t
 _PyDict_SizeOf;Py_ssize_t;PyDictObject*
 _PyErr_BadInternalCall;void;const char*|int
 _PyErr_ChainExceptions;void;PyObject*|PyObject*|PyObject*
+_PyErr_ChainExceptions1;void;PyObject*
 _PyErr_CheckSignals;int;void
 _PyErr_FormatFromCause;PyObject*;PyObject*|const char*|...
 _PyErr_GetExcInfo;void;PyThreadState*|PyObject**|PyObject**|PyObject**
