@@ -49,7 +49,13 @@ except ModuleNotFoundError:
 _testcapi = import_helper.import_module('_testcapi')
 
 # GraalVM change: we don't have _testinternalcapi
-# import _testinternalcapi
+try:
+    import _testinternalcapi
+except ImportError:
+    class NotSupported: pass
+    _testinternalcapi = NotSupported()
+    # GraalVM change: avoid PendingTask._add_pending error 
+    _testinternalcapi.pending_threadfunc = None
 
 
 NULL = None
@@ -1385,6 +1391,7 @@ class TestPendingCalls(unittest.TestCase):
             while self.result is None:
                 time.sleep(0.01)
 
+    @unittest.skipIf(sys.implementation.name == 'graalpy', "_testinternalcapi is not supported")
     @threading_helper.requires_working_threading()
     def test_subthreads_can_handle_pending_calls(self):
         payload = 'Spam spam spam spam. Lovely spam! Wonderful spam!'
@@ -1401,6 +1408,7 @@ class TestPendingCalls(unittest.TestCase):
 
         self.assertEqual(task.result, payload)
 
+    @unittest.skipIf(sys.implementation.name == 'graalpy', "_testinternalcapi is not supported")
     @threading_helper.requires_working_threading()
     def test_many_subthreads_can_handle_pending_calls(self):
         main_tid = threading.get_ident()
