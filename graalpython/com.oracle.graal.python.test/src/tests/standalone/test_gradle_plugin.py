@@ -429,7 +429,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             cmd = gradle_cmd + ["graalpyLockPackages"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out, contains=False)
-            util.check_ouput("In order to run the graalpyLockPackages task there have to be python packages declared in the graalpy-gradle-plugin configuration.", out)
+            util.check_ouput("In order to run the graalPyLockPackages task there have to be python packages declared in the graalpy-gradle-plugin configuration.", out)
             assert not os.path.exists(os.path.join(target_dir, "graalpy.lock"))
 
 

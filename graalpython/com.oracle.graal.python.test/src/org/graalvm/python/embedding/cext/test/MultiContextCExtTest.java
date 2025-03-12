@@ -58,6 +58,7 @@ import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.python.embedding.tools.exec.BuildToolLog;
+import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 import org.junit.Test;
 
 import static org.graalvm.python.embedding.test.EmbeddingTestUtils.deleteDirOnShutdown;
@@ -165,7 +166,7 @@ public class MultiContextCExtTest {
     }
 
     @Test
-    public void testCreatingVenvForMulticontext() throws IOException {
+    public void testCreatingVenvForMulticontext() throws IOException, VFSUtils.PackagesChangedException {
         var log = new TestLog();
         Path tmpdir = Files.createTempDirectory("MultiContextCExtTest");
         Path venvDir = tmpdir.resolve("venv");

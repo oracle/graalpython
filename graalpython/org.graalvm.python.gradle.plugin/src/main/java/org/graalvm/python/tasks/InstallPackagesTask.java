@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
+import org.graalvm.python.embedding.tools.vfs.VFSUtils.PackagesChangedException;
 
 /**
  * This task is responsible installing the dependencies which were requested by the user.
@@ -65,11 +66,41 @@ import org.graalvm.python.embedding.tools.vfs.VFSUtils;
  */
 @CacheableTask
 public abstract class InstallPackagesTask extends AbstractPackagesTask {
+
+    private static final String PACKAGES_CHANGED_ERROR = """
+        Install of python packages is based on lock file %s,
+        but packages and their version constraints in graalpy-gradle-plugin configuration are different then previously used to generate the lock file.
+        
+        Packages currently declared in graalpy-gradle-plugin configuration: %s
+        Packages which were used to generate the lock file: %s
+         
+        The lock file has to be refreshed by running the gradle task 'graalPyLockPackages'.
+        
+        For more information, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools#Python-Dependency-Management
+               
+        """;
+
+    protected static final String MISSING_LOCK_FILE_WARNING = """
+        
+        WARNING: The list of installed Python packages does not match the packages specified in the graalpy-maven-plugin configuration.
+        WARNING: This could indicate that either extra dependencies were installed or some packages were installed with a more specific versions than declared.
+         
+        WARNING: In such cases, it is strongly recommended to lock the Python dependencies by executing the Gradle task 'graalPyLockPackages'.
+        
+        For more details on managing Python dependencies, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools#Python-Dependency-Management
+        
+        """;
+
     @TaskAction
     public void exec() throws GradleException {
         Path venvDirectory = getVenvDirectory().get().getAsFile().toPath();
+        Path lockFilePath = getLockFilePath();
         try {
-            VFSUtils.createVenv(venvDirectory, getPackages().get(), getLockFilePath(), PACKAGES_CHANGED_ERROR, MISSING_LOCK_FILE_WARNING, createLauncher(),  getPolyglotVersion().get(), getLog());
+            VFSUtils.createVenv(venvDirectory, getPackages().get(), lockFilePath, MISSING_LOCK_FILE_WARNING, createLauncher(), getPolyglotVersion().get(), getLog());
+        } catch(PackagesChangedException pce) {
+            String pluginPkgsString = pce.getPluginPackages().isEmpty() ? "None" : String.join(", ", pce.getPluginPackages());
+            String lockFilePkgsString = pce.getLockFilePackages().isEmpty() ? "None" : String.join(", ", pce.getLockFilePackages());
+            throw new GradleException(String.format(PACKAGES_CHANGED_ERROR, lockFilePath, pluginPkgsString, lockFilePkgsString));
         } catch (IOException e) {
             throw new GradleException(String.format("failed to create python virtual environment in %s", venvDirectory), e);
         }
