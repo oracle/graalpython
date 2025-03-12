@@ -91,12 +91,9 @@ public abstract class AbstractPackagesTask extends DefaultTask {
 
     @Classpath
     public abstract ConfigurableFileCollection getLauncherClasspath();
-    
+
     /**
-     * The directory where the virtual filesystem should be generated. If {@link #getIncludeVfsRoot()} is set,
-     * then this is the parent directory where the actual VFS directory should be created and populated with
-     * "venv" subdirectory (this is the case when we generate the VFS to Java resources). Otherwise, this path
-     * is used as is.
+     * The directory where the virtual filesystem should be generated.
      */
     @OutputDirectory
     public abstract DirectoryProperty getOutput();
