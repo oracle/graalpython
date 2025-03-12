@@ -553,13 +553,13 @@ public class ScopeEnvironment {
         private void raiseIfAnnotationBlock(String name, ExprTy node) {
             switch (currentScope.type) {
                 case Annotation:
-                    throw env.parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "'%s' can not be used within an annotation", name);
+                    throw env.parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "%s can not be used within an annotation", name);
                 case TypeVarBound:
-                    throw env.parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "'%s' cannot be used within a TypeVar bound", name);
+                    throw env.parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "%s cannot be used within a TypeVar bound", name);
                 case TypeAlias:
-                    throw env.parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "'%s' cannot be used within a type alias", name);
+                    throw env.parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "%s cannot be used within a type alias", name);
                 case TypeParam:
-                    throw env.parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "'%s' cannot be used within the definition of a generic", name);
+                    throw env.parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "%s cannot be used within the definition of a generic", name);
             }
         }
 
