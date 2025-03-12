@@ -968,7 +968,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INIT_FUNC_RETURNED_UNINT_OBJ = tsLiteral("init function of %s returned uninitialized object");
     public static final TruffleString FUNC_DIDNT_RETURN_INT = tsLiteral("function '%s' did not return an integer");
     public static final TruffleString UNABLE_SET_DICT_OF_OBJ = tsLiteral("Unable to set dict of object of type %p");
-    public static final TruffleString CANT_INSTANTIATE_ABSTRACT_CLASS_WITH_ABSTRACT_METHODS = tsLiteral("Can't instantiate abstract class %N with abstract method%s %s");
+    public static final TruffleString CANT_INSTANTIATE_ABSTRACT_CLASS_WITH_ABSTRACT_METHODS = tsLiteral("Can't instantiate abstract class %N without an implementation for abstract method%s '%s'");
     public static final TruffleString YEAR_OUT_OF_RANGE = tsLiteral("year out of range");
     public static final TruffleString MONTH_OUT_OF_RANGE = tsLiteral("month out of range");
     public static final TruffleString DAY_OF_MONTH_OUT_OF_RANGE = tsLiteral("day of month out of range");
