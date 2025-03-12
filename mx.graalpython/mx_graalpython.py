@@ -133,6 +133,20 @@ CI = get_boolean_env("CI")
 WIN32 = sys.platform == "win32"
 BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = get_boolean_env('BUILD_WITH_ASSERTIONS', CI)
 
+mx_gate.add_jacoco_excludes([
+    "com.oracle.graal.python.pegparser.sst",
+    "com.oracle.graal.python.pegparser.test",
+    "com.oracle.truffle.api.staticobject.test",
+    "com.oracle.truffle.regex.tregex.test",
+    "com.oracle.truffle.tck",
+    "com.oracle.truffle.tools.chromeinspector.test",
+    "com.oracle.truffle.tools.coverage.test",
+    "com.oracle.truffle.tools.dap.test",
+    "com.oracle.truffle.tools.profiler.test",
+    "org.graalvm.tools.insight.test",
+    "org.graalvm.tools.lsp.test",
+])
+
 if CI and not os.environ.get("GRAALPYTEST_FAIL_FAST"):
     os.environ["GRAALPYTEST_FAIL_FAST"] = "true"
 
