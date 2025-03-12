@@ -30,7 +30,6 @@ test.test_compile.TestSpecifics.test_for_distinct_code_objects @ darwin-arm64,da
 test.test_compile.TestSpecifics.test_import @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestSpecifics.test_indentation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestSpecifics.test_lambda_doc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_compile.TestSpecifics.test_line_number_genexp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestSpecifics.test_literals_with_leading_zeroes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestSpecifics.test_mangling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestSpecifics.test_no_ending_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -558,6 +558,7 @@ public abstract class ErrorMessages {
     public static final TruffleString NAME_MUST_BE_A_STRING = tsLiteral("__name__ must be a string");
     public static final TruffleString NAME_NOT_DEFINED = tsLiteral("name '%s' is not defined");
     public static final TruffleString NAME_NOT_IN_GLOBALS = tsLiteral("'__name__' not in globals");
+    public static final TruffleString NAMEDEXPR_TARGET_MUST_BE_A_NAME = tsLiteral("NamedExpr target must be a Name");
     public static final TruffleString NAMELESS_MODULE = tsLiteral("nameless module");
     public static final TruffleString NATIVE_S_SUBTYPES_NOT_IMPLEMENTED = tsLiteral("native %s subtypes not implemented");
     public static final TruffleString NEED_BYTELIKE_OBJ = tsLiteral("decoding to str: need a bytes-like object, %p found");
