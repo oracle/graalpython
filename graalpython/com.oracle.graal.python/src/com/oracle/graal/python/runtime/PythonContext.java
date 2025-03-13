@@ -100,7 +100,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
-import org.graalvm.nativeimage.ImageInfo;
+import com.oracle.truffle.api.TruffleOptions;
 import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -845,7 +845,7 @@ public final class PythonContext extends Python3Core {
 
     private final ConcurrentHashMap<TruffleString, AtomicLong> deserializationId = new ConcurrentHashMap<>();
 
-    private final long perfCounterStart = ImageInfo.inImageBuildtimeCode() ? 0 : System.nanoTime();
+    @CompilationFinal private long perfCounterStart = System.nanoTime();
 
     public static final String CHILD_CONTEXT_DATA = "childContextData";
     @CompilationFinal private List<Integer> childContextFDs;
@@ -1252,7 +1252,7 @@ public final class PythonContext extends Python3Core {
     }
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env) {
-        super(language, env.isNativeAccessAllowed(), env.isSocketIOAllowed());
+        super(language, env);
         this.env = env;
         this.allocationReporter = env.lookup(AllocationReporter.class);
         this.childContextData = (ChildContextData) env.getConfig().get(CHILD_CONTEXT_DATA);
@@ -1512,7 +1512,7 @@ public final class PythonContext extends Python3Core {
      * Get a SecureRandom instance using a non-blocking source.
      */
     public SecureRandom getSecureRandom() {
-        assert !ImageInfo.inImageBuildtimeCode();
+        assert !env.isPreInitialization();
         if (secureRandom == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             try {
@@ -1533,7 +1533,7 @@ public final class PythonContext extends Python3Core {
     }
 
     public byte[] getHashSecret() {
-        assert !ImageInfo.inImageBuildtimeCode();
+        assert !env.isPreInitialization();
         return hashSecret;
     }
 
@@ -1564,18 +1564,22 @@ public final class PythonContext extends Python3Core {
             initializePosixSupport();
             initialize(this);
             setupRuntimeInformation(false);
-            postInitialize();
-            if (!ImageInfo.inImageBuildtimeCode()) {
+            postInitialize(env);
+            if (!env.isPreInitialization()) {
                 importSiteIfForced();
-            } else if (posixSupport instanceof ImageBuildtimePosixSupport) {
-                ((ImageBuildtimePosixSupport) posixSupport).checkLeakingResources();
+            } else if (posixSupport instanceof PreInitPosixSupport) {
+                ((PreInitPosixSupport) posixSupport).checkLeakingResources();
             }
         } finally {
-            if (ImageInfo.inImageBuildtimeCode()) {
+            if (env.isPreInitialization()) {
                 mainThread = null;
             }
             releaseGil();
         }
+    }
+
+    public void resetPerfCounter() {
+        perfCounterStart = System.nanoTime();
     }
 
     public void patch(Env newEnv) {
@@ -1588,7 +1592,7 @@ public final class PythonContext extends Python3Core {
             mainThread = new WeakReference<>(Thread.currentThread());
             setEnv(newEnv);
             setupRuntimeInformation(true);
-            postInitialize();
+            postInitialize(newEnv);
             importSiteIfForced();
         } finally {
             releaseGil();
@@ -1708,7 +1712,7 @@ public final class PythonContext extends Python3Core {
     }
 
     private void setupRuntimeInformation(boolean isPatching) {
-        if (!ImageInfo.inImageBuildtimeCode()) {
+        if (!env.isPreInitialization()) {
             initializeHashSecret();
         }
         initializeLocale();
@@ -1725,11 +1729,11 @@ public final class PythonContext extends Python3Core {
         SetDictNode.executeUncached(mainModule, PFactory.createDictFixedStorage(getLanguage(), mainModule));
         getSysModules().setItem(T___MAIN__, mainModule);
 
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (env.isPreInitialization()) {
             // Patch any pre-loaded packages' paths if we're running
             // pre-initialization
             patchPackagePaths(getStdlibHome(), T_STD_LIB_PLACEHOLDER);
-        } else if (isPatching && ImageInfo.inImageRuntimeCode()) {
+        } else if (isPatching) {
             // Patch any pre-loaded packages' paths to the new stdlib home if
             // we're patching a pre-initialized context
             patchPackagePaths(T_STD_LIB_PLACEHOLDER, getStdlibHome());
@@ -1740,7 +1744,7 @@ public final class PythonContext extends Python3Core {
     }
 
     private void initializeHashSecret() {
-        assert !ImageInfo.inImageBuildtimeCode();
+        assert !env.isPreInitialization();
         Optional<Integer> hashSeed = getOption(PythonOptions.HashSeed);
         if (hashSeed.isPresent()) {
             int hashSeedValue = hashSeed.get();
@@ -1785,13 +1789,17 @@ public final class PythonContext extends Python3Core {
             }
             result = new EmulatedPosixSupport(this);
         } else if (eqNode.execute(T_NATIVE, option, TS_ENCODING) || eqNode.execute(T_LLVM_LANGUAGE, option, TS_ENCODING)) {
-            if (ImageInfo.inImageBuildtimeCode()) {
+            if (env.isPreInitialization()) {
                 EmulatedPosixSupport emulatedPosixSupport = new EmulatedPosixSupport(this);
                 NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
-                result = new ImageBuildtimePosixSupport(nativePosixSupport, emulatedPosixSupport);
-            } else if (ImageInfo.inImageRuntimeCode()) {
+                result = new PreInitPosixSupport(env, nativePosixSupport, emulatedPosixSupport);
+            } else if (TruffleOptions.AOT) {
+                // We always use a PreInitPosixSupport on SVM to keep the type of the posixSupport
+                // field consistent for both pre-initialized and not-pre-initialized contexts so
+                // that host inlining and PE see only one type, and also to avoid polymorphism when
+                // calling library methods.
                 NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
-                result = new ImageBuildtimePosixSupport(nativePosixSupport, null);
+                result = new PreInitPosixSupport(env, nativePosixSupport, null);
             } else {
                 if (!getOption(PythonOptions.RunViaLauncher)) {
                     writeWarning("Native Posix backend is not fully supported when embedding. For example, standard I/O always uses file " +
@@ -1812,8 +1820,9 @@ public final class PythonContext extends Python3Core {
     private TruffleString langHome, sysPrefix, basePrefix, coreHome, capiHome, jniHome, stdLibHome;
 
     public void initializeHomeAndPrefixPaths(Env newEnv, String languageHome) {
-        if (ImageInfo.inImageBuildtimeCode()) {
-            // at buildtime we do not need these paths to be valid, since all boot files are frozen
+        if (env.isPreInitialization()) {
+            // during pre-initialization we do not need these paths to be valid, since all boot
+            // files are frozen
             basePrefix = sysPrefix = langHome = coreHome = stdLibHome = capiHome = jniHome = T_DOT;
             return;
         }
@@ -2513,8 +2522,8 @@ public final class PythonContext extends Python3Core {
         TruffleFile f = env.getInternalTruffleFile(path.toJavaStringUncached());
         // 'isDirectory' does deliberately not follow symlinks because otherwise this could allow to
         // escape the language home directory.
-        // Also, during image build time, we allow full internal access.
-        if (ImageInfo.inImageBuildtimeCode() || isPyFileInLanguageHome(f) && (f.isDirectory(LinkOption.NOFOLLOW_LINKS) || hasAllowedSuffix(path, allowedSuffixes))) {
+        // Also, during pre-initialization, we allow full internal access.
+        if (env.isPreInitialization() || isPyFileInLanguageHome(f) && (f.isDirectory(LinkOption.NOFOLLOW_LINKS) || hasAllowedSuffix(path, allowedSuffixes))) {
             return f;
         } else {
             return env.getPublicTruffleFile(path.toJavaStringUncached());
@@ -2541,7 +2550,7 @@ public final class PythonContext extends Python3Core {
      */
     @TruffleBoundary
     public boolean isPyFileInLanguageHome(TruffleFile path) {
-        assert !ImageInfo.inImageBuildtimeCode() : "language home won't be available during image build time";
+        assert !env.isPreInitialization() : "language home won't be available during pre-initialization";
         // The language home may be 'null' if an embedder uses Python. In this case, IO must just be
         // allowed.
         if (langHome != null) {

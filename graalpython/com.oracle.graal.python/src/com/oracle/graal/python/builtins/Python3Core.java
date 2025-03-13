@@ -56,10 +56,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.ServiceLoader;
 import java.util.logging.Level;
-
-import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.AbcModuleBuiltins;
@@ -393,8 +390,10 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
@@ -417,28 +416,15 @@ public abstract class Python3Core {
 
     private static TruffleString[] initializeCoreFiles() {
         // Order matters!
-        List<TruffleString> coreFiles = new ArrayList<>(Arrays.asList(
+        return new TruffleString[]{
                         toTruffleStringUncached("__graalpython__"),
                         toTruffleStringUncached("_weakref"),
                         toTruffleStringUncached("unicodedata"),
                         toTruffleStringUncached("_sre"),
                         toTruffleStringUncached("_sysconfig"),
                         toTruffleStringUncached("java"),
-                        toTruffleStringUncached("pip_hook")));
-        // add service loader defined python file extensions
-        if (!ImageInfo.inImageRuntimeCode()) {
-            ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
-            PythonOS currentOs = PythonOS.getPythonOS();
-            for (PythonBuiltins builtin : providers) {
-                CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
-                if (!annotation.pythonFile().isEmpty() &&
-                                (annotation.os() == PythonOS.PLATFORM_ANY || annotation.os() == currentOs)) {
-                    coreFiles.add(toTruffleStringUncached(annotation.pythonFile()));
-                }
-            }
-        }
-        coreFiles.removeAll(Arrays.asList(new TruffleString[]{null}));
-        return coreFiles.toArray(new TruffleString[coreFiles.size()]);
+                        toTruffleStringUncached("pip_hook")
+        };
     }
 
     private final PythonBuiltins[] builtins;
@@ -470,7 +456,7 @@ public abstract class Python3Core {
         builtins.removeAll(toRemove);
     }
 
-    private static PythonBuiltins[] initializeBuiltins(boolean nativeAccessAllowed, boolean socketIOAllowed) {
+    private static PythonBuiltins[] initializeBuiltins(TruffleLanguage.Env env) {
         List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(new BuiltinConstructors(),
                         new AbcModuleBuiltins(),
                         new BuiltinFunctions(),
@@ -647,9 +633,9 @@ public abstract class Python3Core {
                         new JSONModuleBuiltins(),
                         new SREModuleBuiltins(),
                         new AstModuleBuiltins(),
-                        PythonImageBuildOptions.WITHOUT_NATIVE_POSIX && (PythonImageBuildOptions.WITHOUT_JAVA_INET || !socketIOAllowed) ? null : new SelectModuleBuiltins(),
-                        PythonImageBuildOptions.WITHOUT_NATIVE_POSIX && (PythonImageBuildOptions.WITHOUT_JAVA_INET || !socketIOAllowed) ? null : new SocketModuleBuiltins(),
-                        PythonImageBuildOptions.WITHOUT_NATIVE_POSIX && (PythonImageBuildOptions.WITHOUT_JAVA_INET || !socketIOAllowed) ? null : new SocketBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_NATIVE_POSIX && (PythonImageBuildOptions.WITHOUT_JAVA_INET || !env.isSocketIOAllowed()) ? null : new SelectModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_NATIVE_POSIX && (PythonImageBuildOptions.WITHOUT_JAVA_INET || !env.isSocketIOAllowed()) ? null : new SocketModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_NATIVE_POSIX && (PythonImageBuildOptions.WITHOUT_JAVA_INET || !env.isSocketIOAllowed()) ? null : new SocketBuiltins(),
                         PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS ? null : new SignalModuleBuiltins(),
                         new TracebackBuiltins(),
                         new GcModuleBuiltins(),
@@ -803,14 +789,10 @@ public abstract class Python3Core {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());
         }
-        if (!PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES && (nativeAccessAllowed || ImageInfo.inImageBuildtimeCode())) {
+        if (!PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES && (env.isNativeAccessAllowed() || env.isPreInitialization())) {
             builtins.add(new BZ2CompressorBuiltins());
             builtins.add(new BZ2DecompressorBuiltins());
             builtins.add(new BZ2ModuleBuiltins());
-        }
-        ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
-        for (PythonBuiltins builtin : providers) {
-            builtins.add(builtin);
         }
         filterBuiltins(builtins);
         return builtins.toArray(new PythonBuiltins[builtins.size()]);
@@ -844,15 +826,15 @@ public abstract class Python3Core {
 
     private final PythonLanguage language;
 
-    public Python3Core(PythonLanguage language, boolean isNativeSupportAllowed, boolean socketIOAllowed) {
+    public Python3Core(PythonLanguage language, TruffleLanguage.Env env) {
         this.language = language;
-        this.builtins = initializeBuiltins(isNativeSupportAllowed, socketIOAllowed);
+        this.builtins = initializeBuiltins(env);
         this.coreFiles = initializeCoreFiles();
     }
 
     @CompilerDirectives.ValueType
     public static class SysModuleState {
-        private int recursionLimit = ImageInfo.inImageCode() ? NATIVE_REC_LIM : REC_LIM;
+        private int recursionLimit = TruffleOptions.AOT ? NATIVE_REC_LIM : REC_LIM;
         private int checkInterval = 100;
         private double switchInterval = 0.005;
 
@@ -1040,10 +1022,10 @@ public abstract class Python3Core {
     /**
      * Run post-initialization code that needs a fully working Python environment. This will be run
      * eagerly when the context is initialized on the JVM or a new context is created on SVM, but is
-     * omitted when the native image is generated.
+     * omitted when creating a pre-initialized context.
      */
-    public final void postInitialize() {
-        if (!ImageInfo.inImageBuildtimeCode() || ImageInfo.inImageRuntimeCode()) {
+    public final void postInitialize(Env env) {
+        if (!env.isPreInitialization()) {
             initialized = false;
 
             for (PythonBuiltins builtin : builtins) {
@@ -1060,9 +1042,9 @@ public abstract class Python3Core {
              * fallback to another _bz2 implementation (e.g. LLVM or maybe some Java lib). This
              * needs to be done here and cannot be done in 'initializeBuiltins' because then we
              * would never include the intrinsified _bz2 module in the native image since native
-             * access is never allowed during native image build time.
+             * access is never allowed during context pre-initialization.
              */
-            if (!PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES && ImageInfo.inImageCode() && !getContext().isNativeAccessAllowed()) {
+            if (!PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES && TruffleOptions.AOT && !getContext().isNativeAccessAllowed()) {
                 removeBuiltinModule(BuiltinNames.T_BZ2);
             }
 

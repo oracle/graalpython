@@ -140,8 +140,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
@@ -647,7 +645,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         TruffleString stdlibHome = context.getStdlibHome();
         TruffleString capiHome = context.getCAPIHome();
 
-        if (!ImageInfo.inImageBuildtimeCode()) {
+        if (!context.getEnv().isPreInitialization()) {
             TruffleString executable = context.getOption(PythonOptions.Executable);
             TruffleString baseExecutable = context.getOption(PythonOptions.BaseExecutable);
             sys.setAttribute(tsLiteral("executable"), executable);

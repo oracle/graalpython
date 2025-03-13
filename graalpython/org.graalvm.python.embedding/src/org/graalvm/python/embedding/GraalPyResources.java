@@ -419,7 +419,7 @@ public final class GraalPyResources {
     /**
      * Determines a native executable path if running in {@link ImageInfo#inImageRuntimeCode()}.
      * <p>
-     * <b>Example </b> creating a GraalPy context precofigured with an external resource directory
+     * <b>Example </b> creating a GraalPy context preconfigured with an external resource directory
      * located next to a native image executable.
      *
      * <pre>

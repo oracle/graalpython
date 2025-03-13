@@ -53,7 +53,6 @@ import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
 import org.graalvm.home.Version;
-import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionValues;
@@ -385,8 +384,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             return factory.apply(descriptor);
         }
         if (descriptor instanceof BuiltinTypeDescriptor builtinDescriptor) {
-            // There must be finite set of objects initialized at build time, no need for a weak map
-            assert !ImageInfo.inImageCode() || builtinDescriptor.wasInitializedAtBuildTime();
+            // There must be finite set of objects initialized in static final fields, no need for a
+            // weak map
             return structSequenceBuiltinTargets.computeIfAbsent(builtinDescriptor, factory);
         }
         return getOrCreateStructSeqNonBuiltinTargets(descriptor, factory);
@@ -498,6 +497,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             Python3Core.writeInfo("Cannot use preinitialized context.");
             return false;
         }
+        context.resetPerfCounter();
         context.initializeHomeAndPrefixPaths(newEnv, getLanguageHome());
         Python3Core.writeInfo("Using preinitialized context.");
         context.patch(newEnv);
@@ -989,7 +989,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     private static Source newSource(PythonContext context, SourceBuilder srcBuilder) throws IOException {
-        if (getPythonOS() == PLATFORM_WIN32 && ImageInfo.inImageBuildtimeCode()) {
+        if (getPythonOS() == PLATFORM_WIN32 && context.getEnv().isPreInitialization()) {
             // canonicalization on windows means something else than on linux and causes issues
             // with paths
             srcBuilder.canonicalizePath(false);
@@ -1218,7 +1218,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (context.getCApiContext() != null) {
             context.getCApiContext().exitCApiContext();
         }
-        if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS && !ImageInfo.inImageBuildtimeCode()) {
+        if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS && !context.getEnv().isPreInitialization()) {
             // Reset signal handlers back to what they were
             PythonModule signalModule = context.lookupBuiltinModule(T__SIGNAL);
             if (signalModule != null) {

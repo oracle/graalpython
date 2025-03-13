@@ -210,6 +210,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import com.oracle.truffle.api.TruffleOptions;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.io.ProcessHandler.Redirect;
@@ -361,7 +362,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @Override
     public void setEnv(Env env) {
         super.setEnv(env);
-        if (!ImageInfo.inImageBuildtimeCode()) {
+        if (!env.isPreInitialization()) {
             environ.putAll(env.getEnvironment());
         }
     }
@@ -2109,7 +2110,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         double ru_stime = 0; // time in system mode (float)
         long ru_maxrss;
 
-        if (!ImageInfo.inImageCode()) {
+        if (!TruffleOptions.AOT) {
             // once GR-44559 is fixed we can enable this branch on NI
             java.lang.management.ThreadMXBean threadMXBean = java.lang.management.ManagementFactory.getThreadMXBean();
             if (PosixConstants.RUSAGE_THREAD.defined &&

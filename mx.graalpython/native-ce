@@ -1,0 +1,7 @@
+GRAALVM_SKIP_ARCHIVE=true
+DYNAMIC_IMPORTS=/tools,/compiler,/substratevm
+COMPONENTS=GraalVM Python,suite:tools,GraalVM compiler,SubstrateVM,Truffle Macro
+NATIVE_IMAGES=lib:pythonvm
+GENERATE_DEBUGINFO=false
+INSTALLABLES=GraalVM Python
+BUILD_TARGETS=GRAALVM_STANDALONES

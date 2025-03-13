@@ -454,7 +454,7 @@ def cache_from_source(path, debug_override=None, *, optimization=None):
     If sys.implementation.cache_tag is None then NotImplementedError is raised.
 
     """
-    if __graalpython__.in_image_buildtime:
+    if __graalpython__.in_preinitialization:
         return
     if debug_override is not None:
         _warnings.warn('the debug_override parameter is deprecated; use '
