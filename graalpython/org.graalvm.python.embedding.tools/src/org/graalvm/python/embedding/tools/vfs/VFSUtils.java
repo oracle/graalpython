@@ -76,6 +76,8 @@ public final class VFSUtils {
 
     public static final String GRAALPY_GROUP_ID = "org.graalvm.python";
 
+    private static final String PLATFORM = System.getProperty("os.name") + " " + System.getProperty("os.arch");
+
     private static final String NATIVE_IMAGE_RESOURCES_CONFIG = """
                     {
                       "resources": {
@@ -235,7 +237,7 @@ public final class VFSUtils {
 
     private static class VenvContents {
         private static final String KEY_VERSION = "version";
-        private static final String KEY_PACKAGES = "packages";
+        private static final String KEY_PACKAGES = "input_packages";
         private static final String KEY_PLATFORM = "platform";
         private static final String CONTENTS_FILE_NAME = "contents";
         final Path contentsFile;
@@ -251,7 +253,7 @@ public final class VFSUtils {
         }
 
         static VenvContents create(Path venvDirectory, String graalPyVersion) {
-            return new VenvContents(venvDirectory.resolve(CONTENTS_FILE_NAME), Collections.emptyList(), graalPyVersion, getPlatform());
+            return new VenvContents(venvDirectory.resolve(CONTENTS_FILE_NAME), Collections.emptyList(), graalPyVersion, PLATFORM);
         }
 
         static VenvContents fromVenv(Path venvDirectory) throws IOException {
@@ -292,13 +294,9 @@ public final class VFSUtils {
         void write(List<String> pkgs) throws IOException {
             List<String> lines = new ArrayList<>();
             lines.add(KEY_VERSION + "=" + graalPyVersion);
-            lines.add(KEY_PLATFORM + "=" + getPlatform());
+            lines.add(KEY_PLATFORM + "=" + PLATFORM);
             lines.add(KEY_PACKAGES + "=" + String.join(",", pkgs));
             Files.write(contentsFile, lines, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        }
-
-        private static String getPlatform() {
-            return System.getProperty("os.name") + " " + System.getProperty("os.arch");
         }
     }
 
@@ -631,6 +629,10 @@ public final class VFSUtils {
             } else if (!graalPyVersion.equals(contents.graalPyVersion)) {
                 contents = null;
                 info(log, "Stale GraalPy virtual environment, updating to %s", graalPyVersion);
+                delete(venvDirectory);
+            } else if (!PLATFORM.equals(contents.platform)) {
+                info(log, "Reinstalling GraalPy venv created on %s, but current is'%s", contents.platform, PLATFORM);
+                contents = null;
                 delete(venvDirectory);
             }
         }

@@ -52,7 +52,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -591,7 +590,7 @@ public class VFSUtilsTest {
 
         Path lockFile = tmpDir.resolve("graalpy.lock");
 
-        // 1a.) create venv with 2 packages
+        // 1a.) create venv
         createVenv(venvDir, "24.2.0", log, lockFile, "hello-world", "tiny-tiny");
         assertTrue(Files.exists(venvDir));
         checkVenvCreate(log.getOutput(), true);
@@ -608,6 +607,34 @@ public class VFSUtilsTest {
         assertTrue(Files.exists(venvDir));
         checkVenvCreate(log.getOutput(), true);
         checkVenvContentsFile(contents, "25.0.0", "hello-world", "tiny-tiny");
+    }
+
+    @Test
+    public void differentPlatform() throws IOException {
+        TestLog log = new TestLog();
+        Path tmpDir = Files.createTempDirectory("installAndLock");
+        Path venvDir = tmpDir.resolve("venv");
+        Path contents = venvDir.resolve("contents");
+        deleteDirOnShutdown(tmpDir);
+
+        Path lockFile = tmpDir.resolve("graalpy.lock");
+
+        // 1a.) create venv
+        createVenv(venvDir, "0.1", log, lockFile, "hello-world");
+        assertTrue(Files.exists(venvDir));
+        checkVenvCreate(log.getOutput(), true);
+        checkVenvContentsFile(contents, "0.1", "hello-world");
+        log.clearOutput();
+        // 1b.) and patch venv contents with different platform
+        List<String> lines = Files.readAllLines(contents).stream().map(l -> l.startsWith("platform=") ? "platform=bogus" : l).collect(Collectors.toList());
+        Files.write(contents, lines, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+        // 2.) now again - venv is removed and newly created
+        createVenv(venvDir, "0.1", log, lockFile, "hello-world");
+        assertTrue(Files.exists(venvDir));
+        checkVenvCreate(log.getOutput(), true);
+        checkVenvContentsFile(contents, "0.1", "hello-world");
+        assertTrue(log.getOutput().contains("Reinstalling GraalPy venv created on"));
     }
 
     private static boolean callPackageRemoved(List<String> packages, List<String> contents, List<String> installed)
@@ -709,7 +736,7 @@ public class VFSUtilsTest {
         assertEquals(graalPyVersion, m.get("version"));
         assertTrue(m.get("platform").contains(System.getProperty("os.name")));
         assertTrue(m.get("platform").contains(System.getProperty("os.arch")));
-        List<String> pkgs = m.get("packages") != null ? Arrays.asList(m.get("packages").split(",")) : Collections.emptyList();
+        List<String> pkgs = m.get("input_packages") != null ? Arrays.asList(m.get("input_packages").split(",")) : Collections.emptyList();
         assertEquals(packages.length, pkgs.size());
         if (!pkgs.containsAll(Arrays.asList(packages))) {
             fail(String.format("expected %s to contain all from %s", pkgs, Arrays.asList(packages)));
