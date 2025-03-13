@@ -581,7 +581,7 @@ public class VFSUtilsTest {
     }
 
     @Test
-    public void venvContentsFormat() throws IOException {
+    public void venvContentsFormat() throws IOException, PackagesChangedException {
         TestLog log = new TestLog();
         Path tmpDir = Files.createTempDirectory("installAndLock");
         Path venvDir = tmpDir.resolve("venv");
@@ -610,7 +610,7 @@ public class VFSUtilsTest {
     }
 
     @Test
-    public void differentPlatform() throws IOException {
+    public void differentPlatform() throws IOException, PackagesChangedException {
         TestLog log = new TestLog();
         Path tmpDir = Files.createTempDirectory("installAndLock");
         Path venvDir = tmpDir.resolve("venv");

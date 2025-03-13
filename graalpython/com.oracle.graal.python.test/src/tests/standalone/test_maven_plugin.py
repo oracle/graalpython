@@ -154,16 +154,25 @@ class MavenPluginTest(util.BuildToolTestBase):
             os.rename(target_dir, target_dir2)
             mvnw_cmd2 = util.get_mvn_wrapper(target_dir2, self.env)
             # adding new dep triggers launcher without venv regen
-            util.replace_in_file(os.path.join(target_dir2, "pom.xml"), "<packages>", "<packages>\n<package>ujson</package>")
+            util.replace_in_file(os.path.join(target_dir2, "pom.xml"), "<packages>", "<packages>\n<package>ujson</package>\n")
             cmd = mvnw_cmd2 + ["package", "exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir2)
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("Deleting GraalPy venv due to changed launcher path", out)
             util.check_ouput("hello java", out)
             util.check_ouput("not compatible with the current platform", out, contains=False)
-            
-            # patch venv/contents file to trigger native extension built on different platform warning
-            util.replace_in_file(os.path.join(target_dir2, "target", "classes", "org.graalvm.python.vfs" if use_default_vfs_path else vfs_prefix, "venv", "contents"), "platform=", "platform=test")
+
+            # create fake native files and patch contents file in venv
+            # to trigger native extension built on different platform warning
+            venv_dir = os.path.join(target_dir2, "target", "classes", "org.graalvm.python.vfs" if use_default_vfs_path else vfs_prefix, "venv")
+            for suffix in [".so", ".dylib", ".dll"]:
+                with open(os.path.join(venv_dir, "nativefile" + suffix), "w") as file:
+                    file.write("test")
+            cmd = mvnw_cmd2 + ["package"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir2)
+            util.check_ouput("BUILD SUCCESS", out)
+
+            util.replace_in_file(os.path.join(venv_dir, "contents"), "platform=", "platform=test")
             cmd = mvnw_cmd2 + ["exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir2)
             util.check_ouput("BUILD SUCCESS", out)
