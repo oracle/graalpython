@@ -26,14 +26,10 @@
 
 package com.oracle.graal.python.builtins.objects.foreign;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
-
 import java.util.List;
 
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -114,8 +110,8 @@ public final class ForeignBooleanBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_str, isComplex = true)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization

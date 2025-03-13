@@ -48,18 +48,20 @@ import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBui
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsInt;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsString;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -79,6 +81,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.UnicodeTranslateError)
 public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = UnicodeTranslateErrorBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -112,7 +116,7 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_str, isComplex = true)
     @GenerateNodeFactory
     public abstract static class UnicodeTranslateErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization

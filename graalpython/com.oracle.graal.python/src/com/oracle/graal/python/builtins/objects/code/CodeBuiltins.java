@@ -30,7 +30,6 @@ import static com.oracle.graal.python.annotations.ArgumentClinic.VALUE_EMPTY_TST
 import static com.oracle.graal.python.annotations.ArgumentClinic.VALUE_NONE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.objectArrayToTruffleStringArray;
@@ -41,6 +40,8 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -51,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.SourceMap;
@@ -80,6 +82,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCode)
 public final class CodeBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = CodeBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -345,7 +349,7 @@ public final class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class CodeReprNode extends PythonUnaryBuiltinNode {
         @Specialization

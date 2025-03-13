@@ -31,7 +31,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
@@ -226,7 +225,7 @@ public final class GeneratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization

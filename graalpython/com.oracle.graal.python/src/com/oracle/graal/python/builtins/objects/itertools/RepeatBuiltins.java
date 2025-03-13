@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.LEN_OF_UNSIZED_OBJECT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
@@ -155,7 +154,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getCnt() >= 0")

@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.tuple;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EQ;
@@ -61,6 +60,8 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -82,8 +83,9 @@ import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GetFullyQuali
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.DisabledNewNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.NewNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.ReduceNodeGen;
-import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.ReprNodeGen;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -102,6 +104,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -118,6 +121,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -250,17 +254,20 @@ public class StructSequence {
         }
     }
 
-    public record DescriptorCallTargets(RootCallTarget reprBuiltin, RootCallTarget reduceBuiltin, RootCallTarget newBuiltin) {
+    public static final TpSlots SLOTS = StructSequenceSlotsGen.SLOTS;
+
+    public record DescriptorCallTargets(RootCallTarget reduceBuiltin, RootCallTarget newBuiltin) {
     }
 
     @TruffleBoundary
     public static void initType(Python3Core core, BuiltinTypeDescriptor desc) {
-        initType(core.getLanguage(), core.lookupType(desc.type), desc);
+        initType(core.getContext(), core.lookupType(desc.type), desc);
     }
 
     @TruffleBoundary
-    public static void initType(PythonLanguage language, Object klass, Descriptor desc) {
+    public static void initType(PythonContext context, PythonAbstractClass klass, Descriptor desc) {
         assert IsSubtypeNode.getUncached().execute(klass, PythonBuiltinClassType.PTuple);
+        PythonLanguage language = context.getLanguage();
 
         long flags = TypeNodes.GetTypeFlagsNode.executeUncached(klass);
         if ((flags & TypeFlags.IMMUTABLETYPE) != 0) {
@@ -280,14 +287,16 @@ public class StructSequence {
         }
 
         DescriptorCallTargets callTargets = language.getOrCreateStructSequenceCallTargets(desc, d -> new DescriptorCallTargets(
-                        createBuiltinCallTarget(language, desc, ReprNode.class, ReprNodeGen::create, true),
                         createBuiltinCallTarget(language, desc, ReduceNode.class, ReduceNodeGen::create, true),
                         desc.allowInstances ? //
                                         createBuiltinCallTarget(language, desc, NewNode.class, NewNodeGen::create, false) : //
                                         createBuiltinCallTarget(language, desc, DisabledNewNode.class, ignore -> DisabledNewNodeGen.create(), false)));
 
-        createMethod(klass, ReprNode.class, callTargets.reprBuiltin);
         createMethod(klass, ReduceNode.class, callTargets.reduceBuiltin);
+
+        TpSlots.Builder slots = TpSlots.GetTpSlotsNode.executeUncached(klass).copy();
+        TpSlots.doSetOneSlot(klass, slots, TpSlots.TpSlotMeta.TP_REPR, SLOTS.tp_repr(), context.getNativeNull());
+        TpSlots.setSlots(klass, slots.build());
 
         WriteAttributeToObjectNode writeAttrNode = WriteAttributeToObjectNode.getUncached(true);
         /*
@@ -495,7 +504,8 @@ public class StructSequence {
         }
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
+    @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @CompilationFinal(dimensions = 1) private final TruffleString[] fieldNames;

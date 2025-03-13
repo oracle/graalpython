@@ -42,12 +42,13 @@ package com.oracle.graal.python.builtins.objects.method;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___SIGNATURE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___SIGNATURE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___SIGNATURE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -59,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -82,12 +84,14 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBuiltinFunctionOrMethod)
 public final class BuiltinFunctionOrMethodBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = BuiltinFunctionOrMethodBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BuiltinFunctionOrMethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         static boolean isBuiltinFunction(PBuiltinMethod self) {

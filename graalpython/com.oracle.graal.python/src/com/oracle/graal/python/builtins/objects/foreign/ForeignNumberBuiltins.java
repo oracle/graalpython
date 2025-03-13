@@ -34,9 +34,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
@@ -722,7 +720,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_str, isComplex = true)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Child private TruffleString.SwitchEncodingNode switchEncodingNode;
@@ -759,7 +757,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class ReprNode extends StrNode {
         @Child private ObjectNodes.DefaultObjectReprNode defaultReprNode;

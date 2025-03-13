@@ -44,11 +44,12 @@ import static com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins
 import static com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins.IDX_WRITTEN;
 import static com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode.ERROR_CERT_VERIFICATION;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -59,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -86,6 +88,8 @@ public final class SSLErrorBuiltins extends PythonBuiltins {
 
     public static final BaseExceptionAttrNode.StorageFactory SSL_ERROR_ATTR_FACTORY = (args) -> new Object[SSL_ERR_NUM_ATTRS];
     public static final TruffleString T_SSL_IN_BRACKETS = tsLiteral("[SSL]");
+
+    public static final TpSlots SLOTS = SSLErrorBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -171,7 +175,7 @@ public final class SSLErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_str, isComplex = true)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization

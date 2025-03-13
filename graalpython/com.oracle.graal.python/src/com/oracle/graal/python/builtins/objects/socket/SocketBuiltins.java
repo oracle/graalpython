@@ -52,7 +52,6 @@ import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ENO
 import static com.oracle.graal.python.builtins.objects.socket.PSocket.INVALID_FD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SOCKET;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.PosixConstants.SOL_SOCKET;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_ERROR;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
@@ -62,6 +61,8 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -74,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -118,6 +120,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSocket)
 public final class SocketBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = SocketBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -265,7 +269,7 @@ public final class SocketBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization

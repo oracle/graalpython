@@ -44,29 +44,25 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRepr.CallSlotReprNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -80,7 +76,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 @GenerateCached
 @GenerateInline(inlineByDefault = true)
-@ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
 
     public static Object executeUncached(Object object) {
@@ -99,32 +94,22 @@ public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
 
     @Specialization
     static Object repr(VirtualFrame frame, Node inliningTarget, Object obj,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "Repr", inline = false) LookupSpecialMethodSlotNode lookupRepr,
-                    @Cached(inline = false) CallUnaryMethodNode callRepr,
+                    @Cached GetObjectSlotsNode getSlots,
+                    @Cached CallSlotReprNode callSlot,
                     @Cached(inline = false) ObjectNodes.DefaultObjectReprNode defaultRepr,
-                    @Cached InlinedConditionProfile isString,
-                    @Cached InlinedConditionProfile isPString,
+                    @Cached PyUnicodeCheckNode checkNode,
                     @Cached PRaiseNode raiseNode) {
-        Object type = getClassNode.execute(inliningTarget, obj);
-        Object reprMethod;
-        try {
-            reprMethod = lookupRepr.execute(frame, type, obj);
-        } catch (PException e) {
+        TpSlots slots = getSlots.execute(inliningTarget, obj);
+        if (slots.tp_repr() == null) {
             return defaultRepr.execute(frame, inliningTarget, obj);
         }
-        if (reprMethod != PNone.NO_VALUE) {
-            Object result = callRepr.executeObject(frame, reprMethod, obj);
-            result = assertNoJavaString(result);
-            if (isString.profile(inliningTarget, result instanceof TruffleString) ||
-                            isPString.profile(inliningTarget, result instanceof PString)) {
-                return result;
-            }
-            if (result != PNone.NO_VALUE) {
-                throw raiseTypeError(inliningTarget, obj, raiseNode);
-            }
+        Object result = callSlot.execute(frame, inliningTarget, slots.tp_repr(), obj);
+        assertNoJavaString(result);
+        if (checkNode.execute(inliningTarget, result)) {
+            return result;
+        } else {
+            throw raiseTypeError(inliningTarget, obj, raiseNode);
         }
-        return defaultRepr.execute(frame, inliningTarget, obj);
     }
 
     @InliningCutoff

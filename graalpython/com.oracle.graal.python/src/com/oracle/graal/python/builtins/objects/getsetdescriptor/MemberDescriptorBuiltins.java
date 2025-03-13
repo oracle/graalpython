@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
@@ -91,7 +90,7 @@ public final class MemberDescriptorBuiltins extends PythonBuiltins {
         return MemberDescriptorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class MemberDescriptorReprNode extends PythonUnaryBuiltinNode {
         @Specialization

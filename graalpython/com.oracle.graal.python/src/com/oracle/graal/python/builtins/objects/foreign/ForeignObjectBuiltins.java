@@ -31,8 +31,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.simpleTruffleStringFormatUncached;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
@@ -53,15 +51,15 @@ import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
+import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
@@ -325,7 +323,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_str, isComplex = true)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Child private TruffleString.SwitchEncodingNode switchEncodingNode;
@@ -333,20 +331,17 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         @Specialization
         Object str(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Cached(parameters = "T___REPR__") LookupAttributeInMRONode lookupAttributeInMRONode,
-                        @Cached(parameters = "Repr") LookupAndCallUnaryNode reprNode,
+                        @Cached GetObjectSlotsNode getSlots,
+                        @Cached PyObjectReprAsObjectNode reprNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached ObjectNodes.DefaultObjectReprNode defaultReprNode,
                         @Cached InlinedBranchProfile isIterator,
                         @Cached InlinedBranchProfile defaultCase) {
             // Check if __repr__ is defined before foreign, if so call that, like object.__str__
             // would do
-            var klass = getClassNode.execute(inliningTarget, object);
-            var repr = lookupAttributeInMRONode.execute(klass);
-            var foreignObjectBuiltinsRepr = lookupAttributeInMRONode.execute(PythonBuiltinClassType.ForeignObject);
-            if (repr != foreignObjectBuiltinsRepr) {
-                return reprNode.executeObject(frame, object);
+            TpSlots slots = getSlots.execute(inliningTarget, object);
+            if (slots.tp_repr() != SLOTS.tp_repr()) {
+                return reprNode.execute(frame, inliningTarget, object);
             }
 
             if (lib.isIterator(object)) {
@@ -375,7 +370,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class ReprNode extends StrNode {
         @Child private ObjectNodes.DefaultObjectReprNode defaultReprNode;

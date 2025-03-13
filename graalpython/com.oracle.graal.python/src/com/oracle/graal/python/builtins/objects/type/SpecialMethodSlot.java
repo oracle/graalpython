@@ -72,11 +72,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET_NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUBCLASSCHECK__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -168,8 +166,6 @@ public enum SpecialMethodSlot {
 
     LengthHint(T___LENGTH_HINT__),
     Hash(T___HASH__),
-    Str(T___STR__),
-    Repr(T___REPR__),
     // Note: __format__ does not seem to be actual slot in CPython, but it is looked up frequently
     Format(T___FORMAT__),
     Missing(T___MISSING__),
@@ -794,15 +790,7 @@ public enum SpecialMethodSlot {
                     return Hash;
                 }
                 break;
-            case 's' * 26 + 't':    // st
-                if (eqNode.execute(name, T___STR__, TS_ENCODING)) {
-                    return Str;
-                }
-                break;
             case 'r' * 26 + 'e':    // re
-                if (eqNode.execute(name, T___REPR__, TS_ENCODING)) {
-                    return Repr;
-                }
                 if (eqNode.execute(name, T___REVERSED__, TS_ENCODING)) {
                     return Reversed;
                 }

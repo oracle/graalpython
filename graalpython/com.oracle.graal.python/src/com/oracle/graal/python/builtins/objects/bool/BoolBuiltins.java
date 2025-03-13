@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.bool;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_FALSE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TRUE;
 
@@ -34,7 +32,6 @@ import java.util.List;
 
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -43,7 +40,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -64,10 +61,10 @@ public final class BoolBuiltins extends PythonBuiltins {
         return BoolBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_str, isComplex = true)
     @TypeSystemReference(PythonIntegerTypes.class)
     @GenerateNodeFactory
-    abstract static class StrNode extends PythonBuiltinNode {
+    abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString doBoolean(boolean self) {
             return self ? T_TRUE : T_FALSE;
@@ -84,7 +81,7 @@ public final class BoolBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class RepNode extends StrNode {
     }

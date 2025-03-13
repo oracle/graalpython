@@ -188,6 +188,7 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
@@ -419,7 +420,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     This is equivalent to (real + imag*1j) where imag defaults to 0.""")
     @GenerateNodeFactory
     public abstract static class ComplexNode extends PythonTernaryBuiltinNode {
-        @Child private LookupAndCallUnaryNode callReprNode;
+        @Child private PyObjectReprAsObjectNode reprNode;
         @Child private LookupAndCallUnaryNode callComplexNode;
         @Child private WarnNode warnNode;
 
@@ -778,11 +779,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private Object convertStringToComplex(VirtualFrame frame, Node inliningTarget, String src, Object cls, Object origObj, PRaiseNode raiseNode) {
             String str = FloatUtils.removeUnicodeAndUnderscores(src);
             if (str == null) {
-                if (callReprNode == null) {
+                if (reprNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    callReprNode = insert(LookupAndCallUnaryNode.create(SpecialMethodSlot.Repr));
+                    reprNode = insert(PyObjectReprAsObjectNode.create());
                 }
-                Object strStr = callReprNode.executeObject(frame, origObj);
+                Object strStr = reprNode.executeCached(frame, origObj);
                 if (PGuards.isString(strStr)) {
                     throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.COULD_NOT_CONVERT_STRING_TO_COMPLEX, strStr);
                 } else {

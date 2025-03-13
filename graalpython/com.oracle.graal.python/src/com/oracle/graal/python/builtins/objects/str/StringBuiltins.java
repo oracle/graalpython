@@ -46,8 +46,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUFFLE_RICHCOMPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
@@ -211,7 +209,7 @@ public final class StringBuiltins extends PythonBuiltins {
         return StringBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_str, isComplex = true)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
 
@@ -334,7 +332,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
