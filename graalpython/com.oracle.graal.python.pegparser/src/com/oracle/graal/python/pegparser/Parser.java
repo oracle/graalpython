@@ -13464,7 +13464,7 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_316_rule(false)
             )
             {
-                _res = dummyName(_literal, _tmp_315_var);
+                _res = raiseSyntaxErrorOnNextToken("f-string: expecting '=', or '!', or ':', or '}'");
                 return (Object)_res;
             }
             reset(_mark);

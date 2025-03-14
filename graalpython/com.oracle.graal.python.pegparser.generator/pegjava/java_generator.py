@@ -372,7 +372,6 @@ ACTION_MAPPINGS = {
     '_PyPegen_setup_full_format_spec ( p , colon , ( asdl_expr_seq* ) spec , EXTRA )': (1, 'setupFullFormatSpec(colon, spec, $RANGE)'),
     '_PyPegen_joined_str ( p , a , ( asdl_expr_seq* ) b , c )': (1, 'joinedStr(a, b, c)'),
     '_PyPegen_concatenate_strings ( p , a , EXTRA )': (1, 'this.concatenateStrings(a, $RANGE)'),
-    'PyErr_Occurred ( ) ? NULL : RAISE_SYNTAX_ERROR_ON_NEXT_TOKEN ( "f-string: expecting \'=\', or \'!\', or \':\', or \'}\'" )': (1, '')
 }
 
 # Maps pattern to (n, replacement), where:
@@ -400,7 +399,7 @@ ACTION_MAPPINGS_RE = {
     r'RAISE_INDENTATION_ERROR \( "(.+)" \)': (1, 'this.raiseIndentationError("\\1")'),
     r'RAISE_INDENTATION_ERROR \( "(.+)" , (\w+) -> lineno \)': (16, 'this.raiseIndentationError("\\1", \\2.getSourceRange().startLine)'),
     'RAISE_SYNTAX_ERROR_ON_NEXT_TOKEN \( "(.+)" \)': (3, 'raiseSyntaxErrorOnNextToken("\\1")'),
-    r'PyErr_Occurred \( \) \? NULL : RAISE_SYNTAX_ERROR_ON_NEXT_TOKEN \( "(.+)" \)': (4, 'raiseSyntaxErrorOnNextToken("\\1")'),
+    r'PyErr_Occurred \( \) \? NULL : RAISE_SYNTAX_ERROR_ON_NEXT_TOKEN \( "(.+)" \)': (5, 'raiseSyntaxErrorOnNextToken("\\1")'),
 }
 
 LICENSE = '''/*
