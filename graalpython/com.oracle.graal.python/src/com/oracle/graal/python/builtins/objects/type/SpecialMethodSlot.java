@@ -340,9 +340,6 @@ public enum SpecialMethodSlot {
             Object[] typeSlots = new Object[VALUES.length];
             PythonBuiltinClass klass = core.lookupType(type);
             for (SpecialMethodSlot slot : VALUES) {
-                if (type.redefinesSlot(slot)) {
-                    continue;
-                }
                 Object value = slot.getValue(klass);
                 if (value instanceof PBuiltinFunction && slot.allowsBuiltinDescriptors) {
                     BuiltinMethodDescriptor info = BuiltinMethodDescriptor.get((PBuiltinFunction) value);
@@ -900,8 +897,7 @@ public enum SpecialMethodSlot {
     // debugging
 
     /**
-     * Checks that there were no builtins' slots overridden except those explicitly marked so by
-     * {@link PythonBuiltinClassType#redefinesSlot}.
+     * Checks that there were no builtins' slots overridden.
      */
     public static boolean checkSlotOverrides(Python3Core core) {
         assert builtinSlotsInitialized;

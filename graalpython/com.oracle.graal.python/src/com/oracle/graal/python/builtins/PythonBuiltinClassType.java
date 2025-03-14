@@ -681,11 +681,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @CompilationFinal private int weaklistoffset;
 
     /**
-     * @see #redefinesSlot(SpecialMethodSlot)
-     */
-    private SpecialMethodSlot[] redefinedSlots;
-
-    /**
      * Lookup cache for special slots defined in {@link SpecialMethodSlot}. Use
      * {@link SpecialMethodSlot} to access the values. Unlike the cache in
      * {@link com.oracle.graal.python.builtins.objects.type.PythonManagedClass}, this caches only
@@ -857,25 +852,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return weaklistoffset;
     }
 
-    /**
-     * Returns {@code true} if this method slot is redefined in Python code during initialization.
-     * Values of such slots cannot be cached in {@link #specialMethodSlots}, because they are not
-     * context independent.
-     */
-    public boolean redefinesSlot(SpecialMethodSlot slot) {
-        if (redefinedSlots != null) {
-            for (SpecialMethodSlot redefSlot : redefinedSlots) {
-                if (redefSlot == slot) {
-                    return true;
-                }
-            }
-        }
-        if (base != null) {
-            return base.redefinesSlot(slot);
-        }
-        return false;
-    }
-
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
@@ -889,29 +865,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @CompilationFinal(dimensions = 1) public static final PythonBuiltinClassType[] VALUES = Arrays.copyOf(values(), values().length - 1);
 
     static {
-        // fill the overridden slots
-        SpecialMethodSlot[] newSlot = new SpecialMethodSlot[]{SpecialMethodSlot.New};
-
-        PStructUnpackIterator.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.LengthHint};
-
-        // These slots actually contain context independent values, but they are initialized in
-        // StructSequence to artificial PBuiltinFunctions with artificial builtin node factories,
-        // which are different for each context. We'd have to turn those factories into singletons
-        // to guarantee their identity across contexts. For the sake of simplicity, we just ignore
-        // those slots for now.
         PStruct.type = PythonClass;
-        PStructRusage.redefinedSlots = newSlot;
-        PStructPasswd.redefinedSlots = newSlot;
-        PUnameResult.redefinedSlots = newSlot;
-        PUnraisableHookArgs.redefinedSlots = newSlot;
-        PIntInfo.redefinedSlots = newSlot;
-        PHashInfo.redefinedSlots = newSlot;
-        PStructTime.redefinedSlots = newSlot;
-        PProfilerEntry.redefinedSlots = newSlot;
-        PProfilerSubentry.redefinedSlots = newSlot;
-        PThreadInfo.redefinedSlots = newSlot;
-        PFloatInfo.redefinedSlots = newSlot;
-        PTerminalSize.redefinedSlots = newSlot;
 
         PythonObject.type = PythonClass;
         PythonObject.base = null;
