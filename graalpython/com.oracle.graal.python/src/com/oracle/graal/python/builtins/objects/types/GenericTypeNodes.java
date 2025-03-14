@@ -77,7 +77,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -329,8 +328,7 @@ public abstract class GenericTypeNodes {
                     arg = argitems[foundIndex];
                     // TypeVarTuple
                     if (arg instanceof PTuple tuple1) {
-                        Object paramType = GetClassNode.executeUncached(param);
-                        if (GetObjectSlotsNode.executeUncached(paramType).tp_iter() != null) {
+                        if (GetObjectSlotsNode.executeUncached(param).tp_iter() != null) {
                             listExtend(subargs, tuple1);
                             continue;
                         }
