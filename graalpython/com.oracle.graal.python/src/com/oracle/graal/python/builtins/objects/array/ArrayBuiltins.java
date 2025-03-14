@@ -47,7 +47,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
@@ -100,13 +99,13 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -502,13 +501,13 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString repr(VirtualFrame frame, PArray self,
                         @Bind("this") Node inliningTarget,
-                        @Cached("create(Repr)") LookupAndCallUnaryNode reprNode,
+                        @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached InlinedConditionProfile isEmptyProfile,
                         @Cached InlinedConditionProfile isUnicodeProfile,
                         @Cached CastToTruffleStringNode cast,
@@ -526,7 +525,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             if (isEmptyProfile.profile(inliningTarget, length != 0)) {
                 if (isUnicodeProfile.profile(inliningTarget, self.getFormat() == BufferFormat.UNICODE)) {
                     appendStringNode.execute(sb, T_COMMA_SPACE);
-                    appendStringNode.execute(sb, cast.execute(inliningTarget, reprNode.executeObject(frame, toUnicodeNode.execute(frame, self))));
+                    appendStringNode.execute(sb, repr.execute(frame, inliningTarget, toUnicodeNode.execute(frame, self)));
                 } else {
                     appendStringNode.execute(sb, T_COMMA_SPACE);
                     appendStringNode.execute(sb, T_LBRACKET);
@@ -535,7 +534,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                             appendStringNode.execute(sb, T_COMMA_SPACE);
                         }
                         Object value = getValueNode.execute(inliningTarget, self, i);
-                        appendStringNode.execute(sb, cast.execute(inliningTarget, reprNode.executeObject(frame, value)));
+                        appendStringNode.execute(sb, cast.execute(inliningTarget, repr.execute(frame, inliningTarget, value)));
                     }
                     appendStringNode.execute(sb, T_RBRACKET);
                 }

@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ class TestPyStructSequenceTypes(unittest.TestCase):
                                static PyStructSequence_Field typeinfo_fields[] = {
                                    {"element0",      "The first element."},
                                    {"element1",      "The second element."},
+                                   {"element2",      "The third element."},
                                    {NULL, NULL,}
                                };
 
@@ -69,11 +70,18 @@ class TestPyStructSequenceTypes(unittest.TestCase):
                                           )
         assert TestPyStructSequence.__doc__ == "Information about some custom struct type"
 
-        tester = TestPyStructSequence(("hello", "world"))
+        tester = TestPyStructSequence(("hello", "world"), {"element2": 1})
         assert hasattr(tester, "element0")
         assert hasattr(tester, "element1")
         assert tester.element0 == "hello"
         assert tester.element1 == "world"
+        assert tester.element2 == 1
+        assert len(tester) == 2
+        assert tuple(tester) == ("hello", "world")
+        assert repr(tester) == "TestPyStructSequenceTypes.TestPyStructSequence(element0='hello', element1='world')"
+        assert tester.__repr__() == "TestPyStructSequenceTypes.TestPyStructSequence(element0='hello', element1='world')"
+        assert tester.__reduce__() == (TestPyStructSequence, (('hello', 'world'), {'element2': 1}))
+        assert tester.__reduce__.__qualname__ == "TestPyStructSequence.__reduce__"
 
     def test_structseq_newtype(self):
         TestPyStructSequenceNewType = CPyExtType("TestPyStructSequenceNewType", """

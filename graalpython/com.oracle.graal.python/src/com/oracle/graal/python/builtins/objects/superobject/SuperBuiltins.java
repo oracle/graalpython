@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___SELF__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___THISCLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
@@ -602,7 +601,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     public abstract static class SuperReprNode extends PythonUnaryBuiltinNode {
         @Specialization

@@ -37,7 +37,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___IMPORT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PACKAGE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_GRAALPYTHON;
@@ -312,6 +311,7 @@ import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinFunctionOrMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.ClassmethodCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.method.DecoratedMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.InstancemethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
@@ -355,6 +355,7 @@ import com.oracle.graal.python.builtins.objects.thread.ThreadBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequenceBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -462,6 +463,7 @@ public abstract class Python3Core {
                         new BuiltinFunctions(),
                         new DecoratedMethodBuiltins(),
                         new ClassmethodBuiltins(),
+                        new ClassmethodCommonBuiltins(),
                         new StaticmethodBuiltins(),
                         new InstancemethodBuiltins(),
                         new SimpleNamespaceBuiltins(),
@@ -491,6 +493,7 @@ public abstract class Python3Core {
                         new RangeBuiltins(),
                         new SliceBuiltins(),
                         new TupleBuiltins(),
+                        new StructSequenceBuiltins(),
                         new StringBuiltins(),
                         new BaseSetBuiltins(),
                         new SetBuiltins(),
@@ -960,11 +963,6 @@ public abstract class Python3Core {
         writeNode.execute(getBuiltins(), T___IMPORT__, __import__);
         importFunc = (PFunction) __import__;
         importlib = bootstrap;
-
-        PythonBuiltinClass moduleType = lookupType(PythonBuiltinClassType.PythonModule);
-        writeNode.execute(moduleType, T___REPR__, readNode.execute(bootstrap, toTruffleStringUncached("_module_repr")));
-
-        SpecialMethodSlot.reinitializeSpecialMethodSlots(moduleType, getLanguage());
 
         // see CPython's init_importlib_external
         callNode.execute(null, null, bootstrap, toTruffleStringUncached("_install_external_importers"));

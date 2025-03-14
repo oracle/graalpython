@@ -76,13 +76,14 @@ import static com.oracle.graal.python.nodes.ErrorMessages.IO_STREAM_DETACHED;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_UNINIT;
 import static com.oracle.graal.python.nodes.ErrorMessages.REENTRANT_CALL_INSIDE_S_REPR;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNSUPPORTED_WHENCE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IOUnsupportedOperation;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.CheckIsClosedNode;
@@ -91,6 +92,7 @@ import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.FlushAndRewin
 import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.RawTellNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -121,6 +123,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PBufferedReader, PBufferedWriter, PBufferedRandom})
 public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
+
+    public static final TpSlots SLOTS = BufferedIOMixinBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BufferedIOMixinBuiltinsFactory.getFactories();
@@ -397,7 +402,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
         }
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
