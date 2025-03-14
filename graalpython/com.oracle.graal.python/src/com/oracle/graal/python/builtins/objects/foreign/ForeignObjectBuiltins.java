@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
@@ -328,6 +329,8 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Child private TruffleString.SwitchEncodingNode switchEncodingNode;
 
+        private static final TpSlot FOREIGN_REPR = SLOTS.tp_repr();
+
         @Specialization
         Object str(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
@@ -340,7 +343,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             // Check if __repr__ is defined before foreign, if so call that, like object.__str__
             // would do
             TpSlots slots = getSlots.execute(inliningTarget, object);
-            if (slots.tp_repr() != SLOTS.tp_repr()) {
+            if (slots.tp_repr() != FOREIGN_REPR) {
                 return reprNode.execute(frame, inliningTarget, object);
             }
 
