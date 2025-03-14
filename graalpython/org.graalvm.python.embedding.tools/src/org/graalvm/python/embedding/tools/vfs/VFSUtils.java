@@ -386,20 +386,44 @@ public final class VFSUtils {
         }
     }
 
-    public static void createVenv(Path venvDirectory, List<String> packagesArgs, Launcher launcherArgs, String graalPyVersion, BuildToolLog log) throws IOException {
-        createVenv(venvDirectory, packagesArgs, null, null, null, launcherArgs, graalPyVersion, log);
+    public static final class PackagesChangedException extends Exception {
+        private static final long serialVersionUID = 9162516912727973035L;
+
+        private final transient List<String> pluginPackages;
+        private final transient List<String> lockFilePackages;
+
+        private PackagesChangedException(List<String> pluginPackages, List<String> lockFilePackages) {
+            this.pluginPackages = pluginPackages;
+            this.lockFilePackages = lockFilePackages;
+        }
+
+        public List<String> getPluginPackages() {
+            return pluginPackages;
+        }
+
+        public List<String> getLockFilePackages() {
+            return lockFilePackages;
+        }
+
     }
 
-    public static void createVenv(Path venvDirectory, List<String> packages, Path lockFilePath, String packagesChangedError, String missingLockFileWarning, Launcher launcher, String graalPyVersion,
-                    BuildToolLog log) throws IOException {
+    public static void createVenv(Path venvDirectory, List<String> packagesArgs, Launcher launcherArgs, String graalPyVersion, BuildToolLog log) throws IOException {
+        try {
+            createVenv(venvDirectory, packagesArgs, null, null, launcherArgs, graalPyVersion, log);
+        } catch (PackagesChangedException e) {
+            // should not happen
+            assert false;
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public static void createVenv(Path venvDirectory, List<String> packages, Path lockFilePath, String missingLockFileWarning, Launcher launcher, String graalPyVersion, BuildToolLog log)
+                    throws IOException, PackagesChangedException {
         Objects.requireNonNull(venvDirectory);
         Objects.requireNonNull(packages);
         Objects.requireNonNull(launcher);
         Objects.requireNonNull(graalPyVersion);
         Objects.requireNonNull(log);
-        if (lockFilePath != null) {
-            Objects.requireNonNull(packagesChangedError);
-        }
 
         logVenvArgs(venvDirectory, packages, lockFilePath, launcher, graalPyVersion, log);
 
@@ -409,7 +433,7 @@ public final class VFSUtils {
             lockFile = LockFile.fromFile(lockFilePath, log);
         }
 
-        if (!checkPackages(venvDirectory, pluginPackages, lockFile, packagesChangedError, log)) {
+        if (!checkPackages(venvDirectory, pluginPackages, lockFile, log)) {
             return;
         }
 
@@ -514,9 +538,9 @@ public final class VFSUtils {
         }
     }
 
-    private static boolean checkPackages(Path venvDirectory, List<String> pluginPackages, LockFile lockFile, String packagesListChangedError, BuildToolLog log) throws IOException {
+    private static boolean checkPackages(Path venvDirectory, List<String> pluginPackages, LockFile lockFile, BuildToolLog log) throws IOException, PackagesChangedException {
         if (lockFile != null) {
-            checkPluginPackagesInLockFile(pluginPackages, lockFile, packagesListChangedError, log);
+            checkPluginPackagesInLockFile(pluginPackages, lockFile);
             logPackages(lockFile.packages, lockFile.path, log);
             return needVenv(venvDirectory, lockFile.packages, log);
         } else {
@@ -629,22 +653,9 @@ public final class VFSUtils {
     /**
      * check that there are no plugin packages missing in lock file
      */
-    private static void checkPluginPackagesInLockFile(List<String> pluginPackages, LockFile lockFile, String packagesChangedError, BuildToolLog log)
-                    throws IOException {
-        checkPluginPackagesInLockFile(pluginPackages, lockFile.inputPackages, lockFile.path, packagesChangedError, log);
-    }
-
-    /**
-     * Accessed from VFSUtilsTest
-     */
-    private static void checkPluginPackagesInLockFile(List<String> pluginPackages, List<String> lockFilePackages, Path lockFilePath, String packagesChangedError, BuildToolLog log)
-                    throws IOException {
-
-        if (pluginPackages.size() != lockFilePackages.size() || !pluginPackages.containsAll(lockFilePackages)) {
-            String pluginPkgsString = pluginPackages.isEmpty() ? "None" : String.join(", ", pluginPackages);
-            String lockFilePkgsString = lockFilePackages.isEmpty() ? "None" : String.join(", ", lockFilePackages);
-            extendedError(log, String.format(packagesChangedError, lockFilePath, pluginPkgsString, lockFilePkgsString) + "\n");
-            throw new IOException("inconsistent packages");
+    private static void checkPluginPackagesInLockFile(List<String> pluginPackages, LockFile lockFile) throws PackagesChangedException {
+        if (pluginPackages.size() != lockFile.inputPackages.size() || !pluginPackages.containsAll(lockFile.inputPackages)) {
+            throw new PackagesChangedException(new ArrayList<>(pluginPackages), new ArrayList<>(lockFile.inputPackages));
         }
     }
 
@@ -827,16 +838,6 @@ public final class VFSUtils {
 
     private static void warning(BuildToolLog log, String txt) {
         log.warning(txt);
-    }
-
-    private static void extendedError(BuildToolLog log, String txt) {
-        if (log.isErrorEnabled()) {
-            log.error("");
-            for (String t : txt.split("\n")) {
-                log.error(t);
-            }
-            log.error("");
-        }
     }
 
     private static void info(BuildToolLog log, String txt, Object... args) {
