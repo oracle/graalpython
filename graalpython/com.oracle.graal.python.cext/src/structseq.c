@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -385,6 +385,7 @@ static PyMethodDef structseq_methods[] = {
     {"__reduce__", (PyCFunction)structseq_reduce, METH_NOARGS, NULL},
     {NULL, NULL}
 };
+#endif // GraalPy change
 
 static Py_ssize_t
 count_members(PyStructSequence_Desc *desc, Py_ssize_t *n_unnamed_members) {
@@ -399,6 +400,7 @@ count_members(PyStructSequence_Desc *desc, Py_ssize_t *n_unnamed_members) {
     return i;
 }
 
+#if 0 // GraalPy change
 static int
 initialize_structseq_dict(PyStructSequence_Desc *desc, PyObject* dict,
                           Py_ssize_t n_members, Py_ssize_t n_unnamed_members) {
@@ -455,6 +457,7 @@ error:
     Py_DECREF(keys);
     return -1;
 }
+#endif // GraalPy change
 
 static void
 initialize_members(PyStructSequence_Desc *desc, PyMemberDef* members,
@@ -478,7 +481,6 @@ initialize_members(PyStructSequence_Desc *desc, PyMemberDef* members,
     }
     members[k].name = NULL;
 }
-#endif // GraalPy change
 
 
 int
@@ -518,7 +520,6 @@ _PyStructSequence_InitType(PyTypeObject *type, PyStructSequence_Desc *desc,
     type->tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | tp_flags;
     type->tp_traverse = (traverseproc) structseq_traverse;
 
-#if 0 // GraalPy change: initialize members in an upcall later
     n_members = count_members(desc, &n_unnamed_members);
     members = PyMem_NEW(PyMemberDef, n_members - n_unnamed_members + 1);
     if (members == NULL) {
@@ -527,9 +528,6 @@ _PyStructSequence_InitType(PyTypeObject *type, PyStructSequence_Desc *desc,
     }
     initialize_members(desc, members, n_members);
     type->tp_members = members;
-#else // GraalPy change
-    type->tp_members = NULL;
-#endif // GraalPy change
 
     if (PyType_Ready(type) < 0) {
         // GraalPy change: not initialized

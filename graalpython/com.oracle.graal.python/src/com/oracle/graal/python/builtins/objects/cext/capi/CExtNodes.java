@@ -550,6 +550,10 @@ public abstract class CExtNodes {
             return execute(charPtr, true);
         }
 
+        public static TruffleString executeUncached(Object charPtr) {
+            return FromCharPointerNodeGen.getUncached().execute(charPtr);
+        }
+
         public abstract TruffleString execute(Object charPtr, boolean copy);
 
         @Specialization

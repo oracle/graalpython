@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -79,7 +79,8 @@ class StructSeqTests(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, r'os.stat_result\(\) takes an at most \d+-sequence \(30-sequence given\)'):
             posix.stat_result((1,) * 30)
         with self.assertRaisesRegex(TypeError, r'cannot create \'sys.flags\' instances'):
-            type(sys.flags)()
+            # GraalPy change: add argument to avoid hitting the argument error first
+            type(sys.flags)(())
 
     def test_no_subclass(self):
         with self.assertRaises(TypeError):

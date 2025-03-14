@@ -37,7 +37,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.VarHandle;
-import java.lang.ref.WeakReference;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
@@ -71,9 +70,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
-import com.oracle.graal.python.builtins.objects.tuple.StructSequence.BuiltinTypeDescriptor;
-import com.oracle.graal.python.builtins.objects.tuple.StructSequence.Descriptor;
-import com.oracle.graal.python.builtins.objects.tuple.StructSequence.DescriptorCallTargets;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -364,46 +360,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @CompilationFinal(dimensions = 1) private final RootCallTarget[] builtinSlotsCallTargets;
 
     /**
-     * Weak hash map of call targets for builtin functions associated with named tuples generated at
-     * runtime from C extensions. We hold the cached call targets also weakly, because otherwise we
-     * would have a cycle from the value (call targets reference builtin nodes which wrap the
-     * descriptor) to the key. The key should be GC'ed when the corresponding generated named tuple
-     * class is GC'ed.
-     */
-    private final WeakHashMap<StructSequence.Descriptor, WeakReference<StructSequence.DescriptorCallTargets>> structSequenceTargets = new WeakHashMap<>();
-
-    /**
-     * The same as {@link #structSequenceTargets}, but for builtin named tuples. There is a bounded
-     * statically known number of builtin named tuples.
-     */
-    private final ConcurrentHashMap<StructSequence.Descriptor, StructSequence.DescriptorCallTargets> structSequenceBuiltinTargets = new ConcurrentHashMap<>();
-
-    public StructSequence.DescriptorCallTargets getOrCreateStructSequenceCallTargets(StructSequence.Descriptor descriptor,
-                    Function<StructSequence.Descriptor, StructSequence.DescriptorCallTargets> factory) {
-        if (singleContext) {
-            return factory.apply(descriptor);
-        }
-        if (descriptor instanceof BuiltinTypeDescriptor builtinDescriptor) {
-            // There must be finite set of objects initialized in static final fields, no need for a
-            // weak map
-            return structSequenceBuiltinTargets.computeIfAbsent(builtinDescriptor, factory);
-        }
-        return getOrCreateStructSeqNonBuiltinTargets(descriptor, factory);
-    }
-
-    private DescriptorCallTargets getOrCreateStructSeqNonBuiltinTargets(Descriptor descriptor, Function<Descriptor, DescriptorCallTargets> factory) {
-        synchronized (structSequenceTargets) {
-            WeakReference<DescriptorCallTargets> weakResult = structSequenceTargets.computeIfAbsent(descriptor, d -> new WeakReference<>(factory.apply(d)));
-            DescriptorCallTargets result = weakResult.get();
-            if (result == null) {
-                result = factory.apply(descriptor);
-                structSequenceTargets.put(descriptor, new WeakReference<>(result));
-            }
-            return result;
-        }
-    }
-
-    /**
      * We cannot initialize call targets in language ctor and the next suitable hook is context
      * initialization, but that is called multiple times. We use this flag to run the language
      * specific initialization only once.
@@ -482,7 +438,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         context.finalizeContext();
         super.finalizeContext(context);
         // trigger cleanup of stale entries in weak hash maps
-        structSequenceTargets.size();
         indirectCallDataMap.size();
     }
 

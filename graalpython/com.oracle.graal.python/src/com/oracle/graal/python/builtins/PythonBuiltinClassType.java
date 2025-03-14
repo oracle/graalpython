@@ -241,7 +241,7 @@ import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltins;
-import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequenceBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltins;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -416,23 +416,23 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PBytesIO("BytesIO", "_io", Flags.PUBLIC_BASE_WDICT, BytesIOBuiltins.SLOTS),
     PBytesIOBuf("_BytesIOBuffer", "_io", Flags.PRIVATE_BASE_WODICT),
 
-    PStatResult("stat_result", "os", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
-    PStatvfsResult("statvfs_result", "os", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
-    PTerminalSize("terminal_size", "os", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
-    PUnameResult("uname_result", J_POSIX, Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
-    PStructTime("struct_time", "time", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
-    PProfilerEntry("profiler_entry", "_lsprof", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
-    PProfilerSubentry("profiler_subentry", "_lsprof", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
-    PStructPasswd("struct_passwd", "pwd", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
-    PStructRusage("struct_rusage", "resource", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
-    PVersionInfo("version_info", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
-    PWindowsVersion("windowsversion", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
-    PFlags("flags", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
-    PFloatInfo("float_info", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
-    PIntInfo("int_info", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
-    PHashInfo("hash_info", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
-    PThreadInfo("thread_info", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
-    PUnraisableHookArgs("UnraisableHookArgs", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
+    PStatResult("stat_result", "os", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PStatvfsResult("statvfs_result", "os", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PTerminalSize("terminal_size", "os", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PUnameResult("uname_result", J_POSIX, Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PStructTime("struct_time", "time", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PProfilerEntry("profiler_entry", "_lsprof", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PProfilerSubentry("profiler_subentry", "_lsprof", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PStructPasswd("struct_passwd", "pwd", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PStructRusage("struct_rusage", "resource", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PVersionInfo("version_info", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PWindowsVersion("windowsversion", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PFlags("flags", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PFloatInfo("float_info", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PIntInfo("int_info", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PHashInfo("hash_info", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PThreadInfo("thread_info", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PUnraisableHookArgs("UnraisableHookArgs", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
 
     PSSLSession("SSLSession", J__SSL),
     PSSLContext("_SSLContext", J__SSL),

@@ -40,95 +40,50 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
-import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EQ;
-import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
-import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringArrayUncached;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.annotations.Slot;
-import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
-import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GetFullyQualifiedClassNameNode;
-import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.DisabledNewNodeGen;
-import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.NewNodeGen;
-import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.ReduceNodeGen;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.Function;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.graal.python.util.PythonUtils.PrototypeNodeFactory;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 /**
  * Allows definitions of tuple-like structs with named fields (like structseq.c in CPython).
@@ -170,28 +125,6 @@ public class StructSequence {
             this(docString, inSequence, fieldNames, fieldDocStrings, true);
         }
 
-        // This shifts the names in a confusing way, but that is what CPython does:
-        // >>> s = os.stat('.')
-        // >>> s.st_atime
-        // 1607033732.3041613
-        // >>> s
-        // os.stat_result(..., st_atime=1607033732, ...)
-        //
-        // note that st_atime accessed by name returns float (index 10), but in repr the same label
-        // is assigned to the int value at index 7
-        TruffleString[] getFieldsForRepr() {
-            TruffleString[] fieldNamesForRepr = new TruffleString[inSequence];
-            int k = 0;
-            for (int idx = 0; idx < fieldNames.length && k < inSequence; ++idx) {
-                if (fieldNames[idx] != null) {
-                    fieldNamesForRepr[k++] = fieldNames[idx];
-                }
-            }
-            // each field < inSequence must have a name
-            assert k == inSequence;
-            return fieldNamesForRepr;
-        }
-
         @Override
         public boolean equals(Object o) {
             if (this == o) {
@@ -217,8 +150,7 @@ public class StructSequence {
     /**
      * Very similar to {@code PyStructSequence_Desc} but already specific to a built-in type. Used
      * for built-in structseq objects. All BuiltinTypeDescriptor instances should be kept in
-     * {@code static final} fields to ensure there is a finite number of them, see
-     * {@link PythonLanguage#getOrCreateStructSequenceCallTargets(Descriptor, Function)}.
+     * {@code static final} fields to ensure there is a finite number of them.
      */
     public static final class BuiltinTypeDescriptor extends Descriptor {
         public final PythonBuiltinClassType type;
@@ -254,11 +186,6 @@ public class StructSequence {
         }
     }
 
-    public static final TpSlots SLOTS = StructSequenceSlotsGen.SLOTS;
-
-    public record DescriptorCallTargets(RootCallTarget reduceBuiltin, RootCallTarget newBuiltin) {
-    }
-
     @TruffleBoundary
     public static void initType(Python3Core core, BuiltinTypeDescriptor desc) {
         initType(core.getContext(), core.lookupType(desc.type), desc);
@@ -275,30 +202,41 @@ public class StructSequence {
             TypeNodes.SetTypeFlagsNode.executeUncached(klass, flags & ~TypeFlags.IMMUTABLETYPE);
         }
 
+        if (!desc.allowInstances) {
+            flags |= TypeFlags.DISALLOW_INSTANTIATION;
+        }
+
         // create descriptors for accessing named fields by their names
         int unnamedFields = 0;
+        List<TruffleString> namedFields = new ArrayList<>(desc.fieldNames.length);
         for (int idx = 0; idx < desc.fieldNames.length; ++idx) {
-            if (desc.fieldNames[idx] != null) {
+            TruffleString fieldName = desc.fieldNames[idx];
+            if (fieldName != null) {
                 TruffleString doc = desc.fieldDocStrings == null ? null : desc.fieldDocStrings[idx];
-                createMember(language, klass, desc.fieldNames[idx], doc, idx);
+                createMember(language, klass, fieldName, doc, idx);
+                namedFields.add(fieldName);
             } else {
                 unnamedFields++;
             }
         }
-
-        DescriptorCallTargets callTargets = language.getOrCreateStructSequenceCallTargets(desc, d -> new DescriptorCallTargets(
-                        createBuiltinCallTarget(language, desc, ReduceNode.class, ReduceNodeGen::create, true),
-                        desc.allowInstances ? //
-                                        createBuiltinCallTarget(language, desc, NewNode.class, NewNodeGen::create, false) : //
-                                        createBuiltinCallTarget(language, desc, DisabledNewNode.class, ignore -> DisabledNewNodeGen.create(), false)));
-
-        createMethod(klass, ReduceNode.class, callTargets.reduceBuiltin);
-
-        TpSlots.Builder slots = TpSlots.GetTpSlotsNode.executeUncached(klass).copy();
-        TpSlots.doSetOneSlot(klass, slots, TpSlots.TpSlotMeta.TP_REPR, SLOTS.tp_repr(), context.getNativeNull());
-        TpSlots.setSlots(klass, slots.build());
-
         WriteAttributeToObjectNode writeAttrNode = WriteAttributeToObjectNode.getUncached(true);
+        if (klass instanceof PythonManagedClass managedClass) {
+            /*
+             * The methods and slots are already set for each PBCT, but we need to store the field
+             * names.
+             */
+            HiddenAttr.WriteNode.executeUncached(managedClass, HiddenAttr.STRUCTSEQ_FIELD_NAMES, namedFields.toArray(new TruffleString[0]));
+        } else if (klass instanceof PythonAbstractNativeObject) {
+            /*
+             * We need to add the methods. Note that PyType_Ready already ran, so we just write the
+             * method wrappers. We take them from any builtin that doesn't override them and rebind
+             * them to the type. Field names are already populated in tp_members on the native side.
+             */
+            PythonBuiltinClass template = context.lookupType(PythonBuiltinClassType.PFlags);
+            copyMethod(language, klass, T___NEW__, template);
+            copyMethod(language, klass, T___REPR__, template);
+            copyMethod(language, klass, T___REDUCE__, template);
+        }
         /*
          * Only set __doc__ if given. It may be 'null' e.g. in case of initializing a native class
          * where 'tp_doc' is set in native code already.
@@ -310,20 +248,13 @@ public class StructSequence {
         writeAttrNode.execute(klass, T_N_FIELDS, desc.fieldNames.length);
         writeAttrNode.execute(klass, T_N_UNNAMED_FIELDS, unnamedFields);
 
-        if (ReadAttributeFromObjectNode.getUncachedForceType().execute(klass, T___NEW__) == PNone.NO_VALUE) {
-            Builtin builtin = NewNode.class.getAnnotation(Builtin.class);
-            PythonUtils.createConstructor(klass, builtin, callTargets.newBuiltin);
-        }
-        if ((flags & TypeFlags.IMMUTABLETYPE) != 0) {
-            // Restore flags
-            TypeNodes.SetTypeFlagsNode.executeUncached(klass, flags);
-        }
+        TypeNodes.SetTypeFlagsNode.executeUncached(klass, flags);
     }
 
-    private static <T extends PythonBuiltinBaseNode> RootCallTarget createBuiltinCallTarget(PythonLanguage l, Descriptor descriptor, Class<T> nodeClass, Function<Descriptor, T> nodeFactory,
-                    boolean declaresExplicitSelf) {
-        Builtin builtin = nodeClass.getAnnotation(Builtin.class);
-        return new BuiltinFunctionRootNode(l, builtin, new PrototypeNodeFactory<T>(nodeFactory.apply(descriptor)), declaresExplicitSelf).getCallTarget();
+    private static void copyMethod(PythonLanguage language, PythonAbstractClass klass, TruffleString name, PythonBuiltinClass template) {
+        PBuiltinFunction templateMethod = (PBuiltinFunction) template.getAttribute(name);
+        PBuiltinFunction method = PFactory.createBuiltinFunction(language, templateMethod, klass);
+        WriteAttributeToObjectNode.getUncached(true).execute(klass, name, method);
     }
 
     private static void createMember(PythonLanguage language, Object klass, TruffleString name, TruffleString doc, int idx) {
@@ -334,212 +265,6 @@ public class StructSequence {
             callable.setAttribute(T___DOC__, doc);
         }
         WriteAttributeToObjectNode.getUncached(true).execute(klass, name, callable);
-    }
-
-    private static void createMethod(Object klass, Class<? extends PythonBuiltinBaseNode> nodeClass, RootCallTarget callTarget) {
-        Builtin builtin = nodeClass.getAnnotation(Builtin.class);
-        PythonUtils.createMethod(klass, builtin, callTarget, PythonBuiltinClassType.PTuple, 0);
-    }
-
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
-    public abstract static class DisabledNewNode extends PythonVarargsBuiltinNode {
-
-        @Override
-        @SuppressWarnings("unused")
-        public final Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            if (arguments.length > 0) {
-                return error(arguments[0], PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw VarargsBuiltinDirectInvocationNotSupported.INSTANCE;
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        Object error(Object cls, Object[] arguments, PKeyword[] keywords) {
-            throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, StructSequence.getTpName(cls));
-        }
-    }
-
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "sequence", "dict"})
-    public abstract static class NewNode extends PythonTernaryBuiltinNode {
-
-        @CompilationFinal(dimensions = 1) private final TruffleString[] fieldNames;
-        private final int inSequence;
-
-        NewNode(Descriptor desc) {
-            this.fieldNames = desc.fieldNames;
-            this.inSequence = desc.inSequence;
-        }
-
-        @NeverDefault
-        public static NewNode create(Descriptor desc) {
-            return NewNodeGen.create(desc);
-        }
-
-        @Specialization(guards = "isNoValue(dict)")
-        @SuppressWarnings("truffle-static-method")
-        PTuple withoutDict(VirtualFrame frame, Object cls, Object sequence, @SuppressWarnings("unused") PNone dict,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached FastConstructListNode fastConstructListNode,
-                        @Exclusive @Cached ToArrayNode toArrayNode,
-                        @Exclusive @Cached IsBuiltinObjectProfile notASequenceProfile,
-                        @Exclusive @Cached InlinedBranchProfile wrongLenProfile,
-                        @Exclusive @Cached InlinedBranchProfile needsReallocProfile,
-                        @Bind PythonLanguage language,
-                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
-            Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile, raiseNode);
-            Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile, raiseNode);
-            for (int i = src.length; i < dst.length; ++i) {
-                dst[i] = PNone.NONE;
-            }
-            return PFactory.createTuple(language, cls, getInstanceShape.execute(cls), new ObjectSequenceStorage(dst, inSequence));
-        }
-
-        @Specialization
-        @SuppressWarnings("truffle-static-method")
-        PTuple withDict(VirtualFrame frame, Object cls, Object sequence, PDict dict,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached FastConstructListNode fastConstructListNode,
-                        @Exclusive @Cached ToArrayNode toArrayNode,
-                        @Exclusive @Cached IsBuiltinObjectProfile notASequenceProfile,
-                        @Exclusive @Cached InlinedBranchProfile wrongLenProfile,
-                        @Exclusive @Cached InlinedBranchProfile needsReallocProfile,
-                        @Cached HashingStorageGetItem getItem,
-                        @Bind PythonLanguage language,
-                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
-            Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile, raiseNode);
-            Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile, raiseNode);
-            HashingStorage hs = dict.getDictStorage();
-            for (int i = src.length; i < dst.length; ++i) {
-                Object o = getItem.execute(inliningTarget, hs, fieldNames[i]);
-                dst[i] = o == null ? PNone.NONE : o;
-            }
-            return PFactory.createTuple(language, cls, getInstanceShape.execute(cls), new ObjectSequenceStorage(dst, inSequence));
-        }
-
-        @Specialization(guards = {"!isNoValue(dict)", "!isDict(dict)"})
-        @SuppressWarnings("unused")
-        static PTuple doDictError(VirtualFrame frame, Object cls, Object sequence, Object dict,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TAKES_A_DICT_AS_SECOND_ARG_IF_ANY, StructSequence.getTpName(cls));
-        }
-
-        private static Object[] sequenceToArray(VirtualFrame frame, Node inliningTarget, Object sequence, FastConstructListNode fastConstructListNode,
-                        ToArrayNode toArrayNode, IsBuiltinObjectProfile notASequenceProfile, PRaiseNode raiseNode) {
-            PSequence seq;
-            try {
-                seq = fastConstructListNode.execute(frame, inliningTarget, sequence);
-            } catch (PException e) {
-                e.expect(inliningTarget, TypeError, notASequenceProfile);
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CONSTRUCTOR_REQUIRES_A_SEQUENCE);
-            }
-            return toArrayNode.execute(inliningTarget, seq.getSequenceStorage());
-        }
-
-        private Object[] processSequence(Node inliningTarget, Object cls, Object[] src, InlinedBranchProfile wrongLenProfile, InlinedBranchProfile needsReallocProfile, PRaiseNode raiseNode) {
-            int len = src.length;
-            int minLen = inSequence;
-            int maxLen = fieldNames.length;
-
-            if (len < minLen || len > maxLen) {
-                wrongLenProfile.enter(inliningTarget);
-                if (minLen == maxLen) {
-                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TAKES_A_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
-                }
-                if (len < minLen) {
-                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TAKES_AN_AT_LEAST_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
-                } else {    // len > maxLen
-                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TAKES_AN_AT_MOST_D_SEQUENCE, StructSequence.getTpName(cls), maxLen, len);
-                }
-            }
-
-            if (len != maxLen) {
-                needsReallocProfile.enter(inliningTarget);
-                Object[] dst = new Object[maxLen];
-                PythonUtils.arraycopy(src, 0, dst, 0, len);
-                return dst;
-            }
-            return src;
-        }
-    }
-
-    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
-    abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-
-        @CompilationFinal(dimensions = 1) private final TruffleString[] fieldNames;
-        private final int inSequence;
-
-        ReduceNode(Descriptor desc) {
-            this.fieldNames = desc.fieldNames;
-            this.inSequence = desc.inSequence;
-        }
-
-        @Specialization
-        PTuple reduce(PTuple self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageSetItem setHashingStorageItem,
-                        @Cached GetClassNode getClass,
-                        @Bind PythonLanguage language) {
-            assert self.getSequenceStorage() instanceof ObjectSequenceStorage;
-            Object[] data = CompilerDirectives.castExact(self.getSequenceStorage(), ObjectSequenceStorage.class).getInternalObjectArray();
-            assert data.length == fieldNames.length;
-            PTuple seq;
-            PDict dict;
-            if (fieldNames.length == inSequence) {
-                seq = PFactory.createTuple(language, data);
-                dict = PFactory.createDict(language);
-            } else {
-                HashingStorage storage = EconomicMapStorage.create(fieldNames.length - inSequence);
-                for (int i = inSequence; i < fieldNames.length; ++i) {
-                    storage = setHashingStorageItem.execute(inliningTarget, storage, fieldNames[i], data[i]);
-                }
-                seq = PFactory.createTuple(language, Arrays.copyOf(data, inSequence));
-                dict = PFactory.createDict(language, storage);
-            }
-            PTuple seqDictPair = PFactory.createTuple(language, new Object[]{seq, dict});
-            return PFactory.createTuple(language, new Object[]{getClass.execute(inliningTarget, self), seqDictPair});
-        }
-    }
-
-    @Slot(value = SlotKind.tp_repr, isComplex = true)
-    @GenerateNodeFactory
-    abstract static class ReprNode extends PythonUnaryBuiltinNode {
-
-        @CompilationFinal(dimensions = 1) private final TruffleString[] fieldNames;
-
-        ReprNode(Descriptor desc) {
-            this.fieldNames = desc.getFieldsForRepr();
-        }
-
-        @Specialization
-        public TruffleString repr(VirtualFrame frame, PTuple self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode,
-                        @Cached("createNotNormalized()") GetItemNode getItemNode,
-                        @Cached PyObjectReprAsTruffleStringNode reprNode,
-                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-            appendStringNode.execute(sb, getFullyQualifiedClassNameNode.execute(frame, inliningTarget, self));
-            appendStringNode.execute(sb, T_LPAREN);
-            SequenceStorage tupleStore = self.getSequenceStorage();
-            if (fieldNames.length > 0) {
-                appendStringNode.execute(sb, fieldNames[0]);
-                appendStringNode.execute(sb, T_EQ);
-                appendStringNode.execute(sb, reprNode.execute(frame, inliningTarget, getItemNode.execute(tupleStore, 0)));
-                for (int i = 1; i < fieldNames.length; i++) {
-                    appendStringNode.execute(sb, T_COMMA_SPACE);
-                    appendStringNode.execute(sb, fieldNames[i]);
-                    appendStringNode.execute(sb, T_EQ);
-                    appendStringNode.execute(sb, reprNode.execute(frame, inliningTarget, getItemNode.execute(tupleStore, i)));
-                }
-            }
-            appendStringNode.execute(sb, T_RPAREN);
-            return toStringNode.execute(sb);
-        }
     }
 
     private static class GetStructMemberNode extends PRootNode {
@@ -554,6 +279,9 @@ public class StructSequence {
         @Override
         public Object execute(VirtualFrame frame) {
             PTuple self = (PTuple) PArguments.getArgument(frame, 0);
+            if (self.getSequenceStorage() instanceof NativeSequenceStorage && fieldIdx >= self.getSequenceStorage().length()) {
+                throw PRaiseNode.raiseStatic(this, NotImplementedError, ErrorMessages.UNSUPPORTED_ACCESS_OF_STRUCT_SEQUENCE_NATIVE_STORAGE);
+            }
             return SequenceStorageNodes.GetItemScalarNode.executeUncached(self.getSequenceStorage(), fieldIdx);
         }
 
