@@ -36,6 +36,7 @@ function(require_var var)
 endfunction()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -g2 -ggdb")
 
 if(MSVC)
     message(FATAL_ERROR "C API cannot be built with MSVC")
@@ -61,7 +62,7 @@ set(TARGET_LIBPYTHON "python-native")
 # common variables and compile/link options (for all build targets)
 ######################################################################
 
-set(CFLAGS_WARNINGS -Wall -Werror,-Wunknown-warning-option -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable
+set(CFLAGS_WARNINGS -ggdb -g2 -O0 -Wall -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable
                     -Wno-tautological-constant-out-of-range-compare   # fileutils.c: wchar_t > MAX_UNICODE is always false on Windows
                     -Wno-unused-but-set-variable                      # sqlite.c: BOOL bRc
                     -Wno-ignored-pragmas                              # sre.c: #pragma optimize("agtw", on)
@@ -272,6 +273,7 @@ if(NOT WIN32)
     native_module("_testcapi" FALSE "${TESTCAPI_SRC}")
     simple_native_module("_testbuffer")
     simple_native_module("_testmultiphase")
+    simple_native_module("_testsinglephase")
     simple_native_module("_ctypes_test")
 
     ###################### BZIP2 ########################

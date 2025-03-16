@@ -68,6 +68,7 @@ clear_state(module_state *state)
 static int
 _set_initialized(_PyTime_t *initialized)
 {
+#if 0 // GraalPy change
     /* We go strictly monotonic to ensure each time is unique. */
     _PyTime_t prev;
     if (_PyTime_GetMonotonicClockWithInfo(&prev, NULL) != 0) {
@@ -81,6 +82,9 @@ _set_initialized(_PyTime_t *initialized)
         }
     } while (t == prev);
 
+#else // GraalPy change: We don't have support for native PyTime functions
+    _PyTime_t t = _PyTime_MAX;
+#endif // GraalPy change
     *initialized = t;
     return 0;
 }
@@ -135,7 +139,11 @@ init_module(PyObject *module, module_state *state)
         return -1;
     }
 
+#if 0 // GraalPy change
     double d = _PyTime_AsSecondsDouble(state->initialized);
+#else // GraalPy change: We don't have support for native PyTime functions
+    double d = 1.0;
+#endif // GraalPy change
     PyObject *initialized = PyFloat_FromDouble(d);
     if (initialized == NULL) {
         return -1;
@@ -162,7 +170,11 @@ common_state_initialized(PyObject *self, PyObject *Py_UNUSED(ignored))
     if (state == NULL) {
         Py_RETURN_NONE;
     }
+#if 0 // GraalPy change
     double d = _PyTime_AsSecondsDouble(state->initialized);
+#else // GraalPy change: We don't have support for native PyTime functions
+    double d = 1.0;
+#endif // GraalPy change
     return PyFloat_FromDouble(d);
 }
 
