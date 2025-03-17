@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
+import static com.oracle.graal.python.nodes.ErrorMessages.BITWISE_INVERSION_OF_THE_UNDERLYING_INT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
@@ -79,6 +81,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -1516,8 +1519,15 @@ public final class IntBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.nb_invert, isComplex = true)
     @GenerateNodeFactory
     abstract static class InvertNode extends PythonUnaryBuiltinNode {
+
+        @TruffleBoundary
+        private static void warnBoolInvert() {
+            WarningsModuleBuiltins.WarnNode.getUncached().warnEx(null, DeprecationWarning, BITWISE_INVERSION_OF_THE_UNDERLYING_INT, 1);
+        }
+
         @Specialization
         static int neg(boolean arg) {
+            warnBoolInvert();
             return ~(arg ? 1 : 0);
         }
 

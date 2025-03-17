@@ -1713,4 +1713,8 @@ public abstract class ErrorMessages {
                     "The sys.prefix must point to a venv, not be identical to sys.base_prefix when the `IsolateNativeModules' option is used, because it is the base path for searching and creating the relocated C API and extension modules. " +
                                     "Refer to https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for details on native module isolation.");
     public static final TruffleString SEPARATOR_EXPECTED_STR_INSTANCE_P_FOUND = tsLiteral("separator: expected str instance, %p found");
+    public static final TruffleString BITWISE_INVERSION_OF_THE_UNDERLYING_INT = tsLiteral("Bitwise inversion '~' on bool is deprecated " +
+                    "and will be removed in Python 3.16. This returns the bitwise inversion of the underlying int object and is usually not what you " +
+                    "expect from negating a bool. Use the 'not' operator for boolean negation or ~int(x) if you really want the bitwise inversion of " +
+                    "the underlying int.");
 }
