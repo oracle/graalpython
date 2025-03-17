@@ -46,6 +46,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -87,8 +88,10 @@ public abstract class SetNodes {
             PSet set = PFactory.createSet(language);
             Object iterator = getIter.execute(frame, inliningTarget, iterable);
             while (true) {
-                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                if (PyIterNextNode.isExhausted(next)) {
+                Object next;
+                try {
+                    next = nextNode.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
                     return set;
                 }
                 setItemNode.execute(frame, inliningTarget, set, next, PNone.NONE);

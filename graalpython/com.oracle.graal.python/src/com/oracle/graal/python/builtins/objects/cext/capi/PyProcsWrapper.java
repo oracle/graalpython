@@ -69,13 +69,13 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotNbPower.CallSlotNbInPlacePowerNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotNbPower.CallSlotNbPowerNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.CallSlotRichCmpNode;
-import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.CallManagedSlotSetAttrNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.CallSlotSizeArgFun;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.CallSlotSqAssItemNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.CallSlotSqContainsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
-import com.oracle.graal.python.lib.PyIterNextNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
@@ -520,7 +520,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         Object execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CallSlotTpIterNextNode callNode,
+                        @Cached CallSlotTpIterNextNode callNextNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
@@ -528,8 +528,10 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
             CApiTiming.enter();
             try {
                 try {
-                    Object result = callNode.execute(null, inliningTarget, getSlot(), toJavaNode.execute(arguments[0]));
-                    if (PyIterNextNode.isExhausted(result)) {
+                    Object result;
+                    try {
+                        result = callNextNode.execute(null, inliningTarget, getSlot(), toJavaNode.execute(arguments[0]));
+                    } catch (IteratorExhausted e) {
                         return PythonContext.get(inliningTarget).getNativeNull();
                     }
                     return toNativeNode.execute(result);

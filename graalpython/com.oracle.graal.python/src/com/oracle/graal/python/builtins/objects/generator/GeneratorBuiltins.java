@@ -151,7 +151,7 @@ public final class GeneratorBuiltins extends PythonBuiltins {
                         @Cached CommonGeneratorBuiltins.ResumeGeneratorNode resumeGeneratorNode,
                         @Cached PRaiseNode raiseNode) {
             if (self.isFinished()) {
-                return iteratorExhausted();
+                throw iteratorExhausted();
             }
             if (self.isRunning()) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);

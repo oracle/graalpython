@@ -825,7 +825,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
             self.realize();
             TruffleString line = stringioReadline(inliningTarget, self, -1, findLineEndingNode, substringNode, toStringNode);
             if (line.isEmpty()) {
-                return TpIterNextBuiltin.iteratorExhausted();
+                throw TpIterNextBuiltin.iteratorExhausted();
             }
             return line;
         }
@@ -847,7 +847,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
             }
             TruffleString line = toString.execute(inliningTarget, res);
             if (line.isEmpty()) {
-                return TpIterNextBuiltin.iteratorExhausted();
+                throw TpIterNextBuiltin.iteratorExhausted();
             }
             return line;
         }

@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyByteArrayCheckNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
@@ -187,8 +188,10 @@ public abstract class BytesNodes {
             int partsTotalSize = 0;
             Object iterator = getIter.execute(frame, inliningTarget, iterable);
             while (true) {
-                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                if (PyIterNextNode.isExhausted(next)) {
+                Object next;
+                try {
+                    next = nextNode.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
                     return joinArrays(sep, parts, partsTotalSize);
                 }
                 partsTotalSize += append(parts, toBytesNode.execute(frame, next));
@@ -782,8 +785,10 @@ public abstract class BytesNodes {
             byte[] arr = new byte[len < 16 && len > 0 ? len : 16];
             int i = 0;
             while (true) {
-                Object next = nextNode.execute(frame, inliningTarget, it);
-                if (PyIterNextNode.isExhausted(next)) {
+                Object next;
+                try {
+                    next = nextNode.execute(frame, inliningTarget, it);
+                } catch (IteratorExhausted e) {
                     return resize(arr, i);
                 }
                 byte item = castToByteNode.execute(frame, next);

@@ -169,6 +169,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSl
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyEvalGetGlobals;
 import com.oracle.graal.python.lib.PyEvalGetLocals;
@@ -486,13 +487,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             while (true) {
                 try {
                     Object next = nextNode.execute(frame, inliningTarget, iterator);
-                    if (PyIterNextNode.isExhausted(next)) {
-                        break;
-                    }
                     nbrIter++;
                     if (!isTrueNode.execute(frame, next)) {
                         return false;
                     }
+                } catch (IteratorExhausted e) {
+                    break;
                 } finally {
                     LoopNode.reportLoopCount(inliningTarget, nbrIter);
                 }
@@ -538,13 +538,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             while (true) {
                 try {
                     Object next = nextNode.execute(frame, inliningTarget, iterator);
-                    if (PyIterNextNode.isExhausted(next)) {
-                        break;
-                    }
                     nbrIter++;
                     if (isTrueNode.execute(frame, next)) {
                         return true;
                     }
+                } catch (IteratorExhausted e) {
+                    break;
                 } finally {
                     LoopNode.reportLoopCount(inliningTarget, nbrIter);
                 }
@@ -1584,8 +1583,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object keywordArg = kwArgsAreNone ? null : keywordArgIn;
 
             Object iterator = getIter.execute(frame, inliningTarget, arg1);
-            Object currentValue = nextNode.execute(frame, inliningTarget, iterator);
-            if (PyIterNextNode.isExhausted(currentValue)) {
+            Object currentValue;
+            try {
+                currentValue = nextNode.execute(frame, inliningTarget, iterator);
+            } catch (IteratorExhausted e) {
                 if (hasDefaultProfile.profile(inliningTarget, isNoValue(defaultVal))) {
                     throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.ARG_IS_EMPTY_SEQ, name);
                 } else {
@@ -1594,12 +1595,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             Object currentKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, currentValue);
             int loopCount = 0;
-            try {
-                while (true) {
+            while (true) {
+                try {
                     Object nextValue = nextNode.execute(frame, inliningTarget, iterator);
-                    if (PyIterNextNode.isExhausted(nextValue)) {
-                        break;
-                    }
                     Object nextKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, nextValue);
                     boolean isTrue = compareNode.execute(frame, inliningTarget, nextKey, currentKey, op);
                     if (isTrue) {
@@ -1607,10 +1605,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         currentValue = nextValue;
                     }
                     loopCount++;
+                } catch (IteratorExhausted e) {
+                    break;
+                } finally {
+                    LoopNode.reportLoopCount(inliningTarget, loopCount < 0 ? Integer.MAX_VALUE : loopCount);
                 }
-            } finally {
-                LoopNode.reportLoopCount(inliningTarget, loopCount < 0 ? Integer.MAX_VALUE : loopCount);
             }
+
             return currentValue;
         }
 
@@ -1709,9 +1710,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (!PyIterCheckNode.checkSlots(slots)) {
                 throw raiseTypeError.raise(inliningTarget, TypeError, ErrorMessages.OBJ_ISNT_ITERATOR, iterator);
             }
-            Object result;
             try {
-                result = callIterNext.execute(frame, inliningTarget, slots.tp_iternext(), iterator);
+                return callIterNext.execute(frame, inliningTarget, slots.tp_iternext(), iterator);
+            } catch (IteratorExhausted e) {
+                if (defaultIsNoValue.profile(inliningTarget, defaultObject == NO_VALUE)) {
+                    throw raiseStopIteration.raise(inliningTarget, StopIteration);
+                } else {
+                    return defaultObject;
+                }
             } catch (PException e) {
                 if (defaultIsNoValue.profile(inliningTarget, defaultObject == NO_VALUE)) {
                     throw e;
@@ -1720,18 +1726,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     return defaultObject;
                 }
             }
-            if (PyIterNextNode.isExhausted(result)) {
-                if (defaultIsNoValue.profile(inliningTarget, defaultObject == NO_VALUE)) {
-                    throw raiseStopIteration.raise(inliningTarget, StopIteration);
-                } else {
-                    return defaultObject;
-                }
-            }
-            return result;
         }
     }
 
-    // ord(c)
+// ord(c)
     @Builtin(name = J_ORD, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
@@ -1777,7 +1775,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    // print(*objects, sep=' ', end='\n', file=sys.stdout, flush=False)
+// print(*objects, sep=' ', end='\n', file=sys.stdout, flush=False)
     @Builtin(name = J_PRINT, takesVarArgs = true, keywordOnlyNames = {"sep", "end", "file", "flush"}, doc = "\n" +
                     "print(value, ..., sep=' ', end='\\n', file=sys.stdout, flush=False)\n" +
                     "\n" +
@@ -2191,61 +2189,90 @@ public final class BuiltinFunctions extends PythonBuiltins {
                             @Cached PyIterNextNode nextNode,
                             @Shared @Cached PyNumberAddNode addNode,
                             @Shared @Cached InlinedConditionProfile resultFitsInInt,
+                            @Exclusive @Cached InlinedBranchProfile seenObject,
                             @Exclusive @Cached InlinedBranchProfile seenInt,
                             @Exclusive @Cached InlinedBranchProfile seenDouble,
-                            @Exclusive @Cached InlinedBranchProfile seenObject) {
+                            @Exclusive @Cached InlinedBranchProfile genericBranch) {
                 /*
                  * Peel the first iteration to see what's the type.
                  */
-                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                if (!PyIterNextNode.isExhausted(next)) {
-                    Object acc = addNode.execute(frame, inliningTarget, start, next);
-                    /*
-                     * We try to process integers/longs/doubles as long as we can. Then we always
-                     * fall through to the generic path. `next` and `acc` are always properly set so
-                     * that the generic path can check if there are remaining items and resume if
-                     * necessary.
-                     */
-                    if (acc instanceof Integer || acc instanceof Long) {
-                        seenInt.enter(inliningTarget);
-                        long longAcc = acc instanceof Integer ? (int) acc : (long) acc;
-                        while (loopProfilePrimitive.profile(inliningTarget, !PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, iterator)))) {
-                            try {
-                                if (next instanceof Integer nextInt) {
-                                    longAcc = PythonUtils.addExact(longAcc, nextInt);
-                                } else if (next instanceof Long nextLong) {
-                                    longAcc = PythonUtils.addExact(longAcc, nextLong);
-                                } else {
-                                    break;
-                                }
-                            } catch (OverflowException e) {
-                                break;
+                Object next;
+                try {
+                    next = nextNode.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
+                    return start;
+                }
+                Object acc = addNode.execute(frame, inliningTarget, start, next);
+                /*
+                 * We try to process integers/longs/doubles as long as we can. Then we always fall
+                 * through to the generic path. `next` and `acc` are always properly set so that the
+                 * generic path can check if there are remaining items and resume if necessary.
+                 */
+                if (acc instanceof Integer || acc instanceof Long) {
+                    seenInt.enter(inliningTarget);
+                    long longAcc = acc instanceof Integer ? (int) acc : (long) acc;
+                    boolean exitLoop = false, exhausted = false;
+                    while (loopProfilePrimitive.profile(inliningTarget, !exitLoop)) {
+                        try {
+                            next = nextNode.execute(frame, inliningTarget, iterator);
+                            if (next instanceof Integer nextInt) {
+                                longAcc = PythonUtils.addExact(longAcc, nextInt);
+                            } else if (next instanceof Long nextLong) {
+                                longAcc = PythonUtils.addExact(longAcc, nextLong);
+                            } else {
+                                exitLoop = true;
                             }
+                        } catch (OverflowException e) {
+                            exitLoop = true;
+                        } catch (IteratorExhausted e) {
+                            exitLoop = true;
+                            exhausted = true;
                         }
-                        acc = maybeInt(inliningTarget, resultFitsInInt, longAcc);
-                    } else if (acc instanceof Double doubleAcc) {
-                        seenDouble.enter(inliningTarget);
-                        while (loopProfilePrimitive.profile(inliningTarget, !PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, iterator)))) {
+                    }
+                    if (exhausted) {
+                        return maybeInt(inliningTarget, resultFitsInInt, longAcc);
+                    }
+                    genericBranch.enter(inliningTarget);
+                    acc = longAcc;
+                } else if (acc instanceof Double doubleAcc) {
+                    seenDouble.enter(inliningTarget);
+                    boolean exitLoop = false, exhausted = false;
+                    while (loopProfilePrimitive.profile(inliningTarget, !exitLoop)) {
+                        try {
+                            next = nextNode.execute(frame, inliningTarget, iterator);
                             if (next instanceof Double nextDouble) {
                                 doubleAcc += nextDouble;
                             } else {
-                                break;
+                                exitLoop = true;
                             }
+                        } catch (IteratorExhausted e) {
+                            exitLoop = true;
+                            exhausted = true;
                         }
-                        acc = doubleAcc;
-                    } else {
-                        next = nextNode.execute(frame, inliningTarget, iterator);
                     }
-                    if (!PyIterNextNode.isExhausted(next)) {
-                        seenObject.enter(inliningTarget);
-                        do {
-                            acc = addNode.execute(frame, inliningTarget, acc, next);
-                        } while (loopProfileGeneric.profile(inliningTarget, !PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, iterator))));
+                    if (exhausted) {
+                        return doubleAcc;
                     }
-                    return acc;
+                    genericBranch.enter(inliningTarget);
+                    acc = doubleAcc;
                 } else {
-                    return start;
+                    seenObject.enter(inliningTarget);
+                    try {
+                        next = nextNode.execute(frame, inliningTarget, iterator);
+                    } catch (IteratorExhausted e) {
+                        return acc;
+                    }
                 }
+                boolean exhausted = false;
+                do {
+                    acc = addNode.execute(frame, inliningTarget, acc, next);
+                    try {
+                        next = nextNode.execute(frame, inliningTarget, iterator);
+                    } catch (IteratorExhausted e) {
+                        exhausted = true;
+                    }
+                } while (loopProfileGeneric.profile(inliningTarget, !exhausted));
+                return acc;
             }
 
             private static long maybeInt(Node inliningTarget, InlinedConditionProfile resultFitsInInt, long result) {

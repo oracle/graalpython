@@ -52,7 +52,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
-import com.oracle.graal.python.lib.PyIterNextNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -64,7 +64,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PPairwise})
 public final class PairwiseBuiltins extends PythonBuiltins {
@@ -93,7 +92,6 @@ public final class PairwiseBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetObjectSlotsNode getSlots,
                         @Cached CallSlotTpIterNextNode callIterNext,
-                        @Cached InlinedBranchProfile exceptionProfile,
                         @Bind PythonLanguage language) {
             Object item;
             Object old = self.getOld();
@@ -101,28 +99,16 @@ public final class PairwiseBuiltins extends PythonBuiltins {
             try {
                 if (self.getOld() == null) {
                     old = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, iterable).tp_iternext(), iterable);
-                    if (PyIterNextNode.isExhausted(old)) {
-                        self.setOld(null);
-                        self.setIterable(null);
-                        return iteratorExhausted();
-                    }
                     self.setOld(old);
                     iterable = self.getIterable();
                     if (iterable == null) {
-                        self.setOld(null);
-                        return iteratorExhausted();
+                        throw iteratorExhausted();
                     }
                 }
                 item = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, iterable).tp_iternext(), iterable);
-                if (PyIterNextNode.isExhausted(item)) {
-                    self.setOld(null);
-                    self.setIterable(null);
-                    return iteratorExhausted();
-                }
                 self.setOld(item);
                 return PFactory.createTuple(language, new Object[]{old, item});
-            } catch (PException e) {
-                exceptionProfile.enter(inliningTarget);
+            } catch (IteratorExhausted | PException e) {
                 self.setOld(null);
                 self.setIterable(null);
                 throw e;
@@ -131,7 +117,7 @@ public final class PairwiseBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getIterable() == null")
         static Object next(@SuppressWarnings("unused") PPairwise self) {
-            return iteratorExhausted();
+            throw iteratorExhausted();
         }
     }
 }

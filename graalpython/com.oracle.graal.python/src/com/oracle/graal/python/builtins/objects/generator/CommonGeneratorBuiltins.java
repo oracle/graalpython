@@ -61,6 +61,8 @@ import com.oracle.graal.python.builtins.objects.exception.PrepareExceptionNode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -239,7 +241,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
             if (e.value != PNone.NONE) {
                 throw PRaiseNode.raiseStatic(inliningTarget, StopIteration, new Object[]{e.value});
             } else {
-                throw PRaiseNode.raiseStatic(inliningTarget, StopIteration);
+                throw TpIterNextBuiltin.iteratorExhausted();
             }
         }
 
@@ -267,7 +269,11 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
             if (!self.isStarted() && value != PNone.NONE) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SEND_NON_NONE_TO_UNSTARTED_GENERATOR);
             }
-            return resumeGeneratorNode.execute(frame, inliningTarget, self, value);
+            try {
+                return resumeGeneratorNode.execute(frame, inliningTarget, self, value);
+            } catch (IteratorExhausted e) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.StopIteration);
+            }
         }
     }
 
@@ -311,7 +317,11 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
             if (startedProfile.profile(inliningTarget, self.isStarted() && !self.isFinished())) {
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
-                return resumeGeneratorNode.execute(frame, inliningTarget, self, new ThrowData(instance, PythonOptions.isPExceptionWithJavaStacktrace(language)));
+                try {
+                    return resumeGeneratorNode.execute(frame, inliningTarget, self, new ThrowData(instance, PythonOptions.isPExceptionWithJavaStacktrace(language)));
+                } catch (IteratorExhausted e) {
+                    throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.StopIteration);
+                }
             } else {
                 // Unstarted generator, we cannot pass the exception into the generator as there is
                 // nothing that would handle it.
@@ -353,6 +363,9 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(inliningTarget));
                 try {
                     resumeGeneratorNode.execute(frame, inliningTarget, self, new ThrowData(pythonException, withJavaStacktrace));
+                } catch (IteratorExhausted e) {
+                    // This is the "success" path
+                    return PNone.NONE;
                 } catch (PException pe) {
                     if (isGeneratorExit.profileException(inliningTarget, pe, GeneratorExit) || isStopIteration.profileException(inliningTarget, pe, StopIteration)) {
                         // This is the "success" path

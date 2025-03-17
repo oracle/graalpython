@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -130,11 +131,12 @@ public abstract class ExecutePositionalStarargsNode extends Node {
         if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
             ArrayBuilder<Object> internalStorage = new ArrayBuilder<>();
             while (true) {
-                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                if (PyIterNextNode.isExhausted(next)) {
+                try {
+                    Object next = nextNode.execute(frame, inliningTarget, iterator);
+                    internalStorage.add(next);
+                } catch (IteratorExhausted e) {
                     return internalStorage.toArray(new Object[0]);
                 }
-                internalStorage.add(next);
             }
         }
         throw raise.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, object);

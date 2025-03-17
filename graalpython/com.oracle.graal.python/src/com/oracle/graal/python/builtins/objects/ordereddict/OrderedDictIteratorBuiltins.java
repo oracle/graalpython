@@ -103,7 +103,7 @@ public class OrderedDictIteratorBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode,
                         @Cached HashingStorageNodes.HashingStorageGetItemWithHash getItem) {
             if (self.current == null) {
-                return iteratorExhausted();
+                throw iteratorExhausted();
             }
             if (self.size != self.dict.nodes.size()) {
                 throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, "OrderedDict");

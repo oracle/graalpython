@@ -102,6 +102,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNod
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
@@ -1771,8 +1772,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     if (nextElement != null) {
                         return true;
                     }
-                    nextElement = nextNode.execute(null, inliningTarget, this);
-                    if (PyIterNextNode.isExhausted(nextElement)) {
+                    try {
+                        nextElement = nextNode.execute(null, inliningTarget, this);
+                    } catch (IteratorExhausted e) {
                         return false;
                     }
                     writeHiddenAttrNode.execute(inliningTarget, this, HiddenAttr.NEXT_ELEMENT, nextElement);

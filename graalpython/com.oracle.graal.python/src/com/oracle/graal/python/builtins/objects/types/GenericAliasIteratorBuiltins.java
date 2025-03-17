@@ -85,7 +85,7 @@ public final class GenericAliasIteratorBuiltins extends PythonBuiltins {
         static Object next(PGenericAliasIterator self,
                         @Bind PythonLanguage language) {
             if (self.isExhausted()) {
-                return iteratorExhausted();
+                throw iteratorExhausted();
             }
             PGenericAlias alias = self.getObj();
             PGenericAlias starredAlias = PFactory.createGenericAlias(language, alias.getOrigin(), alias.getArgs(), true);
