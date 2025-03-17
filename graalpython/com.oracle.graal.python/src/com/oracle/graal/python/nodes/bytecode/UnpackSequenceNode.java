@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -117,14 +118,16 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
             throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_UNPACK_NON_ITERABLE, collection);
         }
         for (int i = 0; i < count; i++) {
-            Object item = nextNode.execute(frame, inliningTarget, iterator);
-            if (PyIterNextNode.isExhausted(item)) {
+            try {
+                Object item = nextNode.execute(frame, inliningTarget, iterator);
+                frame.setObject(stackTop--, item);
+            } catch (IteratorExhausted e) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, count, i);
             }
-            frame.setObject(stackTop--, item);
         }
-        Object next = nextNode.execute(frame, inliningTarget, iterator);
-        if (PyIterNextNode.isExhausted(next)) {
+        try {
+            nextNode.execute(frame, inliningTarget, iterator);
+        } catch (IteratorExhausted e) {
             return resultStackTop;
         }
         throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, count);

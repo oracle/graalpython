@@ -57,7 +57,6 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
-import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -110,15 +109,9 @@ public final class CompressBuiltins extends PythonBuiltins {
             Object result = null;
             do {
                 Object datum = callIterNextData.execute(frame, inliningTarget, dataIterNext, data);
-                if (PyIterNextNode.isExhausted(datum)) {
-                    result = iteratorExhausted();
-                } else {
-                    Object selector = callIterNextSelectors.execute(frame, inliningTarget, selectorsIterNext, selectors);
-                    if (PyIterNextNode.isExhausted(selector)) {
-                        result = iteratorExhausted();
-                    } else if (isTrue.execute(frame, selector)) {
-                        result = datum;
-                    }
+                Object selector = callIterNextSelectors.execute(frame, inliningTarget, selectorsIterNext, selectors);
+                if (isTrue.execute(frame, selector)) {
+                    result = datum;
                 }
             } while (loopConditionProfile.profile(inliningTarget, result == null));
             return result;

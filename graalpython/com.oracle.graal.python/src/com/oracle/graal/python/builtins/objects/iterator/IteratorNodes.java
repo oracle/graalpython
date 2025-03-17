@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -372,11 +373,12 @@ public abstract class IteratorNodes {
             Object it = getIter.execute(frame, inliningTarget, iterable);
             List<Object> result = createlist();
             while (true) {
-                Object next = nextNode.execute(frame, inliningTarget, it);
-                if (PyIterNextNode.isExhausted(next)) {
+                try {
+                    Object next = nextNode.execute(frame, inliningTarget, it);
+                    result.add(next);
+                } catch (IteratorExhausted e) {
                     break;
                 }
-                result.add(next);
             }
             return result.toArray(new Object[result.size()]);
         }

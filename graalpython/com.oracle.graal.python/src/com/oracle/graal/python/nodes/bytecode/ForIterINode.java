@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.bytecode;
 
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.compiler.QuickeningTypes;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -84,16 +85,18 @@ public abstract class ForIterINode extends PNodeWithContext {
     static boolean doGeneric(VirtualFrame frame, Object iterator, int stackTop,
                     @Bind Node inliningTarget,
                     @Cached PyIterNextNode nextNode) throws QuickeningGeneralizeException {
-        Object res = nextNode.execute(frame, inliningTarget, iterator);
-        if (res instanceof Integer) {
-            frame.setInt(stackTop, (int) res);
-            return true;
-        } else if (PyIterNextNode.isExhausted(res)) {
+        try {
+            Object res = nextNode.execute(frame, inliningTarget, iterator);
+            if (res instanceof Integer) {
+                frame.setInt(stackTop, (int) res);
+                return true;
+            } else {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                frame.setObject(stackTop, res);
+                throw new QuickeningGeneralizeException(QuickeningTypes.OBJECT);
+            }
+        } catch (IteratorExhausted e) {
             return false;
-        } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            frame.setObject(stackTop, res);
-            throw new QuickeningGeneralizeException(QuickeningTypes.OBJECT);
         }
     }
 

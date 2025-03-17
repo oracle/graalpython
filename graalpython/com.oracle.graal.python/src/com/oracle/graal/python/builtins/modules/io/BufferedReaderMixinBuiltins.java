@@ -833,7 +833,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
             checkIsClosedNode.execute(frame, self);
             byte[] line = readlineNode.execute(frame, inliningTarget, self, -1);
             if (line.length == 0) {
-                return TpIterNextBuiltin.iteratorExhausted();
+                throw TpIterNextBuiltin.iteratorExhausted();
             }
             return PFactory.createBytes(PythonLanguage.get(inliningTarget), line);
         }

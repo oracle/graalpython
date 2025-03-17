@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqIt
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -179,11 +180,12 @@ public final class DequeBuiltins extends PythonBuiltins {
             }
             Object iterator = getIter.execute(frame, inliningTarget, iterable);
             while (true) {
-                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                if (PyIterNextNode.isExhausted(next)) {
+                try {
+                    Object next = nextNode.execute(frame, inliningTarget, iterator);
+                    self.append(next);
+                } catch (IteratorExhausted e) {
                     break;
                 }
-                self.append(next);
             }
             return PNone.NONE;
         }
@@ -355,11 +357,12 @@ public final class DequeBuiltins extends PythonBuiltins {
             }
 
             while (true) {
-                Object next = nextNode.execute(frame, inliningTarget, it);
-                if (PyIterNextNode.isExhausted(next)) {
+                try {
+                    Object next = nextNode.execute(frame, inliningTarget, it);
+                    appendOperation(self, next);
+                } catch (IteratorExhausted e) {
                     break;
                 }
-                appendOperation(self, next);
             }
             consumeIterator(frame, it, nextNode, inliningTarget);
             return PNone.NONE;
@@ -367,8 +370,9 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         private static void consumeIterator(VirtualFrame frame, Object it, PyIterNextNode getNextNode, Node inliningTarget) {
             while (true) {
-                Object next = getNextNode.execute(frame, inliningTarget, it);
-                if (PyIterNextNode.isExhausted(next)) {
+                try {
+                    getNextNode.execute(frame, inliningTarget, it);
+                } catch (IteratorExhausted e) {
                     break;
                 }
             }
@@ -693,11 +697,12 @@ public final class DequeBuiltins extends PythonBuiltins {
              */
             Object iterator = getIter.execute(frame, inliningTarget, other);
             while (true) {
-                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                if (PyIterNextNode.isExhausted(next)) {
+                try {
+                    Object next = nextNode.execute(frame, inliningTarget, iterator);
+                    self.append(next);
+                } catch (IteratorExhausted e) {
                     break;
                 }
-                self.append(next);
             }
             return self;
         }
@@ -951,16 +956,14 @@ public final class DequeBuiltins extends PythonBuiltins {
             Object ait = getIterSelf.execute(frame, inliningTarget, self);
             Object bit = getIterOther.execute(frame, inliningTarget, other);
             while (true) {
-                Object selfItem = selfItNextNode.execute(frame, inliningTarget, ait);
-                if (PyIterNextNode.isExhausted(selfItem)) {
+                try {
+                    Object selfItem = selfItNextNode.execute(frame, inliningTarget, ait);
+                    Object otherItem = otherItNextNode.execute(frame, inliningTarget, bit);
+                    if (!eqNode.compare(frame, inliningTarget, selfItem, otherItem)) {
+                        return cmpNode.compare(frame, inliningTarget, selfItem, otherItem);
+                    }
+                } catch (IteratorExhausted e) {
                     break;
-                }
-                Object otherItem = otherItNextNode.execute(frame, inliningTarget, bit);
-                if (PyIterNextNode.isExhausted(otherItem)) {
-                    break;
-                }
-                if (!eqNode.compare(frame, inliningTarget, selfItem, otherItem)) {
-                    return cmpNode.compare(frame, inliningTarget, selfItem, otherItem);
                 }
             }
             return cmpNode.compare(frame, inliningTarget, self.getSize(), other.getSize());

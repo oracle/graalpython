@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
@@ -122,7 +123,6 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
                         @Cached PyIterNextNode nextNode,
                         @Cached CallNode callNode,
                         @Cached InlinedConditionProfile initialNoValueProfile,
-                        @Cached IsBuiltinObjectProfile stopIterProfile,
                         @Cached IsBuiltinObjectProfile typeError,
                         @Cached PRaiseNode raiseNode) {
             Object initial = initialNoValueProfile.profile(inliningTarget, PGuards.isNoValue(initialIn)) ? null : initialIn;
@@ -138,8 +138,10 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
 
             int count = 0;
             while (true) {
-                Object op2 = nextNode.execute(frame, inliningTarget, seqIterator);
-                if (PyIterNextNode.isExhausted(op2)) {
+                Object op2;
+                try {
+                    op2 = nextNode.execute(frame, inliningTarget, seqIterator);
+                } catch (IteratorExhausted e) {
                     break;
                 }
                 if (result == null) {

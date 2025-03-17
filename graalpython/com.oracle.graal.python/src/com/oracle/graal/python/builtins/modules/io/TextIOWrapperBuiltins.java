@@ -1216,7 +1216,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             if (line.isEmpty()) {
                 self.clearSnapshot();
                 self.setTelling(self.isSeekable());
-                return TpIterNextBuiltin.iteratorExhausted();
+                throw TpIterNextBuiltin.iteratorExhausted();
             }
             return line;
         }

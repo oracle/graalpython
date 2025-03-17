@@ -83,7 +83,7 @@ public final class ContextIteratorBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language) {
             Object next = self.next(language);
             if (next == null) {
-                return iteratorExhausted();
+                throw iteratorExhausted();
             } else {
                 return next;
             }

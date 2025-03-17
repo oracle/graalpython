@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyListCheckExactNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -267,17 +268,18 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
             Object iter = callGetDictIter.executeCached(null, items);
             boolean first = true;
             while (true) {
-                Object item = PyIterNextNode.executeUncached(iter);
-                if (PyIterNextNode.isExhausted(item)) {
+                try {
+                    Object item = PyIterNextNode.executeUncached(iter);
+                    if (!(item instanceof PTuple itemTuple) || itemTuple.getSequenceStorage().length() != 2) {
+                        throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.ITEMS_MUST_RETURN_2_TUPLES);
+                    }
+                    SequenceStorage sequenceStorage = itemTuple.getSequenceStorage();
+                    Object key = SequenceStorageNodes.GetItemScalarNode.executeUncached(sequenceStorage, 0);
+                    Object value = SequenceStorageNodes.GetItemScalarNode.executeUncached(sequenceStorage, 1);
+                    first = appendDictEntry(encoder, builder, first, key, value);
+                } catch (IteratorExhausted e) {
                     break;
                 }
-                if (!(item instanceof PTuple itemTuple) || itemTuple.getSequenceStorage().length() != 2) {
-                    throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.ITEMS_MUST_RETURN_2_TUPLES);
-                }
-                SequenceStorage sequenceStorage = itemTuple.getSequenceStorage();
-                Object key = SequenceStorageNodes.GetItemScalarNode.executeUncached(sequenceStorage, 0);
-                Object value = SequenceStorageNodes.GetItemScalarNode.executeUncached(sequenceStorage, 1);
-                first = appendDictEntry(encoder, builder, first, key, value);
             }
         }
 
@@ -332,15 +334,16 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
             Object iter = callGetListIter.executeCached(null, list);
             boolean first = true;
             while (true) {
-                Object item = PyIterNextNode.executeUncached(iter);
-                if (PyIterNextNode.isExhausted(item)) {
+                try {
+                    Object item = PyIterNextNode.executeUncached(iter);
+                    if (!first) {
+                        builder.appendStringUncached(encoder.itemSeparator);
+                    }
+                    first = false;
+                    appendListObj(encoder, builder, item);
+                } catch (IteratorExhausted e) {
                     break;
                 }
-                if (!first) {
-                    builder.appendStringUncached(encoder.itemSeparator);
-                }
-                first = false;
-                appendListObj(encoder, builder, item);
             }
         }
     }

@@ -42,7 +42,6 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
-import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -80,9 +79,6 @@ public final class EnumerateBuiltins extends PythonBuiltins {
             Object index = self.getAndIncrementIndex(inliningTarget, language, bigIntIndexProfile);
             Object it = self.getDecoratedIterator();
             Object nextValue = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, it).tp_iternext(), it);
-            if (PyIterNextNode.isExhausted(nextValue)) {
-                return iteratorExhausted();
-            }
             return PFactory.createTuple(language, (new Object[]{index, nextValue}));
         }
     }

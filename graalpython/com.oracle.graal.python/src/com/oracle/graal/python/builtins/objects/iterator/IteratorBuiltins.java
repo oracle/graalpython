@@ -144,12 +144,12 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         private static Object stopIteration(PBuiltinIterator self) {
             self.setExhausted();
-            return TpIterNextBuiltin.iteratorExhausted();
+            throw TpIterNextBuiltin.iteratorExhausted();
         }
 
         @Specialization(guards = "self.isExhausted()")
         static Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
-            return TpIterNextBuiltin.iteratorExhausted();
+            throw TpIterNextBuiltin.iteratorExhausted();
         }
 
         @Specialization(guards = "!self.isExhausted()")
@@ -286,7 +286,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
             try {
                 element = interop.getIteratorNextElement(self);
             } catch (StopIterationException e) {
-                return TpIterNextBuiltin.iteratorExhausted();
+                throw TpIterNextBuiltin.iteratorExhausted();
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere("iterator claimed to be iterator but wasn't");
             } finally {

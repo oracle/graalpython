@@ -113,10 +113,7 @@ public final class GroupByBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language) {
             self.setCurrGrouper(null);
             while (loopConditionProfile.profile(inliningTarget, doGroupByStep(frame, inliningTarget, self, eqProfile, eqNode))) {
-                boolean cont = self.groupByStep(frame, inliningTarget, nextNode, callNode, hasFuncProfile);
-                if (!cont) {
-                    return iteratorExhausted();
-                }
+                self.groupByStep(frame, inliningTarget, nextNode, callNode, hasFuncProfile);
             }
             self.setTgtKey(self.getCurrKey());
             PGrouper grouper = PFactory.createGrouper(language, self, self.getTgtKey());

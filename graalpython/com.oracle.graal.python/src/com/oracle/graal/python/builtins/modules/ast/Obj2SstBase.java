@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyBytesCheckExactNode;
 import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
@@ -291,11 +292,11 @@ abstract class Obj2SstBase {
             Object iter = PyObjectGetIter.executeUncached(obj);
             ArrayList<ConstantValue> list = new ArrayList<>();
             while (true) {
-                Object item = PyIterNextNode.executeUncached(iter);
-                if (PyIterNextNode.isExhausted(item)) {
-                    break;
-                } else {
+                try {
+                    Object item = PyIterNextNode.executeUncached(iter);
                     list.add(obj2ConstantValue(item));
+                } catch (IteratorExhausted e) {
+                    break;
                 }
             }
             if (isTuple) {

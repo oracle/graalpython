@@ -109,7 +109,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getCnt() == 0")
         static Object nextZero(@SuppressWarnings("unused") PRepeat self) {
-            return iteratorExhausted();
+            throw iteratorExhausted();
         }
 
         @Specialization(guards = "self.getCnt() < 0")

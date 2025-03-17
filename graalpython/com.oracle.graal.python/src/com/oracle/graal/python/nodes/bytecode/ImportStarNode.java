@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -127,8 +128,10 @@ public abstract class ImportStarNode extends AbstractImportNode {
                 assert importedModule instanceof PythonModule;
                 Object keysIterator = getIterNode.execute(frame, inliningTarget, getDictNode.execute(inliningTarget, importedModule));
                 while (true) {
-                    Object key = nextNode.execute(frame, inliningTarget, keysIterator);
-                    if (PyIterNextNode.isExhausted(key)) {
+                    Object key;
+                    try {
+                        key = nextNode.execute(frame, inliningTarget, keysIterator);
+                    } catch (IteratorExhausted e1) {
                         break;
                     }
                     writeAttributeToLocals(frame, inliningTarget, moduleName, (PythonModule) importedModule, locals, key, false, castToTruffleStringNode, codePointLengthNode,

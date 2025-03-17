@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryPythonNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -87,12 +88,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class TpSlotIterNext {
     private TpSlotIterNext() {
     }
-
-    /**
-     * Marker value that {@code tp_iternext} slots can return instead of raising
-     * {@code StopIteration} to indicate the same.
-     */
-    public static final Object ITERATOR_EXHAUSTED = PNone.NO_VALUE;
 
     /** Equivalent of {@code _PyObject_NextNotImplemented} */
     public static final TpSlot NEXT_NOT_IMPLEMENTED = TpSlotIterNextSlotsGen.SLOTS.tp_iternext();
@@ -130,11 +125,11 @@ public final class TpSlotIterNext {
 
         @Override
         public Object execute(VirtualFrame frame, Object arg) {
-            Object result = delegate.execute(frame, arg);
-            if (result == ITERATOR_EXHAUSTED) {
+            try {
+                return delegate.execute(frame, arg);
+            } catch (IteratorExhausted e) {
                 throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.StopIteration);
             }
-            return result;
         }
     }
 
@@ -146,12 +141,12 @@ public final class TpSlotIterNext {
     @GenerateInline(value = false, inherit = true)
     public abstract static class TpIterNextBuiltin extends PythonUnaryBuiltinNode {
         /**
-         * Return the marker value used by {@code tp_iternext} slots to indicate the iteration
-         * should stop. A faster equivalent to raising {@code StopIteration} python exception.
-         * Returns the same constant as
+         * Raise a control flow exception that signals iterator exhaustion. A faster equivalent to
+         * raising {@code StopIteration} python exception. Should not be used outside of
+         * {@code tp_iternext} implementations.
          */
-        public static Object iteratorExhausted() {
-            return ITERATOR_EXHAUSTED;
+        public static IteratorExhausted iteratorExhausted() {
+            throw IteratorExhausted.INSTANCE;
         }
     }
 
@@ -201,7 +196,7 @@ public final class TpSlotIterNext {
                 if (state.getCurrentException() != null) {
                     throw clearCurrentExceptionNode.getCurrentExceptionForReraise(inliningTarget, state);
                 } else {
-                    return ITERATOR_EXHAUSTED;
+                    throw TpIterNextBuiltin.iteratorExhausted();
                 }
             }
             return pythonResult;

@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -138,8 +139,9 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
             self.parseReset();
             do {
                 Object lineObj;
-                lineObj = nextNode.execute(frame, inliningTarget, self.inputIter);
-                if (PyIterNextNode.isExhausted(lineObj)) {
+                try {
+                    lineObj = nextNode.execute(frame, inliningTarget, self.inputIter);
+                } catch (IteratorExhausted e) {
                     self.fieldLimit = csvModuleBuiltins.fieldLimit;
                     if (!self.field.isEmpty() || self.state == IN_QUOTED_FIELD) {
                         if (self.dialect.strict) {
@@ -152,7 +154,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                             break;
                         }
                     }
-                    return iteratorExhausted();
+                    throw iteratorExhausted();
                 }
                 self.fieldLimit = csvModuleBuiltins.fieldLimit;
 

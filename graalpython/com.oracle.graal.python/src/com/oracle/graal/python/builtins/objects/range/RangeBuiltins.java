@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolB
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
@@ -790,8 +791,10 @@ public final class RangeBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckExactNode isBuiltin) {
             Object iter = getIter.execute(frame, inliningTarget, self);
             while (true) {
-                Object item = nextNode.execute(frame, inliningTarget, iter);
-                if (PyIterNextNode.isExhausted(item)) {
+                Object item;
+                try {
+                    item = nextNode.execute(frame, inliningTarget, iter);
+                } catch (IteratorExhausted e) {
                     return false;
                 }
                 if (eqNode.compare(frame, inliningTarget, elem, item)) {
@@ -890,8 +893,10 @@ public final class RangeBuiltins extends PythonBuiltins {
             int idx = 0;
             Object iter = getIter.execute(frame, inliningTarget, self);
             while (true) {
-                Object item = nextNode.execute(frame, inliningTarget, iter);
-                if (PyIterNextNode.isExhausted(item)) {
+                Object item;
+                try {
+                    item = nextNode.execute(frame, inliningTarget, iter);
+                } catch (IteratorExhausted e) {
                     break;
                 }
                 if (eqNode.compare(frame, inliningTarget, elem, item)) {
@@ -986,8 +991,10 @@ public final class RangeBuiltins extends PythonBuiltins {
             int count = 0;
             Object iter = getIter.execute(frame, inliningTarget, self);
             while (true) {
-                Object item = nextNode.execute(frame, inliningTarget, iter);
-                if (PyIterNextNode.isExhausted(item)) {
+                Object item;
+                try {
+                    item = nextNode.execute(frame, inliningTarget, iter);
+                } catch (IteratorExhausted e) {
                     return count;
                 }
                 if (eqNode.compare(frame, inliningTarget, elem, item)) {

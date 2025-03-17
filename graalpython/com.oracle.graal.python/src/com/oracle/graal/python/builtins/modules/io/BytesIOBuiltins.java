@@ -100,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
@@ -481,8 +482,10 @@ public final class BytesIOBuiltins extends PythonBuiltins {
             self.checkExports(inliningTarget, raiseNode);
             Object iter = getIter.execute(frame, inliningTarget, lines);
             while (true) {
-                Object line = nextNode.execute(frame, inliningTarget, iter);
-                if (PyIterNextNode.isExhausted(line)) {
+                Object line;
+                try {
+                    line = nextNode.execute(frame, inliningTarget, iter);
+                } catch (IteratorExhausted e) {
                     break;
                 }
                 writeNode.execute(frame, self, line);
@@ -777,7 +780,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             int n = scanEOL(self, -1, bufferLib);
             if (n == 0) {
-                return TpIterNextBuiltin.iteratorExhausted();
+                throw TpIterNextBuiltin.iteratorExhausted();
             }
             return readBytes(self, n, bufferLib, language);
         }

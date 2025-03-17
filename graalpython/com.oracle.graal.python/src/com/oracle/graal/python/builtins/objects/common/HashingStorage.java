@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -215,8 +216,13 @@ public abstract class HashingStorage {
             Object keysIterable = callKeysMethod.execute(frame, keyAttr, EMPTY_OBJECT_ARRAY, EMPTY_KEYWORDS);
             Object keysIt = getIter.execute(frame, inliningTarget, keysIterable);
             ArrayBuilder<KeyValue> elements = new ArrayBuilder<>();
-            Object keyObj;
-            while (!PyIterNextNode.isExhausted(keyObj = nextNode.execute(frame, inliningTarget, keysIt))) {
+            while (true) {
+                Object keyObj;
+                try {
+                    keyObj = nextNode.execute(frame, inliningTarget, keysIt);
+                } catch (IteratorExhausted e) {
+                    break;
+                }
                 Object valueObj = getItemNode.execute(frame, inliningTarget, mapping, keyObj);
                 elements.add(new KeyValue(keyObj, valueObj));
             }
@@ -237,10 +243,15 @@ public abstract class HashingStorage {
                         @Cached IsBuiltinObjectProfile isTypeErrorProfile) throws PException {
             Object it = getIter.execute(frame, inliningTarget, iterable);
             ArrayBuilder<KeyValue> elements = new ArrayBuilder<>();
-            Object next;
             int len = 2;
             try {
-                while (!PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, it))) {
+                while (true) {
+                    Object next;
+                    try {
+                        next = nextNode.execute(frame, inliningTarget, it);
+                    } catch (IteratorExhausted e) {
+                        break;
+                    }
                     PSequence element = createListNode.execute(frame, inliningTarget, next);
                     assert element != null;
                     // This constructs a new list using the builtin type. So, the object cannot

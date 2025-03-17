@@ -50,8 +50,8 @@ import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterCheckNode;
-import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -99,15 +99,13 @@ public abstract class SendNode extends PNodeWithContext {
                     @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
         try {
             Object value = callIterNext.execute(virtualFrame, inliningTarget, slots.tp_iternext(), iter);
-            if (PyIterNextNode.isExhausted(value)) {
-                exhaustedNoException.enter(inliningTarget);
-                virtualFrame.setObject(stackTop, null);
-                virtualFrame.setObject(stackTop - 1, PNone.NONE);
-                return true;
-            } else {
-                virtualFrame.setObject(stackTop, value);
-                return false;
-            }
+            virtualFrame.setObject(stackTop, value);
+            return false;
+        } catch (IteratorExhausted e) {
+            exhaustedNoException.enter(inliningTarget);
+            virtualFrame.setObject(stackTop, null);
+            virtualFrame.setObject(stackTop - 1, PNone.NONE);
+            return true;
         } catch (PException e) {
             handleException(virtualFrame, e, inliningTarget, stopIterationProfile, getValue, stackTop);
             return true;

@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -136,20 +137,28 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                         @Cached CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode) {
             Object callbacks = getAttr.execute(frame, inliningTarget, self, CALLBACKS);
             Object iter = getIter.execute(frame, inliningTarget, callbacks);
-            Object cb = next.execute(frame, inliningTarget, iter);
             TruffleString phase = null;
             Object info;
             long res = 0;
-            if (!PyIterNextNode.isExhausted(cb)) {
+            Object cb;
+            try {
+                cb = next.execute(frame, inliningTarget, iter);
                 phase = START;
                 info = PFactory.createDict(language, new PKeyword[]{
                                 new PKeyword(GENERATION, 2),
                                 new PKeyword(COLLECTED, 0),
                                 new PKeyword(UNCOLLECTABLE, 0),
                 });
-                do {
-                    call.executeObject(frame, cb, phase, info);
-                } while (!PyIterNextNode.isExhausted(cb = next.execute(frame, inliningTarget, iter)));
+                while (true) {
+                    try {
+                        call.executeObject(frame, cb, phase, info);
+                        cb = next.execute(frame, inliningTarget, iter);
+                    } catch (IteratorExhausted e) {
+                        break;
+                    }
+                }
+            } catch (IteratorExhausted e) {
+                // fallthrough
             }
             long freedMemory = javaCollect(inliningTarget, gil);
             PythonContext pythonContext = PythonContext.get(inliningTarget);
@@ -168,8 +177,13 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                                 new PKeyword(UNCOLLECTABLE, 0),
                 });
                 iter = getIter.execute(frame, inliningTarget, callbacks);
-                while (!PyIterNextNode.isExhausted(cb = next.execute(frame, inliningTarget, iter))) {
-                    call.executeObject(frame, cb, phase, info);
+                while (true) {
+                    try {
+                        cb = next.execute(frame, inliningTarget, iter);
+                        call.executeObject(frame, cb, phase, info);
+                    } catch (IteratorExhausted e) {
+                        break;
+                    }
                 }
             }
             return res;

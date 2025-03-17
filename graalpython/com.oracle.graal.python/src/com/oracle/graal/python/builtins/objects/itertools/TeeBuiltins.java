@@ -154,9 +154,7 @@ public final class TeeBuiltins extends PythonBuiltins {
                         @Shared @Cached PyIterNextNode nextNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             Object value = self.getDataobj().getItem(frame, inliningTarget, self.getIndex(), nextNode, raiseNode);
-            if (!PyIterNextNode.isExhausted(value)) {
-                self.setIndex(self.getIndex() + 1);
-            }
+            self.setIndex(self.getIndex() + 1);
             return value;
         }
 

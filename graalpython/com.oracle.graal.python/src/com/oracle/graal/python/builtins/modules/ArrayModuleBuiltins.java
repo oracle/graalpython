@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -295,18 +296,19 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
                 int length = 0;
                 while (true) {
-                    Object nextValue = nextNode.execute(frame, inliningTarget, iter);
-                    if (PyIterNextNode.isExhausted(nextValue)) {
+                    try {
+                        Object nextValue = nextNode.execute(frame, inliningTarget, iter);
+                        try {
+                            length = PythonUtils.addExact(length, 1);
+                            ensureCapacityNode.execute(inliningTarget, array, length);
+                        } catch (OverflowException e) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            throw PRaiseNode.raiseStatic(inliningTarget, MemoryError);
+                        }
+                        putValueNode.execute(frame, inliningTarget, array, length - 1, nextValue);
+                    } catch (IteratorExhausted e) {
                         break;
                     }
-                    try {
-                        length = PythonUtils.addExact(length, 1);
-                        ensureCapacityNode.execute(inliningTarget, array, length);
-                    } catch (OverflowException e) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw PRaiseNode.raiseStatic(inliningTarget, MemoryError);
-                    }
-                    putValueNode.execute(frame, inliningTarget, array, length - 1, nextValue);
                 }
 
                 setLengthNode.execute(inliningTarget, array, length);

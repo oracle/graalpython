@@ -99,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -435,7 +436,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                         @Cached PyObjectSizeNode sizeNode) {
             Object line = callMethod.execute(frame, inliningTarget, self, T_READLINE);
             if (sizeNode.execute(frame, inliningTarget, line) <= 0) {
-                return iteratorExhausted();
+                throw iteratorExhausted();
             }
             return line;
         }
@@ -454,8 +455,10 @@ public final class IOBaseBuiltins extends PythonBuiltins {
             checkClosedNode.execute(frame, inliningTarget, self);
             Object iter = getIter.execute(frame, inliningTarget, lines);
             while (true) {
-                Object line = nextNode.execute(frame, inliningTarget, iter);
-                if (PyIterNextNode.isExhausted(line)) {
+                Object line;
+                try {
+                    line = nextNode.execute(frame, inliningTarget, iter);
+                } catch (IteratorExhausted e) {
                     break;
                 }
                 callMethod.execute(frame, inliningTarget, self, T_WRITE, line);
@@ -555,8 +558,10 @@ public final class IOBaseBuiltins extends PythonBuiltins {
             Object iterator = getIter.execute(frame, inliningTarget, self);
             ArrayBuilder<Object> list = new ArrayBuilder<>();
             while (true) {
-                Object line = nextNode.execute(frame, inliningTarget, iterator);
-                if (PyIterNextNode.isExhausted(line)) {
+                Object line;
+                try {
+                    line = nextNode.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
                     break;
                 }
                 list.add(line);

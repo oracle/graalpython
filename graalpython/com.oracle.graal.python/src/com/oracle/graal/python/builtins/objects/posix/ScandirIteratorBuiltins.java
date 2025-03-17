@@ -117,14 +117,14 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Bind PythonLanguage language) {
             if (self.ref.isReleased()) {
-                return iteratorExhausted();
+                throw iteratorExhausted();
             }
             PosixSupport posixSupport = PosixSupport.get(inliningTarget);
             try {
                 Object dirEntryData = posixLib.readdir(posixSupport, self.ref.getReference());
                 if (dirEntryData == null) {
                     self.ref.rewindAndClose(posixLib, posixSupport);
-                    return iteratorExhausted();
+                    throw iteratorExhausted();
                 }
                 return PFactory.createDirEntry(language, dirEntryData, self.path);
             } catch (PosixException e) {

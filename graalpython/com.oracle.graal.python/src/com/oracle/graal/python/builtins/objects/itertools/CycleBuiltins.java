@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -120,19 +121,19 @@ public final class CycleBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile firstPassProfile) {
             if (self.getIterable() != null) {
                 iterableProfile.enter(inliningTarget);
-                Object item = nextNode.execute(frame, inliningTarget, self.getIterable());
-                if (PyIterNextNode.isExhausted(item)) {
-                    self.setIterable(null);
-                } else {
+                try {
+                    Object item = nextNode.execute(frame, inliningTarget, self.getIterable());
                     if (!self.isFirstpass()) {
                         firstPassProfile.enter(inliningTarget);
                         add(self.getSaved(), item);
                     }
                     return item;
+                } catch (IteratorExhausted e) {
+                    self.setIterable(null);
                 }
             }
             if (isEmpty(self.getSaved())) {
-                return iteratorExhausted();
+                throw iteratorExhausted();
             }
             Object item = get(self.getSaved(), self.getIndex());
             self.setIndex(self.getIndex() + 1);

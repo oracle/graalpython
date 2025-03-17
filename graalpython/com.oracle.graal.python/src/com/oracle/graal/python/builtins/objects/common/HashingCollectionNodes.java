@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
@@ -219,8 +220,10 @@ public abstract class HashingCollectionNodes {
             Object iterator = getIter.execute(frame, inliningTarget, other);
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             while (true) {
-                Object key = nextNode.execute(frame, inliningTarget, iterator);
-                if (PyIterNextNode.isExhausted(key)) {
+                Object key;
+                try {
+                    key = nextNode.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
                     return curStorage;
                 }
                 curStorage = setStorageItem.execute(frame, inliningTarget, curStorage, key, val);
