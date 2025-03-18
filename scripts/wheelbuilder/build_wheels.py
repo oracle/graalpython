@@ -121,29 +121,42 @@ def build_wheels(pip):
         available_scripts = {s.lower(): s for s in os.listdir(scriptdir)}
     else:
         available_scripts = {}
-    for spec in packages_to_build:
-        name, version = spec.split("==")
-        whl_count = len(glob("*.whl"))
-        script = f"{name}.{version}.{script_ext}".lower()
-        if script not in available_scripts:
-            script = f"{name}.{script_ext}".lower()
-        if script in available_scripts:
-            script = join(scriptdir, available_scripts[script])
-            env = os.environ.copy()
-            env["PATH"] = abspath(dirname(pip)) + os.pathsep + env["PATH"]
-            env["VIRTUAL_ENV"] = abspath(dirname(dirname(pip)))
-            print("Building", name, version, "with", script, flush=True)
-            if sys.platform == "win32":
-                cmd = [script, version]  # Python's subprocess.py does the quoting we need
-            else:
-                cmd = f"{os.environ.get('SHELL', '/bin/sh')} {shlex.quote(script)} {version}"
-            subprocess.check_call(cmd, shell=True, env=env)
-            if not len(glob("*.whl")) > whl_count:
-                print("Building wheel for", name, version, "after", script, "did not", flush=True)
-                subprocess.check_call([pip, "wheel", spec])
-        else:
+    remaining_packages = 0
+    while remaining_packages != len(packages_to_build):
+        remaining_packages = len(packages_to_build)
+        for spec in packages_to_build.copy():
+            name, version = spec.split("==")
+            whl_count = len(glob("*.whl"))
+            script = f"{name}.{version}.{script_ext}".lower()
+            if script not in available_scripts:
+                script = f"{name}.{script_ext}".lower()
+            if script in available_scripts:
+                script = join(scriptdir, available_scripts[script])
+                env = os.environ.copy()
+                env["PATH"] = abspath(dirname(pip)) + os.pathsep + env["PATH"]
+                env["VIRTUAL_ENV"] = abspath(dirname(dirname(pip)))
+                print("Building", name, version, "with", script, flush=True)
+                if sys.platform == "win32":
+                    cmd = [script, version]  # Python's subprocess.py does the quoting we need
+                else:
+                    cmd = f"{os.environ.get('SHELL', '/bin/sh')} {shlex.quote(script)} {version}"
+                p = subprocess.run(cmd, shell=True, env=env)
+                if p.returncode != 0:
+                    continue
+                if len(glob("*.whl")) > whl_count:
+                    packages_to_build.remove(spec)
+                    continue
+                print(script, "did not build a wheel, we will do so now", flush=True)
             print("Building", name, version, flush=True)
-            subprocess.check_call([pip, "wheel", spec])
+            p = subprocess.run([pip, "wheel", spec])
+            if p.returncode == 0:
+                packages_to_build.remove(spec)
+    if packages_to_build:
+        print("Failed to build all packages, the following packages failed")
+        print(packages_to_build)
+        return False
+    else:
+        return True
 
 
 def repair_wheels():
@@ -188,5 +201,7 @@ if __name__ == "__main__":
     download(args.graalpy_url, outpath)
     extract(outpath)
     pip = create_venv()
-    build_wheels(pip)
+    success = build_wheels(pip)
     repair_wheels()
+    if not success:
+        sys.exit(1)
