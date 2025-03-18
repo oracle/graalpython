@@ -136,7 +136,7 @@ def build_wheels(pip):
             if sys.platform == "win32":
                 cmd = [script, version]  # Python's subprocess.py does the quoting we need
             else:
-                cmd = f"{shlex.quote(script)} {version}"
+                cmd = f"{os.environ.get('SHELL', '/bin/sh')} {shlex.quote(script)} {version}"
             subprocess.check_call(cmd, shell=True, env=env)
             if not len(glob("*.whl")) > whl_count:
                 print("Building wheel for", name, version, "after", script, "did not", flush=True)
