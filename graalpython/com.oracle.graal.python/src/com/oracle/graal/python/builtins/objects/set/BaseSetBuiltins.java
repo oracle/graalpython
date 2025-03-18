@@ -47,7 +47,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_PARENS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_PARENS;
@@ -124,7 +123,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         return BaseSetBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class BaseReprNode extends PythonUnaryBuiltinNode {
         private static void fillItems(VirtualFrame frame, Node inliningTarget, HashingStorage storage, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode repr,

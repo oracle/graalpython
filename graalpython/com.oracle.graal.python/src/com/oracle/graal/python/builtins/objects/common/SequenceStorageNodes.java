@@ -3035,10 +3035,10 @@ public abstract class SequenceStorageNodes {
     @GenerateUncached
     public abstract static class CreateEmpty2Node extends SequenceStorageBaseNode {
 
-        public abstract ArrayBasedSequenceStorage execute(Node inliningTarget, SequenceStorage s1, SequenceStorage s2, int cap);
+        public abstract SequenceStorage execute(Node inliningTarget, SequenceStorage s1, SequenceStorage s2, int cap);
 
         @Specialization
-        static ArrayBasedSequenceStorage doIt(Node inliningTarget, SequenceStorage s1, SequenceStorage s2, int cap,
+        static SequenceStorage doIt(Node inliningTarget, SequenceStorage s1, SequenceStorage s2, int cap,
                         @Cached GetElementType getElementType1,
                         @Cached GetElementType getElementType2,
                         @Cached CreateEmptyForTypesNode create) {
@@ -3087,23 +3087,35 @@ public abstract class SequenceStorageNodes {
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
+    @ImportStatic(StorageType.class)
     abstract static class CreateEmptyForTypesNode extends SequenceStorageBaseNode {
 
-        public abstract ArrayBasedSequenceStorage execute(Node inliningTarget, StorageType type1, StorageType type2, int cap);
+        public abstract SequenceStorage execute(Node inliningTarget, StorageType type1, StorageType type2, int cap);
 
-        @Specialization(guards = "type1 == type2")
-        static ArrayBasedSequenceStorage doSame(Node inliningTarget, StorageType type1, @SuppressWarnings("unused") StorageType type2, int cap,
-                        @Cached CreateEmptyForTypeNode create) {
+        @Specialization(guards = {"type1 == type2 || type2 == Empty", "type1 != Empty"})
+        static SequenceStorage doSameOr1Empty(Node inliningTarget, StorageType type1, @SuppressWarnings("unused") StorageType type2, int cap,
+                        @Shared @Cached CreateEmptyForTypeNode create) {
             return create.execute(inliningTarget, type1, cap);
         }
 
+        @Specialization(guards = {"type1 == Empty", "type2 != Empty"})
+        static SequenceStorage do2Empty(Node inliningTarget, @SuppressWarnings("unused") StorageType type1, StorageType type2, int cap,
+                        @Shared @Cached CreateEmptyForTypeNode create) {
+            return create.execute(inliningTarget, type2, cap);
+        }
+
+        @Specialization(guards = {"type1 == Empty", "type2 == Empty", "cap == 0"})
+        static SequenceStorage doBothEmpty(@SuppressWarnings("unused") StorageType type1, @SuppressWarnings("unused") StorageType type2, @SuppressWarnings("unused") int cap) {
+            return EmptySequenceStorage.INSTANCE;
+        }
+
         @Specialization(guards = "generalizeToLong(type1, type2)")
-        static LongSequenceStorage doLong(@SuppressWarnings("unused") StorageType type1, @SuppressWarnings("unused") StorageType type2, int cap) {
+        static SequenceStorage doLong(@SuppressWarnings("unused") StorageType type1, @SuppressWarnings("unused") StorageType type2, int cap) {
             return new LongSequenceStorage(cap);
         }
 
         @Fallback
-        static ObjectSequenceStorage doObject(@SuppressWarnings("unused") StorageType type1, @SuppressWarnings("unused") StorageType type2, int cap) {
+        static SequenceStorage doObject(@SuppressWarnings("unused") StorageType type1, @SuppressWarnings("unused") StorageType type2, int cap) {
             return new ObjectSequenceStorage(cap);
         }
 

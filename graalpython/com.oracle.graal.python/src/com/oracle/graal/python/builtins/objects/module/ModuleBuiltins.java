@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStr
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.lib.PyDictGetItem;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -97,6 +98,7 @@ import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -344,6 +346,21 @@ public final class ModuleBuiltins extends PythonBuiltins {
                         @Shared("write") @Cached WriteAttributeToObjectNode write) {
             write.execute(self, T___ANNOTATIONS__, value);
             return PNone.NONE;
+        }
+    }
+
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
+
+        public static final TruffleString T__MODULE_REPR = tsLiteral("_module_repr");
+
+        @Specialization
+        Object repr(VirtualFrame frame, Object self,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            return callMethod.execute(frame, inliningTarget, context.getImportlib(), T__MODULE_REPR, self);
         }
     }
 }

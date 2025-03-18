@@ -49,9 +49,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SIZEOF__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSHOOK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUFFLE_RICHCOMPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_UPDATE;
@@ -103,10 +101,12 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRepr.CallSlotReprNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
@@ -118,7 +118,6 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory;
@@ -340,17 +339,24 @@ public final class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1, doc = "Return str(self).")
+    @Slot(value = SlotKind.tp_str, isComplex = true)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object str(VirtualFrame frame, Object self,
-                        @Cached("create(Repr)") LookupAndCallUnaryNode reprNode) {
-            return reprNode.executeObject(frame, self);
+                        @Bind Node inliningTarget,
+                        @Cached GetObjectSlotsNode getSlots,
+                        @Cached CallSlotReprNode callSlot,
+                        @Cached ObjectNodes.DefaultObjectReprNode defaultRepr) {
+            TpSlots slots = getSlots.execute(inliningTarget, self);
+            if (slots.tp_repr() != null) {
+                return callSlot.execute(frame, inliningTarget, slots.tp_repr(), self);
+            }
+            return defaultRepr.execute(frame, inliningTarget, self);
         }
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
@@ -656,8 +662,9 @@ public final class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "formatString.isEmpty()")
         static Object format(VirtualFrame frame, Object self, @SuppressWarnings("unused") TruffleString formatString,
-                        @Cached("create(Str)") LookupAndCallUnaryNode strCall) {
-            return strCall.executeObject(frame, self);
+                        @Bind Node inliningTarget,
+                        @Cached PyObjectStrAsObjectNode str) {
+            return str.execute(frame, inliningTarget, self);
         }
     }
 

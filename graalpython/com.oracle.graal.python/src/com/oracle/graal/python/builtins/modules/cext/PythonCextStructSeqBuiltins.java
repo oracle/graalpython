@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -77,6 +78,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -97,7 +99,7 @@ public final class PythonCextStructSeqBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static int doGeneric(Object klass, Object fields, int nInSequence,
+        static int doGeneric(PythonAbstractClass klass, Object fields, int nInSequence,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached CStructAccess.ReadPointerNode readNode,
                         @Cached FromCharPointerNode fromCharPtr) {
@@ -123,7 +125,7 @@ public final class PythonCextStructSeqBuiltins {
             TruffleString[] fieldDocs = docs.toArray(TruffleString[]::new);
 
             StructSequence.Descriptor d = new StructSequence.Descriptor(null, nInSequence, fieldNames, fieldDocs);
-            StructSequence.initType(PythonLanguage.get(readNode), klass, d);
+            StructSequence.initType(PythonContext.get(readNode), klass, d);
             return 0;
         }
     }

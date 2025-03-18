@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -105,6 +105,7 @@ public final class HiddenAttr {
     public static final HiddenAttr NATIVE_STORAGE = new HiddenAttr("native_storage");
     public static final HiddenAttr NATIVE_SLOTS = new HiddenAttr("__native_slots__");
     public static final HiddenAttr INSTANCESHAPE = new HiddenAttr("instanceshape");
+    public static final HiddenAttr STRUCTSEQ_FIELD_NAMES = new HiddenAttr("struct_seq_field_names");
 
     private final HiddenKey key;
 

@@ -196,7 +196,11 @@ public @interface Slot {
         /** iter(obj) */
         tp_iter("__iter__"),
         /** next(obj) */
-        tp_iternext("__next__");
+        tp_iternext("__next__"),
+        /** str(obj) */
+        tp_str("__str__"),
+        /** repr(obj) */
+        tp_repr("__repr__");
 
         SlotKind(@SuppressWarnings("unused") String specialMethods) {
         }

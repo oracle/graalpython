@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -400,6 +400,7 @@ static PyMethodDef structseq_methods[] = {
     {"__reduce__", (PyCFunction)structseq_reduce, METH_NOARGS, NULL},
     {NULL, NULL}
 };
+#endif // GraalPy change
 
 static Py_ssize_t
 count_members(PyStructSequence_Desc *desc, Py_ssize_t *n_unnamed_members) {
@@ -414,6 +415,7 @@ count_members(PyStructSequence_Desc *desc, Py_ssize_t *n_unnamed_members) {
     return i;
 }
 
+#if 0 // GraalPy change
 static int
 initialize_structseq_dict(PyStructSequence_Desc *desc, PyObject* dict,
                           Py_ssize_t n_members, Py_ssize_t n_unnamed_members) {
@@ -470,6 +472,7 @@ error:
     Py_DECREF(keys);
     return -1;
 }
+#endif // GraalPy change
 
 static PyMemberDef *
 initialize_members(PyStructSequence_Desc *desc,
@@ -503,7 +506,6 @@ initialize_members(PyStructSequence_Desc *desc,
 
     return members;
 }
-#endif // GraalPy change
 
 
 static void
@@ -638,16 +640,27 @@ PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc)
     }
 #endif // GraalPy change
 
-#if 0 // GraalPy change: initialize members in an upcall later
+    type->tp_name = desc->name;
+    type->tp_basicsize = sizeof(PyStructSequence) - sizeof(PyObject *);
+    type->tp_itemsize = sizeof(PyObject *);
+    type->tp_dealloc = (destructor)structseq_dealloc;
+    // GraalPy change: set in a later upcall
+    type->tp_repr = NULL;
+    type->tp_doc = desc->doc;
+    type->tp_base = &PyTuple_Type;
+    // GraalPy change: set in a later upcall
+    type->tp_methods = NULL;
+    type->tp_new = NULL;
+    type->tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | tp_flags;
+    type->tp_traverse = (traverseproc) structseq_traverse;
+
     n_members = count_members(desc, &n_unnamed_members);
     members = initialize_members(desc, n_members, n_unnamed_members);
     if (members == NULL) {
         return -1;
     }
-#else // GraalPy change
-    n_members = 0;
-    members = NULL;
-#endif // GraalPy change
+    initialize_members(desc, members, n_members);
+    type->tp_members = members;
 
     initialize_static_fields(type, desc, members, n_members, 0);
     if (initialize_static_type(type, desc, n_members, n_unnamed_members) < 0) {

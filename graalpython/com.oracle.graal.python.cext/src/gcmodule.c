@@ -49,6 +49,18 @@ call_traverse(traverseproc traverse, PyObject *op, visitproc visit, void *arg)
                       Py_TYPE((op))->tp_name);
         return 0;
     } else {
+        if (_PyObject_IsFreed(op)) {
+            PyTruffle_Log(PY_TRUFFLE_LOG_INFO,
+                          "we tried to call tp_traverse on a freed object at %p (ctx %p)!",
+                          op, arg);
+            return 0;
+        }
+        if (_PyObject_IsFreed((PyObject *)Py_TYPE(op))) {
+            PyTruffle_Log(PY_TRUFFLE_LOG_INFO,
+                          "we tried to call tp_traverse on an object at %p with a freed type at %p (ctx %p)!",
+                          op, Py_TYPE(op), arg);
+            return 0;
+        }
         return traverse(op, (visitproc)visit, arg);
     }
 

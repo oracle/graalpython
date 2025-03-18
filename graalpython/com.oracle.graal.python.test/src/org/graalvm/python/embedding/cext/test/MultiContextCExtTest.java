@@ -58,6 +58,7 @@ import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.python.embedding.tools.exec.BuildToolLog;
+import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 import org.junit.Test;
 
 import static org.graalvm.python.embedding.test.EmbeddingTestUtils.deleteDirOnShutdown;
@@ -165,7 +166,7 @@ public class MultiContextCExtTest {
     }
 
     @Test
-    public void testCreatingVenvForMulticontext() throws IOException {
+    public void testCreatingVenvForMulticontext() throws IOException, VFSUtils.PackagesChangedException {
         var log = new TestLog();
         Path tmpdir = Files.createTempDirectory("MultiContextCExtTest");
         Path venvDir = tmpdir.resolve("venv");
@@ -243,15 +244,9 @@ public class MultiContextCExtTest {
             } catch (PolyglotException e) {
                 assertTrue("We rely on sys.prefix", e.getMessage().contains("sys.prefix must be a str"));
             }
-            // Fifth one does not work because we don't have the venv configured
-            try {
-                c5.eval(code);
-                fail("should not reach here");
-            } catch (PolyglotException e) {
-                assertTrue("We need a venv", e.getMessage().contains("sys.prefix must point to a venv"));
-            }
-            // Using a context without isolation in the same process needs to use LLVM
-            assertFalse("have not had a context use LLVM, yet", log.truffleLog.toString().contains("as bitcode"));
+            // Fifth works even without a venv
+            c5.eval(code);
+            // Using a context without isolation in the same process does not work
             try {
                 c0.eval(code);
                 fail("should not reach here");

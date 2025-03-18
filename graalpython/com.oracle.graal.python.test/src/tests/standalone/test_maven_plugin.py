@@ -504,6 +504,33 @@ class MavenPluginTest(util.BuildToolTestBase):
             util.check_ouput("Cannot use <externalDirectory> and <resourceDirectory> at the same time", out)
 
 
+    @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
+    def test_java_home_change(self):
+        with util.TemporaryTestDirectory() as tmpdir:
+            target_name = "check_home_warning_test"
+            target_dir = os.path.join(str(tmpdir), target_name)
+            self.generate_app(tmpdir, target_dir, target_name)
+
+            mvnw_cmd = util.get_mvn_wrapper(target_dir, self.env)
+
+            # build the app
+            process_resources_cmd = mvnw_cmd + ["package"]
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+
+            # update the generated launcher, so that it looks like it's been generated with different Java path
+            pyenvcfg = os.path.join(target_dir, 'target', 'pyvenv.cfg')
+            if os.path.exists(pyenvcfg):
+                util.replace_in_file(pyenvcfg, os.environ['JAVA_HOME'], '/bogus/java/home')
+            else:
+                util.replace_in_file(os.path.join(target_dir, 'target', 'graalpy.sh'), os.environ['JAVA_HOME'], '/bogus/java/home')
+
+            util.replace_in_file(os.path.join(target_dir, 'pom.xml'), 'termcolor==2.2', 'termcolor==2')
+            process_resources_cmd = mvnw_cmd + ["package"]
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+
+
     # Creates two Java apps from given pom templates, the dependencies between them
     # must be configured in the pom template(s)
     def _prepare_multi_project(self, tmpdir, app1_pom_template_name, app2_pom_template_name):

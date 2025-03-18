@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.posix;
 import static com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.opaquePathToBytes;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FSPATH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
 import static com.oracle.graal.python.runtime.PosixConstants.DT_DIR;
 import static com.oracle.graal.python.runtime.PosixConstants.DT_LNK;
@@ -59,6 +58,8 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -70,14 +71,14 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -100,6 +101,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDirEntry)
 public final class DirEntryBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = DirEntryBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -128,17 +131,16 @@ public final class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString repr(VirtualFrame frame, PDirEntry self,
                         @Bind("this") Node inliningTarget,
                         @Cached NameNode nameNode,
-                        @Cached("create(Repr)") LookupAndCallUnaryNode reprNode,
-                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("<DirEntry %s>", castToStringNode.execute(inliningTarget, reprNode.executeObject(frame, nameNode.execute(frame, self))));
+            return simpleTruffleStringFormatNode.format("<DirEntry %s>", repr.execute(frame, inliningTarget, nameNode.execute(frame, self)));
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -951,7 +951,7 @@ Py_LOCAL_SYMBOL TruffleContext* TRUFFLE_CONTEXT;
  * that do not work during context shutdown! (This means that it would be safe
  * to share this global across multiple contexts.)
  */
-Py_LOCAL_SYMBOL int32_t graalpy_finalizing;
+Py_LOCAL_SYMBOL int8_t *_graalpy_finalizing = NULL;
 
 PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures, GCState *gc) {
     clock_t t = clock();
@@ -1007,10 +1007,16 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures,
 
 /*
  * This function is called from Java during C API initialization to get the
- * pointer `graalpy_finalizing`.
+ * pointer `_graalpy_finalizing`.
  */
-PyAPI_FUNC(int32_t *) GraalPy_get_finalize_capi_pointer() {
-    return &graalpy_finalizing;
+PyAPI_FUNC(int8_t *) GraalPy_get_finalize_capi_pointer() {
+    assert(!_graalpy_finalizing);
+    // We actually leak this memory on purpose. On the Java side, this is
+    // written to in a VM shutdown hook. Once such a hook is registered it
+    // sticks around, so we're leaking those hooks anyway. 1 byte more to leak
+    // does not strike me (timfel) as significant.
+    _graalpy_finalizing = (int8_t *)calloc(1, sizeof(int8_t));
+    return _graalpy_finalizing;
 }
 
 #if ((__linux__ && __GNU_LIBRARY__) || __APPLE__)

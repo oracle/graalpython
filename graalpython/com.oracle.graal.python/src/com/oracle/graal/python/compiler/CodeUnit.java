@@ -80,6 +80,7 @@ public final class CodeUnit {
 
     public final int stacksize;
 
+    // Note this is being mutated when quickening
     @CompilationFinal(dimensions = 1) public final byte[] code;
     @CompilationFinal(dimensions = 1) public final byte[] srcOffsetTable;
     public final int flags;
@@ -227,10 +228,10 @@ public final class CodeUnit {
     @SuppressWarnings("fallthrough")
     @Override
     public String toString() {
-        return toString(code);
+        return toString(false);
     }
 
-    public String toString(byte[] bytecode) {
+    public String toString(boolean quickened) {
         StringBuilder sb = new StringBuilder();
 
         HashMap<Integer, String[]> lines = new HashMap<>();
@@ -254,9 +255,13 @@ public final class CodeUnit {
         int bci = 0;
         int oparg = 0;
         SourceMap map = getSourceMap();
-        while (bci < bytecode.length) {
+        while (bci < code.length) {
             int bcBCI = bci;
-            OpCodes opcode = OpCodes.fromOpCode(bytecode[bci++]);
+            OpCodes opcode = OpCodes.fromOpCode(code[bci++]);
+
+            if (!quickened) {
+                opcode = unquicken(opcode);
+            }
 
             String[] line = lines.computeIfAbsent(bcBCI, k -> new String[DISASSEMBLY_NUM_COLUMNS]);
             line[0] = String.format("%3d:%-3d - %3d:%-3d", map.startLineMap[bcBCI], map.startColumnMap[bcBCI], map.endLineMap[bcBCI], map.endColumnMap[bcBCI]);
@@ -269,11 +274,11 @@ public final class CodeUnit {
             if (!opcode.hasArg()) {
                 line[4] = "";
             } else {
-                oparg |= Byte.toUnsignedInt(bytecode[bci++]);
+                oparg |= Byte.toUnsignedInt(code[bci++]);
                 if (opcode.argLength > 1) {
                     followingArgs = new byte[opcode.argLength - 1];
                     for (int i = 0; i < opcode.argLength - 1; i++) {
-                        followingArgs[i] = bytecode[bci++];
+                        followingArgs[i] = code[bci++];
                     }
                 }
                 line[4] = String.format("% 2d", oparg);
@@ -465,7 +470,7 @@ public final class CodeUnit {
             }
         }
 
-        for (bci = 0; bci < bytecode.length; bci++) {
+        for (bci = 0; bci < code.length; bci++) {
             String[] line = lines.get(bci);
             if (line != null) {
                 line[5] = line[5] == null ? "" : String.format("(%s)", line[5]);
@@ -772,6 +777,7 @@ public final class CodeUnit {
             bci += 2;
             op = OpCodes.fromOpCode(bytecode[bci]);
         }
+        op = unquicken(op);
         byte[] followingArgs = null;
         if (op.argLength > 0) {
             oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
@@ -792,5 +798,27 @@ public final class CodeUnit {
 
     public void iterateBytecode(BytecodeAction action) {
         iterateBytecode(code, action);
+    }
+
+    public byte[] getBytecodeForSerialization() {
+        byte[] bytecode = Arrays.copyOf(code, code.length);
+        for (int bci = 0; bci < bytecode.length;) {
+            OpCodes op = OpCodes.fromOpCode(bytecode[bci]);
+            bytecode[bci] = (byte) unquicken(op).ordinal();
+            bci += op.length();
+        }
+        return bytecode;
+    }
+
+    private static OpCodes unquicken(OpCodes op) {
+        if (op.quickens == null) {
+            return op;
+        }
+        return switch (op.quickens) {
+            // These are already quickened by the compiler, so keep them quickened
+            // See CompilationUnit.emitBytecode
+            case LOAD_BYTE, LOAD_INT, LOAD_LONG, LOAD_DOUBLE, LOAD_TRUE, LOAD_FALSE -> op;
+            default -> op.quickens;
+        };
     }
 }

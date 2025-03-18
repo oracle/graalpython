@@ -514,7 +514,6 @@ PyObject_Print(PyObject *op, FILE *fp, int flags)
     return ret;
 }
 
-#if 0 // GraalPy change
 /* For debugging convenience.  Set a breakpoint here and call it from your DLL */
 void
 _Py_BreakPoint(void)
@@ -531,9 +530,14 @@ _Py_BreakPoint(void)
 int
 _PyObject_IsFreed(PyObject *op)
 {
+    if (points_to_py_handle_space(op)) {
+        return Graal_PyTruffleObject_IsFreed(op);
+    }
+#if 0 // GraalPy change
     if (_PyMem_IsPtrFreed(op) || _PyMem_IsPtrFreed(Py_TYPE(op))) {
         return 1;
     }
+#endif
     /* ignore op->ob_ref: its value can have be modified
        by Py_INCREF() and Py_DECREF(). */
 #ifdef Py_TRACE_REFS
@@ -547,11 +551,14 @@ _PyObject_IsFreed(PyObject *op)
     return 0;
 }
 
-
 /* For debugging convenience.  See Misc/gdbinit for some useful gdb hooks */
 void
 _PyObject_Dump(PyObject* op)
 {
+    if (points_to_py_handle_space(op)) {
+        Graal_PyTruffleObject_Dump(op);
+        return;
+    }
     if (_PyObject_IsFreed(op)) {
         /* It seems like the object memory has been freed:
            don't access it to prevent a segmentation fault. */
@@ -587,6 +594,7 @@ _PyObject_Dump(PyObject* op)
     fflush(stderr);
 }
 
+#if 0 // GraalPy change
 PyObject *
 PyObject_Repr(PyObject *v)
 {

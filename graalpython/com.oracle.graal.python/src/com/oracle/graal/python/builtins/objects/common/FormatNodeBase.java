@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,27 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
+@GenerateCached(false)
 public abstract class FormatNodeBase extends PythonBinaryClinicBuiltinNode {
-    @Override
-    protected ArgumentClinicProvider getArgumentClinic() {
-        // must be implemented here, because DSL creates a generated node for this class
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AbstractMethodError();
-    }
-
     // applies to all types: empty format string => use __str__
     @Specialization(guards = "formatString.isEmpty()")
     public static Object formatEmptyString(VirtualFrame frame, Object self, @SuppressWarnings("unused") TruffleString formatString,
-                    @Cached("create(Str)") LookupAndCallUnaryNode lookupAndCallNode) {
-        return lookupAndCallNode.executeObject(frame, self);
+                    @Bind Node inliningTarget,
+                    @Cached PyObjectStrAsObjectNode str) {
+        return str.execute(frame, inliningTarget, self);
     }
 }

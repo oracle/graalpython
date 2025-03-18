@@ -56,9 +56,11 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.ProjectLayout;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.tasks.Jar;
@@ -74,6 +76,7 @@ import java.util.function.BiFunction;
 
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.GRAALPY_GROUP_ID;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
+import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_VENV;
 
 public abstract class GraalPyGradlePlugin implements Plugin<Project> {
     private static final String LAUNCHER_CONFIGURATION_NAME = "pythonLauncherClasspath";
@@ -211,8 +214,6 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
     private TaskProvider<LockPackagesTask> registerLockPackagesTask(Project project, Configuration launcherClasspath, GraalPyExtension extension) {
         return project.getTasks().register(GRAALPY_LOCK_PACKAGES_TASK, LockPackagesTask.class, t -> {
             registerPackagesTask(project, launcherClasspath, extension, t);
-            // TODO probably not necessary
-            // t.getOutputs().upToDateWhen(tt -> false);
         });
     }
 
@@ -227,11 +228,18 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
         t.getPackages().set(extension.getPackages());
 
         DirectoryProperty externalDirectory = extension.getExternalDirectory();
-        t.getOutput().convention(externalDirectory.orElse(extension.getPythonResourcesDirectory().orElse(buildDirectory.dir(DEFAULT_RESOURCES_DIRECTORY))));
-        t.getIncludeVfsRoot().convention(externalDirectory.map(d -> false).orElse(extension.getPythonResourcesDirectory().map(d -> false).orElse(true)));
-        t.getResourceDirectory().set(extension.getResourceDirectory());
+        Directory output = externalDirectory.orElse(extension.getPythonResourcesDirectory().orElse(buildDirectory.dir(DEFAULT_RESOURCES_DIRECTORY))).get();
+        t.getOutput().convention(output);
 
-        t.getGraalPyLockFile().convention(extension.getGraalPyLockFile().orElse(projectDirectory.file(GRAALPY_LOCK_FILE)));
+        String vfsRoot = externalDirectory.isPresent() ? "" : extension.getResourceDirectory().getOrElse(VFS_ROOT);
+        t.getVenvDirectory().set(output.getAsFile().toPath().resolve(vfsRoot).resolve(VFS_VENV).toFile());
+
+        RegularFile graalPyLockFile = extension.getGraalPyLockFile().orElse(projectDirectory.file(GRAALPY_LOCK_FILE)).get();
+        File glfFile = graalPyLockFile.getAsFile();
+        if(!glfFile.isAbsolute()) {
+            graalPyLockFile = projectDirectory.file(glfFile.getPath());
+        }
+        t.getGraalPyLockFile().set(graalPyLockFile);
 
         t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
     }

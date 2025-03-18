@@ -89,8 +89,6 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonOS;
@@ -476,7 +474,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @Override
     public void setEnv(Env env) {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (env.isPreInitialization()) {
             return;
         }
         // Java NIO (and TruffleFile) do not expect/support changing native working directory since

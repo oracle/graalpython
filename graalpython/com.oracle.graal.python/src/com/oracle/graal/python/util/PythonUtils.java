@@ -64,7 +64,6 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
-import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.VMRuntime;
 import org.graalvm.polyglot.io.ByteSequence;
 
@@ -531,7 +530,7 @@ public final class PythonUtils {
     private static final ObjectName OBJECT_NAME;
 
     static {
-        if (ImageInfo.inImageCode()) {
+        if (TruffleOptions.AOT) {
             OBJECT_NAME = null;
             SERVER = null;
         } else {
@@ -564,7 +563,7 @@ public final class PythonUtils {
 
     @TruffleBoundary
     public static void dumpHeap(String path) {
-        if (ImageInfo.inImageCode()) {
+        if (TruffleOptions.AOT) {
             try {
                 VMRuntime.dumpHeap(path, true);
             } catch (UnsupportedOperationException | IOException e) {

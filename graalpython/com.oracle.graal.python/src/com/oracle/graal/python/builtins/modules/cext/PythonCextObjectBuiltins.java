@@ -600,8 +600,8 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = Direct)
-    abstract static class _PyObject_IsFreed extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = Ignored)
+    abstract static class _PyTruffleObject_IsFreed extends CApiUnaryBuiltinNode {
         @Specialization
         int doGeneric(Object pointer,
                         @Cached ToPythonWrapperNode toPythonWrapperNode) {
@@ -609,8 +609,8 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {PyObjectWrapper}, call = Direct)
-    abstract static class _PyObject_Dump extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = Void, args = {PyObjectWrapper}, call = Ignored)
+    abstract static class _PyTruffleObject_Dump extends CApiUnaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary

@@ -1,0 +1,7 @@
+GRAALVM_SKIP_ARCHIVE=true
+DYNAMIC_IMPORTS=/tools,/graalpython-enterprise,/graal-enterprise,/vm-enterprise,/sulong-managed,/substratevm-enterprise
+COMPONENTS=GraalVM Python,suite:tools,GraalVM enterprise compiler,Truffle enterprise,GraalVM enterprise license files,LLVM Runtime Native Enterprise,SubstrateVM Enterprise,Truffle Macro Enterprise
+NATIVE_IMAGES=lib:pythonvm
+GENERATE_DEBUGINFO=false
+INSTALLABLES=GraalVM Python
+BUILD_TARGETS=GRAALVM_STANDALONES

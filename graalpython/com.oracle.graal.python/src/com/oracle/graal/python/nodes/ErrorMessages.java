@@ -728,6 +728,7 @@ public abstract class ErrorMessages {
     public static final TruffleString TAKES_A_D_SEQUENCE = tsLiteral("%s() takes a %d-sequence (%d-sequence given)");
     public static final TruffleString TAKES_AN_AT_LEAST_D_SEQUENCE = tsLiteral("%s() takes an at least %d-sequence (%d-sequence given)");
     public static final TruffleString TAKES_AN_AT_MOST_D_SEQUENCE = tsLiteral("%s() takes an at most %d-sequence (%d-sequence given)");
+    public static final TruffleString UNSUPPORTED_ACCESS_OF_STRUCT_SEQUENCE_NATIVE_STORAGE = tsLiteral("Unsupported access of struct sequence native storage");
     public static final TruffleString TAKES_D_OR_D_ARGS = tsLiteral("%s takes %d or %d arguments");
     public static final TruffleString TAKES_D_POS_ARG_S_BUT_D_POS_ARG_S = tsLiteral("%s() takes %d positional argument%s but %d positional argument%s (and %d keyword-only argument%s) were given%s");
     public static final TruffleString TAKES_D_POS_ARG_S_BUT_GIVEN_S = tsLiteral("%s() takes %d positional argument%s but %d %s given%s");
@@ -1710,7 +1711,7 @@ public abstract class ErrorMessages {
                     "The sys.prefix must be a str, not '%p' when the `IsolateNativeModules' option is used, because it is the base path for searching the relocated C API. " +
                                     "Refer to https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for details on native module isolation.");
     public static final TruffleString SYS_PREFIX_MUST_POINT_TO_A_VENV_FOR_CAPI_ISOLATION = tsLiteral(
-                    "The sys.prefix must point to a venv, not be identical to sys.base_prefix when the `IsolateNativeModules' option is used, because it is the base path for searching and creating the relocated C API and extension modules. " +
+                    "The sys.prefix must point to a writable venv folder or the system default temporary directory needs to be writable when the `IsolateNativeModules' option is used, because it is the base path for searching and creating the relocated C API and extension modules. " +
                                     "Refer to https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for details on native module isolation.");
     public static final TruffleString SEPARATOR_EXPECTED_STR_INSTANCE_P_FOUND = tsLiteral("separator: expected str instance, %p found");
     public static final TruffleString BITWISE_INVERSION_OF_THE_UNDERLYING_INT = tsLiteral("Bitwise inversion '~' on bool is deprecated " +

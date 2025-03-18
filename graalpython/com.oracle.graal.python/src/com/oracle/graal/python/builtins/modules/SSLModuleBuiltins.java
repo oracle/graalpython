@@ -67,8 +67,8 @@ import java.util.List;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
+import com.oracle.graal.python.runtime.PythonContext;
 import org.bouncycastle.util.encoders.DecoderException;
-import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -163,10 +163,10 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         return SSLModuleBuiltinsFactory.getFactories();
     }
 
-    private static synchronized void loadDefaults() {
-        if (ImageInfo.inImageBuildtimeCode()) {
+    private static synchronized void loadDefaults(PythonContext pythonContext) {
+        if (pythonContext.getEnv().isPreInitialization()) {
             // The values are dependent on system properties, don't bake them into the image
-            throw new AssertionError("SSL module initialized at build time");
+            throw new AssertionError("SSL module initialized during pre-initialization");
         }
         try {
             SSLContext context = SSLContext.getInstance("TLS");
@@ -218,7 +218,7 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        loadDefaults();
+        loadDefaults(core.getContext());
         PythonModule module = core.lookupBuiltinModule(T__SSL);
         module.setAttribute(tsLiteral("OPENSSL_VERSION_NUMBER"), 0);
         PTuple versionInfo = PFactory.createTuple(core.getLanguage(), new int[]{0, 0, 0, 0, 0});

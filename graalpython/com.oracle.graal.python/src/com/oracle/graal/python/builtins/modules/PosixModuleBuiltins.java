@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequenceBuiltins;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
@@ -398,13 +399,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "stat_result", minNumOfPositionalArgs = 1, parameterNames = {"$cls", "sequence", "dict"}, constructsClass = PythonBuiltinClassType.PStatResult)
-    @ImportStatic(PosixModuleBuiltins.class)
     @GenerateNodeFactory
     public abstract static class StatResultNode extends PythonTernaryBuiltinNode {
 
         @Specialization
         public static PTuple generic(VirtualFrame frame, Object cls, Object sequence, Object dict,
-                        @Cached("create(STAT_RESULT_DESC)") StructSequence.NewNode newNode) {
+                        @Cached StructSequenceBuiltins.NewNode newNode) {
             PTuple p = (PTuple) newNode.execute(frame, cls, sequence, dict);
             Object[] data = CompilerDirectives.castExact(p.getSequenceStorage(), ObjectSequenceStorage.class).getInternalObjectArray();
             for (int i = 7; i <= 9; i++) {
@@ -413,18 +413,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 }
             }
             return p;
-        }
-    }
-
-    @Builtin(name = "statvfs_result", minNumOfPositionalArgs = 1, parameterNames = {"$cls", "sequence", "dict"}, constructsClass = PythonBuiltinClassType.PStatvfsResult)
-    @ImportStatic(PosixModuleBuiltins.class)
-    @GenerateNodeFactory
-    public abstract static class StatvfsResultNode extends PythonTernaryBuiltinNode {
-
-        @Specialization
-        public static Object generic(VirtualFrame frame, Object cls, Object sequence, Object dict,
-                        @Cached("create(STATVFS_RESULT_DESC)") StructSequence.NewNode newNode) {
-            return newNode.execute(frame, cls, sequence, dict);
         }
     }
 

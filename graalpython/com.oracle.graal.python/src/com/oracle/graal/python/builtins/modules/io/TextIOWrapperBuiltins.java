@@ -118,7 +118,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_STREAM_IS_N
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.PGuards.isPNone;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
@@ -155,10 +154,10 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -1222,7 +1221,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class ReprNode extends InitCheckPythonUnaryBuiltinNode {
 
@@ -1230,7 +1229,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         static Object doit(VirtualFrame frame, PTextIO self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
-                        @Cached("create(Repr)") LookupAndCallUnaryNode repr,
+                        @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode,
                         @Cached IONodes.ToTruffleStringNode toString,
                         @Cached IsBuiltinObjectProfile isValueError,
@@ -1253,11 +1252,11 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                     }
                     return simpleTruffleStringFormatNode.format("<_io.TextIOWrapper mode='%s' encoding='%s'>", toString.execute(inliningTarget, modeobj), self.getEncoding());
                 }
-                Object name = repr.executeObject(frame, nameobj);
+                Object name = repr.execute(frame, inliningTarget, nameobj);
                 if (modeobj == PNone.NO_VALUE) {
-                    return simpleTruffleStringFormatNode.format("<_io.TextIOWrapper name=%s encoding='%s'>", toString.execute(inliningTarget, name), self.getEncoding());
+                    return simpleTruffleStringFormatNode.format("<_io.TextIOWrapper name=%s encoding='%s'>", name, self.getEncoding());
                 }
-                return simpleTruffleStringFormatNode.format("<_io.TextIOWrapper name=%s mode='%s' encoding='%s'>", toString.execute(inliningTarget, name), toString.execute(inliningTarget, modeobj),
+                return simpleTruffleStringFormatNode.format("<_io.TextIOWrapper name=%s mode='%s' encoding='%s'>", name, toString.execute(inliningTarget, modeobj),
                                 self.getEncoding());
             } finally {
                 PythonContext.get(inliningTarget).reprLeave(self);

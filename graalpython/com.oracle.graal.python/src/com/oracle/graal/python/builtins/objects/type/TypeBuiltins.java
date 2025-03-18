@@ -64,7 +64,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___PREPARE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSCHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSHOOK__;
@@ -211,7 +210,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         return TypeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     @ImportStatic(SpecialAttributeNames.class)
     abstract static class ReprNode extends PythonUnaryBuiltinNode {

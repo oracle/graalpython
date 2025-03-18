@@ -64,7 +64,6 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ForeignSequenceStorage;
@@ -240,15 +239,15 @@ public abstract class ListNodes {
     @GenerateCached(false)
     public abstract static class FastConstructListNode extends PNodeWithContext {
 
-        public abstract PSequence execute(Frame frame, Node inliningTarget, Object value);
+        public abstract PList execute(Frame frame, Node inliningTarget, Object value);
 
         @Specialization(guards = "isBuiltinList(value)")
-        protected static PSequence doPList(PSequence value) {
+        protected static PList doPList(PList value) {
             return value;
         }
 
         @Fallback
-        protected PSequence doGeneric(VirtualFrame frame, Object value,
+        protected PList doGeneric(VirtualFrame frame, Object value,
                         @Cached(inline = false) ConstructListNode constructListNode) {
             return constructListNode.execute(frame, value);
         }

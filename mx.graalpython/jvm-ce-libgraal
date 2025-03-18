@@ -1,0 +1,6 @@
+GRAALVM_SKIP_ARCHIVE=true
+DYNAMIC_IMPORTS=/tools,/compiler,/substratevm
+COMPONENTS=GraalVM Python,suite:tools,GraalVM compiler,SubstrateVM,LibGraal
+NATIVE_IMAGES=lib:jvmcicompiler
+INSTALLABLES=GraalVM Python
+BUILD_TARGETS=GRAALVM_STANDALONES

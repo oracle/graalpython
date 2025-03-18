@@ -61,8 +61,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
@@ -458,13 +456,13 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public Object exec(PythonModule pythonModule) {
-            final Python3Core core = getContext();
-            if (!ImageInfo.inImageBuildtimeCode()) {
+            final PythonContext context = getContext();
+            if (!context.getEnv().isPreInitialization()) {
                 final PythonBuiltins builtins = pythonModule.getBuiltins();
                 assert builtins != null; // this is a builtin, therefore its builtins must have been
                                          // set at this point
                 if (!builtins.isInitialized()) {
-                    doPostInit(core, builtins);
+                    doPostInit(context, builtins);
                     builtins.setInitialized(true);
                 }
             }
