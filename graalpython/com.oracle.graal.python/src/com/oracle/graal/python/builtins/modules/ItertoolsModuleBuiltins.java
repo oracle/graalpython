@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
@@ -33,10 +34,10 @@ import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_INT_AS_R;
 import static com.oracle.graal.python.nodes.ErrorMessages.ISLICE_WRONG_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NUMBER_IS_REQUIRED;
+import static com.oracle.graal.python.nodes.ErrorMessages.PICKLE_ITERTOOLS_IN_PYTHON_3_14;
 import static com.oracle.graal.python.nodes.ErrorMessages.STEP_FOR_ISLICE_MUST_BE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_FOR_ISLICE_MUST_BE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_S;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COPY__;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +48,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IterNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes.ToArrayNode;
@@ -70,19 +70,18 @@ import com.oracle.graal.python.builtins.objects.itertools.PProduct;
 import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
 import com.oracle.graal.python.builtins.objects.itertools.PStarmap;
 import com.oracle.graal.python.builtins.objects.itertools.PTakewhile;
+import com.oracle.graal.python.builtins.objects.itertools.PTee;
 import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
 import com.oracle.graal.python.builtins.objects.itertools.PZipLongest;
+import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
-import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -96,6 +95,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -117,6 +117,11 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ItertoolsModuleBuiltinsFactory.getFactories();
+    }
+
+    @TruffleBoundary
+    public static void warnPickleDeprecated() {
+        WarningsModuleBuiltins.WarnNode.getUncached().warnEx(null, DeprecationWarning, PICKLE_ITERTOOLS_IN_PYTHON_3_14, 1);
     }
 
     @Builtin(name = "accumulate", minNumOfPositionalArgs = 2, varArgsMarker = true, parameterNames = {"cls", "iterable", "func"}, keywordOnlyNames = {
@@ -489,28 +494,20 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "n > 0")
         static Object tee(VirtualFrame frame, Object iterable, int n,
                         @Bind("this") Node inliningTarget,
-                        @Cached IterNode iterNode,
-                        @Cached PyObjectLookupAttr getAttrNode,
-                        @Cached PyCallableCheckNode callableCheckNode,
-                        @Cached CallVarargsMethodNode callNode,
-                        @Cached InlinedBranchProfile notCallableProfile,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached InlinedConditionProfile isTeeInstanceProfile,
                         @Bind PythonLanguage language) {
-            Object it = iterNode.execute(frame, iterable, PNone.NO_VALUE);
-            Object copyCallable = getAttrNode.execute(frame, inliningTarget, it, T___COPY__);
-            if (!callableCheckNode.execute(inliningTarget, copyCallable)) {
-                notCallableProfile.enter(inliningTarget);
-                // as in Tee.__NEW__()
-                PTeeDataObject dataObj = PFactory.createTeeDataObject(language, it);
-                it = PFactory.createTee(language, dataObj, 0);
-            }
+            Object it = getIter.execute(frame, inliningTarget, iterable);
 
             // return tuple([it] + [it.__copy__() for i in range(1, n)])
             Object[] tupleObjs = new Object[n];
-            tupleObjs[0] = it;
+            PTee to = TeeBuiltins.NewNode.teeFromIterable(frame, null, it,
+                            inliningTarget, getIter, isTeeInstanceProfile, language);
 
-            copyCallable = getAttrNode.execute(frame, inliningTarget, it, T___COPY__);
+            tupleObjs[0] = to;
+
             for (int i = 1; i < n; i++) {
-                tupleObjs[i] = callNode.execute(frame, copyCallable, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
+                tupleObjs[i] = TeeBuiltins.CopyNode.copy(to, language);
             }
             return PFactory.createTuple(language, tupleObjs);
         }

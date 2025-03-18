@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
@@ -158,6 +159,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached InlinedConditionProfile noItProfile,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object fillValue = self.getFillValue();
             if (noFillValueProfile.profile(inliningTarget, fillValue == null)) {
                 fillValue = PNone.NONE;
@@ -183,6 +185,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object setState(PZipLongest self, Object state) {
+            warnPickleDeprecated();
             self.setFillValue(state);
             return PNone.NONE;
         }

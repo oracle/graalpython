@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
@@ -199,6 +200,7 @@ public final class ProductBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile noLstProfile,
                         @Cached GetClassNode getClassNode,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object type = getClassNode.execute(inliningTarget, self);
             if (stoppedProfile.profile(inliningTarget, self.isStopped())) {
                 PTuple empty = PFactory.createEmptyTuple(language);
@@ -232,6 +234,7 @@ public final class ProductBuiltins extends PythonBuiltins {
                         @Cached PyLongAsIntNode pyLongAsIntNode,
                         @Cached InlinedBranchProfile stoppedProfile,
                         @Cached InlinedConditionProfile indexProfile) {
+            warnPickleDeprecated();
             Object[][] gears = self.getGears();
             Object[] lst = new Object[gears.length];
             int[] indices = self.getIndices();

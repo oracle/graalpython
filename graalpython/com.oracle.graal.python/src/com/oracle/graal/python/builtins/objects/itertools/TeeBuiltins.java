@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins.LINKCELLS;
 import static com.oracle.graal.python.nodes.ErrorMessages.INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.INTEGER_REQUIRED_GOT;
@@ -104,15 +105,14 @@ public final class TeeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NewNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object newTee(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object iterable,
+        public static PTee teeFromIterable(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached("createCopyNode()") LookupAndCallUnaryNode copyNode,
                         @Cached InlinedConditionProfile isTeeInstanceProfile,
                         @Bind PythonLanguage language) {
             Object it = getIter.execute(frame, inliningTarget, iterable);
             if (isTeeInstanceProfile.profile(inliningTarget, it instanceof PTee)) {
-                return copyNode.executeObject(frame, it);
+                return CopyNode.copy((PTee) it, language);
             } else {
                 PTeeDataObject dataObj = PFactory.createTeeDataObject(language, it);
                 return PFactory.createTee(language, dataObj, 0);
@@ -129,7 +129,7 @@ public final class TeeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object copy(PTee self,
+        public static PTee copy(PTee self,
                         @Bind PythonLanguage language) {
             return PFactory.createTee(language, self.getDataobj(), self.getIndex());
         }
@@ -181,6 +181,7 @@ public final class TeeBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClass,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             // return type(self), ((),), (self.dataobj, self.index)
             Object type = getClass.execute(inliningTarget, self);
             PTuple tuple1 = PFactory.createTuple(language, new Object[]{PFactory.createEmptyTuple(language)});
@@ -201,6 +202,7 @@ public final class TeeBuiltins extends PythonBuiltins {
                         @Cached CastToJavaIntLossyNode castToIntNode,
                         @Cached PRaiseNode raiseNode) {
 
+            warnPickleDeprecated();
             if (!(state instanceof PTuple) || (int) lenNode.execute(frame, state) != 2) {
                 throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "2-tuple");
             }

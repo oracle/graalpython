@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
@@ -137,6 +138,7 @@ public final class FilterfalseBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile hasNoFuncProfile,
                         @Cached GetClassNode getClassNode,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object func = self.getFunc();
             if (hasNoFuncProfile.profile(inliningTarget, func == null)) {
                 func = PNone.NONE;

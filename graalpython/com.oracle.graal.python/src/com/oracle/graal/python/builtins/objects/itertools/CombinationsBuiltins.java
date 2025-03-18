@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
@@ -201,6 +202,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile stoppedProfile,
                         @Cached GetClassNode getClassNode,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object type = getClassNode.execute(inliningTarget, self);
             if (hasNoLastResultProfile.profile(inliningTarget, self.getLastResult() == null)) {
                 PTuple args = PFactory.createTuple(language, new Object[]{PFactory.createTuple(language, self.getPool()), self.getR()});
@@ -225,6 +227,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                         @Cached CastToJavaIntExactNode cast,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached PRaiseNode raiseNode) {
+            warnPickleDeprecated();
             int n = self.getPool().length;
             if (stateObj instanceof PTuple state && state.getSequenceStorage().length() == self.getR()) {
                 SequenceStorage storage = state.getSequenceStorage();

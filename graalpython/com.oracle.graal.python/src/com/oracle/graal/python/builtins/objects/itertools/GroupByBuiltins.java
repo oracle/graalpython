@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
@@ -148,6 +149,7 @@ public final class GroupByBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile noValuesProfile,
                         @Cached GetClassNode getClassNode,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object keyFunc = self.getKeyFunc();
             if (noKeyFuncProfile.profile(inliningTarget, keyFunc == null)) {
                 keyFunc = PNone.NONE;
@@ -176,6 +178,7 @@ public final class GroupByBuiltins extends PythonBuiltins {
                         @Cached TupleBuiltins.LenNode lenNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
                         @Cached PRaiseNode raiseNode) {
+            warnPickleDeprecated();
             if (!(state instanceof PTuple) || (int) lenNode.execute(frame, state) != 3) {
                 throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "3-tuple");
             }

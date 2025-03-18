@@ -1717,4 +1717,5 @@ public abstract class ErrorMessages {
                     "and will be removed in Python 3.16. This returns the bitwise inversion of the underlying int object and is usually not what you " +
                     "expect from negating a bool. Use the 'not' operator for boolean negation or ~int(x) if you really want the bitwise inversion of " +
                     "the underlying int.");
+    public static final TruffleString PICKLE_ITERTOOLS_IN_PYTHON_3_14 = tsLiteral("Pickle, copy, and deepcopy support will be removed from itertools in Python 3.14.");
 }
