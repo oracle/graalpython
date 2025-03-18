@@ -1958,6 +1958,8 @@ class JumpTestCase(unittest.TestCase):
 
     def run_test(self, func, jumpFrom, jumpTo, expected, error=None,
                  event='line', decorated=False, warning=None):
+        if sys.implementation.name == 'graalpy':
+            warning = None # GraalPy change: different BCI implmentation
         wrapped = func
         while hasattr(wrapped, '__wrapped__'):
             wrapped = wrapped.__wrapped__
@@ -2016,6 +2018,8 @@ class JumpTestCase(unittest.TestCase):
         """Decorator that creates a test that makes a jump
         from one place to another in the following asynchronous code.
         """
+        if sys.implementation.name == 'graalpy':
+            warning = None # GraalPy change: different BCI implmentation
         def decorator(func):
             @wraps(func)
             def test(self):
