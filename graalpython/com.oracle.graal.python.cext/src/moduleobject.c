@@ -271,7 +271,9 @@ PyModule_FromDefAndSpec2(PyModuleDef* def, PyObject *spec, int module_api_versio
     int has_execution_slots = 0;
     const char *name;
     int ret;
+#if 0 // GraalPy change
     PyInterpreterState *interp = _PyInterpreterState_GET();
+#endif // GraalPy change
 
     PyModuleDef_Init(def);
 
@@ -332,6 +334,7 @@ PyModule_FromDefAndSpec2(PyModuleDef* def, PyObject *spec, int module_api_versio
         }
     }
 
+#if 0 // GraalPy change
     /* By default, multi-phase init modules are expected
        to work under multiple interpreters. */
     if (!has_multiple_interpreters_slot) {
@@ -351,6 +354,7 @@ PyModule_FromDefAndSpec2(PyModuleDef* def, PyObject *spec, int module_api_versio
     {
         goto error;
     }
+#endif // GraalPy change
 
     if (create) {
         m = create(spec, def);

@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.SUBSTITUTION_OF_BARE_T
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MRO_ENTRIES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TYPING_PREPARE_SUBST__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TYPING_SUBST__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -98,7 +97,7 @@ public final class TypeVarTupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
