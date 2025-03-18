@@ -160,6 +160,7 @@ def build_wheels(pip):
 
 
 def repair_wheels():
+    whls = glob("*graalpy*.whl")
     if sys.platform == "win32":
         ensure_installed("delvewheel")
         env = os.environ.copy()
@@ -175,19 +176,19 @@ def repair_wheels():
                 "python-native.dll",
                 "-w",
                 "wheelhouse",
-                *glob("*.whl"),
+                *whls,
             ],
             env=env,
         )
     elif sys.platform == "linux":
         ensure_installed("auditwheel")
         subprocess.check_call(
-            [join(dirname(sys.executable), "auditwheel"), "repair", "-w", "wheelhouse", *glob("*.whl")]
+            [join(dirname(sys.executable), "auditwheel"), "repair", "-w", "wheelhouse", *whls]
         )
     elif sys.platform == "darwin":
         ensure_installed("delocate")
         subprocess.check_call(
-            [join(dirname(sys.executable), "delocate-wheel"), "-v", "-w", "wheelhouse", *glob("*.whl")]
+            [join(dirname(sys.executable), "delocate-wheel"), "-v", "-w", "wheelhouse", *whls]
         )
 
 
