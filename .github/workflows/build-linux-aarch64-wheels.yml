@@ -29,10 +29,10 @@ jobs:
           dnf install -y /usr/bin/patch
       - name: Checkout
         uses: actions/checkout@main
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Build wheels
         run: |
           python3 -m venv wheelbuilder_venv
-          export PIP_EXTRA_INDEX_URL=https://pypi.org/simple
           wheelbuilder_venv/bin/python3 scripts/wheelbuilder/build_wheels.py ${{ inputs.graalpy_url }}
       - name: Build wheels
         run: python3 scripts/wheelbuilder/build_wheels.py ${{ inputs.graalpy_url }}

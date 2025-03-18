@@ -18,13 +18,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@main
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: 3.12
       - name: Build wheels
         run: |
-          export PIP_EXTRA_INDEX_URL=https://pypi.org/simple
           python3 scripts/wheelbuilder/build_wheels.py ${{ inputs.graalpy_url }}
       - name: Store wheels
         uses: actions/upload-artifact@main
