@@ -807,7 +807,11 @@ class TestRecursiveRepr(unittest.TestCase):
         wrapped = MyContainer3.wrapped
         wrapper = MyContainer3.wrapper
         for name in assigned:
-            self.assertIs(getattr(wrapper, name), getattr(wrapped, name))
+            # Begin Truffle change
+            # function.__type_params__ returns an empty tuple if not set
+            # In cpython, empty tuple is a singleton object, so they used assertIs here
+            self.assertEqual(getattr(wrapper, name), getattr(wrapped, name))
+            # End Truffle change
 
     def test__type_params__(self):
         class My:
