@@ -934,42 +934,8 @@ PyAPI_FUNC(int8_t *) GraalPy_get_finalize_capi_pointer() {
     return _graalpy_finalizing;
 }
 
-#if ((__linux__ && __GNU_LIBRARY__) || __APPLE__)
-
-#include <stdlib.h>
-#include <string.h>
-#include <execinfo.h>
-
-static void print_c_stacktrace() {
-    size_t max_stack_size = 16;
-    void* stack = calloc(sizeof(void*), max_stack_size);
-    if (stack == NULL) {
-        return;
-    }
-
-    size_t stack_size = backtrace(stack, max_stack_size);
-    char** symbols = backtrace_symbols(stack, stack_size);
-    if (symbols == NULL) {
-        free(stack);
-        return;
-    }
-
-	for (size_t i = 0; i < stack_size; i++) {
-		printf ("%s\n", symbols[i]);
-    }
-}
-
-#else
-
-static void print_c_stacktrace() {
-    // other platforms are not supported
-}
-
-#endif
-
 static void unimplemented(const char* name) {
     printf("Function not implemented in GraalPy: %s\n", name);
-    printf("Native stacktrace:\n");
     print_c_stacktrace();
 }
 
