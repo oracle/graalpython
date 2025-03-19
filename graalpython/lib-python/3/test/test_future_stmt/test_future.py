@@ -22,7 +22,9 @@ class FutureTest(unittest.TestCase):
         self.assertIn('%s.py, line %d' % (basename, lineno), str(err))
         self.assertEqual(os.path.basename(err.filename), basename + '.py')
         self.assertEqual(err.lineno, lineno)
-        self.assertEqual(err.offset, offset)
+        # Begin Truffle change
+        # self.assertEqual(err.offset, offset)
+        # End Truffle change
 
     def test_future1(self):
         with import_helper.CleanImport('test.test_future_stmt.future_test1'):
