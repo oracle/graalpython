@@ -58,6 +58,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.graalvm.python.embedding.test.EmbeddingTestUtils.createLauncher;
 import static org.graalvm.python.embedding.test.EmbeddingTestUtils.delete;
@@ -578,6 +580,63 @@ public class VFSUtilsTest {
         assertTrue(callPackageRemoved(Arrays.asList("pkg1==2"), Arrays.asList("pkg1", "pkg2"), Arrays.asList("pkg1==1", "pkg2==1")));
     }
 
+    @Test
+    public void venvContentsFormat() throws IOException, PackagesChangedException {
+        TestLog log = new TestLog();
+        Path tmpDir = Files.createTempDirectory("installAndLock");
+        Path venvDir = tmpDir.resolve("venv");
+        Path contents = venvDir.resolve("contents");
+        deleteDirOnShutdown(tmpDir);
+
+        Path lockFile = tmpDir.resolve("graalpy.lock");
+
+        // 1a.) create venv
+        createVenv(venvDir, "24.2.0", log, lockFile, "hello-world", "tiny-tiny");
+        assertTrue(Files.exists(venvDir));
+        checkVenvCreate(log.getOutput(), true);
+        checkVenvContentsFile(contents, "24.2.0", "hello-world", "tiny-tiny");
+        log.clearOutput();
+        // 1b.) and patch venv contents with format as if from graalpy < 25.0.0
+        // first line is version, all following lines are packages
+        Files.write(contents, Arrays.asList("24.2.0", "hello-world", "tiny-tiny"), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+        // 2.) now again, all we are interested in, is that
+        // - no error appears due to previous version contents format
+        // - and contents are back as expected
+        createVenv(venvDir, "25.0.0", log, lockFile, "hello-world", "tiny-tiny");
+        assertTrue(Files.exists(venvDir));
+        checkVenvCreate(log.getOutput(), true);
+        checkVenvContentsFile(contents, "25.0.0", "hello-world", "tiny-tiny");
+    }
+
+    @Test
+    public void differentPlatform() throws IOException, PackagesChangedException {
+        TestLog log = new TestLog();
+        Path tmpDir = Files.createTempDirectory("installAndLock");
+        Path venvDir = tmpDir.resolve("venv");
+        Path contents = venvDir.resolve("contents");
+        deleteDirOnShutdown(tmpDir);
+
+        Path lockFile = tmpDir.resolve("graalpy.lock");
+
+        // 1a.) create venv
+        createVenv(venvDir, "0.1", log, lockFile, "hello-world");
+        assertTrue(Files.exists(venvDir));
+        checkVenvCreate(log.getOutput(), true);
+        checkVenvContentsFile(contents, "0.1", "hello-world");
+        log.clearOutput();
+        // 1b.) and patch venv contents with different platform
+        List<String> lines = Files.readAllLines(contents).stream().map(l -> l.startsWith("platform=") ? "platform=bogus" : l).collect(Collectors.toList());
+        Files.write(contents, lines, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+        // 2.) now again - venv is removed and newly created
+        createVenv(venvDir, "0.1", log, lockFile, "hello-world");
+        assertTrue(Files.exists(venvDir));
+        checkVenvCreate(log.getOutput(), true);
+        checkVenvContentsFile(contents, "0.1", "hello-world");
+        assertTrue(log.getOutput().contains("Reinstalling GraalPy venv created on"));
+    }
+
     private static boolean callPackageRemoved(List<String> packages, List<String> contents, List<String> installed)
                     throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Method m = VFSUtils.class.getDeclaredMethod("removedFromPluginPackages", List.class, List.class, List.class);
@@ -665,11 +724,22 @@ public class VFSUtilsTest {
         assertTrue(Files.exists(contents));
         List<String> lines = Files.readAllLines(contents);
 
-        assertEquals(graalPyVersion, lines.get(0));
-        lines.remove(0);
-        assertEquals(packages.length, lines.size());
-        if (!lines.containsAll(Arrays.asList(packages))) {
-            fail(String.format("expected %s to contain all from %s", lines, Arrays.asList(packages)));
+        Map<String, String> m = lines.stream().collect(Collectors.toMap(
+                        l -> {
+                            int idx = l.indexOf("=");
+                            return l.substring(0, idx);
+                        }, l -> {
+                            int idx = l.indexOf("=");
+                            return l.substring(idx + 1);
+                        }));
+
+        assertEquals(graalPyVersion, m.get("version"));
+        assertTrue(m.get("platform").contains(System.getProperty("os.name")));
+        assertTrue(m.get("platform").contains(System.getProperty("os.arch")));
+        List<String> pkgs = m.get("input_packages") != null ? Arrays.asList(m.get("input_packages").split(",")) : Collections.emptyList();
+        assertEquals(packages.length, pkgs.size());
+        if (!pkgs.containsAll(Arrays.asList(packages))) {
+            fail(String.format("expected %s to contain all from %s", pkgs, Arrays.asList(packages)));
         }
     }
 }

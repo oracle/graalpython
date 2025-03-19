@@ -53,9 +53,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
@@ -73,6 +75,8 @@ public final class VFSUtils {
     public static final String VFS_FILESLIST = "fileslist.txt";
 
     public static final String GRAALPY_GROUP_ID = "org.graalvm.python";
+
+    private static final String PLATFORM = System.getProperty("os.name") + " " + System.getProperty("os.arch");
 
     private static final String NATIVE_IMAGE_RESOURCES_CONFIG = """
                     {
@@ -232,45 +236,67 @@ public final class VFSUtils {
     }
 
     private static class VenvContents {
+        private static final String KEY_VERSION = "version";
+        private static final String KEY_PACKAGES = "input_packages";
+        private static final String KEY_PLATFORM = "platform";
         private static final String CONTENTS_FILE_NAME = "contents";
         final Path contentsFile;
         List<String> packages;
         final String graalPyVersion;
+        final String platform;
 
-        private VenvContents(Path contentsFile, List<String> packages, String graalPyVersion) {
+        private VenvContents(Path contentsFile, List<String> packages, String graalPyVersion, String platform) {
             this.contentsFile = contentsFile;
             this.packages = packages;
             this.graalPyVersion = graalPyVersion;
+            this.platform = platform;
         }
 
         static VenvContents create(Path venvDirectory, String graalPyVersion) {
-            return new VenvContents(venvDirectory.resolve(CONTENTS_FILE_NAME), Collections.emptyList(), graalPyVersion);
+            return new VenvContents(venvDirectory.resolve(CONTENTS_FILE_NAME), Collections.emptyList(), graalPyVersion, PLATFORM);
         }
 
         static VenvContents fromVenv(Path venvDirectory) throws IOException {
             Path contentsFile = venvDirectory.resolve(CONTENTS_FILE_NAME);
-            List<String> packages = new ArrayList<>();
-            String graalPyVersion = null;
-            if (Files.isReadable(contentsFile)) {
+            if (Files.exists(contentsFile)) {
                 List<String> lines = Files.readAllLines(contentsFile);
                 if (lines.isEmpty()) {
                     return null;
                 }
-                Iterator<String> it = lines.iterator();
-                graalPyVersion = it.next();
-                while (it.hasNext()) {
-                    packages.add(it.next());
+                if (lines.get(0).startsWith("version=")) {
+                    // this was created with version >= 25
+                    Map<String, String> m = new HashMap<>();
+                    Iterator<String> it = lines.iterator();
+                    while (it.hasNext()) {
+                        String l = it.next();
+                        int idx = l.indexOf("=");
+                        m.put(l.substring(0, idx), l.substring(idx + 1));
+                    }
+                    String graalPyVersion = m.get(KEY_VERSION);
+                    String platform = m.get(KEY_PLATFORM);
+                    String packagesLine = m.get(KEY_PACKAGES);
+                    List<String> packages = packagesLine != null ? Arrays.asList(packagesLine.split(",")) : Collections.emptyList();
+                    return new VenvContents(contentsFile, packages, graalPyVersion, platform);
+                } else {
+                    List<String> packages = new ArrayList<>();
+                    String graalPyVersion;
+                    Iterator<String> it = lines.iterator();
+                    graalPyVersion = it.next();
+                    while (it.hasNext()) {
+                        packages.add(it.next());
+                    }
+                    return new VenvContents(contentsFile, packages, graalPyVersion, null);
                 }
             }
-            return new VenvContents(contentsFile, packages, graalPyVersion);
+            return null;
         }
 
         void write(List<String> pkgs) throws IOException {
-            Files.write(contentsFile, List.of(graalPyVersion), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            if (pkgs != null) {
-                Files.write(contentsFile, pkgs, StandardOpenOption.APPEND);
-                this.packages = pkgs;
-            }
+            List<String> lines = new ArrayList<>();
+            lines.add(KEY_VERSION + "=" + graalPyVersion);
+            lines.add(KEY_PLATFORM + "=" + PLATFORM);
+            lines.add(KEY_PACKAGES + "=" + String.join(",", pkgs));
+            Files.write(contentsFile, lines, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         }
     }
 
@@ -457,7 +483,7 @@ public final class VFSUtils {
 
     private static boolean removedFromPluginPackages(Path venvDirectory, List<String> pluginPackages) throws IOException {
         if (Files.exists(venvDirectory)) {
-            // comapre with contents from prev install if such already present
+            // compare with contents from prev install if such already present
             VenvContents contents = VenvContents.fromVenv(venvDirectory);
             if (contents == null || contents.packages == null) {
                 return false;
@@ -603,6 +629,10 @@ public final class VFSUtils {
             } else if (!graalPyVersion.equals(contents.graalPyVersion)) {
                 contents = null;
                 info(log, "Stale GraalPy virtual environment, updating to %s", graalPyVersion);
+                delete(venvDirectory);
+            } else if (!PLATFORM.equals(contents.platform)) {
+                info(log, "Reinstalling GraalPy venv created on %s, but current is'%s", contents.platform, PLATFORM);
+                contents = null;
                 delete(venvDirectory);
             }
         }

@@ -136,6 +136,13 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     private static final String DEFAULT_VFS_ROOT = "org.graalvm.python.vfs";
 
+    /**
+     * The current platform. Format has to match with <code>VFSUtils.PLATFORM</code>
+     */
+    public static final String PLATFORM = System.getProperty("os.name") + " " + System.getProperty("os.arch");
+
+    private static final String KEY_PLATFORM = "platform";
+
     static final String VFS_VENV = "venv";
     static final String VFS_SRC = "src";
 
@@ -150,6 +157,10 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
      * with '/'.
      */
     private final String vfsRoot;
+
+    private String platformVenvPath;
+
+    private String platformSrcPath;
 
     private final VirtualFileSystem.HostIO allowHostIO;
 
@@ -293,17 +304,17 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
                     HostIO allowHostIO,
                     Class<?> resourceLoadingClass,
                     boolean caseInsensitive) {
-        this.vfsRoot = resourceDirectory == null ? DEFAULT_VFS_ROOT : resourceDirectory;
         if (resourceLoadingClass != null) {
             this.resourceLoadingClass = resourceLoadingClass;
         } else {
             this.resourceLoadingClass = VirtualFileSystem.class;
         }
-
         this.caseInsensitive = caseInsensitive;
         this.mountPoint = mountPoint;
-
         this.mountPointLowerCase = mountPoint.toString().toLowerCase(Locale.ROOT);
+        this.vfsRoot = resourceDirectory == null ? DEFAULT_VFS_ROOT : resourceDirectory;
+        this.platformVenvPath = resourcePathToPlatformPath(absoluteResourcePath(vfsRoot, VFS_VENV));
+        this.platformSrcPath = resourcePathToPlatformPath(absoluteResourcePath(vfsRoot, VFS_SRC));
 
         fine("VirtualFilesystem %s, allowHostIO: %s, resourceLoadingClass: %s, caseInsensitive: %s, extractOnStartup: %s%s",
                         mountPoint, allowHostIO.toString(), this.resourceLoadingClass.getName(), caseInsensitive, extractOnStartup, extractFilter != null ? "" : ", extractFilter: null");
@@ -362,11 +373,11 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     }
 
     String vfsSrcPath() {
-        return resourcePathToPlatformPath(absoluteResourcePath(vfsRoot, VFS_SRC));
+        return this.platformSrcPath;
     }
 
     String vfsVenvPath() {
-        return resourcePathToPlatformPath(absoluteResourcePath(vfsRoot, VFS_VENV));
+        return this.platformVenvPath;
     }
 
     /**
@@ -440,6 +451,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         String srcPath = absoluteResourcePath(vfsRoot, VFS_SRC);
         String venvPath = absoluteResourcePath(vfsRoot, VFS_VENV);
         List<URL> filelistUrls = getFilelistURLs(filelistPath);
+        boolean hasNativeFiles = false;
         for (URL url : filelistUrls) {
             try (InputStream stream = url.openStream()) {
                 if (stream == null) {
@@ -447,23 +459,24 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
                     return;
                 }
                 BufferedReader br = new BufferedReader(new InputStreamReader(stream));
-                String line;
+                String resourcePath;
                 finest("VFS entries:");
-                while ((line = br.readLine()) != null) {
-                    if (line.isBlank()) {
+                while ((resourcePath = br.readLine()) != null) {
+                    if (resourcePath.isBlank()) {
                         // allow empty lines, some tools insert empty lines when concatenating files
                         continue;
                     }
 
                     String projPath = absoluteResourcePath(vfsRoot, PROJ_DIR);
-                    if (!projWarning && line.startsWith(projPath)) {
+                    if (!projWarning && resourcePath.startsWith(projPath)) {
                         projWarning = true;
-                        LOGGER.warning("");
-                        LOGGER.warning(String.format("%s source root was deprecated, use %s instead.", projPath, srcPath));
-                        LOGGER.warning("");
+                        extendedWarn(String.format("%s source root was deprecated, use %s instead.", projPath, srcPath));
+                    }
+                    if (!hasNativeFiles && resourcePath.startsWith(venvPath) && (resourcePath.endsWith(".so") || resourcePath.endsWith(".dylib") || resourcePath.endsWith(".dll"))) {
+                        hasNativeFiles = true;
                     }
 
-                    String platformPath = resourcePathToPlatformPath(line);
+                    String platformPath = resourcePathToPlatformPath(resourcePath);
                     int i = mountPoint.toString().length();
                     DirEntry parent = null;
                     do {
@@ -495,11 +508,11 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
                             if (previous instanceof DirEntry) {
                                 throw fileDirDuplicateMismatchError(platformPath);
                             }
-                            if (filelistUrls.size() > 1 && !line.startsWith(venvPath) && !line.equals(absFilelistPath)) {
+                            if (filelistUrls.size() > 1 && !resourcePath.startsWith(venvPath) && !resourcePath.equals(absFilelistPath)) {
                                 reportFailedMultiVFSCheck(multipleLocationsErrorMessage("There are duplicate entries originating from different virtual " +
-                                                "filesystem instances. The duplicate entries path: %s.", line));
+                                                "filesystem instances. The duplicate entries path: %s.", resourcePath));
                             }
-                            fine(multipleLocationsErrorMessage("Duplicate entries virtual filesystem entries: " + line));
+                            fine(multipleLocationsErrorMessage("Duplicate entries virtual filesystem entries: " + resourcePath));
                         }
                         finest("  %s", fileEntry.getResourcePath());
                         parent.entries.add(fileEntry);
@@ -520,6 +533,33 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         }
         if (filelistUrls.size() > 1) {
             validateMultipleVFSLocations(filelistUrls);
+        }
+        if (hasNativeFiles) {
+            checkPlatform();
+        }
+    }
+
+    private void checkPlatform() {
+        Path contentsPath = mountPoint.resolve("venv").resolve("contents");
+        BaseEntry contentsEntry = getEntry(contentsPath);
+        if (contentsEntry != null) {
+            assert contentsEntry instanceof FileEntry;
+            String contents;
+            try {
+                contents = new String(((FileEntry) contentsEntry).getData());
+            } catch (IOException ex) {
+                throw new IllegalStateException(String.format("IO error while reading venv contents file'%s'.", contentsPath), ex);
+            }
+            for (String line : contents.split("\n")) {
+                if (line.startsWith(KEY_PLATFORM + "=")) {
+                    String platform = line.substring(KEY_PLATFORM.length() + 1);
+                    if (!platform.equals(PLATFORM)) {
+                        extendedWarn(String.format("Virtual filesystem contains third-party Python packages built for %s, which is not compatible with the current platform %s.",
+                                        platform, PLATFORM));
+                    }
+                    break;
+                }
+            }
         }
     }
 
@@ -1267,6 +1307,14 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     private static void warn(String msgFormat, Object... args) {
         if (LOGGER.isLoggable(Level.WARNING)) {
             LOGGER.log(Level.WARNING, String.format(msgFormat, args));
+        }
+    }
+
+    private static void extendedWarn(String msgFormat, Object... args) {
+        if (LOGGER.isLoggable(Level.WARNING)) {
+            LOGGER.log(Level.WARNING, "");
+            LOGGER.log(Level.WARNING, String.format(msgFormat, args));
+            LOGGER.log(Level.WARNING, "");
         }
     }
 
