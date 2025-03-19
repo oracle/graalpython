@@ -26,7 +26,7 @@ module WheelRepoPlugin
     def generate(site)
       index_path = File.join(__dir__, "graalpy_wheels.txt")
       all_wheels = File.readlines(index_path).select do |line|
-        !line.empty? && !line.start_with?("#")
+        !line.strip.empty? && !line.start_with?("#")
       end.collect do |line|
         if /([^-]+)-([^-]+)-.*\.whl/ =~ line
           Wheel.new($1.downcase.gsub(/[-_.]+/, "-"), line.strip)
