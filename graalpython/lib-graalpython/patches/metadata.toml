@@ -302,6 +302,13 @@ license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
 [[numpy.rules]]
+version = '== 2.2.3'
+patch = 'numpy-2.2.3.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+install-priority = 0
+
+[[numpy.rules]]
 version = '== 1.26.4'
 patch = 'numpy-1.26.4.patch'
 license = 'BSD-3-Clause'
@@ -481,6 +488,11 @@ license = 'MIT'
 
 [[pydantic-core.rules]]
 version = '== 2.27.1'
+patch = 'pydantic-core-2.27.1.patch'
+license = 'MIT'
+
+[[pydantic-core.rules]]
+version = '== 2.27.2'
 patch = 'pydantic-core-2.27.1.patch'
 license = 'MIT'
 
