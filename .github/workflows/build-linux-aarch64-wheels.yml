@@ -32,6 +32,7 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           rustflags: "-A warnings -A unexpected-cfgs -A unused-macros -A static-mut-refs -A unused-variables -A unused-imports"
+          cache: false
       - name: Build wheels
         run: |
           python3 -m venv wheelbuilder_venv
