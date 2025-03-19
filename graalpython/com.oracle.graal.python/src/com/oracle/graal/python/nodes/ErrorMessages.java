@@ -65,7 +65,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ARG_D_MUST_BE_S_NOT_P = tsLiteral("%s argument %d must be %s, not %p");
     public static final TruffleString ARG_D_MUST_BE_S_OR_S = tsLiteral("%s argument %d must be '%s' or '%s'");
     public static final TruffleString ARG_S_MUST_BE_A_LIST_OR_TUPLE = tsLiteral("%s must be a list or tuple");
-    public static final TruffleString ARG_IS_EMPTY_SEQ = tsLiteral("%s() arg is an empty sequence");
+    public static final TruffleString ARG_IS_EMPTY_SEQ = tsLiteral("%s() iterable argument is empty");
     public static final TruffleString ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD = tsLiteral("argument must be an int, or have a fileno() method.");
     public static final TruffleString ARG_MUST_BE_NUMBER = tsLiteral("%s argument must be a number, not '%p'");
     public static final TruffleString S_ARG_MUST_BE_S_NOT_P = tsLiteral("%s argument must be %s, not %p");
