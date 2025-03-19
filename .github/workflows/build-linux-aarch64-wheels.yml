@@ -30,6 +30,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@main
       - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: "-A warnings -A unexpected-cfgs -A unused-macros -A static-mut-refs -A unused-variables -A unused-imports"
       - name: Build wheels
         run: |
           python3 -m venv wheelbuilder_venv
