@@ -908,7 +908,7 @@ public abstract class ErrorMessages {
     public static final TruffleString N_NOT_SUBTYPE_OF_ARRAY = tsLiteral("%n is not a subtype of array");
     public static final TruffleString CANNOT_BE_CONVERTED_TO_POINTER = tsLiteral("cannot be converted to pointer");
     public static final TruffleString PY_OBJ_IS_NULL = tsLiteral("PyObject is NULL");
-    public static final TruffleString OUT_OF_RANGE_FLOAT_NOT_JSON_COMPLIANT = tsLiteral("Out of range float values are not JSON compliant");
+    public static final TruffleString OUT_OF_RANGE_FLOAT_NOT_JSON_COMPLIANT = tsLiteral("Out of range float values are not JSON compliant: %s");
     public static final TruffleString CIRCULAR_REFERENCE_DETECTED = tsLiteral("Circular reference detected");
     public static final TruffleString ITEMS_MUST_RETURN_2_TUPLES = tsLiteral("items must return 2-tuples");
     public static final TruffleString CAN_ONLY_EXTEND_WITH_ARRAY_OF_SAME_KIND = tsLiteral("can only extend with array of same kind");
