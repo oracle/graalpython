@@ -59,6 +59,7 @@ import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -101,6 +102,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached PyObjectStrAsTruffleStringNode objectStrAsTruffleStringNode,
                         @Cached PyNumberCheckNode pyNumberCheckNode,
                         @Cached PyIterNextNode nextNode,
@@ -133,7 +135,6 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                     first = false;
                 }
                 boolean quoted;
-                TruffleString str = null;
 
                 switch (dialect.quoting) {
                     case QUOTE_NONNUMERIC:
@@ -143,9 +144,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                         quoted = true;
                         break;
                     case QUOTE_STRINGS:
-                        str = objectStrAsTruffleStringNode.execute(null, inliningTarget, field);
-                        // if field isn't a String then the above statement will throw.
-                        quoted = true;
+                        quoted = unicodeCheckNode.execute(inliningTarget, field);
                         break;
                     case QUOTE_NOTNULL:
                         quoted = field != PNone.NONE;
@@ -160,9 +159,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                     joinAppend(inliningTarget, sb, self, null, quoted,
                                     raiseNode, appendStringNode, codePointLengthNode, joinAppendData);
                 } else {
-                    if (str == null) {
-                        str = objectStrAsTruffleStringNode.execute(null, inliningTarget, field);
-                    }
+                    TruffleString str = objectStrAsTruffleStringNode.execute(null, inliningTarget, field);
                     joinAppend(inliningTarget, sb, self, str, quoted,
                                     raiseNode, appendStringNode, codePointLengthNode, joinAppendData);
                 }
