@@ -115,7 +115,7 @@ index 0000000..955ac8d
 +            '-DARROW_WITH_BROTLI=ON',
 +        ])
 +        subprocess.check_call([
-+            'cmake', '--build', str(build_dir), '--parallel',
++            'cmake', '--build', str(build_dir),
 +        ])
 +        subprocess.check_call([
 +            'cmake', '--install', str(build_dir),

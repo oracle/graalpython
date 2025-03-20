@@ -33,6 +33,7 @@ jobs:
           cache: false
       - name: Build wheels
         run: |
+          export PIP_GRAALPY_PATCHES_URL="${GITHUB_WORKSPACE}/graalpython/lib-graalpython/patches"
           python3 -m venv wheelbuilder_venv
           wheelbuilder_venv/bin/python3 scripts/wheelbuilder/build_wheels.py ${{ inputs.graalpy_url }}
       - name: Store wheels

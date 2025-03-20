@@ -30,6 +30,8 @@ jobs:
       - name: Build wheels
         run: |
           $env:PATH+=";C:\Program Files\Git\usr\bin"
+          $env:PIP_GRAALPY_PATCHES_URL=$env:GITHUB_WORKSPACE
+          $env:PIP_GRAALPY_PATCHES_URL+="/graalpython/lib-graalpython/patches"
           python3 scripts/wheelbuilder/build_wheels.py ${{ inputs.graalpy_url }}
       - name: Store wheels
         uses: actions/upload-artifact@main

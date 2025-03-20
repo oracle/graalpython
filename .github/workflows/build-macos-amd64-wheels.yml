@@ -28,6 +28,7 @@ jobs:
           python-version: 3.12
       - name: Build wheels
         run: |
+          export PIP_GRAALPY_PATCHES_URL="${GITHUB_WORKSPACE}/graalpython/lib-graalpython/patches"
           python3 scripts/wheelbuilder/build_wheels.py ${{ inputs.graalpy_url }}
       - name: Store wheels
         uses: actions/upload-artifact@main

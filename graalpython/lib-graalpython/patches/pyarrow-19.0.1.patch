@@ -57,7 +57,7 @@ index 0000000..0929c5f
 +import urllib.request
 +from pathlib import Path
 +
-+VERSION = '19.0.0'
++VERSION = '19.0.1'
 +
 +
 +def build_sdist(sdist_directory, config_settings=None):
