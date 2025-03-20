@@ -641,7 +641,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return new Signature(co.positionalOnlyArgCount,
                         co.takesVarKeywordArgs(),
                         varArgsIndex,
-                        co.positionalOnlyArgCount > 0,
                         parameterNames,
                         kwOnlyNames);
     }

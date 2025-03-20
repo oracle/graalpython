@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.ANONYMOUS_MUST_BE_A_SE
 import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_MUST_BE_A_SEQUENCE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_IS_SPECIFIED_IN_ANONYMOUS_BUT_NOT_IN_FIELDS;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNEXPECTED_TYPE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SIZEOF__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -56,6 +55,9 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -108,7 +110,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.StgDict)
 public final class StgDictBuiltins extends PythonBuiltins {
-    public static final TpSlots SLOTS = TpSlots.createEmpty();
+    public static final TpSlots SLOTS = StgDictBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -117,7 +119,8 @@ public final class StgDictBuiltins extends PythonBuiltins {
 
     protected static final TruffleString T__ANONYMOUS_ = tsLiteral("_anonymous_");
 
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class InitNode extends PythonBuiltinNode {
 

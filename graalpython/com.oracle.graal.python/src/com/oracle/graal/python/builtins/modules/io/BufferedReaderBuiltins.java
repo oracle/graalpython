@@ -43,14 +43,17 @@ package com.oracle.graal.python.builtins.modules.io;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedReader;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_FLUSH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -69,6 +72,9 @@ import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PBufferedReader)
 public final class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
+
+    public static final TpSlots SLOTS = BufferedReaderBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BufferedReaderBuiltinsFactory.getFactories();
@@ -107,7 +113,8 @@ public final class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
     }
 
     // BufferedReader(raw[, buffer_size=DEFAULT_BUFFER_SIZE])
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 2, parameterNames = {"self", "raw", "buffer_size"}, raiseErrorName = "BufferedReader")
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 2, parameterNames = {"self", "raw", "buffer_size"}, raiseErrorName = "BufferedReader")
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization

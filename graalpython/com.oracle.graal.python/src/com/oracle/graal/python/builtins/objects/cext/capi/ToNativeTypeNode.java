@@ -297,7 +297,6 @@ public abstract class ToNativeTypeNode {
 
         // TODO properly implement 'tp_dictoffset' for builtin classes
         writeI64Node.write(mem, CFields.PyTypeObject__tp_dictoffset, GetDictOffsetNode.executeUncached(clazz));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_init, lookup(clazz, SlotMethodDef.TP_INIT));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_alloc, lookup(clazz, PyTypeObject__tp_alloc, HiddenAttr.ALLOC));
         // T___new__ is magically a staticmethod for Python types. The tp_new slot lookup
         // expects to get the function

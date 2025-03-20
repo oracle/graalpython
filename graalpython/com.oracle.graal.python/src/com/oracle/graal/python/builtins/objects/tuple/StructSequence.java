@@ -274,7 +274,7 @@ public class StructSequence {
     }
 
     private static class GetStructMemberNode extends PRootNode {
-        public static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("$self"), EMPTY_TRUFFLESTRING_ARRAY);
+        public static final Signature SIGNATURE = new Signature(-1, false, -1, tsArray("$self"), EMPTY_TRUFFLESTRING_ARRAY);
         private final int fieldIdx;
 
         GetStructMemberNode(PythonLanguage language, int fieldIdx) {

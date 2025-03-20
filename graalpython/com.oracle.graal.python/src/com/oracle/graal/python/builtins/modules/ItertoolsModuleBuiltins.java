@@ -118,7 +118,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         return ItertoolsModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "accumulate", minNumOfPositionalArgs = 2, varArgsMarker = true, parameterNames = {"cls", "iterable", "func"}, keywordOnlyNames = {
+    @Builtin(name = "accumulate", minNumOfPositionalArgs = 2, parameterNames = {"cls", "iterable", "func"}, keywordOnlyNames = {
                     "initial"}, constructsClass = PythonBuiltinClassType.PAccumulate, doc = "accumulate(iterable) --> accumulate object\n\nReturn series of accumulated sums.")
     @GenerateNodeFactory
     public abstract static class AccumulateNode extends PythonBuiltinNode {

@@ -67,6 +67,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMATMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INVERT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IOR__;
@@ -187,6 +188,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.TpSlotG
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.TpSlotGetAttrPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.TpSlotHashBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInit.TpSlotInitBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.TpSlotInquiryBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpSlotIterNextBuiltin;
@@ -346,6 +348,7 @@ public record TpSlots(TpSlot nb_bool, //
                 TpSlot tp_iternext, //
                 TpSlot tp_repr, //
                 TpSlot tp_str, //
+                TpSlot tp_init, //
                 boolean has_as_number,
                 boolean has_as_sequence,
                 boolean has_as_mapping) {
@@ -909,7 +912,15 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_str,
                         PExternalFunctionWrapper.UNARYFUNC,
-                        UnaryFuncWrapper::new);
+                        UnaryFuncWrapper::new),
+        TP_INIT(
+                        TpSlots::tp_init,
+                        TpSlotPythonSingle.class,
+                        TpSlotInitBuiltin.class,
+                        TpSlotGroup.NO_GROUP,
+                        CFields.PyTypeObject__tp_init,
+                        PExternalFunctionWrapper.INITPROC,
+                        PyProcsWrapper.InitWrapper::new);
 
         public static final TpSlotMeta[] VALUES = values();
 
@@ -1101,6 +1112,7 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.TP_ITERNEXT, TpSlotDef.withSimpleFunction(T___NEXT__, PExternalFunctionWrapper.ITERNEXT));
         addSlotDef(s, TpSlotMeta.TP_STR, TpSlotDef.withSimpleFunction(T___STR__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.TP_REPR, TpSlotDef.withSimpleFunction(T___REPR__, PExternalFunctionWrapper.UNARYFUNC));
+        addSlotDef(s, TpSlotMeta.TP_INIT, TpSlotDef.withSimpleFunction(T___INIT__, PExternalFunctionWrapper.INITPROC));
         addSlotDef(s, TpSlotMeta.NB_ADD,
                         TpSlotDef.withoutHPy(T___ADD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
                         TpSlotDef.withoutHPy(T___RADD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
@@ -1701,6 +1713,10 @@ public record TpSlots(TpSlot nb_bool, //
         return a.copy().merge(b).build();
     }
 
+    public static TpSlots merge(TpSlots a, TpSlots b, TpSlots c) {
+        return a.copy().merge(b).merge(c).build();
+    }
+
     public static final class Builder {
         private final TpSlot[] values = new TpSlot[TpSlotMeta.VALUES.length];
         private final boolean[] explicitGroups = new boolean[TpSlotGroup.VALID_VALUES.length];
@@ -1885,6 +1901,7 @@ public record TpSlots(TpSlot nb_bool, //
                             get(TpSlotMeta.TP_ITERNEXT), //
                             get(TpSlotMeta.TP_REPR), //
                             get(TpSlotMeta.TP_STR), //
+                            get(TpSlotMeta.TP_INIT), //
                             hasGroup(TpSlotGroup.AS_NUMBER),
                             hasGroup(TpSlotGroup.AS_SEQUENCE),
                             hasGroup(TpSlotGroup.AS_MAPPING));

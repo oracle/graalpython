@@ -152,7 +152,7 @@ public final class PartialBuiltins extends PythonBuiltins {
     }
 
     // functools.partial(func, /, *args, **keywords)
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, varArgsMarker = true, takesVarArgs = true, //
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, //
                     takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PPartial, //
                     doc = "partial(func, *args, **keywords) - new function with partial application\n" + //
                                     "of the given arguments and keywords.\n")

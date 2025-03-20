@@ -62,7 +62,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class ConversionNodeTests {
-    static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("arg"), null);
+    static final Signature SIGNATURE = new Signature(-1, false, -1, tsArray("arg"), null);
 
     protected static Object call(Object arg, ArgumentCastNode castNode) {
         final PythonContext pythonContext = PythonContext.get(castNode);

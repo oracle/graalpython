@@ -53,7 +53,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_RESET;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_SETSTATE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ILLEGAL_STATE_ARGUMENT;
 import static com.oracle.graal.python.nodes.ErrorMessages.STATE_ARGUMENT_MUST_BE_A_TUPLE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_CR;
 import static com.oracle.graal.python.nodes.StringLiterals.T_CRLF;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
@@ -64,6 +63,9 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -71,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -100,6 +103,9 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PIncrementalNewlineDecoder)
 public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = IncrementalNewlineDecoderBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return IncrementalNewlineDecoderBuiltinsFactory.getFactories();
@@ -111,7 +117,8 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
     public static final int SEEN_ALL = (SEEN_CR | SEEN_LF | SEEN_CRLF);
 
     // BufferedReader(raw[, buffer_size=DEFAULT_BUFFER_SIZE])
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "decoder", "translate", "errors"})
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 2, parameterNames = {"$self", "decoder", "translate", "errors"})
     @ArgumentClinic(name = "translate", conversion = ArgumentClinic.ClinicConversion.Boolean)
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_STRICT", useDefaultForNone = true)
     @GenerateNodeFactory

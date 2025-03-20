@@ -786,11 +786,11 @@ public abstract class ExternalFunctionNodes {
     }
 
     private static Signature createSignature(boolean takesVarKeywordArgs, int varArgIndex, TruffleString[] parameters, boolean checkEnclosingType, boolean hidden) {
-        return new Signature(-1, takesVarKeywordArgs, varArgIndex, false, parameters, KEYWORDS_HIDDEN_CALLABLE, checkEnclosingType, T_EMPTY_STRING, hidden);
+        return new Signature(-1, takesVarKeywordArgs, varArgIndex, parameters, KEYWORDS_HIDDEN_CALLABLE, checkEnclosingType, T_EMPTY_STRING, hidden);
     }
 
     private static Signature createSignatureWithClosure(boolean takesVarKeywordArgs, int varArgIndex, TruffleString[] parameters, boolean checkEnclosingType, boolean hidden) {
-        return new Signature(-1, takesVarKeywordArgs, varArgIndex, false, parameters, KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE, checkEnclosingType, T_EMPTY_STRING, hidden);
+        return new Signature(-1, takesVarKeywordArgs, varArgIndex, parameters, KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE, checkEnclosingType, T_EMPTY_STRING, hidden);
     }
 
     static final class MethDirectRoot extends MethodDescriptorRoot {
@@ -2150,7 +2150,8 @@ public abstract class ExternalFunctionNodes {
      * arguments after the call returned.
      */
     @GenerateInline(false)
-    abstract static class CreateArgsTupleNode extends Node {
+    @GenerateUncached
+    public abstract static class CreateArgsTupleNode extends Node {
         public abstract PTuple execute(PythonLanguage language, Object[] args, boolean eagerNative);
 
         @Specialization(guards = {"args.length == cachedLen", "cachedLen <= 8", "!eagerNative"}, limit = "1")
@@ -2249,6 +2250,7 @@ public abstract class ExternalFunctionNodes {
      * reference is owned by managed code only.
      */
     @GenerateInline(false)
+    @GenerateUncached
     abstract static class MaterializePrimitiveNode extends Node {
 
         public abstract Object execute(PythonLanguage language, Object object);

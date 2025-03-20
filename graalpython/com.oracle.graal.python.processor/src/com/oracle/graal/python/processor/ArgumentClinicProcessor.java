@@ -83,6 +83,7 @@ import com.oracle.graal.python.processor.CodeWriter.Block;
 public class ArgumentClinicProcessor extends AbstractProcessor {
     private static final boolean LOGGING = false;
     private static final String BuiltinAnnotationClass = "com.oracle.graal.python.builtins.Builtin";
+    private static final String SlotSignatureAnnotationClass = "com.oracle.graal.python.annotations.Slot.SlotSignature";
     private static final String BuiltinsAnnotationClass = "com.oracle.graal.python.builtins.Builtins";
     private static final String BUILTINS_BASE_CLASSES_PACKAGE = "com.oracle.graal.python.nodes.function.builtins";
 
@@ -325,7 +326,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         }
     }
 
-    private static AnnotationMirror findAnnotationMirror(TypeElement type, String annotationQualifiedName) {
+    private AnnotationMirror findAnnotationMirror(TypeElement type, String annotationQualifiedName) {
         for (AnnotationMirror annot : type.getAnnotationMirrors()) {
             String name = ((TypeElement) annot.getAnnotationType().asElement()).getQualifiedName().toString();
             if (name.equals(annotationQualifiedName)) {
@@ -353,13 +354,18 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    private static BuiltinAnnotation getBuiltinAnnotation(TypeElement type) throws ProcessingError {
+    private BuiltinAnnotation getBuiltinAnnotation(TypeElement type) throws ProcessingError {
         String builtinName = null;
         Stream<?> parameterNames = null;
         Stream<?> keywordOnlyNames = null;
         int minNumOfPositionalArgs = -1;
         boolean takesVarArgs = false;
         AnnotationMirror annot = findAnnotationMirror(type, BuiltinAnnotationClass);
+        if (annot == null) {
+            annot = findAnnotationMirror(type, SlotSignatureAnnotationClass);
+            // XXX
+            builtinName = "slot";
+        }
         if (annot == null) {
             annot = findAnnotationMirror(type, BuiltinsAnnotationClass);
             if (annot != null) {

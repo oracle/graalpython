@@ -2499,7 +2499,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "from_bytes", minNumOfPositionalArgs = 2, parameterNames = {"cls", "bytes", "byteorder"}, varArgsMarker = true, keywordOnlyNames = {"signed"}, isClassmethod = true)
+    @Builtin(name = "from_bytes", minNumOfPositionalArgs = 2, parameterNames = {"cls", "bytes", "byteorder"}, keywordOnlyNames = {"signed"}, isClassmethod = true)
     @ArgumentClinic(name = "byteorder", conversion = ClinicConversion.TString, defaultValue = "T_BIG")
     @ArgumentClinic(name = "signed", conversion = ClinicConversion.Boolean, defaultValue = "false")
     @ImportStatic(SpecialMethodNames.class)

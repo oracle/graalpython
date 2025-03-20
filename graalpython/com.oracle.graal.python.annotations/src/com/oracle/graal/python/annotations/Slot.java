@@ -78,11 +78,15 @@ public @interface Slot {
     @interface SlotSignature {
         int minNumOfPositionalArgs() default 0;
 
+        int maxNumOfPositionalArgs() default -1;
+
         boolean takesVarArgs() default false;
 
         boolean takesVarKeywordArgs() default false;
 
         String[] parameterNames() default {};
+
+        String[] keywordOnlyNames() default {};
 
         boolean needsFrame() default false;
 
@@ -206,7 +210,8 @@ public @interface Slot {
         /** str(obj) */
         tp_str("__str__"),
         /** repr(obj) */
-        tp_repr("__repr__");
+        tp_repr("__repr__"),
+        tp_init("__init__");
 
         SlotKind(@SuppressWarnings("unused") String specialMethods) {
         }

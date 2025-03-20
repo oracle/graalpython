@@ -100,7 +100,7 @@ public abstract class SortNodes {
     }
 
     private static class ObjectComparatorRootNode extends PRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("a", "b"), PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, tsArray("a", "b"), PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
 
         @Child private ExecutionContext.CalleeContext calleeContext = ExecutionContext.CalleeContext.create();
         @Child private CachedPyObjectRichCompareBool ltNodeA = CachedPyObjectRichCompareBool.create();

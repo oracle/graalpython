@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.exception;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.S_IS_AN_INVALID_ARG_FOR_S;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
@@ -53,6 +52,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -114,8 +114,9 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
      * 'takesVarArgs = true' and ' takesVarKeywordArgs = true' because otherwise the created root
      * node would fail.
      */
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, //
-                    takesVarArgs = true, varArgsMarker = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, //
+                    takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class ImportErrorInitNode extends PythonVarargsBuiltinNode {
         private static final TruffleString NAME = tsLiteral("name");

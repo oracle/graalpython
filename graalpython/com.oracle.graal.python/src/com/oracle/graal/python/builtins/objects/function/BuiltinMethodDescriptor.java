@@ -181,11 +181,6 @@ public abstract class BuiltinMethodDescriptor {
                 }
 
                 @Override
-                public boolean varArgsMarker() {
-                    return false;
-                }
-
-                @Override
                 public boolean takesVarKeywordArgs() {
                     return false;
                 }

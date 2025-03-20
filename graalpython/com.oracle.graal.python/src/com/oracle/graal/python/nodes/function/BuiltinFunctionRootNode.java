@@ -126,7 +126,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     /**
      * Should return a signature compatible with {@link #createArgumentsList(Builtin, boolean)}
      */
-    private static Signature createSignature(NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin, boolean declaresExplicitSelf, boolean constructsClass) {
+    public static Signature createSignature(NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin, boolean declaresExplicitSelf, boolean constructsClass) {
         TruffleString[] parameterNames = toTruffleStringArrayUncached(builtin.parameterNames());
         int maxNumPosArgs = Math.max(builtin.minNumOfPositionalArgs(), parameterNames.length);
 
@@ -189,7 +189,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         assert canUseSpecialBuiltinNode(builtin) || !usesSpecialBuiltinNode(factory.getNodeClass()) : factory.getNodeClass().getName() +
                         " must not use PythonUnary/Binary/Ternary/QuaternaryBultinNode";
         return new Signature(posOnlyArgs, builtin.takesVarKeywordArgs(), builtin.takesVarArgs() ? parameterNames.length : -1,
-                        builtin.varArgsMarker(), parameterNames, toTruffleStringArrayUncached(builtin.keywordOnlyNames()), false, toTruffleStringUncached(builtin.raiseErrorName()));
+                        parameterNames, toTruffleStringArrayUncached(builtin.keywordOnlyNames()), false, toTruffleStringUncached(builtin.raiseErrorName()));
     }
 
     private static boolean validateBuiltin(NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin) {
@@ -227,7 +227,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     // (Note that this does not apply to PythonVarargsBuiltinNode which can be used with
     // varargs/kwargs builtins.)
     private static boolean canUseSpecialBuiltinNode(Builtin builtin) {
-        return !builtin.takesVarArgs() && !builtin.takesVarKeywordArgs() && !builtin.varArgsMarker();
+        return !builtin.takesVarArgs() && !builtin.takesVarKeywordArgs();
     }
 
     private static boolean usesSpecialBuiltinNode(Class<? extends PythonBuiltinBaseNode> clazz) {

@@ -79,6 +79,7 @@ public class SlotsMapping {
             case tp_setattro -> "TpSlotSetAttr.TpSlotSetAttrBuiltin";
             case tp_iternext -> "TpSlotIterNext.TpSlotIterNextBuiltin";
             case tp_hash -> "TpSlotHashFun.TpSlotHashBuiltin";
+            case tp_init -> "TpSlotInit.TpSlotInitBuiltin";
         };
     }
 
@@ -111,6 +112,7 @@ public class SlotsMapping {
             case tp_descr_set -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.DescrSetBuiltinNode";
             case tp_setattro -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode";
             case tp_hash -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode";
+            case tp_init -> "com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode";
         };
     }
 

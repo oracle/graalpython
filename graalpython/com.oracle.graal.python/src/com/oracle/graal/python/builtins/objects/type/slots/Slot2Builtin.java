@@ -46,6 +46,7 @@ import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.util.PythonUtils;
 
 /**
  * Adopts the {@link SlotSignature} annotation to {@link Builtin} annotation, so that the builtin
@@ -99,7 +100,7 @@ class Slot2Builtin implements Builtin {
 
     @Override
     public int maxNumOfPositionalArgs() {
-        return -1;
+        return annotation != null ? annotation.maxNumOfPositionalArgs() : -1;
     }
 
     @Override
@@ -128,13 +129,8 @@ class Slot2Builtin implements Builtin {
     }
 
     @Override
-    public boolean varArgsMarker() {
-        return false;
-    }
-
-    @Override
     public boolean takesVarKeywordArgs() {
-        return false;
+        return annotation != null && annotation.takesVarKeywordArgs();
     }
 
     @Override
@@ -144,7 +140,7 @@ class Slot2Builtin implements Builtin {
 
     @Override
     public String[] keywordOnlyNames() {
-        return new String[0];
+        return annotation != null ? annotation.keywordOnlyNames() : PythonUtils.EMPTY_STRING_ARRAY;
     }
 
     @Override

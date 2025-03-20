@@ -1611,7 +1611,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "unlink", minNumOfPositionalArgs = 1, parameterNames = {"path"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd"})
+    @Builtin(name = "unlink", minNumOfPositionalArgs = 1, parameterNames = {"path"}, keywordOnlyNames = {"dir_fd"})
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
     @GenerateNodeFactory
@@ -1639,7 +1639,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "remove", minNumOfPositionalArgs = 1, parameterNames = {"path"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd"})
+    @Builtin(name = "remove", minNumOfPositionalArgs = 1, parameterNames = {"path"}, keywordOnlyNames = {"dir_fd"})
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
     @GenerateNodeFactory
@@ -2133,7 +2133,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "utime", minNumOfPositionalArgs = 1, parameterNames = {"path", "times"}, varArgsMarker = true, keywordOnlyNames = {"ns", "dir_fd", "follow_symlinks"})
+    @Builtin(name = "utime", minNumOfPositionalArgs = 1, parameterNames = {"path", "times"}, keywordOnlyNames = {"ns", "dir_fd", "follow_symlinks"})
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
     @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "true")
@@ -2278,7 +2278,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "rename", minNumOfPositionalArgs = 2, parameterNames = {"src", "dst"}, varArgsMarker = true, keywordOnlyNames = {"src_dir_fd", "dst_dir_fd"})
+    @Builtin(name = "rename", minNumOfPositionalArgs = 2, parameterNames = {"src", "dst"}, keywordOnlyNames = {"src_dir_fd", "dst_dir_fd"})
     @ArgumentClinic(name = "src", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @ArgumentClinic(name = "dst", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @ArgumentClinic(name = "src_dir_fd", conversionClass = DirFdConversionNode.class)
@@ -2308,7 +2308,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "replace", minNumOfPositionalArgs = 2, parameterNames = {"src", "dst"}, varArgsMarker = true, keywordOnlyNames = {"src_dir_fd", "dst_dir_fd"})
+    @Builtin(name = "replace", minNumOfPositionalArgs = 2, parameterNames = {"src", "dst"}, keywordOnlyNames = {"src_dir_fd", "dst_dir_fd"})
     @ArgumentClinic(name = "src", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @ArgumentClinic(name = "dst", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @ArgumentClinic(name = "src_dir_fd", conversionClass = DirFdConversionNode.class)
@@ -2325,7 +2325,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "access", minNumOfPositionalArgs = 2, parameterNames = {"path", "mode"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd", "effective_ids", "follow_symlinks"})
+    @Builtin(name = "access", minNumOfPositionalArgs = 2, parameterNames = {"path", "mode"}, keywordOnlyNames = {"dir_fd", "effective_ids", "follow_symlinks"})
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
@@ -2374,7 +2374,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "chmod", minNumOfPositionalArgs = 2, parameterNames = {"path", "mode"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd", "follow_symlinks"})
+    @Builtin(name = "chmod", minNumOfPositionalArgs = 2, parameterNames = {"path", "mode"}, keywordOnlyNames = {"dir_fd", "follow_symlinks"})
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
     @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
@@ -2570,7 +2570,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "readlink", minNumOfPositionalArgs = 1, parameterNames = {"path"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd"}, doc = "readlink(path, *, dir_fd=None) -> path\n" +
+    @Builtin(name = "readlink", minNumOfPositionalArgs = 1, parameterNames = {"path"}, keywordOnlyNames = {"dir_fd"}, doc = "readlink(path, *, dir_fd=None) -> path\n" +
                     "\nReturn a string representing the path to which the symbolic link points.\n")
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)

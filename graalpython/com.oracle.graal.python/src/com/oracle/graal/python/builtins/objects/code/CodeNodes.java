@@ -139,7 +139,6 @@ public abstract class CodeNodes {
                 signature = new Signature(positionalOnlyArgCount,
                                 (flags & PCode.CO_VARKEYWORDS) != 0,
                                 varArgsIndex,
-                                positionalOnlyArgCount > 0,
                                 parameterNames,
                                 kwOnlyNames);
             } else {

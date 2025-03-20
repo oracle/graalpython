@@ -95,6 +95,7 @@ import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixShMemModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ProfilerBuiltins;
 import com.oracle.graal.python.builtins.modules.PwdModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
@@ -790,7 +791,7 @@ public abstract class Python3Core {
                         new TokenizerIterBuiltins()));
         if (hasProfilerTool) {
             builtins.add(new LsprofModuleBuiltins());
-            builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());
+            builtins.add(new ProfilerBuiltins());
         }
         if (!PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES && (env.isNativeAccessAllowed() || env.isPreInitialization())) {
             builtins.add(new BZ2CompressorBuiltins());
