@@ -229,20 +229,24 @@ public final class PythonCextTypeBuiltins {
 
     @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyTypeObject}, call = Direct)
     abstract static class PyType_Modified extends CApiUnaryBuiltinNode {
-
         @TruffleBoundary
         @Specialization
-        static Object doIt(PythonAbstractNativeObject clazz,
+        static Object doIt(PythonAbstractClass object,
                         @Bind("this") Node inliningTarget) {
-            PythonContext context = PythonContext.get(inliningTarget);
-            CyclicAssumption nativeClassStableAssumption = context.getNativeClassStableAssumption(clazz, false);
-            if (nativeClassStableAssumption != null) {
-                nativeClassStableAssumption.invalidate("PyType_Modified(\"" + TypeNodes.GetNameNode.executeUncached(clazz).toJavaStringUncached() + "\") called");
+            if (object instanceof PythonAbstractNativeObject clazz) {
+                PythonContext context = PythonContext.get(inliningTarget);
+                CyclicAssumption nativeClassStableAssumption = context.getNativeClassStableAssumption(clazz, false);
+                if (nativeClassStableAssumption != null) {
+                    nativeClassStableAssumption.invalidate("PyType_Modified(\"" + TypeNodes.GetNameNode.executeUncached(clazz).toJavaStringUncached() + "\") called");
+                }
+                MroSequenceStorage mroStorage = TypeNodes.GetMroStorageNode.executeUncached(clazz);
+                mroStorage.lookupChanged();
+                // Reload slots from native, which also invalidates cached slot lookups
+                clazz.setTpSlots(TpSlots.fromNative(clazz, context));
+            } else {
+                MroSequenceStorage mroStorage = TypeNodes.GetMroStorageNode.executeUncached(object);
+                mroStorage.lookupChanged();
             }
-            MroSequenceStorage mroStorage = TypeNodes.GetMroStorageNode.executeUncached(clazz);
-            mroStorage.lookupChanged();
-            // Reload slots from native, which also invalidates cached slot lookups
-            clazz.setTpSlots(TpSlots.fromNative(clazz, context));
             return PNone.NO_VALUE;
         }
     }
