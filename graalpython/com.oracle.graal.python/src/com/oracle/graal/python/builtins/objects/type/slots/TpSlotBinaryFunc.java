@@ -99,7 +99,7 @@ public class TpSlotBinaryFunc {
 
         @Override
         public void initialize(PythonLanguage language) {
-            RootCallTarget target = createBuiltinCallTarget(language, BuiltinSlotWrapperSignature.BINARY, getNodeFactory(), builtinName);
+            RootCallTarget target = createSlotCallTarget(language, BuiltinSlotWrapperSignature.BINARY, getNodeFactory(), builtinName);
             language.setBuiltinSlotCallTarget(callTargetIndex, target);
         }
     }

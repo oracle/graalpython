@@ -1092,9 +1092,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass1, Class<?> nodeClass2, String name) {
-        // for slot wrappers: the root node may be wrapping a helper wrapper node implementing the
-        // wrapper logic and the bare slot node itself
+        // for slot call targets and wrappers: the root node may be wrapping a helper wrapper node
+        // implementing the slot wrapper logic and the bare slot node itself
         return createCachedCallTargetUnsafe(rootNodeFunction, true, nodeClass1, nodeClass2, name);
+    }
+
+    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass1, Class<?> nodeClass2, PythonBuiltinClassType type, String name) {
+        // for slot wrappers: the type is used for validation of "self" type
+        return createCachedCallTargetUnsafe(rootNodeFunction, true, nodeClass1, nodeClass2, type, name);
     }
 
     /**

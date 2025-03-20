@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -234,8 +235,13 @@ public class StructSequence {
              */
             PythonBuiltinClass template = context.lookupType(PythonBuiltinClassType.PFlags);
             copyMethod(language, klass, T___NEW__, template);
-            copyMethod(language, klass, T___REPR__, template);
             copyMethod(language, klass, T___REDUCE__, template);
+
+            // Wrappers of "new" slots perform self type validation according to CPython semantics,
+            // so we cannot reuse them, but we create and cache one call-target shared among all
+            // native structseq subclasses
+            PBuiltinFunction reprWrapperDescr = TpSlotBuiltin.createNativeReprWrapperDescriptor(context, StructSequenceBuiltins.SLOTS, klass);
+            WriteAttributeToObjectNode.getUncached(true).execute(klass, T___REPR__, reprWrapperDescr);
         }
         /*
          * Only set __doc__ if given. It may be 'null' e.g. in case of initializing a native class

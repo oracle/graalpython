@@ -144,7 +144,7 @@ public abstract class TpSlotDescrGet {
         public void initialize(PythonLanguage language) {
             // We need a different call-target for the "raw" slot. It must not normalize None to
             // NO_VALUE (NULL in CPython) like the __get__ wrapper.
-            RootCallTarget callTarget = createBuiltinCallTarget(language, SIGNATURE, getNodeFactory(), J___GET__);
+            RootCallTarget callTarget = createSlotCallTarget(language, SIGNATURE, getNodeFactory(), J___GET__);
             language.setBuiltinSlotCallTarget(callTargetIndex, callTarget);
         }
     }

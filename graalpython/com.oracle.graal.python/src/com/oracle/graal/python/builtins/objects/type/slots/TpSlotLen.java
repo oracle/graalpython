@@ -133,7 +133,7 @@ public abstract class TpSlotLen {
 
         @Override
         public final void initialize(PythonLanguage language) {
-            RootCallTarget callTarget = createBuiltinCallTarget(language, SIGNATURE, getNodeFactory(), J___LEN__);
+            RootCallTarget callTarget = createSlotCallTarget(language, SIGNATURE, getNodeFactory(), J___LEN__);
             language.setBuiltinSlotCallTarget(callTargetIndex, callTarget);
         }
     }
