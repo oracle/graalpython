@@ -1286,7 +1286,7 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            return new Object[]{readSelf(frame), PNone.NONE};
+            return new Object[]{readSelf(frame), PNone.NO_VALUE};
         }
 
         @Override
