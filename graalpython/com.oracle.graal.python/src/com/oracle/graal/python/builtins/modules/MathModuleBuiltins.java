@@ -66,7 +66,6 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -78,6 +77,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonIntegerAndFloatTypes;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.NarrowBigIntegerNode;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -1133,20 +1133,20 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"args.length > 1", "keywords.length == 0"})
-        public static Object gcd(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+        static Object gcd(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @Cached LoopConditionProfile profile,
+                        @Cached IsZeroNode isZeroNode,
                         @Shared @Cached PyNumberIndexNode indexNode,
                         @Cached Gcd2Node gcdNode,
                         @Cached IntBuiltins.FloorDivNode floorDivNode,
                         @Cached IntBuiltins.MulNode mulNode,
-                        @Cached BinaryComparisonNode.EqNode eqNode,
                         @Shared @Cached BuiltinFunctions.AbsNode absNode) {
             Object a = indexNode.execute(frame, inliningTarget, args[0]);
             profile.profileCounted(args.length);
             for (int i = 1; profile.inject(i < args.length); i++) {
                 Object b = indexNode.execute(frame, inliningTarget, args[i]);
-                if ((boolean) eqNode.execute(frame, a, 0)) {
+                if (isZeroNode.execute(inliningTarget, a)) {
                     continue;
                 }
                 Object g = gcdNode.execute(frame, a, b);
@@ -1175,6 +1175,39 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         public int gcdKeywords(Object self, Object[] args, PKeyword[] keywords) {
             throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "gcd()");
+        }
+
+        // Fast-path from CPython uses identity comparison to 0 as best effort check
+        @TypeSystemReference(PythonIntegerTypes.class)
+        @GenerateInline
+        @GenerateCached(false)
+        abstract static class IsZeroNode extends Node {
+            abstract boolean execute(Node inliningTarget, Object value);
+
+            @Specialization(guards = "a == 0")
+            static boolean isLongZero(long a) {
+                return true;
+            }
+
+            @Specialization(guards = "a != 0")
+            static boolean isLongNonZero(long a) {
+                return false;
+            }
+
+            @Specialization(guards = "i.isZero()")
+            static boolean isPIntZero(PInt i) {
+                return true;
+            }
+
+            @Specialization(guards = "!i.isZero()")
+            static boolean isPIntNonZero(PInt i) {
+                return false;
+            }
+
+            @Fallback
+            static boolean others(Object o) {
+                return false;
+            }
         }
     }
 

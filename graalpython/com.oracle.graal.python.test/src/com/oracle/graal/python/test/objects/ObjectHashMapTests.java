@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,9 +67,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PopNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
-import com.oracle.graal.python.lib.PyObjectRichCompareBool.Comparison;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
@@ -86,9 +86,9 @@ public class ObjectHashMapTests {
         }
     }
 
-    private static final class EqNodeStub extends PyObjectRichCompareBool.EqNode {
+    private static final class EqNodeStub extends PyObjectRichCompareBool {
         @Override
-        protected boolean execute(Frame frame, Node inliningTarget, Object a, Object b, Comparison cmp) {
+        public boolean execute(Frame frame, Node inliningTarget, Object a, Object b, TpSlotRichCompare.RichCmpOp cmp) {
             // Sanity check: we do not use any other keys in the tests
             assert a instanceof Long || a instanceof DictKey;
             assert b instanceof Long || b instanceof DictKey;

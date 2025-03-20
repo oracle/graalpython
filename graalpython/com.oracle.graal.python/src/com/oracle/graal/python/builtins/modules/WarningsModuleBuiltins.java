@@ -96,7 +96,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
-import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool.CachedPyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -204,7 +204,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
 
     static final class WarningsModuleNode extends Node {
         @Child CastToTruffleStringNode castStr;
-        @Child PyObjectRichCompareBool.EqNode eqNode;
+        @Child CachedPyObjectRichCompareBool eqNode;
         @Child GetClassNode getClassNode;
         @Child PyNumberAsSizeNode asSizeNode;
         @Child PyObjectIsTrueNode isTrueNode;
@@ -238,10 +238,10 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             return PythonContext.get(this);
         }
 
-        private PyObjectRichCompareBool.EqNode getEqNode() {
+        private CachedPyObjectRichCompareBool getEqNode() {
             if (eqNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                eqNode = insert(PyObjectRichCompareBool.EqNode.create());
+                eqNode = insert(CachedPyObjectRichCompareBool.create());
             }
             return eqNode;
         }
@@ -609,18 +609,18 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
          * warnings will be printed.
          */
         private static boolean alreadyWarnedShouldSet(PythonModule _warnings, PDict registry, Object key) {
-            return alreadyWarned(null, _warnings, registry, key, true, PyObjectRichCompareBool.EqNode.getUncached(), PyObjectCallMethodObjArgs.getUncached(), PyDictGetItem.getUncached(),
+            return alreadyWarned(null, _warnings, registry, key, true, CachedPyObjectRichCompareBool.getUncached(), PyObjectCallMethodObjArgs.getUncached(), PyDictGetItem.getUncached(),
                             PyObjectSetItem.getUncached(), PyObjectIsTrueNode.getUncached());
         }
 
         /**
          * Used on both fast and slow path.
          */
-        private static boolean alreadyWarned(VirtualFrame frame, PythonModule _warnings, PDict registry, Object key, boolean shouldSet, PyObjectRichCompareBool.EqNode eqNode,
+        private static boolean alreadyWarned(VirtualFrame frame, PythonModule _warnings, PDict registry, Object key, boolean shouldSet, CachedPyObjectRichCompareBool eqNode,
                         PyObjectCallMethodObjArgs callMethod, PyDictGetItem getItem, PyObjectSetItem setItem, PyObjectIsTrueNode isTrueNode) {
             Object versionObj = getItem.executeCached(frame, registry, T_VERSION);
             long stateFiltersVersion = getStateFiltersVersion(_warnings);
-            if (versionObj == null || !eqNode.compareCached(frame, stateFiltersVersion, versionObj)) {
+            if (versionObj == null || !eqNode.executeEq(frame, stateFiltersVersion, versionObj)) {
                 callMethod.executeCached(frame, registry, T_CLEAR);
                 setItem.executeCached(frame, registry, T_VERSION, stateFiltersVersion);
             } else {

@@ -71,6 +71,7 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStor
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -104,6 +105,7 @@ public abstract class ListNodes {
             return list.getSequenceStorage();
         }
 
+        @InliningCutoff
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, seq)", "interop.hasArrayElements(seq)"}, limit = "1")
         static SequenceStorage doForeign(Node inliningTarget, Object seq,
                         @Cached IsForeignObjectNode isForeignObjectNode,
@@ -117,6 +119,7 @@ public abstract class ListNodes {
             }
         }
 
+        @InliningCutoff
         @Fallback
         static SequenceStorage doFallback(Node inliningTarget, Object seq) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "list", seq);

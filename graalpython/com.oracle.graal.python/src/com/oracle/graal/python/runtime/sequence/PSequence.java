@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -64,79 +64,79 @@ public abstract class PSequence extends PythonBuiltinObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public boolean isNumber() {
+    public final boolean isNumber() {
         return false;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public byte asByte() throws UnsupportedMessageException {
+    public final byte asByte() throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public boolean fitsInByte() {
+    public final boolean fitsInByte() {
         return false;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public short asShort() throws UnsupportedMessageException {
+    public final short asShort() throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public boolean fitsInShort() {
+    public final boolean fitsInShort() {
         return false;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public int asInt() throws UnsupportedMessageException {
+    public final int asInt() throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public boolean fitsInInt() {
+    public final boolean fitsInInt() {
         return false;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public long asLong() throws UnsupportedMessageException {
+    public final long asLong() throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public boolean fitsInLong() {
+    public final boolean fitsInLong() {
         return false;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public float asFloat() throws UnsupportedMessageException {
+    public final float asFloat() throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public boolean fitsInFloat() {
+    public final boolean fitsInFloat() {
         return false;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public double asDouble() throws UnsupportedMessageException {
+    public final double asDouble() throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public boolean fitsInDouble() {
+    public final boolean fitsInDouble() {
         return false;
     }
 
@@ -148,17 +148,17 @@ public abstract class PSequence extends PythonBuiltinObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public String asString() throws UnsupportedMessageException {
+    public final String asString() throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
-    public boolean hasArrayElements() {
+    public final boolean hasArrayElements() {
         return true;
     }
 
     @ExportMessage
-    public long getArraySize(@Bind("$node") Node inliningTarget,
+    public final long getArraySize(@Bind("$node") Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -170,7 +170,7 @@ public abstract class PSequence extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public Object readArrayElement(long index,
+    public final Object readArrayElement(long index,
                     @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItem,
@@ -189,7 +189,7 @@ public abstract class PSequence extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public void writeArrayElement(long index, Object value,
+    public final void writeArrayElement(long index, Object value,
                     @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Exclusive @Cached PForeignToPTypeNode convert,
@@ -209,7 +209,7 @@ public abstract class PSequence extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public void removeArrayElement(long index,
+    public final void removeArrayElement(long index,
                     @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem,
@@ -228,7 +228,7 @@ public abstract class PSequence extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public boolean isArrayElementReadable(long idx,
+    public final boolean isArrayElementReadable(long idx,
                     @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.IsInBoundsNode isInBoundsNode,
                     @Exclusive @Cached GilNode gil) {
@@ -241,7 +241,7 @@ public abstract class PSequence extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public boolean isArrayElementModifiable(long idx,
+    public final boolean isArrayElementModifiable(long idx,
                     @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.IsInBoundsNode isInBoundsNode,
                     @Exclusive @Cached GilNode gil) {
@@ -254,7 +254,7 @@ public abstract class PSequence extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public boolean isArrayElementInsertable(long idx,
+    public final boolean isArrayElementInsertable(long idx,
                     @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.IsInBoundsNode isInBoundsNode,
                     @Exclusive @Cached GilNode gil) {
@@ -267,7 +267,7 @@ public abstract class PSequence extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public boolean isArrayElementRemovable(long idx,
+    public final boolean isArrayElementRemovable(long idx,
                     @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.IsInBoundsNode isInBoundsNode,
                     @Exclusive @Cached GilNode gil) {

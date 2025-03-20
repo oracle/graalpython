@@ -129,9 +129,6 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
                 if (nargs < builtinAnnotation.minNumOfPositionalArgs() || nargs > maxArgs) {
                     return null;
                 }
-            } else {
-                // for slots without SlotSignature the max args is implied by the node class
-                assert TpSlotBuiltin.isSlotFactory(builtinNodeFactory) : nodeClass.getName();
             }
         }
         PythonBuiltinBaseNode builtinNode = builtinNodeFactory.createNode();

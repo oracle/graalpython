@@ -103,7 +103,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyIterNextNode nextNode,
                         @Cached CallNode callNode,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached PyObjectRichCompareBool eqNode,
                         @Cached InlinedBranchProfile currGrouperProfile,
                         @Cached InlinedBranchProfile currValueMarkerProfile,
                         @Cached InlinedBranchProfile currValueTgtProfile,
@@ -121,7 +121,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
                     return iteratorExhausted();
                 }
             }
-            if (!eqNode.compare(frame, inliningTarget, self.getTgtKey(), gbo.getCurrKey())) {
+            if (!eqNode.executeEq(frame, inliningTarget, self.getTgtKey(), gbo.getCurrKey())) {
                 currValueTgtProfile.enter(inliningTarget);
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             }

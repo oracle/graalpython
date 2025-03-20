@@ -539,8 +539,8 @@ public class TpSlotBinaryOp {
 
         @Fallback
         static boolean doGenericRuntimeObjects(VirtualFrame frame, Node inliningTarget, Object a, Object b,
-                        @Cached PyObjectRichCompareBool.NeNode neNode) {
-            return neNode.compare(frame, inliningTarget, a, b);
+                        @Cached PyObjectRichCompareBool neNode) {
+            return neNode.execute(frame, inliningTarget, a, b, TpSlotRichCompare.RichCmpOp.Py_NE);
         }
     }
 }

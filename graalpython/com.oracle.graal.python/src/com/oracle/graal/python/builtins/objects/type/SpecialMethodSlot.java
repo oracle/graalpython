@@ -56,22 +56,15 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LENGTH_HINT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET_NAME__;
@@ -165,17 +158,9 @@ public enum SpecialMethodSlot {
     Enter(T___ENTER__),
 
     LengthHint(T___LENGTH_HINT__),
-    Hash(T___HASH__),
     // Note: __format__ does not seem to be actual slot in CPython, but it is looked up frequently
     Format(T___FORMAT__),
     Missing(T___MISSING__),
-
-    Eq(T___EQ__),
-    Ne(T___NE__),
-    Lt(T___LT__),
-    Le(T___LE__),
-    Gt(T___GT__),
-    Ge(T___GE__),
 
     Round(T___ROUND__),
 
@@ -723,11 +708,6 @@ public enum SpecialMethodSlot {
         }
         int x = codePointAtIndexNode.execute(name, 2, TS_ENCODING) * 26 + codePointAtIndexNode.execute(name, 3, TS_ENCODING);
         switch (x) {
-            case 'g' * 26 + 'e':    // ge
-                if (eqNode.execute(name, T___GE__, TS_ENCODING)) {
-                    return Ge;
-                }
-                break;
             case 's' * 26 + 'e':    // se
                 if (eqNode.execute(name, T___SET_NAME__, TS_ENCODING)) {
                     return SetName;
@@ -741,9 +721,6 @@ public enum SpecialMethodSlot {
             case 'n' * 26 + 'e':    // ne
                 if (eqNode.execute(name, T___NEW__, TS_ENCODING)) {
                     return New;
-                }
-                if (eqNode.execute(name, T___NE__, TS_ENCODING)) {
-                    return Ne;
                 }
                 break;
             case 'i' * 26 + 'n':    // in
@@ -778,14 +755,6 @@ public enum SpecialMethodSlot {
                 if (eqNode.execute(name, T___LENGTH_HINT__, TS_ENCODING)) {
                     return LengthHint;
                 }
-                if (eqNode.execute(name, T___LE__, TS_ENCODING)) {
-                    return Le;
-                }
-                break;
-            case 'h' * 26 + 'a':    // ha
-                if (eqNode.execute(name, T___HASH__, TS_ENCODING)) {
-                    return Hash;
-                }
                 break;
             case 'r' * 26 + 'e':    // re
                 if (eqNode.execute(name, T___REVERSED__, TS_ENCODING)) {
@@ -803,19 +772,6 @@ public enum SpecialMethodSlot {
                 }
                 break;
             case 'e' * 26 + 'q':    // eq
-                if (eqNode.execute(name, T___EQ__, TS_ENCODING)) {
-                    return Eq;
-                }
-                break;
-            case 'l' * 26 + 't':    // lt
-                if (eqNode.execute(name, T___LT__, TS_ENCODING)) {
-                    return Lt;
-                }
-                break;
-            case 'g' * 26 + 't':    // gt
-                if (eqNode.execute(name, T___GT__, TS_ENCODING)) {
-                    return Gt;
-                }
                 break;
             case 'a' * 26 + 'n':    // an
                 if (eqNode.execute(name, T___ANEXT__, TS_ENCODING)) {

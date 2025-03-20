@@ -474,7 +474,7 @@ public final class PFactory {
         // Fixup tp slots
         MroSequenceStorage mro = GetMroStorageNode.executeUncached(result);
         SpecialMethodSlot.initializeSpecialMethodSlots(result, mro, language);
-        TpSlots.inherit(result, mro, true);
+        TpSlots.inherit(result, null, mro, true);
         TpSlots.fixupSlotDispatchers(result);
         result.initializeMroShape(language);
         return result;

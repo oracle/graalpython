@@ -100,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.set.SetNodesFactory;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CreateSliceNode;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodesFactory.CreateSliceNodeGen;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp;
 import com.oracle.graal.python.compiler.BinaryOpsConstants;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.FormatOptions;
@@ -154,6 +155,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNodeGen;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNodeGen;
+import com.oracle.graal.python.lib.PyObjectRichCompare.RichCompareBinaryOp;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttrNodeGen;
 import com.oracle.graal.python.lib.PyObjectSetItem;
@@ -192,7 +194,6 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNodeGen;
 import com.oracle.graal.python.nodes.exception.ExceptMatchNode;
 import com.oracle.graal.python.nodes.exception.ExceptMatchNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryOp;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
@@ -487,17 +488,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             case BinaryOpsConstants.INPLACE_MATMUL:
                 return PyNumberInPlaceMatrixMultiplyNode.create();
             case BinaryOpsConstants.EQ:
-                return BinaryComparisonNode.EqNode.create();
+                return RichCompareBinaryOp.create(RichCmpOp.Py_EQ);
             case BinaryOpsConstants.NE:
-                return BinaryComparisonNode.NeNode.create();
+                return RichCompareBinaryOp.create(RichCmpOp.Py_NE);
             case BinaryOpsConstants.LT:
-                return BinaryComparisonNode.LtNode.create();
+                return RichCompareBinaryOp.create(RichCmpOp.Py_LT);
             case BinaryOpsConstants.LE:
-                return BinaryComparisonNode.LeNode.create();
+                return RichCompareBinaryOp.create(RichCmpOp.Py_LE);
             case BinaryOpsConstants.GT:
-                return BinaryComparisonNode.GtNode.create();
+                return RichCompareBinaryOp.create(RichCmpOp.Py_GT);
             case BinaryOpsConstants.GE:
-                return BinaryComparisonNode.GeNode.create();
+                return RichCompareBinaryOp.create(RichCmpOp.Py_GE);
             case BinaryOpsConstants.IS:
                 return IsNode.create();
             case BinaryOpsConstants.IN:

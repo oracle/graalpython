@@ -105,6 +105,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -732,21 +733,15 @@ public abstract class ExternalFunctionNodes {
 
         private static int getCompareOpCode(PExternalFunctionWrapper sig) {
             // op codes for binary comparisons (defined in 'object.h')
-            switch (sig) {
-                case LT:
-                    return 0;
-                case LE:
-                    return 1;
-                case EQ:
-                    return 2;
-                case NE:
-                    return 3;
-                case GT:
-                    return 4;
-                case GE:
-                    return 5;
-            }
-            throw CompilerDirectives.shouldNotReachHere();
+            return switch (sig) {
+                case LT -> RichCmpOp.Py_LT.asNative();
+                case LE -> RichCmpOp.Py_LE.asNative();
+                case EQ -> RichCmpOp.Py_EQ.asNative();
+                case NE -> RichCmpOp.Py_NE.asNative();
+                case GT -> RichCmpOp.Py_GT.asNative();
+                case GE -> RichCmpOp.Py_GE.asNative();
+                default -> throw CompilerDirectives.shouldNotReachHere(sig.getName());
+            };
         }
 
         CheckFunctionResultNode createCheckFunctionResultNode() {

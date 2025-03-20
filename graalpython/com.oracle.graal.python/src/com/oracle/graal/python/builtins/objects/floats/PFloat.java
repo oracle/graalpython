@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -26,13 +26,10 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.floats;
 
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -40,7 +37,6 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.strings.TruffleString;
 
 @SuppressWarnings("truffle-abstract-export")
 @ExportLibrary(InteropLibrary.class)
@@ -86,30 +82,19 @@ public class PFloat extends PythonBuiltinObject {
         return new PFloat(cls, instanceShape, value);
     }
 
-    @TruffleBoundary
-    public static TruffleString doubleToString(double item) {
-        String d = Double.toString(item);
-        int exp = d.indexOf("E");
-        if (exp != -1) {
-            int l = d.length() - 1;
-            if (exp == (l - 2)) {
-                if (d.charAt(exp + 1) == '-') {
-                    if (Integer.valueOf(d.charAt(l) + "") == 4) {
-                        /*- Java convert double when 0.000###... while Python does it when 0.0000####... */
-                        d = Double.toString((item * 10)).replace(".", ".0");
-                    } else {
-                        d = d.substring(0, l) + "0" + d.substring(l);
-                    }
+    public static int compare(double x, double y) {
+        return (x < y) ? -1 : ((x == y) ? 0 : 1);
+    }
 
-                    exp = d.indexOf("E");
-                }
-            }
-            if (exp != -1 && d.charAt(exp + 1) != '-') {
-                d = d.substring(0, exp + 1) + "+" + d.substring(exp + 1, l + 1);
-            }
-            d = d.toLowerCase();
-        }
-        return toTruffleStringUncached(d);
+    /**
+     * CPython does identity check in {@code PyObject_RichCompareBool}. We do not really have
+     * identity for doubles, so we cannot say if NaNs, which are by definition not equal
+     * (PyObjectRichCompare always returns false for NaN and NaN), are identical or not. So we
+     * choose that all NaNs with equal bit patterns are identical. This method should be used in
+     * places which use {@code PyObject_RichCompareBool} in CPython.
+     */
+    public static boolean areIdentical(double x, double y) {
+        return x == y || Double.doubleToRawLongBits(x) == Double.doubleToRawLongBits(y);
     }
 
     @ExportMessage

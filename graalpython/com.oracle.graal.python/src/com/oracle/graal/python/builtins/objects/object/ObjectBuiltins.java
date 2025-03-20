@@ -36,22 +36,14 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETSTATE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT_SUBCLASS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SIZEOF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSHOOK__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUFFLE_RICHCOMPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_UPDATE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REDUCE__;
@@ -101,7 +93,9 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRepr.CallSlotReprNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -116,16 +110,12 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -150,6 +140,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -160,7 +151,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -275,28 +265,28 @@ public final class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class HashNode extends PythonUnaryBuiltinNode {
+    public abstract static class HashNode extends HashBuiltinNode {
         @Specialization
-        public int hash(PythonBuiltinClassType self) {
+        public long hash(PythonBuiltinClassType self) {
             return hash(getContext().lookupType(self));
         }
 
         @TruffleBoundary
         @Specialization(guards = "!isPythonBuiltinClassType(self)")
-        public static int hash(Object self) {
+        public static long hash(Object self) {
             return self.hashCode();
         }
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static Object eq(Object self, Object other,
+    public abstract static class EqNode extends TpSlotRichCompare.RichCmpBuiltinNode {
+        @Specialization(guards = "op.isEq()")
+        static Object eq(Object self, Object other, TpSlotRichCompare.RichCmpOp op,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile isEq,
+                        @Exclusive @Cached InlinedConditionProfile isEq,
                         @Cached IsNode isNode) {
             if (isEq.profile(inliningTarget, isNode.execute(self, other))) {
                 return true;
@@ -306,34 +296,29 @@ public final class ObjectBuiltins extends PythonBuiltins {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
         }
-    }
 
-    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    @ImportStatic(SpecialMethodSlot.class)
-    public abstract static class NeNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(VirtualFrame frame, Object self, Object other,
-                        @Cached(parameters = "Eq") LookupAndCallBinaryNode eqNode,
+        @Specialization(guards = "op.isNe()")
+        static Object ne(VirtualFrame frame, Object self, Object other, TpSlotRichCompare.RichCmpOp op,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached InlinedConditionProfile isEq,
+                        @Cached GetObjectSlotsNode getSlotsNode,
+                        @Cached TpSlotRichCompare.CallSlotRichCmpNode callSlotRichCmp,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            Object result = eqNode.executeObject(frame, self, other);
-            if (result == PNotImplemented.NOT_IMPLEMENTED) {
-                return result;
+            // By default, __ne__() delegates to __eq__() and inverts the result, unless the latter
+            // returns NotImplemented
+            TpSlot selfRichCmp = getSlotsNode.execute(inliningTarget, self).tp_richcmp();
+            if (selfRichCmp == null) {
+                return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return !isTrueNode.execute(frame, result);
+            Object result = callSlotRichCmp.execute(frame, inliningTarget, selfRichCmp, self, other, TpSlotRichCompare.RichCmpOp.Py_EQ);
+            if (result != PNotImplemented.NOT_IMPLEMENTED) {
+                return !isTrueNode.execute(frame, result);
+            }
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
-    }
 
-    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class LtLeGtGeNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object notImplemented(Object self, Object other) {
+        @Fallback
+        static Object doOthers(Object self, Object other, TpSlotRichCompare.RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -664,52 +649,6 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyObjectStrAsObjectNode str) {
             return str.execute(frame, inliningTarget, self);
-        }
-    }
-
-    @Builtin(name = J___TRUFFLE_RICHCOMPARE__, minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
-        protected static final int NO_SLOW_PATH = Integer.MAX_VALUE;
-        @CompilationFinal private boolean seenNonBoolean = false;
-
-        static BinaryComparisonNode createOp(int op) {
-            switch (op) {
-                case 0:
-                    return BinaryComparisonNodeFactory.LtNodeGen.create();
-                case 4:
-                    return BinaryComparisonNodeFactory.GtNodeGen.create();
-                case 2:
-                    return BinaryComparisonNodeFactory.EqNodeGen.create();
-                case 5:
-                    return BinaryComparisonNodeFactory.GeNodeGen.create();
-                case 1:
-                    return BinaryComparisonNodeFactory.LeNodeGen.create();
-                case 3:
-                    return BinaryComparisonNodeFactory.NeNodeGen.create();
-                default:
-                    throw new RuntimeException("unexpected operation: " + op);
-            }
-        }
-
-        @Specialization(guards = "op == cachedOp", limit = "NO_SLOW_PATH")
-        @SuppressWarnings("truffle-static-method")
-        boolean richcmp(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") int op,
-                        @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached("op") int cachedOp,
-                        @Cached("createOp(op)") BinaryComparisonNode node,
-                        @Cached PyObjectIsTrueNode castToBooleanNode) {
-            if (!seenNonBoolean) {
-                try {
-                    return node.executeBool(frame, left, right);
-                } catch (UnexpectedResultException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    seenNonBoolean = true;
-                    return castToBooleanNode.execute(frame, e.getResult());
-                }
-            } else {
-                return castToBooleanNode.execute(frame, node.execute(frame, left, right));
-            }
         }
     }
 

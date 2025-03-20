@@ -40,24 +40,27 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.CallSlotHashFunNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.nodes.util.CastUnsignedToJavaLongHashNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
@@ -71,6 +74,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(SpecialMethodSlot.class)
@@ -160,34 +164,62 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
 
     @Fallback
     @InliningCutoff
-    static long hash(VirtualFrame frame, Node inliningTarget, Object object,
+    static long genericHash(VirtualFrame frame, Node inliningTarget, Object object,
                     @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "Hash", inline = false) LookupCallableSlotInMRONode lookupHash,
-                    @Cached MaybeBindDescriptorNode bindDescriptorNode,
-                    @Cached(inline = false) CallUnaryMethodNode callHash,
-                    @Cached CastUnsignedToJavaLongHashNode cast,
+                    @Cached GetCachedTpSlotsNode getSlotsNode,
+                    @Cached CallSlotHashFunNode callHashFun,
+                    @Cached HandleNoHashNativeObj handleNoHashNativeObj,
                     @Cached PRaiseNode raiseNode) {
-        /* This combines the logic from abstract.c:PyObject_Hash and typeobject.c:slot_tp_hash */
-        Object type = getClassNode.execute(inliningTarget, object);
-        // We have to do the lookup and bind steps separately to avoid binding possible None
-        Object hashDescr = lookupHash.execute(type);
-        if (hashDescr != PNone.NO_VALUE && hashDescr != PNone.NONE) {
-            try {
-                hashDescr = bindDescriptorNode.execute(frame, inliningTarget, hashDescr, object, type);
-            } catch (PException e) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.UNHASHABLE_TYPE_P, object);
+        Object klass = getClassNode.execute(inliningTarget, object);
+        TpSlots slots = getSlotsNode.execute(inliningTarget, klass);
+        if (slots.tp_hash() == null) {
+            if (klass instanceof PythonAbstractNativeObject nativeKlass) {
+                // Comment from CPython:
+                /*
+                 * To keep to the general practice that inheriting solely from object in C code
+                 * should work without an explicit call to PyType_Ready, we implicitly call
+                 * PyType_Ready here and then check the tp_hash slot again
+                 */
+                return handleNoHashNativeObj.execute(frame, inliningTarget, object, nativeKlass);
             }
-            Object result = callHash.executeObject(frame, hashDescr, object);
-            try {
-                return avoidNegative1(cast.execute(inliningTarget, result));
-            } catch (CannotCastException e) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.HASH_SHOULD_RETURN_INTEGER);
-            }
+            throw raiseUnhashable(inliningTarget, object, raiseNode);
         }
-        throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.UNHASHABLE_TYPE_P, object);
+        return callHashFun.execute(frame, inliningTarget, slots.tp_hash(), object);
     }
 
-    public static PyObjectHashNode getUncached() {
-        return PyObjectHashNodeGen.getUncached();
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    abstract static class HandleNoHashNativeObj extends Node {
+        abstract long execute(VirtualFrame frame, Node inliningTarget, Object obj, PythonAbstractNativeObject klass);
+
+        @Specialization
+        static long doIt(VirtualFrame frame, Node inliningTarget, Object object, PythonAbstractNativeObject klass,
+                        @Cached(inline = false) PCallCapiFunction callCapiFunction,
+                        @Cached(inline = false) PythonToNativeNode pythonToNativeNode,
+                        @Cached InlinedBranchProfile typeReadyFailed,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached GetCachedTpSlotsNode getSlotsNode,
+                        @Cached CallSlotHashFunNode callHashFun) {
+            int res = (int) callCapiFunction.call(NativeCAPISymbol.FUN_PY_TYPE_READY, pythonToNativeNode.execute(klass));
+            if (res < 0) {
+                typeReadyFailed.enter(inliningTarget);
+                throw raiseSystemError(inliningTarget, klass);
+            }
+            TpSlots slots = getSlotsNode.execute(inliningTarget, klass);
+            if (slots.tp_hash() == null) {
+                throw raiseUnhashable(inliningTarget, object, raiseNode);
+            }
+            return callHashFun.execute(frame, inliningTarget, slots.tp_hash(), object);
+        }
+
+        private static PException raiseSystemError(Node inliningTarget, Object klass) {
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, GetNameNode.executeUncached(klass));
+        }
+    }
+
+    @InliningCutoff
+    private static PException raiseUnhashable(Node inliningTarget, Object object, PRaiseNode raiseNode) {
+        throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.UNHASHABLE_TYPE_P, object);
     }
 }

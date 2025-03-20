@@ -141,12 +141,12 @@ public class KeywordsStorage extends HashingStorage {
         static Object notString(Frame frame, Node inliningTarget, KeywordsStorage self, Object key, long hashIn,
                         @SuppressWarnings("unused") @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Cached PyObjectHashNode hashNode,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+                        @Cached PyObjectRichCompareBool eqNode) {
             long hash = hashIn == -1 ? hashNode.execute(frame, inliningTarget, key) : hashIn;
             for (int i = 0; i < self.keywords.length; i++) {
                 TruffleString currentKey = self.keywords[i].getName();
                 long keyHash = hashNode.execute(frame, inliningTarget, currentKey);
-                if (keyHash == hash && eqNode.compare(frame, inliningTarget, key, currentKey)) {
+                if (keyHash == hash && eqNode.executeEq(frame, inliningTarget, key, currentKey)) {
                     return self.keywords[i].getValue();
                 }
             }

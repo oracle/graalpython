@@ -106,7 +106,7 @@ public final class GroupByBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyIterNextNode nextNode,
                         @Cached CallNode callNode,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached PyObjectRichCompareBool eqNode,
                         @Cached InlinedBranchProfile eqProfile,
                         @Cached InlinedConditionProfile hasFuncProfile,
                         @Cached InlinedLoopConditionProfile loopConditionProfile,
@@ -123,14 +123,14 @@ public final class GroupByBuiltins extends PythonBuiltins {
             return PFactory.createTuple(language, new Object[]{self.getCurrKey(), grouper});
         }
 
-        private static boolean doGroupByStep(VirtualFrame frame, Node inliningTarget, PGroupBy self, InlinedBranchProfile eqProfile, PyObjectRichCompareBool.EqNode eqNode) {
+        private static boolean doGroupByStep(VirtualFrame frame, Node inliningTarget, PGroupBy self, InlinedBranchProfile eqProfile, PyObjectRichCompareBool eqNode) {
             if (self.getCurrKey() == null) {
                 return true;
             } else if (self.getTgtKey() == null) {
                 return false;
             } else {
                 eqProfile.enter(inliningTarget);
-                if (!eqNode.compare(frame, inliningTarget, self.getTgtKey(), self.getCurrKey())) {
+                if (!eqNode.executeEq(frame, inliningTarget, self.getTgtKey(), self.getCurrKey())) {
                     return false;
                 }
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,8 +42,6 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -140,9 +138,6 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
             }
             Object value = readNode.execute(currentType, slot.methodName);
             if (value != PNone.NO_VALUE) {
-                if (slot == SlotMethodDef.TP_HASH && value == PNone.NONE) {
-                    return CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PYOBJECT_HASH_NOT_IMPLEMENTED);
-                }
                 return wrapManagedMethod(slot, (PythonManagedClass) currentType, value);
             }
         }

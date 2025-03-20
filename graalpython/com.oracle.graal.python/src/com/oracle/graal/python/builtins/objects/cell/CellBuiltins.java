@@ -40,18 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cell;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -69,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -93,7 +83,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCell)
 public final class CellBuiltins extends PythonBuiltins {
-
     public static final TpSlots SLOTS = CellBuiltinsSlotsGen.SLOTS;
 
     @Override
@@ -101,183 +90,33 @@ public final class CellBuiltins extends PythonBuiltins {
         return CellBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @Slot(value = Slot.SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBuiltinNode {
+    public abstract static class EqNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        static boolean eq(VirtualFrame frame, PCell self, PCell other,
+        static boolean eq(VirtualFrame frame, PCell self, PCell other, TpSlotRichCompare.RichCmpOp op,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached PyObjectRichCompareBool richCmpNode,
                         @Cached InlinedConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
             Object left = getRefL.execute(inliningTarget, self);
             Object right = getRefR.execute(inliningTarget, other);
             if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
-                return eqNode.compare(frame, inliningTarget, left, right);
+                return richCmpNode.execute(frame, inliningTarget, left, right, op);
             }
-            return left == null && right == null;
+            return op.compare(right == null, left == null);
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        static Object eq(Object self, Object other,
+        static Object eq(Object self, Object other, TpSlotRichCompare.RichCmpOp op,
                         @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___EQ__, "cell", self);
-        }
-    }
-
-    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class NeNode extends PythonBuiltinNode {
-        @Specialization
-        static boolean ne(VirtualFrame frame, PCell self, PCell other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyObjectRichCompareBool.NeNode neNode,
-                        @Cached InlinedConditionProfile nonEmptyProfile,
-                        @Cached GetRefNode getRefL,
-                        @Cached GetRefNode getRefR) {
-            Object left = getRefL.execute(inliningTarget, self);
-            Object right = getRefR.execute(inliningTarget, other);
-            if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
-                return neNode.compare(frame, inliningTarget, left, right);
-            }
-            return left != null || right != null;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        static Object eq(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            if (self instanceof PCell) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___NE__, "cell", self);
-        }
-    }
-
-    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class LtNode extends PythonBuiltinNode {
-        @Specialization
-        static boolean lt(VirtualFrame frame, PCell self, PCell other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyObjectRichCompareBool.LtNode ltNode,
-                        @Cached InlinedConditionProfile nonEmptyProfile,
-                        @Cached GetRefNode getRefL,
-                        @Cached GetRefNode getRefR) {
-            Object left = getRefL.execute(inliningTarget, self);
-            Object right = getRefR.execute(inliningTarget, other);
-            if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
-                return ltNode.compare(frame, inliningTarget, left, right);
-            }
-            return right != null;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        static Object notImplemented(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            if (self instanceof PCell) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___LT__, "cell", self);
-        }
-    }
-
-    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class LeNode extends PythonBuiltinNode {
-        @Specialization
-        static boolean le(VirtualFrame frame, PCell self, PCell other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyObjectRichCompareBool.LeNode leNode,
-                        @Cached InlinedConditionProfile nonEmptyProfile,
-                        @Cached GetRefNode getRefL,
-                        @Cached GetRefNode getRefR) {
-            Object left = getRefL.execute(inliningTarget, self);
-            Object right = getRefR.execute(inliningTarget, other);
-            if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
-                return leNode.compare(frame, inliningTarget, left, right);
-            }
-            return left == null;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        static Object notImplemented(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            if (self instanceof PCell) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___LE__, "cell", self);
-        }
-    }
-
-    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class GtNode extends PythonBuiltinNode {
-        @Specialization
-        static boolean gt(VirtualFrame frame, PCell self, PCell other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyObjectRichCompareBool.GtNode gtNode,
-                        @Cached InlinedConditionProfile nonEmptyProfile,
-                        @Cached GetRefNode getRefL,
-                        @Cached GetRefNode getRefR) {
-            Object left = getRefL.execute(inliningTarget, self);
-            Object right = getRefR.execute(inliningTarget, other);
-            if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
-                return gtNode.compare(frame, inliningTarget, left, right);
-            }
-            return left != null;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        static Object notImplemented(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            if (self instanceof PCell) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GT__, "cell", self);
-        }
-    }
-
-    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class GeNode extends PythonBuiltinNode {
-        @Specialization
-        static boolean ge(VirtualFrame frame, PCell self, PCell other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyObjectRichCompareBool.GeNode geNode,
-                        @Cached InlinedConditionProfile nonEmptyProfile,
-                        @Cached GetRefNode getRefL,
-                        @Cached GetRefNode getRefR) {
-            Object left = getRefL.execute(inliningTarget, self);
-            Object right = getRefR.execute(inliningTarget, other);
-            if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
-                return geNode.compare(frame, inliningTarget, left, right);
-            }
-            return right == null;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        static Object notImplemented(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            if (self instanceof PCell) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GE__, "cell", self);
         }
     }
 

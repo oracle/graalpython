@@ -3140,7 +3140,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 Object pythonValue = PythonUtils.pythonObjectFromConstantValue(constantValue);
                 for (Object o : seen) {
                     // need python like equal - e.g. 1 equals True
-                    if (PyObjectRichCompareBool.EqNode.compareUncached(o, pythonValue)) {
+                    if (PyObjectRichCompareBool.executeEqUncached(o, pythonValue)) {
                         errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "mapping pattern checks duplicate key (%s)", pythonValue);
                     }
                 }

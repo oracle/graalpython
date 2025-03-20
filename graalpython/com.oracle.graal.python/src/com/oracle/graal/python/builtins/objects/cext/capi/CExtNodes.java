@@ -154,6 +154,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -175,6 +176,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupA
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
@@ -187,7 +189,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
-import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -206,6 +207,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -616,51 +618,45 @@ public abstract class CExtNodes {
     @GenerateCached(false)
     public abstract static class PointerCompareNode extends Node {
 
-        public abstract boolean execute(Node inliningTarget, ComparisonOp op, Object a, Object b);
+        public abstract boolean execute(Node inliningTarget, RichCmpOp op, Object a, Object b);
 
-        @Specialization(guards = "op.isEqualityOp()", limit = "2")
-        static boolean doEqNe(ComparisonOp op, PythonAbstractNativeObject a, PythonAbstractNativeObject b,
-                        @CachedLibrary("a") InteropLibrary aLib,
-                        @CachedLibrary(limit = "3") InteropLibrary bLib) {
-            return aLib.isIdentical(a, b, bLib) == (op == ComparisonOp.EQ);
-        }
-
-        @Specialization(guards = {"isNativeObjectOrVoidPointer(a)", "isNativeObjectOrLong(b)"})
-        static boolean doGeneric(Node inliningTarget, ComparisonOp op, Object a, Object b,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Cached InlinedConditionProfile aProfile,
-                        @Cached InlinedConditionProfile bProfile) {
+        @Specialization
+        static boolean doGeneric(Node inliningTarget, RichCmpOp op, Object a, Object b,
+                        @Cached NormalizePtrNode normalizeA,
+                        @Cached NormalizePtrNode normalizeB,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
             CompilerAsserts.partialEvaluationConstant(op);
-            Object ptrA;
-            if (aProfile.profile(inliningTarget, a instanceof PythonNativeObject)) {
-                ptrA = ((PythonNativeObject) a).getPtr();
-            } else {
-                // guaranteed by the guard
-                assert a instanceof PythonNativeVoidPtr;
-                ptrA = ((PythonNativeVoidPtr) a).getNativePointer();
-            }
-            Object ptrB;
-            if (bProfile.profile(inliningTarget, b instanceof PythonNativeObject)) {
-                ptrB = ((PythonNativeObject) b).getPtr();
-            } else {
-                // guaranteed by the guard
-                assert b instanceof Long;
-                ptrB = b;
-            }
+            Object ptrA = normalizeA.execute(inliningTarget, a);
+            Object ptrB = normalizeB.execute(inliningTarget, b);
             try {
                 Object sym = CApiContext.getNativeSymbol(inliningTarget, FUN_PTR_COMPARE);
-                return (int) interopLibrary.execute(sym, ptrA, ptrB, op.opCode) != 0;
+                return (int) interopLibrary.execute(sym, ptrA, ptrB, op.asNative()) != 0;
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
-        static boolean isNativeObjectOrVoidPointer(Object object) {
-            return object instanceof PythonNativeObject || object instanceof PythonNativeVoidPtr;
-        }
+        @TypeSystemReference(PythonIntegerTypes.class)
+        @GenerateInline
+        @GenerateCached(false)
+        @GenerateUncached
+        abstract static class NormalizePtrNode extends Node {
+            abstract Object execute(Node inliningTarget, Object ptr);
 
-        static boolean isNativeObjectOrLong(Object object) {
-            return object instanceof PythonNativeObject || object instanceof Long;
+            @Specialization
+            static Object doLong(long l) {
+                return l;
+            }
+
+            @Specialization
+            static Object doLong(PythonNativeObject o) {
+                return o.getPtr();
+            }
+
+            @Specialization
+            static Object doLong(PythonNativeVoidPtr o) {
+                return o.getNativePointer();
+            }
         }
     }
 

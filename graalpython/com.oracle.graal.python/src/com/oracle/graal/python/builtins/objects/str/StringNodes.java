@@ -257,6 +257,7 @@ public abstract class StringNodes {
         }
 
         @Specialization(guards = "!isTruffleString(self)")
+        @InliningCutoff
         static TruffleString doConvert(Node inliningTarget, Object self, TruffleString errMsgFormat, Object[] errMsgArgs,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached PRaiseNode raiseNode) {

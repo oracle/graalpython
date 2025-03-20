@@ -26,15 +26,7 @@
 package com.oracle.graal.python.builtins.objects.tuple;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUFFLE_RICHCOMPARE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_PARENS;
@@ -58,7 +50,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CmpNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageMpSubscriptNode;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
@@ -69,7 +60,9 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsClinicProvide
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
@@ -88,7 +81,6 @@ import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -99,19 +91,13 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.ComparisonOp;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -180,16 +166,16 @@ public final class TupleBuiltins extends PythonBuiltins {
     public abstract static class CountNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        long count(VirtualFrame frame, Object self, Object value,
+        static long count(VirtualFrame frame, Object self, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+                        @Cached PyObjectRichCompareBool eqNode) {
             long count = 0;
             SequenceStorage tupleStore = getTupleStorage.execute(inliningTarget, self);
             for (int i = 0; i < tupleStore.length(); i++) {
                 Object seqItem = getItemNode.execute(tupleStore, i);
-                if (eqNode.compare(frame, inliningTarget, seqItem, value)) {
+                if (eqNode.execute(frame, inliningTarget, seqItem, value, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
                     count++;
                 }
             }
@@ -301,144 +287,22 @@ public final class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @GenerateCached(false)
-    abstract static class AbstractCmpNode extends PythonBinaryBuiltinNode {
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class TupleRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        static boolean doPTuple(VirtualFrame frame, PTuple left, PTuple right,
-                        @Shared("cmp") @Cached("createCmp()") SequenceStorageNodes.CmpNode cmp) {
-            return cmp.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
-        }
-
-        @Specialization(guards = {"checkRight.execute(inliningTarget, right)"}, limit = "1", replaces = "doPTuple")
-        static boolean doTuple(VirtualFrame frame, Object left, Object right,
+        static Object doTuple(VirtualFrame frame, Object left, Object right, TpSlotRichCompare.RichCmpOp op,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyTupleCheckNode checkRight,
-                        @Cached GetTupleStorage getLeft,
-                        @Cached GetTupleStorage getRight,
-                        @Shared("cmp") @Cached("createCmp()") SequenceStorageNodes.CmpNode cmp) {
-            return cmp.execute(frame, getLeft.execute(inliningTarget, left), getRight.execute(inliningTarget, right));
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static Object doOther(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        @NeverDefault
-        protected abstract SequenceStorageNodes.CmpNode createCmp();
-    }
-
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class EqNode extends AbstractCmpNode {
-
-        @NeverDefault
-        @Override
-        protected CmpNode createCmp() {
-            return SequenceStorageNodes.CmpNode.createEq();
-        }
-    }
-
-    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class NeNode extends AbstractCmpNode {
-
-        @NeverDefault
-        @Override
-        protected CmpNode createCmp() {
-            return SequenceStorageNodes.CmpNode.createNe();
-        }
-    }
-
-    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class GeNode extends AbstractCmpNode {
-
-        @NeverDefault
-        @Override
-        protected CmpNode createCmp() {
-            return SequenceStorageNodes.CmpNode.createGe();
-        }
-    }
-
-    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class LeNode extends AbstractCmpNode {
-
-        @NeverDefault
-        @Override
-        protected CmpNode createCmp() {
-            return SequenceStorageNodes.CmpNode.createLe();
-        }
-    }
-
-    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class GtNode extends AbstractCmpNode {
-
-        @NeverDefault
-        @Override
-        protected CmpNode createCmp() {
-            return SequenceStorageNodes.CmpNode.createGt();
-        }
-    }
-
-    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class LtNode extends AbstractCmpNode {
-
-        @NeverDefault
-        @Override
-        protected CmpNode createCmp() {
-            return SequenceStorageNodes.CmpNode.createLt();
-        }
-    }
-
-    @Builtin(name = J___TRUFFLE_RICHCOMPARE__, minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    @ImportStatic(ComparisonOp.class)
-    abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
-
-        @Specialization(guards = {"opCode == cachedOp.opCode"}, limit = "6")
-        static Object doPTuple(VirtualFrame frame, PTuple left, PTuple right, @SuppressWarnings("unused") int opCode,
-                        @SuppressWarnings("unused") @Cached("fromOpCode(opCode)") ComparisonOp cachedOp,
-                        @Exclusive @Cached("createCmpNode(cachedOp)") SequenceStorageNodes.CmpNode cmpNode) {
-            return cmpNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
-        }
-
-        @Specialization(guards = {"opCode == cachedOp.opCode"}, limit = "6", replaces = "doPTuple")
-        static Object doGeneric(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") int opCode,
-                        @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached("fromOpCode(opCode)") ComparisonOp cachedOp,
                         @Cached PyTupleCheckNode checkLeft,
                         @Cached PyTupleCheckNode checkRight,
+                        @Cached InlinedConditionProfile tupleCheckProfile,
                         @Cached GetTupleStorage getLeft,
                         @Cached GetTupleStorage getRight,
-                        @Exclusive @Cached("createCmpNode(cachedOp)") SequenceStorageNodes.CmpNode cmpNode) {
-            if (!checkLeft.execute(inliningTarget, left) || !checkRight.execute(inliningTarget, right)) {
+                        @Cached SequenceStorageNodes.CmpNode cmp) {
+            if (tupleCheckProfile.profile(inliningTarget, !checkLeft.execute(inliningTarget, left) || !checkRight.execute(inliningTarget, right))) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return cmpNode.execute(frame, getLeft.execute(inliningTarget, left), getRight.execute(inliningTarget, right));
-        }
-
-        @NeverDefault
-        static SequenceStorageNodes.CmpNode createCmpNode(ComparisonOp op) {
-            switch (op) {
-                case LE:
-                    return SequenceStorageNodes.CmpNode.createLe();
-                case LT:
-                    return SequenceStorageNodes.CmpNode.createLt();
-                case EQ:
-                    return SequenceStorageNodes.CmpNode.createEq();
-                case NE:
-                    return SequenceStorageNodes.CmpNode.createNe();
-                case GT:
-                    return SequenceStorageNodes.CmpNode.createGt();
-                case GE:
-                    return SequenceStorageNodes.CmpNode.createGe();
-            }
-            throw CompilerDirectives.shouldNotReachHere();
+            return cmp.execute(frame, inliningTarget, getLeft.execute(inliningTarget, left), getRight.execute(inliningTarget, right), false, null, null, op);
         }
     }
 
@@ -538,9 +402,9 @@ public final class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class HashNode extends PythonUnaryBuiltinNode {
+    public abstract static class HashNode extends HashBuiltinNode {
         protected static long HASH_UNSET = -1;
 
         @Specialization(guards = {"self.getHash() != HASH_UNSET"})

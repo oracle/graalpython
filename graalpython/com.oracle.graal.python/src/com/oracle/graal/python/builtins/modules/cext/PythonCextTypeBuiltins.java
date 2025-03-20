@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PYOBJECT_HASH_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
@@ -55,6 +56,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -332,6 +334,12 @@ public final class PythonCextTypeBuiltins {
             // slots declared on the PyTypeObject. However, one could maybe "steal" a manged slot
             // and stash it into a native type, so we play it safe a check both eventualities in
             // CreateFunctionNode
+            if (memberName.equalsUncached(T___HASH__, PythonUtils.TS_ENCODING)) {
+                if (CApiContext.isIdenticalToSymbol(cfunc, FUN_PYOBJECT_HASH_NOT_IMPLEMENTED)) {
+                    PyDictSetDefault.executeUncached(tpDict, T___HASH__, PNone.NONE);
+                    return 0;
+                }
+            }
             if (HashingStorageGetItem.hasKeyUncached(tpDict.getDictStorage(), memberName)) {
                 // Following typeobject.c:add_operators we skip a slot if we already create a
                 // function for it from another slot that was earlier or if the dict already

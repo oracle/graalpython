@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp;
 import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.lib.PyTupleCheckExactNode;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
@@ -84,7 +85,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
                     @Cached PyObjectGetAttrO getAttr,
                     @Cached TypeNodes.GetTypeFlagsNode getTypeFlagsNode,
                     @Cached IsBuiltinObjectProfile isClassProfile,
-                    @Cached StringBuiltins.EqNode eqStrNode,
+                    @Cached StringBuiltins.StringRichCmpNode eqStrNode,
                     @Cached PyTupleCheckExactNode tupleCheckExactNode,
                     @Bind PythonLanguage language,
                     @Cached PyTupleSizeNode tupleSizeNode,
@@ -145,7 +146,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
     @ExplodeLoop
     private static void getArgs(VirtualFrame frame, Node inliningTarget, Object subject, Object type, int nargs, Object[] seen, int[] seenLength, Object[] attrs, int[] attrsLength, Object matchArgs,
                     PyObjectGetAttrO getAttr,
-                    StringBuiltins.EqNode eqStrNode, TupleBuiltins.GetItemNode getItemNode, PyUnicodeCheckNode unicodeCheckNode, PRaiseNode raise) {
+                    StringBuiltins.StringRichCmpNode eqStrNode, TupleBuiltins.GetItemNode getItemNode, PyUnicodeCheckNode unicodeCheckNode, PRaiseNode raise) {
         CompilerAsserts.partialEvaluationConstant(nargs);
         for (int i = 0; i < nargs; i++) {
             Object name = getItemNode.execute(frame, matchArgs, i);
@@ -160,7 +161,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
     @ExplodeLoop
     private static void getKwArgs(VirtualFrame frame, Node inliningTarget, Object subject, Object type, TruffleString[] kwArgs, Object[] seen, int[] seenLength, Object[] attrs, int[] attrsLength,
                     PyObjectGetAttrO getAttr,
-                    StringBuiltins.EqNode eqStrNode, PRaiseNode raise) {
+                    StringBuiltins.StringRichCmpNode eqStrNode, PRaiseNode raise) {
         CompilerAsserts.partialEvaluationConstant(kwArgs);
         for (int i = 0; i < kwArgs.length; i++) {
             TruffleString name = kwArgs[i];
@@ -170,7 +171,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
         }
     }
 
-    private static void setName(VirtualFrame frame, Node inliningTarget, Object type, Object name, Object[] seen, int[] seenLength, StringBuiltins.EqNode eqNode, PRaiseNode raise) {
+    private static void setName(VirtualFrame frame, Node inliningTarget, Object type, Object name, Object[] seen, int[] seenLength, StringBuiltins.StringRichCmpNode eqNode, PRaiseNode raise) {
         if (seenLength[0] > 0 && contains(frame, seen, name, eqNode)) {
             throw raise.raise(inliningTarget, TypeError, ErrorMessages.S_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S, type, name);
         }
@@ -178,9 +179,9 @@ public abstract class MatchClassNode extends PNodeWithContext {
     }
 
     @ExplodeLoop
-    private static boolean contains(VirtualFrame frame, Object[] seen, Object name, StringBuiltins.EqNode eqNode) {
+    private static boolean contains(VirtualFrame frame, Object[] seen, Object name, StringBuiltins.StringRichCmpNode eqNode) {
         for (int i = 0; i < seen.length; i++) {
-            if (seen[i] != null && (boolean) eqNode.execute(frame, seen[i], name)) {
+            if (seen[i] != null && (boolean) eqNode.execute(frame, seen[i], name, RichCmpOp.Py_EQ)) {
                 return true;
             }
         }

@@ -301,9 +301,9 @@ public abstract class PythonBuiltins {
     }
 
     static void addFunctionsToModuleObject(Map<TruffleString, BoundBuiltinCallable<?>> builtinFunctions, PythonObject obj, PythonLanguage language) {
+        assert obj instanceof PythonModule || obj instanceof PythonBuiltinClass : "unexpected object while adding builtins";
         for (Entry<TruffleString, BoundBuiltinCallable<?>> entry : builtinFunctions.entrySet()) {
             Object value;
-            assert obj instanceof PythonModule || obj instanceof PythonBuiltinClass : "unexpected object while adding builtins";
             if (obj instanceof PythonModule) {
                 value = PFactory.createBuiltinMethod(language, obj, (PBuiltinFunction) entry.getValue());
             } else {

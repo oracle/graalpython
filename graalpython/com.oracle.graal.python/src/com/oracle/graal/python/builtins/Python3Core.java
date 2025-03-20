@@ -1228,8 +1228,9 @@ public abstract class Python3Core {
         Map<TruffleString, BoundBuiltinCallable<?>> wrapped = new HashMap<>();
         for (PythonBuiltinClassType klass : PythonBuiltinClassType.VALUES) {
             wrapped.clear();
-            TpSlots.addOperatorsToBuiltin(wrapped, this, klass);
-            PythonBuiltins.addFunctionsToModuleObject(wrapped, lookupType(klass), getLanguage());
+            PythonBuiltinClass pbc = lookupType(klass);
+            TpSlots.addOperatorsToBuiltin(wrapped, this, klass, pbc);
+            PythonBuiltins.addFunctionsToModuleObject(wrapped, pbc, getLanguage());
         }
 
         // core machinery

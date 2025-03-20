@@ -41,11 +41,6 @@
 package com.oracle.graal.python.builtins.objects.set;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_PARENS;
@@ -65,13 +60,11 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAreDisjoint;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCompareKeys;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -79,12 +72,16 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.IsKeysSubset;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.slots.PyObjectHashNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -92,13 +89,13 @@ import com.oracle.graal.python.lib.PyObjectGetStateNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -241,19 +238,57 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    protected abstract static class BaseEqNode extends PythonBinaryBuiltinNode {
+    protected abstract static class BaseSetRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
+        static boolean lengthsMismatch(int len1, int len2, TpSlotRichCompare.RichCmpOp op) {
+            return switch (op) {
+                case Py_EQ -> len1 != len2;
+                case Py_LT -> len1 >= len2;
+                case Py_GT -> len1 <= len2;
+                case Py_LE -> len1 > len2;
+                case Py_GE -> len1 < len2;
+                case Py_NE -> throw CompilerDirectives.shouldNotReachHere();
+            };
+        }
+
         @Specialization
-        static boolean doSetSameType(VirtualFrame frame, PBaseSet self, PBaseSet other,
+        static Object doIt(VirtualFrame frame, PBaseSet self, PBaseSet other, TpSlotRichCompare.RichCmpOp opIn,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageCompareKeys compareKeys) {
-            return compareKeys.execute(frame, inliningTarget, self.getDictStorage(), other.getDictStorage()) == 0;
+                        @Cached HashingStorageLen lenSelfNode,
+                        @Cached HashingStorageLen lenOtherNode,
+                        @Cached InlinedConditionProfile sizeProfile,
+                        @Cached IsKeysSubset issubsetNode) {
+            boolean wasNe = opIn.isNe();
+            TpSlotRichCompare.RichCmpOp op = opIn;
+            if (wasNe) {
+                op = TpSlotRichCompare.RichCmpOp.Py_EQ;
+            }
+
+            final int len1 = lenSelfNode.execute(inliningTarget, self.getDictStorage());
+            final int len2 = lenOtherNode.execute(inliningTarget, other.getDictStorage());
+            if (sizeProfile.profile(inliningTarget, lengthsMismatch(len1, len2, op))) {
+                return wasNe;
+            }
+
+            PBaseSet left, right;
+            if (op.isEq() || op.isLe() || op.isLt()) {
+                left = self;
+                right = other;
+            } else {
+                left = other;
+                right = self;
+            }
+            boolean result = issubsetNode.execute(frame, inliningTarget, left.getDictStorage(), right.getDictStorage());
+            if (wasNe) {
+                return !result;
+            }
+            return result;
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        static PNotImplemented doGeneric(Object self, Object other) {
+        static PNotImplemented doGeneric(Object self, Object other, TpSlotRichCompare.RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -388,9 +423,9 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         static boolean isSubSetGeneric(VirtualFrame frame, PBaseSet self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
-                        @Cached HashingStorageCompareKeys compareKeys) {
+                        @Cached IsKeysSubset compareKeys) {
             HashingStorage otherStorage = getSetStorageNode.execute(frame, inliningTarget, other);
-            return compareKeys.execute(frame, inliningTarget, self.getDictStorage(), otherStorage) <= 0;
+            return compareKeys.execute(frame, inliningTarget, self.getDictStorage(), otherStorage);
         }
     }
 
@@ -401,9 +436,9 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         static boolean isSuperSetGeneric(VirtualFrame frame, PBaseSet self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
-                        @Cached HashingStorageCompareKeys compareKeys) {
+                        @Cached HashingStorageNodes.IsKeysSubset compareKeys) {
             HashingStorage otherStorage = getSetStorageNode.execute(frame, inliningTarget, other);
-            return compareKeys.execute(frame, inliningTarget, otherStorage, self.getDictStorage()) <= 0;
+            return compareKeys.execute(frame, inliningTarget, otherStorage, self.getDictStorage());
         }
 
     }
@@ -447,92 +482,6 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    protected abstract static class BaseLessEqualNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static boolean doLE(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageCompareKeys compareKeys) {
-            return compareKeys.execute(frame, inliningTarget, self.getDictStorage(), other.getDictStorage()) <= 0;
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static PNotImplemented doNotImplemented(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    protected abstract static class BaseGreaterEqualNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static boolean doGE(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageCompareKeys compareKeys) {
-            return compareKeys.execute(frame, inliningTarget, other.getDictStorage(), self.getDictStorage()) <= 0;
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static PNotImplemented doNotImplemented(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    protected abstract static class BaseLessThanNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static boolean isLessThan(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageLen lenSelfNode,
-                        @Cached HashingStorageLen lenOtherNode,
-                        @Cached HashingStorageCompareKeys compareKeys,
-                        @Cached InlinedConditionProfile sizeProfile) {
-            final int len1 = lenSelfNode.execute(inliningTarget, self.getDictStorage());
-            final int len2 = lenOtherNode.execute(inliningTarget, other.getDictStorage());
-            if (sizeProfile.profile(inliningTarget, len1 >= len2)) {
-                return false;
-            }
-            return BaseLessEqualNode.doLE(frame, self, other, inliningTarget, compareKeys);
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static PNotImplemented doNotImplemented(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    protected abstract static class BaseGreaterThanNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static boolean isGreaterThan(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageLen aLenNode,
-                        @Cached HashingStorageLen bLenNode,
-                        @Cached HashingStorageCompareKeys compareKeys,
-                        @Cached InlinedConditionProfile sizeProfile) {
-            final int len1 = aLenNode.execute(inliningTarget, self.getDictStorage());
-            final int len2 = bLenNode.execute(inliningTarget, other.getDictStorage());
-            if (sizeProfile.profile(inliningTarget, len1 <= len2)) {
-                return false;
-            }
-            return BaseGreaterEqualNode.doGE(frame, self, other, inliningTarget, compareKeys);
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static PNotImplemented doNotImplemented(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
     @GenerateInline
     @GenerateCached(false)
     @ImportStatic({PGuards.class, SpecialMethodSlot.class})
@@ -547,11 +496,14 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         @Specialization
         static Object doPSet(Node inliningTarget, PSet key,
                         @Cached HashingStorageCopy copyNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached(parameters = "Hash", inline = false) LookupCallableSlotInMRONode lookupHash,
-                        @Cached InlinedConditionProfile createSet) {
-            Object hashDescr = lookupHash.execute(getClassNode.execute(inliningTarget, key));
-            if (createSet.profile(inliningTarget, hashDescr instanceof PNone)) {
+                        @Cached GetObjectSlotsNode getSlotsNode) {
+            // This follows the logic in CPython's setobject.c:set_contains
+            // TODO: CPython first tries the search and only if it gets back TypeError and the key
+            // type is set, then it transforms it to frozenset. The issue is that the TypeError can
+            // come from the tp_hash implementation or from the tp_richcompare also called during
+            // the search
+            TpSlots slots = getSlotsNode.execute(inliningTarget, key);
+            if (slots.tp_hash() == null || slots.tp_hash() == PyObjectHashNotImplemented.INSTANCE) {
                 return PFactory.createFrozenSet(PythonLanguage.get(inliningTarget), copyNode.execute(inliningTarget, key.getDictStorage()));
             } else {
                 return key;

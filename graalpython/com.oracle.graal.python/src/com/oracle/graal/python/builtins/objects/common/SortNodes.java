@@ -50,11 +50,11 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
-import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool.CachedPyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
@@ -103,9 +103,8 @@ public abstract class SortNodes {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("a", "b"), PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
 
         @Child private ExecutionContext.CalleeContext calleeContext = ExecutionContext.CalleeContext.create();
-        @Child private PyObjectIsTrueNode isTrueNode = PyObjectIsTrueNode.create();
-        @Child private BinaryComparisonNode.LtNode ltNodeA = BinaryComparisonNode.LtNode.create();
-        @Child private BinaryComparisonNode.LtNode ltNodeB = BinaryComparisonNode.LtNode.create();
+        @Child private CachedPyObjectRichCompareBool ltNodeA = CachedPyObjectRichCompareBool.create();
+        @Child private CachedPyObjectRichCompareBool ltNodeB = CachedPyObjectRichCompareBool.create();
 
         enum Result {
             LT(-1),
@@ -131,9 +130,9 @@ public abstract class SortNodes {
                 Object[] arguments = frame.getArguments();
                 Object a = arguments[PArguments.USER_ARGUMENTS_OFFSET];
                 Object b = arguments[PArguments.USER_ARGUMENTS_OFFSET + 1];
-                if (isTrueNode.execute(frame, ltNodeA.execute(frame, a, b))) {
+                if (ltNodeA.execute(frame, a, b, RichCmpOp.Py_LT)) {
                     return Result.LT;
-                } else if (isTrueNode.execute(frame, ltNodeB.execute(frame, b, a))) {
+                } else if (ltNodeB.execute(frame, b, a, RichCmpOp.Py_LT)) {
                     return Result.GT;
                 } else {
                     return Result.EQ;

@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.namespace;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.NO_POSITIONAL_ARGUMENTS_EXPECTED;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
@@ -81,13 +80,14 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
@@ -114,7 +114,6 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSimpleNamespace)
 public final class SimpleNamespaceBuiltins extends PythonBuiltins {
-
     public static final TpSlots SLOTS = SimpleNamespaceBuiltinsSlotsGen.SLOTS;
 
     @Override
@@ -151,20 +150,20 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class SimpleNamespaceEqNode extends PythonBinaryBuiltinNode {
+    public abstract static class SimpleNamespaceEqNode extends RichCmpBuiltinNode {
         @Specialization
-        static Object eq(VirtualFrame frame, PSimpleNamespace self, PSimpleNamespace other,
+        static Object eq(VirtualFrame frame, PSimpleNamespace self, PSimpleNamespace other, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict,
                         @Cached DictBuiltins.EqNode eqNode) {
-            return eqNode.execute(frame, getDict.execute(inliningTarget, self), getDict.execute(inliningTarget, other));
+            return eqNode.execute(frame, getDict.execute(inliningTarget, self), getDict.execute(inliningTarget, other), op);
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        static PNotImplemented doGeneric(Object self, Object other) {
+        static PNotImplemented doGeneric(Object self, Object other, RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

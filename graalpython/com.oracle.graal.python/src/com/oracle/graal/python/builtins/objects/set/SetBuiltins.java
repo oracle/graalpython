@@ -27,12 +27,12 @@ package com.oracle.graal.python.builtins.objects.set;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ADD;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -96,14 +96,13 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
  * binary operations are implemented in {@link BaseSetBuiltins}
  */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSet)
+@HashNotImplemented
 public final class SetBuiltins extends PythonBuiltins {
-
     public static final TpSlots SLOTS = SetBuiltinsSlotsGen.SLOTS;
 
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        addBuiltinConstant(T___HASH__, PNone.NONE);
     }
 
     @Override

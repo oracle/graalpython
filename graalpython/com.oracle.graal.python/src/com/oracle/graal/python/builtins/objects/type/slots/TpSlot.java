@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.builtins.PythonBuiltins.numDefaults;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PYOBJECT_HASH_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 
@@ -102,14 +103,25 @@ public abstract class TpSlot {
             // This returns PyProcsWrapper, which will, in its toNative message, register the
             // pointer in C API context, such that we can map back from a pointer that we get from C
             // to the PyProcsWrapper and from that to the slot instance again in TpSlots#fromNative
-            assert PythonContext.get(null).ownsGil(); // without GIL: use AtomicReference & CAS
-            if (managedSlot.slotWrapper == null) {
-                managedSlot.slotWrapper = slotMeta.createNativeWrapper(managedSlot);
-            }
-            return managedSlot.slotWrapper;
+            return getNativeWrapper(slotMeta, managedSlot);
         } else {
             throw CompilerDirectives.shouldNotReachHere("TpSlotWrapper should wrap only managed slots. Native slots should go directly to native unwrapped.");
         }
+    }
+
+    private static Object getNativeWrapper(TpSlotMeta slotMeta, TpSlotManaged slot) {
+        if (slot == PyObjectHashNotImplemented.INSTANCE) {
+            // If there are more such cases, we should add generic mapping mechanism
+            // This translation other way around is also done in TpSlots.fromNative
+            // We must not cache this in the singleton slot object, it would hold onto and leak
+            // Python objects
+            return CApiContext.getNativeSymbol(null, FUN_PYOBJECT_HASH_NOT_IMPLEMENTED);
+        }
+        assert PythonContext.get(null).ownsGil(); // without GIL: use AtomicReference & CAS
+        if (slot.slotWrapper == null) {
+            slot.slotWrapper = slotMeta.createNativeWrapper(slot);
+        }
+        return slot.slotWrapper;
     }
 
     /**
@@ -150,7 +162,11 @@ public abstract class TpSlot {
      * Marker base class for managed slots: either builtin slots or user defined Python slots.
      */
     public abstract static sealed class TpSlotManaged extends TpSlot permits TpSlotBuiltin, TpSlotPython {
-        private TpSlotWrapper slotWrapper;
+        /**
+         * Represents native callable that delegates to this slot. Should be {@link TpSlotWrapper}
+         * most of the time, but we allow overriding those wrappers with native implementation.
+         */
+        private Object slotWrapper;
     }
 
     /**
@@ -368,6 +384,7 @@ public abstract class TpSlot {
             return function;
         }
 
+        @SuppressWarnings("unchecked")
         public static PBuiltinFunction createNativeReprWrapperDescriptor(Python3Core core, TpSlots slots, Object type) {
             return createNativeWrapperDescriptor(core, (TpSlotBuiltin<PythonUnaryBuiltinNode>) slots.tp_repr(), type, T___REPR__, BuiltinSlotWrapperSignature.UNARY,
                             PExternalFunctionWrapper.UNARYFUNC);
@@ -383,7 +400,6 @@ public abstract class TpSlot {
                             NodeFactoryUtils.NodeFactoryBase.class.isAssignableFrom(factory.getClass());
         }
     }
-
     // ------------------------------------------------------------------------
     // Convenience base classes for code sharing:
 

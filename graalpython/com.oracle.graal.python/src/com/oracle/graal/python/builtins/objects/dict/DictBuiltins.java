@@ -30,10 +30,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -41,6 +39,7 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -72,6 +71,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSu
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.lib.PyDictCheckNode;
 import com.oracle.graal.python.lib.PyDictSetDefault;
@@ -114,13 +115,13 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
  * a proper error and not allow other objects as arguments.
  */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDict)
+@HashNotImplemented
 public final class DictBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = DictBuiltinsSlotsGen.SLOTS;
 
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        addBuiltinConstant(T___HASH__, PNone.NONE);
     }
 
     @Override
@@ -400,27 +401,27 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBinaryBuiltinNode {
+    public abstract static class EqNode extends RichCmpBuiltinNode {
 
-        @Specialization
-        static Object doDictDict(VirtualFrame frame, PDict self, PDict other,
+        @Specialization(guards = "op.isEqOrNe()")
+        static Object doDictDict(VirtualFrame frame, PDict self, PDict other, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached HashingStorageEq eqNode) {
-            return eqNode.execute(frame, inliningTarget, self.getDictStorage(), other.getDictStorage());
+            return eqNode.execute(frame, inliningTarget, self.getDictStorage(), other.getDictStorage()) == op.isEq();
         }
 
         @Fallback
-        static Object doGeneric(VirtualFrame frame, Object self, Object other,
+        static Object doGeneric(VirtualFrame frame, Object self, Object other, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
                         @Cached PyDictCheckNode isDictNode,
                         @Exclusive @Cached HashingStorageEq eqNode,
                         @Cached DictNodes.GetDictStorageNode getStorageNode) {
-            if (isDictNode.execute(inliningTarget, other)) {
+            if (op.isEqOrNe() && isDictNode.execute(inliningTarget, other)) {
                 var selfStorage = getStorageNode.execute(inliningTarget, self);
                 var otherStorage = getStorageNode.execute(inliningTarget, other);
-                return eqNode.execute(frame, inliningTarget, selfStorage, otherStorage);
+                return eqNode.execute(frame, inliningTarget, selfStorage, otherStorage) == op.isEq();
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }

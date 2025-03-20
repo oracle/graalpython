@@ -72,7 +72,7 @@ public abstract class MatchKeysNode extends PNodeWithContext {
     static Object matchCached(VirtualFrame frame, Object map, @NeverDefault Object[] keys,
                     @Bind("this") Node inliningTarget,
                     @Cached("keys.length") int keysLen,
-                    @Shared @Cached PyObjectRichCompareBool.EqNode compareNode,
+                    @Shared @Cached PyObjectRichCompareBool compareNode,
                     @Shared @Cached PyObjectCallMethodObjArgs callMethod,
                     @Shared @Cached PRaiseNode raise) {
         Object[] values = getValues(frame, inliningTarget, map, keys, keysLen, compareNode, callMethod, raise);
@@ -80,7 +80,7 @@ public abstract class MatchKeysNode extends PNodeWithContext {
     }
 
     @ExplodeLoop
-    private static Object[] getValues(VirtualFrame frame, Node inliningTarget, Object map, Object[] keys, int keysLen, PyObjectRichCompareBool.EqNode compareNode, PyObjectCallMethodObjArgs callMethod,
+    private static Object[] getValues(VirtualFrame frame, Node inliningTarget, Object map, Object[] keys, int keysLen, PyObjectRichCompareBool compareNode, PyObjectCallMethodObjArgs callMethod,
                     PRaiseNode raise) {
         CompilerAsserts.partialEvaluationConstant(keysLen);
         Object[] values = new Object[keysLen];
@@ -100,9 +100,9 @@ public abstract class MatchKeysNode extends PNodeWithContext {
     }
 
     @ExplodeLoop
-    private static void checkSeen(VirtualFrame frame, Node inliningTarget, PRaiseNode raise, Object[] seen, Object key, PyObjectRichCompareBool.EqNode compareNode) {
+    private static void checkSeen(VirtualFrame frame, Node inliningTarget, PRaiseNode raise, Object[] seen, Object key, PyObjectRichCompareBool compareNode) {
         for (int i = 0; i < seen.length; i++) {
-            if (seen[i] != null && compareNode.compare(frame, inliningTarget, seen[i], key)) {
+            if (seen[i] != null && compareNode.executeEq(frame, inliningTarget, seen[i], key)) {
                 raise.raise(inliningTarget, ValueError, ErrorMessages.MAPPING_PATTERN_CHECKS_DUPE_KEY_S, key);
             }
         }
@@ -111,7 +111,7 @@ public abstract class MatchKeysNode extends PNodeWithContext {
     @Specialization(guards = "keys.length > 0", replaces = "matchCached")
     static Object match(VirtualFrame frame, Object map, Object[] keys,
                     @Bind("this") Node inliningTarget,
-                    @Shared @Cached PyObjectRichCompareBool.EqNode compareNode,
+                    @Shared @Cached PyObjectRichCompareBool compareNode,
                     @Shared @Cached PyObjectCallMethodObjArgs callMethod,
                     @Shared @Cached PRaiseNode raise) {
         if (keys.length == 0) {
@@ -121,7 +121,7 @@ public abstract class MatchKeysNode extends PNodeWithContext {
         return values != null ? PFactory.createTuple(PythonLanguage.get(inliningTarget), values) : PNone.NONE;
     }
 
-    private static Object[] getValuesLongArray(VirtualFrame frame, Node inliningTarget, Object map, Object[] keys, PyObjectRichCompareBool.EqNode compareNode, PyObjectCallMethodObjArgs callMethod,
+    private static Object[] getValuesLongArray(VirtualFrame frame, Node inliningTarget, Object map, Object[] keys, PyObjectRichCompareBool compareNode, PyObjectCallMethodObjArgs callMethod,
                     PRaiseNode raise) {
         Object[] values = new Object[keys.length];
         Object dummy = new Object();
@@ -139,9 +139,9 @@ public abstract class MatchKeysNode extends PNodeWithContext {
         return values;
     }
 
-    private static void checkSeenLongArray(VirtualFrame frame, Node inliningTarget, PRaiseNode raise, Object[] seen, Object key, PyObjectRichCompareBool.EqNode compareNode) {
+    private static void checkSeenLongArray(VirtualFrame frame, Node inliningTarget, PRaiseNode raise, Object[] seen, Object key, PyObjectRichCompareBool compareNode) {
         for (int i = 0; i < seen.length; i++) {
-            if (seen[i] != null && compareNode.compare(frame, inliningTarget, seen[i], key)) {
+            if (seen[i] != null && compareNode.executeEq(frame, inliningTarget, seen[i], key)) {
                 raise.raise(inliningTarget, ValueError, ErrorMessages.MAPPING_PATTERN_CHECKS_DUPE_KEY_S, key);
             }
         }

@@ -811,8 +811,8 @@ def test_tp_hash():
 
     def assert_has_no_hash(obj):
         assert_raises(TypeError, hash, obj)
-        assert type(obj).__hash__ is None
-        assert TypeWithoutHash.has_hash_not_implemented(obj)
+        assert type(obj).__hash__ is None, f"{type(obj).__hash__=}, {TypeWithoutHash.has_hash_not_implemented(obj)=}"
+        assert TypeWithoutHash.has_hash_not_implemented(obj), f"{type(obj).__hash__=}, {TypeWithoutHash.has_hash_not_implemented(obj)=}"
 
     assert_has_no_hash(TypeWithoutHash())
 
@@ -838,13 +838,27 @@ def test_tp_hash():
 
     assert_has_no_hash(DisablesHash2())
 
-    # TODO GR-55196
-    # TypeWithoutHashExplicit = CPyExtType(
-    #     "TypeWithoutHashExplicit",
-    #     tp_hash='PyObject_HashNotImplemented',
-    # )
-    #
-    # assert_has_no_hash(TypeWithoutHashExplicit())
+    TypeWithoutHashExplicit = CPyExtType(
+        "TypeWithoutHashExplicit",
+        tp_hash='PyObject_HashNotImplemented',
+        code = '''
+            static hashfunc myglobal = PyObject_HashNotImplemented;
+            typedef struct { hashfunc x; } _mystruct_t;
+            static _mystruct_t mystruct = { PyObject_HashNotImplemented };
+        ''',
+        ready_code = '''
+            // printf("TypeWithoutHashExplicitType.tp_hash=%p, PyObject_HashNotImplemented=%p, myglobal=%p, mystruct.x=%p\\n", TypeWithoutHashExplicitType.tp_hash, &PyObject_HashNotImplemented, myglobal, mystruct.x);
+            // printf("TypeWithoutHashExplicitType.tp_as_mapping=%p, TypeWithoutHashExplicit_mapping_methods=%p\\n", TypeWithoutHashExplicitType.tp_as_mapping, &TypeWithoutHashExplicit_mapping_methods);
+            // printf("offsetof(PyTypeObject, tp_hash)=%p, tp_as_mapping=%p\\n", offsetof(PyTypeObject, tp_hash), offsetof(PyTypeObject, tp_as_mapping));
+            // For some reason MSVC initializes tp_hash to some different pointer that also seems to point to PyObject_HashNotImplemented (some dynamic linking issue?)
+            // This happens on both CPython 3.11 and GraalPy. The printouts above can help debug the issue in the future.
+            #if defined(_MSC_VER)
+              TypeWithoutHashExplicitType.tp_hash=PyObject_HashNotImplemented;
+            #endif
+        '''
+    )
+
+    assert_has_no_hash(TypeWithoutHashExplicit())
 
 
 def test_attr_update():
@@ -1553,3 +1567,12 @@ def test_tp_iternext_not_implemented():
         next(i)
     except TypeError as e:
         assert str(e).endswith("is not an iterator")
+
+
+def test_richcmp():
+    MyNativeIntSubType = CPyExtType("MyNativeIntSubTypeForRichCmpTest",
+                             ready_code = "MyNativeIntSubTypeForRichCmpTestType.tp_new = PyLong_Type.tp_new;",
+                             tp_base='&PyLong_Type',
+                             struct_base='PyLongObject base;')
+    assert MyNativeIntSubType(42) == 42
+    assert MyNativeIntSubType(42) == MyNativeIntSubType(42)

@@ -146,6 +146,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -680,7 +681,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethodFlush,
                         @Cached PyObjectCallMethodObjArgs callMethodSeek,
                         @Cached PyObjectCallMethodObjArgs callMethodRead,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached PyObjectRichCompareBool eqNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode) {
@@ -694,7 +695,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             switch (whence) {
                 case SEEK_CUR:
                     /* seek relative to current position */
-                    if (!eqNode.compare(frame, inliningTarget, cookieObj, 0)) {
+                    if (!eqNode.execute(frame, inliningTarget, cookieObj, 0, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
                         throw raiseNode.raise(inliningTarget, IOUnsupportedOperation, CAN_T_DO_NONZERO_CUR_RELATIVE_SEEKS);
                     }
 
@@ -707,7 +708,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
                 case SEEK_END:
                     /* seek relative to end of file */
-                    if (!eqNode.compare(frame, inliningTarget, cookieObj, 0)) {
+                    if (!eqNode.executeEq(frame, inliningTarget, cookieObj, 0)) {
                         throw raiseNode.raise(inliningTarget, IOUnsupportedOperation, CAN_T_DO_NONZERO_END_RELATIVE_SEEKS);
                     }
 
@@ -722,7 +723,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                     Object res = callMethodSeek.execute(frame, inliningTarget, self.getBuffer(), T_SEEK, 0, 2);
                     if (self.hasEncoder()) {
                         /* If seek() == 0, we are at the start of stream, otherwise not */
-                        encoderResetNode.execute(frame, inliningTarget, self, eqNode.compare(frame, inliningTarget, res, 0));
+                        encoderResetNode.execute(frame, inliningTarget, self, eqNode.executeEq(frame, inliningTarget, res, 0));
                     }
                     return res;
 
