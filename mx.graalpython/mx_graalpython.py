@@ -60,6 +60,7 @@ import mx_gate
 import mx_native
 import mx_unittest
 import mx_sdk
+import mx_sdk_vm_ng
 import mx_subst
 import mx_graalpython_bisect
 import mx_graalpython_import
@@ -73,6 +74,9 @@ from mx_graalpython_gradleproject import GradlePluginProject #pylint: disable=un
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO
 
+
+# re-export custom mx project classes, so they can be used from suite.py
+from mx_sdk_vm_ng import StandaloneLicenses, ThinLauncherProject, LanguageLibraryProject, DynamicPOMDistribution, DeliverableStandaloneArchive  # pylint: disable=unused-import
 
 if not sys.modules.get("__main__"):
     # workaround for pdb++
@@ -232,6 +236,22 @@ def check_vm(vm_warning=True, must_be_jvmci=False):
 
 def get_jdk():
     return mx.get_jdk()
+
+
+def has_suite(name):
+    return mx.suite(name, fatalIfMissing=False)
+
+
+def is_ee():
+    return has_suite('graal-enterprise')
+
+
+# Called from suite.py
+def graalpy_standalone_deps():
+    deps = mx_sdk_vm_ng.resolve_truffle_dist_names()
+    if is_ee():
+        deps += ['sulong-managed:SULONG_ENTERPRISE_NATIVE']
+    return deps
 
 
 def full_python(args, env=None):

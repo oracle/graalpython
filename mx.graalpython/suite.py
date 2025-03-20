@@ -5,7 +5,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "7.33.0",
+    "mxversion": "7.45.0",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -793,6 +793,61 @@ suite = {
             "ignorePatterns": [],
             "license": ["PSF-License"],
         },
+
+        "graalpy_licenses": {
+            "class": "StandaloneLicenses",
+            "community_license_file": "LICENSE.txt",
+            "community_3rd_party_license_file": "THIRD_PARTY_LICENSE.txt",
+        },
+
+        "graalpy_thin_launcher": {
+            "class": "ThinLauncherProject",
+            "mainClass": "com.oracle.graal.python.shell.GraalPythonMain",
+            "jar_distributions": ["graalpython:GRAALPYTHON-LAUNCHER"],
+            "relative_home_paths": {
+                "python": "..",
+            },
+            "relative_jre_path": "../jvm",
+            "relative_module_path": "../modules",
+            "relative_extracted_lib_paths": {
+                "truffle.attach.library": "../jvmlibs/<lib:truffleattach>",
+                "truffle.nfi.library": "../jvmlibs/<lib:trufflenfi>",
+            },
+            "liblang_relpath": "../lib/<lib:pythonvm>",
+            "default_vm_args": [
+                "--vm.Xss16777216", # request 16M of stack
+            ],
+        },
+
+        "libpythonvm": {
+            "class": "LanguageLibraryProject",
+            "dependencies": [
+                "GRAALPY_STANDALONE_DEPENDENCIES",
+                # LLVM_NATIVE_COMMUNITY is intentionally not used as that would include SULONG_NATIVE_RESOURCES,
+                # which would copy the resources in the image, regardless of IncludeLanguageResources,
+                # see com.oracle.truffle.llvm.nativemode.resources.NativeResourceFeature.
+            ],
+            "buildDependencies": [
+                "GRAALPY_STANDALONE_COMMON",
+            ],
+            "build_args": [
+                # From mx.graalpython/native-image.properties
+                "-Dpolyglot.image-build-time.PreinitializeContexts=python",
+                # "-Dorg.graalvm.language.python.home=<path:GRAALPY_STANDALONE_COMMON>", # TODO needed?
+                "--add-exports", "org.graalvm.nativeimage/org.graalvm.nativeimage.impl=ALL-UNNAMED",
+                "-R:StackSize=16777216",
+                "-H:+AddAllCharsets",
+                "-H:IncludeLocales=no,be,ro,ru,es,se,in,ka,hu,hr,bg,is,mk,da,nn,cs,sq,fr,pl,fo,bs,kl,fa,sv,it,uk,af,tg,ps,de",
+                # Configure launcher
+                "-Dorg.graalvm.launcher.class=com.oracle.graal.python.shell.GraalPythonMain",
+                # From mx.graalpython/mx_graalpython.py
+                "-J-Xms14g", # GR-46399: libpythonvm needs more than the default minimum of 8 GB to be built
+                "-H:-CopyLanguageResources",
+                "-Dpolyglot.python.PosixModuleBackend=native",
+                "-Dpolyglot.python.Sha3ModuleBackend=native",
+                "--verbose", # TODO remove
+            ],
+        },
     },
 
     "licenses": {
@@ -1022,7 +1077,8 @@ suite = {
                 "sdk:NATIVEIMAGE",
                 "sdk:COLLECTIONS",
                 "truffle:TRUFFLE_NFI",
-                "truffle:TRUFFLE_NFI_LIBFFI",
+                "truffle:TRUFFLE_NFI_LIBFFI", # runtime dependency for convenience
+                "truffle:TRUFFLE_NFI_PANAMA", # runtime dependency for convenience
                 "truffle:TRUFFLE_ICU4J",
                 "truffle:TRUFFLE_XZ",
             ],
@@ -1365,6 +1421,116 @@ suite = {
                 "THIRD_PARTY_LICENSE_GRAALPY.txt": "file:THIRD_PARTY_LICENSE.txt",
             },
             "maven": False,
+        },
+
+        "GRAALPY_STANDALONE_DEPENDENCIES": {
+            "description": "GraalPy standalone dependencies",
+            "class": "DynamicPOMDistribution",
+            "distDependencies": [
+                "graalpython:GRAALPYTHON-LAUNCHER",
+                "graalpython:GRAALPYTHON",
+                "graalpython:BOUNCYCASTLE-PROVIDER",
+                "graalpython:BOUNCYCASTLE-PKIX",
+                "graalpython:BOUNCYCASTLE-UTIL",
+                "sulong:SULONG_NATIVE",
+                "sulong:SULONG_NFI",
+                "sdk:TOOLS_FOR_STANDALONE",
+            ],
+            "dynamicDistDependencies": "graalpy_standalone_deps",
+            "maven": False,
+        },
+
+        "GRAALPY_STANDALONE_COMMON": {
+            "description": "Common layout for Native and JVM standalones",
+            "type": "dir",
+            "platformDependent": True,
+            "platforms": "local",
+            "layout": {
+                "./": [
+                    "extracted-dependency:GRAALPYTHON_GRAALVM_SUPPORT",
+                    "extracted-dependency:GRAALPYTHON_GRAALVM_DOCS",
+                    "extracted-dependency:GRAALPY_VIRTUALENV_SEEDER",
+                    "dependency:graalpy_licenses/*",
+                ],
+                "bin/<exe:graalpy>": "dependency:graalpy_thin_launcher",
+                "bin/<exe:graalpy-lt>": "dependency:graalpy_thin_launcher",
+                "bin/<exe:python>": "dependency:graalpy_thin_launcher",
+                "bin/<exe:python3>": "dependency:graalpy_thin_launcher",
+                "libexec/<exe:graalpy-polyglot-get>": "dependency:graalpy_thin_launcher",
+                "lib/sulong/": [
+                    "extracted-dependency:sulong:SULONG_CORE_HOME",
+                    "extracted-dependency:sulong:SULONG_GRAALVM_DOCS",
+                    "extracted-dependency:sulong:SULONG_BITCODE_HOME",
+                    "extracted-dependency:sulong:SULONG_NATIVE_HOME",
+                    # TODO: lib/sulong/native/bin/* are missing, those are old launchers
+                ],
+                "lib/llvm-toolchain/": "extracted-dependency:sdk:LLVM_TOOLCHAIN",
+                "release": "dependency:sdk:STANDALONE_JAVA_HOME/release",
+            },
+        },
+
+        "GRAALPY_NATIVE_STANDALONE": {
+            "description": "GraalPy Native standalone",
+            "type": "dir",
+            "platformDependent": True,
+            "platforms": "local",
+            "layout": {
+                "./": [
+                    "dependency:GRAALPY_STANDALONE_COMMON/*",
+                ],
+                "lib/": "dependency:libpythonvm",
+            },
+        },
+
+        "GRAALPY_JVM_STANDALONE": {
+            "description": "GraalPy JVM standalone",
+            "type": "dir",
+            "platformDependent": True,
+            "platforms": "local",
+            "layout": {
+                "./": [
+                    "dependency:GRAALPY_STANDALONE_COMMON/*",
+                ],
+                "jvm/": {
+                    "source_type": "dependency",
+                    "dependency": "sdk:STANDALONE_JAVA_HOME",
+                    "path": "*",
+                    "exclude": [
+                        # Native Image-related
+                        "bin/native-image*",
+                        "lib/static",
+                        "lib/svm",
+                        "lib/<lib:native-image-agent>",
+                        "lib/<lib:native-image-diagnostics-agent>",
+                        # Unnecessary and big
+                        "lib/src.zip",
+                        "jmods",
+                    ],
+                },
+                "jvmlibs/": [
+                    "extracted-dependency:truffle:TRUFFLE_ATTACH_GRAALVM_SUPPORT",
+                    "extracted-dependency:truffle:TRUFFLE_NFI_NATIVE_GRAALVM_SUPPORT",
+                ],
+                "modules/": [
+                    "classpath-dependencies:GRAALPY_STANDALONE_DEPENDENCIES",
+                ],
+            },
+        },
+
+        "GRAALPY_NATIVE_STANDALONE_RELEASE_ARCHIVE": {
+            "class": "DeliverableStandaloneArchive",
+            "platformDependent": True,
+            "standalone_dist": "GRAALPY_NATIVE_STANDALONE",
+            "community_archive_name": "graalpy-community",
+            "enterprise_archive_name": "graalpy",
+        },
+
+        "GRAALPY_JVM_STANDALONE_RELEASE_ARCHIVE": {
+            "class": "DeliverableStandaloneArchive",
+            "platformDependent": True,
+            "standalone_dist": "GRAALPY_JVM_STANDALONE",
+            "community_archive_name": "graalpy-community-jvm",
+            "enterprise_archive_name": "graalpy-jvm",
         },
 
         "graalpy-archetype-polyglot-app": {
