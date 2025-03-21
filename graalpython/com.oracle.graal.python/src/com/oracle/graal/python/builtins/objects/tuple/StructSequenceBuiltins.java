@@ -75,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetItem;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
@@ -141,18 +142,20 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
     @GenerateInline
     @GenerateCached(false)
     abstract static class GetSizeNode extends Node {
-        public abstract int execute(Node inliningTarget, Object type, TruffleString key);
+        public abstract int execute(VirtualFrame frame, Node inliningTarget, Object type, TruffleString key);
 
         @Specialization
-        static int doPBCT(Node inliningTarget, PythonBuiltinClassType type, TruffleString key,
-                        @Shared @Cached("createForceType()") ReadAttributeFromObjectNode read) {
-            return doGeneric(PythonContext.get(inliningTarget).lookupType(type), key, read);
+        static int doPBCT(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType type, TruffleString key,
+                        @Shared @Cached("createForceType()") ReadAttributeFromObjectNode read,
+                        @Shared @Cached PyNumberAsSizeNode asSizeNode) {
+            return doGeneric(frame, inliningTarget, PythonContext.get(inliningTarget).lookupType(type), key, read, asSizeNode);
         }
 
         @Fallback
-        static int doGeneric(Object type, TruffleString key,
-                        @Shared @Cached("createForceType()") ReadAttributeFromObjectNode read) {
-            return (int) read.execute(type, key);
+        static int doGeneric(VirtualFrame frame, Node inliningTarget, Object type, TruffleString key,
+                        @Shared @Cached("createForceType()") ReadAttributeFromObjectNode read,
+                        @Shared @Cached PyNumberAsSizeNode asSizeNode) {
+            return asSizeNode.executeExact(frame, inliningTarget, read.execute(type, key));
         }
     }
 
@@ -231,9 +234,9 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
             }
 
             int len = seq.length();
-            int minLen = getSizeNode.execute(inliningTarget, cls, StructSequence.T_N_SEQUENCE_FIELDS);
-            int maxLen = getSizeNode.execute(inliningTarget, cls, StructSequence.T_N_FIELDS);
-            int unnamedFields = getSizeNode.execute(inliningTarget, cls, StructSequence.T_N_UNNAMED_FIELDS);
+            int minLen = getSizeNode.execute(frame, inliningTarget, cls, StructSequence.T_N_SEQUENCE_FIELDS);
+            int maxLen = getSizeNode.execute(frame, inliningTarget, cls, StructSequence.T_N_FIELDS);
+            int unnamedFields = getSizeNode.execute(frame, inliningTarget, cls, StructSequence.T_N_UNNAMED_FIELDS);
 
             if (len < minLen || len > maxLen) {
                 wrongLenProfile.enter(inliningTarget);
@@ -306,7 +309,7 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
     abstract static class ReduceNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static PTuple reduce(PTuple self,
+        static PTuple reduce(VirtualFrame frame, PTuple self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClass,
                         @Cached GetSizeNode getSizeNode,
@@ -318,9 +321,9 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language) {
             SequenceStorage storage = self.getSequenceStorage();
             Object type = getClass.execute(inliningTarget, self);
-            int nFields = getSizeNode.execute(inliningTarget, type, StructSequence.T_N_FIELDS);
+            int nFields = getSizeNode.execute(frame, inliningTarget, type, StructSequence.T_N_FIELDS);
             int nVisibleFields = storage.length();
-            int nUnnamedFields = getSizeNode.execute(inliningTarget, type, StructSequence.T_N_UNNAMED_FIELDS);
+            int nUnnamedFields = getSizeNode.execute(frame, inliningTarget, type, StructSequence.T_N_UNNAMED_FIELDS);
             PTuple tuple = PFactory.createTuple(language, getSeqSlice.execute(storage, 0, nVisibleFields, 1, nVisibleFields));
             PDict dict = PFactory.createDict(language);
             if (nFields > nVisibleFields) {
