@@ -229,15 +229,6 @@ public final class ObjectBuiltins extends PythonBuiltins {
     public abstract static class InitNode extends PythonVarargsBuiltinNode {
         @Child private SplitArgsNode splitArgsNode;
 
-        @Override
-        public final Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            if (splitArgsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                splitArgsNode = insert(SplitArgsNode.create());
-            }
-            return execute(frame, arguments[0], splitArgsNode.executeCached(arguments), keywords);
-        }
-
         @Specialization(guards = {"arguments.length == 0", "keywords.length == 0"})
         @SuppressWarnings("unused")
         static PNone initNoArgs(Object self, Object[] arguments, PKeyword[] keywords) {
@@ -672,10 +663,6 @@ public final class ObjectBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
     }
 
     @Builtin(name = J___SIZEOF__, minNumOfPositionalArgs = 1)

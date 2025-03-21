@@ -149,15 +149,6 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Override
-        public final Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            if (splitArgsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                splitArgsNode = insert(SplitArgsNode.create());
-            }
-            return execute(frame, arguments[0], splitArgsNode.executeCached(arguments), keywords);
-        }
-
         // multiple non-inlined specializations share nodes
         @SuppressWarnings("truffle-interpreted-performance")
         @ImportStatic(PGuards.class)

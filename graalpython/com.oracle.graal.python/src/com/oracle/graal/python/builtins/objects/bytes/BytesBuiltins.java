@@ -102,12 +102,6 @@ public class BytesBuiltins extends PythonBuiltins {
     public abstract static class InitNode extends PythonVarargsBuiltinNode {
 
         @SuppressWarnings("unused")
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
         @Specialization
         static Object byteDone(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
             return PNone.NONE;

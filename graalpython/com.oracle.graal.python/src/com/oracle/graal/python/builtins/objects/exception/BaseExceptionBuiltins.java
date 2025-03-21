@@ -97,7 +97,6 @@ import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -133,20 +132,6 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         public final Object execute(Object self, Object[] args) {
             return execute(null, self, args, PKeyword.EMPTY_KEYWORDS);
-        }
-
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            if (arguments.length == 0) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw VarargsBuiltinDirectInvocationNotSupported.INSTANCE;
-            }
-            if (splitArgsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                splitArgsNode = insert(SplitArgsNode.create());
-            }
-            Object[] argsWithoutSelf = splitArgsNode.executeCached(arguments);
-            return execute(frame, arguments[0], argsWithoutSelf, keywords);
         }
 
         @Specialization(guards = {"args.length == 0", "keywords.length == 0"})

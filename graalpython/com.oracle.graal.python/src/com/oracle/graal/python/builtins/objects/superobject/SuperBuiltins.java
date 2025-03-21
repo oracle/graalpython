@@ -206,24 +206,6 @@ public final class SuperBuiltins extends PythonBuiltins {
         private final BranchProfile errorProfile = BranchProfile.create();
 
         @Override
-        public Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            if (keywords.length != 0) {
-                errorProfile.enter();
-                throw PRaiseNode.raiseStatic(this, RuntimeError, ErrorMessages.UNEXPECTED_KEYWORD_ARGS, "super()");
-            }
-            if (arguments.length == 1) {
-                return execute(frame, arguments[0], PNone.NO_VALUE, PNone.NO_VALUE);
-            } else if (arguments.length == 2) {
-                return execute(frame, arguments[0], arguments[1], PNone.NO_VALUE);
-            } else if (arguments.length == 3) {
-                return execute(frame, arguments[0], arguments[1], arguments[2]);
-            } else {
-                errorProfile.enter();
-                throw PRaiseNode.raiseStatic(this, RuntimeError, ErrorMessages.INVALID_NUMBER_OF_ARGUMENTS, "super()");
-            }
-        }
-
-        @Override
         public final Object execute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
             if (keywords.length != 0) {
                 errorProfile.enter();

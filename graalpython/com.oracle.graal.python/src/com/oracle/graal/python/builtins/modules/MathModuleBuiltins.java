@@ -989,11 +989,6 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GcdNode extends PythonVarargsBuiltinNode {
 
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            return execute(frame, self, arguments, keywords);
-        }
-
         @Specialization(guards = {"args.length > 1", "keywords.length == 0"})
         public static Object gcd(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Cached Gcd2Node gdcNode,
@@ -1133,10 +1128,6 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "lcm", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     public abstract static class LcmNode extends PythonVarargsBuiltinNode {
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            return execute(frame, self, arguments, keywords);
-        }
 
         @Specialization(guards = {"args.length > 1", "keywords.length == 0"})
         static Object gcd(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
@@ -2011,11 +2002,6 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
     public abstract static class HypotNode extends PythonVarargsBuiltinNode {
-
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            return execute(frame, self, arguments, keywords);
-        }
 
         @Specialization(guards = "arguments.length == 2")
         public double hypot2(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords,

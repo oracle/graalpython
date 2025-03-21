@@ -340,15 +340,6 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Child private SplitArgsNode splitArgsNode;
         private final BranchProfile errorProfile = BranchProfile.create();
 
-        @Override
-        public final Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            if (splitArgsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                splitArgsNode = insert(SplitArgsNode.create());
-            }
-            return execute(frame, arguments[0], splitArgsNode.executeCached(arguments), keywords);
-        }
-
         @Specialization
         Object init(@SuppressWarnings("unused") Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] kwds) {
             if (arguments.length != 1 && arguments.length != 3) {
@@ -367,11 +358,6 @@ public final class TypeBuiltins extends PythonBuiltins {
         @NeverDefault
         public static CallNode create() {
             return CallNodeFactory.create();
-        }
-
-        @Override
-        public final Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
-            return execute(frame, self, arguments, keywords);
         }
 
         private CallNodeHelper getCallNodeHelper() {

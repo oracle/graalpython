@@ -205,6 +205,9 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         } else if (PythonVarargsBuiltinNode.class.isAssignableFrom(nodeClass)) {
             assert builtin.takesVarArgs() : "PythonVararagsBuiltin subclass must take varargs, builtin " + nodeClass.getName();
             assert builtin.takesVarKeywordArgs() : "PythonVararagsBuiltin subclass must take varkwargs, builtin " + nodeClass.getName();
+            assert builtin.minNumOfPositionalArgs() != 0 || builtin.maxNumOfPositionalArgs() != -1 || builtin.numOfPositionalOnlyArgs() != 0 || builtin.parameterNames().length > 0 ||
+                            builtin.keywordOnlyNames().length > 0 : "PythonVararagsBuiltin subclass must not define any parameters on the @Builtin annotation, it must do all parameter parsing and validation themselves, builtin" +
+                                            nodeClass.getName();
         }
         return true;
     }
