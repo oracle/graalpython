@@ -606,7 +606,10 @@ class TestUpdateWrapper(unittest.TestCase):
                       updated=functools.WRAPPER_UPDATES):
         # Check attributes were assigned
         for name in assigned:
-            self.assertIs(getattr(wrapper, name), getattr(wrapped, name))
+            # Begin Truffle change
+            # in cpython, () is a singleton
+            self.assertEqual(getattr(wrapper, name), getattr(wrapped, name))
+            # End Truffle change
         # Check attributes were updated
         for name in updated:
             wrapper_attr = getattr(wrapper, name)
