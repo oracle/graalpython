@@ -85,7 +85,7 @@ opentelemetry-sdk==1.30.0
 opentelemetry-semantic-conventions==0.51b0
 optuna==4.2.1
 oracledb==2.5.1
-orjson==3.10.15
+orjson==3.10.5
 packaging==24.2
 pandas==2.2.3
 paramiko==3.5.1
