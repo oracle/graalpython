@@ -1,0 +1,11 @@
+--- a/scikit_build_core/_vendor/pyproject_metadata/__init__.py
++++ b/scikit_build_core/_vendor/pyproject_metadata/__init__.py
+@@ -308,7 +308,7 @@
+         project = pyproject_table["project"]
+         project_dir = pathlib.Path(project_dir)
+
+-        if not allow_extra_keys:
++        if False:
+             extra_keys = extras_project(data)
+             if extra_keys:
+                 extra_keys_str = ", ".join(sorted(f"{k!r}" for k in extra_keys))

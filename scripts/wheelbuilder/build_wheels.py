@@ -121,66 +121,88 @@ def build_wheels(pip):
         available_scripts = {s.lower(): s for s in os.listdir(scriptdir)}
     else:
         available_scripts = {}
-    for spec in packages_to_build:
-        name, version = spec.split("==")
-        whl_count = len(glob("*.whl"))
-        script = f"{name}.{version}.{script_ext}".lower()
-        if script not in available_scripts:
-            script = f"{name}.{script_ext}".lower()
-        if script in available_scripts:
-            script = join(scriptdir, available_scripts[script])
-            env = os.environ.copy()
-            env["PATH"] = abspath(dirname(pip)) + os.pathsep + env["PATH"]
-            env["VIRTUAL_ENV"] = abspath(dirname(dirname(pip)))
-            print("Building", name, version, "with", script, flush=True)
-            if sys.platform == "win32":
-                cmd = [script, version]  # Python's subprocess.py does the quoting we need
-            else:
-                cmd = f"{shlex.quote(script)} {version}"
-            subprocess.check_call(cmd, shell=True, env=env)
-            if not len(glob("*.whl")) > whl_count:
-                print("Building wheel for", name, version, "after", script, "did not", flush=True)
-                subprocess.check_call([pip, "wheel", spec])
-        else:
+    remaining_packages = 0
+    while remaining_packages != len(packages_to_build):
+        remaining_packages = len(packages_to_build)
+        for spec in packages_to_build.copy():
+            name, version = spec.split("==")
+            whl_count = len(glob("*.whl"))
+            script = f"{name}.{version}.{script_ext}".lower()
+            if script not in available_scripts:
+                script = f"{name}.{script_ext}".lower()
+            if script in available_scripts:
+                script = join(scriptdir, available_scripts[script])
+                env = os.environ.copy()
+                env["PATH"] = abspath(dirname(pip)) + os.pathsep + env["PATH"]
+                env["VIRTUAL_ENV"] = abspath(dirname(dirname(pip)))
+                print("Building", name, version, "with", script, flush=True)
+                if sys.platform == "win32":
+                    cmd = [script, version]  # Python's subprocess.py does the quoting we need
+                else:
+                    cmd = f"{os.environ.get('SHELL', '/bin/sh')} {shlex.quote(script)} {version}"
+                p = subprocess.run(cmd, shell=True, env=env)
+                if p.returncode != 0:
+                    continue
+                if len(glob("*.whl")) > whl_count:
+                    packages_to_build.remove(spec)
+                    continue
+                print(script, "did not build a wheel, we will do so now", flush=True)
             print("Building", name, version, flush=True)
-            subprocess.check_call([pip, "wheel", spec])
+            p = subprocess.run([pip, "wheel", spec])
+            if p.returncode == 0:
+                packages_to_build.remove(spec)
+    if packages_to_build:
+        print("Failed to build all packages, the following packages failed")
+        print(packages_to_build)
+        return False
+    else:
+        return True
 
 
 def repair_wheels():
-    if sys.platform == "win32":
-        ensure_installed("delvewheel")
-        env = os.environ.copy()
-        env["PYTHONUTF8"] = "1"
-        subprocess.check_call(
-            [
-                sys.executable,
-                "-m",
-                "delvewheel",
-                "repair",
-                "-v",
-                "--exclude",
-                "python-native.dll",
-                "-w",
-                "wheelhouse",
-                *glob("*.whl"),
-            ],
-            env=env,
-        )
-    elif sys.platform == "linux":
-        ensure_installed("auditwheel")
-        subprocess.check_call(
-            [join(dirname(sys.executable), "auditwheel"), "repair", "-w", "wheelhouse", *glob("*.whl")]
-        )
-    elif sys.platform == "darwin":
-        ensure_installed("delocate")
-        subprocess.check_call(
-            [join(dirname(sys.executable), "delocate-wheel"), "-v", "-w", "wheelhouse", *glob("*.whl")]
-        )
+    whls = glob("*graalpy*.whl")
+    for whl in whls:
+        if sys.platform == "win32":
+            ensure_installed("delvewheel")
+            env = os.environ.copy()
+            env["PYTHONUTF8"] = "1"
+            p = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "delvewheel",
+                    "repair",
+                    "-v",
+                    "--exclude",
+                    "python-native.dll",
+                    "-w",
+                    "wheelhouse",
+                    whl,
+                ],
+                env=env,
+            )
+        elif sys.platform == "linux":
+            ensure_installed("auditwheel")
+            p = subprocess.run(
+                [join(dirname(sys.executable), "auditwheel"), "repair", "-w", "wheelhouse", whl]
+            )
+        elif sys.platform == "darwin":
+            ensure_installed("delocate")
+            p = subprocess.run(
+                [join(dirname(sys.executable), "delocate-wheel"), "-v", "-w", "wheelhouse", whl]
+            )
+        if p.returncode != 0:
+            print("Repairing", whl, "failed, copying as is.")
+            try:
+                shutil.copy(whl, "wheelhouse")
+            except:
+                pass
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("graalpy_url")
+    parser.add_argument("--ignore-failures", action="store_true", default=False)
     args = parser.parse_args()
     ext = splitext(args.graalpy_url)[1]
     outpath = f"graalpy{ext}"
@@ -188,5 +210,7 @@ if __name__ == "__main__":
     download(args.graalpy_url, outpath)
     extract(outpath)
     pip = create_venv()
-    build_wheels(pip)
+    success = build_wheels(pip)
     repair_wheels()
+    if not success and not args.ignore_failures:
+        sys.exit(1)

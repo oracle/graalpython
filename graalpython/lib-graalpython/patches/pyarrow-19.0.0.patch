@@ -162,3 +162,27 @@ index ef2043f..cb08a86 100644
  
  [project]
  name = "pyarrow"
+diff --git a/MANIFEST.in b/MANIFEST.in
+index ef2043f..cb08a86 100644
+--- a/MANIFEST.in
++++ b/MANIFEST.in
+@@ -1,6 +1,4 @@
+ include README.md
+-include ../LICENSE.txt
+-include ../NOTICE.txt
+ 
+ global-include CMakeLists.txt
+ graft pyarrow
+diff --git a/setup.cfg b/setup.cfg
+index ef2043f..cb08a86 100644
+--- a/setup.cfg
++++ b/setup.cfg
+@@ -1,7 +1,6 @@
+ [metadata]
+ license_files = 
+-	../LICENSE.txt
+-	../NOTICE.txt
++	README.md
+ 
+ [build_sphinx]
+ source-dir = doc/
