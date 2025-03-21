@@ -161,35 +161,42 @@ def build_wheels(pip):
 
 def repair_wheels():
     whls = glob("*graalpy*.whl")
-    if sys.platform == "win32":
-        ensure_installed("delvewheel")
-        env = os.environ.copy()
-        env["PYTHONUTF8"] = "1"
-        subprocess.check_call(
-            [
-                sys.executable,
-                "-m",
-                "delvewheel",
-                "repair",
-                "-v",
-                "--exclude",
-                "python-native.dll",
-                "-w",
-                "wheelhouse",
-                *whls,
-            ],
-            env=env,
-        )
-    elif sys.platform == "linux":
-        ensure_installed("auditwheel")
-        subprocess.check_call(
-            [join(dirname(sys.executable), "auditwheel"), "repair", "-w", "wheelhouse", *whls]
-        )
-    elif sys.platform == "darwin":
-        ensure_installed("delocate")
-        subprocess.check_call(
-            [join(dirname(sys.executable), "delocate-wheel"), "-v", "-w", "wheelhouse", *whls]
-        )
+    for whl in whls:
+        if sys.platform == "win32":
+            ensure_installed("delvewheel")
+            env = os.environ.copy()
+            env["PYTHONUTF8"] = "1"
+            p = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "delvewheel",
+                    "repair",
+                    "-v",
+                    "--exclude",
+                    "python-native.dll",
+                    "-w",
+                    "wheelhouse",
+                    whl,
+                ],
+                env=env,
+            )
+        elif sys.platform == "linux":
+            ensure_installed("auditwheel")
+            p = subprocess.run(
+                [join(dirname(sys.executable), "auditwheel"), "repair", "-w", "wheelhouse", whl]
+            )
+        elif sys.platform == "darwin":
+            ensure_installed("delocate")
+            p = subprocess.run(
+                [join(dirname(sys.executable), "delocate-wheel"), "-v", "-w", "wheelhouse", whl]
+            )
+        if p.returncode != 0:
+            print("Repairing", whl, "failed, copying as is.")
+            try:
+                shutil.copy(whl, "wheelhouse")
+            except:
+                pass
 
 
 if __name__ == "__main__":
