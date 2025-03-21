@@ -177,6 +177,7 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_CONVERT_S_TO_INT_RATIO = tsLiteral("cannot convert %s to integer ratio");
     public static final TruffleString CANNOT_CREATE_CALL_TARGET = tsLiteral("cannot create a call target from the code object: %p");
     public static final TruffleString CANNOT_CREATE_INSTANCES = tsLiteral("cannot create '%s' instances");
+    public static final TruffleString CANNOT_CREATE_N_INSTANCES = tsLiteral("cannot create '%N' instances");
     public static final TruffleString CANNOT_CREATE_WEAK_REFERENCE_TO = tsLiteral("cannot create weak reference to '%p' object");
     public static final TruffleString CANNOT_DELETE_ATTRIBUTE = tsLiteral("can't delete %s.%s");
     public static final TruffleString CANNOT_DELETE_MEMORY = tsLiteral("cannot delete memory");
