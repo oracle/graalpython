@@ -195,6 +195,7 @@ def repair_wheels():
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("graalpy_url")
+    parser.add_argument("--ignore-failures", action="store_true", default=False)
     args = parser.parse_args()
     ext = splitext(args.graalpy_url)[1]
     outpath = f"graalpy{ext}"
@@ -204,5 +205,5 @@ if __name__ == "__main__":
     pip = create_venv()
     success = build_wheels(pip)
     repair_wheels()
-    if not success:
+    if not success and not args.ignore_failures:
         sys.exit(1)
