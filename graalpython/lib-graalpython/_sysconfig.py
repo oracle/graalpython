@@ -96,6 +96,7 @@ def _get_posix_vars():
     g['CFLAGS'] = ' '.join(cflags_default + [gnu_source])
     g['LDFLAGS'] = ""
     g['CCSHARED'] = fpic
+    g['MACOSX_DEPLOYMENT_TARGET'] = "" # for linux it should return empty string and for macOS we should figure out how to get that value
     if darwin_native:
         g['LDFLAGS'] = "-bundle -undefined dynamic_lookup"
         ldshared_common = g['LDFLAGS']
