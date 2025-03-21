@@ -619,6 +619,11 @@ version = '== 0.3.3'
 patch = 'safetensors-0.3.3.patch'
 license = 'Apache-2.0'
 
+[[scikit-build-core.rules]]
+version = '~= 0.11.0'
+patch = 'scikit-build-core.patch'
+license = 'Apache-2.0'
+
 [[scikit-learn.rules]]
 version = '== 1.5.2'
 patch = 'scikit-learn-1.5.2.patch'
