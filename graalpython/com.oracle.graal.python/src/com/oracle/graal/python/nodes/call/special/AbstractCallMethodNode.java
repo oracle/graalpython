@@ -98,6 +98,11 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
         if (builtinNodeFactory == null) {
             return null; // see for example MethodDescriptorRoot and subclasses
         }
+        if (TpSlotBuiltin.isSlotFactory(builtinNodeFactory)) {
+            // slot wrapper must perform validation implemented in WrapperDescrCall inside the
+            // PBuiltinRootNode
+            return null;
+        }
         Class<? extends PythonBuiltinBaseNode> nodeClass = builtinNodeFactory.getNodeClass();
         int builtinNodeArity = getBuiltinNodeArity(nodeClass);
         if (builtinNodeArity == -1 || builtinNodeArity < nargs) {

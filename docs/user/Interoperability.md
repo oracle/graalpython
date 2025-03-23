@@ -112,7 +112,7 @@ For example, if you have already configured a Maven project with GraalPy, add th
 <dependency>
     <groupId>org.graalvm.polyglot</groupId>
     <artifactId>js</artifactId>
-    <version>24.1.0</version>
+    <version>24.2.0</version>
 </dependency>
 ```
 

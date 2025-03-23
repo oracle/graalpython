@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "47ed7d96ed1e3e96c3d474880f8213a98ac23bfa",
+                "version": "0465567966e7f571243e34b5d0f263ed2fcfde9f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "47ed7d96ed1e3e96c3d474880f8213a98ac23bfa",
+                "version": "0465567966e7f571243e34b5d0f263ed2fcfde9f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "47ed7d96ed1e3e96c3d474880f8213a98ac23bfa",
+                "version": "0465567966e7f571243e34b5d0f263ed2fcfde9f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "47ed7d96ed1e3e96c3d474880f8213a98ac23bfa",
+                "version": "0465567966e7f571243e34b5d0f263ed2fcfde9f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -970,7 +970,6 @@ suite = {
                 "name": "org.graalvm.python.embedding",
                 "exports": [
                     "org.graalvm.python.embedding",
-                    "org.graalvm.python.embedding.utils",
                 ]
             },
             "useModulePath": True,

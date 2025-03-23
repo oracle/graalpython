@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.builtins.PythonBuiltins.numDefaults;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -50,17 +51,20 @@ import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.NodeFactoryBase;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -309,29 +313,69 @@ public abstract class TpSlot {
          */
         public abstract PBuiltinFunction createBuiltin(Python3Core core, Object type, TruffleString tsName, PExternalFunctionWrapper wrapper);
 
-        // helper method
+        /**
+         * Helper method for creating a {@link PBuiltinFunction} as a wrapper for slots. Intended to
+         * be used from implementation of
+         * {@link #createBuiltin(Python3Core, Object, TruffleString, PExternalFunctionWrapper)}.
+         */
         final PBuiltinFunction createBuiltin(Python3Core core, Object type, TruffleString tsName, BuiltinSlotWrapperSignature signature, PExternalFunctionWrapper wrapper,
                         NodeFactory<? extends PythonBuiltinBaseNode> factory) {
             String name = tsName.toJavaStringUncached();
-            RootCallTarget callTarget = createBuiltinCallTarget(core.getLanguage(), signature, factory, name);
-            Builtin builtin = ((BuiltinFunctionRootNode) callTarget.getRootNode()).getBuiltin();
+
+            SlotSignature slotSignature = factory.getNodeClass().getAnnotation(SlotSignature.class);
+            Builtin builtin = new Slot2Builtin(slotSignature, name, signature);
+            Class<?> nodeClass = NodeFactoryBase.getWrappedNodeClass(factory);
+            validateSlotNode(factory, nodeClass, slotSignature);
+            PythonBuiltinClassType builtinType = type instanceof PythonBuiltinClassType bt ? bt : PythonBuiltinClassType.nil;
+            RootCallTarget callTarget = core.getLanguage().createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, true, builtinType), factory.getNodeClass(), nodeClass,
+                            builtinType, name);
+
             PBuiltinFunction function = PFactory.createWrapperDescriptor(core.getLanguage(), tsName, type, numDefaults(builtin), 0, callTarget, this, wrapper);
             function.setAttribute(T___DOC__, SlotWrapperDocstrings.getDocstring(name));
             return function;
         }
 
         /**
-         * Helper method for creating a {@link RootCallTarget}, it may be used in
+         * Helper method for creating a {@link RootCallTarget} for raw slots. Should be used in
          * {@link #initialize(PythonLanguage)} to create the slot call target if the slot node can
          * be wrapped by {@link BuiltinFunctionRootNode}.
          */
-        static RootCallTarget createBuiltinCallTarget(PythonLanguage language, BuiltinSlotWrapperSignature signature, NodeFactory<? extends PythonBuiltinBaseNode> factory, String name) {
+        static RootCallTarget createSlotCallTarget(PythonLanguage language, BuiltinSlotWrapperSignature signature, NodeFactory<? extends PythonBuiltinBaseNode> factory, String name) {
             SlotSignature slotSignature = factory.getNodeClass().getAnnotation(SlotSignature.class);
             Builtin builtin = new Slot2Builtin(slotSignature, name, signature);
             Class<?> nodeClass = NodeFactoryBase.getWrappedNodeClass(factory);
+            validateSlotNode(factory, nodeClass, slotSignature);
+            return language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, true), factory.getNodeClass(), nodeClass, name);
+        }
+
+        /**
+         * For manual creation of a wrapper descriptor for an inherited builtin slot of a native
+         * class. We give up on type check in the descriptor, because we would have to store the
+         * type in AST or in the context using some indirection.
+         */
+        public static <T extends PythonBuiltinBaseNode> PBuiltinFunction createNativeWrapperDescriptor(Python3Core core, TpSlotBuiltin<T> slot, Object type,
+                        TruffleString tsName, BuiltinSlotWrapperSignature signature, PExternalFunctionWrapper wrapper) {
+            String name = tsName.toJavaStringUncached();
+            NodeFactory<T> factory = slot.getNodeFactory();
+            SlotSignature slotSignature = slot.getSlotSignatureAnnotation();
+            Builtin builtin = new Slot2Builtin(slotSignature, name, signature);
+            Class<?> nodeClass = NodeFactoryBase.getWrappedNodeClass(factory);
+            validateSlotNode(factory, nodeClass, slotSignature);
+            RootCallTarget callTarget = core.getLanguage().createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, true), factory.getNodeClass(), nodeClass, name);
+
+            PBuiltinFunction function = PFactory.createWrapperDescriptor(core.getLanguage(), tsName, type, numDefaults(builtin), 0, callTarget, slot, wrapper);
+            function.setAttribute(T___DOC__, SlotWrapperDocstrings.getDocstring(name));
+            return function;
+        }
+
+        public static PBuiltinFunction createNativeReprWrapperDescriptor(Python3Core core, TpSlots slots, Object type) {
+            return createNativeWrapperDescriptor(core, (TpSlotBuiltin<PythonUnaryBuiltinNode>) slots.tp_repr(), type, T___REPR__, BuiltinSlotWrapperSignature.UNARY,
+                            PExternalFunctionWrapper.UNARYFUNC);
+        }
+
+        private static void validateSlotNode(NodeFactory<? extends PythonBuiltinBaseNode> factory, Class<?> nodeClass, SlotSignature slotSignature) {
             assert nodeClass == factory.getNodeClass() || slotSignature == null : //
                             "@SlotSignature cannot be used for builtin slot nodes that are wrapped into multiple builtin magic methods";
-            return language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, true), factory.getNodeClass(), nodeClass, name);
         }
 
         public static boolean isSlotFactory(NodeFactory<?> factory) {

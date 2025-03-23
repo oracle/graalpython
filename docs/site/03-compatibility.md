@@ -5,6 +5,7 @@ permalink: compatibility/
 ---
 <script src="{{ '/assets/js/check_compatibility_helpers.js' | relative_url }}"></script>
 <script>
+    const default_version = 'v242';
     const show_percentages = true;
     const dbs = {};
     var module_query = '';
@@ -103,7 +104,7 @@ permalink: compatibility/
     }
     const updatePageData = function () {
         const params = new URLSearchParams(window.location.search);
-        const graalpyModuleValue = params.get('version') || 'v241';
+        const graalpyModuleValue = params.get('version') || default_version;
         load_db(graalpyModuleValue).then(function (db_contents) {
             database = new DB("python", db_contents);
             const rowsPerPage = getRowsPerPage();
@@ -226,7 +227,7 @@ permalink: compatibility/
         });
         function setFilters() {
             const params = new URLSearchParams(window.location.search);
-            const graalpyModuleValue = params.get('version') || 'v241';
+            const graalpyModuleValue = params.get('version') || default_version;
             const moduleFilterElement = $(`.compatibility_page-module[data-filter=${graalpyModuleValue}]`);
             moduleFilterElement.addClass("compatibility_page-active").siblings().removeClass("compatibility_page-active");
         }
@@ -241,7 +242,8 @@ permalink: compatibility/
                     <h3 class="truffle__subtitle">GraalPy: Package Compatibility</h3>
                 <div class="compatibility_page-filter">
                     <div class="compatibility__row">
-                        <p class="compatibility_page-item compatibility_page-module compatibility_page-active" data-filter="v241">GraalPy 24.1</p>
+                        <p class="compatibility_page-item compatibility_page-module compatibility_page-active" data-filter="v242">GraalPy 24.2</p>
+                        <p class="compatibility_page-item compatibility_page-module" data-filter="v241">GraalPy 24.1</p>
                     </div>
                 </div>
             </div>

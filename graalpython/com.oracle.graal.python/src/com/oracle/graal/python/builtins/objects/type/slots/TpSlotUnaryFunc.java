@@ -92,7 +92,7 @@ public final class TpSlotUnaryFunc {
 
         @Override
         public final void initialize(PythonLanguage language) {
-            RootCallTarget callTarget = createBuiltinCallTarget(language, BuiltinSlotWrapperSignature.UNARY, getNodeFactory(), builtinName);
+            RootCallTarget callTarget = createSlotCallTarget(language, BuiltinSlotWrapperSignature.UNARY, getNodeFactory(), builtinName);
             language.setBuiltinSlotCallTarget(callTargetIndex, callTarget);
         }
     }
