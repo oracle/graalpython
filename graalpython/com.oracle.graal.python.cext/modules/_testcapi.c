@@ -4071,10 +4071,10 @@ PyInit__testcapi(void)
     if (_PyTestCapi_Init_Vectorcall(m) < 0) {
         return NULL;
     }
+#endif // GraalPy change
     if (_PyTestCapi_Init_Heaptype(m) < 0) {
         return NULL;
     }
-#endif // GraalPy change
     if (_PyTestCapi_Init_Abstract(m) < 0) {
         return NULL;
     }

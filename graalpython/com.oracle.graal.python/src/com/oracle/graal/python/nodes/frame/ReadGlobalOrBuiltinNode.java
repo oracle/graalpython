@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -34,7 +35,9 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -44,6 +47,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -171,6 +175,11 @@ public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
             e.expect(inliningTarget, KeyError, errorProfile);
             return returnGlobalOrBuiltin(PNone.NO_VALUE, attributeId, readFromBuiltinsNode, inliningTarget, wasReadFromModule);
         }
+    }
+
+    @Fallback
+    protected static Object syserr(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object dict, @SuppressWarnings("unused") TruffleString attributeId) {
+        throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
     }
 
     private static Object returnGlobalOrBuiltin(Object result, TruffleString attributeId, ReadBuiltinNode readFromBuiltinsNode, Node inliningTarget, InlinedBranchProfile wasReadFromModule) {

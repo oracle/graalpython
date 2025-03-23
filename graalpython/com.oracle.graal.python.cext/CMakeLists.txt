@@ -245,7 +245,7 @@ set(TESTCAPI_SRC
     "${SRC_DIR}/modules/_testcapi/float.c"
     "${SRC_DIR}/modules/_testcapi/gc.c"
     "${SRC_DIR}/modules/_testcapi/getargs.c"
-    # "${SRC_DIR}/modules/_testcapi/heaptype.c"
+    "${SRC_DIR}/modules/_testcapi/heaptype.c"
     # "${SRC_DIR}/modules/_testcapi/heaptype_relative.c"
     "${SRC_DIR}/modules/_testcapi/immortal.c"
     "${SRC_DIR}/modules/_testcapi/list.c"

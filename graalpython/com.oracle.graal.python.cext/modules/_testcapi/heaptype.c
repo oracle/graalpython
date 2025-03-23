@@ -111,6 +111,7 @@ finally:
 }
 
 
+#if 0 // GraalPy change
 static PyObject *
 test_from_spec_invalid_metatype_inheritance(PyObject *self, PyObject *Py_UNUSED(ignored))
 {
@@ -197,6 +198,7 @@ finally:
     Py_XDECREF(args);
     return result;
 }
+#endif // GraalPy change
 
 
 static PyObject *
@@ -421,9 +423,11 @@ static PyMethodDef TestMethods[] = {
         create_type_from_repeated_slots, METH_O},
     {"test_from_spec_metatype_inheritance", test_from_spec_metatype_inheritance,
      METH_NOARGS},
+#if 0 // GraalPy change
     {"test_from_spec_invalid_metatype_inheritance",
      test_from_spec_invalid_metatype_inheritance,
      METH_NOARGS},
+#endif // GraalPy change
     {"make_immutable_type_with_base", make_immutable_type_with_base, METH_O},
     {"make_type_with_base", make_type_with_base, METH_O},
     {"pyobject_getitemdata", pyobject_getitemdata, METH_O},
@@ -805,6 +809,7 @@ static PyType_Spec HeapCTypeWithDict2_spec = {
     HeapCTypeWithDict_slots
 };
 
+#if 0 // GraalPy change
 static int
 heapmanaged_traverse(HeapCTypeObject *self, visitproc visit, void *arg)
 {
@@ -818,21 +823,28 @@ heapmanaged_clear(HeapCTypeObject *self)
     _PyObject_ClearManagedDict((PyObject *)self);
     return 0;
 }
+#endif // GraalPy change
 
 static void
 heapmanaged_dealloc(HeapCTypeObject *self)
 {
     PyTypeObject *tp = Py_TYPE(self);
+#if 0 // GraalPy change
     _PyObject_ClearManagedDict((PyObject *)self);
+#endif // GraalPy change
     PyObject_GC_UnTrack(self);
     PyObject_GC_Del(self);
     Py_DECREF(tp);
 }
 
 static PyType_Slot HeapCTypeWithManagedDict_slots[] = {
+#if 0 // GraalPy change
     {Py_tp_traverse, heapmanaged_traverse},
+#endif // GraalPy change
     {Py_tp_getset, heapctypewithdict_getsetlist},
+#if 0 // GraalPy change
     {Py_tp_clear, heapmanaged_clear},
+#endif // GraalPy change
     {Py_tp_dealloc, heapmanaged_dealloc},
     {0, 0},
 };
