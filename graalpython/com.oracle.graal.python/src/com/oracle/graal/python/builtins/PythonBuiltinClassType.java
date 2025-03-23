@@ -668,13 +668,13 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     PTokenizerIter("TokenizerIter", PythonObject, "_tokenize", TokenizerIterBuiltins.SLOTS),
 
-    PTypeVar(J_TYPE_VAR, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, TYPEVAR_TYPE_M_FLAGS, TypeVarBuiltins.SLOTS),
-    PTypeVarTuple(J_TYPE_VAR_TUPLE, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, TypeVarTupleBuiltins.SLOTS),
-    PParamSpec(J_PARAM_SPEC, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, PARAMSPEC_TYPE_M_FLAGS, ParamSpecBuiltins.SLOTS),
-    PParamSpecArgs(J_PARAM_SPEC_ARGS, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, ParamSpecArgsBuiltins.SLOTS),
-    PParamSpecKwargs(J_PARAM_SPEC_KWARGS, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, ParamSpecKwargsBuiltins.SLOTS),
-    PTypeAliasType(J_TYPE_ALIAS_TYPE, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, TYPEALIAS_TYPE_M_FLAGS, TypeAliasTypeBuiltins.SLOTS),
-    PGeneric(J_GENERIC, J__TYPING, J_TYPING, Flags.PUBLIC_BASE_WDICT),
+    PTypeVar(J_TYPE_VAR, PythonObject, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, TYPEVAR_TYPE_M_FLAGS, TypeVarBuiltins.SLOTS),
+    PTypeVarTuple(J_TYPE_VAR_TUPLE, PythonObject, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, TypeVarTupleBuiltins.SLOTS),
+    PParamSpec(J_PARAM_SPEC, PythonObject, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, PARAMSPEC_TYPE_M_FLAGS, ParamSpecBuiltins.SLOTS),
+    PParamSpecArgs(J_PARAM_SPEC_ARGS, PythonObject, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, ParamSpecArgsBuiltins.SLOTS),
+    PParamSpecKwargs(J_PARAM_SPEC_KWARGS, PythonObject, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, ParamSpecKwargsBuiltins.SLOTS),
+    PTypeAliasType(J_TYPE_ALIAS_TYPE, PythonObject, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, TYPEALIAS_TYPE_M_FLAGS, TypeAliasTypeBuiltins.SLOTS),
+    PGeneric(J_GENERIC, PythonObject, J__TYPING, J_TYPING, Flags.PUBLIC_BASE_WDICT),
 
     // A marker for @Builtin that is not a class. Must always come last.
     nil(PythonObject, "nil");
