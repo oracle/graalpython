@@ -656,6 +656,7 @@ int lzma_encode_filter_spec(lzmast_stream *lzmast, int64_t* opts) {
 
 // nfi_function: name('decodeFilter') map('lzmast_stream*', 'POINTER')
 int lzma_decode_filter_spec(int64_t filter_id, Byte* encoded_props, int len, int64_t *opts) {
+    LOG_INFO("lzma_decode_filter_spec(filter_id=%ld, encoded_props=%p, len=%d, opts=%p)\n", filter_id, encoded_props, len, opts);
 
     lzma_ret lzret;
     lzma_filter filter;
@@ -699,7 +700,10 @@ int lzma_decode_filter_spec(int64_t filter_id, Byte* encoded_props, int len, int
         case LZMA_FILTER_ARMTHUMB:
         case LZMA_FILTER_SPARC: {
             lzma_options_bcj *options = filter.options;
-            opts[START_OFFSET_INDEX] = options->start_offset;
+            if (options) {
+                opts[START_OFFSET_INDEX] = options->start_offset;
+            }
+            opts[START_OFFSET_INDEX + 1] = filter.options == NULL;
             break;
         }
         default:
