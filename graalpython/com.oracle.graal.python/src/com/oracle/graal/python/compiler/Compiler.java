@@ -2062,7 +2062,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         SourceRange savedLocation = setLocation(node);
         try {
             if (!unit.scope.isFunction()) {
-                throw parserCallbacks.onError(ErrorType.Syntax, unit.currentLocation, "'yield' outside function");
+                throw parserCallbacks.onError(ErrorType.Syntax, unit.currentLocation, "'yield from' outside function");
             }
             if (unit.scopeType == CompilationScope.AsyncFunction) {
                 throw parserCallbacks.onError(ErrorType.Syntax, unit.currentLocation, "'yield from' inside async function");
