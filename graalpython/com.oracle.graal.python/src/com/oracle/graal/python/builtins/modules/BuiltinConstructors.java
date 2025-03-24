@@ -149,7 +149,7 @@ import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.property.PProperty;
 import com.oracle.graal.python.builtins.objects.range.PBigRange;
@@ -163,6 +163,8 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -1458,14 +1460,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
             @Fallback
             @SuppressWarnings("unused")
             static void check(Node inliningTarget, Object type, Object[] args, PKeyword[] kwargs,
-                            @Cached(parameters = "Init", inline = false) LookupCallableSlotInMRONode lookupInit,
+                            @Cached GetCachedTpSlotsNode getSlots,
                             @Cached(parameters = "New", inline = false) LookupCallableSlotInMRONode lookupNew,
                             @Cached TypeNodes.CheckCallableIsSpecificBuiltinNode checkSlotIs,
                             @Cached PRaiseNode raiseNode) {
+                TpSlots slots = getSlots.execute(inliningTarget, type);
                 if (!checkSlotIs.execute(inliningTarget, lookupNew.execute(type), BuiltinConstructorsFactory.ObjectNodeFactory.getInstance())) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NEW_TAKES_ONE_ARG);
                 }
-                if (checkSlotIs.execute(inliningTarget, lookupInit.execute(type), ObjectBuiltinsFactory.InitNodeFactory.getInstance())) {
+                if (slots.tp_init() == ObjectBuiltins.SLOTS.tp_init()) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NEW_TAKES_NO_ARGS, type);
                 }
             }

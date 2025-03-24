@@ -160,6 +160,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.Builder;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
@@ -2842,7 +2843,6 @@ public abstract class TypeNodes {
      * CPython's {@code type->tp_init == object_init} check.
      */
     @GenerateInline(inlineByDefault = true)
-    @ImportStatic(SpecialMethodSlot.class)
     public abstract static class HasObjectInitNode extends Node {
         public abstract boolean execute(Node inliningTarget, Object type);
 
@@ -2852,10 +2852,9 @@ public abstract class TypeNodes {
 
         @Specialization
         static boolean check(Node inliningTarget, Object type,
-                        @Cached(parameters = "Init", inline = false) LookupCallableSlotInMRONode lookup,
-                        @Cached CheckCallableIsSpecificBuiltinNode check) {
-            Object slot = lookup.execute(type);
-            return check.execute(inliningTarget, slot, ObjectBuiltinsFactory.InitNodeFactory.getInstance());
+                        @Cached GetCachedTpSlotsNode getSlots) {
+            TpSlots slots = getSlots.execute(inliningTarget, type);
+            return slots.tp_init() == ObjectBuiltins.SLOTS.tp_init();
         }
     }
 }

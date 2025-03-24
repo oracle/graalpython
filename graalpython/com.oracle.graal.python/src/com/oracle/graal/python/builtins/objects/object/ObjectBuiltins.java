@@ -84,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -240,13 +241,14 @@ public final class ObjectBuiltins extends PythonBuiltins {
         static PNone init(Object self, Object[] arguments, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached(parameters = "Init") LookupCallableSlotInMRONode lookupInit,
+                        @Cached GetCachedTpSlotsNode getSlots,
                         @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNew,
                         @Cached TypeNodes.CheckCallableIsSpecificBuiltinNode checkSlotIs,
                         @Cached PRaiseNode raiseNode) {
             if (arguments.length != 0 || keywords.length != 0) {
                 Object type = getClassNode.execute(inliningTarget, self);
-                if (!checkSlotIs.execute(inliningTarget, lookupInit.execute(type), ObjectBuiltinsFactory.InitNodeFactory.getInstance())) {
+                TpSlots slots = getSlots.execute(inliningTarget, type);
+                if (slots.tp_init() != SLOTS.tp_init()) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INIT_TAKES_ONE_ARG_OBJECT);
                 }
 
