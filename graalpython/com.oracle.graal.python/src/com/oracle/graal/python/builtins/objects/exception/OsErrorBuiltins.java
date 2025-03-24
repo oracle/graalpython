@@ -92,6 +92,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -280,6 +281,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                         @Cached GetCachedTpSlotsNode getSlots,
                         @Cached PyNumberCheckNode pyNumberCheckNode,
                         @Cached PyNumberAsSizeNode pyNumberAsSizeNode,
+                        @Cached BuiltinClassProfiles.IsBuiltinClassExactProfile isOSErrorExact,
                         @Cached PyArgCheckPositionalNode checkPositionalNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode,
                         @Bind PythonLanguage language,
@@ -296,7 +298,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                 parsedArgs = osErrorParseArgs(args, inliningTarget, checkPositionalNode);
                 final Object errnoVal = parsedArgs[IDX_ERRNO];
                 if (errnoVal != null && PGuards.canBeInteger(errnoVal) &&
-                                subType == PythonBuiltinClassType.OSError) {
+                                isOSErrorExact.profileClass(inliningTarget, subType, PythonBuiltinClassType.OSError)) {
                     final int errno = pyNumberAsSizeNode.executeExact(frame, inliningTarget, errnoVal);
                     Object newType = errno2errorType(errno);
                     if (newType != null) {
