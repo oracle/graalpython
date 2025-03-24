@@ -83,7 +83,7 @@ public class SlotsProcessor extends AbstractProcessor {
 
         public String builderCall() {
             if (isHashNotImplemented()) {
-                return ".set(TpSlots.TpSlotMeta.TP_HASH, com.oracle.graal.python.builtins.objects.type.slots.PyObjectHashNotImplemented.INSTANCE)";
+                return ".set(TpSlots.TpSlotMeta.TP_HASH, com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HASH_NOT_IMPLEMENTED)";
             }
             return String.format(".set(TpSlots.TpSlotMeta.%s, %s.INSTANCE)", //
                             slot.value().name().toUpperCase(Locale.ROOT), //

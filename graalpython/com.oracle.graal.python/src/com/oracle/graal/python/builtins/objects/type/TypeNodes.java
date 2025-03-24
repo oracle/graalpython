@@ -177,7 +177,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptab
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetTypeFlagsNodeGen;
-import com.oracle.graal.python.builtins.objects.type.slots.PyObjectHashNotImplemented;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -2027,7 +2027,7 @@ public abstract class TypeNodes {
                 if (inheritedSlots.get(TpSlotMeta.TP_HASH) == null) {
                     Object dunderHash = getItemNamespace.execute(inliningTarget, namespace.getDictStorage(), T___HASH__);
                     if (dunderHash == null) {
-                        inheritedSlots.set(TpSlotMeta.TP_HASH, PyObjectHashNotImplemented.INSTANCE);
+                        inheritedSlots.set(TpSlotMeta.TP_HASH, TpSlotHashFun.HASH_NOT_IMPLEMENTED);
                         newType.setAttribute(T___HASH__, PNone.NONE);
                     }
                 }

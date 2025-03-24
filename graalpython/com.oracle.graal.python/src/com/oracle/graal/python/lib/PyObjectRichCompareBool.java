@@ -70,7 +70,7 @@ import com.oracle.truffle.api.strings.TruffleString.EqualNode;
  * referential equality first (when doing equality comparison) before calling the special method.
  * This makes a difference for objects that report they are unequal to themselves (i.e.
  * {@code NaN}). Since we do not maintain identity for unboxed float objects, we cannot fully match
- * the CPython behavior - we treat all NaNs as equal.
+ * the CPython behavior - we treat all NaNs with exactly the same bits as equal.
  */
 @GenerateInline
 @GenerateCached(false)

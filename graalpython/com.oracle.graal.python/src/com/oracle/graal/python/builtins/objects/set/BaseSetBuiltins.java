@@ -78,8 +78,8 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.slots.PyObjectHashNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
@@ -503,7 +503,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
             // come from the tp_hash implementation or from the tp_richcompare also called during
             // the search
             TpSlots slots = getSlotsNode.execute(inliningTarget, key);
-            if (slots.tp_hash() == null || slots.tp_hash() == PyObjectHashNotImplemented.INSTANCE) {
+            if (slots.tp_hash() == null || slots.tp_hash() == TpSlotHashFun.HASH_NOT_IMPLEMENTED) {
                 return PFactory.createFrozenSet(PythonLanguage.get(inliningTarget), copyNode.execute(inliningTarget, key.getDictStorage()));
             } else {
                 return key;

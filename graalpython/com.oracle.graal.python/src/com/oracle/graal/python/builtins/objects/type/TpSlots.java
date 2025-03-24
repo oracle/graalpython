@@ -167,7 +167,6 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.TpSlotsFactory.GetObjectSlotsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TpSlotsFactory.GetTpSlotsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
-import com.oracle.graal.python.builtins.objects.type.slots.PyObjectHashNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
@@ -186,6 +185,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.TpSlot
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.TpSlotDescrSetPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.TpSlotGetAttrBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.TpSlotGetAttrPython;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.TpSlotHashBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.TpSlotInquiryBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext;
@@ -1239,7 +1239,7 @@ public record TpSlots(TpSlot nb_bool, //
                         // PyObject_HashNotImplemented, we still assign it to the slot as wrapped
                         // native executable later on
                         if (CApiContext.isIdenticalToSymbol(fieldPointer, NativeCAPISymbol.FUN_PYOBJECT_HASH_NOT_IMPLEMENTED)) {
-                            builder.set(def, TpSlotIterNext.NEXT_NOT_IMPLEMENTED);
+                            builder.set(def, TpSlotHashFun.HASH_NOT_IMPLEMENTED);
                             continue;
                         }
                     } else if (def == TpSlotMeta.TP_ITERNEXT) {
@@ -1534,7 +1534,7 @@ public record TpSlots(TpSlot nb_bool, //
                     // TODO: special cases:
                     // PyCFunction_Type && tp_new (looks like just optimization)
                 } else if (descr == PNone.NONE && slot == TpSlotMeta.TP_HASH) {
-                    specific = PyObjectHashNotImplemented.INSTANCE;
+                    specific = TpSlotHashFun.HASH_NOT_IMPLEMENTED;
                 } else {
                     useGeneric = true;
                     generic = defs[i].functionFactory;
@@ -1621,7 +1621,7 @@ public record TpSlots(TpSlot nb_bool, //
         for (var slotDefGroup : SLOTDEFS.entrySet()) {
             TpSlotMeta slotMeta = slotDefGroup.getKey();
             TpSlot slotValue = slotMeta.getter.get(slots);
-            if (slotMeta == TpSlotMeta.TP_HASH && slotValue == PyObjectHashNotImplemented.INSTANCE) {
+            if (slotMeta == TpSlotMeta.TP_HASH && slotValue == TpSlotHashFun.HASH_NOT_IMPLEMENTED) {
                 DynamicObjectLibrary.getUncached().put(pythonBuiltinClass, T___HASH__, PNone.NONE);
                 continue;
             }
@@ -1664,7 +1664,7 @@ public record TpSlots(TpSlot nb_bool, //
                     continue;
                 }
                 Object wrapperDescriptor = null;
-                if (value == PyObjectHashNotImplemented.INSTANCE) {
+                if (value == TpSlotHashFun.HASH_NOT_IMPLEMENTED) {
                     wrapperDescriptor = PNone.NO_VALUE;
                 } else if (value instanceof TpSlotBuiltin<?> builtinSlot) {
                     wrapperDescriptor = builtinSlot.createBuiltin(context, type, tpSlotDef.name, tpSlotDef.wrapper);

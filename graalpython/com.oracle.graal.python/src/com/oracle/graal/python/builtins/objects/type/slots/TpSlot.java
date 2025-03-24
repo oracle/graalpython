@@ -110,7 +110,7 @@ public abstract class TpSlot {
     }
 
     private static Object getNativeWrapper(TpSlotMeta slotMeta, TpSlotManaged slot) {
-        if (slot == PyObjectHashNotImplemented.INSTANCE) {
+        if (slot == TpSlotHashFun.HASH_NOT_IMPLEMENTED) {
             // If there are more such cases, we should add generic mapping mechanism
             // This translation other way around is also done in TpSlots.fromNative
             // We must not cache this in the singleton slot object, it would hold onto and leak

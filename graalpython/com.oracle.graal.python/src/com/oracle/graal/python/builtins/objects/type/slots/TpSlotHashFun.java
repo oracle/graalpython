@@ -52,10 +52,14 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.UnaryPythonSlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.PyObjectHashNotImplemented.HashNotImplementedNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFunFactory.PyObjectHashNotImplementedFactory.HashNotImplementedNodeFactory;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -74,6 +78,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -83,7 +88,30 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public abstract class TpSlotHashFun {
+    public static final TpSlotManaged HASH_NOT_IMPLEMENTED = new PyObjectHashNotImplemented();
+
     private TpSlotHashFun() {
+    }
+
+    /**
+     * Mirror of the {@code PyObject_HashNotImplemented} slot on the managed side. We translate this
+     * slot singleton instance to a pointer to the {@code PyObject_HashNotImplemented} C function in
+     * {@link TpSlot#toNative(TpSlotMeta, TpSlot, Object)} and vice versa in
+     * {@code TpSlot#fromNative(PythonContext, Object, InteropLibrary)}.
+     */
+    public static class PyObjectHashNotImplemented extends TpSlotHashBuiltin<HashNotImplementedNode> {
+        private PyObjectHashNotImplemented() {
+            super(HashNotImplementedNodeFactory.getInstance());
+        }
+
+        @GenerateNodeFactory
+        public abstract static class HashNotImplementedNode extends HashBuiltinNode {
+            @Specialization
+            static long doIt(@SuppressWarnings("unused") Object obj,
+                            @Bind Node nodeForRaise) {
+                throw PRaiseNode.raiseStatic(nodeForRaise, PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE_P, obj);
+            }
+        }
     }
 
     public abstract static class TpSlotHashBuiltin<T extends HashBuiltinNode>
