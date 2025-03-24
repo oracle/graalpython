@@ -53,7 +53,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J_DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_DECODE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.ArrayList;
@@ -80,7 +79,10 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInit.CallSlotInitNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
@@ -90,7 +92,6 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
@@ -317,22 +318,17 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class CodecInitNode extends PythonVarargsBuiltinNode {
         @Specialization
-        Object init(VirtualFrame frame, PythonObject self, Object[] args, PKeyword[] kw,
+        static Object init(VirtualFrame frame, PythonObject self, Object[] args, PKeyword[] kw,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetAttr getAttrNode,
                         @Cached PyObjectSetAttr setAttrNode,
                         @Cached GetPythonObjectClassNode getClass,
                         @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached CallNode callNode) {
+                        @Cached GetCachedTpSlotsNode getSlots,
+                        @Cached CallSlotInitNode callInit) {
             assert args.length > 0;
             Object base = getBaseClassNode.execute(inliningTarget, getClass.execute(inliningTarget, self));
-            Object superInit = getAttrNode.execute(frame, inliningTarget, base, T___INIT__);
-            Object[] callArgs = new Object[args.length];
-            callArgs[0] = self;
-            if (args.length > 1) {
-                PythonUtils.arraycopy(args, 1, callArgs, 1, args.length - 1);
-            }
-            callNode.execute(frame, superInit, callArgs, kw);
+            TpSlots baseSlots = getSlots.execute(inliningTarget, base);
+            callInit.execute(frame, inliningTarget, baseSlots.tp_init(), self, PythonUtils.arrayCopyOfRange(args, 1, args.length), kw);
             setAttrNode.execute(frame, inliningTarget, self, T_ATTR_ENCODING, args[0]);
             return PNone.NONE;
         }

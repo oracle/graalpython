@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltinsFactory.PyTypeStgDictNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -81,19 +82,16 @@ import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -122,23 +120,12 @@ public final class StgDictBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_init, isComplex = true)
     @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    protected abstract static class InitNode extends PythonBuiltinNode {
+    protected abstract static class InitNode extends PythonVarargsBuiltinNode {
 
         @Specialization
-        Object init(VirtualFrame frame, StgDictObject self, Object[] args, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookup,
-                        @Cached CallNode callNode) {
-            Object initMethod = lookup.execute(frame, inliningTarget, PythonBuiltinClassType.PDict, SpecialMethodNames.T___INIT__);
-            Object[] dictArgs;
-            if (args.length > 0) {
-                dictArgs = new Object[args.length + 1];
-                dictArgs[0] = self;
-                PythonUtils.arraycopy(args, 0, dictArgs, 1, args.length);
-            } else {
-                dictArgs = new Object[]{self};
-            }
-            callNode.execute(frame, initMethod, dictArgs, kwargs);
+        static Object init(VirtualFrame frame, StgDictObject self, Object[] args, PKeyword[] kwargs,
+                        @Cached DictBuiltins.InitNode dictInit) {
+            dictInit.execute(frame, self, args, kwargs);
             self.format = null;
             self.ndim = 0;
             self.shape = null;
