@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PYOBJECT_HASH_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
@@ -1232,19 +1231,19 @@ public record TpSlots(TpSlot nb_bool, //
                     Object executable = ctx.getCApiContext().getClosureExecutable(fieldPointer);
                     if (executable instanceof TpSlotWrapper execWrapper) {
                         existingSlotWrapper = execWrapper;
-                    } else if (executable == null && CApiContext.isIdenticalToSymbol(field, FUN_PYOBJECT_HASH_NOT_IMPLEMENTED)) {
-                        builder.set(def, PyObjectHashNotImplemented.INSTANCE);
-                        continue;
                     } else if (executable != null) {
                         // This can happen for legacy slots where the delegate would be a PFunction
                         LOGGER.fine(() -> String.format("Unexpected executable for slot pointer: %s", executable));
-                    } else if (def == TpSlotMeta.TP_ITERNEXT) {
+                    } else if (def == TpSlotMeta.TP_HASH) {
                         // If the slot is not tp_iternext, but the value is
-                        // _PyObject_NextNotImplemented, we still assign it to the slot as wrapped
-                        // native executable
-                        Object symbol = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_OBJECT_NEXT_NOT_IMPLEMENTED);
-                        InteropLibrary symbolLibrary = InteropLibrary.getUncached(symbol);
-                        if (fieldPointer == symbolLibrary.asPointer(symbol)) {
+                        // PyObject_HashNotImplemented, we still assign it to the slot as wrapped
+                        // native executable later on
+                        if (CApiContext.isIdenticalToSymbol(fieldPointer, NativeCAPISymbol.FUN_PYOBJECT_HASH_NOT_IMPLEMENTED)) {
+                            builder.set(def, TpSlotIterNext.NEXT_NOT_IMPLEMENTED);
+                            continue;
+                        }
+                    } else if (def == TpSlotMeta.TP_ITERNEXT) {
+                        if (CApiContext.isIdenticalToSymbol(fieldPointer, NativeCAPISymbol.FUN_PY_OBJECT_NEXT_NOT_IMPLEMENTED)) {
                             builder.set(def, TpSlotIterNext.NEXT_NOT_IMPLEMENTED);
                             continue;
                         }

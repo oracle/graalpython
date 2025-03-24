@@ -671,6 +671,18 @@ public final class CApiContext extends CExtContext {
         }
     }
 
+    public static boolean isIdenticalToSymbol(long ptr, NativeCAPISymbol symbol) {
+        CompilerAsserts.neverPartOfCompilation();
+        Object nativeSymbol = getNativeSymbol(null, symbol);
+        InteropLibrary lib = InteropLibrary.getUncached(nativeSymbol);
+        lib.toNative(nativeSymbol);
+        try {
+            return lib.asPointer(nativeSymbol) == ptr;
+        } catch (UnsupportedMessageException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static Object getNativeSymbol(Node caller, NativeCAPISymbol symbol) {
         Object[] nativeSymbolCache = getSymbolCache(caller);
         Object result = nativeSymbolCache[symbol.ordinal()];
