@@ -38,7 +38,7 @@
 # SOFTWARE.
 
 if [ -n "$GITHUB_RUN_ID" ]; then
-    brew install libffi openssl
+    brew install pkg-config libffi openssl
 fi
 export PKG_CONFIG_PATH=/opt/homebrew/opt/openssl/lib/pkgconfig
 if [ -n "$1" ]; then
