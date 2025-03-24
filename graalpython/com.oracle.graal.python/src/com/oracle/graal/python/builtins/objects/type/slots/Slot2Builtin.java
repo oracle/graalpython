@@ -175,7 +175,7 @@ class Slot2Builtin implements Builtin {
 
     @Override
     public String raiseErrorName() {
-        return annotation != null ? annotation.raiseErrorName() : "";
+        return annotation != null ? annotation.name() : "";
     }
 
     @Override

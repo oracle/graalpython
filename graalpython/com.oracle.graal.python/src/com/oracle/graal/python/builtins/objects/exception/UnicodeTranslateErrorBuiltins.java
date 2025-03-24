@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
@@ -89,19 +90,18 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class UnicodeTranslateErrorInitNode extends PythonBuiltinNode {
-        public abstract Object execute(PBaseException self, Object[] args);
 
         @Specialization
-        static Object initNoArgs(PBaseException self, Object[] args,
+        static Object initNoArgs(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached CastToJavaIntExactNode toJavaIntExactNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode,
                         @Cached PRaiseNode raiseNode) {
-            baseInitNode.execute(self, args);
+            baseInitNode.execute(frame, self, args, keywords);
             // PyArg_ParseTuple(args, "UnnU"), TODO: add proper error messages
             self.setExceptionAttributes(new Object[]{
                             null, // placeholder for object so we do not redefine the access indexes

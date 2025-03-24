@@ -83,7 +83,7 @@ public class ProfilerBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, parameterNames = {"$self", "timer", "timeunit", "subcalls", "builtins"})
+    @SlotSignature(name = "Profiler", minNumOfPositionalArgs = 1, parameterNames = {"$self", "timer", "timeunit", "subcalls", "builtins"})
     @GenerateNodeFactory
     abstract static class Init extends PythonBuiltinNode {
         @Specialization

@@ -73,7 +73,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -114,14 +113,11 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
      * node would fail.
      */
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, //
-                    takesVarArgs = true, takesVarKeywordArgs = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class ImportErrorInitNode extends PythonVarargsBuiltinNode {
         private static final TruffleString NAME = tsLiteral("name");
         private static final TruffleString PATH = tsLiteral("path");
-
-        @Child private SplitArgsNode splitArgsNode;
 
         @Specialization
         static Object init(PBaseException self, Object[] args, PKeyword[] kwargs,

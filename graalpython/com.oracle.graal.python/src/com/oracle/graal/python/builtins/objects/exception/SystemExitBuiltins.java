@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -90,9 +91,9 @@ public final class SystemExitBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization
-        static Object initNoArgs(PBaseException self, Object[] args,
+        static Object initNoArgs(PBaseException self, Object[] args, PKeyword[] keywords,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
-            baseExceptionInitNode.execute(self, args);
+            baseExceptionInitNode.execute(null, self, args, keywords);
             self.setExceptionAttributes(SYSTEM_EXIT_ATTR_FACTORY.create(args));
             return PNone.NONE;
         }

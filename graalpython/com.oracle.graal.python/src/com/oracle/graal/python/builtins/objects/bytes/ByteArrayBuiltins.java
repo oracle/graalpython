@@ -159,7 +159,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
 
     // bytearray([source[, encoding[, errors]]])
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, parameterNames = {"$self", "source", "encoding", "errors"})
+    @SlotSignature(name = "bytearray", minNumOfPositionalArgs = 1, parameterNames = {"$self", "source", "encoding", "errors"})
     @ArgumentClinic(name = "encoding", conversionClass = BytesNodes.ExpectStringNode.class, args = "\"bytearray()\"")
     @ArgumentClinic(name = "errors", conversionClass = BytesNodes.ExpectStringNode.class, args = "\"bytearray()\"")
     @GenerateNodeFactory

@@ -108,7 +108,7 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, parameterNames = {"$self", "format", "check", "preset", "filters"})
+    @SlotSignature(name = "LZMACompressor", minNumOfPositionalArgs = 1, parameterNames = {"$self", "format", "check", "preset", "filters"})
     @ArgumentClinic(name = "format", conversion = ClinicConversion.Int, defaultValue = "LZMAModuleBuiltins.FORMAT_XZ", useDefaultForNone = true)
     @ArgumentClinic(name = "check", conversion = ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ArgumentClinic(name = "preset", conversionClass = ExpectUINT32Node.class, defaultValue = "PNone.NO_VALUE")

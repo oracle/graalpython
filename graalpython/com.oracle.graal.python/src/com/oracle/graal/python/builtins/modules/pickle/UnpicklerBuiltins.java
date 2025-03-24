@@ -102,7 +102,7 @@ public class UnpicklerBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 2, parameterNames = {"$self", "file"}, keywordOnlyNames = {"fix_imports", "encoding", "errors", "buffers"})
+    @SlotSignature(name = "Unpickler", minNumOfPositionalArgs = 2, parameterNames = {"$self", "file"}, keywordOnlyNames = {"fix_imports", "encoding", "errors", "buffers"})
     @ArgumentClinic(name = "fix_imports", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true")
     @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_ASCII_UPPERCASE")
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_STRICT")

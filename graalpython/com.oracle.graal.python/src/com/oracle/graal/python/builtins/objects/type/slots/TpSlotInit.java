@@ -151,7 +151,7 @@ public final class TpSlotInit {
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
-    public abstract static class CallSlotInitNode extends Node {
+    public abstract static class CallSlotTpInitNode extends Node {
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, J___INIT__);
 
         public abstract void execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, Object[] args, PKeyword[] keywords);

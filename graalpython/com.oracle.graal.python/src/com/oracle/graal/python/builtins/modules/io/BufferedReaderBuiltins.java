@@ -114,7 +114,7 @@ public final class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
 
     // BufferedReader(raw[, buffer_size=DEFAULT_BUFFER_SIZE])
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 2, parameterNames = {"self", "raw", "buffer_size"}, raiseErrorName = "BufferedReader")
+    @SlotSignature(name = "BufferedReader", minNumOfPositionalArgs = 2, parameterNames = {"self", "raw", "buffer_size"})
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization

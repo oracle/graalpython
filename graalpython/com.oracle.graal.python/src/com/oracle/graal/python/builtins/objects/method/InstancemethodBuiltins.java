@@ -102,7 +102,7 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 2)
+    @SlotSignature(name = "instancemethod", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InitNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "checkCallableNode.execute(this, callable)")

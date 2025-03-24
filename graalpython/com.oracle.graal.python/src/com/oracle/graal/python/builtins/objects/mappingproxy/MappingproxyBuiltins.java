@@ -95,7 +95,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 2)
+    @SlotSignature(name = "mappingproxy", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryBuiltinNode {
 

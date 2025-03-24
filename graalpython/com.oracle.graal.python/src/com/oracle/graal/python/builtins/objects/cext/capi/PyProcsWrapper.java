@@ -62,7 +62,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSl
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.CallSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.CallManagedSlotGetAttrNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.CallSlotHashFunNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInit.CallSlotInitNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInit.CallSlotTpInitNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CallSlotNbBoolNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
@@ -798,7 +798,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Bind("$node") Node inliningTarget,
                         @Cached ExecutePositionalStarargsNode posStarargsNode,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode,
-                        @Cached CallSlotInitNode callSlot,
+                        @Cached CallSlotTpInitNode callSlot,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GilNode gil) {

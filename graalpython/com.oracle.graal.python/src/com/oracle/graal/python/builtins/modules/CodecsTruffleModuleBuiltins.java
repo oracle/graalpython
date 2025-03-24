@@ -82,7 +82,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInit.CallSlotInitNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInit;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
@@ -324,7 +324,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
                         @Cached GetPythonObjectClassNode getClass,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached GetCachedTpSlotsNode getSlots,
-                        @Cached CallSlotInitNode callInit) {
+                        @Cached TpSlotInit.CallSlotTpInitNode callInit) {
             assert args.length > 0;
             Object base = getBaseClassNode.execute(inliningTarget, getClass.execute(inliningTarget, self));
             TpSlots baseSlots = getSlots.execute(inliningTarget, base);

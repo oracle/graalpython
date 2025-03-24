@@ -131,7 +131,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Binary
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInit.CallSlotInitNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInit.CallSlotTpInitNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInit.TpSlotInitBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes;
@@ -168,7 +168,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -191,7 +190,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -335,14 +333,16 @@ public final class TypeBuiltins extends PythonBuiltins {
     @SlotSignature(takesVarArgs = true, minNumOfPositionalArgs = 1, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonVarargsBuiltinNode {
-        @Child private SplitArgsNode splitArgsNode;
-        private final BranchProfile errorProfile = BranchProfile.create();
 
         @Specialization
-        Object init(@SuppressWarnings("unused") Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] kwds) {
+        static Object init(@SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] kwds,
+                        @Bind Node inliningTarget,
+                        @Cached PRaiseNode raiseNode) {
             if (arguments.length != 1 && arguments.length != 3) {
-                errorProfile.enter();
-                throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.TAKES_D_OR_D_ARGS, "type.__init__()", 1, 3);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TAKES_D_OR_D_ARGS, "type.__init__()", 1, 3);
+            }
+            if (arguments.length == 1 && kwds.length != 0) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "type.__init__()");
             }
             return PNone.NONE;
         }
@@ -436,7 +436,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getInstanceClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached InlinedConditionProfile hasInit,
-                        @Cached CallSlotInitNode callInit) {
+                        @Cached CallSlotTpInitNode callInit) {
             checkTypeFlagsNode.execute(inliningTarget, type);
             Object newMethod = lookupNew.execute(type);
             assert newMethod != NO_VALUE;

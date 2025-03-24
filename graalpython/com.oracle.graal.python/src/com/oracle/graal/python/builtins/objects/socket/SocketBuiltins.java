@@ -139,7 +139,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, parameterNames = {"$self", "family", "type", "proto", "fileno"})
+    @SlotSignature(name = "socket", minNumOfPositionalArgs = 1, parameterNames = {"$self", "family", "type", "proto", "fileno"})
     @ArgumentClinic(name = "family", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1")
     @ArgumentClinic(name = "type", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1")
     @ArgumentClinic(name = "proto", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1")

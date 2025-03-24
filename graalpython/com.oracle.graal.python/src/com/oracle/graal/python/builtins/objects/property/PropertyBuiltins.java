@@ -108,7 +108,7 @@ public final class PropertyBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(parameterNames = {"$self", "fget", "fset", "fdel", "doc"})
+    @SlotSignature(name = "property", parameterNames = {"$self", "fget", "fset", "fdel", "doc"})
     @GenerateNodeFactory
     abstract static class PropertyInitNode extends PythonBuiltinNode {
 

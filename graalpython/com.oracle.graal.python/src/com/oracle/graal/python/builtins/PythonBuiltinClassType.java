@@ -237,7 +237,6 @@ import com.oracle.graal.python.builtins.objects.method.BuiltinClassmethodBuiltin
 import com.oracle.graal.python.builtins.objects.method.BuiltinFunctionOrMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodCommonBuiltins;
-import com.oracle.graal.python.builtins.objects.method.DecoratedMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.InstancemethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodWrapperBuiltins;
@@ -393,8 +392,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PSemLock("SemLock", PythonObject, "_multiprocessing"),
     PGraalPySemLock("SemLock", PythonObject, "_multiprocessing_graalpy"),
     PSocket("socket", PythonObject, J__SOCKET, SocketBuiltins.SLOTS),
-    PStaticmethod("staticmethod", PythonObject, J_BUILTINS, Flags.PUBLIC_BASE_WDICT, TpSlots.merge(DecoratedMethodBuiltins.SLOTS, StaticmethodBuiltins.SLOTS)),
-    PClassmethod("classmethod", PythonObject, J_BUILTINS, Flags.PUBLIC_BASE_WDICT, TpSlots.merge(DecoratedMethodBuiltins.SLOTS, ClassmethodCommonBuiltins.SLOTS, ClassmethodBuiltins.SLOTS)),
+    PStaticmethod("staticmethod", PythonObject, J_BUILTINS, Flags.PUBLIC_BASE_WDICT, StaticmethodBuiltins.SLOTS),
+    PClassmethod("classmethod", PythonObject, J_BUILTINS, Flags.PUBLIC_BASE_WDICT, TpSlots.merge(ClassmethodCommonBuiltins.SLOTS, ClassmethodBuiltins.SLOTS)),
     PInstancemethod("instancemethod", PythonObject, Flags.PUBLIC_BASE_WDICT, InstancemethodBuiltins.SLOTS),
     PScandirIterator("ScandirIterator", PythonObject, J_POSIX, Flags.PRIVATE_DERIVED_WODICT, ScandirIteratorBuiltins.SLOTS),
     PDirEntry("DirEntry", PythonObject, J_POSIX, Flags.PUBLIC_DERIVED_WODICT, DirEntryBuiltins.SLOTS),

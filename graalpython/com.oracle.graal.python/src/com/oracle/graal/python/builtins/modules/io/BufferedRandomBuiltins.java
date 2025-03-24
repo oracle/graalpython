@@ -105,7 +105,7 @@ public final class BufferedRandomBuiltins extends AbstractBufferedIOBuiltins {
 
     // BufferedRandom(raw[, buffer_size=DEFAULT_BUFFER_SIZE])
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 2, parameterNames = {"self", "raw", "buffer_size"}, raiseErrorName = "BufferedRandom")
+    @SlotSignature(name = "BufferedRandom", minNumOfPositionalArgs = 2, parameterNames = {"self", "raw", "buffer_size"})
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization

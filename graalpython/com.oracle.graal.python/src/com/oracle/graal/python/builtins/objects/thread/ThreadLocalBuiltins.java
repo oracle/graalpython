@@ -47,7 +47,6 @@ import java.util.List;
 
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -94,16 +93,6 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ThreadLocalBuiltinsFactory.getFactories();
-    }
-
-    @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class InitNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        PNone repr(@SuppressWarnings("unused") PThreadLocal self) {
-            return PNone.NONE;
-        }
     }
 
     @Builtin(name = J___DICT__, minNumOfPositionalArgs = 1, isGetter = true)

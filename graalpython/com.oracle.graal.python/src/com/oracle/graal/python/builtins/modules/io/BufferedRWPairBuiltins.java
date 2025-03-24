@@ -116,7 +116,7 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 3, parameterNames = {"$self", "reader", "writer", "buffer_size"})
+    @SlotSignature(name = "BufferedRWPair", minNumOfPositionalArgs = 3, parameterNames = {"$self", "reader", "writer", "buffer_size"})
     @ArgumentClinic(name = "buffer_size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonQuaternaryClinicBuiltinNode {

@@ -263,7 +263,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, parameterNames = {"$self", "initial_value", "newline"})
+    @SlotSignature(name = "StringIO", minNumOfPositionalArgs = 1, parameterNames = {"$self", "initial_value", "newline"})
     @ArgumentClinic(name = "initial_value", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_EMPTY_STRING", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonTernaryClinicBuiltinNode {

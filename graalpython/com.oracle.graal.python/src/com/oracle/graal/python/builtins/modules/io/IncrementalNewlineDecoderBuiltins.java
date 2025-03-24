@@ -118,7 +118,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
 
     // BufferedReader(raw[, buffer_size=DEFAULT_BUFFER_SIZE])
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 2, parameterNames = {"$self", "decoder", "translate", "errors"})
+    @SlotSignature(name = "IncrementalNewlineDecoder", minNumOfPositionalArgs = 2, parameterNames = {"$self", "decoder", "translate", "errors"})
     @ArgumentClinic(name = "translate", conversion = ArgumentClinic.ClinicConversion.Boolean)
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_STRICT", useDefaultForNone = true)
     @GenerateNodeFactory

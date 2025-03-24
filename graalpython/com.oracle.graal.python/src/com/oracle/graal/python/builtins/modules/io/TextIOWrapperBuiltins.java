@@ -267,7 +267,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 2, parameterNames = {"$self", "buffer", "encoding", "errors", "newline", "line_buffering", "write_through"})
+    @SlotSignature(name = "TextIOWrapper", minNumOfPositionalArgs = 2, parameterNames = {"$self", "buffer", "encoding", "errors", "newline", "line_buffering", "write_through"})
     @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "PNone.NONE", useDefaultForNone = true)
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_STRICT", useDefaultForNone = true)
     @ArgumentClinic(name = "newline", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "PNone.NONE", useDefaultForNone = true)

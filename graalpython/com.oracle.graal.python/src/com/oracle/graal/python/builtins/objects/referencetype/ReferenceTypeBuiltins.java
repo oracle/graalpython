@@ -100,7 +100,7 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @SlotSignature(name = "ref", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonTernaryBuiltinNode {
         @Specialization

@@ -193,7 +193,7 @@ public final class ListBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @SlotSignature(name = "list", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ListInitNode extends PythonBinaryBuiltinNode {
 

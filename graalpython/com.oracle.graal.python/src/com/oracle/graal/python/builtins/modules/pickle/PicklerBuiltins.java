@@ -111,7 +111,7 @@ public class PicklerBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 2, parameterNames = {"$self", "file", "protocol", "fix_imports", "buffer_callback"})
+    @SlotSignature(name = "Pickler", minNumOfPositionalArgs = 2, parameterNames = {"$self", "file", "protocol", "fix_imports", "buffer_callback"})
     @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = J_DEFAULT_PICKLE_PROTOCOL, useDefaultForNone = true)
     @ArgumentClinic(name = "fix_imports", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true")
     @GenerateNodeFactory

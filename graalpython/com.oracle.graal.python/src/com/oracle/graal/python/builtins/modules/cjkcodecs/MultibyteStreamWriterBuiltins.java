@@ -137,7 +137,7 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, parameterNames = {"$self"})
+    @SlotSignature(name = "MultibyteStreamWriter", minNumOfPositionalArgs = 1, parameterNames = {"$self"})
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonUnaryBuiltinNode {
 

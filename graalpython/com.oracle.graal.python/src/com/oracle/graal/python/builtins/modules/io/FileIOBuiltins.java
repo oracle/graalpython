@@ -478,7 +478,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
     // FileIO(name, mode='r', closefd=True, opener=None)
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 2, parameterNames = {"$self", "name", "mode", "closefd", "opener"})
+    @SlotSignature(name = "FileIO", minNumOfPositionalArgs = 2, parameterNames = {"$self", "name", "mode", "closefd", "opener"})
     // "mode" should not have `null` character
     @ArgumentClinic(name = "mode", conversionClass = IONodes.CreateIOModeNode.class, args = "false")
     @ArgumentClinic(name = "closefd", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true", useDefaultForNone = true)

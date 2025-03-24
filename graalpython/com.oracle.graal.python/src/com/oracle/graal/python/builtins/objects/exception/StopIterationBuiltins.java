@@ -50,15 +50,16 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.StopIteration)
 public final class StopIterationBuiltins extends PythonBuiltins {
@@ -76,12 +77,11 @@ public final class StopIterationBuiltins extends PythonBuiltins {
     @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class StopIterationInitNode extends PythonVarargsBuiltinNode {
-        @Child private SplitArgsNode splitArgsNode;
 
         @Specialization
-        static Object init(PBaseException self, Object[] args,
+        static Object init(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] keywords,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
-            baseExceptionInitNode.execute(self, args);
+            baseExceptionInitNode.execute(frame, self, args, keywords);
             self.setExceptionAttributes(STOP_ITERATION_ATTR_FACTORY.create(args));
             return PNone.NONE;
         }

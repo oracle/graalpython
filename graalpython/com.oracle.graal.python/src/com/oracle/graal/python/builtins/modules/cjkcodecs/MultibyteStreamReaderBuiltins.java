@@ -137,7 +137,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, parameterNames = {"$self"})
+    @SlotSignature(name = "MultibyteStreamReader", minNumOfPositionalArgs = 1, parameterNames = {"$self"})
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonUnaryBuiltinNode {
 

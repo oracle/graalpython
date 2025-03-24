@@ -131,7 +131,6 @@ import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -228,7 +227,6 @@ public final class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(SpecialMethodSlot.class)
     public abstract static class InitNode extends PythonVarargsBuiltinNode {
-        @Child private SplitArgsNode splitArgsNode;
 
         @Specialization(guards = {"arguments.length == 0", "keywords.length == 0"})
         @SuppressWarnings("unused")

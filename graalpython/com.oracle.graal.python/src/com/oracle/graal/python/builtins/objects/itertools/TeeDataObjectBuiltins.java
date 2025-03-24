@@ -96,7 +96,7 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, parameterNames = {"$self", "it", "values", "nxt"})
+    @SlotSignature(name = "TeeDataObject", minNumOfPositionalArgs = 1, parameterNames = {"$self", "it", "values", "nxt"})
     @ArgumentClinic(name = "values", defaultValue = "PNone.NONE", useDefaultForNone = true)
     @ArgumentClinic(name = "nxt", defaultValue = "PNone.NONE", useDefaultForNone = true)
     @GenerateNodeFactory

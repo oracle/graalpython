@@ -129,9 +129,9 @@ public final class ModuleBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 2, parameterNames = {"self", "name", "doc"})
-    @GenerateNodeFactory
+    @SlotSignature(name = "module", minNumOfPositionalArgs = 2, parameterNames = {"self", "name", "doc"})
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
+    @GenerateNodeFactory
     public abstract static class ModuleNode extends PythonClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {

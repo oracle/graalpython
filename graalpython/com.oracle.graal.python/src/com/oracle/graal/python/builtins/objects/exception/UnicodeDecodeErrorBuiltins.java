@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -102,20 +103,20 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class UnicodeDecodeErrorInitNode extends PythonBuiltinNode {
         public abstract Object execute(VirtualFrame frame, PBaseException self, Object[] args);
 
         @Specialization
-        static Object initNoArgs(VirtualFrame frame, PBaseException self, Object[] args,
+        static Object initNoArgs(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @Cached UnicodeErrorBuiltins.GetArgAsBytesNode getArgAsBytesNode,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached CastToJavaIntExactNode toJavaIntExactNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode,
                         @Cached PRaiseNode raiseNode) {
-            baseInitNode.execute(self, args);
+            baseInitNode.execute(frame, self, args, keywords);
             // PyArg_ParseTuple(args, "UOnnU"), TODO: add proper error messages
             self.setExceptionAttributes(new Object[]{
                             getArgAsString(inliningTarget, args, 0, raiseNode, toStringNode),

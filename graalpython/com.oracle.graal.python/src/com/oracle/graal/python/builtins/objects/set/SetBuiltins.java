@@ -112,7 +112,7 @@ public final class SetBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @SlotSignature(name = "set", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     public abstract static class InitNode extends PythonBuiltinNode {

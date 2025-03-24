@@ -326,7 +326,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         }
     }
 
-    private AnnotationMirror findAnnotationMirror(TypeElement type, String annotationQualifiedName) {
+    private static AnnotationMirror findAnnotationMirror(TypeElement type, String annotationQualifiedName) {
         for (AnnotationMirror annot : type.getAnnotationMirrors()) {
             String name = ((TypeElement) annot.getAnnotationType().asElement()).getQualifiedName().toString();
             if (name.equals(annotationQualifiedName)) {
@@ -354,7 +354,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    private BuiltinAnnotation getBuiltinAnnotation(TypeElement type) throws ProcessingError {
+    private static BuiltinAnnotation getBuiltinAnnotation(TypeElement type) throws ProcessingError {
         String builtinName = null;
         Stream<?> parameterNames = null;
         Stream<?> keywordOnlyNames = null;
@@ -363,8 +363,6 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         AnnotationMirror annot = findAnnotationMirror(type, BuiltinAnnotationClass);
         if (annot == null) {
             annot = findAnnotationMirror(type, SlotSignatureAnnotationClass);
-            // XXX
-            builtinName = "slot";
         }
         if (annot == null) {
             annot = findAnnotationMirror(type, BuiltinsAnnotationClass);

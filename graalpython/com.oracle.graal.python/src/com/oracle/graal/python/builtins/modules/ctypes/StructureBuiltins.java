@@ -75,6 +75,7 @@ import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -127,7 +128,7 @@ public final class StructureBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_init, isComplex = true)
     @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    protected abstract static class InitNode extends PythonBuiltinNode {
+    protected abstract static class InitNode extends PythonVarargsBuiltinNode {
         private static final int RECURSION_LIMIT = 5;
 
         @Specialization

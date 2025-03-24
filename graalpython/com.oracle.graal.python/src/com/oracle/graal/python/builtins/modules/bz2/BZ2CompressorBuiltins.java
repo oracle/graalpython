@@ -96,7 +96,7 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, parameterNames = {"$self", "compresslevel"})
+    @SlotSignature(name = "BZ2Compressor", minNumOfPositionalArgs = 1, parameterNames = {"$self", "compresslevel"})
     @ArgumentClinic(name = "compresslevel", conversion = ClinicConversion.Int, defaultValue = "9", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryClinicBuiltinNode {

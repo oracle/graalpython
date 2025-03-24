@@ -178,7 +178,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     protected static final byte[] EMPTY_BYTE_ARRAY = PythonUtils.EMPTY_BYTE_ARRAY;
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, parameterNames = {"$self", "initial_bytes"})
+    @SlotSignature(name = "BytesIO", minNumOfPositionalArgs = 1, parameterNames = {"$self", "initial_bytes"})
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryBuiltinNode {
 

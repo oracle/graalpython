@@ -105,7 +105,7 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
 
     @ImportStatic(PGuards.class)
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, parameterNames = {"$self", "format", "memlimit", "filters"})
+    @SlotSignature(name = "LZMADecompressor", minNumOfPositionalArgs = 1, parameterNames = {"$self", "format", "memlimit", "filters"})
     @ArgumentClinic(name = "format", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "LZMAModuleBuiltins.FORMAT_AUTO", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonQuaternaryClinicBuiltinNode {

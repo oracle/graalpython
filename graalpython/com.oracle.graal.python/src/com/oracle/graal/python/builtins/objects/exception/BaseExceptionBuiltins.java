@@ -93,7 +93,6 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -128,7 +127,6 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
     @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BaseExceptionInitNode extends PythonVarargsBuiltinNode {
-        @Child private SplitArgsNode splitArgsNode;
 
         public final Object execute(Object self, Object[] args) {
             return execute(null, self, args, PKeyword.EMPTY_KEYWORDS);

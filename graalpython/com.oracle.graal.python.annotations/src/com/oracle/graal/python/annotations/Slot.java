@@ -76,6 +76,11 @@ public @interface Slot {
      */
     @Retention(RetentionPolicy.RUNTIME)
     @interface SlotSignature {
+        /**
+         * Used to supply the function name for error messages from argument parsing.
+         */
+        String name() default "";
+
         int minNumOfPositionalArgs() default 0;
 
         int maxNumOfPositionalArgs() default -1;
@@ -91,8 +96,6 @@ public @interface Slot {
         boolean needsFrame() default false;
 
         boolean alwaysNeedsCallerFrame() default false;
-
-        String raiseErrorName() default "";
     }
 
     /** See <a href="https://docs.python.org/3/c-api/typeobj.html">slot documentation</a> */

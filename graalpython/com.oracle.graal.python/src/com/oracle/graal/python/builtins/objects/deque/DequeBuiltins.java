@@ -151,7 +151,7 @@ public final class DequeBuiltins extends PythonBuiltins {
 
     // deque.__init__(self, [iterable, [maxlen]])
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, parameterNames = {"$self", "iterable", "maxlen"})
+    @SlotSignature(name = "deque", minNumOfPositionalArgs = 1, parameterNames = {"$self", "iterable", "maxlen"})
     @GenerateNodeFactory
     public abstract static class DequeInitNode extends PythonTernaryBuiltinNode {
 
