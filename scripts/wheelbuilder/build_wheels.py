@@ -50,6 +50,7 @@ The steps are:
 import hashlib
 import importlib
 import os
+import platform
 import re
 import shlex
 import shutil
@@ -189,7 +190,16 @@ def repair_wheels():
         elif sys.platform == "darwin":
             ensure_installed("delocate")
             p = subprocess.run(
-                [join(dirname(sys.executable), "delocate-wheel"), "-v", "-w", "wheelhouse", whl]
+                [
+                    join(dirname(sys.executable), "delocate-wheel"),
+                    "-v",
+                    "--ignore-missing-dependencies",
+                    "--require-archs",
+                    "arm64" if platform.processor() == "arm" else "x86_64",
+                    "-w",
+                    "wheelhouse",
+                    whl,
+                ],
             )
         if p.returncode != 0:
             print("Repairing", whl, "failed, copying as is.")
