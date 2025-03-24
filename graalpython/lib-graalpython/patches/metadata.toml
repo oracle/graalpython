@@ -749,6 +749,10 @@ version = '== 3.*'
 # transformers tends to depend on a specific version of tokenizers. Pin it to avoid pulling unpatched tokenizers
 version = '== 4.33.3'
 
+[[trio.rules]]
+patch = 'trio.patch'
+license = 'Apache-2.0 OR MIT'
+
 [[typing_extensions.rules]]
 patch = 'typing_extensions.patch'
 license = 'PSF-2.0'
@@ -764,6 +768,7 @@ version = '>= 2, < 2.0.3'
 install-priority = 0
 
 [[uvloop.rules]]
+version = '<= 0.19.0'
 patch = 'uvloop.patch'
 license = 'MIT'
 
