@@ -101,6 +101,11 @@ def create_venv():
     subprocess.check_call([binary, "-m", "venv", "graalpy"])
     print("Installing wheel with", pip, flush=True)
     subprocess.check_call([pip, "install", "wheel"])
+    if sys.platform == "win32":
+        print("Installing python-patch-ng to provide patch.exe", flush=True)
+        p = subprocess.run([pip, "install", "git+https://github.com/timfel/python-patch-ng.git"])
+        if p.returncode != 0:
+            print("Installing python-patch-ng failed, assuming patch.exe is on PATH", flush=True)
     return pip
 
 
