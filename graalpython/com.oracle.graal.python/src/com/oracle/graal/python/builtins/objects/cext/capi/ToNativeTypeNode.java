@@ -241,12 +241,10 @@ public abstract class ToNativeTypeNode {
         writeI64Node.write(mem, CFields.PyTypeObject__tp_vectorcall_offset, lookupSize(clazz, PyTypeObject__tp_vectorcall_offset, HiddenAttr.VECTORCALL_OFFSET));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_getattr, nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_async, asAsync);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_repr, lookup(clazz, SlotMethodDef.TP_REPR));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_number, asNumber);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_sequence, asSequence);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_mapping, asMapping);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_call, lookup(clazz, SlotMethodDef.TP_CALL));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_str, lookup(clazz, SlotMethodDef.TP_STR));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_buffer, asBuffer);
         writeI64Node.write(mem, CFields.PyTypeObject__tp_flags, flags);
 
