@@ -73,7 +73,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttr
 import com.oracle.graal.python.lib.PyNumberOrNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;

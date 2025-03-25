@@ -66,7 +66,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Binary
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyFloatCheckNode;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;

@@ -69,7 +69,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotNbPower.CallSlotNbInPlacePowerNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotNbPower.CallSlotNbPowerNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.CallSlotRichCmpNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.CallManagedSlotSetAttrNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.CallSlotSizeArgFun;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.CallSlotSqAssItemNode;

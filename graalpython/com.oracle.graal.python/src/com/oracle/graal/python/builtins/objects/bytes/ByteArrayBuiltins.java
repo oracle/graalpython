@@ -82,6 +82,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetStateNode;
 import com.oracle.graal.python.lib.PySliceNew;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -832,9 +833,9 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    abstract static class ComparisonHelperNode extends TpSlotRichCompare.RichCmpBuiltinNode {
+    abstract static class RichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        static boolean cmp(PByteArray self, PBytesLike other, TpSlotRichCompare.RichCmpOp op,
+        static boolean cmp(PByteArray self, PBytesLike other, RichCmpOp op,
                         @Bind("$node") Node inliningTarget,
                         @Exclusive @Cached GetInternalByteArrayNode getArray) {
             SequenceStorage selfStorage = self.getSequenceStorage();
@@ -844,7 +845,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"check.execute(inliningTarget, self)", "acquireLib.hasBuffer(other)"}, limit = "3")
         @InliningCutoff
-        static Object cmp(VirtualFrame frame, Object self, Object other, TpSlotRichCompare.RichCmpOp op,
+        static Object cmp(VirtualFrame frame, Object self, Object other, RichCmpOp op,
                         @Bind("$node") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @SuppressWarnings("unused") @Exclusive @Cached PyByteArrayCheckNode check,
@@ -864,7 +865,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"check.execute(inliningTarget, self)", "!acquireLib.hasBuffer(other)"})
         @SuppressWarnings("unused")
-        static Object cmp(VirtualFrame frame, Object self, Object other, TpSlotRichCompare.RichCmpOp op,
+        static Object cmp(VirtualFrame frame, Object self, Object other, RichCmpOp op,
                         @Bind("$node") Node inliningTarget,
                         @Shared @Cached PyByteArrayCheckNode check,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib) {
@@ -874,7 +875,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "!check.execute(inliningTarget, self)")
         @InliningCutoff
         @SuppressWarnings("unused")
-        static Object error(VirtualFrame frame, Object self, Object other, TpSlotRichCompare.RichCmpOp op,
+        static Object error(VirtualFrame frame, Object self, Object other, RichCmpOp op,
                         @Bind("$node") Node inliningTarget,
                         @Shared @Cached PyByteArrayCheckNode check) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.getPythonName(), J_BYTEARRAY, self);

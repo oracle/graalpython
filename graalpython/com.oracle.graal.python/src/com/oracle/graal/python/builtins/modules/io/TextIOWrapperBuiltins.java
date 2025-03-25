@@ -146,7 +146,6 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -158,6 +157,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -695,7 +695,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             switch (whence) {
                 case SEEK_CUR:
                     /* seek relative to current position */
-                    if (!eqNode.execute(frame, inliningTarget, cookieObj, 0, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
+                    if (!eqNode.execute(frame, inliningTarget, cookieObj, 0, RichCmpOp.Py_EQ)) {
                         throw raiseNode.raise(inliningTarget, IOUnsupportedOperation, CAN_T_DO_NONZERO_CUR_RELATIVE_SEEKS);
                     }
 

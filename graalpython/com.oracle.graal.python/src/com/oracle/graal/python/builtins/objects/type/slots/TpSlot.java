@@ -97,8 +97,6 @@ public abstract class TpSlot {
             return defaultValue;
         } else if (slot instanceof TpSlotNative nativeSlot) {
             return nativeSlot.getCallable();
-        } else if (slot == TpSlotIterNext.NEXT_NOT_IMPLEMENTED) {
-            return CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_OBJECT_NEXT_NOT_IMPLEMENTED);
         } else if (slot instanceof TpSlotManaged managedSlot) {
             // This returns PyProcsWrapper, which will, in its toNative message, register the
             // pointer in C API context, such that we can map back from a pointer that we get from C
@@ -116,6 +114,8 @@ public abstract class TpSlot {
             // We must not cache this in the singleton slot object, it would hold onto and leak
             // Python objects
             return CApiContext.getNativeSymbol(null, FUN_PYOBJECT_HASH_NOT_IMPLEMENTED);
+        } else if (slot == TpSlotIterNext.NEXT_NOT_IMPLEMENTED) {
+            return CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_OBJECT_NEXT_NOT_IMPLEMENTED);
         }
         assert PythonContext.get(null).ownsGil(); // without GIL: use AtomicReference & CAS
         if (slot.slotWrapper == null) {

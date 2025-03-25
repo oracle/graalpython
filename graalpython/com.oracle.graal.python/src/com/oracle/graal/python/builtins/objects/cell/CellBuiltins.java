@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -94,7 +95,7 @@ public final class CellBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        static boolean eq(VirtualFrame frame, PCell self, PCell other, TpSlotRichCompare.RichCmpOp op,
+        static boolean eq(VirtualFrame frame, PCell self, PCell other, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool richCmpNode,
                         @Cached InlinedConditionProfile nonEmptyProfile,
@@ -110,7 +111,7 @@ public final class CellBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        static Object eq(Object self, Object other, TpSlotRichCompare.RichCmpOp op,
+        static Object eq(Object self, Object other, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (self instanceof PCell) {

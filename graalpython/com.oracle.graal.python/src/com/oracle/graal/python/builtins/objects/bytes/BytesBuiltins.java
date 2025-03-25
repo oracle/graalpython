@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqIt
 import com.oracle.graal.python.lib.PyBytesCheckExactNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -263,9 +264,9 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateUncached
     // N.B. bytes only allow comparing to bytes, bytearray has its own implementation that uses
     // buffer API
-    abstract static class ComparisonHelperNode extends TpSlotRichCompare.RichCmpBuiltinNode {
+    abstract static class RichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        static boolean cmp(PBytes self, PBytes other, TpSlotRichCompare.RichCmpOp op,
+        static boolean cmp(PBytes self, PBytes other, RichCmpOp op,
                         @Bind("$node") Node inliningTarget,
                         @Exclusive @Cached SequenceStorageNodes.GetInternalByteArrayNode getArray) {
             SequenceStorage selfStorage = self.getSequenceStorage();
@@ -274,7 +275,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        static Object cmp(Object self, Object other, TpSlotRichCompare.RichCmpOp op,
+        static Object cmp(Object self, Object other, RichCmpOp op,
                         @Bind("$node") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyBytesCheckNode check,
                         @Cached BytesNodes.GetBytesStorage getBytesStorage,

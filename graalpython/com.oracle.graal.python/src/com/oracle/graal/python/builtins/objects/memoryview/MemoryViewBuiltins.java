@@ -88,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqIt
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -310,7 +311,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MemoryViewRichCmp extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization(guards = "op.isEqOrNe()")
-        static Object doIt(VirtualFrame frame, Object a, Object b, TpSlotRichCompare.RichCmpOp op,
+        static Object doIt(VirtualFrame frame, Object a, Object b, RichCmpOp op,
                         @Bind("$node") Node inliningTarget,
                         @Cached MemoryViewEqNode eqNode) {
             Object result = eqNode.execute(frame, inliningTarget, a, b);
@@ -322,7 +323,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!op.isEqOrNe()")
         @SuppressWarnings("unused")
-        static Object doOthers(Object a, Object b, TpSlotRichCompare.RichCmpOp op) {
+        static Object doOthers(Object a, Object b, RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

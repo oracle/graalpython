@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import com.oracle.graal.python.lib.RichCmpOp;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -67,7 +68,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PopNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.truffle.api.frame.Frame;
@@ -88,7 +88,7 @@ public class ObjectHashMapTests {
 
     private static final class EqNodeStub extends PyObjectRichCompareBool {
         @Override
-        public boolean execute(Frame frame, Node inliningTarget, Object a, Object b, TpSlotRichCompare.RichCmpOp cmp) {
+        public boolean execute(Frame frame, Node inliningTarget, Object a, Object b, RichCmpOp cmp) {
             // Sanity check: we do not use any other keys in the tests
             assert a instanceof Long || a instanceof DictKey;
             assert b instanceof Long || b instanceof DictKey;

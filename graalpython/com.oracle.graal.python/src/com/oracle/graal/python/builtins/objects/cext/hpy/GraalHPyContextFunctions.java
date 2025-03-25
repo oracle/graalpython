@@ -302,7 +302,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyDictKeys;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;

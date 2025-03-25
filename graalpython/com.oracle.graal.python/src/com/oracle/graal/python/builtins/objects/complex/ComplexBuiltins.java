@@ -83,6 +83,7 @@ import com.oracle.graal.python.lib.PyFloatCheckNode;
 import com.oracle.graal.python.lib.PyLongAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -658,7 +659,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
     @GenerateUncached
     abstract static class ComplexRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        static Object doComplex(Object left, Object right, TpSlotRichCompare.RichCmpOp op,
+        static Object doComplex(Object left, Object right, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
                         @Cached ComplexEqNode complexEqNode,
                         @Cached InlinedConditionProfile isNotImplementedProfile) {
@@ -669,7 +670,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
             if (isNotImplementedProfile.profile(inliningTarget, result == PNotImplemented.NOT_IMPLEMENTED)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return (boolean) result == (op == TpSlotRichCompare.RichCmpOp.Py_EQ);
+            return (boolean) result == (op == RichCmpOp.Py_EQ);
         }
     }
 

@@ -74,6 +74,7 @@ import com.oracle.graal.python.lib.PyTupleCheckExactNode;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
@@ -175,7 +176,7 @@ public final class TupleBuiltins extends PythonBuiltins {
             SequenceStorage tupleStore = getTupleStorage.execute(inliningTarget, self);
             for (int i = 0; i < tupleStore.length(); i++) {
                 Object seqItem = getItemNode.execute(tupleStore, i);
-                if (eqNode.execute(frame, inliningTarget, seqItem, value, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
+                if (eqNode.execute(frame, inliningTarget, seqItem, value, RichCmpOp.Py_EQ)) {
                     count++;
                 }
             }
@@ -291,7 +292,7 @@ public final class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TupleRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        static Object doTuple(VirtualFrame frame, Object left, Object right, TpSlotRichCompare.RichCmpOp op,
+        static Object doTuple(VirtualFrame frame, Object left, Object right, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTupleCheckNode checkLeft,
                         @Cached PyTupleCheckNode checkRight,

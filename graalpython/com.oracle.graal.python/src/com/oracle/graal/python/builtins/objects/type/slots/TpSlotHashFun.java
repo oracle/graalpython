@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNati
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.PyObjectHashNotImplemented.HashNotImplementedNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFunFactory.CallSlotHashFunNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFunFactory.PyObjectHashNotImplementedFactory.HashNotImplementedNodeFactory;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
@@ -186,6 +187,10 @@ public abstract class TpSlotHashFun {
             Object[] arguments = PArguments.create(1);
             PArguments.setArgument(arguments, 0, self);
             return (long) BuiltinDispatchers.callGenericBuiltin(frame, inliningTarget, slot.callTargetIndex, arguments, callContext, isNullFrameProfile, indirectCallNode);
+        }
+
+        public static CallSlotHashFunNode getUncached() {
+            return CallSlotHashFunNodeGen.getUncached();
         }
     }
 

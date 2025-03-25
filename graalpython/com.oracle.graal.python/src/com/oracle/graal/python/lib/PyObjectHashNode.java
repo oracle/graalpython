@@ -50,10 +50,15 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadI64Node;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.CallSlotHashFunNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -61,7 +66,10 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -74,7 +82,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(SpecialMethodSlot.class)
@@ -167,55 +175,65 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
     static long genericHash(VirtualFrame frame, Node inliningTarget, Object object,
                     @Cached GetClassNode getClassNode,
                     @Cached GetCachedTpSlotsNode getSlotsNode,
+                    @Cached CStructAccess.ReadI64Node readTypeObjectFieldNode,
+                    @Cached InlinedConditionProfile tpDictIsNullProfile,
+                    @Cached InlinedConditionProfile typeIsNotReadyProfile,
+                    @Cached("createFor(this)") IndirectCallData indirectCallData,
                     @Cached CallSlotHashFunNode callHashFun,
-                    @Cached HandleNoHashNativeObj handleNoHashNativeObj,
                     @Cached PRaiseNode raiseNode) {
         Object klass = getClassNode.execute(inliningTarget, object);
         TpSlots slots = getSlotsNode.execute(inliningTarget, klass);
         if (slots.tp_hash() == null) {
-            if (klass instanceof PythonAbstractNativeObject nativeKlass) {
-                // Comment from CPython:
-                /*
-                 * To keep to the general practice that inheriting solely from object in C code
-                 * should work without an explicit call to PyType_Ready, we implicitly call
-                 * PyType_Ready here and then check the tp_hash slot again
-                 */
-                return handleNoHashNativeObj.execute(frame, inliningTarget, object, nativeKlass);
-            }
-            throw raiseUnhashable(inliningTarget, object, raiseNode);
+            slots = handleNoHash(frame, inliningTarget, object, readTypeObjectFieldNode,
+                            typeIsNotReadyProfile, indirectCallData, raiseNode, klass, slots);
         }
         return callHashFun.execute(frame, inliningTarget, slots.tp_hash(), object);
     }
 
-    @GenerateInline
-    @GenerateCached(false)
-    @GenerateUncached
-    abstract static class HandleNoHashNativeObj extends Node {
-        abstract long execute(VirtualFrame frame, Node inliningTarget, Object obj, PythonAbstractNativeObject klass);
-
-        @Specialization
-        static long doIt(VirtualFrame frame, Node inliningTarget, Object object, PythonAbstractNativeObject klass,
-                        @Cached(inline = false) PCallCapiFunction callCapiFunction,
-                        @Cached(inline = false) PythonToNativeNode pythonToNativeNode,
-                        @Cached InlinedBranchProfile typeReadyFailed,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached GetCachedTpSlotsNode getSlotsNode,
-                        @Cached CallSlotHashFunNode callHashFun) {
-            int res = (int) callCapiFunction.call(NativeCAPISymbol.FUN_PY_TYPE_READY, pythonToNativeNode.execute(klass));
-            if (res < 0) {
-                typeReadyFailed.enter(inliningTarget);
-                throw raiseSystemError(inliningTarget, klass);
+    @InliningCutoff
+    private static TpSlots handleNoHash(VirtualFrame frame, Node inliningTarget, Object object, ReadI64Node readTypeObjectFieldNode,
+                    InlinedConditionProfile typeIsNotReadyProfile,
+                    IndirectCallData indirectCallData, PRaiseNode raiseNode, Object klass, TpSlots slots) {
+        boolean initialized = false;
+        if (klass instanceof PythonAbstractNativeObject nativeKlass) {
+            // Comment from CPython:
+            /*
+             * To keep to the general practice that inheriting solely from object in C code should
+             * work without an explicit call to PyType_Ready, we implicitly call PyType_Ready here
+             * and then check the tp_hash slot again
+             */
+            long flags = readTypeObjectFieldNode.readFromObj(nativeKlass, CFields.PyTypeObject__tp_flags);
+            if (typeIsNotReadyProfile.profile(inliningTarget, (flags & TypeFlags.READY) == 0)) {
+                Object savedState = IndirectCallContext.enter(frame, indirectCallData);
+                try {
+                    slots = callTypeReady(inliningTarget, object, nativeKlass);
+                    initialized = true;
+                } finally {
+                    IndirectCallContext.exit(frame, indirectCallData, savedState);
+                }
             }
-            TpSlots slots = getSlotsNode.execute(inliningTarget, klass);
-            if (slots.tp_hash() == null) {
-                throw raiseUnhashable(inliningTarget, object, raiseNode);
-            }
-            return callHashFun.execute(frame, inliningTarget, slots.tp_hash(), object);
         }
+        if (!initialized) {
+            throw raiseUnhashable(inliningTarget, object, raiseNode);
+        }
+        return slots;
+    }
 
-        private static PException raiseSystemError(Node inliningTarget, Object klass) {
-            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, GetNameNode.executeUncached(klass));
+    @TruffleBoundary
+    private static TpSlots callTypeReady(Node inliningTarget, Object object, PythonAbstractNativeObject klass) {
+        int res = (int) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TYPE_READY, PythonToNativeNode.executeUncached(klass));
+        if (res < 0) {
+            throw raiseSystemError(inliningTarget, klass);
         }
+        TpSlots slots = GetTpSlotsNode.executeUncached(klass);
+        if (slots.tp_hash() == null) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.UNHASHABLE_TYPE_P, object);
+        }
+        return slots;
+    }
+
+    private static PException raiseSystemError(Node inliningTarget, Object klass) {
+        throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, GetNameNode.executeUncached(klass));
     }
 
     @InliningCutoff

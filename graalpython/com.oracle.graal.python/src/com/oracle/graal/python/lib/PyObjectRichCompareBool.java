@@ -41,8 +41,6 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp;
 import com.oracle.graal.python.lib.PyObjectRichCompare.GenericRichCompare;
 import com.oracle.graal.python.lib.PyObjectRichCompareBoolNodeGen.CachedPyObjectRichCompareBoolNodeGen;
 import com.oracle.graal.python.nodes.object.IsNode;
@@ -77,22 +75,22 @@ import com.oracle.truffle.api.strings.TruffleString.EqualNode;
 @GenerateUncached
 @TypeSystemReference(PythonIntegerTypes.class)
 public abstract class PyObjectRichCompareBool extends Node {
-    public abstract boolean execute(Frame frame, Node inliningTarget, Object a, Object b, TpSlotRichCompare.RichCmpOp op);
+    public abstract boolean execute(Frame frame, Node inliningTarget, Object a, Object b, RichCmpOp op);
 
     public final boolean executeEq(Frame frame, Node inliningTarget, Object a, Object b) {
-        return execute(frame, inliningTarget, a, b, TpSlotRichCompare.RichCmpOp.Py_EQ);
+        return execute(frame, inliningTarget, a, b, RichCmpOp.Py_EQ);
     }
 
-    public final boolean executeCached(Frame frame, Object a, Object b, TpSlotRichCompare.RichCmpOp op) {
+    public final boolean executeCached(Frame frame, Object a, Object b, RichCmpOp op) {
         return execute(frame, null, a, b, op);
     }
 
-    public static boolean executeUncached(Object a, Object b, TpSlotRichCompare.RichCmpOp op) {
+    public static boolean executeUncached(Object a, Object b, RichCmpOp op) {
         return getUncached().execute(null, null, a, b, op);
     }
 
     public static boolean executeEqUncached(Object a, Object b) {
-        return executeUncached(a, b, TpSlotRichCompare.RichCmpOp.Py_EQ);
+        return executeUncached(a, b, RichCmpOp.Py_EQ);
     }
 
     @Specialization
@@ -129,7 +127,7 @@ public abstract class PyObjectRichCompareBool extends Node {
     }
 
     @Fallback
-    static boolean doIt(VirtualFrame frame, Object a, Object b, TpSlotRichCompare.RichCmpOp op,
+    static boolean doIt(VirtualFrame frame, Object a, Object b, RichCmpOp op,
                     @Cached IsNode isNode,
                     @Cached(inline = false) GenericRichCompare richCompare,
                     @Cached PyObjectIsTrueNode isTrueNode) {
@@ -151,14 +149,14 @@ public abstract class PyObjectRichCompareBool extends Node {
     @GenerateInline(false)
     @GenerateUncached
     public abstract static class CachedPyObjectRichCompareBool extends Node {
-        public abstract boolean execute(Frame frame, Object a, Object b, TpSlotRichCompare.RichCmpOp op);
+        public abstract boolean execute(Frame frame, Object a, Object b, RichCmpOp op);
 
         public final boolean executeEq(Frame frame, Object a, Object b) {
-            return execute(frame, a, b, TpSlotRichCompare.RichCmpOp.Py_EQ);
+            return execute(frame, a, b, RichCmpOp.Py_EQ);
         }
 
         @Specialization
-        static boolean doIt(Frame frame, Object a, Object b, TpSlotRichCompare.RichCmpOp op,
+        static boolean doIt(Frame frame, Object a, Object b, RichCmpOp op,
                         @Bind Node inliningTarget,
                         @Cached PyObjectRichCompareBool delegate) {
             return delegate.execute(frame, inliningTarget, a, b, op);

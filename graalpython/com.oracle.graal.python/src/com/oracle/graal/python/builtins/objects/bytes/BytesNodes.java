@@ -76,7 +76,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.lib.PyByteArrayCheckNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
@@ -85,6 +84,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyOSFSPathNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -984,10 +984,10 @@ public abstract class BytesNodes {
         return endIn;
     }
 
-    static boolean compareByteArrays(TpSlotRichCompare.RichCmpOp op, byte[] selfArray, int selfLength, byte[] otherArray, int otherLength) {
+    static boolean compareByteArrays(RichCmpOp op, byte[] selfArray, int selfLength, byte[] otherArray, int otherLength) {
         int compareResult = 0;
         if (op.isEqOrNe() && selfLength != otherLength) {
-            return op == TpSlotRichCompare.RichCmpOp.Py_NE;
+            return op == RichCmpOp.Py_NE;
         }
         for (int i = 0; i < Math.min(selfLength, otherLength); i++) {
             compareResult = Byte.compareUnsigned(selfArray[i], otherArray[i]);

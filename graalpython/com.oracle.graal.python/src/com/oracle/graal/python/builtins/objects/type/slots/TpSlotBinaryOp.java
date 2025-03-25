@@ -93,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNati
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.TpSlotBinaryFuncBuiltin;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -540,7 +541,7 @@ public class TpSlotBinaryOp {
         @Fallback
         static boolean doGenericRuntimeObjects(VirtualFrame frame, Node inliningTarget, Object a, Object b,
                         @Cached PyObjectRichCompareBool neNode) {
-            return neNode.execute(frame, inliningTarget, a, b, TpSlotRichCompare.RichCmpOp.Py_NE);
+            return neNode.execute(frame, inliningTarget, a, b, RichCmpOp.Py_NE);
         }
     }
 }

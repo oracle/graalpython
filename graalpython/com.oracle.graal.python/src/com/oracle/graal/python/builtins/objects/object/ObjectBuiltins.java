@@ -101,6 +101,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
@@ -284,7 +285,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization(guards = "op.isEq()")
-        static Object eq(Object self, Object other, TpSlotRichCompare.RichCmpOp op,
+        static Object eq(Object self, Object other, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached InlinedConditionProfile isEq,
                         @Cached IsNode isNode) {
@@ -298,7 +299,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "op.isNe()")
-        static Object ne(VirtualFrame frame, Object self, Object other, TpSlotRichCompare.RichCmpOp op,
+        static Object ne(VirtualFrame frame, Object self, Object other, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached InlinedConditionProfile isEq,
                         @Cached GetObjectSlotsNode getSlotsNode,
@@ -310,7 +311,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
             if (selfRichCmp == null) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            Object result = callSlotRichCmp.execute(frame, inliningTarget, selfRichCmp, self, other, TpSlotRichCompare.RichCmpOp.Py_EQ);
+            Object result = callSlotRichCmp.execute(frame, inliningTarget, selfRichCmp, self, other, RichCmpOp.Py_EQ);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return !isTrueNode.execute(frame, result);
             }
@@ -318,7 +319,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        static Object doOthers(Object self, Object other, TpSlotRichCompare.RichCmpOp op) {
+        static Object doOthers(Object self, Object other, RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

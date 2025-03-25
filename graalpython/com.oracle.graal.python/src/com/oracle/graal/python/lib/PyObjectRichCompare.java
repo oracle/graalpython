@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.CallSlotRichCmpNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp;
 import com.oracle.graal.python.lib.PyObjectRichCompareNodeGen.RichCompareBinaryOpNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -67,6 +66,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.EqualNode;
 
@@ -140,34 +140,38 @@ public abstract class PyObjectRichCompare extends Node {
                         @Cached GetClassNode getWClass,
                         @Cached GetCachedTpSlotsNode getVSlots,
                         @Cached GetCachedTpSlotsNode getWSlots,
+                        @Cached InlinedConditionProfile checkRevOpProfile,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached CallSlotRichCmpNode callRichCmpSwapped,
                         @Cached CallSlotRichCmpNode callRichCmp,
                         @Cached IsNode isNode,
+                        @Cached InlinedConditionProfile notImplemented1Profile,
+                        @Cached InlinedConditionProfile notImplemented2Profile,
+                        @Cached InlinedConditionProfile notImplemented3Profile,
                         @Cached PRaiseNode raiseNode) {
             Object vClass = getVClass.execute(inliningTarget, v);
             Object wClass = getWClass.execute(inliningTarget, w);
             TpSlots wSlots = getWSlots.execute(inliningTarget, wClass);
             boolean checkedReverseOp = false;
-            if (wSlots.tp_richcmp() != null && !isSameTypeNode.execute(inliningTarget, vClass, wClass) &&
-                            isSubtypeNode.execute(wClass, vClass)) {
+            if (checkRevOpProfile.profile(inliningTarget, wSlots.tp_richcmp() != null &&
+                            !isSameTypeNode.execute(inliningTarget, vClass, wClass) && isSubtypeNode.execute(wClass, vClass))) {
                 checkedReverseOp = true;
                 Object result = callRichCmpSwapped.execute(frame, inliningTarget, wSlots.tp_richcmp(), w, v, op.getSwapped());
-                if (result != PNotImplemented.NOT_IMPLEMENTED) {
+                if (notImplemented1Profile.profile(inliningTarget, result != PNotImplemented.NOT_IMPLEMENTED)) {
                     return result;
                 }
             }
             TpSlots vSlots = getVSlots.execute(inliningTarget, vClass);
             if (vSlots.tp_richcmp() != null) {
                 Object result = callRichCmp.execute(frame, inliningTarget, vSlots.tp_richcmp(), v, w, op);
-                if (result != PNotImplemented.NOT_IMPLEMENTED) {
+                if (notImplemented2Profile.profile(inliningTarget, result != PNotImplemented.NOT_IMPLEMENTED)) {
                     return result;
                 }
             }
             if (wSlots.tp_richcmp() != null && !checkedReverseOp) {
                 Object result = callRichCmpSwapped.execute(frame, inliningTarget, wSlots.tp_richcmp(), w, v, op.getSwapped());
-                if (result != PNotImplemented.NOT_IMPLEMENTED) {
+                if (notImplemented3Profile.profile(inliningTarget, result != PNotImplemented.NOT_IMPLEMENTED)) {
                     return result;
                 }
             }

@@ -117,7 +117,7 @@ public class SlotsMapping {
     static String getUncachedExecuteSignature(SlotKind s) {
         return switch (s) {
             case nb_bool -> "boolean executeUncached(Object self)";
-            case tp_richcompare -> "Object executeUncached(Object self, Object obj, com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp op)";
+            case tp_richcompare -> "Object executeUncached(Object self, Object obj, com.oracle.graal.python.lib.RichCmpOp op)";
             case tp_descr_get -> "Object executeUncached(Object self, Object obj, Object type)";
             case sq_length, mp_length -> "int executeUncached(Object self)";
             default -> throw new AssertionError("Should not reach here: should be always complex");

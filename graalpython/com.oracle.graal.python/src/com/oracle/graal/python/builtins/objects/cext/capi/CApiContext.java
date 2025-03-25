@@ -659,13 +659,10 @@ public final class CApiContext extends CExtContext {
 
     public static boolean isIdenticalToSymbol(Object obj, NativeCAPISymbol symbol) {
         CompilerAsserts.neverPartOfCompilation();
-        Object nativeSymbol = getNativeSymbol(null, symbol);
-        InteropLibrary lib = InteropLibrary.getUncached(nativeSymbol);
-        lib.toNative(nativeSymbol);
         InteropLibrary objLib = InteropLibrary.getUncached(obj);
         objLib.toNative(obj);
         try {
-            return lib.asPointer(nativeSymbol) == objLib.asPointer(obj);
+            return isIdenticalToSymbol(objLib.asPointer(obj), symbol);
         } catch (UnsupportedMessageException e) {
             throw new RuntimeException(e);
         }

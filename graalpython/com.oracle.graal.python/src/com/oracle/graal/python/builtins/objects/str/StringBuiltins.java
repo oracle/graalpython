@@ -60,6 +60,7 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.lib.RichCmpOp;
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
 import org.graalvm.shadowed.com.ibm.icu.text.CaseMap;
@@ -356,7 +357,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Child TruffleString.CompareIntsUTF32Node compareIntsUTF32Node;
 
         @Specialization
-        Object doGeneric(Object self, Object other, TpSlotRichCompare.RichCmpOp op,
+        Object doGeneric(Object self, Object other, RichCmpOp op,
                         @Bind("$node") Node inliningTarget,
                         @Cached CastToTruffleStringNode castSelfNode,
                         @Cached CastToTruffleStringNode castOtherNode,

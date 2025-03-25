@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectRichCompare;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -91,7 +92,7 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class KeyWrapperRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        boolean doCompare(VirtualFrame frame, PKeyWrapper self, PKeyWrapper other, TpSlotRichCompare.RichCmpOp op,
+        boolean doCompare(VirtualFrame frame, PKeyWrapper self, PKeyWrapper other, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached PyObjectRichCompare richCompareNode,
@@ -102,7 +103,7 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        static boolean fallback(Object self, Object other, TpSlotRichCompare.RichCmpOp op,
+        static boolean fallback(Object self, Object other, RichCmpOp op,
                         @Bind("this") Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, OTHER_ARG_MUST_BE_KEY);
         }

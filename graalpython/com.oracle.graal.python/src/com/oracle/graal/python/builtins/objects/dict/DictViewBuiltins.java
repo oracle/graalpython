@@ -75,7 +75,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -219,7 +219,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
             HashingStorage dictStorage = self.getWrappedStorage();
             Object value = getItem.execute(frame, inliningTarget, dictStorage, getTupleItemNode.execute(tupleStorage, 0));
             if (value != null) {
-                return eqNode.execute(frame, inliningTarget, value, getTupleItemNode.execute(tupleStorage, 1), TpSlotRichCompare.RichCmpOp.Py_EQ);
+                return eqNode.execute(frame, inliningTarget, value, getTupleItemNode.execute(tupleStorage, 1), RichCmpOp.Py_EQ);
             } else {
                 return false;
             }
@@ -338,8 +338,8 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DictViewRichcompareHelperNode extends TpSlotRichCompare.RichCmpBuiltinNode {
 
-        protected static boolean reverse(TpSlotRichCompare.RichCmpOp op) {
-            return op == TpSlotRichCompare.RichCmpOp.Py_GE || op == TpSlotRichCompare.RichCmpOp.Py_GT;
+        protected static boolean reverse(RichCmpOp op) {
+            return op == RichCmpOp.Py_GE || op == RichCmpOp.Py_GT;
         }
 
         static boolean isDictViewOrSet(Object o) {
@@ -347,7 +347,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isDictViewOrSet(other)")
-        static boolean doIt(VirtualFrame frame, PDictView self, Object other, TpSlotRichCompare.RichCmpOp originalOp,
+        static boolean doIt(VirtualFrame frame, PDictView self, Object other, RichCmpOp originalOp,
                         @Bind("$node") Node inliningTarget,
                         @Cached InlinedConditionProfile isSetProfile,
                         @Cached InlinedConditionProfile lenCheckProfile,
@@ -378,7 +378,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                 right = self;
             }
             boolean result = allContained.execute(frame, left, right);
-            if (originalOp == TpSlotRichCompare.RichCmpOp.Py_NE) {
+            if (originalOp == RichCmpOp.Py_NE) {
                 result = !result;
             }
             return result;
@@ -386,7 +386,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        static PNotImplemented wrongTypes(Object self, Object other, TpSlotRichCompare.RichCmpOp op) {
+        static PNotImplemented wrongTypes(Object self, Object other, RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

@@ -89,12 +89,12 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -1882,22 +1882,22 @@ public abstract class SequenceStorageNodes {
     @GenerateCached(false)
     public abstract static class CmpNode extends SequenceStorageBaseNode {
         public abstract boolean execute(VirtualFrame frame, Node inliningTarget, SequenceStorage left, SequenceStorage right,
-                        boolean isListComparison, Object leftSeq, Object rightSeq, TpSlotRichCompare.RichCmpOp op);
+                        boolean isListComparison, Object leftSeq, Object rightSeq, RichCmpOp op);
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"isEmpty(left)", "isEmpty(right)"})
-        static boolean doEmpty(SequenceStorage left, SequenceStorage right, boolean isListComparison, Object leftSeq, Object rightSeq, TpSlotRichCompare.RichCmpOp op) {
+        static boolean doEmpty(SequenceStorage left, SequenceStorage right, boolean isListComparison, Object leftSeq, Object rightSeq, RichCmpOp op) {
             return op.compare(0, 0);
         }
 
         @Specialization
         static boolean doBoolStorage(Node inliningTarget, BoolSequenceStorage left, BoolSequenceStorage right, boolean isListComparison, Object leftSeq, Object rightSeq,
-                        TpSlotRichCompare.RichCmpOp op,
+                        RichCmpOp op,
                         @Shared @Cached InlinedLoopConditionProfile loopProfile) {
             int llen = left.length();
             int rlen = right.length();
             if (op.isEqOrNe() && llen != rlen) {
-                return op == TpSlotRichCompare.RichCmpOp.Py_NE;
+                return op == RichCmpOp.Py_NE;
             }
             // intentionally imprecise loop profile to avoid its overhead...
             loopProfile.profileCounted(inliningTarget, Math.min(llen, rlen));
@@ -1915,12 +1915,12 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static boolean doByteStorage(Node inliningTarget, ByteSequenceStorage left, ByteSequenceStorage right, boolean isListComparison, Object leftSeq, Object rightSeq,
-                        TpSlotRichCompare.RichCmpOp op,
+                        RichCmpOp op,
                         @Shared @Cached InlinedLoopConditionProfile loopProfile) {
             int llen = left.length();
             int rlen = right.length();
             if (op.isEqOrNe() && llen != rlen) {
-                return op == TpSlotRichCompare.RichCmpOp.Py_NE;
+                return op == RichCmpOp.Py_NE;
             }
             // intentionally imprecise loop profile to avoid its overhead...
             loopProfile.profileCounted(inliningTarget, Math.min(llen, rlen));
@@ -1937,12 +1937,12 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static boolean doIntStorage(Node inliningTarget, IntSequenceStorage left, IntSequenceStorage right, boolean isListComparison, Object leftSeq, Object rightSeq, TpSlotRichCompare.RichCmpOp op,
+        static boolean doIntStorage(Node inliningTarget, IntSequenceStorage left, IntSequenceStorage right, boolean isListComparison, Object leftSeq, Object rightSeq, RichCmpOp op,
                         @Shared @Cached InlinedLoopConditionProfile loopProfile) {
             int llen = left.length();
             int rlen = right.length();
             if (op.isEqOrNe() && llen != rlen) {
-                return op == TpSlotRichCompare.RichCmpOp.Py_NE;
+                return op == RichCmpOp.Py_NE;
             }
             // intentionally imprecise loop profile to avoid its overhead...
             loopProfile.profileCounted(inliningTarget, Math.min(llen, rlen));
@@ -1960,12 +1960,12 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static boolean doLongStorage(Node inliningTarget, LongSequenceStorage left, LongSequenceStorage right, boolean isListComparison, Object leftSeq, Object rightSeq,
-                        TpSlotRichCompare.RichCmpOp op,
+                        RichCmpOp op,
                         @Shared @Cached InlinedLoopConditionProfile loopProfile) {
             int llen = left.length();
             int rlen = right.length();
             if (op.isEqOrNe() && llen != rlen) {
-                return op == TpSlotRichCompare.RichCmpOp.Py_NE;
+                return op == RichCmpOp.Py_NE;
             }
             // intentionally imprecise loop profile to avoid its overhead...
             loopProfile.profileCounted(inliningTarget, Math.min(llen, rlen));
@@ -1983,12 +1983,12 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static boolean doDoubleStorage(Node inliningTarget, DoubleSequenceStorage left, DoubleSequenceStorage right, boolean isListComparison, Object leftSeq, Object rightSeq,
-                        TpSlotRichCompare.RichCmpOp op,
+                        RichCmpOp op,
                         @Shared @Cached InlinedLoopConditionProfile loopProfile) {
             int llen = left.length();
             int rlen = right.length();
             if (op.isEqOrNe() && llen != rlen) {
-                return op == TpSlotRichCompare.RichCmpOp.Py_NE;
+                return op == RichCmpOp.Py_NE;
             }
             // intentionally imprecise loop profile to avoid its overhead...
             loopProfile.profileCounted(inliningTarget, Math.min(llen, rlen));
@@ -2007,7 +2007,7 @@ public abstract class SequenceStorageNodes {
         @Specialization
         @SuppressWarnings("truffle-static-method")
         static boolean doGeneric(VirtualFrame frame, Node inliningTarget, SequenceStorage left, SequenceStorage right, boolean isListComparison, Object leftSeq, Object rightSeq,
-                        TpSlotRichCompare.RichCmpOp op,
+                        RichCmpOp op,
                         @Cached PyObjectRichCompareBool eqNode,
                         @Cached PyObjectRichCompareBool cmpNode,
                         @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
@@ -2018,14 +2018,14 @@ public abstract class SequenceStorageNodes {
             int llen = left.length();
             int rlen = right.length();
             if (op.isEqOrNe() && llen != rlen) {
-                return op == TpSlotRichCompare.RichCmpOp.Py_NE;
+                return op == RichCmpOp.Py_NE;
             }
             // intentionally imprecise loop profile to avoid its overhead...
             loopProfile.profileCounted(inliningTarget, Math.min(left.length(), right.length()));
             for (int i = 0; loopProfile.inject(inliningTarget, i < Math.min(left.length(), right.length())); i++) {
                 Object leftItem = getLeftItemNode.execute(inliningTarget, left, i);
                 Object rightItem = getRightItemNode.execute(inliningTarget, right, i);
-                if (!eqNode.execute(frame, inliningTarget, leftItem, rightItem, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
+                if (!eqNode.execute(frame, inliningTarget, leftItem, rightItem, RichCmpOp.Py_EQ)) {
                     LoopNode.reportLoopCount(inliningTarget, i);
                     // Following CPython semantics: we must compare the length again...
                     SequenceStorage newLeft = null, newRight = null;
@@ -2719,7 +2719,7 @@ public abstract class SequenceStorageNodes {
                         @Cached PyObjectRichCompareBool eqNode) {
             for (int i = 0; i < self.length(); i++) {
                 Object seqItem = getItemNode.execute(inliningTarget, self, i);
-                if (eqNode.execute(frame, inliningTarget, seqItem, item, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
+                if (eqNode.execute(frame, inliningTarget, seqItem, item, RichCmpOp.Py_EQ)) {
                     return i;
                 }
             }
@@ -3850,7 +3850,7 @@ public abstract class SequenceStorageNodes {
                         @Cached PyObjectRichCompareBool eqNode) {
             for (int i = start; i < getLength(s, end); i++) {
                 Object seqItem = getItemNode.execute(inliningTarget, s, i);
-                if (eqNode.execute(frame, inliningTarget, seqItem, item, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
+                if (eqNode.execute(frame, inliningTarget, seqItem, item, RichCmpOp.Py_EQ)) {
                     return i;
                 }
             }

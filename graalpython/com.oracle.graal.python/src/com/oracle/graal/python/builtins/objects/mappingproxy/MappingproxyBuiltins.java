@@ -67,6 +67,7 @@ import com.oracle.graal.python.lib.PyObjectRichCompare;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -221,7 +222,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MappingproxyRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        Object doIt(VirtualFrame frame, PMappingproxy self, Object other, TpSlotRichCompare.RichCmpOp op,
+        Object doIt(VirtualFrame frame, PMappingproxy self, Object other, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompare cmpNode) {
             return cmpNode.execute(frame, inliningTarget, self.getMapping(), other, op);

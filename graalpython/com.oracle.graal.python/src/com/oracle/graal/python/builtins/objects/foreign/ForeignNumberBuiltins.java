@@ -75,6 +75,7 @@ import com.oracle.graal.python.lib.PyNumberTrueDivideNode;
 import com.oracle.graal.python.lib.PyNumberXorNode;
 import com.oracle.graal.python.lib.PyObjectRichCompare;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -616,7 +617,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ForeignBinaryComparisonNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        Object doComparison(VirtualFrame frame, Object left, Object right, TpSlotRichCompare.RichCmpOp op,
+        Object doComparison(VirtualFrame frame, Object left, Object right, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
                         @Cached UnboxNode unboxNode,
                         @Cached IsBuiltinObjectProfile exProfile,

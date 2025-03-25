@@ -98,6 +98,7 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetStateNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -296,7 +297,7 @@ public final class DequeBuiltins extends PythonBuiltins {
             int n = 0;
             int startState = self.getState();
             for (Object item : self.data) {
-                if (PyObjectRichCompareBool.executeUncached(item, value, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
+                if (PyObjectRichCompareBool.executeUncached(item, value, RichCmpOp.Py_EQ)) {
                     n++;
                 }
                 if (startState != self.getState()) {
@@ -410,7 +411,7 @@ public final class DequeBuiltins extends PythonBuiltins {
                  */
                 Object item = next(iterator);
                 if (normStart <= idx) {
-                    if (eqNode.execute(frame, inliningTarget, item, value, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
+                    if (eqNode.execute(frame, inliningTarget, item, value, RichCmpOp.Py_EQ)) {
                         return idx;
                     }
                     if (startState != self.getState()) {
@@ -542,7 +543,7 @@ public final class DequeBuiltins extends PythonBuiltins {
             int n = self.getSize();
             for (int i = 0; i < n; i++) {
                 try {
-                    boolean result = PyObjectRichCompareBool.executeUncached(self.peekLeft(), value, TpSlotRichCompare.RichCmpOp.Py_EQ);
+                    boolean result = PyObjectRichCompareBool.executeUncached(self.peekLeft(), value, RichCmpOp.Py_EQ);
                     if (n != self.getSize()) {
                         throw PRaiseNode.raiseStatic(this, IndexError, DEQUE_MUTATED_DURING_REMOVE);
                     }
@@ -780,7 +781,7 @@ public final class DequeBuiltins extends PythonBuiltins {
         boolean doGeneric(PDeque self, Object value) {
             int startState = self.getState();
             for (Object item : self.data) {
-                if (PyObjectRichCompareBool.executeUncached(item, value, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
+                if (PyObjectRichCompareBool.executeUncached(item, value, RichCmpOp.Py_EQ)) {
                     return true;
                 }
                 if (startState != self.getState()) {
@@ -912,24 +913,24 @@ public final class DequeBuiltins extends PythonBuiltins {
     public abstract static class DequeRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization(guards = {"self == other", "op.isEqOrNe()"})
         @SuppressWarnings("unused")
-        static boolean doSame(PDeque self, PDeque other, TpSlotRichCompare.RichCmpOp op) {
-            return op == TpSlotRichCompare.RichCmpOp.Py_EQ;
+        static boolean doSame(PDeque self, PDeque other, RichCmpOp op) {
+            return op == RichCmpOp.Py_EQ;
         }
 
         @Specialization(guards = {"self.getSize() != other.getSize()", "op.isEqOrNe()"})
         @SuppressWarnings("unused")
-        static boolean doDifferentLengths(PDeque self, PDeque other, TpSlotRichCompare.RichCmpOp op) {
-            return op == TpSlotRichCompare.RichCmpOp.Py_NE;
+        static boolean doDifferentLengths(PDeque self, PDeque other, RichCmpOp op) {
+            return op == RichCmpOp.Py_NE;
         }
 
         @Specialization(guards = "!isPDeque(self) || !isPDeque(other)")
         @SuppressWarnings("unused")
-        static Object doOther(Object self, Object other, TpSlotRichCompare.RichCmpOp op) {
+        static Object doOther(Object self, Object other, RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
         @Specialization(guards = "isGenericCase(self, other, op)")
-        static Object doGeneric(VirtualFrame frame, PDeque self, PDeque other, TpSlotRichCompare.RichCmpOp op,
+        static Object doGeneric(VirtualFrame frame, PDeque self, PDeque other, RichCmpOp op,
                         @Bind("$node") Node inliningTarget,
                         @Cached PyObjectGetIter getIterSelf,
                         @Cached PyObjectGetIter getIterOther,
@@ -948,7 +949,7 @@ public final class DequeBuiltins extends PythonBuiltins {
                 if (PyIterNextNode.isExhausted(otherItem)) {
                     break;
                 }
-                if (!eqNode.execute(frame, inliningTarget, selfItem, otherItem, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
+                if (!eqNode.execute(frame, inliningTarget, selfItem, otherItem, RichCmpOp.Py_EQ)) {
                     return cmpNode.execute(frame, inliningTarget, selfItem, otherItem, op);
                 }
             }
@@ -959,7 +960,7 @@ public final class DequeBuiltins extends PythonBuiltins {
             return object instanceof PDeque;
         }
 
-        static boolean isGenericCase(PDeque self, PDeque other, TpSlotRichCompare.RichCmpOp op) {
+        static boolean isGenericCase(PDeque self, PDeque other, RichCmpOp op) {
             return !op.isEqOrNe() || (self != other && self.getSize() == other.getSize());
         }
     }

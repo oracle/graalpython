@@ -87,6 +87,7 @@ import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetStateNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -241,7 +242,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
     protected abstract static class BaseSetRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
-        static boolean lengthsMismatch(int len1, int len2, TpSlotRichCompare.RichCmpOp op) {
+        static boolean lengthsMismatch(int len1, int len2, RichCmpOp op) {
             return switch (op) {
                 case Py_EQ -> len1 != len2;
                 case Py_LT -> len1 >= len2;
@@ -253,16 +254,16 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object doIt(VirtualFrame frame, PBaseSet self, PBaseSet other, TpSlotRichCompare.RichCmpOp opIn,
+        static Object doIt(VirtualFrame frame, PBaseSet self, PBaseSet other, RichCmpOp opIn,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenSelfNode,
                         @Cached HashingStorageLen lenOtherNode,
                         @Cached InlinedConditionProfile sizeProfile,
                         @Cached IsKeysSubset issubsetNode) {
             boolean wasNe = opIn.isNe();
-            TpSlotRichCompare.RichCmpOp op = opIn;
+            RichCmpOp op = opIn;
             if (wasNe) {
-                op = TpSlotRichCompare.RichCmpOp.Py_EQ;
+                op = RichCmpOp.Py_EQ;
             }
 
             final int len1 = lenSelfNode.execute(inliningTarget, self.getDictStorage());
@@ -288,7 +289,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        static PNotImplemented doGeneric(Object self, Object other, TpSlotRichCompare.RichCmpOp op) {
+        static PNotImplemented doGeneric(Object self, Object other, RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

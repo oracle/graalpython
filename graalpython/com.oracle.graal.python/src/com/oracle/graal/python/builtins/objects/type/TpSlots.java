@@ -194,7 +194,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.TpSlotLenBu
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.TpSlotMpAssSubscriptBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.TpSlotMpAssSubscriptPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotNbPower.TpSlotNbPowerBuiltin;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.TpSlotRichCmpBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.TpSlotRichCmpPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.TpSlotSetAttrBuiltin;
@@ -1602,12 +1601,7 @@ public record TpSlots(TpSlot nb_bool, //
         // We do not look in MRO, we may have already called addOperatorsToBuiltin on super
         var readAttr = ReadAttributeFromObjectNode.getUncachedForceType();
         PythonBuiltinClass typeObj = core.lookupType(type);
-        slots: for (TruffleString name : SPECIAL2SLOT.keySet()) {
-            for (RichCmpOp op : RichCmpOp.values()) {
-                if (name.equalsUncached(op.getPythonName(), TS_ENCODING)) {
-                    continue slots;
-                }
-            }
+        for (TruffleString name : SPECIAL2SLOT.keySet()) {
             assert readAttr.execute(typeObj, name) == PNone.NO_VALUE : type.name() + ":" + name;
         }
         return true;

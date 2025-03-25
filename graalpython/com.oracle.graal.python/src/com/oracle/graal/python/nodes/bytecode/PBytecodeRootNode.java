@@ -100,7 +100,7 @@ import com.oracle.graal.python.builtins.objects.set.SetNodesFactory;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CreateSliceNode;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodesFactory.CreateSliceNodeGen;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.compiler.BinaryOpsConstants;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.FormatOptions;

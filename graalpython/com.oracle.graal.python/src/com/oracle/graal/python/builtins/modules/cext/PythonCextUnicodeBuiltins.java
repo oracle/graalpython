@@ -130,7 +130,7 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins.RFindNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ReplaceNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StartsWithNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpOp;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;

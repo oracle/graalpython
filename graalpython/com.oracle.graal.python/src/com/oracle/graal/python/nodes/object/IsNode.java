@@ -63,6 +63,7 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -211,11 +212,11 @@ public abstract class IsNode extends Node implements BinaryOp {
     @Specialization
     @InliningCutoff
     public static boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
-                    @Bind("this") Node inliningTarget,
-                    @CachedLibrary(limit = "1") InteropLibrary interop) {
-        // Assumption: not perf critical, use interop library to save footprint of extracting a
-        // shared node to do the equality check. The interop library will always dispatch to
-        // PythonAbstractNativeObject - no need to specialize it
+                    @Exclusive @CachedLibrary(limit = "1") InteropLibrary interop) {
+        // Assumption: not perf critical, instead of refactoring
+        // PythonAbstractNativeObject.isIdentical into a separate node, we just piggy-back on
+        // interop library. We do not need two libraries, this will always specialize only to
+        // PythonAbstractNativeObject
         return interop.isIdentical(left, right, interop);
     }
 

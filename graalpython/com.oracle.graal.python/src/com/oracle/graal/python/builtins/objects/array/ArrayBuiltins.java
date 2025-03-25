@@ -97,6 +97,7 @@ import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompare;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -280,7 +281,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
     abstract static class ArrayRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
 
         @Specialization(guards = "!isFloatingPoint(left.getFormat()) || (left.getFormat() != right.getFormat())")
-        static Object cmpItems(VirtualFrame frame, PArray left, PArray right, TpSlotRichCompare.RichCmpOp op,
+        static Object cmpItems(VirtualFrame frame, PArray left, PArray right, RichCmpOp op,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached InlinedBranchProfile fullCmpProfile,
                         @Exclusive @Cached PyObjectRichCompareBool richCmpEqNode,
@@ -290,7 +291,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Exclusive @Cached InlinedLoopConditionProfile loopProfile) {
             if (left.getLength() != right.getLength() && op.isEqOrNe()) {
                 // the same fast-path as CPython
-                return op == TpSlotRichCompare.RichCmpOp.Py_NE;
+                return op == RichCmpOp.Py_NE;
             }
             fullCmpProfile.enter(inliningTarget);
             int commonLength = Math.min(left.getLength(), right.getLength());
@@ -298,10 +299,10 @@ public final class ArrayBuiltins extends PythonBuiltins {
             for (int i = 0; loopProfile.inject(inliningTarget, i < commonLength); i++) {
                 Object leftValue = getLeft.execute(inliningTarget, left, i);
                 Object rightValue = getRight.execute(inliningTarget, right, i);
-                if (!richCmpEqNode.execute(frame, inliningTarget, leftValue, rightValue, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
-                    if (op == TpSlotRichCompare.RichCmpOp.Py_EQ) {
+                if (!richCmpEqNode.execute(frame, inliningTarget, leftValue, rightValue, RichCmpOp.Py_EQ)) {
+                    if (op == RichCmpOp.Py_EQ) {
                         return false;
-                    } else if (op == TpSlotRichCompare.RichCmpOp.Py_NE) {
+                    } else if (op == RichCmpOp.Py_NE) {
                         return true;
                     }
                     return richCmpOpNode.execute(frame, inliningTarget, leftValue, rightValue, op);
@@ -322,7 +323,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
         // be preserved, so here we know for sure that if we see two NaNs, PyObjectRichCompareBool
         // would return false on CPython, and so we do the same. This is tested in CPython tests.
         @Specialization(guards = {"isFloatingPoint(left.getFormat())", "left.getFormat() == right.getFormat()"})
-        static boolean cmpDoubles(VirtualFrame frame, PArray left, PArray right, TpSlotRichCompare.RichCmpOp op,
+        static boolean cmpDoubles(VirtualFrame frame, PArray left, PArray right, RichCmpOp op,
                         @Bind("$node") Node inliningTarget,
                         @Exclusive @Cached InlinedBranchProfile fullCmpProfile,
                         @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
@@ -330,7 +331,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Exclusive @Cached InlinedLoopConditionProfile loopProfile) {
             if (left.getLength() != right.getLength() && op.isEqOrNe()) {
                 // the same fast-path as CPython
-                return op == TpSlotRichCompare.RichCmpOp.Py_NE;
+                return op == RichCmpOp.Py_NE;
             }
             fullCmpProfile.enter(inliningTarget);
             int commonLength = Math.min(left.getLength(), right.getLength());
@@ -350,13 +351,13 @@ public final class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isArray(right)")
         @SuppressWarnings("unused")
-        static Object cmp(PArray left, Object right, TpSlotRichCompare.RichCmpOp op) {
+        static Object cmp(PArray left, Object right, RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
         @Specialization(guards = "!isArray(left)")
         @SuppressWarnings("unused")
-        static Object error(Object left, Object right, TpSlotRichCompare.RichCmpOp op,
+        static Object error(Object left, Object right, RichCmpOp op,
                         @Bind("this") Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.getPythonName(), J_ARRAY + "." + J_ARRAY, left);
         }
@@ -371,7 +372,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached PyObjectRichCompareBool eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             for (int i = 0; i < self.getLength(); i++) {
-                if (eqNode.execute(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
+                if (eqNode.execute(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value, RichCmpOp.Py_EQ)) {
                     return true;
                 }
             }
@@ -927,7 +928,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             for (int i = 0; i < self.getLength(); i++) {
                 Object item = getValueNode.execute(inliningTarget, self, i);
-                if (eqNode.execute(frame, inliningTarget, item, value, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
+                if (eqNode.execute(frame, inliningTarget, item, value, RichCmpOp.Py_EQ)) {
                     self.checkCanResize(inliningTarget, raiseNode);
                     deleteSliceNode.execute(inliningTarget, self, i, 1);
                     return PNone.NONE;
@@ -1274,7 +1275,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 stop += length;
             }
             for (int i = start; i < stop && i < length; i++) {
-                if (eqNode.execute(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
+                if (eqNode.execute(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value, RichCmpOp.Py_EQ)) {
                     return i;
                 }
             }
@@ -1297,7 +1298,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             int count = 0;
             for (int i = 0; i < self.getLength(); i++) {
-                if (eqNode.execute(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
+                if (eqNode.execute(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value, RichCmpOp.Py_EQ)) {
                     count++;
                 }
             }

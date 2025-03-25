@@ -85,6 +85,7 @@ import com.oracle.graal.python.lib.PyListCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -518,7 +519,7 @@ public final class ListBuiltins extends PythonBuiltins {
             loopProfile.profileCounted(inliningTarget, len);
             for (int i = 0; i < len; i++) {
                 Object object = getItemNode.execute(listStore, i);
-                if (eqNode.execute(frame, inliningTarget, object, value, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
+                if (eqNode.execute(frame, inliningTarget, object, value, RichCmpOp.Py_EQ)) {
                     deleteNode.execute(frame, listStore, i);
                     LoopNode.reportLoopCount(inliningTarget, i);
                     return PNone.NONE;
@@ -634,7 +635,7 @@ public final class ListBuiltins extends PythonBuiltins {
             loopProfile.profileCounted(inliningTarget, s.length());
             for (int i = 0; loopProfile.inject(inliningTarget, i < s.length()); i++) {
                 Object seqItem = getItemNode.execute(s, i);
-                if (eqNode.execute(frame, inliningTarget, seqItem, value, TpSlotRichCompare.RichCmpOp.Py_EQ)) {
+                if (eqNode.execute(frame, inliningTarget, seqItem, value, RichCmpOp.Py_EQ)) {
                     LoopNode.reportLoopCount(inliningTarget, i);
                     count++;
                 }
@@ -835,7 +836,7 @@ public final class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ListRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        static Object doIt(VirtualFrame frame, Object left, Object right, TpSlotRichCompare.RichCmpOp op,
+        static Object doIt(VirtualFrame frame, Object left, Object right, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
                         @Cached PyListCheckNode isLeftList,
                         @Cached PyListCheckNode isRightList,
