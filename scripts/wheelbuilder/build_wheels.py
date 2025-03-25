@@ -75,8 +75,11 @@ def ensure_installed(name):
 
 
 def download(url, out):
-    print("Downloading", url, flush=True)
-    urlretrieve(url, out)
+    if not os.path.exists(out):
+        print("Downloading", url, flush=True)
+        urlretrieve(url, out)
+    else:
+        print("Using previously downloaded", out, flush=True)
 
 
 def extract(archive):
