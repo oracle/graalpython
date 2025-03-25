@@ -980,6 +980,26 @@ class DelegateInplaceSlot(DelegateSlot):
         return wrapper
 
 
+native_slot_proxy_template = '''
+static PyObject* get_delegate(PyObject* self) {
+    return ((ProxyObject*)self)->delegate;
+}
+static void set_delegate(PyObject* self, PyObject* delegate) {
+    Py_XSETREF(((ProxyObject*)self)->delegate, delegate);
+}
+static PyObject* proxy_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
+    PyObject* delegate;
+    if (!PyArg_UnpackTuple(args, "NativeSlotProxy", 0, 1, &delegate))
+        return NULL;
+    ProxyObject* obj = (ProxyObject*)type->tp_alloc(type, 0);
+    if (!obj)
+        return NULL;
+    obj->delegate = Py_NewRef(delegate);  // leaked
+    return (PyObject*)obj;
+}
+'''
+
+
 def test_nb_slot_calls():
     slots = [
         ('proxy_nb_binary_slot', 'nb_add'),
@@ -1023,22 +1043,7 @@ def test_nb_slot_calls():
         cmembers='PyObject* delegate;',
         code=r'''
             typedef NativeNbSlotProxyObject ProxyObject;
-            static PyObject* get_delegate(PyObject* self) {
-                return ((ProxyObject*)self)->delegate;
-            }
-            static void set_delegate(PyObject* self, PyObject* delegate) {
-                Py_XSETREF(((ProxyObject*)self)->delegate, delegate);
-            }
-            static PyObject* proxy_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
-                PyObject* delegate;
-                if (!PyArg_UnpackTuple(args, "NativeNbSlotProxy", 0, 1, &delegate))
-                    return NULL;
-                ProxyObject* obj = (ProxyObject*)type->tp_alloc(type, 0);
-                if (!obj)
-                    return NULL;
-                obj->delegate = Py_NewRef(delegate);  // leaked
-                return (PyObject*)obj;
-            }
+            ''' + native_slot_proxy_template + r'''
             static PyTypeObject NativeNbSlotProxyType;
             #define proxy_nb_unary_slot(slot) \
                 static PyObject* proxy_##slot(PyObject *a) { \
@@ -1249,22 +1254,7 @@ def test_sq_slot_calls():
         cmembers='PyObject* delegate;',
         code=r'''
             typedef NativeSqSlotProxyObject ProxyObject;
-            static PyObject* get_delegate(PyObject* self) {
-                return ((ProxyObject*)self)->delegate;
-            }
-            static void set_delegate(PyObject* self, PyObject* delegate) {
-                Py_XSETREF(((ProxyObject*)self)->delegate, delegate);
-            }
-            static PyObject* proxy_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
-                PyObject* delegate;
-                if (!PyArg_UnpackTuple(args, "NativeSqSlotProxy", 0, 1, &delegate))
-                    return NULL;
-                ProxyObject* obj = (ProxyObject*)type->tp_alloc(type, 0);
-                if (!obj)
-                    return NULL;
-                obj->delegate = Py_NewRef(delegate);  // leaked
-                return (PyObject*)obj;
-            }
+            ''' + native_slot_proxy_template + r'''
             static Py_ssize_t proxy_sq_length(PyObject* self) {
                 PyObject* delegate = get_delegate(self);
                 return Py_TYPE(delegate)->tp_as_sequence->sq_length(delegate);
@@ -1388,19 +1378,7 @@ def test_mp_slot_calls():
         cmembers='PyObject* delegate;',
         code=r'''
             typedef NativeMpSlotProxyObject ProxyObject;
-            static PyObject* get_delegate(PyObject* self) {
-                return ((ProxyObject*)self)->delegate;
-            }
-            static PyObject* proxy_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
-                PyObject* delegate;
-                if (!PyArg_UnpackTuple(args, "NativeMpSlotProxy", 0, 1, &delegate))
-                    return NULL;
-                ProxyObject* obj = (ProxyObject*)type->tp_alloc(type, 0);
-                if (!obj)
-                    return NULL;
-                obj->delegate = Py_NewRef(delegate);  // leaked
-                return (PyObject*)obj;
-            }
+            ''' + native_slot_proxy_template + r'''
             static Py_ssize_t proxy_mp_length(PyObject* self) {
                 PyObject* delegate = get_delegate(self);
                 return Py_TYPE(delegate)->tp_as_mapping->mp_length(delegate);
@@ -1447,25 +1425,13 @@ def test_mp_slot_calls():
         assert not bool(obj)
 
 
-def test_tp_slot_calls():
+def test_tp_iter_iternext_calls():
     NativeSlotProxy = CPyExtType(
-        name='TpSlotProxy',
+        name='TpIterSlotProxy',
         cmembers='PyObject* delegate;',
         code=r'''
-            typedef TpSlotProxyObject ProxyObject;
-            static PyObject* get_delegate(PyObject* self) {
-                return ((ProxyObject*)self)->delegate;
-            }
-            static PyObject* proxy_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
-                PyObject* delegate;
-                if (!PyArg_UnpackTuple(args, "NativeTpSlotProxy", 0, 1, &delegate))
-                    return NULL;
-                ProxyObject* obj = (ProxyObject*)type->tp_alloc(type, 0);
-                if (!obj)
-                    return NULL;
-                obj->delegate = Py_NewRef(delegate);  // leaked
-                return (PyObject*)obj;
-            }
+            typedef TpIterSlotProxyObject ProxyObject;
+            ''' + native_slot_proxy_template + r'''
             static PyObject* proxy_tp_iter(PyObject* self) {
                 PyObject* delegate = get_delegate(self);
                 return Py_TYPE(delegate)->tp_iter(delegate);
@@ -1568,6 +1534,76 @@ def test_tp_iternext_not_implemented():
         next(i)
     except TypeError as e:
         assert str(e).endswith("is not an iterator")
+
+
+def test_tp_str_repr_calls():
+    NativeSlotProxy = CPyExtType(
+        name='TpStrSlotProxy',
+        cmembers='PyObject* delegate;',
+        code=r'''
+            typedef TpStrSlotProxyObject ProxyObject;
+            ''' + native_slot_proxy_template + r'''
+            static PyObject* proxy_tp_str(PyObject* self) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_str(delegate);
+            }
+            static PyObject* proxy_tp_repr(PyObject* self) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_repr(delegate);
+            }
+        ''',
+        tp_new='proxy_tp_new',
+        tp_members='{"delegate", T_OBJECT, offsetof(ProxyObject, delegate), 0, NULL}',
+        tp_str='proxy_tp_str',
+        tp_repr='proxy_tp_repr',
+    )
+
+    class PureSlotProxy:
+        def __init__(self, delegate):
+            self.delegate = delegate
+
+        __str__ = DelegateSlot()
+        __repr__ = DelegateSlot()
+
+    for obj in [NativeSlotProxy("a\nb"), NativeSlotProxy(PureSlotProxy("a\nb"))]:
+        assert str(obj) == "a\nb"
+        assert repr(obj) == repr("a\nb")
+
+
+def test_tp_init_calls():
+    NativeSlotProxy = CPyExtType(
+        name='TpInitSlotProxy',
+        cmembers='PyObject* delegate;',
+        code=r'''
+            typedef TpInitSlotProxyObject ProxyObject;
+            ''' + native_slot_proxy_template + r'''
+            int proxy_tp_init(PyObject* self, PyObject* args, PyObject* kwargs) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_init(delegate, args, kwargs);
+            }
+        ''',
+        tp_new='proxy_tp_new',
+        tp_members='{"delegate", T_OBJECT, offsetof(ProxyObject, delegate), 0, NULL}',
+        tp_init='proxy_tp_init',
+    )
+
+    class PureSlotProxy:
+        def __new__(cls, delegate):
+            self = object.__new__(cls)
+            self.delegate = delegate
+            return self
+
+        def __init__(self, delegate, *args, **kwargs):
+            self.delegate.__init__(*args, **kwargs)
+
+    obj = NativeSlotProxy([1])
+    assert obj.delegate == []
+    assert obj.__init__({2}) is None
+    assert obj.delegate == [2]
+    assert_raises(TypeError, NativeSlotProxy, ([1],), {'a': 1})
+
+    obj = NativeSlotProxy(PureSlotProxy([1]))
+    assert obj.delegate.delegate == []
 
 
 def test_richcmp():
