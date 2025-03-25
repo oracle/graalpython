@@ -38,8 +38,6 @@ jobs:
           export PIP_GRAALPY_PATCHES_URL="${GITHUB_WORKSPACE}/graalpython/lib-graalpython/patches"
           python3 -m venv wheelbuilder_venv
           wheelbuilder_venv/bin/python3 scripts/wheelbuilder/build_wheels.py ${{ inputs.graalpy_url }}
-      - name: Build wheels
-        run: python3 scripts/wheelbuilder/build_wheels.py ${{ inputs.graalpy_url }}
       - name: Store wheels
         uses: actions/upload-artifact@main
         with:
