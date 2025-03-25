@@ -1639,13 +1639,20 @@ def getclosurevars(func):
     builtin_vars = {}
     unbound_names = set()
     global_names = set()
-    for instruction in dis.get_instructions(code):
-        opname = instruction.opname
-        name = instruction.argval
-        if opname == "LOAD_ATTR":
-            unbound_names.add(name)
-        elif opname == "LOAD_GLOBAL":
-            global_names.add(name)
+    for name in code.co_names:
+        if name in ("None", "True", "False"):
+            # Because these used to be builtins instead of keywords, they
+            # may still show up as name references. We ignore them.
+            continue
+        global_names.add(name)
+    # GraalPy change: dis isn't supported
+    # for instruction in dis.get_instructions(code):
+    #     opname = instruction.opname
+    #     name = instruction.argval
+    #     if opname == "LOAD_ATTR":
+    #         unbound_names.add(name)
+    #     elif opname == "LOAD_GLOBAL":
+    #         global_names.add(name)
     for name in global_names:
         try:
             global_vars[name] = global_ns[name]
