@@ -580,8 +580,22 @@ license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
 [[rapidfuzz.rules]]
+version = '< 3.10'
 patch = 'rapidfuzz.patch'
 license = 'MIT'
+
+[[rapidfuzz.rules]]
+version = '>= 3.10.0, <= 3.12.2'
+patch = 'rapidfuzz-3.10.patch'
+license = 'MIT'
+
+[[levenshtein.add-sources]]
+version = '0.26.1'
+url = 'https://github.com/rapidfuzz/Levenshtein/archive/refs/tags/v0.26.1.zip'
+
+[[levenshtein.add-sources]]
+version = '0.27.1'
+url = 'https://github.com/rapidfuzz/Levenshtein/archive/refs/tags/v0.27.1.zip'
 
 [[ray.rules]]
 version = '== 2.3.0'
