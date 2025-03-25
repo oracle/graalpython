@@ -105,7 +105,7 @@ patch = 'cryptography-42.0.5.patch'
 license = 'Apache-2.0 OR BSD-3-Clause'
 
 [[Cython.rules]]
-version = '>= 3.0.10, < 3.0.12'
+version = '>= 3.0.10, <= 3.0.12'
 patch = 'Cython-3.0.10.patch'
 license = 'Apache-2.0'
 
