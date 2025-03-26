@@ -715,14 +715,11 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         ret_code, out, dims = super(PythonBaseBenchmarkSuite, self).runAndReturnStdOut(benchmarks, bmSuiteArgs)
 
         # host-vm rewrite rules
-        def _replace_host_vm(key):
-            host_vm = dims.get("host-vm")
-            if host_vm and host_vm.startswith(key):
-                dims['host-vm'] = key
-                mx.logv("[DEBUG] replace 'host-vm': '{key}-python' -> '{key}'".format(key=key))
+        if mx.suite('graal-enterprise', fatalIfMissing=False):
+            dims['host-vm'] = 'graalvm-ee'
+        else:
+            dims['host-vm'] = 'graalvm-ce'
 
-        _replace_host_vm('graalvm-ce')
-        _replace_host_vm('graalvm-ee')
         self.post_run_graph(benchmarks[0], dims['host-vm-config'], dims['guest-vm-config'])
 
         if self._checkup:
