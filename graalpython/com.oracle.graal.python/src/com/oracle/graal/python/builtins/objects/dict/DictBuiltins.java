@@ -72,7 +72,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Binary
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
-import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyDictCheckNode;
@@ -80,11 +79,13 @@ import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectSetItem;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -93,6 +94,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -339,13 +341,15 @@ public final class DictBuiltins extends PythonBuiltins {
         @Specialization
         static Object missing(VirtualFrame frame, Object self, Object key,
                         @Bind("this") Node inliningTarget,
-                        @Cached("create(Missing)") LookupAndCallBinaryNode callMissing,
+                        @Cached GetClassNode getClassNode,
+                        @Cached("create(Missing)") LookupSpecialMethodSlotNode lookupMissingNode,
+                        @Cached CallBinaryMethodNode callMissingNode,
                         @Cached PRaiseNode raiseNode) {
-            Object result = callMissing.executeObject(frame, self, key);
-            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+            Object missingFun = lookupMissingNode.execute(frame, getClassNode.execute(inliningTarget, self), self);
+            if (PGuards.isNoValue(missingFun)) {
                 throw raiseNode.raise(inliningTarget, KeyError, new Object[]{key});
             }
-            return result;
+            return callMissingNode.executeObject(frame, missingFun, self, key);
         }
     }
 

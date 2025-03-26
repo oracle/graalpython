@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,7 +73,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @GenerateUncached
-public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
+public abstract class CallBinaryMethodNode extends AbstractCallMethodNode {
     @NeverDefault
     public static CallBinaryMethodNode create() {
         return CallBinaryMethodNodeGen.create();
@@ -99,11 +99,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
     static Object callBinarySpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") BinaryBuiltinDescriptor info, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("info") BinaryBuiltinDescriptor cachedInfo,
                     @Cached("getBuiltin(cachedInfo)") PythonBinaryBuiltinNode node) {
-        if (cachedInfo.isReverseOperation()) {
-            return node.execute(frame, arg2, arg1);
-        } else {
-            return node.execute(frame, arg1, arg2);
-        }
+        return node.execute(frame, arg1, arg2);
     }
 
     protected static boolean hasAllowedArgsNum(BuiltinMethodDescriptor descr) {
@@ -116,9 +112,6 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
                     @Cached("hasAllowedArgsNum(cachedInfo)") boolean hasValidArgsNum,
                     @Cached("getBuiltin(cachedInfo)") PythonTernaryBuiltinNode node) {
         raiseInvalidArgsNumUncached(hasValidArgsNum, cachedInfo);
-        if (cachedInfo.isReverseOperation()) {
-            return node.execute(frame, arg2, arg1, PNone.NO_VALUE);
-        }
         return node.execute(frame, arg1, arg2, PNone.NO_VALUE);
     }
 
@@ -143,26 +136,16 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
     @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callObjectSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBuiltin(frame, func, 2)") PythonBuiltinBaseNode builtinNode) {
-        if (isReverse) {
-            return callBinaryBuiltin(frame, builtinNode, arg2, arg1);
-        } else {
-            return callBinaryBuiltin(frame, builtinNode, arg1, arg2);
-        }
+        return callBinaryBuiltin(frame, builtinNode, arg1, arg2);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, //
                     limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callObject(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
-                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getBuiltin(frame, func, 2)") PythonBuiltinBaseNode builtinNode) {
-        if (isReverse) {
-            return callBinaryBuiltin(frame, builtinNode, arg2, arg1);
-        } else {
-            return callBinaryBuiltin(frame, builtinNode, arg1, arg2);
-        }
+        return callBinaryBuiltin(frame, builtinNode, arg1, arg2);
     }
 
     @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")

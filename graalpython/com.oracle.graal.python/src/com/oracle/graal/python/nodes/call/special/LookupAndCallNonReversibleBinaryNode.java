@@ -41,8 +41,6 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -50,8 +48,6 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -68,17 +64,14 @@ abstract class LookupAndCallNonReversibleBinaryNode extends LookupAndCallBinaryN
     protected final SpecialMethodSlot slot;
     protected final TruffleString name;
 
-    LookupAndCallNonReversibleBinaryNode(TruffleString name, Supplier<NotImplementedHandler> handlerFactory, boolean ignoreDescriptorException) {
-        super(handlerFactory, ignoreDescriptorException);
+    LookupAndCallNonReversibleBinaryNode(TruffleString name) {
         this.name = name;
         this.slot = null;
     }
 
-    LookupAndCallNonReversibleBinaryNode(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handlerFactory, boolean ignoreDescriptorException) {
-        super(handlerFactory, ignoreDescriptorException);
+    LookupAndCallNonReversibleBinaryNode(SpecialMethodSlot slot) {
         // If the slot is reversible, use LookupAndCallReversibleBinaryNode via factory in
         // LookupAndCallBinaryNode
-        assert slot.getReverse() == null;
         this.name = slot.getName();
         this.slot = slot;
     }
@@ -145,23 +138,7 @@ abstract class LookupAndCallNonReversibleBinaryNode extends LookupAndCallBinaryN
 
     private Object doCallObject(VirtualFrame frame, Node inliningTarget, Object left, Object right, GetClassNode getClassNode, LookupSpecialBaseNode getattr) {
         Object leftClass = getClassNode.execute(inliningTarget, left);
-        Object leftCallable;
-        try {
-            leftCallable = getattr.execute(frame, leftClass, left);
-        } catch (PException e) {
-            if (ignoreDescriptorException) {
-                leftCallable = PNone.NO_VALUE;
-            } else {
-                throw e;
-            }
-        }
-        if (leftCallable == PNone.NO_VALUE) {
-            if (handlerFactory != null) {
-                return runErrorHandler(frame, left, right);
-            } else {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-        }
+        Object leftCallable = getattr.execute(frame, leftClass, left);
         return ensureDispatch().executeObject(frame, leftCallable, left, right);
     }
 

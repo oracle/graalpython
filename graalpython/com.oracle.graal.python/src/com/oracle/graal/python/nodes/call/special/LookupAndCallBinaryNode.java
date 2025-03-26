@@ -41,9 +41,7 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -63,21 +61,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 // is slower than converting int->double, which is always correct.
 @ImportStatic(PythonOptions.class)
 public abstract class LookupAndCallBinaryNode extends Node {
-
-    public abstract static class NotImplementedHandler extends PNodeWithContext {
-        public abstract Object execute(VirtualFrame frame, Object arg, Object arg2);
-    }
-
-    protected final Supplier<NotImplementedHandler> handlerFactory;
-    protected final boolean ignoreDescriptorException;
-
     @Child private CallBinaryMethodNode dispatchNode;
-    @Child private NotImplementedHandler handler;
-
-    LookupAndCallBinaryNode(Supplier<NotImplementedHandler> handlerFactory, boolean ignoreDescriptorException) {
-        this.handlerFactory = handlerFactory;
-        this.ignoreDescriptorException = ignoreDescriptorException;
-    }
 
     public abstract Object executeObject(VirtualFrame frame, Object arg, Object arg2);
 
@@ -87,17 +71,12 @@ public abstract class LookupAndCallBinaryNode extends Node {
         // LookupAndCallBinaryNode for dynamic name, then we should change this method or the caller
         // to try to lookup a slot and use that if found
         assert SpecialMethodSlot.findSpecialSlotUncached(name) == null : name;
-        return LookupAndCallNonReversibleBinaryNodeGen.create(name, null, false);
+        return LookupAndCallNonReversibleBinaryNodeGen.create(name);
     }
 
     @NeverDefault
     public static LookupAndCallBinaryNode create(SpecialMethodSlot slot) {
-        return LookupAndCallNonReversibleBinaryNodeGen.create(slot, null, false);
-    }
-
-    @NeverDefault
-    public static LookupAndCallBinaryNode create(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallNonReversibleBinaryNodeGen.create(slot, handlerFactory, false);
+        return LookupAndCallNonReversibleBinaryNodeGen.create(slot);
     }
 
     public abstract TruffleString getName();
@@ -109,13 +88,5 @@ public abstract class LookupAndCallBinaryNode extends Node {
             dispatchNode = insert(CallBinaryMethodNode.create());
         }
         return dispatchNode;
-    }
-
-    protected final Object runErrorHandler(VirtualFrame frame, Object left, Object right) {
-        if (handler == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            handler = insert(handlerFactory.get());
-        }
-        return handler.execute(frame, left, right);
     }
 }

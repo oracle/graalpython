@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -231,11 +231,6 @@ public abstract class BuiltinMethodDescriptor {
                 }
 
                 @Override
-                public boolean reverseOperation() {
-                    return false;
-                }
-
-                @Override
                 public String raiseErrorName() {
                     return null;
                 }
@@ -309,7 +304,6 @@ public abstract class BuiltinMethodDescriptor {
     private final Builtin builtinAnnotation;
     // Shortcuts for fields of builtinAnnotation that are accessed on a fast-path
     private final String name;
-    private final boolean isReverseOperation;
     private final int minNumOfPositionalArgs;
 
     private BuiltinMethodDescriptor(String name, NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type, Builtin builtinAnnotation) {
@@ -318,7 +312,6 @@ public abstract class BuiltinMethodDescriptor {
         this.factory = factory;
         this.type = type;
         this.builtinAnnotation = builtinAnnotation;
-        this.isReverseOperation = builtinAnnotation.reverseOperation();
         this.minNumOfPositionalArgs = builtinAnnotation.minNumOfPositionalArgs();
     }
 
@@ -336,10 +329,6 @@ public abstract class BuiltinMethodDescriptor {
 
     public final String getName() {
         return name;
-    }
-
-    public final boolean isReverseOperation() {
-        return isReverseOperation;
     }
 
     public final int minNumOfPositionalArgs() {
