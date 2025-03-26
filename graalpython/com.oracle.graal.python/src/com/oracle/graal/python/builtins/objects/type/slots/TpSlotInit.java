@@ -71,15 +71,17 @@ import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -88,8 +90,10 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -103,11 +107,9 @@ public final class TpSlotInit {
         final int callTargetIndex = TpSlotBuiltinCallTargetRegistry.getNextCallTargetIndex();
         /*
          * TODO these should be just final, but we currently can't initialize them in the
-         * constructor because of circular dependency between @Builtin and PBCT
+         * constructor because of circular dependency between @Builtin and PBCT.nil
          */
-        @CompilationFinal boolean directOneArg;
-        @CompilationFinal boolean directTwoArgs;
-        @CompilationFinal boolean directVarArgs;
+        @CompilationFinal boolean directInvocation;
         @CompilationFinal Signature signature;
         @CompilationFinal Object[] defaults;
 
@@ -115,8 +117,8 @@ public final class TpSlotInit {
             super(nodeFactory);
         }
 
-        final PythonBuiltinBaseNode createSlotNode() {
-            return createNode();
+        final PythonBuiltinBaseNode createSlotNodeIfDirect() {
+            return directInvocation ? createNode() : null;
         }
 
         public Signature getSignature() {
@@ -135,9 +137,8 @@ public final class TpSlotInit {
             signature = BuiltinFunctionRootNode.createSignature(getNodeFactory(), builtin, true, false);
             defaults = new Object[PythonBuiltins.numDefaults(builtin)];
             Arrays.fill(defaults, PNone.NO_VALUE);
-            directTwoArgs = nodeClass.isAssignableFrom(PythonBinaryBuiltinNode.class);
-            directOneArg = nodeClass.isAssignableFrom(PythonUnaryBuiltinNode.class) || directTwoArgs && defaults.length == 1;
-            directVarArgs = nodeClass.isAssignableFrom(PythonVarargsBuiltinNode.class);
+            directInvocation = PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass) || //
+                            PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonVarargsBuiltinNode.class.isAssignableFrom(nodeClass);
             RootCallTarget callTarget = createSlotCallTarget(language, null, getNodeFactory(), J___INIT__);
             language.setBuiltinSlotCallTarget(callTargetIndex, callTarget);
         }
@@ -151,28 +152,83 @@ public final class TpSlotInit {
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
+    @ReportPolymorphism
     public abstract static class CallSlotTpInitNode extends Node {
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, J___INIT__);
 
         public abstract void execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, Object[] args, PKeyword[] keywords);
 
-        @Specialization(guards = {"cachedSlot == slot", "directInvocation(cachedSlot, args, keywords)"}, limit = "3")
-        static void callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotInitBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
+        @Specialization(guards = "cachedSlot == slot", limit = "3")
+        static void callCachedBuiltin(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") TpSlotInitBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
                         @SuppressWarnings("unused") @Cached("slot") TpSlotInitBuiltin<?> cachedSlot,
-                        @Cached("cachedSlot.createSlotNode()") PythonBuiltinBaseNode slotNode) {
-            if (slotNode instanceof PythonUnaryBuiltinNode unaryBuiltinNode) {
-                unaryBuiltinNode.execute(frame, self);
-            } else if (slotNode instanceof PythonBinaryBuiltinNode binaryBuiltinNode) {
-                binaryBuiltinNode.execute(frame, self, args.length > 0 ? args[0] : PNone.NO_VALUE);
-            } else if (slotNode instanceof PythonVarargsBuiltinNode varargsBuiltinNode) {
-                varargsBuiltinNode.execute(frame, self, args, keywords);
-            } else {
-                throw CompilerDirectives.shouldNotReachHere();
+                        @Cached("cachedSlot.createSlotNodeIfDirect()") PythonBuiltinBaseNode slotNode,
+                        @Cached DispatchSlotFullDirectNode dispatchFullNode) {
+            if (slotNode != null) {
+                if (slotNode instanceof PythonUnaryBuiltinNode unaryBuiltinNode && keywords.length == 0 && args.length == 0) {
+                    unaryBuiltinNode.execute(frame, self);
+                    return;
+                } else if (slotNode instanceof PythonBinaryBuiltinNode binaryBuiltinNode && keywords.length == 0) {
+                    if (args.length == 1) {
+                        binaryBuiltinNode.execute(frame, self, args[0]);
+                        return;
+                    }
+                    int numDefaults = cachedSlot.getDefaults().length;
+                    if (args.length == 0 && numDefaults >= 1) {
+                        binaryBuiltinNode.execute(frame, self, PNone.NO_VALUE);
+                        return;
+                    }
+                } else if (slotNode instanceof PythonTernaryBuiltinNode ternaryBuiltinNode && keywords.length == 0) {
+                    if (args.length == 2) {
+                        ternaryBuiltinNode.execute(frame, self, args[0], args[1]);
+                        return;
+                    }
+                    int numDefaults = cachedSlot.getDefaults().length;
+                    if (args.length == 1 && numDefaults >= 1) {
+                        ternaryBuiltinNode.execute(frame, self, args[0], PNone.NO_VALUE);
+                        return;
+                    }
+                    if (args.length == 0 && numDefaults >= 2) {
+                        ternaryBuiltinNode.execute(frame, self, PNone.NO_VALUE, PNone.NO_VALUE);
+                        return;
+                    }
+                } else if (slotNode instanceof PythonVarargsBuiltinNode varargsBuiltinNode) {
+                    varargsBuiltinNode.execute(frame, self, args, keywords);
+                    return;
+                }
             }
+            dispatchFullNode.execute(frame, inliningTarget, cachedSlot, self, args, keywords);
         }
 
-        protected static boolean directInvocation(TpSlotInitBuiltin<?> slot, Object[] args, PKeyword[] keywords) {
-            return slot.directVarArgs || (keywords.length == 0 && (slot.directOneArg && args.length == 0 || slot.directTwoArgs && args.length == 1));
+        @GenerateInline
+        @GenerateCached(false)
+        abstract static class DispatchSlotFullDirectNode extends Node {
+
+            public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlotInitBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords);
+
+            @Specialization
+            static Object call(VirtualFrame frame, Node inliningTarget, TpSlotInitBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
+                            @Bind PythonLanguage language,
+                            @Bind("language.getBuiltinSlotCallTarget(slot.callTargetIndex)") RootCallTarget callTarget,
+                            @Cached CreateAndCheckArgumentsNode createArgumentsNode,
+                            @Cached CallContext callContext,
+                            @Cached InlinedConditionProfile frameProfile,
+                            @Cached(parameters = "callTarget") DirectCallNode callNode) {
+                CompilerAsserts.partialEvaluationConstant(slot);
+                Object[] arguments = createArgumentsNode.execute(inliningTarget, T___INIT__, args, keywords, slot.getSignature(), self, null, slot.getDefaults(), PKeyword.EMPTY_KEYWORDS, false);
+                if (frameProfile.profile(inliningTarget, frame != null)) {
+                    callContext.prepareCall(frame, arguments, callTarget, inliningTarget);
+                    return callNode.call(arguments);
+                } else {
+                    PythonContext context = PythonContext.get(inliningTarget);
+                    PythonThreadState threadState = context.getThreadState(language);
+                    Object state = IndirectCalleeContext.enter(threadState, arguments, callTarget);
+                    try {
+                        return callNode.call(arguments);
+                    } finally {
+                        IndirectCalleeContext.exit(threadState, state);
+                    }
+                }
+            }
         }
 
         @Specialization

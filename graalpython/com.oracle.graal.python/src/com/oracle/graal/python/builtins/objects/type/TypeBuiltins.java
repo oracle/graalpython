@@ -366,7 +366,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TAKES_D_OR_D_ARGS, "type()", 1, 3);
                 }
             }
-            return createInstanceNode.execute(frame, self, arguments, keywords);
+            return createInstanceNode.execute(frame, inliningTarget, self, arguments, keywords);
         }
     }
 
@@ -421,22 +421,27 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     protected abstract static class CreateInstanceNode extends PNodeWithContext {
 
-        abstract Object execute(VirtualFrame frame, Object self, Object[] args, PKeyword[] keywords);
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object self, Object[] args, PKeyword[] keywords);
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object type, Object[] arguments, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+        static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object type, Object[] arguments, PKeyword[] keywords,
                         @Cached CheckTypeFlagsNode checkTypeFlagsNode,
+                        @Cached InlinedConditionProfile builtinProfile,
                         @Cached GetCachedTpSlotsNode getSlots,
                         @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNew,
                         @Cached BindNew bindNew,
                         @Cached CallVarargsMethodNode dispatchNew,
                         @Cached GetClassNode getInstanceClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached InlinedConditionProfile hasInit,
                         @Cached CallSlotTpInitNode callInit) {
+            if (builtinProfile.profile(inliningTarget, type instanceof PythonBuiltinClass)) {
+                // PythonBuiltinClassType should help the code after this to optimize better
+                type = ((PythonBuiltinClass) type).getType();
+            }
             checkTypeFlagsNode.execute(inliningTarget, type);
             Object newMethod = lookupNew.execute(type);
             assert newMethod != NO_VALUE;
@@ -445,7 +450,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             Object newInstanceKlass = getInstanceClassNode.execute(inliningTarget, newInstance);
             if (isSubtypeNode.execute(newInstanceKlass, type)) {
                 TpSlots slots = getSlots.execute(inliningTarget, newInstanceKlass);
-                if (hasInit.profile(inliningTarget, slots.tp_init() != null)) {
+                if (slots.tp_init() != null) {
                     callInit.execute(frame, inliningTarget, slots.tp_init(), newInstance, arguments, keywords);
                 }
             }
