@@ -137,7 +137,6 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
@@ -1644,17 +1643,6 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyUnicodeBuildEncodingMapNode buildEncodingMapNode) {
             return buildEncodingMapNode.execute(frame, inliningTarget, map);
-        }
-    }
-
-    @Builtin(name = "EncodingMap", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PEncodingMap, isPublic = false)
-    @GenerateNodeFactory
-    abstract static class EncodingMapNode extends PythonBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object encodingMap(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "EncodingMap");
         }
     }
 

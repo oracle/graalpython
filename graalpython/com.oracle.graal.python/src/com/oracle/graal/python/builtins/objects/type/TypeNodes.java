@@ -406,7 +406,7 @@ public abstract class TypeNodes {
                     result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR;
                     break;
                 case PLruListElem:
-                    result = DEFAULT | HAVE_GC | DISALLOW_INSTANTIATION;
+                    result = DEFAULT | HAVE_GC;
                     break;
                 case PBytesIOBuf:
                 case PMethod:
@@ -467,6 +467,7 @@ public abstract class TypeNodes {
                     break;
             }
             result |= clazz.isAcceptableBase() ? BASETYPE : 0;
+            result |= clazz.disallowInstantiation() ? DISALLOW_INSTANTIATION : 0;
             PythonBuiltinClassType iter = clazz;
             while (iter != null) {
                 if (iter == PythonBuiltinClassType.PBaseException) {

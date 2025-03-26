@@ -296,107 +296,107 @@ import com.oracle.truffle.api.strings.TruffleString;
 public enum PythonBuiltinClassType implements TruffleObject {
 
     PythonObject("object", null, J_BUILTINS, ObjectBuiltins.SLOTS),
-    PythonClass("type", PythonObject, J_BUILTINS, J_BUILTINS, Flags.PUBLIC_BASE_WDICT, TYPE_M_FLAGS, TypeBuiltins.SLOTS),
+    PythonClass("type", PythonObject, J_BUILTINS, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT, TYPE_M_FLAGS, TypeBuiltins.SLOTS),
     PArray("array", PythonObject, "array", ARRAY_M_FLAGS, ArrayBuiltins.SLOTS),
-    PArrayIterator("arrayiterator", PythonObject, Flags.PRIVATE_DERIVED_WODICT, IteratorBuiltins.SLOTS),
-    PIterator("iterator", PythonObject, Flags.PRIVATE_DERIVED_WODICT, IteratorBuiltins.SLOTS),
+    PArrayIterator("arrayiterator", PythonObject, Flags.PRIVATE | Flags.DISALLOW_INSTANTIATION, IteratorBuiltins.SLOTS),
+    PIterator("iterator", PythonObject, Flags.PRIVATE | Flags.DISALLOW_INSTANTIATION, IteratorBuiltins.SLOTS),
     /** See {@link com.oracle.graal.python.builtins.objects.function.PBuiltinFunction} */
-    PBuiltinFunction("method_descriptor", PythonObject, Flags.PRIVATE_DERIVED_WODICT, MethodDescriptorBuiltins.SLOTS),
+    PBuiltinFunction("method_descriptor", PythonObject, Flags.PRIVATE | Flags.DISALLOW_INSTANTIATION, MethodDescriptorBuiltins.SLOTS),
     /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
-    PBuiltinFunctionOrMethod("builtin_function_or_method", PythonObject, Flags.PRIVATE_DERIVED_WODICT, TpSlots.merge(AbstractMethodBuiltins.SLOTS, BuiltinFunctionOrMethodBuiltins.SLOTS)),
+    PBuiltinFunctionOrMethod("builtin_function_or_method", PythonObject, Flags.PRIVATE, TpSlots.merge(AbstractMethodBuiltins.SLOTS, BuiltinFunctionOrMethodBuiltins.SLOTS)),
     /** See {@link com.oracle.graal.python.builtins.objects.function.PBuiltinFunction} */
-    WrapperDescriptor(J_WRAPPER_DESCRIPTOR, PythonObject, Flags.PRIVATE_DERIVED_WODICT, WrapperDescriptorBuiltins.SLOTS),
+    WrapperDescriptor(J_WRAPPER_DESCRIPTOR, PythonObject, Flags.PRIVATE | Flags.DISALLOW_INSTANTIATION, WrapperDescriptorBuiltins.SLOTS),
     /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
-    MethodWrapper("method-wrapper", PythonObject, Flags.PRIVATE_DERIVED_WODICT, TpSlots.merge(AbstractMethodBuiltins.SLOTS, MethodWrapperBuiltins.SLOTS)),
+    MethodWrapper("method-wrapper", PythonObject, Flags.PRIVATE, TpSlots.merge(AbstractMethodBuiltins.SLOTS, MethodWrapperBuiltins.SLOTS)),
     /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
-    PBuiltinMethod("builtin_method", PBuiltinFunctionOrMethod, Flags.PRIVATE_DERIVED_WODICT),
-    PBuiltinClassMethod("classmethod_descriptor", PythonObject, Flags.PRIVATE_DERIVED_WODICT, TpSlots.merge(ClassmethodCommonBuiltins.SLOTS, BuiltinClassmethodBuiltins.SLOTS)),
-    GetSetDescriptor("getset_descriptor", PythonObject, Flags.PRIVATE_DERIVED_WODICT, GetSetDescriptorTypeBuiltins.SLOTS),
-    MemberDescriptor(J_MEMBER_DESCRIPTOR, PythonObject, Flags.PRIVATE_DERIVED_WODICT, MemberDescriptorBuiltins.SLOTS),
+    PBuiltinMethod("builtin_method", PBuiltinFunctionOrMethod, Flags.PRIVATE),
+    PBuiltinClassMethod("classmethod_descriptor", PythonObject, Flags.PRIVATE, TpSlots.merge(ClassmethodCommonBuiltins.SLOTS, BuiltinClassmethodBuiltins.SLOTS)),
+    GetSetDescriptor("getset_descriptor", PythonObject, Flags.PRIVATE | Flags.DISALLOW_INSTANTIATION, GetSetDescriptorTypeBuiltins.SLOTS),
+    MemberDescriptor(J_MEMBER_DESCRIPTOR, PythonObject, Flags.PRIVATE | Flags.DISALLOW_INSTANTIATION, MemberDescriptorBuiltins.SLOTS),
     PByteArray("bytearray", PythonObject, J_BUILTINS, BYTE_ARRAY_M_FLAGS, TpSlots.merge(BytesCommonBuiltins.SLOTS, ByteArrayBuiltins.SLOTS)),
     PBytes("bytes", PythonObject, J_BUILTINS, BYTES_M_FLAGS, TpSlots.merge(BytesCommonBuiltins.SLOTS, BytesBuiltins.SLOTS)),
-    PCell("cell", PythonObject, Flags.PRIVATE_DERIVED_WODICT, CellBuiltins.SLOTS),
-    PSimpleNamespace("SimpleNamespace", PythonObject, null, "types", Flags.PUBLIC_BASE_WDICT, SimpleNamespaceBuiltins.SLOTS),
-    PKeyWrapper("KeyWrapper", PythonObject, "_functools", "functools", Flags.PUBLIC_DERIVED_WODICT, KeyWrapperBuiltins.SLOTS),
-    PPartial(J_PARTIAL, PythonObject, "_functools", "functools", Flags.PUBLIC_BASE_WDICT, PartialBuiltins.SLOTS),
-    PLruListElem("_lru_list_elem", PythonObject, null, "functools", Flags.PUBLIC_DERIVED_WODICT),
-    PLruCacheWrapper(J_LRU_CACHE_WRAPPER, PythonObject, "_functools", "functools", Flags.PUBLIC_BASE_WDICT, LruCacheWrapperBuiltins.SLOTS),
-    PDeque(J_DEQUE, PythonObject, "_collections", "_collections", Flags.PUBLIC_BASE_WODICT, DEQUE_M_FLAGS, DequeBuiltins.SLOTS),
-    PTupleGetter(J_TUPLE_GETTER, PythonObject, "_collections", Flags.PUBLIC_BASE_WODICT, TupleGetterBuiltins.SLOTS),
-    PDequeIter(J_DEQUE_ITER, PythonObject, "_collections", Flags.PUBLIC_DERIVED_WODICT, DequeIterBuiltins.SLOTS),
-    PDequeRevIter(J_DEQUE_REV_ITER, PythonObject, "_collections", Flags.PUBLIC_DERIVED_WODICT, DequeIterBuiltins.SLOTS),
+    PCell("cell", PythonObject, Flags.PRIVATE, CellBuiltins.SLOTS),
+    PSimpleNamespace("SimpleNamespace", PythonObject, null, "types", Flags.BASETYPE | Flags.HAS_DICT, SimpleNamespaceBuiltins.SLOTS),
+    PKeyWrapper("KeyWrapper", PythonObject, "_functools", "functools", Flags.DISALLOW_INSTANTIATION, KeyWrapperBuiltins.SLOTS),
+    PPartial(J_PARTIAL, PythonObject, "_functools", "functools", Flags.BASETYPE | Flags.HAS_DICT, PartialBuiltins.SLOTS),
+    PLruListElem("_lru_list_elem", PythonObject, null, "functools", Flags.DISALLOW_INSTANTIATION),
+    PLruCacheWrapper(J_LRU_CACHE_WRAPPER, PythonObject, "_functools", "functools", Flags.BASETYPE | Flags.HAS_DICT, LruCacheWrapperBuiltins.SLOTS),
+    PDeque(J_DEQUE, PythonObject, "_collections", "_collections", Flags.BASETYPE, DEQUE_M_FLAGS, DequeBuiltins.SLOTS),
+    PTupleGetter(J_TUPLE_GETTER, PythonObject, "_collections", Flags.BASETYPE, TupleGetterBuiltins.SLOTS),
+    PDequeIter(J_DEQUE_ITER, PythonObject, "_collections", 0, DequeIterBuiltins.SLOTS),
+    PDequeRevIter(J_DEQUE_REV_ITER, PythonObject, "_collections", 0, DequeIterBuiltins.SLOTS),
     PComplex("complex", PythonObject, J_BUILTINS, COMPLEX_M_FLAGS, ComplexBuiltins.SLOTS),
     PDict("dict", PythonObject, J_BUILTINS, DICT_M_FLAGS, TpSlots.merge(DictBuiltins.SLOTS, DictReprBuiltin.SLOTS)),
-    PDefaultDict(J_DEFAULTDICT, PDict, "_collections", "collections", Flags.PUBLIC_BASE_WODICT, DEFAULTDICT_M_FLAGS, DefaultDictBuiltins.SLOTS),
-    POrderedDict(J_ORDERED_DICT, PDict, "_collections", "_collections", Flags.PUBLIC_BASE_WDICT, DICT_M_FLAGS, OrderedDictBuiltins.SLOTS),
-    PDictItemIterator(J_DICT_ITEMITERATOR, PythonObject, Flags.PRIVATE_DERIVED_WODICT, IteratorBuiltins.SLOTS),
-    PDictReverseItemIterator(J_DICT_REVERSE_ITEMITERATOR, PythonObject, Flags.PRIVATE_DERIVED_WODICT, IteratorBuiltins.SLOTS),
-    PDictItemsView(J_DICT_ITEMS, PythonObject, Flags.PRIVATE_DERIVED_WODICT, DICTITEMSVIEW_M_FLAGS, TpSlots.merge(DictViewBuiltins.SLOTS, DictReprBuiltin.SLOTS)),
-    PDictKeyIterator(J_DICT_KEYITERATOR, PythonObject, Flags.PRIVATE_DERIVED_WODICT, IteratorBuiltins.SLOTS),
-    PDictReverseKeyIterator(J_DICT_REVERSE_KEYITERATOR, PythonObject, Flags.PRIVATE_DERIVED_WODICT, IteratorBuiltins.SLOTS),
-    PDictKeysView(J_DICT_KEYS, PythonObject, Flags.PRIVATE_DERIVED_WODICT, DICTKEYSVIEW_M_FLAGS, TpSlots.merge(DictViewBuiltins.SLOTS, DictReprBuiltin.SLOTS)),
-    PDictValueIterator(J_DICT_VALUEITERATOR, PythonObject, Flags.PRIVATE_DERIVED_WODICT, IteratorBuiltins.SLOTS),
-    PDictReverseValueIterator(J_DICT_REVERSE_VALUEITERATOR, PythonObject, Flags.PRIVATE_DERIVED_WODICT, IteratorBuiltins.SLOTS),
-    PDictValuesView(J_DICT_VALUES, PythonObject, Flags.PRIVATE_DERIVED_WODICT, DICTVALUESVIEW_M_FLAGS, TpSlots.merge(DictValuesBuiltins.SLOTS, DictReprBuiltin.SLOTS)),
-    POrderedDictKeys("odict_keys", PDictKeysView, Flags.PRIVATE_DERIVED_WODICT, DICTKEYSVIEW_M_FLAGS, OrderedDictKeysBuiltins.SLOTS),
-    POrderedDictValues("odict_values", PDictValuesView, Flags.PRIVATE_DERIVED_WODICT, DICTVALUESVIEW_M_FLAGS, OrderedDictValuesBuiltins.SLOTS),
-    POrderedDictItems("odict_items", PDictItemsView, Flags.PRIVATE_DERIVED_WODICT, DICTITEMSVIEW_M_FLAGS, OrderedDictItemsBuiltins.SLOTS),
-    POrderedDictIterator("odict_iterator", PythonObject, Flags.PRIVATE_DERIVED_WODICT, OrderedDictIteratorBuiltins.SLOTS),
-    PEllipsis("ellipsis", PythonObject, Flags.PRIVATE_DERIVED_WODICT, EllipsisBuiltins.SLOTS),
+    PDefaultDict(J_DEFAULTDICT, PDict, "_collections", "collections", Flags.BASETYPE, DEFAULTDICT_M_FLAGS, DefaultDictBuiltins.SLOTS),
+    POrderedDict(J_ORDERED_DICT, PDict, "_collections", "_collections", Flags.BASETYPE | Flags.HAS_DICT, DICT_M_FLAGS, OrderedDictBuiltins.SLOTS),
+    PDictItemIterator(J_DICT_ITEMITERATOR, PythonObject, Flags.PRIVATE | Flags.DISALLOW_INSTANTIATION, IteratorBuiltins.SLOTS),
+    PDictReverseItemIterator(J_DICT_REVERSE_ITEMITERATOR, PythonObject, Flags.PRIVATE, IteratorBuiltins.SLOTS),
+    PDictItemsView(J_DICT_ITEMS, PythonObject, Flags.PRIVATE | Flags.DISALLOW_INSTANTIATION, DICTITEMSVIEW_M_FLAGS, TpSlots.merge(DictViewBuiltins.SLOTS, DictReprBuiltin.SLOTS)),
+    PDictKeyIterator(J_DICT_KEYITERATOR, PythonObject, Flags.PRIVATE | Flags.DISALLOW_INSTANTIATION, IteratorBuiltins.SLOTS),
+    PDictReverseKeyIterator(J_DICT_REVERSE_KEYITERATOR, PythonObject, Flags.PRIVATE, IteratorBuiltins.SLOTS),
+    PDictKeysView(J_DICT_KEYS, PythonObject, Flags.PRIVATE | Flags.DISALLOW_INSTANTIATION, DICTKEYSVIEW_M_FLAGS, TpSlots.merge(DictViewBuiltins.SLOTS, DictReprBuiltin.SLOTS)),
+    PDictValueIterator(J_DICT_VALUEITERATOR, PythonObject, Flags.PRIVATE | Flags.DISALLOW_INSTANTIATION, IteratorBuiltins.SLOTS),
+    PDictReverseValueIterator(J_DICT_REVERSE_VALUEITERATOR, PythonObject, Flags.PRIVATE, IteratorBuiltins.SLOTS),
+    PDictValuesView(J_DICT_VALUES, PythonObject, Flags.PRIVATE | Flags.DISALLOW_INSTANTIATION, DICTVALUESVIEW_M_FLAGS, TpSlots.merge(DictValuesBuiltins.SLOTS, DictReprBuiltin.SLOTS)),
+    POrderedDictKeys("odict_keys", PDictKeysView, Flags.PRIVATE, DICTKEYSVIEW_M_FLAGS, OrderedDictKeysBuiltins.SLOTS),
+    POrderedDictValues("odict_values", PDictValuesView, Flags.PRIVATE, DICTVALUESVIEW_M_FLAGS, OrderedDictValuesBuiltins.SLOTS),
+    POrderedDictItems("odict_items", PDictItemsView, Flags.PRIVATE, DICTITEMSVIEW_M_FLAGS, OrderedDictItemsBuiltins.SLOTS),
+    POrderedDictIterator("odict_iterator", PythonObject, Flags.PRIVATE, OrderedDictIteratorBuiltins.SLOTS),
+    PEllipsis("ellipsis", PythonObject, Flags.PRIVATE, EllipsisBuiltins.SLOTS),
     PEnumerate("enumerate", PythonObject, J_BUILTINS, EnumerateBuiltins.SLOTS),
     PMap("map", PythonObject, J_BUILTINS, MapBuiltins.SLOTS),
     PFloat("float", PythonObject, J_BUILTINS, FLOAT_M_FLAGS, FloatBuiltins.SLOTS),
-    PFrame("frame", PythonObject, Flags.PRIVATE_DERIVED_WODICT, FrameBuiltins.SLOTS),
+    PFrame("frame", PythonObject, Flags.PRIVATE, FrameBuiltins.SLOTS),
     PFrozenSet("frozenset", PythonObject, J_BUILTINS, FROZENSET_M_FLAGS, TpSlots.merge(BaseSetBuiltins.SLOTS, FrozenSetBuiltins.SLOTS)),
-    PFunction("function", PythonObject, Flags.PRIVATE_DERIVED_WDICT, FunctionBuiltins.SLOTS),
-    PGenerator("generator", PythonObject, Flags.PRIVATE_DERIVED_WODICT, GENERATOR_M_FLAGS, GeneratorBuiltins.SLOTS),
-    PCoroutine("coroutine", PythonObject, Flags.PRIVATE_DERIVED_WODICT, COROUTINE_M_FLAGS, CoroutineBuiltins.SLOTS),
-    PCoroutineWrapper("coroutine_wrapper", PythonObject, Flags.PRIVATE_DERIVED_WODICT, CoroutineWrapperBuiltins.SLOTS),
-    PAsyncGenerator("async_generator", PythonObject, Flags.PRIVATE_DERIVED_WODICT, ASYNC_GENERATOR_M_FLAGS),
+    PFunction("function", PythonObject, Flags.PRIVATE | Flags.HAS_DICT, FunctionBuiltins.SLOTS),
+    PGenerator("generator", PythonObject, Flags.PRIVATE | Flags.DISALLOW_INSTANTIATION, GENERATOR_M_FLAGS, GeneratorBuiltins.SLOTS),
+    PCoroutine("coroutine", PythonObject, Flags.PRIVATE, COROUTINE_M_FLAGS, CoroutineBuiltins.SLOTS),
+    PCoroutineWrapper("coroutine_wrapper", PythonObject, Flags.PRIVATE, CoroutineWrapperBuiltins.SLOTS),
+    PAsyncGenerator("async_generator", PythonObject, Flags.PRIVATE, ASYNC_GENERATOR_M_FLAGS),
     PInt("int", PythonObject, J_BUILTINS, INT_M_FLAGS, IntBuiltins.SLOTS),
-    Boolean("bool", PInt, J_BUILTINS, J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT, BOOLEAN_M_FLAGS, BoolBuiltins.SLOTS),
+    Boolean("bool", PInt, J_BUILTINS, J_BUILTINS, 0, BOOLEAN_M_FLAGS, BoolBuiltins.SLOTS),
     PList("list", PythonObject, J_BUILTINS, LIST_M_FLAGS, ListBuiltins.SLOTS),
-    PMappingproxy("mappingproxy", PythonObject, Flags.PRIVATE_DERIVED_WODICT, MAPPINGPROXY_M_FLAGS, MappingproxyBuiltins.SLOTS),
-    PMemoryView("memoryview", PythonObject, J_BUILTINS, J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT, MEMORYVIEW_M_FLAGS, MemoryViewBuiltins.SLOTS),
-    PAsyncGenASend("async_generator_asend", PythonObject, Flags.PRIVATE_DERIVED_WODICT, ASYNC_GENERATOR_ASEND_M_FLAGS, AsyncGenSendBuiltins.SLOTS),
-    PAsyncGenAThrow("async_generator_athrow", PythonObject, Flags.PRIVATE_DERIVED_WODICT, ASYNC_GENERATOR_ATHROW_M_FLAGS, AsyncGenThrowBuiltins.SLOTS),
-    PAsyncGenAWrappedValue("async_generator_wrapped_value", PythonObject, Flags.PRIVATE_DERIVED_WODICT),
-    PMethod("method", PythonObject, Flags.PRIVATE_DERIVED_WODICT, TpSlots.merge(AbstractMethodBuiltins.SLOTS, MethodBuiltins.SLOTS)),
+    PMappingproxy("mappingproxy", PythonObject, Flags.PRIVATE, MAPPINGPROXY_M_FLAGS, MappingproxyBuiltins.SLOTS),
+    PMemoryView("memoryview", PythonObject, J_BUILTINS, J_BUILTINS, 0, MEMORYVIEW_M_FLAGS, MemoryViewBuiltins.SLOTS),
+    PAsyncGenASend("async_generator_asend", PythonObject, Flags.PRIVATE, ASYNC_GENERATOR_ASEND_M_FLAGS, AsyncGenSendBuiltins.SLOTS),
+    PAsyncGenAThrow("async_generator_athrow", PythonObject, Flags.PRIVATE, ASYNC_GENERATOR_ATHROW_M_FLAGS, AsyncGenThrowBuiltins.SLOTS),
+    PAsyncGenAWrappedValue("async_generator_wrapped_value", PythonObject, Flags.PRIVATE),
+    PMethod("method", PythonObject, Flags.PRIVATE, TpSlots.merge(AbstractMethodBuiltins.SLOTS, MethodBuiltins.SLOTS)),
     PMMap("mmap", PythonObject, "mmap", MMAP_M_FLAGS, MMapBuiltins.SLOTS),
-    PNone("NoneType", PythonObject, Flags.PRIVATE_DERIVED_WODICT, NONE_M_FLAGS, NoneBuiltins.SLOTS),
-    PNotImplemented("NotImplementedType", PythonObject, Flags.PRIVATE_DERIVED_WODICT, NotImplementedBuiltins.SLOTS),
-    PProperty(J_PROPERTY, PythonObject, J_BUILTINS, Flags.PUBLIC_BASE_WODICT, PropertyBuiltins.SLOTS),
-    PSimpleQueue(J_SIMPLE_QUEUE, PythonObject, "_queue", Flags.PUBLIC_BASE_WODICT),
+    PNone("NoneType", PythonObject, Flags.PRIVATE, NONE_M_FLAGS, NoneBuiltins.SLOTS),
+    PNotImplemented("NotImplementedType", PythonObject, Flags.PRIVATE, NotImplementedBuiltins.SLOTS),
+    PProperty(J_PROPERTY, PythonObject, J_BUILTINS, Flags.BASETYPE, PropertyBuiltins.SLOTS),
+    PSimpleQueue(J_SIMPLE_QUEUE, PythonObject, "_queue", Flags.BASETYPE),
     PRandom("Random", PythonObject, "_random"),
-    PRange("range", PythonObject, J_BUILTINS, J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT, RANGE_M_FLAGS, RangeBuiltins.SLOTS),
+    PRange("range", PythonObject, J_BUILTINS, J_BUILTINS, 0, RANGE_M_FLAGS, RangeBuiltins.SLOTS),
     PReferenceType("ReferenceType", PythonObject, "_weakref", ReferenceTypeBuiltins.SLOTS),
-    PSentinelIterator("callable_iterator", PythonObject, Flags.PRIVATE_DERIVED_WODICT, SentinelIteratorBuiltins.SLOTS),
+    PSentinelIterator("callable_iterator", PythonObject, Flags.PRIVATE | Flags.DISALLOW_INSTANTIATION, SentinelIteratorBuiltins.SLOTS),
     PReverseIterator("reversed", PythonObject, J_BUILTINS, ReversedBuiltins.SLOTS),
     PSet("set", PythonObject, J_BUILTINS, SET_M_FLAGS, TpSlots.merge(BaseSetBuiltins.SLOTS, SetBuiltins.SLOTS)),
     PSlice("slice", PythonObject, J_BUILTINS, SliceBuiltins.SLOTS),
     PString("str", PythonObject, J_BUILTINS, STRING_M_FLAGS, StringBuiltins.SLOTS),
     PTraceback(PythonObject, "traceback"),
     PTuple("tuple", PythonObject, J_BUILTINS, TUPLE_M_FLAGS, TupleBuiltins.SLOTS),
-    PythonModule("module", PythonObject, Flags.PRIVATE_BASE_WDICT, ModuleBuiltins.SLOTS),
-    PythonModuleDef("moduledef", PythonObject, Flags.PRIVATE_DERIVED_WODICT),
+    PythonModule("module", PythonObject, Flags.PRIVATE | Flags.BASETYPE | Flags.HAS_DICT, ModuleBuiltins.SLOTS),
+    PythonModuleDef("moduledef", PythonObject, Flags.PRIVATE),
     Super("super", PythonObject, J_BUILTINS, SuperBuiltins.SLOTS),
-    PCode("code", PythonObject, Flags.PRIVATE_DERIVED_WODICT, CodeBuiltins.SLOTS),
-    PGenericAlias("GenericAlias", PythonObject, J_TYPES, J_TYPES, Flags.PUBLIC_BASE_WODICT, GENERIC_ALIAS_M_FLAGS, GenericAliasBuiltins.SLOTS),
-    PGenericAliasIterator("generic_alias_iterator", PythonObject, Flags.PRIVATE_DERIVED_WODICT, GenericAliasIteratorBuiltins.SLOTS),
-    PUnionType("UnionType", PythonObject, J_TYPES, J_TYPES, Flags.PUBLIC_DERIVED_WODICT, UNION_TYPE_M_FLAGS, UnionTypeBuiltins.SLOTS),
+    PCode("code", PythonObject, Flags.PRIVATE, CodeBuiltins.SLOTS),
+    PGenericAlias("GenericAlias", PythonObject, J_TYPES, J_TYPES, Flags.BASETYPE, GENERIC_ALIAS_M_FLAGS, GenericAliasBuiltins.SLOTS),
+    PGenericAliasIterator("generic_alias_iterator", PythonObject, Flags.PRIVATE, GenericAliasIteratorBuiltins.SLOTS),
+    PUnionType("UnionType", PythonObject, J_TYPES, J_TYPES, 0, UNION_TYPE_M_FLAGS, UnionTypeBuiltins.SLOTS),
     PZip("zip", PythonObject, J_BUILTINS, PZipBuiltins.SLOTS),
     PThread("start_new_thread", PythonObject, J__THREAD),
     PThreadLocal("_local", PythonObject, J__THREAD, ThreadLocalBuiltins.SLOTS),
-    PLock("LockType", PythonObject, J__THREAD, LockBuiltins.SLOTS),
+    PLock("LockType", PythonObject, J__THREAD, Flags.DISALLOW_INSTANTIATION, LockBuiltins.SLOTS),
     PRLock("RLock", PythonObject, J__THREAD, LockBuiltins.SLOTS),
     PSemLock("SemLock", PythonObject, "_multiprocessing"),
     PGraalPySemLock("SemLock", PythonObject, "_multiprocessing_graalpy"),
     PSocket("socket", PythonObject, J__SOCKET, SocketBuiltins.SLOTS),
-    PStaticmethod("staticmethod", PythonObject, J_BUILTINS, Flags.PUBLIC_BASE_WDICT, StaticmethodBuiltins.SLOTS),
-    PClassmethod("classmethod", PythonObject, J_BUILTINS, Flags.PUBLIC_BASE_WDICT, TpSlots.merge(ClassmethodCommonBuiltins.SLOTS, ClassmethodBuiltins.SLOTS)),
-    PInstancemethod("instancemethod", PythonObject, Flags.PUBLIC_BASE_WDICT, InstancemethodBuiltins.SLOTS),
-    PScandirIterator("ScandirIterator", PythonObject, J_POSIX, Flags.PRIVATE_DERIVED_WODICT, ScandirIteratorBuiltins.SLOTS),
-    PDirEntry("DirEntry", PythonObject, J_POSIX, Flags.PUBLIC_DERIVED_WODICT, DirEntryBuiltins.SLOTS),
+    PStaticmethod("staticmethod", PythonObject, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT, StaticmethodBuiltins.SLOTS),
+    PClassmethod("classmethod", PythonObject, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT, TpSlots.merge(ClassmethodCommonBuiltins.SLOTS, ClassmethodBuiltins.SLOTS)),
+    PInstancemethod("instancemethod", PythonObject, Flags.BASETYPE | Flags.HAS_DICT, InstancemethodBuiltins.SLOTS),
+    PScandirIterator("ScandirIterator", PythonObject, J_POSIX, Flags.PRIVATE | Flags.DISALLOW_INSTANTIATION, ScandirIteratorBuiltins.SLOTS),
+    PDirEntry("DirEntry", PythonObject, J_POSIX, Flags.DISALLOW_INSTANTIATION, DirEntryBuiltins.SLOTS),
     LsprofProfiler("Profiler", PythonObject, "_lsprof", ProfilerBuiltins.SLOTS),
     PStruct("Struct", PythonObject, J__STRUCT),
     PStructUnpackIterator("unpack_iterator", PythonObject, J__STRUCT, StructUnpackIteratorBuiltins.SLOTS),
@@ -409,114 +409,114 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // Errors and exceptions:
 
     // everything after BaseException is considered to be an exception
-    PBaseException("BaseException", PythonObject, J_BUILTINS, Flags.EXCEPTION, BaseExceptionBuiltins.SLOTS),
-    PBaseExceptionGroup("BaseExceptionGroup", PBaseException, J_BUILTINS, Flags.EXCEPTION, BaseExceptionGroupBuiltins.SLOTS),
-    SystemExit("SystemExit", PBaseException, J_BUILTINS, Flags.EXCEPTION, SystemExitBuiltins.SLOTS),
-    KeyboardInterrupt("KeyboardInterrupt", PBaseException, J_BUILTINS, Flags.EXCEPTION),
-    GeneratorExit("GeneratorExit", PBaseException, J_BUILTINS, Flags.EXCEPTION),
-    Exception("Exception", PBaseException, J_BUILTINS, Flags.EXCEPTION),
-    ReferenceError("ReferenceError", Exception, J_BUILTINS, Flags.EXCEPTION),
-    RuntimeError("RuntimeError", Exception, J_BUILTINS, Flags.EXCEPTION),
-    NotImplementedError("NotImplementedError", RuntimeError, J_BUILTINS, Flags.EXCEPTION),
-    SyntaxError("SyntaxError", Exception, J_BUILTINS, Flags.EXCEPTION, SyntaxErrorBuiltins.SLOTS),
-    IndentationError("IndentationError", SyntaxError, J_BUILTINS, Flags.EXCEPTION, SyntaxErrorBuiltins.SLOTS),
-    TabError("TabError", IndentationError, J_BUILTINS, Flags.EXCEPTION, SyntaxErrorBuiltins.SLOTS),
-    SystemError("SystemError", Exception, J_BUILTINS, Flags.EXCEPTION),
-    TypeError("TypeError", Exception, J_BUILTINS, Flags.EXCEPTION),
-    ValueError("ValueError", Exception, J_BUILTINS, Flags.EXCEPTION),
-    StopIteration("StopIteration", Exception, J_BUILTINS, Flags.EXCEPTION, StopIterationBuiltins.SLOTS),
-    StopAsyncIteration("StopAsyncIteration", Exception, J_BUILTINS, Flags.EXCEPTION),
-    ArithmeticError("ArithmeticError", Exception, J_BUILTINS, Flags.EXCEPTION),
-    FloatingPointError("FloatingPointError", ArithmeticError, J_BUILTINS, Flags.EXCEPTION),
-    OverflowError("OverflowError", ArithmeticError, J_BUILTINS, Flags.EXCEPTION),
-    ZeroDivisionError("ZeroDivisionError", ArithmeticError, J_BUILTINS, Flags.EXCEPTION),
-    AssertionError("AssertionError", Exception, J_BUILTINS, Flags.EXCEPTION),
-    AttributeError("AttributeError", Exception, J_BUILTINS, Flags.EXCEPTION),
-    BufferError("BufferError", Exception, J_BUILTINS, Flags.EXCEPTION),
-    EOFError("EOFError", Exception, J_BUILTINS, Flags.EXCEPTION),
-    ImportError("ImportError", Exception, J_BUILTINS, Flags.EXCEPTION, ImportErrorBuiltins.SLOTS),
-    ModuleNotFoundError("ModuleNotFoundError", ImportError, J_BUILTINS, Flags.EXCEPTION),
-    LookupError("LookupError", Exception, J_BUILTINS, Flags.EXCEPTION),
-    IndexError("IndexError", LookupError, J_BUILTINS, Flags.EXCEPTION),
-    KeyError("KeyError", LookupError, J_BUILTINS, Flags.EXCEPTION, KeyErrorBuiltins.SLOTS),
-    MemoryError("MemoryError", Exception, J_BUILTINS, Flags.EXCEPTION),
-    NameError("NameError", Exception, J_BUILTINS, Flags.EXCEPTION),
-    UnboundLocalError("UnboundLocalError", NameError, J_BUILTINS, Flags.EXCEPTION),
-    OSError("OSError", Exception, J_BUILTINS, Flags.EXCEPTION, OsErrorBuiltins.SLOTS),
-    BlockingIOError("BlockingIOError", OSError, J_BUILTINS, Flags.EXCEPTION),
-    ChildProcessError("ChildProcessError", OSError, J_BUILTINS, Flags.EXCEPTION),
-    ConnectionError("ConnectionError", OSError, J_BUILTINS, Flags.EXCEPTION),
-    BrokenPipeError("BrokenPipeError", ConnectionError, J_BUILTINS, Flags.EXCEPTION),
-    ConnectionAbortedError("ConnectionAbortedError", ConnectionError, J_BUILTINS, Flags.EXCEPTION),
-    ConnectionRefusedError("ConnectionRefusedError", ConnectionError, J_BUILTINS, Flags.EXCEPTION),
-    ConnectionResetError("ConnectionResetError", ConnectionError, J_BUILTINS, Flags.EXCEPTION),
-    FileExistsError("FileExistsError", OSError, J_BUILTINS, Flags.EXCEPTION),
-    FileNotFoundError("FileNotFoundError", OSError, J_BUILTINS, Flags.EXCEPTION),
-    InterruptedError("InterruptedError", OSError, J_BUILTINS, Flags.EXCEPTION),
-    IsADirectoryError("IsADirectoryError", OSError, J_BUILTINS, Flags.EXCEPTION),
-    NotADirectoryError("NotADirectoryError", OSError, J_BUILTINS, Flags.EXCEPTION),
-    PermissionError("PermissionError", OSError, J_BUILTINS, Flags.EXCEPTION),
-    ProcessLookupError("ProcessLookupError", OSError, J_BUILTINS, Flags.EXCEPTION),
-    TimeoutError("TimeoutError", OSError, J_BUILTINS, Flags.EXCEPTION),
-    ZLibError("error", Exception, "zlib", Flags.EXCEPTION),
-    CSVError("Error", Exception, "_csv", Flags.EXCEPTION),
-    LZMAError("LZMAError", Exception, "_lzma", Flags.EXCEPTION),
-    StructError("StructError", Exception, J__STRUCT, Flags.EXCEPTION),
-    PickleError("PickleError", Exception, "_pickle", Flags.EXCEPTION),
-    PicklingError("PicklingError", PickleError, "_pickle", Flags.EXCEPTION),
-    UnpicklingError("UnpicklingError", PickleError, "_pickle", Flags.EXCEPTION),
-    SocketGAIError("gaierror", OSError, J__SOCKET, Flags.EXCEPTION),
-    SocketHError("herror", OSError, J__SOCKET, Flags.EXCEPTION),
-    BinasciiError("Error", ValueError, "binascii", Flags.EXCEPTION),
-    BinasciiIncomplete("Incomplete", Exception, "binascii", Flags.EXCEPTION),
-    SSLError("SSLError", OSError, J__SSL, Flags.EXCEPTION, SSLErrorBuiltins.SLOTS),
-    SSLZeroReturnError("SSLZeroReturnError", SSLError, J__SSL, Flags.EXCEPTION),
-    SSLWantReadError("SSLWantReadError", SSLError, J__SSL, Flags.EXCEPTION),
-    SSLWantWriteError("SSLWantWriteError", SSLError, J__SSL, Flags.EXCEPTION),
-    SSLSyscallError("SSLSyscallError", SSLError, J__SSL, Flags.EXCEPTION),
-    SSLEOFError("SSLEOFError", SSLError, J__SSL, Flags.EXCEPTION),
-    SSLCertVerificationError("SSLCertVerificationError", SSLError, J__SSL, Flags.EXCEPTION),
+    PBaseException("BaseException", PythonObject, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT, BaseExceptionBuiltins.SLOTS),
+    PBaseExceptionGroup("BaseExceptionGroup", PBaseException, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT, BaseExceptionGroupBuiltins.SLOTS),
+    SystemExit("SystemExit", PBaseException, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT, SystemExitBuiltins.SLOTS),
+    KeyboardInterrupt("KeyboardInterrupt", PBaseException, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    GeneratorExit("GeneratorExit", PBaseException, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    Exception("Exception", PBaseException, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    ReferenceError("ReferenceError", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    RuntimeError("RuntimeError", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    NotImplementedError("NotImplementedError", RuntimeError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    SyntaxError("SyntaxError", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT, SyntaxErrorBuiltins.SLOTS),
+    IndentationError("IndentationError", SyntaxError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT, SyntaxErrorBuiltins.SLOTS),
+    TabError("TabError", IndentationError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT, SyntaxErrorBuiltins.SLOTS),
+    SystemError("SystemError", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    TypeError("TypeError", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    ValueError("ValueError", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    StopIteration("StopIteration", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT, StopIterationBuiltins.SLOTS),
+    StopAsyncIteration("StopAsyncIteration", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    ArithmeticError("ArithmeticError", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    FloatingPointError("FloatingPointError", ArithmeticError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    OverflowError("OverflowError", ArithmeticError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    ZeroDivisionError("ZeroDivisionError", ArithmeticError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    AssertionError("AssertionError", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    AttributeError("AttributeError", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    BufferError("BufferError", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    EOFError("EOFError", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    ImportError("ImportError", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT, ImportErrorBuiltins.SLOTS),
+    ModuleNotFoundError("ModuleNotFoundError", ImportError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    LookupError("LookupError", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    IndexError("IndexError", LookupError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    KeyError("KeyError", LookupError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT, KeyErrorBuiltins.SLOTS),
+    MemoryError("MemoryError", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    NameError("NameError", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    UnboundLocalError("UnboundLocalError", NameError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    OSError("OSError", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT, OsErrorBuiltins.SLOTS),
+    BlockingIOError("BlockingIOError", OSError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    ChildProcessError("ChildProcessError", OSError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    ConnectionError("ConnectionError", OSError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    BrokenPipeError("BrokenPipeError", ConnectionError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    ConnectionAbortedError("ConnectionAbortedError", ConnectionError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    ConnectionRefusedError("ConnectionRefusedError", ConnectionError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    ConnectionResetError("ConnectionResetError", ConnectionError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    FileExistsError("FileExistsError", OSError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    FileNotFoundError("FileNotFoundError", OSError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    InterruptedError("InterruptedError", OSError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    IsADirectoryError("IsADirectoryError", OSError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    NotADirectoryError("NotADirectoryError", OSError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    PermissionError("PermissionError", OSError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    ProcessLookupError("ProcessLookupError", OSError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    TimeoutError("TimeoutError", OSError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    ZLibError("error", Exception, "zlib", Flags.BASETYPE | Flags.HAS_DICT),
+    CSVError("Error", Exception, "_csv", Flags.BASETYPE | Flags.HAS_DICT),
+    LZMAError("LZMAError", Exception, "_lzma", Flags.BASETYPE | Flags.HAS_DICT),
+    StructError("StructError", Exception, J__STRUCT, Flags.BASETYPE | Flags.HAS_DICT),
+    PickleError("PickleError", Exception, "_pickle", Flags.BASETYPE | Flags.HAS_DICT),
+    PicklingError("PicklingError", PickleError, "_pickle", Flags.BASETYPE | Flags.HAS_DICT),
+    UnpicklingError("UnpicklingError", PickleError, "_pickle", Flags.BASETYPE | Flags.HAS_DICT),
+    SocketGAIError("gaierror", OSError, J__SOCKET, Flags.BASETYPE | Flags.HAS_DICT),
+    SocketHError("herror", OSError, J__SOCKET, Flags.BASETYPE | Flags.HAS_DICT),
+    BinasciiError("Error", ValueError, "binascii", Flags.BASETYPE | Flags.HAS_DICT),
+    BinasciiIncomplete("Incomplete", Exception, "binascii", Flags.BASETYPE | Flags.HAS_DICT),
+    SSLError("SSLError", OSError, J__SSL, Flags.BASETYPE | Flags.HAS_DICT, SSLErrorBuiltins.SLOTS),
+    SSLZeroReturnError("SSLZeroReturnError", SSLError, J__SSL, Flags.BASETYPE | Flags.HAS_DICT),
+    SSLWantReadError("SSLWantReadError", SSLError, J__SSL, Flags.BASETYPE | Flags.HAS_DICT),
+    SSLWantWriteError("SSLWantWriteError", SSLError, J__SSL, Flags.BASETYPE | Flags.HAS_DICT),
+    SSLSyscallError("SSLSyscallError", SSLError, J__SSL, Flags.BASETYPE | Flags.HAS_DICT),
+    SSLEOFError("SSLEOFError", SSLError, J__SSL, Flags.BASETYPE | Flags.HAS_DICT),
+    SSLCertVerificationError("SSLCertVerificationError", SSLError, J__SSL, Flags.BASETYPE | Flags.HAS_DICT),
 
     // todo: all OS errors
 
-    UnicodeError("UnicodeError", ValueError, J_BUILTINS, Flags.EXCEPTION),
-    UnicodeDecodeError("UnicodeDecodeError", UnicodeError, J_BUILTINS, Flags.EXCEPTION, UnicodeDecodeErrorBuiltins.SLOTS),
-    UnicodeEncodeError("UnicodeEncodeError", UnicodeError, J_BUILTINS, Flags.EXCEPTION, UnicodeEncodeErrorBuiltins.SLOTS),
-    UnicodeTranslateError("UnicodeTranslateError", UnicodeError, J_BUILTINS, Flags.EXCEPTION, UnicodeTranslateErrorBuiltins.SLOTS),
-    RecursionError("RecursionError", RuntimeError, J_BUILTINS, Flags.EXCEPTION),
+    UnicodeError("UnicodeError", ValueError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    UnicodeDecodeError("UnicodeDecodeError", UnicodeError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT, UnicodeDecodeErrorBuiltins.SLOTS),
+    UnicodeEncodeError("UnicodeEncodeError", UnicodeError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT, UnicodeEncodeErrorBuiltins.SLOTS),
+    UnicodeTranslateError("UnicodeTranslateError", UnicodeError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT, UnicodeTranslateErrorBuiltins.SLOTS),
+    RecursionError("RecursionError", RuntimeError, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
 
     /*
      * _io.UnsupportedOperation inherits from ValueError and OSError done currently within
      * IOModuleBuiltins class
      */
-    IOUnsupportedOperation("UnsupportedOperation", OSError, "io", Flags.EXCEPTION),
+    IOUnsupportedOperation("UnsupportedOperation", OSError, "io", Flags.BASETYPE | Flags.HAS_DICT),
 
-    Empty("Empty", Exception, "_queue", Flags.EXCEPTION),
+    Empty("Empty", Exception, "_queue", Flags.BASETYPE | Flags.HAS_DICT),
 
-    UnsupportedMessage("UnsupportedMessage", Exception, J_POLYGLOT, Flags.EXCEPTION),
+    UnsupportedMessage("UnsupportedMessage", Exception, J_POLYGLOT, Flags.BASETYPE | Flags.HAS_DICT),
 
     // warnings
-    Warning("Warning", Exception, J_BUILTINS, Flags.EXCEPTION),
-    BytesWarning("BytesWarning", Warning, J_BUILTINS, Flags.EXCEPTION),
-    DeprecationWarning("DeprecationWarning", Warning, J_BUILTINS, Flags.EXCEPTION),
-    FutureWarning("FutureWarning", Warning, J_BUILTINS, Flags.EXCEPTION),
-    ImportWarning("ImportWarning", Warning, J_BUILTINS, Flags.EXCEPTION),
-    PendingDeprecationWarning("PendingDeprecationWarning", Warning, J_BUILTINS, Flags.EXCEPTION),
-    ResourceWarning("ResourceWarning", Warning, J_BUILTINS, Flags.EXCEPTION),
-    RuntimeWarning("RuntimeWarning", Warning, J_BUILTINS, Flags.EXCEPTION),
-    SyntaxWarning("SyntaxWarning", Warning, J_BUILTINS, Flags.EXCEPTION),
-    UnicodeWarning("UnicodeWarning", Warning, J_BUILTINS, Flags.EXCEPTION),
-    UserWarning("UserWarning", Warning, J_BUILTINS, Flags.EXCEPTION),
-    EncodingWarning("EncodingWarning", Warning, J_BUILTINS, Flags.EXCEPTION),
+    Warning("Warning", Exception, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    BytesWarning("BytesWarning", Warning, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    DeprecationWarning("DeprecationWarning", Warning, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    FutureWarning("FutureWarning", Warning, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    ImportWarning("ImportWarning", Warning, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    PendingDeprecationWarning("PendingDeprecationWarning", Warning, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    ResourceWarning("ResourceWarning", Warning, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    RuntimeWarning("RuntimeWarning", Warning, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    SyntaxWarning("SyntaxWarning", Warning, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    UnicodeWarning("UnicodeWarning", Warning, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    UserWarning("UserWarning", Warning, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
+    EncodingWarning("EncodingWarning", Warning, J_BUILTINS, Flags.BASETYPE | Flags.HAS_DICT),
 
     // Foreign
-    ForeignObject("ForeignObject", PythonObject, J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, ForeignObjectBuiltins.SLOTS),
-    ForeignNumber("ForeignNumber", J_POLYGLOT, ForeignObject, Flags.PUBLIC_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignNumberBuiltins.SLOTS),
-    ForeignBoolean("ForeignBoolean", J_POLYGLOT, ForeignNumber, Flags.PUBLIC_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignBooleanBuiltins.SLOTS),
-    ForeignAbstractClass("ForeignAbstractClass", ForeignObject, J_POLYGLOT, Flags.PUBLIC_BASE_WDICT),
-    ForeignExecutable("ForeignExecutable", ForeignObject, J_POLYGLOT, Flags.PUBLIC_BASE_WDICT),
-    ForeignInstantiable("ForeignInstantiable", ForeignObject, J_POLYGLOT, Flags.PUBLIC_BASE_WDICT),
-    ForeignIterable("ForeignIterable", ForeignObject, J_POLYGLOT, J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, ForeignIterableBuiltins.SLOTS),
+    ForeignObject("ForeignObject", PythonObject, J_POLYGLOT, Flags.BASETYPE | Flags.HAS_DICT, ForeignObjectBuiltins.SLOTS),
+    ForeignNumber("ForeignNumber", J_POLYGLOT, ForeignObject, Flags.BASETYPE | Flags.HAS_DICT, FOREIGNNUMBER_M_FLAGS, ForeignNumberBuiltins.SLOTS),
+    ForeignBoolean("ForeignBoolean", J_POLYGLOT, ForeignNumber, Flags.BASETYPE | Flags.HAS_DICT, FOREIGNNUMBER_M_FLAGS, ForeignBooleanBuiltins.SLOTS),
+    ForeignAbstractClass("ForeignAbstractClass", ForeignObject, J_POLYGLOT, Flags.BASETYPE | Flags.HAS_DICT),
+    ForeignExecutable("ForeignExecutable", ForeignObject, J_POLYGLOT, Flags.BASETYPE | Flags.HAS_DICT),
+    ForeignInstantiable("ForeignInstantiable", ForeignObject, J_POLYGLOT, Flags.BASETYPE | Flags.HAS_DICT),
+    ForeignIterable("ForeignIterable", ForeignObject, J_POLYGLOT, J_POLYGLOT, Flags.BASETYPE | Flags.HAS_DICT, ForeignIterableBuiltins.SLOTS),
 
     // bz2
     BZ2Compressor("BZ2Compressor", PythonObject, "_bz2", BZ2CompressorBuiltins.SLOTS),
@@ -527,51 +527,61 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PLZMADecompressor("LZMADecompressor", PythonObject, "_lzma", LZMADecompressorBuiltins.SLOTS),
 
     // zlib
-    ZlibCompress("Compress", PythonObject, "zlib"),
-    ZlibDecompress("Decompress", PythonObject, "zlib"),
+    ZlibCompress("Compress", PythonObject, "zlib", Flags.DISALLOW_INSTANTIATION),
+    ZlibDecompress("Decompress", PythonObject, "zlib", Flags.DISALLOW_INSTANTIATION),
 
     // io
-    PIOBase("_IOBase", PythonObject, "_io", Flags.PUBLIC_BASE_WDICT, IOBaseBuiltins.SLOTS),
+    PIOBase("_IOBase", PythonObject, "_io", Flags.BASETYPE | Flags.HAS_DICT, IOBaseBuiltins.SLOTS),
     PRawIOBase("_RawIOBase", PIOBase, "_io", IOBaseBuiltins.SLOTS),
     PTextIOBase("_TextIOBase", PIOBase, "_io", IOBaseBuiltins.SLOTS),
     PBufferedIOBase("_BufferedIOBase", PIOBase, "_io", IOBaseBuiltins.SLOTS),
-    PBufferedReader("BufferedReader", PBufferedIOBase, "_io", Flags.PUBLIC_BASE_WDICT, TpSlots.merge(BufferedReaderMixinBuiltins.SLOTS, BufferedIOMixinBuiltins.SLOTS, BufferedReaderBuiltins.SLOTS)),
-    PBufferedWriter("BufferedWriter", PBufferedIOBase, "_io", Flags.PUBLIC_BASE_WDICT, TpSlots.merge(BufferedIOMixinBuiltins.SLOTS, BufferedWriterBuiltins.SLOTS)),
-    PBufferedRWPair("BufferedRWPair", PBufferedIOBase, "_io", Flags.PUBLIC_BASE_WDICT, BufferedRWPairBuiltins.SLOTS),
-    PBufferedRandom("BufferedRandom", PBufferedIOBase, "_io", Flags.PUBLIC_BASE_WDICT, TpSlots.merge(BufferedReaderMixinBuiltins.SLOTS, BufferedIOMixinBuiltins.SLOTS, BufferedRandomBuiltins.SLOTS)),
-    PFileIO("FileIO", PRawIOBase, "_io", Flags.PUBLIC_BASE_WDICT, FileIOBuiltins.SLOTS),
-    PTextIOWrapper("TextIOWrapper", PTextIOBase, "_io", Flags.PUBLIC_BASE_WDICT, TextIOWrapperBuiltins.SLOTS),
-    PIncrementalNewlineDecoder("IncrementalNewlineDecoder", PythonObject, "_io", Flags.PUBLIC_BASE_WODICT, IncrementalNewlineDecoderBuiltins.SLOTS),
-    PStringIO("StringIO", PTextIOBase, "_io", Flags.PUBLIC_BASE_WDICT, StringIOBuiltins.SLOTS),
-    PBytesIO("BytesIO", PBufferedIOBase, "_io", Flags.PUBLIC_BASE_WDICT, BytesIOBuiltins.SLOTS),
-    PBytesIOBuf("_BytesIOBuffer", PythonObject, "_io", Flags.PRIVATE_BASE_WODICT),
+    PBufferedReader(
+                    "BufferedReader",
+                    PBufferedIOBase,
+                    "_io",
+                    Flags.BASETYPE | Flags.HAS_DICT,
+                    TpSlots.merge(BufferedReaderMixinBuiltins.SLOTS, BufferedIOMixinBuiltins.SLOTS, BufferedReaderBuiltins.SLOTS)),
+    PBufferedWriter("BufferedWriter", PBufferedIOBase, "_io", Flags.BASETYPE | Flags.HAS_DICT, TpSlots.merge(BufferedIOMixinBuiltins.SLOTS, BufferedWriterBuiltins.SLOTS)),
+    PBufferedRWPair("BufferedRWPair", PBufferedIOBase, "_io", Flags.BASETYPE | Flags.HAS_DICT, BufferedRWPairBuiltins.SLOTS),
+    PBufferedRandom(
+                    "BufferedRandom",
+                    PBufferedIOBase,
+                    "_io",
+                    Flags.BASETYPE | Flags.HAS_DICT,
+                    TpSlots.merge(BufferedReaderMixinBuiltins.SLOTS, BufferedIOMixinBuiltins.SLOTS, BufferedRandomBuiltins.SLOTS)),
+    PFileIO("FileIO", PRawIOBase, "_io", Flags.BASETYPE | Flags.HAS_DICT, FileIOBuiltins.SLOTS),
+    PTextIOWrapper("TextIOWrapper", PTextIOBase, "_io", Flags.BASETYPE | Flags.HAS_DICT, TextIOWrapperBuiltins.SLOTS),
+    PIncrementalNewlineDecoder("IncrementalNewlineDecoder", PythonObject, "_io", Flags.BASETYPE, IncrementalNewlineDecoderBuiltins.SLOTS),
+    PStringIO("StringIO", PTextIOBase, "_io", Flags.BASETYPE | Flags.HAS_DICT, StringIOBuiltins.SLOTS),
+    PBytesIO("BytesIO", PBufferedIOBase, "_io", Flags.BASETYPE | Flags.HAS_DICT, BytesIOBuiltins.SLOTS),
+    PBytesIOBuf("_BytesIOBuffer", PythonObject, "_io", Flags.PRIVATE | Flags.BASETYPE),
 
-    PStatResult("stat_result", PTuple, "os", "os", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
-    PStatvfsResult("statvfs_result", PTuple, "os", "os", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
-    PTerminalSize("terminal_size", PTuple, "os", "os", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
-    PUnameResult("uname_result", PTuple, J_POSIX, J_POSIX, Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
-    PStructTime("struct_time", PTuple, "time", "time", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
-    PProfilerEntry("profiler_entry", PTuple, "_lsprof", "_lsprof", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
-    PProfilerSubentry("profiler_subentry", PTuple, "_lsprof", "_lsprof", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
-    PStructPasswd("struct_passwd", PTuple, "pwd", "pwd", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
-    PStructRusage("struct_rusage", PTuple, "resource", "resource", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
-    PVersionInfo("version_info", PTuple, "sys", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
-    PWindowsVersion("windowsversion", PTuple, "sys", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
-    PFlags("flags", PTuple, "sys", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
-    PFloatInfo("float_info", PTuple, "sys", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
-    PIntInfo("int_info", PTuple, "sys", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
-    PHashInfo("hash_info", PTuple, "sys", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
-    PThreadInfo("thread_info", PTuple, "sys", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
-    PUnraisableHookArgs("UnraisableHookArgs", PTuple, "sys", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PStatResult("stat_result", PTuple, "os", "os", 0, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PStatvfsResult("statvfs_result", PTuple, "os", "os", 0, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PTerminalSize("terminal_size", PTuple, "os", "os", 0, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PUnameResult("uname_result", PTuple, J_POSIX, J_POSIX, 0, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PStructTime("struct_time", PTuple, "time", "time", 0, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PProfilerEntry("profiler_entry", PTuple, "_lsprof", "_lsprof", 0, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PProfilerSubentry("profiler_subentry", PTuple, "_lsprof", "_lsprof", 0, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PStructPasswd("struct_passwd", PTuple, "pwd", "pwd", 0, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PStructRusage("struct_rusage", PTuple, "resource", "resource", 0, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PVersionInfo("version_info", PTuple, "sys", "sys", Flags.DISALLOW_INSTANTIATION, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PWindowsVersion("windowsversion", PTuple, "sys", "sys", 0, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PFlags("flags", PTuple, "sys", "sys", Flags.DISALLOW_INSTANTIATION, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PFloatInfo("float_info", PTuple, "sys", "sys", 0, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PIntInfo("int_info", PTuple, "sys", "sys", 0, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PHashInfo("hash_info", PTuple, "sys", "sys", 0, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PThreadInfo("thread_info", PTuple, "sys", "sys", 0, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
+    PUnraisableHookArgs("UnraisableHookArgs", PTuple, "sys", "sys", 0, TUPLE_M_FLAGS, StructSequenceBuiltins.SLOTS),
 
-    PSSLSession("SSLSession", PythonObject, J__SSL),
+    PSSLSession("SSLSession", PythonObject, J__SSL, Flags.DISALLOW_INSTANTIATION),
     PSSLContext("_SSLContext", PythonObject, J__SSL),
     PSSLSocket("_SSLSocket", PythonObject, J__SSL),
     PMemoryBIO("MemoryBIO", PythonObject, J__SSL),
 
     // itertools
-    PTee("_tee", PythonObject, "itertools", Flags.PUBLIC_DERIVED_WODICT, TeeBuiltins.SLOTS),
-    PTeeDataObject("_tee_dataobject", PythonObject, "itertools", Flags.PUBLIC_DERIVED_WODICT, TeeDataObjectBuiltins.SLOTS),
+    PTee("_tee", PythonObject, "itertools", 0, TeeBuiltins.SLOTS),
+    PTeeDataObject("_tee_dataobject", PythonObject, "itertools", 0, TeeDataObjectBuiltins.SLOTS),
     PAccumulate("accumulate", PythonObject, "itertools", AccumulateBuiltins.SLOTS),
     PCombinations("combinations", PythonObject, "itertools", CombinationsBuiltins.SLOTS),
     PCombinationsWithReplacement("combinations_with_replacement", PythonObject, "itertools", CombinationsBuiltins.SLOTS),
@@ -580,7 +590,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PDropwhile("dropwhile", PythonObject, "itertools", DropwhileBuiltins.SLOTS),
     PFilterfalse("filterfalse", PythonObject, "itertools", FilterfalseBuiltins.SLOTS),
     PGroupBy("groupby", PythonObject, "itertools", GroupByBuiltins.SLOTS),
-    PGrouper("grouper", PythonObject, "itertools", Flags.PUBLIC_DERIVED_WODICT, GrouperBuiltins.SLOTS),
+    PGrouper("grouper", PythonObject, "itertools", 0, GrouperBuiltins.SLOTS),
     PPairwise("pairwise", PythonObject, "itertools", PairwiseBuiltins.SLOTS),
     PPermutations("permutations", PythonObject, "itertools", PermutationsBuiltins.SLOTS),
     PProduct("product", PythonObject, "itertools", ProductBuiltins.SLOTS),
@@ -593,82 +603,82 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PZipLongest("zip_longest", PythonObject, "itertools", ZipLongestBuiltins.SLOTS),
 
     // json
-    JSONScanner("Scanner", PythonObject, "_json", Flags.PUBLIC_BASE_WODICT),
-    JSONEncoder("Encoder", PythonObject, "_json", Flags.PUBLIC_BASE_WODICT),
+    JSONScanner("Scanner", PythonObject, "_json", Flags.BASETYPE),
+    JSONEncoder("Encoder", PythonObject, "_json", Flags.BASETYPE),
 
     // csv
-    CSVDialect("Dialect", PythonObject, "_csv", Flags.PUBLIC_BASE_WODICT),
-    CSVReader("Reader", PythonObject, "_csv", Flags.PUBLIC_BASE_WODICT, CSVReaderBuiltins.SLOTS),
-    CSVWriter("Writer", PythonObject, "_csv", Flags.PUBLIC_BASE_WODICT),
+    CSVDialect("Dialect", PythonObject, "_csv", Flags.BASETYPE),
+    CSVReader("Reader", PythonObject, "_csv", Flags.BASETYPE | Flags.DISALLOW_INSTANTIATION, CSVReaderBuiltins.SLOTS),
+    CSVWriter("Writer", PythonObject, "_csv", Flags.BASETYPE | Flags.DISALLOW_INSTANTIATION),
 
     // codecs
-    PEncodingMap("EncodingMap", PythonObject, Flags.PRIVATE_DERIVED_WODICT),
+    PEncodingMap("EncodingMap", PythonObject, Flags.PRIVATE | Flags.DISALLOW_INSTANTIATION),
 
     // hashlib
-    MD5Type("md5", PythonObject, "_md5", Flags.PUBLIC_BASE_WODICT),
-    SHA1Type("sha1", PythonObject, "_sha1", Flags.PUBLIC_BASE_WODICT),
-    SHA224Type("sha224", PythonObject, "_sha256", Flags.PUBLIC_BASE_WODICT),
-    SHA256Type("sha256", PythonObject, "_sha256", Flags.PUBLIC_BASE_WODICT),
-    SHA384Type("sha384", PythonObject, "_sha512", Flags.PUBLIC_BASE_WODICT),
-    SHA512Type("sha512", PythonObject, "_sha512", Flags.PUBLIC_BASE_WODICT),
-    Sha3SHA224Type("sha3_224", PythonObject, "_sha3", Flags.PUBLIC_BASE_WODICT),
-    Sha3SHA256Type("sha3_256", PythonObject, "_sha3", Flags.PUBLIC_BASE_WODICT),
-    Sha3SHA384Type("sha3_384", PythonObject, "_sha3", Flags.PUBLIC_BASE_WODICT),
-    Sha3SHA512Type("sha3_512", PythonObject, "_sha3", Flags.PUBLIC_BASE_WODICT),
-    Sha3Shake128Type("shake_128", PythonObject, "_sha3", Flags.PUBLIC_BASE_WODICT),
-    Sha3Shake256Type("shake_256", PythonObject, "_sha3", Flags.PUBLIC_BASE_WODICT),
-    Blake2bType("blake2b", PythonObject, "_blake2", Flags.PUBLIC_BASE_WODICT),
-    Blake2sType("blake2s", PythonObject, "_blake2", Flags.PUBLIC_BASE_WODICT),
-    HashlibHash("HASH", PythonObject, "_hashlib", Flags.PUBLIC_BASE_WODICT, HashObjectBuiltins.SLOTS),
-    HashlibHashXof("HASHXOF", HashlibHash, "_hashlib", Flags.PUBLIC_DERIVED_WODICT),
-    HashlibHmac("HMAC", PythonObject, "_hashlib", Flags.PUBLIC_BASE_WODICT, HashObjectBuiltins.SLOTS),
-    UnsupportedDigestmodError("UnsupportedDigestmodError", ValueError, "_hashlib", Flags.EXCEPTION),
+    MD5Type("md5", PythonObject, "_md5", Flags.BASETYPE | Flags.DISALLOW_INSTANTIATION),
+    SHA1Type("sha1", PythonObject, "_sha1", Flags.BASETYPE | Flags.DISALLOW_INSTANTIATION),
+    SHA224Type("sha224", PythonObject, "_sha256", Flags.BASETYPE | Flags.DISALLOW_INSTANTIATION),
+    SHA256Type("sha256", PythonObject, "_sha256", Flags.BASETYPE | Flags.DISALLOW_INSTANTIATION),
+    SHA384Type("sha384", PythonObject, "_sha512", Flags.BASETYPE | Flags.DISALLOW_INSTANTIATION),
+    SHA512Type("sha512", PythonObject, "_sha512", Flags.BASETYPE | Flags.DISALLOW_INSTANTIATION),
+    Sha3SHA224Type("sha3_224", PythonObject, "_sha3", Flags.BASETYPE),
+    Sha3SHA256Type("sha3_256", PythonObject, "_sha3", Flags.BASETYPE),
+    Sha3SHA384Type("sha3_384", PythonObject, "_sha3", Flags.BASETYPE),
+    Sha3SHA512Type("sha3_512", PythonObject, "_sha3", Flags.BASETYPE),
+    Sha3Shake128Type("shake_128", PythonObject, "_sha3", Flags.BASETYPE),
+    Sha3Shake256Type("shake_256", PythonObject, "_sha3", Flags.BASETYPE),
+    Blake2bType("blake2b", PythonObject, "_blake2", Flags.BASETYPE),
+    Blake2sType("blake2s", PythonObject, "_blake2", Flags.BASETYPE),
+    HashlibHash("HASH", PythonObject, "_hashlib", Flags.BASETYPE | Flags.DISALLOW_INSTANTIATION, HashObjectBuiltins.SLOTS),
+    HashlibHashXof("HASHXOF", HashlibHash, "_hashlib", Flags.DISALLOW_INSTANTIATION),
+    HashlibHmac("HMAC", PythonObject, "_hashlib", Flags.BASETYPE | Flags.DISALLOW_INSTANTIATION, HashObjectBuiltins.SLOTS),
+    UnsupportedDigestmodError("UnsupportedDigestmodError", ValueError, "_hashlib", Flags.BASETYPE | Flags.HAS_DICT),
 
     // _ast (rest of the classes are not builtin, they are generated in AstModuleBuiltins)
-    AST("AST", PythonObject, "_ast", "ast", Flags.PUBLIC_BASE_WDICT, AstBuiltins.SLOTS),
+    AST("AST", PythonObject, "_ast", "ast", Flags.BASETYPE | Flags.HAS_DICT, AstBuiltins.SLOTS),
 
     // _ctype
-    CArgObject("CArgObject", PythonObject, Flags.PUBLIC_BASE_WODICT, CArgObjectBuiltins.SLOTS),
-    CThunkObject("CThunkObject", PythonObject, J__CTYPES, Flags.PUBLIC_BASE_WODICT),
-    StgDict("StgDict", PDict, Flags.PRIVATE_DERIVED_WODICT, DICT_M_FLAGS, StgDictBuiltins.SLOTS),
-    PyCStructType("PyCStructType", PythonClass, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCSTRUCTTYPE_M_FLAGS, TpSlots.merge(CDataTypeSequenceBuiltins.SLOTS, PyCStructTypeBuiltins.SLOTS)),
+    CArgObject("CArgObject", PythonObject, Flags.BASETYPE, CArgObjectBuiltins.SLOTS),
+    CThunkObject("CThunkObject", PythonObject, J__CTYPES, Flags.BASETYPE),
+    StgDict("StgDict", PDict, Flags.PRIVATE, DICT_M_FLAGS, StgDictBuiltins.SLOTS),
+    PyCStructType("PyCStructType", PythonClass, J__CTYPES, J__CTYPES, Flags.BASETYPE, PYCSTRUCTTYPE_M_FLAGS, TpSlots.merge(CDataTypeSequenceBuiltins.SLOTS, PyCStructTypeBuiltins.SLOTS)),
     UnionType(
                     "UnionType",
                     PythonClass,
                     J__CTYPES,
                     J__CTYPES,
-                    Flags.PUBLIC_BASE_WODICT,
+                    Flags.BASETYPE,
                     UNIONTYPE_M_FLAGS,
                     TpSlots.merge(CDataTypeSequenceBuiltins.SLOTS, com.oracle.graal.python.builtins.modules.ctypes.UnionTypeBuiltins.SLOTS)),
-    PyCPointerType("PyCPointerType", PythonClass, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCPOINTERTYPE_M_FLAGS, CDataTypeSequenceBuiltins.SLOTS),
-    PyCArrayType("PyCArrayType", PythonClass, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCARRAYTYPE_M_FLAGS, CDataTypeSequenceBuiltins.SLOTS),
-    PyCSimpleType("PyCSimpleType", PythonClass, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCSIMPLETYPE_M_FLAGS, CDataTypeSequenceBuiltins.SLOTS),
-    PyCFuncPtrType("PyCFuncPtrType", PythonClass, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCFUNCPTRTYPE_M_FLAGS, CDataTypeSequenceBuiltins.SLOTS),
-    PyCData("_CData", PythonObject, J__CTYPES, Flags.PUBLIC_BASE_WODICT, CDataBuiltins.SLOTS), /*- type = PyCStructType */
-    Structure("Structure", PyCData, J__CTYPES, Flags.PUBLIC_BASE_WODICT, StructureBuiltins.SLOTS), /*- type = PyCStructType */
-    Union("Union", PyCData, J__CTYPES, Flags.PUBLIC_BASE_WODICT, StructureBuiltins.SLOTS), /*- type = UnionType */
-    PyCPointer("_Pointer", PyCData, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCPOINTER_M_FLAGS, PyCPointerBuiltins.SLOTS), /*- type = PyCPointerType */
-    PyCArray("Array", PyCData, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCARRAY_M_FLAGS, PyCArrayBuiltins.SLOTS), /*- type = PyCArrayType */
-    SimpleCData("_SimpleCData", PyCData, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, SIMPLECDATA_M_FLAGS, SimpleCDataBuiltins.SLOTS), /*- type = PyCStructType */
-    PyCFuncPtr("PyCFuncPtr", PyCData, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCFUNCPTR_M_FLAGS, PyCFuncPtrBuiltins.SLOTS), /*- type = PyCFuncPtrType */
-    CField("CField", PythonObject, J__CTYPES, Flags.PUBLIC_BASE_WODICT, CFieldBuiltins.SLOTS),
-    DictRemover("DictRemover", PythonObject, J__CTYPES, Flags.PUBLIC_BASE_WODICT),
-    StructParam("StructParam_Type", PythonObject, J__CTYPES, Flags.PUBLIC_BASE_WODICT),
-    ArgError("ArgumentError", PBaseException, J__CTYPES, Flags.EXCEPTION),
+    PyCPointerType("PyCPointerType", PythonClass, J__CTYPES, J__CTYPES, Flags.BASETYPE, PYCPOINTERTYPE_M_FLAGS, CDataTypeSequenceBuiltins.SLOTS),
+    PyCArrayType("PyCArrayType", PythonClass, J__CTYPES, J__CTYPES, Flags.BASETYPE, PYCARRAYTYPE_M_FLAGS, CDataTypeSequenceBuiltins.SLOTS),
+    PyCSimpleType("PyCSimpleType", PythonClass, J__CTYPES, J__CTYPES, Flags.BASETYPE, PYCSIMPLETYPE_M_FLAGS, CDataTypeSequenceBuiltins.SLOTS),
+    PyCFuncPtrType("PyCFuncPtrType", PythonClass, J__CTYPES, J__CTYPES, Flags.BASETYPE, PYCFUNCPTRTYPE_M_FLAGS, CDataTypeSequenceBuiltins.SLOTS),
+    PyCData("_CData", PythonObject, J__CTYPES, Flags.BASETYPE, CDataBuiltins.SLOTS), /*- type = PyCStructType */
+    Structure("Structure", PyCData, J__CTYPES, Flags.BASETYPE, StructureBuiltins.SLOTS), /*- type = PyCStructType */
+    Union("Union", PyCData, J__CTYPES, Flags.BASETYPE, StructureBuiltins.SLOTS), /*- type = UnionType */
+    PyCPointer("_Pointer", PyCData, J__CTYPES, J__CTYPES, Flags.BASETYPE, PYCPOINTER_M_FLAGS, PyCPointerBuiltins.SLOTS), /*- type = PyCPointerType */
+    PyCArray("Array", PyCData, J__CTYPES, J__CTYPES, Flags.BASETYPE, PYCARRAY_M_FLAGS, PyCArrayBuiltins.SLOTS), /*- type = PyCArrayType */
+    SimpleCData("_SimpleCData", PyCData, J__CTYPES, J__CTYPES, Flags.BASETYPE, SIMPLECDATA_M_FLAGS, SimpleCDataBuiltins.SLOTS), /*- type = PyCStructType */
+    PyCFuncPtr("PyCFuncPtr", PyCData, J__CTYPES, J__CTYPES, Flags.BASETYPE, PYCFUNCPTR_M_FLAGS, PyCFuncPtrBuiltins.SLOTS), /*- type = PyCFuncPtrType */
+    CField("CField", PythonObject, J__CTYPES, Flags.BASETYPE, CFieldBuiltins.SLOTS),
+    DictRemover("DictRemover", PythonObject, J__CTYPES, Flags.BASETYPE),
+    StructParam("StructParam_Type", PythonObject, J__CTYPES, Flags.BASETYPE),
+    ArgError("ArgumentError", PBaseException, J__CTYPES, Flags.BASETYPE | Flags.HAS_DICT),
 
     // _multibytecodec
-    MultibyteCodec("MultibyteCodec", PythonObject, "_multibytecodec", Flags.PUBLIC_BASE_WDICT),
-    MultibyteIncrementalEncoder("MultibyteIncrementalEncoder", PythonObject, "_multibytecodec", Flags.PUBLIC_BASE_WDICT, MultibyteIncrementalEncoderBuiltins.SLOTS),
-    MultibyteIncrementalDecoder("MultibyteIncrementalDecoder", PythonObject, "_multibytecodec", Flags.PUBLIC_BASE_WDICT, MultibyteIncrementalDecoderBuiltins.SLOTS),
-    MultibyteStreamReader("MultibyteStreamReader", PythonObject, "_multibytecodec", Flags.PUBLIC_BASE_WDICT, MultibyteStreamReaderBuiltins.SLOTS),
-    MultibyteStreamWriter("MultibyteStreamWriter", PythonObject, "_multibytecodec", Flags.PUBLIC_BASE_WDICT, MultibyteStreamWriterBuiltins.SLOTS),
+    MultibyteCodec("MultibyteCodec", PythonObject, "_multibytecodec", Flags.BASETYPE | Flags.HAS_DICT | Flags.DISALLOW_INSTANTIATION),
+    MultibyteIncrementalEncoder("MultibyteIncrementalEncoder", PythonObject, "_multibytecodec", Flags.BASETYPE | Flags.HAS_DICT, MultibyteIncrementalEncoderBuiltins.SLOTS),
+    MultibyteIncrementalDecoder("MultibyteIncrementalDecoder", PythonObject, "_multibytecodec", Flags.BASETYPE | Flags.HAS_DICT, MultibyteIncrementalDecoderBuiltins.SLOTS),
+    MultibyteStreamReader("MultibyteStreamReader", PythonObject, "_multibytecodec", Flags.BASETYPE | Flags.HAS_DICT, MultibyteStreamReaderBuiltins.SLOTS),
+    MultibyteStreamWriter("MultibyteStreamWriter", PythonObject, "_multibytecodec", Flags.BASETYPE | Flags.HAS_DICT, MultibyteStreamWriterBuiltins.SLOTS),
 
     // contextvars
-    ContextVarsToken("Token", PythonObject, J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT, TokenBuiltins.SLOTS),
-    ContextVarsContext("Context", PythonObject, J__CONTEXTVARS, J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT, CONTEXT_M_FLAGS, ContextBuiltins.SLOTS),
-    ContextVar("ContextVar", PythonObject, J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
+    ContextVarsToken("Token", PythonObject, J__CONTEXTVARS, 0, TokenBuiltins.SLOTS),
+    ContextVarsContext("Context", PythonObject, J__CONTEXTVARS, J__CONTEXTVARS, 0, CONTEXT_M_FLAGS, ContextBuiltins.SLOTS),
+    ContextVar("ContextVar", PythonObject, J__CONTEXTVARS, 0),
     // CPython uses separate keys, values, items python types for the iterators.
-    ContextIterator("context_iterator", PythonObject, J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT, ContextIteratorBuiltins.SLOTS),
+    ContextIterator("context_iterator", PythonObject, J__CONTEXTVARS, 0, ContextIteratorBuiltins.SLOTS),
 
     Capsule(PythonObject, "PyCapsule"),
 
@@ -677,26 +687,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // A marker for @Builtin that is not a class. Must always come last.
     nil(PythonObject, "nil");
 
-    private static class Flags {
-
-        static final Flags EXCEPTION = new Flags(true, true, true);
-        static final Flags PRIVATE_DERIVED_WDICT = new Flags(false, false, true);
-        static final Flags PRIVATE_BASE_WDICT = new Flags(false, true, true);
-        static final Flags PRIVATE_BASE_WODICT = new Flags(false, true, false);
-        static final Flags PUBLIC_BASE_WDICT = new Flags(true, true, true);
-        static final Flags PUBLIC_BASE_WODICT = new Flags(true, true, false);
-        static final Flags PUBLIC_DERIVED_WODICT = new Flags(true, false, false);
-        static final Flags PRIVATE_DERIVED_WODICT = new Flags(false, false, false);
-
-        final boolean isPublic;
-        final boolean isBaseType;
-        final boolean isBuiltinWithDict;
-
-        Flags(boolean isPublic, boolean isBaseType, boolean isBuiltinWithDict) {
-            this.isPublic = isPublic;
-            this.isBaseType = isBaseType;
-            this.isBuiltinWithDict = isBuiltinWithDict;
-        }
+    private static final class Flags {
+        static final int HAS_DICT = 1;
+        static final int BASETYPE = 1 << 1;
+        static final int PRIVATE = 1 << 2;
+        static final int DISALLOW_INSTANTIATION = 1 << 3;
     }
 
     private final TruffleString name;
@@ -708,6 +703,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     private final TruffleString printName;
     private final boolean basetype;
     private final boolean isBuiltinWithDict;
+    private final boolean disallowInstantiation;
 
     // initialized in static constructor
     @CompilationFinal private PythonBuiltinClassType type;
@@ -734,42 +730,43 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     private final long methodsFlags;
 
-    PythonBuiltinClassType(String name, PythonBuiltinClassType base, String module, Flags flags) {
+    PythonBuiltinClassType(String name, PythonBuiltinClassType base, String module, int flags) {
         this(name, base, module, module, flags);
     }
 
-    PythonBuiltinClassType(String name, PythonBuiltinClassType base, String module, Flags flags, TpSlots slots) {
+    PythonBuiltinClassType(String name, PythonBuiltinClassType base, String module, int flags, TpSlots slots) {
         this(name, base, module, module, flags, DEFAULT_M_FLAGS, slots);
     }
 
-    PythonBuiltinClassType(String name, PythonBuiltinClassType base, String module, Flags flags, long methodsFlags) {
+    PythonBuiltinClassType(String name, PythonBuiltinClassType base, String module, int flags, long methodsFlags) {
         this(name, base, module, module, flags, methodsFlags, TpSlots.createEmpty());
     }
 
-    PythonBuiltinClassType(String name, String module, PythonBuiltinClassType base, Flags flags, long methodsFlags, TpSlots slots) {
+    PythonBuiltinClassType(String name, String module, PythonBuiltinClassType base, int flags, long methodsFlags, TpSlots slots) {
         this(name, base, module, module, flags, methodsFlags, slots);
     }
 
-    PythonBuiltinClassType(String name, PythonBuiltinClassType base, String publishInModule, String moduleName, Flags flags) {
+    PythonBuiltinClassType(String name, PythonBuiltinClassType base, String publishInModule, String moduleName, int flags) {
         this(name, base, publishInModule, moduleName, flags, DEFAULT_M_FLAGS, TpSlots.createEmpty());
     }
 
-    PythonBuiltinClassType(String name, PythonBuiltinClassType base, String publishInModule, String moduleName, Flags flags, TpSlots slots) {
+    PythonBuiltinClassType(String name, PythonBuiltinClassType base, String publishInModule, String moduleName, int flags, TpSlots slots) {
         this(name, base, publishInModule, moduleName, flags, DEFAULT_M_FLAGS, slots);
     }
 
-    PythonBuiltinClassType(String name, PythonBuiltinClassType base, String publishInModule, String moduleName, Flags flags, long methodsFlags, TpSlots declaredSlots) {
+    PythonBuiltinClassType(String name, PythonBuiltinClassType base, String publishInModule, String moduleName, int flags, long methodsFlags, TpSlots declaredSlots) {
         this.name = toTruffleStringUncached(name);
         this.base = base;
         this.publishInModule = toTruffleStringUncached(publishInModule);
-        this.moduleName = flags.isPublic && moduleName != null ? toTruffleStringUncached(moduleName) : null;
+        this.moduleName = (flags & Flags.PRIVATE) == 0 && moduleName != null ? toTruffleStringUncached(moduleName) : null;
         if (moduleName != null && moduleName != J_BUILTINS) {
             printName = toTruffleStringUncached(moduleName + "." + name);
         } else {
             printName = this.name;
         }
-        this.basetype = flags.isBaseType;
-        this.isBuiltinWithDict = flags.isBuiltinWithDict;
+        this.basetype = (flags & Flags.BASETYPE) != 0;
+        this.isBuiltinWithDict = (flags & Flags.HAS_DICT) != 0;
+        this.disallowInstantiation = (flags & Flags.DISALLOW_INSTANTIATION) != 0;
         this.methodsFlags = methodsFlags;
         this.weaklistoffset = -1;
         this.declaredSlots = declaredSlots;
@@ -777,35 +774,35 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     PythonBuiltinClassType(String name, PythonBuiltinClassType base, String module) {
-        this(name, base, module, Flags.PUBLIC_BASE_WODICT);
+        this(name, base, module, Flags.BASETYPE);
     }
 
     PythonBuiltinClassType(String name, PythonBuiltinClassType base, String module, TpSlots slots) {
-        this(name, base, module, Flags.PUBLIC_BASE_WODICT, slots);
+        this(name, base, module, Flags.BASETYPE, slots);
     }
 
     PythonBuiltinClassType(String name, PythonBuiltinClassType base, String module, long methodsFlags, TpSlots slots) {
-        this(name, base, module, module, Flags.PUBLIC_BASE_WODICT, methodsFlags, slots);
+        this(name, base, module, module, Flags.BASETYPE, methodsFlags, slots);
     }
 
-    PythonBuiltinClassType(String name, PythonBuiltinClassType base, Flags flags) {
+    PythonBuiltinClassType(String name, PythonBuiltinClassType base, int flags) {
         this(name, base, null, flags);
     }
 
-    PythonBuiltinClassType(String name, PythonBuiltinClassType base, Flags flags, TpSlots slots) {
+    PythonBuiltinClassType(String name, PythonBuiltinClassType base, int flags, TpSlots slots) {
         this(name, base, null, flags, slots);
     }
 
-    PythonBuiltinClassType(String name, PythonBuiltinClassType base, Flags flags, long methodsFlags) {
+    PythonBuiltinClassType(String name, PythonBuiltinClassType base, int flags, long methodsFlags) {
         this(name, base, null, flags, methodsFlags);
     }
 
-    PythonBuiltinClassType(String name, PythonBuiltinClassType base, Flags flags, long methodsFlags, TpSlots slots) {
+    PythonBuiltinClassType(String name, PythonBuiltinClassType base, int flags, long methodsFlags, TpSlots slots) {
         this(name, base, null, null, flags, methodsFlags, slots);
     }
 
     PythonBuiltinClassType(PythonBuiltinClassType base, String name) {
-        this(name, base, Flags.PRIVATE_BASE_WODICT);
+        this(name, base, Flags.PRIVATE | Flags.BASETYPE);
     }
 
     public boolean isAcceptableBase() {
@@ -830,6 +827,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     public boolean isBuiltinWithDict() {
         return isBuiltinWithDict;
+    }
+
+    public boolean disallowInstantiation() {
+        return disallowInstantiation;
     }
 
     public TruffleString getPublishInModule() {

@@ -71,7 +71,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetItem;
@@ -205,7 +204,6 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
         static PTuple withDict(VirtualFrame frame, Object cls, Object sequence, Object dict,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetTypeFlagsNode getFlags,
                         @Cached GetSizeNode getSizeNode,
                         @Cached GetFieldNamesNode getFieldNamesNode,
                         @Cached ListNodes.FastConstructListNode fastConstructListNode,
@@ -216,10 +214,6 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
                         @Cached PyDictGetItem dictGetItem,
                         @Cached InlinedConditionProfile hasDictProfile,
                         @Cached PRaiseNode raiseNode) {
-            // FIXME this should be checked by type.__call__
-            if ((getFlags.execute(cls) & TypeFlags.DISALLOW_INSTANTIATION) != 0) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, StructSequence.getTpName(cls));
-            }
             SequenceStorage seq;
             try {
                 seq = fastConstructListNode.execute(frame, inliningTarget, sequence).getSequenceStorage();

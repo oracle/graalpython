@@ -408,16 +408,36 @@ public final class TypeBuiltins extends PythonBuiltins {
         abstract void execute(Node inliningTarget, Object type);
 
         @Specialization
+        static void doPBCT(Node inliningTarget, PythonBuiltinClassType type,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            if (type.disallowInstantiation()) {
+                throw raiseException(inliningTarget, type, raiseNode);
+            }
+        }
+
+        @Specialization
         static void doNative(Node inliningTarget, PythonAbstractNativeObject type,
                         @Cached GetTypeFlagsNode getTypeFlagsNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             if ((getTypeFlagsNode.execute(type) & TypeFlags.DISALLOW_INSTANTIATION) != 0) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_N_INSTANCES, type);
+                throw raiseException(inliningTarget, type, raiseNode);
             }
         }
 
         @Fallback
         static void doManaged(@SuppressWarnings("unused") Object type) {
+            // Guaranteed by caller
+            assert !(type instanceof PythonBuiltinClass);
+        }
+
+        @InliningCutoff
+        private static PException raiseException(Node inliningTarget, PythonAbstractNativeObject type, PRaiseNode raiseNode) {
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_N_INSTANCES, type);
+        }
+
+        @InliningCutoff
+        private static PException raiseException(Node inliningTarget, PythonBuiltinClassType type, PRaiseNode raiseNode) {
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, type.getPrintName());
         }
     }
 

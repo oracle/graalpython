@@ -1899,28 +1899,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "ScandirIterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PScandirIterator, isPublic = false)
-    @GenerateNodeFactory
-    abstract static class ScandirIteratorNode extends PythonBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object scandirIterator(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "posix.ScandirIterator");
-        }
-    }
-
-    @Builtin(name = "DirEntry", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDirEntry, isPublic = true)
-    @GenerateNodeFactory
-    abstract static class DirEntryNode extends PythonBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object dirEntry(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "posix.DirEntry");
-        }
-    }
-
     @Builtin(name = "scandir", minNumOfPositionalArgs = 0, parameterNames = {"path"})
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"true", "true"})
     @GenerateNodeFactory

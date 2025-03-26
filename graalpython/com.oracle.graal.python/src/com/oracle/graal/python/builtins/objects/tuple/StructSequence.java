@@ -233,7 +233,7 @@ public class StructSequence {
              * method wrappers. We take them from any builtin that doesn't override them and rebind
              * them to the type. Field names are already populated in tp_members on the native side.
              */
-            PythonBuiltinClass template = context.lookupType(PythonBuiltinClassType.PFlags);
+            PythonBuiltinClass template = context.lookupType(PythonBuiltinClassType.PFloatInfo);
             copyMethod(language, klass, T___NEW__, template);
             copyMethod(language, klass, T___REDUCE__, template);
 

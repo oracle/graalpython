@@ -33,21 +33,13 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_BYTES;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_CLASSMETHOD;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_COMPLEX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_ITEMITERATOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_ITEMS;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_KEYITERATOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_KEYS;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUEITERATOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUES;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ENUMERATE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FLOAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FROZENSET;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_GETSET_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_INSTANCEMETHOD;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_INT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_LIST;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MAP;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMORYVIEW;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MODULE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_OBJECT;
@@ -60,14 +52,10 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_STR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SUPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPE;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_WRAPPER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ZIP;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_EXCEPTION_GROUP;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_GETSET_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_LAMBDA_NAME;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NOT_IMPLEMENTED;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_WRAPPER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ZIP;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_NOT_BE_ZERO;
 import static com.oracle.graal.python.nodes.PGuards.isInteger;
@@ -2112,18 +2100,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    // builtin-function(method-def, self, module)
-    @Builtin(name = "method_descriptor", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 6, constructsClass = PythonBuiltinClassType.PBuiltinFunction, isPublic = false)
-    @GenerateNodeFactory
-    public abstract static class BuiltinFunctionNode extends PythonBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static PFunction function(Object cls, Object method_def, Object def, Object name, Object module,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "method_descriptor");
-        }
-    }
-
     // type(object, bases, dict)
     @Builtin(name = J_TYPE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, needsFrame = true, constructsClass = PythonBuiltinClassType.PythonClass)
     @GenerateNodeFactory
@@ -2293,116 +2269,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         public static PNone module(Object cls) {
             return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = J_DICT_KEYS, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictKeysView, isPublic = false)
-    @GenerateNodeFactory
-    public abstract static class DictKeysTypeNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        static Object dictKeys(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_KEYS);
-        }
-    }
-
-    @Builtin(name = J_DICT_KEYITERATOR, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictKeyIterator, isPublic = false)
-    @GenerateNodeFactory
-    public abstract static class DictKeysIteratorTypeNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        static Object dictKeys(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_KEYITERATOR);
-        }
-    }
-
-    @Builtin(name = J_DICT_VALUES, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictValuesView, isPublic = false)
-    @GenerateNodeFactory
-    public abstract static class DictValuesTypeNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        static Object dictKeys(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_VALUES);
-        }
-    }
-
-    @Builtin(name = J_DICT_VALUEITERATOR, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictValueIterator, isPublic = false)
-    @GenerateNodeFactory
-    public abstract static class DictValuesIteratorTypeNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        static Object dictKeys(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_VALUEITERATOR);
-        }
-    }
-
-    @Builtin(name = J_DICT_ITEMS, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictItemsView, isPublic = false)
-    @GenerateNodeFactory
-    public abstract static class DictItemsTypeNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        static Object dictKeys(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_ITEMS);
-        }
-    }
-
-    @Builtin(name = J_DICT_ITEMITERATOR, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictItemIterator, isPublic = false)
-    @GenerateNodeFactory
-    public abstract static class DictItemsIteratorTypeNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        static Object dictKeys(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, J_DICT_ITEMITERATOR);
-        }
-    }
-
-    @Builtin(name = "iterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PIterator, isPublic = false)
-    @GenerateNodeFactory
-    public abstract static class IteratorTypeNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        static Object iterator(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "iterator");
-        }
-    }
-
-    @Builtin(name = "arrayiterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PArrayIterator, isPublic = false)
-    @GenerateNodeFactory
-    public abstract static class ArrayIteratorTypeNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        static Object iterator(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "arrayiterator");
-        }
-    }
-
-    @Builtin(name = "callable_iterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PSentinelIterator, isPublic = false)
-    @GenerateNodeFactory
-    public abstract static class CallableIteratorTypeNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        static Object iterator(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "callable_iterator");
-        }
-    }
-
-    @Builtin(name = "generator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PGenerator, isPublic = false)
-    @GenerateNodeFactory
-    public abstract static class GeneratorTypeNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        static Object generator(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "generator");
         }
     }
 
@@ -2719,55 +2585,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         static Object doMissing(Object klass, PNone none,
                         @Bind("this") Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_POS, "mappingproxy()", "mapping", 1);
-        }
-    }
-
-    abstract static class DescriptorNode extends PythonBuiltinNode {
-        @TruffleBoundary
-        protected final void denyInstantiationAfterInitialization(TruffleString name) {
-            if (getContext().isCoreInitialized()) {
-                throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, name);
-            }
-        }
-
-        protected static Object ensure(Object value) {
-            return value == PNone.NO_VALUE ? null : value;
-        }
-    }
-
-    @Builtin(name = J_GETSET_DESCRIPTOR, constructsClass = PythonBuiltinClassType.GetSetDescriptor, isPublic = false, minNumOfPositionalArgs = 1, //
-                    parameterNames = {"cls", "fget", "fset", "name", "owner"})
-    @GenerateNodeFactory
-    public abstract static class GetSetDescriptorNode extends DescriptorNode {
-        @Specialization(guards = "isPythonClass(owner)")
-        @TruffleBoundary
-        Object call(@SuppressWarnings("unused") Object clazz, Object get, Object set, TruffleString name, Object owner) {
-            denyInstantiationAfterInitialization(T_GETSET_DESCRIPTOR);
-            return PFactory.createGetSetDescriptor(PythonLanguage.get(null), ensure(get), ensure(set), name, owner);
-        }
-    }
-
-    @Builtin(name = J_MEMBER_DESCRIPTOR, constructsClass = PythonBuiltinClassType.MemberDescriptor, isPublic = false, minNumOfPositionalArgs = 1, //
-                    parameterNames = {"cls", "fget", "fset", "name", "owner"})
-    @GenerateNodeFactory
-    public abstract static class MemberDescriptorNode extends DescriptorNode {
-        @Specialization(guards = "isPythonClass(owner)")
-        @TruffleBoundary
-        Object doGeneric(@SuppressWarnings("unused") Object clazz, Object get, Object set, TruffleString name, Object owner) {
-            denyInstantiationAfterInitialization(T_MEMBER_DESCRIPTOR);
-            return PFactory.createGetSetDescriptor(PythonLanguage.get(null), ensure(get), ensure(set), name, owner);
-        }
-    }
-
-    @Builtin(name = J_WRAPPER_DESCRIPTOR, constructsClass = PythonBuiltinClassType.WrapperDescriptor, isPublic = false, minNumOfPositionalArgs = 1, //
-                    parameterNames = {"cls", "fget", "fset", "name", "owner"})
-    @GenerateNodeFactory
-    public abstract static class WrapperDescriptorNode extends DescriptorNode {
-        @Specialization(guards = "isPythonClass(owner)")
-        @TruffleBoundary
-        Object doGeneric(@SuppressWarnings("unused") Object clazz, Object get, Object set, TruffleString name, Object owner) {
-            denyInstantiationAfterInitialization(T_WRAPPER_DESCRIPTOR);
-            return PFactory.createGetSetDescriptor(PythonLanguage.get(null), ensure(get), ensure(set), name, owner);
         }
     }
 

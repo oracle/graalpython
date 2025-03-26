@@ -79,8 +79,7 @@ class StructSeqTests(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, r'os.stat_result\(\) takes an at most \d+-sequence \(30-sequence given\)'):
             posix.stat_result((1,) * 30)
         with self.assertRaisesRegex(TypeError, r'cannot create \'sys.flags\' instances'):
-            # GraalPy change: add argument to avoid hitting the argument error first
-            type(sys.flags)(())
+            type(sys.flags)()
 
     def test_no_subclass(self):
         with self.assertRaises(TypeError):
