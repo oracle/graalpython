@@ -872,6 +872,12 @@ class EnsurePipTest(BaseTest):
                 "^WARNING: Disabling truststore since ssl support is missing$",
                 "",
                 err, flags=re.MULTILINE)
+        # Begin Truffle change
+        err = re.sub(
+            "^WARNING: Disabling truststore because platform isn't supported$",
+            "",
+            err, flags=re.MULTILINE)
+        # End Truffle change
         self.assertEqual(err.rstrip(), "")
         # Being fairly specific regarding the expected behaviour for the
         # initial bundling phase in Python 3.4. If the output changes in
