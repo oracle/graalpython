@@ -41,6 +41,7 @@ import sys
 
 import operator
 from . import CPyExtType, CPyExtHeapType, compile_module_from_string, assert_raises, compile_module_from_file
+from .test_indexed_slots import cmembers
 
 
 def get_delegate(o):
@@ -842,9 +843,9 @@ def test_tp_hash():
         "TypeWithoutHashExplicit",
         tp_hash='PyObject_HashNotImplemented',
         code = '''
-            static hashfunc myglobal = PyObject_HashNotImplemented;
-            typedef struct { hashfunc x; } _mystruct_t;
-            static _mystruct_t mystruct = { PyObject_HashNotImplemented };
+            // static hashfunc myglobal = PyObject_HashNotImplemented;
+            // typedef struct { hashfunc x; } _mystruct_t;
+            // static _mystruct_t mystruct = { PyObject_HashNotImplemented };
         ''',
         ready_code = '''
             // printf("TypeWithoutHashExplicitType.tp_hash=%p, PyObject_HashNotImplemented=%p, myglobal=%p, mystruct.x=%p\\n", TypeWithoutHashExplicitType.tp_hash, &PyObject_HashNotImplemented, myglobal, mystruct.x);
@@ -1576,3 +1577,72 @@ def test_richcmp():
                              struct_base='PyLongObject base;')
     assert MyNativeIntSubType(42) == 42
     assert MyNativeIntSubType(42) == MyNativeIntSubType(42)
+
+    RichCmpMockType = CPyExtType("RichCmpMock",
+                                   cmembers="int results[Py_GE+1];",
+                                   code='''
+                                    static PyTypeObject RichCmpMockType;
+
+                                    static PyObject* set_values(PyObject* self, PyObject* values) {
+                                        RichCmpMockObject* richCmp = (RichCmpMockObject*) self;
+                                        for (int i = 0; i <= Py_GE; i++) {
+                                            richCmp->results[i] = (int) PyLong_AsLong(PyTuple_GET_ITEM(values, i));
+                                        }
+                                        Py_RETURN_NONE;
+                                    }
+
+                                    static PyObject *custom_type_richcmp(PyObject *v, PyObject *w, int op) {
+                                        if (!PyObject_TypeCheck(v, &RichCmpMockType)) Py_RETURN_NOTIMPLEMENTED;
+                                        RichCmpMockObject* richCmp = (RichCmpMockObject*) v;
+                                        if (richCmp->results[op] == 0) {
+                                            Py_RETURN_FALSE;
+                                        } else if (richCmp->results[op] == 1) {
+                                            Py_RETURN_TRUE;
+                                        } else {
+                                            Py_RETURN_NOTIMPLEMENTED;
+                                        }
+                                    };
+                                   ''',
+                                   tp_methods='{"set_values", (PyCFunction)set_values, METH_O, NULL}',
+                                   tp_richcompare='custom_type_richcmp')
+
+    def create_mock(lt=-1, le=-1, eq=-1, ne=-1, gt=-1, ge=-1):
+        mock = RichCmpMockType()
+        mock.set_values(tuple([lt, le, eq, ne, gt, ge]))
+        return mock
+
+    def expect_type_error(code):
+        try:
+            code()
+        except TypeError as e:
+            assert "not supported between instances " in str(e)
+
+    def test_cmp(op_lambda, rop_lambda, op_name, rop_name):
+        assert op_lambda(create_mock(**{op_name: 1}), "whatever")
+        assert op_lambda(create_mock(**{op_name: 1}), create_mock(**{rop_name: 0, op_name: 0}))
+        assert not op_lambda(create_mock(**{op_name: 0}), "whatever")
+        expect_type_error(lambda: op_lambda(create_mock(), "whatever"))
+
+        if rop_lambda:
+            assert rop_lambda("whatever", create_mock(**{op_name: 1}))
+            assert rop_lambda(create_mock(), create_mock(**{op_name: 1}))
+            assert not rop_lambda(create_mock(**{rop_name: 0}), create_mock(**{op_name: 1}))
+
+    import operator
+    test_cmp(operator.lt, operator.gt, "lt", "gt")
+    test_cmp(operator.le, operator.ge, "le", "ge")
+    test_cmp(operator.gt, operator.lt, "gt", "lt")
+    test_cmp(operator.ge, operator.le, "ge", "le")
+    test_cmp(operator.eq, operator.ne, "eq", "ne")
+    test_cmp(operator.ne, None, "ne", "eq")
+
+    test_cmp(lambda a,b: a.__lt__(b), lambda a,b: a.__gt__(b), "lt", "gt")
+    test_cmp(lambda a,b: a.__le__(b), lambda a,b: a.__ge__(b), "le", "ge")
+    test_cmp(lambda a,b: a.__gt__(b), lambda a,b: a.__lt__(b), "gt", "lt")
+    test_cmp(lambda a,b: a.__ge__(b), lambda a,b: a.__le__(b), "ge", "le")
+    test_cmp(lambda a,b: a.__eq__(b), lambda a,b: a.__ne__(b), "eq", "ne")
+    test_cmp(lambda a,b: a.__ne__(b), None, "ne", "eq")
+
+    assert create_mock(ne=1) == create_mock(eq=1)
+    assert create_mock(ne=1, eq=0) != create_mock(ne=0, eq=1)
+    assert not create_mock(ne=1, eq=0) == create_mock(ne=0, eq=1)

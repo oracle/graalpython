@@ -40,21 +40,13 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -106,90 +98,6 @@ public abstract class LookupAndCallBinaryNode extends Node {
     @NeverDefault
     public static LookupAndCallBinaryNode create(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handlerFactory) {
         return LookupAndCallNonReversibleBinaryNodeGen.create(slot, handlerFactory, false);
-    }
-
-    @NeverDefault
-    public static LookupAndCallBinaryNode createReversible(SpecialMethodSlot slot, SpecialMethodSlot rslot, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallReversibleBinaryNodeGen.create(slot, rslot, handlerFactory, false, false);
-    }
-
-    @NeverDefault
-    public static LookupAndCallBinaryNode create(SpecialMethodSlot slot, SpecialMethodSlot rslot, boolean alwaysCheckReverse, boolean ignoreDescriptorException) {
-        return LookupAndCallReversibleBinaryNodeGen.create(slot, rslot, null, alwaysCheckReverse, ignoreDescriptorException);
-    }
-
-    @ImportStatic(PGuards.class)
-    @GenerateInline
-    @GenerateCached(false)
-    protected abstract static class AreSameCallables extends Node {
-        public abstract boolean execute(Node inliningTarget, Object left, Object right);
-
-        @Specialization(guards = "a == b")
-        static boolean areIdenticalFastPath(@SuppressWarnings("unused") Object a, @SuppressWarnings("unused") Object b) {
-            return true;
-        }
-
-        @Specialization(guards = "isNone(a) || isNone(b)")
-        static boolean noneFastPath(@SuppressWarnings("unused") Object a, @SuppressWarnings("unused") Object b) {
-            return a == b;
-        }
-
-        @Specialization(replaces = "areIdenticalFastPath")
-        static boolean doDescrs(BuiltinMethodDescriptor a, BuiltinMethodDescriptor b) {
-            return a == b;
-        }
-
-        @Specialization(replaces = "areIdenticalFastPath")
-        static boolean doDescrFun1(BuiltinMethodDescriptor a, PBuiltinFunction b) {
-            return a.isDescriptorOf(b);
-        }
-
-        @Specialization(replaces = "areIdenticalFastPath")
-        static boolean doDescrFun2(PBuiltinFunction a, BuiltinMethodDescriptor b) {
-            return b.isDescriptorOf(a);
-        }
-
-        @Specialization(replaces = "areIdenticalFastPath")
-        static boolean doDescrMeth1(BuiltinMethodDescriptor a, PBuiltinMethod b) {
-            return doDescrFun1(a, b.getBuiltinFunction());
-        }
-
-        @Specialization(replaces = "areIdenticalFastPath")
-        static boolean doDescrMeth2(PBuiltinMethod a, BuiltinMethodDescriptor b) {
-            return doDescrFun2(a.getBuiltinFunction(), b);
-        }
-
-        @Fallback
-        static boolean doGenericRuntimeObjects(Object a, Object b) {
-            return a == b;
-        }
-    }
-
-    @ImportStatic(PGuards.class)
-    @GenerateInline
-    @GenerateCached(false)
-    protected abstract static class GetEnclosingType extends Node {
-        public abstract Object execute(Node inliningTarget, Object callable);
-
-        @Specialization
-        static Object doDescrs(BuiltinMethodDescriptor descriptor) {
-            return descriptor.getEnclosingType();
-        }
-
-        @Specialization
-        static Object doBuiltinFun(PBuiltinFunction fun) {
-            return fun.getEnclosingType();
-        }
-
-        @Specialization
-        static Object doBuiltinMethod(PBuiltinMethod a) {
-            return doBuiltinFun(a.getBuiltinFunction());
-        }
-
-        @Fallback
-        static Object doOthers(@SuppressWarnings("unused") Object callable) {
-            return null;
-        }
     }
 
     public abstract TruffleString getName();

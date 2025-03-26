@@ -40,11 +40,6 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.strings.TruffleString;
-
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GT__;
@@ -52,6 +47,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NE__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Mirror of the CPython constants of the same name. The order is important: the ordinal should be
