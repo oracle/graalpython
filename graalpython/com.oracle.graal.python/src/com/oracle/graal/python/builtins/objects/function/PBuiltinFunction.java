@@ -107,7 +107,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, callTarget, null, null);
     }
 
-    private static PKeyword[] generateKwDefaults(Signature signature) {
+    public static PKeyword[] generateKwDefaults(Signature signature) {
         TruffleString[] keywordNames = signature.getKeywordNames();
         PKeyword[] kwDefaults = PKeyword.create(keywordNames.length);
         for (int i = 0; i < keywordNames.length; i++) {

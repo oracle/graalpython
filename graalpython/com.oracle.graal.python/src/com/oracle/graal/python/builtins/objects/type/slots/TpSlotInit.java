@@ -44,8 +44,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -112,6 +110,7 @@ public final class TpSlotInit {
         @CompilationFinal boolean directInvocation;
         @CompilationFinal Signature signature;
         @CompilationFinal Object[] defaults;
+        @CompilationFinal PKeyword[] kwDefaults;
 
         protected TpSlotInitBuiltin(NodeFactory<T> nodeFactory) {
             super(nodeFactory);
@@ -129,14 +128,18 @@ public final class TpSlotInit {
             return defaults;
         }
 
+        public PKeyword[] getKwDefaults() {
+            return kwDefaults;
+        }
+
         @Override
         public final void initialize(PythonLanguage language) {
             Class<T> nodeClass = getNodeFactory().getNodeClass();
             SlotSignature slotSignature = nodeClass.getAnnotation(SlotSignature.class);
             Slot2Builtin builtin = new Slot2Builtin(slotSignature, J___INIT__, null);
             signature = BuiltinFunctionRootNode.createSignature(getNodeFactory(), builtin, true, false);
-            defaults = new Object[PythonBuiltins.numDefaults(builtin)];
-            Arrays.fill(defaults, PNone.NO_VALUE);
+            defaults = PBuiltinFunction.generateDefaults(PythonBuiltins.numDefaults(builtin));
+            kwDefaults = PBuiltinFunction.generateKwDefaults(signature);
             directInvocation = PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass) || //
                             PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonVarargsBuiltinNode.class.isAssignableFrom(nodeClass);
             RootCallTarget callTarget = createSlotCallTarget(language, null, getNodeFactory(), J___INIT__);
@@ -214,7 +217,7 @@ public final class TpSlotInit {
                             @Cached InlinedConditionProfile frameProfile,
                             @Cached(parameters = "callTarget") DirectCallNode callNode) {
                 CompilerAsserts.partialEvaluationConstant(slot);
-                Object[] arguments = createArgumentsNode.execute(inliningTarget, T___INIT__, args, keywords, slot.getSignature(), self, null, slot.getDefaults(), PKeyword.EMPTY_KEYWORDS, false);
+                Object[] arguments = createArgumentsNode.execute(inliningTarget, T___INIT__, args, keywords, slot.getSignature(), self, null, slot.getDefaults(), slot.getKwDefaults(), false);
                 if (frameProfile.profile(inliningTarget, frame != null)) {
                     callContext.prepareCall(frame, arguments, callTarget, inliningTarget);
                     return callNode.call(arguments);
@@ -278,7 +281,7 @@ public final class TpSlotInit {
                         @Cached(inline = false) CallContext callContext,
                         @Cached InlinedConditionProfile isNullFrameProfile,
                         @Cached(inline = false) IndirectCallNode indirectCallNode) {
-            Object[] arguments = createArgumentsNode.execute(inliningTarget, T___INIT__, args, keywords, slot.getSignature(), self, null, slot.getDefaults(), PKeyword.EMPTY_KEYWORDS,
+            Object[] arguments = createArgumentsNode.execute(inliningTarget, T___INIT__, args, keywords, slot.getSignature(), self, null, slot.getDefaults(), slot.getKwDefaults(),
                             false);
             BuiltinDispatchers.callGenericBuiltin(frame, inliningTarget, slot.callTargetIndex, arguments, callContext, isNullFrameProfile, indirectCallNode);
         }
