@@ -724,10 +724,10 @@ public abstract class TextIOWrapperNodes {
         static void fixEncoderState(VirtualFrame frame, @SuppressWarnings("unused") Node inliningTarget, PTextIO self,
                         @Cached PyObjectCallMethodObjArgs callMethodTell,
                         @Cached PyObjectCallMethodObjArgs callMethodSetState,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+                        @Cached PyObjectRichCompareBool eqNode) {
             self.setEncodingStartOfStream(true);
             Object cookieObj = callMethodTell.execute(frame, inliningTarget, self.getBuffer(), T_TELL);
-            if (!eqNode.compare(frame, inliningTarget, cookieObj, 0)) {
+            if (!eqNode.executeEq(frame, inliningTarget, cookieObj, 0)) {
                 self.setEncodingStartOfStream(false);
                 callMethodSetState.execute(frame, inliningTarget, self.getEncoder(), T_SETSTATE, 0);
             }

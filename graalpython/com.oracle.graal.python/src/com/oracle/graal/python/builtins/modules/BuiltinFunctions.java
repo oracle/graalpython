@@ -166,6 +166,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
@@ -191,6 +192,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttrO;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSetAttrO;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -222,7 +224,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -295,7 +296,6 @@ import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -1566,11 +1566,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateCached(false)
     public abstract static class MinMaxNode extends Node {
 
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal, String name, BinaryComparisonNode comparisonNode);
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal, String name, RichCmpOp op);
 
         @Specialization(guards = "args.length == 0")
         static Object minmaxSequenceWithKey(VirtualFrame frame, Node inliningTarget, Object arg1, @SuppressWarnings("unused") Object[] args, Object keywordArgIn, Object defaultVal, String name,
-                        BinaryComparisonNode compare,
+                        RichCmpOp op,
+                        @Exclusive @Cached PyObjectRichCompareBool compareNode,
                         @Exclusive @Cached PyObjectGetIter getIter,
                         @Exclusive @Cached PyIterNextNode nextNode,
                         @Exclusive @Cached PyObjectIsTrueNode castToBooleanNode,
@@ -1600,17 +1601,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         break;
                     }
                     Object nextKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, nextValue);
-                    boolean isTrue;
-                    if (!seenNonBoolean.wasEntered(inliningTarget)) {
-                        try {
-                            isTrue = compare.executeBool(frame, nextKey, currentKey);
-                        } catch (UnexpectedResultException e) {
-                            seenNonBoolean.enter(inliningTarget);
-                            isTrue = castToBooleanNode.execute(frame, e.getResult());
-                        }
-                    } else {
-                        isTrue = castToBooleanNode.execute(frame, compare.execute(frame, nextKey, currentKey));
-                    }
+                    boolean isTrue = compareNode.execute(frame, inliningTarget, nextKey, currentKey, op);
                     if (isTrue) {
                         currentKey = nextKey;
                         currentValue = nextValue;
@@ -1624,7 +1615,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = {"args.length != 0"})
-        static Object minmaxBinaryWithKey(VirtualFrame frame, Node inliningTarget, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal, String name, BinaryComparisonNode compare,
+        static Object minmaxBinaryWithKey(VirtualFrame frame, Node inliningTarget, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal, String name,
+                        RichCmpOp op,
+                        @Exclusive @Cached PyObjectRichCompareBool compareNode,
                         @Exclusive @Cached CallNode.Lazy keyCall,
                         @Exclusive @Cached PyObjectIsTrueNode castToBooleanNode,
                         @Exclusive @Cached InlinedBranchProfile seenNonBoolean,
@@ -1644,17 +1637,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object currentKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, currentValue);
             Object nextValue = args[0];
             Object nextKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, nextValue);
-            boolean isTrue;
-            if (!seenNonBoolean.wasEntered(inliningTarget)) {
-                try {
-                    isTrue = compare.executeBool(frame, nextKey, currentKey);
-                } catch (UnexpectedResultException e) {
-                    seenNonBoolean.enter(inliningTarget);
-                    isTrue = castToBooleanNode.execute(frame, e.getResult());
-                }
-            } else {
-                isTrue = castToBooleanNode.execute(frame, compare.execute(frame, nextKey, currentKey));
-            }
+            boolean isTrue = compareNode.execute(frame, inliningTarget, nextKey, currentKey, op);
             if (isTrue) {
                 currentKey = nextKey;
                 currentValue = nextValue;
@@ -1665,16 +1648,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 for (int i = 0; loopProfile.inject(inliningTarget, i < args.length); i++) {
                     nextValue = args[i];
                     nextKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, nextValue);
-                    if (!seenNonBoolean.wasEntered(inliningTarget)) {
-                        try {
-                            isTrue = compare.executeBool(frame, nextKey, currentKey);
-                        } catch (UnexpectedResultException e) {
-                            seenNonBoolean.enter(inliningTarget);
-                            isTrue = castToBooleanNode.execute(frame, e.getResult());
-                        }
-                    } else {
-                        isTrue = castToBooleanNode.execute(frame, compare.execute(frame, nextKey, currentKey));
-                    }
+                    isTrue = compareNode.execute(frame, inliningTarget, nextKey, currentKey, op);
                     if (isTrue) {
                         currentKey = nextKey;
                         currentValue = nextValue;
@@ -1700,9 +1674,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         static Object max(VirtualFrame frame, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal,
                         @Bind("this") Node inliningTarget,
-                        @Cached MinMaxNode minMaxNode,
-                        @Cached BinaryComparisonNode.GtNode gtNode) {
-            return minMaxNode.execute(frame, inliningTarget, arg1, args, keywordArgIn, defaultVal, "max", gtNode);
+                        @Cached MinMaxNode minMaxNode) {
+            return minMaxNode.execute(frame, inliningTarget, arg1, args, keywordArgIn, defaultVal, "max", RichCmpOp.Py_GT);
         }
     }
 
@@ -1714,9 +1687,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         static Object min(VirtualFrame frame, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal,
                         @Bind("this") Node inliningTarget,
-                        @Cached MinMaxNode minMaxNode,
-                        @Cached BinaryComparisonNode.LtNode ltNode) {
-            return minMaxNode.execute(frame, inliningTarget, arg1, args, keywordArgIn, defaultVal, "min", ltNode);
+                        @Cached MinMaxNode minMaxNode) {
+            return minMaxNode.execute(frame, inliningTarget, arg1, args, keywordArgIn, defaultVal, "min", RichCmpOp.Py_LT);
         }
     }
 

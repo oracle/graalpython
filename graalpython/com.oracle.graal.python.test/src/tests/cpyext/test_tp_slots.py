@@ -41,6 +41,7 @@ import sys
 
 import operator
 from . import CPyExtType, CPyExtHeapType, compile_module_from_string, assert_raises, compile_module_from_file
+from .test_indexed_slots import cmembers
 
 
 def get_delegate(o):
@@ -811,8 +812,8 @@ def test_tp_hash():
 
     def assert_has_no_hash(obj):
         assert_raises(TypeError, hash, obj)
-        assert type(obj).__hash__ is None
-        assert TypeWithoutHash.has_hash_not_implemented(obj)
+        assert type(obj).__hash__ is None, f"{type(obj).__hash__=}, {TypeWithoutHash.has_hash_not_implemented(obj)=}"
+        assert TypeWithoutHash.has_hash_not_implemented(obj), f"{type(obj).__hash__=}, {TypeWithoutHash.has_hash_not_implemented(obj)=}"
 
     assert_has_no_hash(TypeWithoutHash())
 
@@ -838,13 +839,27 @@ def test_tp_hash():
 
     assert_has_no_hash(DisablesHash2())
 
-    # TODO GR-55196
-    # TypeWithoutHashExplicit = CPyExtType(
-    #     "TypeWithoutHashExplicit",
-    #     tp_hash='PyObject_HashNotImplemented',
-    # )
-    #
-    # assert_has_no_hash(TypeWithoutHashExplicit())
+    TypeWithoutHashExplicit = CPyExtType(
+        "TypeWithoutHashExplicit",
+        tp_hash='PyObject_HashNotImplemented',
+        code = '''
+            // static hashfunc myglobal = PyObject_HashNotImplemented;
+            // typedef struct { hashfunc x; } _mystruct_t;
+            // static _mystruct_t mystruct = { PyObject_HashNotImplemented };
+        ''',
+        ready_code = '''
+            // printf("TypeWithoutHashExplicitType.tp_hash=%p, PyObject_HashNotImplemented=%p, myglobal=%p, mystruct.x=%p\\n", TypeWithoutHashExplicitType.tp_hash, &PyObject_HashNotImplemented, myglobal, mystruct.x);
+            // printf("TypeWithoutHashExplicitType.tp_as_mapping=%p, TypeWithoutHashExplicit_mapping_methods=%p\\n", TypeWithoutHashExplicitType.tp_as_mapping, &TypeWithoutHashExplicit_mapping_methods);
+            // printf("offsetof(PyTypeObject, tp_hash)=%p, tp_as_mapping=%p\\n", offsetof(PyTypeObject, tp_hash), offsetof(PyTypeObject, tp_as_mapping));
+            // For some reason MSVC initializes tp_hash to some different pointer that also seems to point to PyObject_HashNotImplemented (some dynamic linking issue?)
+            // This happens on both CPython 3.11 and GraalPy. The printouts above can help debug the issue in the future.
+            #if defined(_MSC_VER)
+              TypeWithoutHashExplicitType.tp_hash=PyObject_HashNotImplemented;
+            #endif
+        '''
+    )
+
+    assert_has_no_hash(TypeWithoutHashExplicit())
 
 
 def test_attr_update():
@@ -1553,3 +1568,81 @@ def test_tp_iternext_not_implemented():
         next(i)
     except TypeError as e:
         assert str(e).endswith("is not an iterator")
+
+
+def test_richcmp():
+    MyNativeIntSubType = CPyExtType("MyNativeIntSubTypeForRichCmpTest",
+                             ready_code = "MyNativeIntSubTypeForRichCmpTestType.tp_new = PyLong_Type.tp_new;",
+                             tp_base='&PyLong_Type',
+                             struct_base='PyLongObject base;')
+    assert MyNativeIntSubType(42) == 42
+    assert MyNativeIntSubType(42) == MyNativeIntSubType(42)
+
+    RichCmpMockType = CPyExtType("RichCmpMock",
+                                   cmembers="int results[Py_GE+1];",
+                                   code='''
+                                    static PyTypeObject RichCmpMockType;
+
+                                    static PyObject* set_values(PyObject* self, PyObject* values) {
+                                        RichCmpMockObject* richCmp = (RichCmpMockObject*) self;
+                                        for (int i = 0; i <= Py_GE; i++) {
+                                            richCmp->results[i] = (int) PyLong_AsLong(PyTuple_GET_ITEM(values, i));
+                                        }
+                                        Py_RETURN_NONE;
+                                    }
+
+                                    static PyObject *custom_type_richcmp(PyObject *v, PyObject *w, int op) {
+                                        if (!PyObject_TypeCheck(v, &RichCmpMockType)) Py_RETURN_NOTIMPLEMENTED;
+                                        RichCmpMockObject* richCmp = (RichCmpMockObject*) v;
+                                        if (richCmp->results[op] == 0) {
+                                            Py_RETURN_FALSE;
+                                        } else if (richCmp->results[op] == 1) {
+                                            Py_RETURN_TRUE;
+                                        } else {
+                                            Py_RETURN_NOTIMPLEMENTED;
+                                        }
+                                    };
+                                   ''',
+                                   tp_methods='{"set_values", (PyCFunction)set_values, METH_O, NULL}',
+                                   tp_richcompare='custom_type_richcmp')
+
+    def create_mock(lt=-1, le=-1, eq=-1, ne=-1, gt=-1, ge=-1):
+        mock = RichCmpMockType()
+        mock.set_values(tuple([lt, le, eq, ne, gt, ge]))
+        return mock
+
+    def expect_type_error(code):
+        try:
+            code()
+        except TypeError as e:
+            assert "not supported between instances " in str(e)
+
+    def test_cmp(op_lambda, rop_lambda, op_name, rop_name):
+        assert op_lambda(create_mock(**{op_name: 1}), "whatever")
+        assert op_lambda(create_mock(**{op_name: 1}), create_mock(**{rop_name: 0, op_name: 0}))
+        assert not op_lambda(create_mock(**{op_name: 0}), "whatever")
+        expect_type_error(lambda: op_lambda(create_mock(), "whatever"))
+
+        if rop_lambda:
+            assert rop_lambda("whatever", create_mock(**{op_name: 1}))
+            assert rop_lambda(create_mock(), create_mock(**{op_name: 1}))
+            assert not rop_lambda(create_mock(**{rop_name: 0}), create_mock(**{op_name: 1}))
+
+    import operator
+    test_cmp(operator.lt, operator.gt, "lt", "gt")
+    test_cmp(operator.le, operator.ge, "le", "ge")
+    test_cmp(operator.gt, operator.lt, "gt", "lt")
+    test_cmp(operator.ge, operator.le, "ge", "le")
+    test_cmp(operator.eq, operator.ne, "eq", "ne")
+    test_cmp(operator.ne, None, "ne", "eq")
+
+    test_cmp(lambda a,b: a.__lt__(b), lambda a,b: a.__gt__(b), "lt", "gt")
+    test_cmp(lambda a,b: a.__le__(b), lambda a,b: a.__ge__(b), "le", "ge")
+    test_cmp(lambda a,b: a.__gt__(b), lambda a,b: a.__lt__(b), "gt", "lt")
+    test_cmp(lambda a,b: a.__ge__(b), lambda a,b: a.__le__(b), "ge", "le")
+    test_cmp(lambda a,b: a.__eq__(b), lambda a,b: a.__ne__(b), "eq", "ne")
+    test_cmp(lambda a,b: a.__ne__(b), None, "ne", "eq")
+
+    assert create_mock(ne=1) == create_mock(eq=1)
+    assert create_mock(ne=1, eq=0) != create_mock(ne=0, eq=1)
+    assert not create_mock(ne=1, eq=0) == create_mock(ne=0, eq=1)

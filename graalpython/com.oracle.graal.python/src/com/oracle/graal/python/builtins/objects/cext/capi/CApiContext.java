@@ -657,6 +657,29 @@ public final class CApiContext extends CExtContext {
         return PythonContext.get(caller).getCApiContext().nativeSymbolCache;
     }
 
+    public static boolean isIdenticalToSymbol(Object obj, NativeCAPISymbol symbol) {
+        CompilerAsserts.neverPartOfCompilation();
+        InteropLibrary objLib = InteropLibrary.getUncached(obj);
+        objLib.toNative(obj);
+        try {
+            return isIdenticalToSymbol(objLib.asPointer(obj), symbol);
+        } catch (UnsupportedMessageException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static boolean isIdenticalToSymbol(long ptr, NativeCAPISymbol symbol) {
+        CompilerAsserts.neverPartOfCompilation();
+        Object nativeSymbol = getNativeSymbol(null, symbol);
+        InteropLibrary lib = InteropLibrary.getUncached(nativeSymbol);
+        lib.toNative(nativeSymbol);
+        try {
+            return lib.asPointer(nativeSymbol) == ptr;
+        } catch (UnsupportedMessageException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static Object getNativeSymbol(Node caller, NativeCAPISymbol symbol) {
         Object[] nativeSymbolCache = getSymbolCache(caller);
         Object result = nativeSymbolCache[symbol.ordinal()];
@@ -952,6 +975,7 @@ public final class CApiContext extends CExtContext {
                 Object initFunction = U.readMember(capiLibrary, "initialize_graal_capi");
                 CApiContext cApiContext = new CApiContext(context, capiLibrary, loc);
                 context.setCApiContext(cApiContext);
+
                 try (BuiltinArrayWrapper builtinArrayWrapper = new BuiltinArrayWrapper()) {
                     /*
                      * The GC state needs to be created before the first managed object is sent to

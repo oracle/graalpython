@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
-import com.oracle.graal.python.lib.PyObjectRichCompareBool.EqNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -436,7 +435,7 @@ public final class ObjectHashMap {
                         @Cached InlinedCountingConditionProfile foundEqKey,
                         @Cached InlinedCountingConditionProfile collisionFoundNoValue,
                         @Cached InlinedCountingConditionProfile collisionFoundEqKey,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+                        @Cached PyObjectRichCompareBool eqNode) {
             // Must not call generic __eq__ before builtins are initialized
             // If this assert fires: we'll need something like putUncachedWithJavaEq also for get
             assert map.size == 0 || SpecialMethodSlot.areBuiltinSlotsInitialized();
@@ -457,7 +456,7 @@ public final class ObjectHashMap {
                         InlinedCountingConditionProfile foundEqKey,
                         InlinedCountingConditionProfile collisionFoundNoValue,
                         InlinedCountingConditionProfile collisionFoundEqKey,
-                        PyObjectRichCompareBool.EqNode eqNode) throws RestartLookupException {
+                        PyObjectRichCompareBool eqNode) throws RestartLookupException {
             assert map.checkInternalState();
             int[] indices = map.indices;
             int indicesLen = indices.length;
@@ -485,7 +484,7 @@ public final class ObjectHashMap {
         private static Object getCollision(Frame frame, ObjectHashMap map, Object key, long keyHash, Node inliningTarget,
                         InlinedCountingConditionProfile collisionFoundNoValue,
                         InlinedCountingConditionProfile collisionFoundEqKey,
-                        EqNode eqNode, int[] indices, int indicesLen, int compactIndex) throws RestartLookupException {
+                        PyObjectRichCompareBool eqNode, int[] indices, int indicesLen, int compactIndex) throws RestartLookupException {
             int index;
             // collision: intentionally counted loop
             long perturb = keyHash;
@@ -560,7 +559,7 @@ public final class ObjectHashMap {
                         @Cached InlinedCountingConditionProfile collisionFoundEqKey,
                         @Cached InlinedBranchProfile rehash1Profile,
                         @Cached InlinedBranchProfile rehash2Profile,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+                        @Cached PyObjectRichCompareBool eqNode) {
             // Must not call generic __eq__ before builtins are initialized
             // If this assert fires: make sure to use putUncachedWithJavaEq during initialization
             assert map.size == 0 || (SpecialMethodSlot.areBuiltinSlotsInitialized() || eqNode == null);
@@ -584,7 +583,7 @@ public final class ObjectHashMap {
                         InlinedCountingConditionProfile collisionFoundEqKey,
                         InlinedBranchProfile rehash1Profile,
                         InlinedBranchProfile rehash2Profile,
-                        PyObjectRichCompareBool.EqNode eqNode) throws RestartLookupException {
+                        PyObjectRichCompareBool eqNode) throws RestartLookupException {
             assert map.checkInternalState();
             int[] indices = map.indices;
             int indicesLen = indices.length;
@@ -608,7 +607,7 @@ public final class ObjectHashMap {
         @InliningCutoff
         private static void putCollision(Frame frame, ObjectHashMap map, Object key, long keyHash, Object value, Node inliningTarget,
                         InlinedCountingConditionProfile collisionFoundNoValue, InlinedCountingConditionProfile collisionFoundEqKey,
-                        InlinedBranchProfile rehash2Profile, EqNode eqNode,
+                        InlinedBranchProfile rehash2Profile, PyObjectRichCompareBool eqNode,
                         int[] indices, int indicesLen, int compactIndex) throws RestartLookupException {
             markCollision(indices, compactIndex);
             long perturb = keyHash;
@@ -719,7 +718,7 @@ public final class ObjectHashMap {
                         @Cached InlinedCountingConditionProfile collisionFoundNoValue,
                         @Cached InlinedCountingConditionProfile collisionFoundEqKey,
                         @Cached InlinedBranchProfile compactProfile,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+                        @Cached PyObjectRichCompareBool eqNode) {
             while (true) {
                 try {
                     return doRemove(frame, inliningTarget, map, key, keyHash, foundNullKey, foundEqKey,
@@ -737,7 +736,7 @@ public final class ObjectHashMap {
                         InlinedCountingConditionProfile collisionFoundNoValue,
                         InlinedCountingConditionProfile collisionFoundEqKey,
                         InlinedBranchProfile compactProfile,
-                        PyObjectRichCompareBool.EqNode eqNode) throws RestartLookupException {
+                        PyObjectRichCompareBool eqNode) throws RestartLookupException {
             assert map.checkInternalState();
             // TODO: move this to the point after we find the value to remove?
             if (CompilerDirectives.injectBranchProbability(SLOWPATH_PROBABILITY, map.needsCompaction())) {
@@ -772,7 +771,7 @@ public final class ObjectHashMap {
         @InliningCutoff
         private static Object removeCollision(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash,
                         InlinedCountingConditionProfile collisionFoundNoValue, InlinedCountingConditionProfile collisionFoundEqKey,
-                        EqNode eqNode, int[] indices, int indicesLen, int compactIndex) throws RestartLookupException {
+                        PyObjectRichCompareBool eqNode, int[] indices, int indicesLen, int compactIndex) throws RestartLookupException {
             int unwrappedIndex;
             long perturb = keyHash;
             int searchLimit = getBucketsCount(indices) + PERTURB_SHIFTS_COUT;
@@ -824,7 +823,7 @@ public final class ObjectHashMap {
     }
 
     private boolean keysEqual(int[] originalIndices, Frame frame, Node inliningTarget, int index, Object key, long keyHash,
-                    PyObjectRichCompareBool.EqNode eqNode) throws RestartLookupException {
+                    PyObjectRichCompareBool eqNode) throws RestartLookupException {
         if (hashes[index] != keyHash) {
             return false;
         }
@@ -836,7 +835,7 @@ public final class ObjectHashMap {
             // this is hack, see putUncachedWithJavaEq
             return javaEquals(originalKey, key);
         }
-        boolean result = eqNode.compare(frame, inliningTarget, originalKey, key);
+        boolean result = eqNode.executeEq(frame, inliningTarget, originalKey, key);
         if (getKey(index) != originalKey || indices != originalIndices) {
             // Either someone overridden the slot we are just examining, or rehasing reallocated the
             // indices array. We need to restart the lookup. Other situations are OK:

@@ -124,14 +124,13 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EncodeNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EndsWithNode;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EqNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.FindNode;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltins.LtNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ModNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.RFindNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ReplaceNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StartsWithNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
@@ -469,9 +468,9 @@ public final class PythonCextUnicodeBuiltins {
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached EqNode eqNode,
+                        @Cached StringBuiltins.StringRichCmpNode eqNode,
                         @Cached PyObjectIsTrueNode isTrue) {
-            return PInt.intValue(isTrue.execute(null, eqNode.execute(null, left, right)));
+            return PInt.intValue(isTrue.execute(null, eqNode.execute(null, left, right, RichCmpOp.Py_EQ)));
         }
 
         @Specialization(guards = {"!isAnyString(inliningTarget, left, getClassNode, isSubtypeNode) || !isAnyString(inliningTarget, right, getClassNode, isSubtypeNode)"})
@@ -502,13 +501,13 @@ public final class PythonCextUnicodeBuiltins {
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached EqNode eqNode,
-                        @Cached LtNode ltNode,
+                        @Cached StringBuiltins.StringRichCmpNode eqNode,
+                        @Cached StringBuiltins.StringRichCmpNode ltNode,
                         @Cached InlinedConditionProfile eqProfile) {
-            if (eqProfile.profile(inliningTarget, (boolean) eqNode.execute(null, left, right))) {
+            if (eqProfile.profile(inliningTarget, (boolean) eqNode.execute(null, left, right, RichCmpOp.Py_EQ))) {
                 return 0;
             } else {
-                return (boolean) ltNode.execute(null, left, right) ? -1 : 1;
+                return (boolean) ltNode.execute(null, left, right, RichCmpOp.Py_LT) ? -1 : 1;
             }
         }
 

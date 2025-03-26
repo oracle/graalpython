@@ -158,10 +158,6 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         }
     }
 
-    public boolean isReverseOperationSlot() {
-        return isReverseOperationSlot(callTarget);
-    }
-
     public static boolean isReverseOperationSlot(RootCallTarget ct) {
         RootNode functionRootNode = ct.getRootNode();
         if (functionRootNode instanceof BuiltinFunctionRootNode) {

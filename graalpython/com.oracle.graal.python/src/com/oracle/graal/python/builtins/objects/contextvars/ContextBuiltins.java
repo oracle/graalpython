@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -76,6 +77,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ContextVarsContext)
+@HashNotImplemented
 public final class ContextBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = ContextBuiltinsSlotsGen.SLOTS;
 

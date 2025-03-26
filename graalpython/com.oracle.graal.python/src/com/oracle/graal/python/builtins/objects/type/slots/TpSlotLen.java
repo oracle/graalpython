@@ -187,7 +187,7 @@ public abstract class TpSlotLen {
         }
 
         @Specialization
-        static int callNative(VirtualFrame frame, Node inliningTarget, TpSlotHPyNative slot, Object self,
+        static int callHPy(VirtualFrame frame, Node inliningTarget, TpSlotHPyNative slot, Object self,
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
                         @Cached(inline = false) HPyAsHandleNode toNativeNode,
                         @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,

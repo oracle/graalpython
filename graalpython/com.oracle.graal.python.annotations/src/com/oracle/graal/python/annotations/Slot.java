@@ -185,10 +185,16 @@ public @interface Slot {
         mp_subscript("__getitem__"),
         /** o[key] = value */
         mp_ass_subscript("__setitem__"),
+        /** comparison operations: >,=>, ==, !=, <, <= */
+        tp_richcompare("__lt__, __le__, __eq__, __ne__, __gt__, __ge__"),
         /** type descriptor get */
         tp_descr_get("__get__"),
         /** type descriptor set/delete */
         tp_descr_set("__set__, __delete__"),
+        /**
+         * hash code. See also if {@link HashNotImplemented} is not more appropriate.
+         */
+        tp_hash("__hash__"),
         /** get object attribute */
         tp_getattro("__getattribute__, __getattr__"),
         /** set/delete object attribute */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -136,7 +136,7 @@ public final class PThreadLocal extends PythonBuiltinObject {
 
     @ExportMessage
     public boolean isMemberReadable(String member,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         return readMember(inliningTarget, member, getItem, fromJavaStringNode) != null;
@@ -144,7 +144,7 @@ public final class PThreadLocal extends PythonBuiltinObject {
 
     @ExportMessage
     public boolean isMemberModifiable(String member,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         return readMember(inliningTarget, member, getItem, fromJavaStringNode) != null;
@@ -152,7 +152,7 @@ public final class PThreadLocal extends PythonBuiltinObject {
 
     @ExportMessage
     public boolean isMemberInsertable(String member,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         return !isMemberReadable(member, inliningTarget, getItem, fromJavaStringNode);
@@ -160,7 +160,7 @@ public final class PThreadLocal extends PythonBuiltinObject {
 
     @ExportMessage
     public boolean isMemberInvocable(String member,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         PDict localDict = getThreadLocalDict();
@@ -169,7 +169,7 @@ public final class PThreadLocal extends PythonBuiltinObject {
 
     @ExportMessage
     public boolean isMemberRemovable(String member,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         return isMemberReadable(member, inliningTarget, getItem, fromJavaStringNode);
@@ -177,7 +177,7 @@ public final class PThreadLocal extends PythonBuiltinObject {
 
     @ExportMessage
     public boolean hasMemberReadSideEffects(String member,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared @Cached GetObjectSlotsNode getSlotsNode) {
@@ -187,7 +187,7 @@ public final class PThreadLocal extends PythonBuiltinObject {
 
     @ExportMessage
     public boolean hasMemberWriteSideEffects(String member,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared @Cached GetObjectSlotsNode getSlotsNode) {

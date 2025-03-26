@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -236,14 +236,14 @@ public final class DynamicObjectStorage extends HashingStorage {
                             @Shared("readKey") @Cached ReadAttributeFromPythonObjectNode readKey,
                             @Exclusive @Cached("self.store.getShape()") Shape cachedShape,
                             @Exclusive @Cached(value = "keyArray(cachedShape)", dimensions = 1) Object[] keyList,
-                            @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
+                            @Shared("eqNode") @Cached PyObjectRichCompareBool eqNode,
                             @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                             @Shared("noValueProfile") @Cached InlinedConditionProfile noValueProfile) {
                 long hash = hashIn == -1 ? hashNode.execute(frame, inliningTarget, key) : hashIn;
                 for (Object currentKey : keyList) {
                     if (currentKey instanceof TruffleString) {
                         long keyHash = hashNode.execute(frame, inliningTarget, currentKey);
-                        if (keyHash == hash && eqNode.compare(frame, inliningTarget, key, currentKey)) {
+                        if (keyHash == hash && eqNode.executeEq(frame, inliningTarget, key, currentKey)) {
                             return string(inliningTarget, self, (TruffleString) currentKey, -1, readKey, noValueProfile);
                         }
                     }
@@ -255,7 +255,7 @@ public final class DynamicObjectStorage extends HashingStorage {
             static Object notStringLoop(Frame frame, DynamicObjectStorage self, Object key, long hashIn,
                             @Bind("this") Node inliningTarget,
                             @Shared("readKey") @Cached ReadAttributeFromPythonObjectNode readKey,
-                            @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
+                            @Shared("eqNode") @Cached PyObjectRichCompareBool eqNode,
                             @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                             @Shared("noValueProfile") @Cached InlinedConditionProfile noValueProfile) {
                 long hash = hashIn == -1 ? hashNode.execute(frame, inliningTarget, key) : hashIn;
@@ -264,7 +264,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                     Object currentKey = getNext(keys);
                     if (currentKey instanceof TruffleString) {
                         long keyHash = hashNode.execute(frame, inliningTarget, currentKey);
-                        if (keyHash == hash && eqNode.compare(frame, inliningTarget, key, currentKey)) {
+                        if (keyHash == hash && eqNode.executeEq(frame, inliningTarget, key, currentKey)) {
                             return string(inliningTarget, self, (TruffleString) currentKey, -1, readKey, noValueProfile);
                         }
                     }

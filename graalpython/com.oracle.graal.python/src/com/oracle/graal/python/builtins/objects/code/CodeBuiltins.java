@@ -28,8 +28,6 @@ package com.oracle.graal.python.builtins.objects.code;
 
 import static com.oracle.graal.python.annotations.ArgumentClinic.VALUE_EMPTY_TSTRING;
 import static com.oracle.graal.python.annotations.ArgumentClinic.VALUE_NONE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.objectArrayToTruffleStringArray;
@@ -53,6 +51,9 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.SourceMap;
@@ -60,7 +61,6 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -362,45 +362,46 @@ public final class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class CodeEqNode extends PythonBinaryBuiltinNode {
+    public abstract static class CodeEqNode extends RichCmpBuiltinNode {
 
-        @Specialization
+        @Specialization(guards = "op.isEqOrNe()")
         @TruffleBoundary
-        boolean eq(PCode self, PCode other) {
+        boolean eq(PCode self, PCode other, RichCmpOp op) {
             if (self == other) {
-                return true;
+                return op.isEq();
             }
             // it's quite difficult for our deserialized code objects to tell if they are the same
             if (self.getRootNode() != null && other.getRootNode() != null) {
                 if (!self.getName().equalsUncached(other.getName(), TS_ENCODING)) {
-                    return false;
+                    return op.isNe();
                 }
                 if (self.co_argcount() != other.co_argcount() || self.co_posonlyargcount() != other.co_posonlyargcount() || self.co_kwonlyargcount() != other.co_kwonlyargcount() ||
                                 self.co_nlocals() != other.co_nlocals() || self.co_flags() != other.co_flags() || self.co_firstlineno() != other.co_firstlineno()) {
-                    return false;
+                    return op.isNe();
                 }
                 if (!Arrays.equals(self.getCodestring(), other.getCodestring())) {
-                    return false;
+                    return op.isNe();
                 }
                 // TODO compare co_const
-                return Arrays.equals(self.getNames(), other.getNames()) && Arrays.equals(self.getVarnames(), other.getVarnames()) && Arrays.equals(self.getFreeVars(), other.getFreeVars()) &&
+                boolean eq = Arrays.equals(self.getNames(), other.getNames()) && Arrays.equals(self.getVarnames(), other.getVarnames()) && Arrays.equals(self.getFreeVars(), other.getFreeVars()) &&
                                 Arrays.equals(self.getCellVars(), other.getCellVars());
+                return eq == op.isEq();
             }
-            return false;
+            return op.isNe();
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        Object fail(Object self, Object other) {
+        Object fail(Object self, Object other, RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class CodeHashNode extends PythonUnaryBuiltinNode {
+    public abstract static class CodeHashNode extends HashBuiltinNode {
         @Specialization
         static long hash(VirtualFrame frame, PCode self,
                         @Bind("this") Node inliningTarget,

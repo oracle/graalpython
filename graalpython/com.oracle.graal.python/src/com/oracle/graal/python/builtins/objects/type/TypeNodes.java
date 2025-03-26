@@ -89,6 +89,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___WEAKREF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_MRO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CLASS_GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT_SUBCLASS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -158,6 +159,8 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins.IsIdentifierN
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.Builder;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBasicSizeNodeGen;
@@ -174,6 +177,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptab
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetTypeFlagsNodeGen;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -2002,13 +2006,33 @@ public abstract class TypeNodes {
                 // it still simple).
                 //
                 // From CPython point of view: we are in "type_new_impl", we call PyType_Ready,
-                // which calls type_ready_inherit to inherit the slots, and then
-                // fixup_slot_dispatchers to set the slots according to magic methods.
+                // which calls:
                 //
-                // We do not need to map slots to magic methods (add_operators in CPython), because
-                // this is a managed class and it cannot define its own slots.
-                TpSlots.inherit(newType, getMroStorageNode.execute(inliningTarget, newType), true);
-                TpSlots.fixupSlotDispatchers(newType);
+                // - type_ready_fill_dict, which calls add_operators, which fills the dunder methods
+                // from the slots. Here we are creating a managed type, so there cannot be any
+                // native slots, so this is a no-op for us.
+                //
+                // - type_ready_inherit to inherit the type slots. Here we may inherit slots from
+                // native classes in the MRO and things would get complicated if we did not follow
+                // CPython structure.
+                //
+                // - type_ready_set_hash: sets tp_hash=PyObject_HashNotImplemented and __hash__=None
+                // if tp_hash is NULL (it must be, this is managed class) and there's no __hash__
+                // magic method.
+                //
+                // - fixup_slot_dispatchers to set the slots according to magic methods.
+
+                Builder inheritedSlots = TpSlots.buildInherited(newType, namespace, getMroStorageNode.execute(inliningTarget, newType), true);
+                // type_ready_set_hash
+                if (inheritedSlots.get(TpSlotMeta.TP_HASH) == null) {
+                    Object dunderHash = getItemNamespace.execute(inliningTarget, namespace.getDictStorage(), T___HASH__);
+                    if (dunderHash == null) {
+                        inheritedSlots.set(TpSlotMeta.TP_HASH, TpSlotHashFun.HASH_NOT_IMPLEMENTED);
+                        newType.setAttribute(T___HASH__, PNone.NONE);
+                    }
+                }
+                TpSlots.fixupSlotDispatchers(newType, inheritedSlots);
+                newType.setTpSlots(inheritedSlots.build());
 
                 HashingStorage storage = namespace.getDictStorage();
                 HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
@@ -2157,17 +2181,6 @@ public abstract class TypeNodes {
 
             // 3.) invoke metaclass mro() method
             pythonClass.invokeMro(inliningTarget);
-
-            // CPython masks the __hash__ method with None when __eq__ is overriden, but __hash__ is
-            // not
-            HashingStorage namespaceStorage = namespace.getDictStorage();
-            Object hashMethod = getHashingStorageItem.execute(frame, inliningTarget, namespaceStorage, SpecialMethodNames.T___HASH__);
-            if (hashMethod == null) {
-                Object eqMethod = getHashingStorageItem.execute(frame, inliningTarget, namespaceStorage, SpecialMethodNames.T___EQ__);
-                if (eqMethod != null) {
-                    pythonClass.setAttribute(SpecialMethodNames.T___HASH__, PNone.NONE);
-                }
-            }
 
             // may_add_dict = base->tp_dictoffset == 0
             ctx.mayAddDict = !hasDictNode.execute(base);

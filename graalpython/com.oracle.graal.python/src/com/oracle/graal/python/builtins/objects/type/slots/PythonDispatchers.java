@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type.slots;
 
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -49,6 +50,7 @@ import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.FunctionInvokeNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -134,14 +136,21 @@ abstract class PythonDispatchers {
         final Object execute(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self, Object arg1) {
             assert !(callable instanceof TruffleWeakReference<?>);
             assert !(type instanceof TruffleWeakReference<?>);
-            return executeImpl(frame, inliningTarget, callable, type, self, arg1);
+            return executeImpl(frame, inliningTarget, callable, type, self, arg1, false);
         }
 
-        abstract Object executeImpl(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self, Object arg1);
+        final Object executeIgnoreDescriptorBindErrors(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self, Object arg1) {
+            assert !(callable instanceof TruffleWeakReference<?>);
+            assert !(type instanceof TruffleWeakReference<?>);
+            return executeImpl(frame, inliningTarget, callable, type, self, arg1, true);
+        }
+
+        abstract Object executeImpl(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self, Object arg1, boolean ignoreDescBindErrors);
 
         @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "isSimpleSignature(cachedCallee, 2)"}, //
                         limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "cachedCallee.getCodeStableAssumption()")
         protected static Object doCachedPFunction(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self, Object arg1,
+                        boolean ignoreDescBindErrors,
                         @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
                         @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
             Object[] arguments = PArguments.create(2);
@@ -152,10 +161,19 @@ abstract class PythonDispatchers {
 
         @Specialization(replaces = "doCachedPFunction")
         @InliningCutoff
-        static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object callableObj, Object type, Object self, Object arg1,
+        static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object callableObj, Object type, Object self, Object arg1, boolean ignoreDescBindErrors,
                         @Cached MaybeBindDescriptorNode bindDescriptorNode,
                         @Cached(inline = false) CallNode callNode) {
-            Object bound = bindDescriptorNode.execute(frame, inliningTarget, callableObj, self, type);
+            Object bound;
+            try {
+                bound = bindDescriptorNode.execute(frame, inliningTarget, callableObj, self, type);
+            } catch (PException ex) {
+                if (ignoreDescBindErrors) {
+                    return PNotImplemented.NOT_IMPLEMENTED;
+                } else {
+                    throw ex;
+                }
+            }
             Object[] arguments;
             Object callable;
             if (bound instanceof BoundDescriptor boundDescr) {

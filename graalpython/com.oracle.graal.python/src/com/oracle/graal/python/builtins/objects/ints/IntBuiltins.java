@@ -41,18 +41,10 @@
 package com.oracle.graal.python.builtins.objects.ints;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUFFLE_RICHCOMPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_BIG;
@@ -80,22 +72,43 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.BytesFromObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PointerCompareNode;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsClinicProviders.FormatNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsClinicProviders.FromBytesNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsClinicProviders.ToBytesNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory.AddNodeFactory;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory.AndNodeFactory;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory.FloorDivNodeFactory;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory.LShiftNodeFactory;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory.ModNodeFactory;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory.MulNodeFactory;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory.NegNodeFactory;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory.OrNodeFactory;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory.PowNodeFactory;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory.RShiftNodeFactory;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory.SubNodeFactory;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory.TrueDivNodeFactory;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory.XorNodeFactory;
+import com.oracle.graal.python.builtins.objects.ints.IntNodes.PyLongFromByteArray;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyLongCopy;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -108,7 +121,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -118,7 +131,6 @@ import com.oracle.graal.python.runtime.formatting.IntegerFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -150,6 +162,9 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.EqualNode;
+import com.oracle.truffle.api.strings.TruffleString.FromJavaStringNode;
+import com.oracle.truffle.api.strings.TruffleString.FromLongNode;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PInt)
 public final class IntBuiltins extends PythonBuiltins {
@@ -434,7 +449,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @NeverDefault
         public static AddNode create() {
-            return IntBuiltinsFactory.AddNodeFactory.create();
+            return AddNodeFactory.create();
         }
     }
 
@@ -518,7 +533,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @NeverDefault
         public static SubNode create() {
-            return IntBuiltinsFactory.SubNodeFactory.create();
+            return SubNodeFactory.create();
         }
     }
 
@@ -629,7 +644,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @NeverDefault
         public static TrueDivNode create() {
-            return IntBuiltinsFactory.TrueDivNodeFactory.create();
+            return TrueDivNodeFactory.create();
         }
     }
 
@@ -774,7 +789,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @NeverDefault
         public static FloorDivNode create() {
-            return IntBuiltinsFactory.FloorDivNodeFactory.create();
+            return FloorDivNodeFactory.create();
         }
     }
 
@@ -941,7 +956,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @NeverDefault
         public static ModNode create() {
-            return IntBuiltinsFactory.ModNodeFactory.create();
+            return ModNodeFactory.create();
         }
     }
 
@@ -1053,7 +1068,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @NeverDefault
         public static MulNode create() {
-            return IntBuiltinsFactory.MulNodeFactory.create();
+            return MulNodeFactory.create();
         }
     }
 
@@ -1366,7 +1381,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @NeverDefault
         public static PowNode create() {
-            return IntBuiltinsFactory.PowNodeFactory.create();
+            return PowNodeFactory.create();
         }
     }
 
@@ -1507,7 +1522,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @NeverDefault
         public static NegNode create() {
-            return IntBuiltinsFactory.NegNodeFactory.create();
+            return NegNodeFactory.create();
         }
     }
 
@@ -1765,7 +1780,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @NeverDefault
         public static LShiftNode create() {
-            return IntBuiltinsFactory.LShiftNodeFactory.create();
+            return LShiftNodeFactory.create();
         }
     }
 
@@ -1887,7 +1902,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @NeverDefault
         public static RShiftNode create() {
-            return IntBuiltinsFactory.RShiftNodeFactory.create();
+            return RShiftNodeFactory.create();
         }
     }
 
@@ -2014,7 +2029,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @NeverDefault
         public static AndNode create() {
-            return IntBuiltinsFactory.AndNodeFactory.create();
+            return AndNodeFactory.create();
         }
     }
 
@@ -2041,7 +2056,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @NeverDefault
         public static OrNode create() {
-            return IntBuiltinsFactory.OrNodeFactory.create();
+            return OrNodeFactory.create();
         }
     }
 
@@ -2067,472 +2082,238 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @NeverDefault
         public static XorNode create() {
-            return IntBuiltinsFactory.XorNodeFactory.create();
-        }
-    }
-
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonIntegerTypes.class)
-    public abstract static class EqNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static boolean eqLL(long a, long b) {
-            return a == b;
-        }
-
-        @Specialization
-        static boolean eqPIntBoolean(PInt a, boolean b) {
-            return b ? a.isOne() : a.isZero();
-        }
-
-        @Specialization
-        static boolean eqBooleanPInt(boolean a, PInt b) {
-            return a ? b.isOne() : b.isZero();
-        }
-
-        @Specialization(rewriteOn = OverflowException.class)
-        static boolean eqPiL(PInt a, long b) throws OverflowException {
-            return a.longValueExact() == b;
-        }
-
-        @Specialization
-        static boolean eqPiLOvf(PInt a, long b) {
-            try {
-                return a.longValueExact() == b;
-            } catch (OverflowException e) {
-                return false;
-            }
-        }
-
-        @Specialization(rewriteOn = OverflowException.class)
-        static boolean eqLPi(long b, PInt a) throws OverflowException {
-            return a.longValueExact() == b;
-        }
-
-        @Specialization
-        static boolean eqPiLOvf(long b, PInt a) {
-            try {
-                return a.longValueExact() == b;
-            } catch (OverflowException e) {
-                return false;
-            }
-        }
-
-        @Specialization
-        static boolean eqPiPi(PInt a, PInt b) {
-            return a.compareTo(b) == 0;
-        }
-
-        // left: PythonNativeVoidPtr
-
-        @Specialization
-        static boolean eqLongVoidPtr(VirtualFrame frame, long a, PythonNativeVoidPtr b,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("h") @Cached PyObjectHashNode hashNode) {
-            return eqVoidPtrLong(frame, b, a, inliningTarget, hashNode);
-        }
-
-        @Specialization
-        static boolean eqPIntVoidPtr(PInt a, PythonNativeVoidPtr b) {
-            return eqVoidPtrPInt(b, a);
-        }
-
-        @Specialization
-        static boolean eqVoidPtrLong(VirtualFrame frame, PythonNativeVoidPtr a, long b,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("h") @Cached PyObjectHashNode hashNode) {
-            if (a.isNativePointer()) {
-                long ptrVal = a.getNativePointer();
-                // pointers are considered unsigned
-                return ptrVal == b;
-            }
-            return hashNode.execute(frame, inliningTarget, a) == b;
-        }
-
-        @Specialization(guards = {"a.isNativePointer()", "b.isNativePointer()"})
-        static boolean voidPtrsNative(PythonNativeVoidPtr a, PythonNativeVoidPtr b) {
-            long ptrVal = a.getNativePointer();
-            // pointers are considered unsigned
-            return ptrVal == b.getNativePointer();
-        }
-
-        @Specialization(guards = {"a.isNativePointer()", "!b.isNativePointer()"})
-        static boolean voidPtrsANative(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("h") @Cached PyObjectHashNode hashNode) {
-            long ptrVal = a.getNativePointer();
-            // pointers are considered unsigned
-            return ptrVal == hashNode.execute(frame, inliningTarget, b);
-        }
-
-        @Specialization(guards = {"!a.isNativePointer()", "b.isNativePointer()"})
-        static boolean voidPtrsBNative(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("h") @Cached PyObjectHashNode hashNode) {
-            long ptrVal = b.getNativePointer();
-            // pointers are considered unsigned
-            return ptrVal == hashNode.execute(frame, inliningTarget, a);
-        }
-
-        @Specialization(guards = {"!a.isNativePointer()", "!b.isNativePointer()"})
-        static boolean voidPtrsManaged(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("h") @Cached PyObjectHashNode hashNode) {
-            return hashNode.execute(frame, inliningTarget, a) == hashNode.execute(frame, inliningTarget, b);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        static boolean eqVoidPtrPInt(PythonNativeVoidPtr a, PInt b) {
-            if (a.isNativePointer()) {
-                long ptrVal = a.getNativePointer();
-                if (ptrVal < 0) {
-                    // pointers are considered unsigned
-                    BigInteger bi = PInt.longToBigInteger(ptrVal).add(BigInteger.ONE.shiftLeft(64));
-                    return bi.equals(b.getValue());
-                }
-                return PInt.longToBigInteger(ptrVal).equals(b.getValue());
-            }
-            try {
-                return PyObjectHashNode.executeUncached(a) == b.longValueExact();
-            } catch (OverflowException e) {
-                return false;
-            }
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static PNotImplemented eq(Object a, Object b) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonIntegerTypes.class)
-    abstract static class NeNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static boolean eqLL(long a, long b) {
-            return a != b;
-        }
-
-        @Specialization(rewriteOn = OverflowException.class)
-        static boolean eqPiL(PInt a, long b) throws OverflowException {
-            return a.longValueExact() != b;
-        }
-
-        @Specialization(replaces = "eqPiL")
-        static boolean eqPiLOvf(PInt a, long b) {
-            try {
-                return a.longValueExact() != b;
-            } catch (OverflowException e) {
-                return true;
-            }
-        }
-
-        @Specialization(rewriteOn = OverflowException.class)
-        static boolean eqLPi(long b, PInt a) throws OverflowException {
-            return a.longValueExact() != b;
-        }
-
-        @Specialization(replaces = "eqLPi")
-        static boolean eqLPiOvf(long b, PInt a) {
-            try {
-                return a.longValueExact() != b;
-            } catch (OverflowException e) {
-                return true;
-            }
-        }
-
-        @Specialization
-        static boolean eqPiPi(PInt a, PInt b) {
-            return a.compareTo(b) != 0;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        static PNotImplemented eq(Object a, Object b) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonIntegerTypes.class)
-    @ImportStatic(FromNativeSubclassNode.class)
-    public abstract static class LtNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static boolean doII(int left, int right) {
-            return left < right;
-        }
-
-        @Specialization
-        static boolean doLL(long left, long right) {
-            return left < right;
-        }
-
-        @Specialization
-        static boolean doLP(long left, PInt right) {
-            try {
-                return left < right.longValueExact();
-            } catch (OverflowException e) {
-                return right.doubleValue() > 0;
-            }
-        }
-
-        @Specialization
-        static boolean doPL(PInt left, long right) {
-            try {
-                return left.longValueExact() < right;
-            } catch (OverflowException e) {
-                return left.doubleValue() < 0;
-            }
-        }
-
-        @Specialization
-        static boolean doPP(PInt left, PInt right) {
-            return left.compareTo(right) < 0;
-        }
-
-        @Specialization(guards = "isFloatSubtype(frame, inliningTarget, y, getClass, isSubtype)")
-        static boolean doDN(VirtualFrame frame, long x, PythonAbstractNativeObject y,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClass,
-                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtype,
-                        @Shared @Cached FromNativeSubclassNode nativeRight) {
-            return x < nativeRight.execute(frame, y);
-        }
-
-        @Specialization(guards = {
-                        "isFloatSubtype(frame, inliningTarget, x, getClass, isSubtype)",
-                        "isFloatSubtype(frame, inliningTarget, y, getClass, isSubtype)"})
-        static boolean doDN(VirtualFrame frame, PythonAbstractNativeObject x, PythonAbstractNativeObject y,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClass,
-                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtype,
-                        @Shared @Cached FromNativeSubclassNode nativeLeft,
-                        @Shared @Cached FromNativeSubclassNode nativeRight) {
-            return nativeLeft.execute(frame, x) < nativeRight.execute(frame, y);
-        }
-
-        @Specialization(guards = "isFloatSubtype(frame, inliningTarget, x, getClass, isSubtype)")
-        static boolean doDN(VirtualFrame frame, PythonAbstractNativeObject x, double y,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClass,
-                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtype,
-                        @Shared @Cached FromNativeSubclassNode nativeLeft) {
-            return nativeLeft.execute(frame, x) < y;
-        }
-
-        @Specialization
-        static boolean doVoidPtr(PythonNativeVoidPtr x, long y,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CExtNodes.PointerCompareNode ltNode) {
-            return ltNode.execute(inliningTarget, ComparisonOp.LT, x, y);
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        static PNotImplemented doGeneric(Object a, Object b) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonIntegerTypes.class)
-    abstract static class LeNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static boolean doII(int left, int right) {
-            return left <= right;
-        }
-
-        @Specialization
-        static boolean doLL(long left, long right) {
-            return left <= right;
-        }
-
-        @Specialization
-        static boolean doLP(long left, PInt right) {
-            try {
-                return left <= right.longValueExact();
-            } catch (OverflowException e) {
-                return right.doubleValue() > 0;
-            }
-        }
-
-        @Specialization
-        static boolean doPL(PInt left, long right) {
-            try {
-                return left.longValueExact() <= right;
-            } catch (OverflowException e) {
-                return left.doubleValue() < 0;
-            }
-        }
-
-        @Specialization
-        static boolean doPP(PInt left, PInt right) {
-            return left.compareTo(right) <= 0;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        static PNotImplemented doGeneric(Object a, Object b) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonIntegerTypes.class)
-    public abstract static class GtNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static boolean doII(int left, int right) {
-            return left > right;
-        }
-
-        @Specialization
-        static boolean doLL(long left, long right) {
-            return left > right;
-        }
-
-        @Specialization
-        static boolean doLP(long left, PInt right) {
-            try {
-                return left > right.longValueExact();
-            } catch (OverflowException e) {
-                return right.doubleValue() < 0;
-            }
-        }
-
-        @Specialization
-        static boolean doPL(PInt left, long right) {
-            try {
-                return left.longValueExact() > right;
-            } catch (OverflowException e) {
-                return left.doubleValue() > 0;
-            }
-        }
-
-        @Specialization
-        static boolean doPP(PInt left, PInt right) {
-            return left.compareTo(right) > 0;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        static PNotImplemented doGeneric(Object a, Object b) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonIntegerTypes.class)
-    abstract static class GeNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static boolean doII(int left, int right) {
-            return left >= right;
-        }
-
-        @Specialization
-        static boolean doLL(long left, long right) {
-            return left >= right;
-        }
-
-        @Specialization
-        static boolean doLP(long left, PInt right) {
-            try {
-                return left >= right.longValueExact();
-            } catch (OverflowException e) {
-                return right.doubleValue() < 0;
-            }
-        }
-
-        @Specialization
-        static boolean doPL(PInt left, long right) {
-            try {
-                return left.longValueExact() >= right;
-            } catch (OverflowException e) {
-                return left.doubleValue() > 0;
-            }
-        }
-
-        @Specialization
-        static boolean doPP(PInt left, PInt right) {
-            return left.compareTo(right) >= 0;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        static PNotImplemented doGeneric(Object a, Object b) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+            return XorNodeFactory.create();
         }
     }
 
     @GenerateInline
     @GenerateCached(false)
     @TypeSystemReference(PythonIntegerTypes.class)
+    @ImportStatic(FromNativeSubclassNode.class)
     abstract static class RichCompareHelperNode extends Node {
 
-        abstract Object execute(Node inliningTarget, Object left, Object right, ComparisonOp op);
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object left, Object right, RichCmpOp op);
 
         @Specialization
-        static boolean doII(int left, int right, ComparisonOp op) {
-            return op.cmpResultToBool(Integer.compare(left, right));
+        static boolean doII(int left, int right, RichCmpOp op) {
+            return op.compareResultToBool(Integer.compare(left, right));
         }
 
         @Specialization
-        static boolean doLL(long left, long right, ComparisonOp op) {
-            return op.cmpResultToBool(Long.compare(left, right));
+        static boolean doLL(long left, long right, RichCmpOp op) {
+            return op.compareResultToBool(Long.compare(left, right));
+        }
+
+        @Specialization(rewriteOn = OverflowException.class)
+        static boolean doLPExact(long left, PInt right, RichCmpOp op) throws OverflowException {
+            return op.compareResultToBool(Long.compare(left, right.longValueExact()));
+        }
+
+        @Specialization(rewriteOn = OverflowException.class)
+        static boolean doPLExact(PInt left, long right, RichCmpOp op) throws OverflowException {
+            return op.compareResultToBool(Long.compare(left.longValueExact(), right));
+        }
+
+        @Specialization(replaces = "doLPExact")
+        static boolean doLP(long left, PInt right, RichCmpOp op) {
+            return op.compareResultToBool(PInt.compareTo(left, right));
+        }
+
+        @Specialization(replaces = "doPLExact")
+        static boolean doPL(PInt left, long right, RichCmpOp op) {
+            return op.compareResultToBool(left.compareTo(right));
         }
 
         @Specialization
-        static boolean doLP(long left, PInt right, ComparisonOp op) {
-            return op.cmpResultToBool(PInt.compareTo(left, right));
+        static boolean doPP(PInt left, PInt right, RichCmpOp op) {
+            return op.compareResultToBool(left.compareTo(right));
         }
 
-        @Specialization
-        static boolean doPL(PInt left, long right, ComparisonOp op) {
-            return op.cmpResultToBool(left.compareTo(right));
+        @Specialization(guards = "isFloatSubtype(frame, inliningTarget, y, getClass, isSubtype)")
+        @InliningCutoff
+        static boolean doDN(VirtualFrame frame, Node inliningTarget, long x, PythonAbstractNativeObject y, RichCmpOp op,
+                        @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClass,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtype,
+                        @Shared @Cached FromNativeSubclassNode nativeRight) {
+            return op.compareResultToBool(PFloat.compare(x, nativeRight.execute(frame, y)));
         }
 
-        @Specialization
-        static boolean doPP(PInt left, PInt right, ComparisonOp op) {
-            return op.cmpResultToBool(left.compareTo(right));
+        @Specialization(guards = {
+                        "isFloatSubtype(frame, inliningTarget, x, getClass, isSubtype)",
+                        "isFloatSubtype(frame, inliningTarget, y, getClass, isSubtype)"})
+        @InliningCutoff
+        static boolean doDN(VirtualFrame frame, Node inliningTarget, PythonAbstractNativeObject x, PythonAbstractNativeObject y, RichCmpOp op,
+                        @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClass,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtype,
+                        @Shared @Cached FromNativeSubclassNode nativeLeft,
+                        @Shared @Cached FromNativeSubclassNode nativeRight) {
+            return op.compareResultToBool(PFloat.compare(nativeLeft.execute(frame, x), nativeRight.execute(frame, y)));
         }
 
-        @Specialization
-        static boolean doVoidPtr(Node inliningTarget, PythonNativeVoidPtr x, long y, ComparisonOp op,
-                        @Cached CExtNodes.PointerCompareNode ltNode) {
-            return ltNode.execute(inliningTarget, op, x, y);
+        @Specialization(guards = "isFloatSubtype(frame, inliningTarget, x, getClass, isSubtype)")
+        @InliningCutoff
+        static boolean doDN(VirtualFrame frame, Node inliningTarget, PythonAbstractNativeObject x, double y, RichCmpOp op,
+                        @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClass,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtype,
+                        @Shared @Cached FromNativeSubclassNode nativeLeft) {
+            return op.compareResultToBool(PFloat.compare(nativeLeft.execute(frame, x), y));
+        }
+
+        // Note: native int subclasses are still represented as Java PInt, just with a different
+        // Python level class
+
+        static boolean someIsNativePtr(Object a, Object b) {
+            return a instanceof PythonNativeVoidPtr || b instanceof PythonNativeVoidPtr;
+        }
+
+        @Specialization(guards = "someIsNativePtr(x, y)")
+        @InliningCutoff
+        static Object doVoidPtr(VirtualFrame frame, Node inliningTarget, Object x, Object y, RichCmpOp op,
+                        @Cached PointerCompareNode pointerCompareNode,
+                        @Cached EqNodeNativePtr pointerEqNode) {
+            if (op.isEqOrNe()) {
+                Object result = pointerEqNode.execute(frame, x, y);
+                if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                    return result;
+                }
+                return ((boolean) result) == op.isEq();
+            }
+            return pointerCompareNode.execute(inliningTarget, op, x, y);
+        }
+
+        @TypeSystemReference(PythonIntegerTypes.class)
+        abstract static class EqNodeNativePtr extends PNodeWithContext {
+
+            abstract Object execute(VirtualFrame frame, Object a, Object b);
+
+            @Specialization
+            static boolean eqLongVoidPtr(VirtualFrame frame, long a, PythonNativeVoidPtr b,
+                            @Bind("this") Node inliningTarget,
+                            @Shared("h") @Cached PyObjectHashNode hashNode) {
+                return eqVoidPtrLong(frame, b, a, inliningTarget, hashNode);
+            }
+
+            @Specialization
+            static boolean eqPIntVoidPtr(PInt a, PythonNativeVoidPtr b) {
+                return eqVoidPtrPInt(b, a);
+            }
+
+            @Specialization
+            static boolean eqVoidPtrLong(VirtualFrame frame, PythonNativeVoidPtr a, long b,
+                            @Bind("this") Node inliningTarget,
+                            @Shared("h") @Cached PyObjectHashNode hashNode) {
+                if (a.isNativePointer()) {
+                    long ptrVal = a.getNativePointer();
+                    // pointers are considered unsigned
+                    return ptrVal == b;
+                }
+                return hashNode.execute(frame, inliningTarget, a) == b;
+            }
+
+            @Specialization(guards = {"a.isNativePointer()", "b.isNativePointer()"})
+            static boolean voidPtrsNative(PythonNativeVoidPtr a, PythonNativeVoidPtr b) {
+                long ptrVal = a.getNativePointer();
+                // pointers are considered unsigned
+                return ptrVal == b.getNativePointer();
+            }
+
+            @Specialization(guards = {"a.isNativePointer()", "!b.isNativePointer()"})
+            static boolean voidPtrsANative(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
+                            @Bind("this") Node inliningTarget,
+                            @Shared("h") @Cached PyObjectHashNode hashNode) {
+                long ptrVal = a.getNativePointer();
+                // pointers are considered unsigned
+                return ptrVal == hashNode.execute(frame, inliningTarget, b);
+            }
+
+            @Specialization(guards = {"!a.isNativePointer()", "b.isNativePointer()"})
+            static boolean voidPtrsBNative(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
+                            @Bind("this") Node inliningTarget,
+                            @Shared("h") @Cached PyObjectHashNode hashNode) {
+                long ptrVal = b.getNativePointer();
+                // pointers are considered unsigned
+                return ptrVal == hashNode.execute(frame, inliningTarget, a);
+            }
+
+            @Specialization(guards = {"!a.isNativePointer()", "!b.isNativePointer()"})
+            static boolean voidPtrsManaged(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
+                            @Bind("this") Node inliningTarget,
+                            @Shared("h") @Cached PyObjectHashNode hashNode) {
+                return hashNode.execute(frame, inliningTarget, a) == hashNode.execute(frame, inliningTarget, b);
+            }
+
+            @Specialization
+            @TruffleBoundary
+            static boolean eqVoidPtrPInt(PythonNativeVoidPtr a, PInt b) {
+                if (a.isNativePointer()) {
+                    long ptrVal = a.getNativePointer();
+                    if (ptrVal < 0) {
+                        // pointers are considered unsigned
+                        BigInteger bi = PInt.longToBigInteger(ptrVal).add(BigInteger.ONE.shiftLeft(64));
+                        return bi.equals(b.getValue());
+                    }
+                    return PInt.longToBigInteger(ptrVal).equals(b.getValue());
+                }
+                try {
+                    return PyObjectHashNode.executeUncached(a) == b.longValueExact();
+                } catch (OverflowException e) {
+                    return false;
+                }
+            }
+
+            @SuppressWarnings("unused")
+            @Fallback
+            static PNotImplemented doGeneric(Object a, Object b) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+        }
+
+        private static long normalizeValue(Object val, InteropLibrary lib) throws OverflowException {
+            if (val instanceof PythonNativeVoidPtr xPtr) {
+                if (!xPtr.isNativePointer()) {
+                    lib.toNative(xPtr.getPointerObject());
+                    try {
+                        return lib.asPointer(xPtr.getPointerObject());
+                    } catch (UnsupportedMessageException e) {
+                        throw CompilerDirectives.shouldNotReachHere(e);
+                    }
+                } else {
+                    return xPtr.getNativePointer();
+                }
+            } else if (val instanceof Long) {
+                return (long) val;
+            } else if (val instanceof Integer) {
+                return (int) val;
+            } else if (val instanceof Boolean) {
+                return PInt.intValue((Boolean) val);
+            } else if (val instanceof PInt pint) {
+                return pint.longValueExact();
+            } else {
+                throw OverflowException.INSTANCE;
+            }
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        static PNotImplemented doGeneric(Object a, Object b, ComparisonOp op) {
+        static PNotImplemented doGeneric(Object a, Object b, RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = J___TRUFFLE_RICHCOMPARE__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    @ImportStatic(ComparisonOp.class)
-    abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
-
-        @Specialization(guards = {"opCode == cachedOp.opCode"}, limit = "6")
-        static Object doCached(Object left, Object right, @SuppressWarnings("unused") int opCode,
+    abstract static class RichCompareNode extends RichCmpBuiltinNode {
+        @Specialization(guards = {"opCode == cachedOp"}, limit = "6")
+        static Object doCached(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") RichCmpOp opCode,
                         @Bind("this") Node inliningTarget,
                         @Cached PyLongCheckNode checkLeft,
                         @Cached PyLongCheckNode checkRight,
-                        @SuppressWarnings("unused") @Cached("fromOpCode(opCode)") ComparisonOp cachedOp,
+                        @SuppressWarnings("unused") @Cached("opCode") RichCmpOp cachedOp,
                         @Cached RichCompareHelperNode cmpNode) {
             if (!checkLeft.execute(inliningTarget, left) || !checkRight.execute(inliningTarget, right)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return cmpNode.execute(inliningTarget, left, right, cachedOp);
+            return cmpNode.execute(frame, inliningTarget, left, right, cachedOp);
         }
     }
 
@@ -2714,7 +2495,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return IntBuiltinsClinicProviders.ToBytesNodeClinicProviderGen.INSTANCE;
+            return ToBytesNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -2730,11 +2511,11 @@ public final class IntBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached("create(Bytes)") LookupAndCallUnaryNode callBytes,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached BuiltinClassProfiles.IsBuiltinClassExactProfile isBuiltinIntProfile,
+                        @Cached IsBuiltinClassExactProfile isBuiltinIntProfile,
                         @Cached InlinedBranchProfile hasBytesProfile,
-                        @Cached TruffleString.EqualNode equalNode,
-                        @Cached BytesNodes.BytesFromObject bytesFromObject,
-                        @Cached IntNodes.PyLongFromByteArray fromByteArray,
+                        @Cached EqualNode equalNode,
+                        @Cached BytesFromObject bytesFromObject,
+                        @Cached PyLongFromByteArray fromByteArray,
                         @Cached CallNode callCtor,
                         @Cached PRaiseNode raiseNode) {
             boolean littleEndian;
@@ -2766,7 +2547,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return IntBuiltinsClinicProviders.FromBytesNodeClinicProviderGen.INSTANCE;
+            return FromBytesNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -2808,14 +2589,14 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString doL(long self,
-                        @Shared("fromLong") @Cached TruffleString.FromLongNode fromLongNode) {
+                        @Shared("fromLong") @Cached FromLongNode fromLongNode) {
             return fromLongNode.execute(self, TS_ENCODING, false);
         }
 
         @Specialization
         static TruffleString doPInt(PInt self,
                         @Bind("this") Node inliningTarget,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached FromJavaStringNode fromJavaStringNode,
                         @Cached InlinedIntValueProfile maxDigitsProfile,
                         @Cached InlinedIntValueProfile maxDigitsBitLengthProfile,
                         @Cached PRaiseNode raiseNode) {
@@ -2862,7 +2643,7 @@ public final class IntBuiltins extends PythonBuiltins {
         static TruffleString doNativeVoidPtr(VirtualFrame frame, PythonNativeVoidPtr self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectHashNode hashNode,
-                        @Shared("fromLong") @Cached TruffleString.FromLongNode fromLongNode) {
+                        @Shared("fromLong") @Cached FromLongNode fromLongNode) {
             return doL(hashNode.execute(frame, inliningTarget, self), fromLongNode);
         }
     }
@@ -2976,11 +2757,11 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonIntegerTypes.class)
-    abstract static class HashNode extends PythonUnaryBuiltinNode {
-
+    @GenerateUncached
+    public abstract static class HashNode extends HashBuiltinNode {
         @Specialization
         static long hash(int self) {
             return PyObjectHashNode.hash(self);

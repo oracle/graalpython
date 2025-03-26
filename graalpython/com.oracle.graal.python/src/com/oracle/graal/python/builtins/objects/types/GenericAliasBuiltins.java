@@ -56,8 +56,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PARAMETERS
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___UNPACKED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MRO_ENTRIES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
@@ -93,6 +91,9 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyObjectDir;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -246,9 +247,9 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
-    abstract static class HashNode extends PythonUnaryBuiltinNode {
+    abstract static class HashNode extends HashBuiltinNode {
         @Specialization
         static long hash(VirtualFrame frame, PGenericAlias self,
                         @Bind("this") Node inliningTarget,
@@ -309,23 +310,26 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    abstract static class EqNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static boolean eq(VirtualFrame frame, PGenericAlias self, PGenericAlias other,
+    abstract static class EqNode extends RichCmpBuiltinNode {
+        @Specialization(guards = "op.isEqOrNe()")
+        static boolean eq(VirtualFrame frame, PGenericAlias self, PGenericAlias other, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectRichCompareBool.EqNode eqOrigin,
-                        @Cached PyObjectRichCompareBool.EqNode eqArgs) {
+                        @Cached PyObjectRichCompareBool eqOrigin,
+                        @Cached PyObjectRichCompareBool eqArgs) {
             if (self.isStarred() != other.isStarred()) {
-                return false;
+                return op.isNe();
             }
-            return eqOrigin.compare(frame, inliningTarget, self.getOrigin(), other.getOrigin()) && eqArgs.compare(frame, inliningTarget, self.getArgs(), other.getArgs());
+            if (!eqOrigin.executeEq(frame, inliningTarget, self.getOrigin(), other.getOrigin())) {
+                return op.isNe();
+            }
+            return eqArgs.executeEq(frame, inliningTarget, self.getArgs(), other.getArgs()) == op.isEq();
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        static Object eq(Object self, Object other) {
+        static Object eq(Object self, Object other, RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

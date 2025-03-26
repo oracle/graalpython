@@ -37,18 +37,9 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_FORMAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STARTSWITH;
 import static com.oracle.graal.python.nodes.ErrorMessages.FILL_CHAR_MUST_BE_UNICODE_CHAR_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUFFLE_RICHCOMPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
@@ -69,6 +60,7 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.lib.RichCmpOp;
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
 import org.graalvm.shadowed.com.ibm.icu.text.CaseMap;
@@ -124,7 +116,9 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
@@ -145,7 +139,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
@@ -163,8 +156,6 @@ import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.graal.python.runtime.formatting.StringFormatProcessor;
 import com.oracle.graal.python.runtime.formatting.TextFormatter;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.ComparisonOp;
-import com.oracle.graal.python.util.IntPredicate;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -174,7 +165,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -360,63 +350,41 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @GenerateInline
-    @GenerateCached(false)
-    abstract static class StringEqOpHelperNode extends Node {
-
-        abstract Object execute(Node inliningTarget, Object self, Object other, boolean negate);
-
-        @Specialization
-        static boolean doStrings(TruffleString self, TruffleString other, boolean negate,
-                        @Shared @Cached(inline = false) TruffleString.EqualNode equalNode) {
-            return equalNode.execute(self, other, TS_ENCODING) != negate;
-        }
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
+    @GenerateNodeFactory
+    public abstract static class StringRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
+        @Child TruffleString.EqualNode equalNode;
+        @Child TruffleString.CompareIntsUTF32Node compareIntsUTF32Node;
 
         @Specialization
-        static Object doGeneric(Node inliningTarget, Object self, Object other, boolean negate,
-                        @Cached CastToTruffleStringCheckedNode castSelfNode,
+        Object doGeneric(Object self, Object other, RichCmpOp op,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached CastToTruffleStringNode castSelfNode,
                         @Cached CastToTruffleStringNode castOtherNode,
-                        @Shared @Cached(inline = false) TruffleString.EqualNode equalNode,
                         @Cached InlinedBranchProfile noStringBranch) {
-            TruffleString selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, T___EQ__, self);
+            TruffleString selfStr;
             TruffleString otherStr;
             try {
+                selfStr = castSelfNode.execute(inliningTarget, self);
                 otherStr = castOtherNode.execute(inliningTarget, other);
             } catch (CannotCastException e) {
+                // This is the same as if PyUnicodeCheckNode returned false
                 noStringBranch.enter(inliningTarget);
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return doStrings(selfStr, otherStr, negate, equalNode);
-        }
-    }
-
-    @GenerateInline
-    @GenerateCached(false)
-    abstract static class StringCmpOpHelperNode extends Node {
-
-        abstract Object execute(Node inliningTarget, Object self, Object other, IntPredicate resultProcessor);
-
-        @Specialization
-        static boolean doStrings(TruffleString self, TruffleString other, IntPredicate resultProcessor,
-                        @Shared @Cached(inline = false) TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
-            return resultProcessor.test(StringUtils.compareStrings(self, other, compareIntsUTF32Node));
-        }
-
-        @Specialization
-        static Object doGeneric(Node inliningTarget, Object self, Object other, IntPredicate resultProcessor,
-                        @Cached CastToTruffleStringCheckedNode castSelfNode,
-                        @Cached CastToTruffleStringNode castOtherNode,
-                        @Shared @Cached(inline = false) TruffleString.CompareIntsUTF32Node compareIntsUTF32Node,
-                        @Cached InlinedBranchProfile noStringBranch) {
-            TruffleString selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, T___EQ__, self);
-            TruffleString otherStr;
-            try {
-                otherStr = castOtherNode.execute(inliningTarget, other);
-            } catch (CannotCastException e) {
-                noStringBranch.enter(inliningTarget);
-                return PNotImplemented.NOT_IMPLEMENTED;
+            if (op.isEqOrNe()) {
+                if (equalNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    equalNode = insert(TruffleString.EqualNode.create());
+                }
+                return equalNode.execute(selfStr, otherStr, TS_ENCODING) == op.isEq();
+            } else {
+                if (compareIntsUTF32Node == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    compareIntsUTF32Node = insert(TruffleString.CompareIntsUTF32Node.create());
+                }
+                return op.compareResultToBool(StringUtils.compareStrings(selfStr, otherStr, compareIntsUTF32Node));
             }
-            return doStrings(selfStr, otherStr, resultProcessor, compareIntsUTF32Node);
         }
     }
 
@@ -434,109 +402,6 @@ public final class StringBuiltins extends PythonBuiltins {
             TruffleString selfStr = castStr.cast(inliningTarget, self, ErrorMessages.REQUIRES_STRING_AS_LEFT_OPERAND, other);
             TruffleString otherStr = castStr.cast(inliningTarget, other, ErrorMessages.REQUIRES_STRING_AS_LEFT_OPERAND, other);
             return indexOfStringNode.execute(selfStr, otherStr, 0, codePointLengthNode.execute(selfStr, TS_ENCODING), TS_ENCODING) >= 0;
-        }
-    }
-
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object doIt(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached StringEqOpHelperNode stringEqOpHelperNode) {
-            return stringEqOpHelperNode.execute(inliningTarget, self, other, false);
-        }
-    }
-
-    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class NeNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object doIt(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached StringEqOpHelperNode stringEqOpHelperNode) {
-            return stringEqOpHelperNode.execute(inliningTarget, self, other, true);
-        }
-    }
-
-    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class LtNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object doIt(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached StringCmpOpHelperNode stringCmpOpHelperNode) {
-            return stringCmpOpHelperNode.execute(inliningTarget, self, other, r -> r < 0);
-        }
-    }
-
-    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class LeNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object doIt(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached StringCmpOpHelperNode stringCmpOpHelperNode) {
-            return stringCmpOpHelperNode.execute(inliningTarget, self, other, r -> r <= 0);
-        }
-    }
-
-    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class GtNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object doIt(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached StringCmpOpHelperNode stringCmpOpHelperNode) {
-            return stringCmpOpHelperNode.execute(inliningTarget, self, other, r -> r > 0);
-        }
-    }
-
-    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class GeNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object doIt(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached StringCmpOpHelperNode stringCmpOpHelperNode) {
-            return stringCmpOpHelperNode.execute(inliningTarget, self, other, r -> r >= 0);
-        }
-    }
-
-    @Builtin(name = J___TRUFFLE_RICHCOMPARE__, minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    @ImportStatic(ComparisonOp.class)
-    abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
-
-        @Specialization(guards = "isEqualityOpCode(opCode)")
-        static Object doEqNeOp(Object left, Object right, int opCode,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PyUnicodeCheckNode checkLeft,
-                        @Exclusive @Cached PyUnicodeCheckNode checkRight,
-                        @Cached StringEqOpHelperNode stringEqOpHelperNode) {
-            if (!checkLeft.execute(inliningTarget, left) || !checkRight.execute(inliningTarget, right)) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-            return stringEqOpHelperNode.execute(inliningTarget, left, right, opCode == ComparisonOp.NE.opCode);
-        }
-
-        @Specialization(guards = {"opCode == cachedOp.opCode", "!isEqualityOpCode(opCode)"}, limit = "4")
-        static Object doRelOp(Object left, Object right, @SuppressWarnings("unused") int opCode,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PyUnicodeCheckNode checkLeft,
-                        @Exclusive @Cached PyUnicodeCheckNode checkRight,
-                        @Cached("fromOpCode(opCode)") ComparisonOp cachedOp,
-                        @Cached StringCmpOpHelperNode stringCmpOpHelperNode) {
-            if (!checkLeft.execute(inliningTarget, left) || !checkRight.execute(inliningTarget, right)) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-            return stringCmpOpHelperNode.execute(inliningTarget, left, right, cachedOp.intPredicate);
         }
     }
 
@@ -2600,9 +2465,9 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class HashNode extends PythonUnaryBuiltinNode {
+    public abstract static class HashNode extends HashBuiltinNode {
 
         @Specialization
         static long doString(TruffleString self,

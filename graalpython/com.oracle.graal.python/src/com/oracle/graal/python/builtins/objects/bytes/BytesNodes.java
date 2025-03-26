@@ -84,6 +84,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyOSFSPathNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -104,7 +105,6 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -984,10 +984,10 @@ public abstract class BytesNodes {
         return endIn;
     }
 
-    static boolean compareByteArrays(ComparisonOp op, byte[] selfArray, int selfLength, byte[] otherArray, int otherLength) {
+    static boolean compareByteArrays(RichCmpOp op, byte[] selfArray, int selfLength, byte[] otherArray, int otherLength) {
         int compareResult = 0;
-        if ((op == ComparisonOp.EQ || op == ComparisonOp.NE) && selfLength != otherLength) {
-            return op == ComparisonOp.NE;
+        if (op.isEqOrNe() && selfLength != otherLength) {
+            return op == RichCmpOp.Py_NE;
         }
         for (int i = 0; i < Math.min(selfLength, otherLength); i++) {
             compareResult = Byte.compareUnsigned(selfArray[i], otherArray[i]);
@@ -998,7 +998,7 @@ public abstract class BytesNodes {
         if (compareResult == 0) {
             compareResult = Integer.compare(selfLength, otherLength);
         }
-        return op.cmpResultToBool(compareResult);
+        return op.compareResultToBool(compareResult);
     }
 
     @GenerateCached(false)

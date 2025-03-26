@@ -43,15 +43,8 @@ package com.oracle.graal.python.builtins.objects.complex;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyComplexObject__cval__imag;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyComplexObject__cval__real;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COMPLEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZeroDivisionError;
@@ -80,7 +73,9 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyComplexCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
@@ -88,11 +83,11 @@ import com.oracle.graal.python.lib.PyFloatCheckNode;
 import com.oracle.graal.python.lib.PyLongAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -610,6 +605,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     abstract static class ComplexEqNode extends Node {
         public abstract Object execute(Node inliningTarget, Object left, Object right);
@@ -658,69 +654,23 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
     }
 
+    @Slot(SlotKind.tp_richcompare)
     @GenerateNodeFactory
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
-    abstract static class EqNode extends PythonBinaryBuiltinNode {
+    @GenerateUncached
+    abstract static class ComplexRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        static Object doComplex(Object left, Object right,
+        static Object doComplex(Object left, Object right, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
-                        @Cached ComplexEqNode complexEqNode) {
-            return complexEqNode.execute(inliningTarget, left, right);
-        }
-    }
-
-    @GenerateNodeFactory
-    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
-    abstract static class NeNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static Object doComplex(Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ComplexEqNode complexEqNode) {
-            Object res = complexEqNode.execute(inliningTarget, left, right);
-            if (res == PNotImplemented.NOT_IMPLEMENTED) {
+                        @Cached ComplexEqNode complexEqNode,
+                        @Cached InlinedConditionProfile isNotImplementedProfile) {
+            if (!op.isEqOrNe()) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return !(boolean) res;
-        }
-    }
-
-    @GenerateNodeFactory
-    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
-    abstract static class GeNode extends PythonBinaryBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        static PNotImplemented doGeneric(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @GenerateNodeFactory
-    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
-    abstract static class GtNode extends PythonBinaryBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        static PNotImplemented doGeneric(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @GenerateNodeFactory
-    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
-    abstract static class LtNode extends PythonBinaryBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        static PNotImplemented doGeneric(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @GenerateNodeFactory
-    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
-    abstract static class LeNode extends PythonBinaryBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        static PNotImplemented doGeneric(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+            Object result = complexEqNode.execute(inliningTarget, left, right);
+            if (isNotImplementedProfile.profile(inliningTarget, result == PNotImplemented.NOT_IMPLEMENTED)) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            return (boolean) result == (op == RichCmpOp.Py_EQ);
         }
     }
 
@@ -868,9 +818,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
     }
 
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
-    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
-    abstract static class HashNode extends PythonUnaryBuiltinNode {
+    abstract static class HashNode extends HashBuiltinNode {
         @Specialization
         static long doPComplex(Object self,
                         @Bind("this") Node inliningTarget,

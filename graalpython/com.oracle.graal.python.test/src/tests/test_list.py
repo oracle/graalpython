@@ -966,5 +966,31 @@ class NativeStorageTests(unittest.TestCase):
         # self.check_refcounts(o1=0, o2=0, o3=0, o4=0)
 
 
+def test_eq_side_effects():
+    class X:
+        def __eq__(self,other) :
+            l1[0] = 42
+            l2[0] = 11
+            return False
+
+    l1 = [X()]
+    l2 = [0]
+    assert l1 > l2 # actually comparing 42 > 11
+    assert l1 == [42]
+    assert l2 == [11]
+
+
+    class X:
+        def __eq__(self,other) :
+            l1.clear()
+            return False
+
+    l1 = [X()]
+    l2 = [0]
+    assert l1 < l2 # l1 cleared -> is smaller than l2
+    assert l1 == []
+    assert l2 == [0]
+
+
 if __name__ == '__main__':
     unittest.main()

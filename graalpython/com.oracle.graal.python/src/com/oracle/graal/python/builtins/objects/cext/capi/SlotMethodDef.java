@@ -44,25 +44,19 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAs
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAsyncMethods__am_anext;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAsyncMethods__am_await;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_call;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_hash;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_init;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_repr;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_richcompare;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_str;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ANEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUFFLE_RICHCOMPARE__;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.CallFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.HashfuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InitWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.RichcmpFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncLegacyWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
@@ -72,10 +66,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public enum SlotMethodDef {
     TP_CALL(PyTypeObject__tp_call, T___CALL__, CallFunctionWrapper::new),
-    TP_HASH(PyTypeObject__tp_hash, T___HASH__, HashfuncWrapper::new),
     TP_INIT(PyTypeObject__tp_init, T___INIT__, InitWrapper::new),
     TP_REPR(PyTypeObject__tp_repr, T___REPR__, PyProcsWrapper.UnaryFuncLegacyWrapper::new),
-    TP_RICHCOMPARE(PyTypeObject__tp_richcompare, T___TRUFFLE_RICHCOMPARE__, RichcmpFunctionWrapper::new),
     TP_STR(PyTypeObject__tp_str, T___STR__, UnaryFuncLegacyWrapper::new),
 
     AM_AWAIT(PyAsyncMethods__am_await, T___AWAIT__, UnaryFuncLegacyWrapper::new, MethodsFlags.AM_AWAIT),

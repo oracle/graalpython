@@ -302,6 +302,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyDictKeys;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
@@ -346,6 +347,8 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetMethod;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyObjectRichCompare;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttrO;
 import com.oracle.graal.python.lib.PyObjectSetItem;
@@ -358,7 +361,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
@@ -366,9 +368,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
@@ -2549,34 +2549,37 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    public abstract static class GraalHPyRichcompareBaseNode extends HPyQuaternaryContextFunction {
+        static final int RICH_CMP_OP_COUNT = RichCmpOp.VALUES.length;
+
+        static RichCmpOp opFromNative(int op) {
+            return RichCmpOp.fromNative(op);
+        }
+    }
+
     @HPyContextFunction("ctx_RichCompare")
     @GenerateUncached
-    public abstract static class GraalHPyRichcompare extends HPyQuaternaryContextFunction {
+    public abstract static class GraalHPyRichcompare extends GraalHPyRichcompareBaseNode {
 
-        @Specialization
+        @Specialization(guards = "opFromNative(arg2) == op", limit = "RICH_CMP_OP_COUNT")
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object arg1, int arg2,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Cached LookupSpecialMethodNode.Dynamic lookupRichcmp,
-                        @Cached CallTernaryMethodNode callRichcmp) {
-            Object richcmp = lookupRichcmp.execute(null, inliningTarget, getClassNode.execute(inliningTarget, receiver), SpecialMethodNames.T___TRUFFLE_RICHCOMPARE__, receiver);
-            return callRichcmp.execute(null, richcmp, receiver, arg1, arg2);
+                        @Cached(value = "opFromNative(arg2)", allowUncached = true) RichCmpOp op,
+                        @Cached PyObjectRichCompare richCmpNode) {
+            return richCmpNode.execute(null, inliningTarget, receiver, arg1, op);
         }
     }
 
     @HPyContextFunction("ctx_RichCompareBool")
     @GenerateUncached
-    public abstract static class GraalHPyRichcompareBool extends HPyQuaternaryContextFunction {
+    public abstract static class GraalHPyRichcompareBool extends GraalHPyRichcompareBaseNode {
 
-        @Specialization
-        static Object doGeneric(Object ctx, Object receiver, Object arg1, int arg2,
+        @Specialization(guards = "opFromNative(arg2) == op", limit = "RICH_CMP_OP_COUNT")
+        static int doGeneric(Object ctx, Object receiver, Object arg1, int arg2,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Cached LookupSpecialMethodNode.Dynamic lookupRichcmp,
-                        @Cached CallTernaryMethodNode callRichcmp,
-                        @Cached PyObjectIsTrueNode isTrueNode) {
-            Object result = GraalHPyRichcompare.doGeneric(ctx, receiver, arg1, arg2, inliningTarget, getClassNode, lookupRichcmp, callRichcmp);
-            return PInt.intValue(isTrueNode.execute(null, result));
+                        @Cached(value = "opFromNative(arg2)", allowUncached = true) RichCmpOp op,
+                        @Cached PyObjectRichCompareBool richCmpNode) {
+            return PInt.intValue(richCmpNode.execute(null, inliningTarget, receiver, arg1, op));
         }
     }
 

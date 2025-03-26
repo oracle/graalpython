@@ -38,25 +38,30 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -89,10 +94,13 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PMethod, PythonBuiltinClassType.PBuiltinFunctionOrMethod, PythonBuiltinClassType.MethodWrapper})
 public final class AbstractMethodBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = AbstractMethodBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -149,9 +157,9 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    abstract static class EqNode extends PythonBinaryBuiltinNode {
+    abstract static class EqNode extends RichCmpBuiltinNode {
 
         @Child private InteropLibrary identicalLib = InteropLibrary.getFactory().createDispatched(3);
         @Child private InteropLibrary identicalLib2 = InteropLibrary.getFactory().createDispatched(3);
@@ -172,25 +180,46 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
             return true;
         }
 
-        @Specialization
-        boolean eq(PMethod self, PMethod other) {
-            return eq(self.getFunction(), other.getFunction(), self.getSelf(), other.getSelf());
-        }
+        @Specialization(guards = "op.isEqOrNe()")
+        boolean eqOrNe(Object self, Object other, RichCmpOp op,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached InlinedConditionProfile isBuiltinProfile,
+                        @Cached InlinedConditionProfile isMethodProfile) {
+            Object selfFunction, otherFunction;
+            Object selfSelf, otherSelf;
 
-        @Specialization
-        boolean eq(PBuiltinMethod self, PBuiltinMethod other) {
-            return eq(self.getFunction(), other.getFunction(), self.getSelf(), other.getSelf());
+            if (isBuiltinProfile.profile(inliningTarget, self instanceof PBuiltinMethod)) {
+                selfFunction = ((PBuiltinMethod) self).getBuiltinFunction();
+                selfSelf = ((PBuiltinMethod) self).getSelf();
+            } else if (isMethodProfile.profile(inliningTarget, self instanceof PMethod)) {
+                selfFunction = ((PMethod) self).getFunction();
+                selfSelf = ((PMethod) self).getSelf();
+            } else {
+                return op.isNe();
+            }
+
+            if (isBuiltinProfile.profile(inliningTarget, other instanceof PBuiltinMethod)) {
+                otherFunction = ((PBuiltinMethod) other).getBuiltinFunction();
+                otherSelf = ((PBuiltinMethod) other).getSelf();
+            } else if (isMethodProfile.profile(inliningTarget, other instanceof PMethod)) {
+                otherFunction = ((PMethod) other).getFunction();
+                otherSelf = ((PMethod) other).getSelf();
+            } else {
+                return op.isNe();
+            }
+
+            return eq(selfFunction, otherFunction, selfSelf, otherSelf) == op.isEq();
         }
 
         @Fallback
-        static boolean eq(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
-            return false;
+        static Object others(Object self, Object other, RichCmpOp op) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
-    abstract static class HashNode extends PythonUnaryBuiltinNode {
+    abstract static class HashNode extends HashBuiltinNode {
         @Specialization
         static long hash(PMethod self) {
             return PythonAbstractObject.systemHashCode(self.getSelf()) ^ PythonAbstractObject.systemHashCode(self.getFunction());

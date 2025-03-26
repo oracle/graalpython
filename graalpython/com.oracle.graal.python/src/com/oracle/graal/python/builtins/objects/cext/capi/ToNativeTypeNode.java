@@ -245,7 +245,6 @@ public abstract class ToNativeTypeNode {
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_number, asNumber);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_sequence, asSequence);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_mapping, asMapping);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_hash, lookup(clazz, SlotMethodDef.TP_HASH));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_call, lookup(clazz, SlotMethodDef.TP_CALL));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_str, lookup(clazz, SlotMethodDef.TP_STR));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_buffer, asBuffer);
@@ -270,7 +269,6 @@ public abstract class ToNativeTypeNode {
         writePtrNode.write(mem, CFields.PyTypeObject__tp_traverse, tpTraverse);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_is_gc, tpIsGc);
 
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_richcompare, lookup(clazz, SlotMethodDef.TP_RICHCOMPARE));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_methods, nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_members, nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_getset, nullValue);

@@ -29,15 +29,8 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_SORT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_BRACKETS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_BRACKETS;
@@ -52,6 +45,7 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -81,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSu
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
@@ -90,8 +85,8 @@ import com.oracle.graal.python.lib.PyListCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
@@ -126,9 +121,11 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
@@ -140,13 +137,13 @@ import com.oracle.truffle.api.strings.TruffleStringIterator;
  * get a proper error and not allow other sequences, just PList or foreign list.
  */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PList)
+@HashNotImplemented
 public final class ListBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = ListBuiltinsSlotsGen.SLOTS;
 
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        this.addBuiltinConstant(T___HASH__, PNone.NONE);
     }
 
     @Override
@@ -513,18 +510,22 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetListStorageNode getStorageNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
+                        @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached PyObjectRichCompareBool eqNode,
                         @Cached PRaiseNode raiseNode) {
             SequenceStorage listStore = getStorageNode.execute(inliningTarget, list);
             int len = listStore.length();
+            loopProfile.profileCounted(inliningTarget, len);
             for (int i = 0; i < len; i++) {
                 Object object = getItemNode.execute(listStore, i);
-                if (eqNode.compare(frame, inliningTarget, object, value)) {
+                if (eqNode.execute(frame, inliningTarget, object, value, RichCmpOp.Py_EQ)) {
                     deleteNode.execute(frame, listStore, i);
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return PNone.NONE;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, len);
             throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.NOT_IN_LIST_MESSAGE);
         }
     }
@@ -625,17 +626,21 @@ public final class ListBuiltins extends PythonBuiltins {
         @Specialization
         long count(VirtualFrame frame, Object list, Object value,
                         @Bind("this") Node inliningTarget,
+                        @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached GetListStorageNode getStorageNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+                        @Cached PyObjectRichCompareBool eqNode) {
             long count = 0;
             SequenceStorage s = getStorageNode.execute(inliningTarget, list);
-            for (int i = 0; i < s.length(); i++) {
+            loopProfile.profileCounted(inliningTarget, s.length());
+            for (int i = 0; loopProfile.inject(inliningTarget, i < s.length()); i++) {
                 Object seqItem = getItemNode.execute(s, i);
-                if (eqNode.compare(frame, inliningTarget, seqItem, value)) {
+                if (eqNode.execute(frame, inliningTarget, seqItem, value, RichCmpOp.Py_EQ)) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     count++;
                 }
             }
+            LoopNode.reportLoopCount(inliningTarget, s.length());
             return count;
         }
 
@@ -827,182 +832,21 @@ public final class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    abstract static class EqNode extends PythonBinaryBuiltinNode {
-
-        protected static boolean isObjectStorage(PList left, PList right) {
-            return PGuards.isObjectStorage(left) || PGuards.isObjectStorage(right);
-        }
-
-        @Specialization(guards = "!isObjectStorage(left, right)")
-        boolean doPList(VirtualFrame frame, PList left, PList right,
-                        @Shared @Cached("createEq()") SequenceStorageNodes.CmpNode cmpNode) {
-            return cmpNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
-        }
-
-        /**
-         * This is a fix for the bpo-38588 bug. See
-         * {@code test_list.py: ListTest.test_equal_operator_modifying_operand}
-         */
-        @Specialization(guards = "isObjectStorage(left, right)")
-        boolean doPListObjectStorage(VirtualFrame frame, PList left, PList right,
-                        @Shared @Cached("createEq()") SequenceStorageNodes.CmpNode cmpNode) {
-            final SequenceStorage leftStorage = left.getSequenceStorage();
-            final SequenceStorage rightStorage = right.getSequenceStorage();
-            final boolean result = cmpNode.execute(frame, leftStorage, rightStorage);
-            /*
-             * This will check if the underlying storage has been modified and if so, we do the
-             * check again.
-             */
-            if (leftStorage == left.getSequenceStorage() && rightStorage == right.getSequenceStorage()) {
-                return result;
-            }
-            /*
-             * To avoid possible infinite recursion case, we call the default specialization.
-             */
-            return doPList(frame, left, right, cmpNode);
-        }
-
-        @Fallback
-        static Object doOther(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyListCheckNode isListNode,
-                        @Shared @Cached("createEq()") SequenceStorageNodes.CmpNode cmpNode,
-                        @Cached GetListStorageNode getStorageNode) {
-            if (isListNode.execute(inliningTarget, right)) {
-                var leftStorage = getStorageNode.execute(inliningTarget, left);
-                var rightStorage = getStorageNode.execute(inliningTarget, right);
-                return cmpNode.execute(frame, leftStorage, rightStorage);
-            } else {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-        }
-    }
-
-    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class NeNode extends PythonBinaryBuiltinNode {
-
+    abstract static class ListRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        boolean doPList(VirtualFrame frame, PList left, PList right,
-                        @Shared @Cached("createNe()") SequenceStorageNodes.CmpNode cmpNode) {
-            return cmpNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
-        }
-
-        @Fallback
-        static Object doOther(VirtualFrame frame, Object left, Object right,
+        static Object doIt(VirtualFrame frame, Object left, Object right, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyListCheckNode isListNode,
-                        @Shared @Cached("createNe()") SequenceStorageNodes.CmpNode cmpNode,
+                        @Cached PyListCheckNode isLeftList,
+                        @Cached PyListCheckNode isRightList,
+                        @Cached InlinedConditionProfile listCheckProfile,
+                        @Cached SequenceStorageNodes.CmpNode cmpNode,
                         @Cached GetListStorageNode getStorageNode) {
-            if (isListNode.execute(inliningTarget, right)) {
+            if (listCheckProfile.profile(inliningTarget, isLeftList.execute(inliningTarget, left) && isRightList.execute(inliningTarget, right))) {
                 var leftStorage = getStorageNode.execute(inliningTarget, left);
                 var rightStorage = getStorageNode.execute(inliningTarget, right);
-                return cmpNode.execute(frame, leftStorage, rightStorage);
-            } else {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-        }
-    }
-
-    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class GeNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        boolean doPList(VirtualFrame frame, PList left, PList right,
-                        @Shared @Cached("createGe()") SequenceStorageNodes.CmpNode cmpNode) {
-            return cmpNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
-        }
-
-        @Fallback
-        static Object doOther(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyListCheckNode isListNode,
-                        @Shared @Cached("createGe()") SequenceStorageNodes.CmpNode cmpNode,
-                        @Cached GetListStorageNode getStorageNode) {
-            if (isListNode.execute(inliningTarget, right)) {
-                var leftStorage = getStorageNode.execute(inliningTarget, left);
-                var rightStorage = getStorageNode.execute(inliningTarget, right);
-                return cmpNode.execute(frame, leftStorage, rightStorage);
-            } else {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-        }
-    }
-
-    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class LeNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        boolean doPList(VirtualFrame frame, PList left, PList right,
-                        @Shared @Cached("createLe()") SequenceStorageNodes.CmpNode cmpNode) {
-            return cmpNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
-        }
-
-        @Fallback
-        static Object doOther(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyListCheckNode isListNode,
-                        @Shared @Cached("createLe()") SequenceStorageNodes.CmpNode cmpNode,
-                        @Cached GetListStorageNode getStorageNode) {
-            if (isListNode.execute(inliningTarget, right)) {
-                var leftStorage = getStorageNode.execute(inliningTarget, left);
-                var rightStorage = getStorageNode.execute(inliningTarget, right);
-                return cmpNode.execute(frame, leftStorage, rightStorage);
-            } else {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-        }
-    }
-
-    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class GtNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        boolean doPList(VirtualFrame frame, PList left, PList right,
-                        @Shared @Cached("createGt()") SequenceStorageNodes.CmpNode cmpNode) {
-            return cmpNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
-        }
-
-        @Fallback
-        static Object doOther(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyListCheckNode isListNode,
-                        @Shared @Cached("createGt()") SequenceStorageNodes.CmpNode cmpNode,
-                        @Cached GetListStorageNode getStorageNode) {
-            if (isListNode.execute(inliningTarget, right)) {
-                var leftStorage = getStorageNode.execute(inliningTarget, left);
-                var rightStorage = getStorageNode.execute(inliningTarget, right);
-                return cmpNode.execute(frame, leftStorage, rightStorage);
-            } else {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-        }
-    }
-
-    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class LtNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        boolean doPList(VirtualFrame frame, PList left, PList right,
-                        @Shared @Cached("createLt()") SequenceStorageNodes.CmpNode cmpNode) {
-            return cmpNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
-        }
-
-        @Fallback
-        static Object doOther(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyListCheckNode isListNode,
-                        @Shared @Cached("createLt()") SequenceStorageNodes.CmpNode cmpNode,
-                        @Cached GetListStorageNode getStorageNode) {
-            if (isListNode.execute(inliningTarget, right)) {
-                var leftStorage = getStorageNode.execute(inliningTarget, left);
-                var rightStorage = getStorageNode.execute(inliningTarget, right);
-                return cmpNode.execute(frame, leftStorage, rightStorage);
+                return cmpNode.execute(frame, inliningTarget, leftStorage, rightStorage, true, left, right, op);
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }

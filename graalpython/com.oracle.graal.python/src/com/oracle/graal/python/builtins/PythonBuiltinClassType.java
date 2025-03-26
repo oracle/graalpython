@@ -111,10 +111,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CArgObjectBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CDataBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeSequenceBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.PyCArrayBuiltins;
@@ -123,6 +125,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.PyCPointerBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.PyCStructTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.SimpleCDataBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins;
+import com.oracle.graal.python.builtins.modules.functools.KeyWrapperBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.LruCacheWrapperBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.PartialBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.HashObjectBuiltins;
@@ -148,6 +151,7 @@ import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.ContextBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.ContextIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.contextvars.TokenBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeIterBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DefaultDictBuiltins;
@@ -207,6 +211,7 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins;
+import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinFunctionOrMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
@@ -231,6 +236,7 @@ import com.oracle.graal.python.builtins.objects.range.RangeBuiltins;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.reversed.ReversedBuiltins;
 import com.oracle.graal.python.builtins.objects.set.BaseSetBuiltins;
+import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltins;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.slice.SliceBuiltins;
 import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
@@ -276,11 +282,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
     /** See {@link com.oracle.graal.python.builtins.objects.function.PBuiltinFunction} */
     PBuiltinFunction("method_descriptor", PythonObject, Flags.PRIVATE_DERIVED_WODICT, MethodDescriptorBuiltins.SLOTS),
     /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
-    PBuiltinFunctionOrMethod("builtin_function_or_method", PythonObject, Flags.PRIVATE_DERIVED_WODICT, BuiltinFunctionOrMethodBuiltins.SLOTS),
+    PBuiltinFunctionOrMethod("builtin_function_or_method", PythonObject, Flags.PRIVATE_DERIVED_WODICT, TpSlots.merge(AbstractMethodBuiltins.SLOTS, BuiltinFunctionOrMethodBuiltins.SLOTS)),
     /** See {@link com.oracle.graal.python.builtins.objects.function.PBuiltinFunction} */
     WrapperDescriptor(J_WRAPPER_DESCRIPTOR, PythonObject, Flags.PRIVATE_DERIVED_WODICT, WrapperDescriptorBuiltins.SLOTS),
     /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
-    MethodWrapper("method-wrapper", PythonObject, Flags.PRIVATE_DERIVED_WODICT, MethodWrapperBuiltins.SLOTS),
+    MethodWrapper("method-wrapper", PythonObject, Flags.PRIVATE_DERIVED_WODICT, TpSlots.merge(AbstractMethodBuiltins.SLOTS, MethodWrapperBuiltins.SLOTS)),
     /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
     PBuiltinMethod("builtin_method", PBuiltinFunctionOrMethod, Flags.PRIVATE_DERIVED_WODICT),
     PBuiltinClassMethod("classmethod_descriptor", PythonObject, Flags.PRIVATE_DERIVED_WODICT, TpSlots.merge(ClassmethodCommonBuiltins.SLOTS, BuiltinClassmethodBuiltins.SLOTS)),
@@ -290,7 +296,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PBytes("bytes", PythonObject, J_BUILTINS, BYTES_M_FLAGS, TpSlots.merge(BytesCommonBuiltins.SLOTS, BytesBuiltins.SLOTS)),
     PCell("cell", PythonObject, Flags.PRIVATE_DERIVED_WODICT, CellBuiltins.SLOTS),
     PSimpleNamespace("SimpleNamespace", PythonObject, null, "types", Flags.PUBLIC_BASE_WDICT, SimpleNamespaceBuiltins.SLOTS),
-    PKeyWrapper("KeyWrapper", PythonObject, "_functools", "functools", Flags.PUBLIC_DERIVED_WODICT),
+    PKeyWrapper("KeyWrapper", PythonObject, "_functools", "functools", Flags.PUBLIC_DERIVED_WODICT, KeyWrapperBuiltins.SLOTS),
     PPartial(J_PARTIAL, PythonObject, "_functools", "functools", Flags.PUBLIC_BASE_WDICT, PartialBuiltins.SLOTS),
     PLruListElem("_lru_list_elem", PythonObject, null, "functools", Flags.PUBLIC_DERIVED_WODICT),
     PLruCacheWrapper(J_LRU_CACHE_WRAPPER, PythonObject, "_functools", "functools", Flags.PUBLIC_BASE_WDICT, LruCacheWrapperBuiltins.SLOTS),
@@ -320,7 +326,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PMap("map", PythonObject, J_BUILTINS, MapBuiltins.SLOTS),
     PFloat("float", PythonObject, J_BUILTINS, FLOAT_M_FLAGS, FloatBuiltins.SLOTS),
     PFrame("frame", PythonObject, Flags.PRIVATE_DERIVED_WODICT, FrameBuiltins.SLOTS),
-    PFrozenSet("frozenset", PythonObject, J_BUILTINS, FROZENSET_M_FLAGS, BaseSetBuiltins.SLOTS),
+    PFrozenSet("frozenset", PythonObject, J_BUILTINS, FROZENSET_M_FLAGS, TpSlots.merge(BaseSetBuiltins.SLOTS, FrozenSetBuiltins.SLOTS)),
     PFunction("function", PythonObject, Flags.PRIVATE_DERIVED_WDICT, FunctionBuiltins.SLOTS),
     PGenerator("generator", PythonObject, Flags.PRIVATE_DERIVED_WODICT, GENERATOR_M_FLAGS, GeneratorBuiltins.SLOTS),
     PCoroutine("coroutine", PythonObject, Flags.PRIVATE_DERIVED_WODICT, COROUTINE_M_FLAGS, CoroutineBuiltins.SLOTS),
@@ -334,7 +340,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PAsyncGenASend("async_generator_asend", PythonObject, Flags.PRIVATE_DERIVED_WODICT, ASYNC_GENERATOR_ASEND_M_FLAGS, AsyncGenSendBuiltins.SLOTS),
     PAsyncGenAThrow("async_generator_athrow", PythonObject, Flags.PRIVATE_DERIVED_WODICT, ASYNC_GENERATOR_ATHROW_M_FLAGS, AsyncGenThrowBuiltins.SLOTS),
     PAsyncGenAWrappedValue("async_generator_wrapped_value", PythonObject, Flags.PRIVATE_DERIVED_WODICT),
-    PMethod("method", PythonObject, Flags.PRIVATE_DERIVED_WODICT, MethodBuiltins.SLOTS),
+    PMethod("method", PythonObject, Flags.PRIVATE_DERIVED_WODICT, TpSlots.merge(AbstractMethodBuiltins.SLOTS, MethodBuiltins.SLOTS)),
     PMMap("mmap", PythonObject, "mmap", MMAP_M_FLAGS, MMapBuiltins.SLOTS),
     PNone("NoneType", PythonObject, Flags.PRIVATE_DERIVED_WODICT, NONE_M_FLAGS, NoneBuiltins.SLOTS),
     PNotImplemented("NotImplementedType", PythonObject, Flags.PRIVATE_DERIVED_WODICT, NotImplementedBuiltins.SLOTS),
@@ -617,7 +623,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PyCArrayType("PyCArrayType", PythonClass, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCARRAYTYPE_M_FLAGS, CDataTypeSequenceBuiltins.SLOTS),
     PyCSimpleType("PyCSimpleType", PythonClass, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCSIMPLETYPE_M_FLAGS, CDataTypeSequenceBuiltins.SLOTS),
     PyCFuncPtrType("PyCFuncPtrType", PythonClass, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCFUNCPTRTYPE_M_FLAGS, CDataTypeSequenceBuiltins.SLOTS),
-    PyCData("_CData", PythonObject, J__CTYPES, Flags.PUBLIC_BASE_WODICT), /*- type = PyCStructType */
+    PyCData("_CData", PythonObject, J__CTYPES, Flags.PUBLIC_BASE_WODICT, CDataBuiltins.SLOTS), /*- type = PyCStructType */
     Structure("Structure", PyCData, J__CTYPES, Flags.PUBLIC_BASE_WODICT), /*- type = PyCStructType */
     Union("Union", PyCData, J__CTYPES, Flags.PUBLIC_BASE_WODICT), /*- type = UnionType */
     PyCPointer("_Pointer", PyCData, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCPOINTER_M_FLAGS, PyCPointerBuiltins.SLOTS), /*- type = PyCPointerType */
@@ -637,7 +643,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     MultibyteStreamWriter("MultibyteStreamWriter", PythonObject, "_multibytecodec", Flags.PUBLIC_BASE_WDICT),
 
     // contextvars
-    ContextVarsToken("Token", PythonObject, J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
+    ContextVarsToken("Token", PythonObject, J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT, TokenBuiltins.SLOTS),
     ContextVarsContext("Context", PythonObject, J__CONTEXTVARS, J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT, CONTEXT_M_FLAGS, ContextBuiltins.SLOTS),
     ContextVar("ContextVar", PythonObject, J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
     // CPython uses separate keys, values, items python types for the iterators.
@@ -976,6 +982,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     private static boolean hasSlotNodes(PythonBuiltins builtin) {
+        if (builtin.getClass().getAnnotation(HashNotImplemented.class) != null) {
+            return true;
+        }
         for (Class<?> innerClass : builtin.getClass().getDeclaredClasses()) {
             if (innerClass.getDeclaredAnnotationsByType(Slot.class).length > 0) {
                 return true;

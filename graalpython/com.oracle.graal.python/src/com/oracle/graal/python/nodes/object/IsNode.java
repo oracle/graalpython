@@ -44,26 +44,26 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.expression.BinaryOp;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -174,7 +174,7 @@ public abstract class IsNode extends Node implements BinaryOp {
     public static boolean doDD(double left, double right) {
         // n.b. we simulate that the primitive NaN is a singleton; this is required to make
         // 'nan = float("nan"); nan is nan' work
-        return left == right || (Double.isNaN(left) && Double.isNaN(right));
+        return left == right || (Double.doubleToRawLongBits(left) == Double.doubleToRawLongBits(right));
     }
 
     @Specialization
@@ -210,14 +210,19 @@ public abstract class IsNode extends Node implements BinaryOp {
 
     // native objects
     @Specialization
+    @InliningCutoff
     public static boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
-                    @Bind("this") Node inliningTarget,
-                    @Cached CExtNodes.PointerCompareNode pointerCompareNode) {
-        return pointerCompareNode.execute(inliningTarget, ComparisonOp.EQ, left, right);
+                    @Exclusive @CachedLibrary(limit = "1") InteropLibrary interop) {
+        // Assumption: not perf critical, instead of refactoring
+        // PythonAbstractNativeObject.isIdentical into a separate node, we just piggy-back on
+        // interop library. We do not need two libraries, this will always specialize only to
+        // PythonAbstractNativeObject
+        return interop.isIdentical(left, right, interop);
     }
 
     // code
     @Specialization
+    @InliningCutoff
     public static boolean doCode(PCode left, PCode right,
                     @Bind("this") Node inliningTarget,
                     @Cached CodeNodes.GetCodeCallTargetNode getCt) {
@@ -246,27 +251,31 @@ public abstract class IsNode extends Node implements BinaryOp {
         return true;
     }
 
+    static boolean someIsNone(Object left, Object right) {
+        return PGuards.isPNone(left) || PGuards.isPNone(right);
+    }
+
     // none
-    @Specialization
-    public static boolean doObjectPNone(Object left, PNone right,
+    @Specialization(guards = "someIsNone(left, right)")
+    public static boolean doPNone(Object left, Object right,
                     @Bind("this") Node inliningTarget,
                     @Shared @Cached IsForeignObjectNode isForeignObjectNode,
                     @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
         if (left == right) {
             return true;
         }
+        return doPNoneSlowpath(left, right, inliningTarget, isForeignObjectNode, lib);
+    }
+
+    @InliningCutoff
+    private static boolean doPNoneSlowpath(Object left, Object right, Node inliningTarget, IsForeignObjectNode isForeignObjectNode, InteropLibrary lib) {
         if (isForeignObjectNode.execute(inliningTarget, left)) {
             return lib.isNull(left);
         }
+        if (isForeignObjectNode.execute(inliningTarget, right)) {
+            return lib.isNull(right);
+        }
         return false;
-    }
-
-    @Specialization
-    public static boolean doPNoneObject(PNone left, Object right,
-                    @Bind("this") Node inliningTarget,
-                    @Shared @Cached IsForeignObjectNode isForeignObjectNode,
-                    @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
-        return doObjectPNone(right, left, inliningTarget, isForeignObjectNode, lib);
     }
 
     // pstring (may be interned)
@@ -284,6 +293,7 @@ public abstract class IsNode extends Node implements BinaryOp {
 
     // everything else
     @Fallback
+    @InliningCutoff
     public static boolean doOther(Object left, Object right,
                     @Bind("this") Node inliningTarget,
                     @Shared @Cached IsForeignObjectNode isForeignObjectNode,

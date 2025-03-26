@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -9362,13 +9362,8 @@ static int type_ready_graalpy_slot_conv(PyTypeObject* cls) {
     ADD_SLOT_CONV("__delattr__", cls->tp_setattro, -3, JWRAPPER_DELATTRO);
     ADD_SLOT_CONV("__clear__", cls->tp_clear, -1, JWRAPPER_INQUIRY);
 
-    /* IMPORTANT NOTE: If the class already provides 'tp_richcompare' but this is the default
-       'object.__truffle_richcompare__' function, then we need to break a recursive cycle since
-       the default function dispatches to the individual comparison functions which would in
-       this case again invoke 'object.__truffle_richcompare__'. */
     richcmpfunc richcompare = cls->tp_richcompare;
-    if (richcompare && richcompare != PyBaseObject_Type.tp_richcompare) {
-        ADD_SLOT_CONV("__compare__", richcompare, -3, JWRAPPER_RICHCMP);
+    if (richcompare) {
         ADD_SLOT_CONV("__lt__", richcompare, -2, JWRAPPER_LT);
         ADD_SLOT_CONV("__le__", richcompare, -2, JWRAPPER_LE);
         ADD_SLOT_CONV("__eq__", richcompare, -2, JWRAPPER_EQ);

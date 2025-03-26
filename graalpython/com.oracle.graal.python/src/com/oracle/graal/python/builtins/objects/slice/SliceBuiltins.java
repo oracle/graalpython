@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.slice;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -34,12 +32,15 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CoerceToObjectSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.ComputeIndices;
@@ -47,11 +48,13 @@ import com.oracle.graal.python.builtins.objects.slice.SliceNodes.SliceCastToToBi
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.SliceExactCastToInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.lib.RichCmpOp;
+import com.oracle.graal.python.lib.PyObjectRichCompare;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -63,16 +66,18 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSlice)
+@HashNotImplemented
 public final class SliceBuiltins extends PythonBuiltins {
-
     public static final TpSlots SLOTS = SliceBuiltinsSlotsGen.SLOTS;
 
     @Override
@@ -90,38 +95,78 @@ public final class SliceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    abstract static class EqNode extends PythonBuiltinNode {
+    abstract static class EqNode extends RichCmpBuiltinNode {
         @Specialization
-        static boolean sliceCmp(PIntSlice left, PIntSlice right) {
-            return left.equals(right);
+        static boolean doIntSliceEq(PIntSlice left, PIntSlice right, RichCmpOp op,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached InlinedConditionProfile startCmpProfile,
+                        @Cached InlinedConditionProfile stopCmpProfile,
+                        @Cached InlinedConditionProfile stepCmpProfile,
+                        @Cached PRaiseNode raiseNode) {
+            // Inlined tuple comparison specialized for ints
+            if (startCmpProfile.profile(inliningTarget, left.start != right.start)) {
+                return cmpVal(inliningTarget, left.start, right.start, left.startIsNone, right.startIsNone, op, raiseNode);
+            }
+            if (stopCmpProfile.profile(inliningTarget, left.stop != right.stop)) {
+                return cmpVal(inliningTarget, left.stop, right.stop, false, false, op, raiseNode);
+            }
+            if (stepCmpProfile.profile(inliningTarget, left.step != right.step)) {
+                return cmpVal(inliningTarget, left.step, right.step, left.stepIsNone, right.stepIsNone, op, raiseNode);
+            }
+            return op.isEq() || op.isLe() || op.isGe();
         }
 
-        /**
-         * As per {@link "https://github.com/python/cpython/blob/master/Objects/sliceobject.c#L569"}
-         *
-         *
-         * both {@code left} and {@code right} must be a slice.
-         *
-         * @return CPython returns {@code NOTIMPLEMENTED} which will eventually yield {@value false}
-         *         , so we shortcut and return {@value false}.
-         */
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!isPSlice(right)")
-        static boolean notEqual(PSlice left, Object right) {
-            return false;
+        private static boolean cmpVal(Node inliningTarget, int leftVal, int rightVal, boolean leftValIsNone, boolean rightValIsNone, RichCmpOp op, PRaiseNode raiseNode) {
+            if (op.isEqOrNe()) {
+                return op.isNe();
+            }
+            if (leftValIsNone || rightValIsNone) {
+                Object leftObj = leftValIsNone ? PNone.NONE : leftVal;
+                Object rightObj = rightValIsNone ? PNone.NONE : rightVal;
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, op.getOpName(), leftObj, rightObj);
+            }
+            return op.compare(leftVal, rightVal);
         }
 
-        @Specialization
-        static boolean sliceCmpWithLib(VirtualFrame frame, PSlice left, PSlice right,
+        static boolean noIntSlices(PSlice a, PSlice b) {
+            return !(a instanceof PIntSlice && b instanceof PIntSlice);
+        }
+
+        @Specialization(guards = {"noIntSlices(left, right)", "left == right"})
+        static boolean sliceCmpIdentical(VirtualFrame frame, PSlice left, PSlice right, RichCmpOp op) {
+            // CPython fast-path, can have visible behavior, because we skip richcmp
+            return op.isEq() || op.isLe() || op.isGe();
+        }
+
+        @Specialization(guards = {"noIntSlices(left, right)", "left != right"})
+        static Object sliceCmpWithLib(VirtualFrame frame, PSlice left, PSlice right, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
-            return eqNode.compare(frame, inliningTarget, left.getStart(), right.getStart()) &&
-                            eqNode.compare(frame, inliningTarget, left.getStop(), right.getStop()) &&
-                            eqNode.compare(frame, inliningTarget, left.getStep(), right.getStep());
+                        @Cached InlinedConditionProfile startCmpProfile,
+                        @Cached InlinedConditionProfile stopCmpProfile,
+                        @Cached InlinedConditionProfile stepCmpProfile,
+                        @Cached PyObjectRichCompareBool eqNode,
+                        @Cached PyObjectRichCompare cmpNode) {
+            // Inlined tuple comparison specialized for tuples of 3 items to avoid the tuples
+            // allocation
+            if (startCmpProfile.profile(inliningTarget, !eqNode.executeEq(frame, inliningTarget, left.getStart(), right.getStart()))) {
+                return cmpNode.execute(frame, inliningTarget, left.getStart(), right.getStart(), op);
+            }
+            if (stopCmpProfile.profile(inliningTarget, !eqNode.executeEq(frame, inliningTarget, left.getStop(), right.getStop()))) {
+                return cmpNode.execute(frame, inliningTarget, left.getStop(), right.getStop(), op);
+            }
+            if (stepCmpProfile.profile(inliningTarget, !eqNode.executeEq(frame, inliningTarget, left.getStep(), right.getStep()))) {
+                return cmpNode.execute(frame, inliningTarget, left.getStep(), right.getStep(), op);
+            }
+            return op.isEq() || op.isLe() || op.isGe();
         }
 
+        @Fallback
+        @SuppressWarnings("unused")
+        static Object doOthers(VirtualFrame frame, Object left, Object right, RichCmpOp op) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
     }
 
     @Builtin(name = "start", minNumOfPositionalArgs = 1, isGetter = true)
@@ -225,17 +270,6 @@ public final class SliceBuiltins extends PythonBuiltins {
         static PTuple lengthNone(@SuppressWarnings("unused") PSlice self, @SuppressWarnings("unused") Object length,
                         @Bind("this") Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError);
-        }
-    }
-
-    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class HashNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        public static long hash(PSlice self,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE_P, PythonBuiltinClassType.PSlice);
         }
     }
 

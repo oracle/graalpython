@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_TP_RICHCOMPARE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ALLOC__;
@@ -95,7 +96,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUFFLE_RICHCOMPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -141,7 +141,7 @@ public abstract class GraalHPyLegacyDef {
         Py_tp_methods(64, NO_TP_SLOT),
         Py_tp_new(65, NO_TP_SLOT, T___NEW__, PExternalFunctionWrapper.KEYWORDS),
         Py_tp_repr(66, NO_TP_SLOT, T___REPR__, PExternalFunctionWrapper.TP_REPR),
-        Py_tp_richcompare(67, NO_TP_SLOT, T___TRUFFLE_RICHCOMPARE__, PExternalFunctionWrapper.RICHCMP),
+        Py_tp_richcompare(67, TpSlotMeta.TP_RICHCOMPARE, T_TP_RICHCOMPARE, PExternalFunctionWrapper.RICHCMP),
         Py_tp_setattr(68, NO_TP_SLOT, T___SETATTR__, PExternalFunctionWrapper.SETATTR),
         Py_tp_setattro(69, NO_TP_SLOT, T___SETATTR__),
         Py_tp_str(70, NO_TP_SLOT, T___STR__, PExternalFunctionWrapper.TP_STR),

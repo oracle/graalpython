@@ -1,4 +1,4 @@
-# Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -162,6 +162,8 @@ def slots_tester(Klass, other_klasses):
         test_dunder(obj1, "__radd__", obj2)
         test_dunder(obj1, "__mul__", obj2)
 
+
+    test_dunder(obj, '__hash__')
 '''
 
 # language=Python
@@ -282,7 +284,8 @@ SLOTS = [
             Py_XDECREF(global_stash2);
             global_stash2 = value;
             return 0;
-        '''])
+        ''']),
+    Slot(NO_GROUP, 'tp_hash', 'Py_hash_t $name$(PyObject* self)', ['0', None, '42', '-1', '-2', 'PY_SSIZE_T_MAX'])
 ]
 
 PY_GLOBALS = '''
@@ -317,7 +320,8 @@ MAGIC = {
                                      del global_dict1[name]
                                      return None
                                      '''],
-    '__getitem__(self, index)': [None, 'True', 'repr(index)']
+    '__getitem__(self, index)': [None, 'True', 'repr(index)'],
+    '__hash__(self, index)': [None, '1', '-1', '-2', '44', '123456788901223442423234234']
 }
 
 

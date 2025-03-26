@@ -28,12 +28,7 @@ package com.oracle.graal.python.builtins.objects.foreign;
 
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.simpleTruffleStringFormatUncached;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -54,11 +49,11 @@ import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins.Fo
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.lib.PyNumberAbsoluteNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAndNode;
@@ -78,7 +73,9 @@ import com.oracle.graal.python.lib.PyNumberRshiftNode;
 import com.oracle.graal.python.lib.PyNumberSubtractNode;
 import com.oracle.graal.python.lib.PyNumberTrueDivideNode;
 import com.oracle.graal.python.lib.PyNumberXorNode;
+import com.oracle.graal.python.lib.PyObjectRichCompare;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -616,63 +613,24 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class ForeignBinaryComparisonNode extends PythonBinaryBuiltinNode {
-        @Child private LookupAndCallBinaryNode comparisonNode;
-
-        protected ForeignBinaryComparisonNode(SpecialMethodSlot slot, SpecialMethodSlot rslot) {
-            this.comparisonNode = LookupAndCallBinaryNode.create(slot, rslot, true, true);
-        }
-
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
+    @GenerateNodeFactory
+    public abstract static class ForeignBinaryComparisonNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        Object doComparison(VirtualFrame frame, Object left, Object right,
+        Object doComparison(VirtualFrame frame, Object left, Object right, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
-                        @Cached UnboxNode unboxNode) {
+                        @Cached UnboxNode unboxNode,
+                        @Cached IsBuiltinObjectProfile exProfile,
+                        @Cached PyObjectRichCompare richCompareNode) {
             Object unboxed = unboxNode.execute(inliningTarget, left);
             if (unboxed != null) {
-                return comparisonNode.executeObject(frame, unboxed, right);
-            } else {
-                return PNotImplemented.NOT_IMPLEMENTED;
+                try {
+                    return richCompareNode.execute(frame, inliningTarget, unboxed, right, op);
+                } catch (PException ex) {
+                    ex.expect(inliningTarget, PythonBuiltinClassType.TypeError, exProfile);
+                }
             }
-        }
-    }
-
-    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class LtNode extends ForeignBinaryComparisonNode {
-        protected LtNode() {
-            super(SpecialMethodSlot.Lt, SpecialMethodSlot.Gt);
-        }
-    }
-
-    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class LeNode extends ForeignBinaryComparisonNode {
-        protected LeNode() {
-            super(SpecialMethodSlot.Le, SpecialMethodSlot.Ge);
-        }
-    }
-
-    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class GtNode extends ForeignBinaryComparisonNode {
-        protected GtNode() {
-            super(SpecialMethodSlot.Gt, SpecialMethodSlot.Lt);
-        }
-    }
-
-    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class GeNode extends ForeignBinaryComparisonNode {
-        protected GeNode() {
-            super(SpecialMethodSlot.Ge, SpecialMethodSlot.Le);
-        }
-    }
-
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class EqNode extends ForeignBinaryComparisonNode {
-        protected EqNode() {
-            super(SpecialMethodSlot.Eq, SpecialMethodSlot.Eq);
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
