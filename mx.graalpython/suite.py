@@ -1441,8 +1441,8 @@ suite = {
             "maven": False,
         },
 
-        "GRAALPY_STANDALONE_COMMON": {
-            "description": "Common layout for Native and JVM standalones",
+        "GRAALPY_STANDALONE_COMMON_BASE": {
+            "description": "Common base layout for Native and JVM standalones without Sulong and LLVM toolchain",
             "type": "dir",
             "platformDependent": True,
             "platforms": "local",
@@ -1452,7 +1452,6 @@ suite = {
                     "extracted-dependency:GRAALPYTHON_GRAALVM_DOCS",
                     "extracted-dependency:GRAALPY_VIRTUALENV_SEEDER",
                     "dependency:graalpy_licenses/*",
-                    "dependency:sulong:SULONG_NATIVE_AND_LLVM_TOOLCHAIN/*",
                 ],
                 "bin/<exe:graalpy>": "dependency:graalpy_thin_launcher",
                 "bin/<exe:graalpy-lt>": "dependency:graalpy_thin_launcher",
@@ -1460,6 +1459,32 @@ suite = {
                 "bin/<exe:python3>": "dependency:graalpy_thin_launcher",
                 "libexec/<exe:graalpy-polyglot-get>": "dependency:graalpy_thin_launcher",
                 "release": "dependency:sdk:STANDALONE_JAVA_HOME/release",
+            },
+        },
+
+        "GRAALPY_STANDALONE_COMMON_DEV": {
+            "description": "Layout for dev standalone (no native toolchain wrappers)",
+            "type": "dir",
+            "platformDependent": True,
+            "platforms": "local",
+            "layout": {
+                "./": [
+                    "dependency:GRAALPY_STANDALONE_COMMON_BASE/*",
+                    "dependency:sulong:SULONG_NATIVE_AND_LLVM_TOOLCHAIN_JVM_WRAPPERS/*",
+                ],
+            },
+        },
+
+        "GRAALPY_STANDALONE_COMMON": {
+            "description": "Common layout for Native and JVM standalones",
+            "type": "dir",
+            "platformDependent": True,
+            "platforms": "local",
+            "layout": {
+                "./": [
+                    "dependency:GRAALPY_STANDALONE_COMMON_BASE/*",
+                    "dependency:sulong:SULONG_NATIVE_AND_LLVM_TOOLCHAIN/*",
+                ],
             },
         },
 
@@ -1473,6 +1498,45 @@ suite = {
                     "dependency:GRAALPY_STANDALONE_COMMON/*",
                 ],
                 "lib/": "dependency:libpythonvm",
+            },
+        },
+
+        # We need to avoid native toolchain wrappers, otherwise they require /substratevm
+        # which in turns include /compiler and so always uses the Optimizing TruffleRuntime.
+        # But for the dev standalone we want the Default TruffleRuntime.
+        # This can be removed once GraalPy no longer needs Sulong native toolchain wrappers.
+        "GRAALPY_JVM_DEV_STANDALONE": {
+            "description": "GraalPy JVM standalone without native toolchain wrappers",
+            "type": "dir",
+            "platformDependent": True,
+            "platforms": "local",
+            "layout": {
+                "./": [
+                    "dependency:GRAALPY_STANDALONE_COMMON_DEV/*",
+                ],
+                "jvm/": {
+                    "source_type": "dependency",
+                    "dependency": "sdk:STANDALONE_JAVA_HOME",
+                    "path": "*",
+                    "exclude": [
+                        # Native Image-related
+                        "bin/native-image*",
+                        "lib/static",
+                        "lib/svm",
+                        "lib/<lib:native-image-agent>",
+                        "lib/<lib:native-image-diagnostics-agent>",
+                        # Unnecessary and big
+                        "lib/src.zip",
+                        "jmods",
+                    ],
+                },
+                "jvmlibs/": [
+                    "extracted-dependency:truffle:TRUFFLE_ATTACH_GRAALVM_SUPPORT",
+                    "extracted-dependency:truffle:TRUFFLE_NFI_NATIVE_GRAALVM_SUPPORT",
+                ],
+                "modules/": [
+                    "classpath-dependencies:GRAALPY_STANDALONE_DEPENDENCIES",
+                ],
             },
         },
 
