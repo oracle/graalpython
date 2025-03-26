@@ -1,6 +1,6 @@
 DYNAMIC_IMPORTS=/tools,/graal-enterprise,/truffle-enterprise,/vm-enterprise,/sulong-managed,/substratevm-enterprise,substratevm-enterprise-gcs
 BUILD_TARGETS=GRAALPY_NATIVE_STANDALONE
 COMPONENTS=SubstrateVM Enterprise,Truffle SVM Macro Enterprise,suite:substratevm-enterprise-gcs
-NATIVE_IMAGES=lib:pythonvm
+NATIVE_IMAGES=lib:pythonvm,lib:nativetoolchainwrappers
 GENERATE_DEBUGINFO=false
 GRAALVM_SKIP_ARCHIVE=true

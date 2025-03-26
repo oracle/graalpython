@@ -1,2 +1,5 @@
-DYNAMIC_IMPORTS=/tools,/compiler
+DYNAMIC_IMPORTS=/tools,/compiler,/substratevm
 BUILD_TARGETS=GRAALPY_JVM_STANDALONE
+COMPONENTS=SubstrateVM
+NATIVE_IMAGES=lib:nativetoolchainwrappers
+GRAALVM_SKIP_ARCHIVE=true
