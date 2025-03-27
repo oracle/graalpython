@@ -37,7 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-if command -v manylinux-interpreters 2>&1 >/dev/null; then
+if [ -n "$GITHUB_RUN_ID" ]; then
     git clone --single-branch --branch v3.3.2 --depth 1 https://github.com/rapidfuzz/rapidfuzz-cpp.git rapidfuzz-cpp
     cd rapidfuzz-cpp
     mkdir build && cd build
@@ -52,7 +52,7 @@ pip install 'Cython==3.0.11' 'scikit_build_core==0.11.1'
 pip install --no-build-isolation 'rapidfuzz==3.12.1'
 pip wheel --no-build-isolation 'levenshtein==0.26.1'
 
-if command -v manylinux-interpreters 2>&1 >/dev/null; then
+if [ -n "$GITHUB_RUN_ID" ]; then
     cd rapidfuzz-cpp
     cd build
     xargs rm < install_manifest.txt

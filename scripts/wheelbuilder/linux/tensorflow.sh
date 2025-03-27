@@ -37,7 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-if command -v manylinux-interpreters 2>&1 >/dev/null; then
+if [ -n "$GITHUB_RUN_ID" ]; then
     dnf install -y openblas-devel /usr/bin/cmake /usr/bin/sudo /usr/bin/curl java-11-openjdk-devel
 fi
 pip install pip numpy wheel packaging requests opt_einsum
