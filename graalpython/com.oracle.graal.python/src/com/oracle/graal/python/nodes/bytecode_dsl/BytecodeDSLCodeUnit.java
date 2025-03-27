@@ -67,7 +67,7 @@ public class BytecodeDSLCodeUnit extends CodeUnit {
      * When this code unit is directly instantiated via unmarshaling, there is no {@link
      * BytecodeNodes}; instead, we store the serialized bytes directly.
      */
-    @CompilationFinal(dimensions = 1) private byte[] serialized;
+    @CompilationFinal(dimensions = 1) private volatile byte[] serialized;
     private final BytecodeRootNodes<PBytecodeDSLRootNode> nodes;
     public final int classcellIndex;
     public final int selfIndex;

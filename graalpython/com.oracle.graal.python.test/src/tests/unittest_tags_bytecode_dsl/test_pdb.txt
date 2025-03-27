@@ -26,7 +26,6 @@ test.test_pdb.PdbTestCase.test_find_function_found_with_encoding_cookie @ linux-
 test.test_pdb.PdbTestCase.test_gh_94215_crash @ linux-x86_64
 test.test_pdb.PdbTestCase.test_header @ linux-x86_64
 test.test_pdb.PdbTestCase.test_invalid_cmd_line_options @ linux-x86_64
-test.test_pdb.PdbTestCase.test_issue13120 @ linux-x86_64
 test.test_pdb.PdbTestCase.test_issue16180 @ linux-x86_64
 test.test_pdb.PdbTestCase.test_issue26053 @ linux-x86_64
 test.test_pdb.PdbTestCase.test_issue42383 @ linux-x86_64

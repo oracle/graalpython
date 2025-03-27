@@ -682,7 +682,8 @@ public final class PythonContext extends Python3Core {
 
         public void popInstrumentationData(PBytecodeDSLRootNode rootNode) {
             assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
-            assert instrumentationData != null && instrumentationData.getRootNode() == rootNode;
+            assert instrumentationData != null;
+            assert instrumentationData.getRootNode() == rootNode : instrumentationData.getRootNode();
             instrumentationData = instrumentationData.getPrevious();
         }
 
