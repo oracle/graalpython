@@ -2027,7 +2027,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     // function(code, globals[, name[, argdefs[, closure]]])
     @Builtin(name = "function", minNumOfPositionalArgs = 3, parameterNames = {"$cls", "code", "globals", "name", "argdefs",
-                    "closure"}, constructsClass = PythonBuiltinClassType.PFunction, isPublic = false)
+                    "closure"}, constructsClass = PythonBuiltinClassType.PFunction)
     @GenerateNodeFactory
     public abstract static class FunctionNode extends PythonBuiltinNode {
 
@@ -2225,7 +2225,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_MODULE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonModule, isPublic = false, doc = """
+    @Builtin(name = J_MODULE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonModule, doc = """
                     Create a module object.
 
                     The name must be a string; the optional doc argument can have any type.""")
@@ -2242,7 +2242,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "NotImplementedType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNotImplemented, isPublic = false)
+    @Builtin(name = "NotImplementedType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNotImplemented)
     @GenerateNodeFactory
     public abstract static class NotImplementedTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -2252,7 +2252,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "ellipsis", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PEllipsis, isPublic = false)
+    @Builtin(name = "ellipsis", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PEllipsis)
     @GenerateNodeFactory
     public abstract static class EllipsisTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -2262,7 +2262,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "NoneType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNone, isPublic = false)
+    @Builtin(name = "NoneType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNone)
     @GenerateNodeFactory
     public abstract static class NoneTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -2272,7 +2272,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "method", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PMethod, isPublic = false, doc = "Create a bound instance method object.")
+    @Builtin(name = "method", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PMethod, doc = "Create a bound instance method object.")
     @GenerateNodeFactory
     public abstract static class MethodTypeNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -2301,7 +2301,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "builtin_function_or_method", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PBuiltinFunctionOrMethod, isPublic = false)
+    @Builtin(name = "builtin_function_or_method", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PBuiltinFunctionOrMethod)
     @GenerateNodeFactory
     public abstract static class BuiltinMethodTypeNode extends PythonBuiltinNode {
         @Specialization
@@ -2311,7 +2311,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "frame", constructsClass = PythonBuiltinClassType.PFrame, isPublic = false)
+    @Builtin(name = "frame", constructsClass = PythonBuiltinClassType.PFrame)
     @GenerateNodeFactory
     public abstract static class FrameTypeNode extends PythonBuiltinNode {
         @Specialization
@@ -2321,7 +2321,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "TracebackType", constructsClass = PythonBuiltinClassType.PTraceback, isPublic = false, minNumOfPositionalArgs = 5, parameterNames = {"$cls", "tb_next", "tb_frame", "tb_lasti",
+    @Builtin(name = "TracebackType", constructsClass = PythonBuiltinClassType.PTraceback, minNumOfPositionalArgs = 5, parameterNames = {"$cls", "tb_next", "tb_frame", "tb_lasti",
                     "tb_lineno"})
     @ArgumentClinic(name = "tb_lasti", conversion = ArgumentClinic.ClinicConversion.Index)
     @ArgumentClinic(name = "tb_lineno", conversion = ArgumentClinic.ClinicConversion.Index)
@@ -2363,7 +2363,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "code", constructsClass = PythonBuiltinClassType.PCode, isPublic = false, minNumOfPositionalArgs = 16, numOfPositionalOnlyArgs = 18, parameterNames = {
+    @Builtin(name = "code", constructsClass = PythonBuiltinClassType.PCode, minNumOfPositionalArgs = 16, numOfPositionalOnlyArgs = 18, parameterNames = {
                     "$cls", "argcount", "posonlyargcount", "kwonlyargcount", "nlocals", "stacksize", "flags", "codestring",
                     "constants", "names", "varnames", "filename", "name", "qualname", "firstlineno",
                     "linetable", "exceptiontable", "freevars", "cellvars"})
@@ -2427,7 +2427,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "cell", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PCell, isPublic = false)
+    @Builtin(name = "cell", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PCell)
     @GenerateNodeFactory
     public abstract static class CellTypeNode extends PythonBinaryBuiltinNode {
         @CompilationFinal private Assumption sharedAssumption;
@@ -2564,7 +2564,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "mappingproxy", constructsClass = PythonBuiltinClassType.PMappingproxy, isPublic = false, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = "mappingproxy", constructsClass = PythonBuiltinClassType.PMappingproxy, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "!isNoValue(obj)")
@@ -2711,7 +2711,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_INSTANCEMETHOD, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PInstancemethod, isPublic = false, doc = "instancemethod(function)\n\nBind a function to a class.")
+    @Builtin(name = J_INSTANCEMETHOD, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PInstancemethod, doc = "instancemethod(function)\n\nBind a function to a class.")
     @GenerateNodeFactory
     public abstract static class InstancemethodNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -2828,7 +2828,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "SimpleNamespace", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, isPublic = false, constructsClass = PythonBuiltinClassType.PSimpleNamespace, doc = "A simple attribute-based namespace.\n" +
+    @Builtin(name = "SimpleNamespace", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PSimpleNamespace, doc = "A simple attribute-based namespace.\n" +
                     "\n" +
                     "SimpleNamespace(**kwargs)")
     @GenerateNodeFactory

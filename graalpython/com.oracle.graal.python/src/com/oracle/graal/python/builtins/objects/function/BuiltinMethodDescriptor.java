@@ -196,11 +196,6 @@ public abstract class BuiltinMethodDescriptor {
                 }
 
                 @Override
-                public boolean isPublic() {
-                    return false;
-                }
-
-                @Override
                 public boolean isClassmethod() {
                     return false;
                 }

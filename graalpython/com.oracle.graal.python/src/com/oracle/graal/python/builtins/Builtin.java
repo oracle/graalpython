@@ -69,8 +69,6 @@ public @interface Builtin {
 
     String[] keywordOnlyNames() default {};
 
-    boolean isPublic() default true;
-
     boolean isClassmethod() default false;
 
     boolean isStaticmethod() default false;

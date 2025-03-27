@@ -144,11 +144,6 @@ class Slot2Builtin implements Builtin {
     }
 
     @Override
-    public boolean isPublic() {
-        return true;
-    }
-
-    @Override
     public boolean isClassmethod() {
         return false;
     }

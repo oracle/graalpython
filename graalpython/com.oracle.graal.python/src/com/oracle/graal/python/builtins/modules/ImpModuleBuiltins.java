@@ -578,7 +578,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "find_frozen", parameterNames = {"name", "withData"}, minNumOfPositionalArgs = 1, isPublic = false, doc = "find_frozen($module, name, /, *, withdata=False)\n" +
+    @Builtin(name = "find_frozen", parameterNames = {"name", "withData"}, minNumOfPositionalArgs = 1, doc = "find_frozen($module, name, /, *, withdata=False)\n" +
                     "--\n" +
                     "\n" +
                     "Return info about the corresponding frozen module (if there is one) or None.\n" +
