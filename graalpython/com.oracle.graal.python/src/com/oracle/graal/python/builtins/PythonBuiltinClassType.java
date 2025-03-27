@@ -813,23 +813,95 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PBytesIO("BytesIO", PBufferedIOBase, new Builder().publishInModule("_io").basetype().addDict().slots(BytesIOBuiltins.SLOTS)),
     PBytesIOBuf("_BytesIOBuffer", PythonObject, new Builder().moduleName("_io").basetype()),
 
-    PStatResult("stat_result", PTuple, new Builder().publishInModule("os").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
-    PStatvfsResult("statvfs_result", PTuple, new Builder().publishInModule("os").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
-    PTerminalSize("terminal_size", PTuple, new Builder().publishInModule("os").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
-    PUnameResult("uname_result", PTuple, new Builder().publishInModule(J_POSIX).slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
-    PStructTime("struct_time", PTuple, new Builder().publishInModule("time").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
+    PStatResult("stat_result", PTuple, new Builder().publishInModule("os").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
+                    stat_result: Result from stat, fstat, or lstat.
+
+                    This object may be accessed either as a tuple of
+                      (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime)
+                    or via the attributes st_mode, st_ino, st_dev, st_nlink, st_uid, and so on.
+
+                    Posix/windows: If your platform supports st_blksize, st_blocks, st_rdev,
+                    or st_flags, they are available as attributes only.
+
+                    See os.stat for more information.""")),
+    PStatvfsResult("statvfs_result", PTuple, new Builder().publishInModule("os").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
+                    statvfs_result: Result from statvfs or fstatvfs.
+
+                    This object may be accessed either as a tuple of
+                      (bsize, frsize, blocks, bfree, bavail, files, ffree, favail, flag, namemax),
+                    or via the attributes f_bsize, f_frsize, f_blocks, f_bfree, and so on.
+
+                    See os.statvfs for more information.""")),
+    PTerminalSize("terminal_size", PTuple, new Builder().publishInModule("os").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
+                    A tuple of (columns, lines) for holding terminal window size""")),
+    PUnameResult("uname_result", PTuple, new Builder().publishInModule(J_POSIX).slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
+                    uname_result: Result from os.uname().
+
+                    This object may be accessed either as a tuple of
+                      (sysname, nodename, release, version, machine),
+                    or via the attributes sysname, nodename, release, version, and machine.
+
+                    See os.uname for more information.""")),
+    PStructTime("struct_time", PTuple, new Builder().publishInModule("time").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
+                    The time value as returned by gmtime(), localtime(), and strptime(), and
+                     accepted by asctime(), mktime() and strftime().  May be considered as a
+                     sequence of 9 integers.
+
+                     Note that several fields' values are not the same as those defined by
+                     the C language standard for struct tm.  For example, the value of the
+                     field tm_year is the actual year, not year - 1900.  See individual
+                     fields' descriptions for details.""")),
     PProfilerEntry("profiler_entry", PTuple, new Builder().publishInModule("_lsprof").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
     PProfilerSubentry("profiler_subentry", PTuple, new Builder().publishInModule("_lsprof").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
-    PStructPasswd("struct_passwd", PTuple, new Builder().publishInModule("pwd").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
-    PStructRusage("struct_rusage", PTuple, new Builder().publishInModule("resource").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
-    PVersionInfo("version_info", PTuple, new Builder().publishInModule("sys").disallowInstantiation().slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
-    PWindowsVersion("windowsversion", PTuple, new Builder().publishInModule("sys").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
-    PFlags("flags", PTuple, new Builder().publishInModule("sys").disallowInstantiation().slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
-    PFloatInfo("float_info", PTuple, new Builder().publishInModule("sys").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
-    PIntInfo("int_info", PTuple, new Builder().publishInModule("sys").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
-    PHashInfo("hash_info", PTuple, new Builder().publishInModule("sys").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
-    PThreadInfo("thread_info", PTuple, new Builder().publishInModule("sys").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
-    PUnraisableHookArgs("UnraisableHookArgs", PTuple, new Builder().publishInModule("sys").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
+    PStructPasswd("struct_passwd", PTuple, new Builder().publishInModule("pwd").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
+                    pwd.struct_passwd: Results from getpw*() routines.
+
+                    This object may be accessed either as a tuple of
+                      (pw_name,pw_passwd,pw_uid,pw_gid,pw_gecos,pw_dir,pw_shell)
+                    or via the object attributes as named in the above tuple.""")),
+    PStructRusage("struct_rusage", PTuple, new Builder().publishInModule("resource").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
+                    struct_rusage: Result from getrusage.
+
+                    This object may be accessed either as a tuple of
+                        (utime,stime,maxrss,ixrss,idrss,isrss,minflt,majflt,
+                        nswap,inblock,oublock,msgsnd,msgrcv,nsignals,nvcsw,nivcsw)
+                    or via the attributes ru_utime, ru_stime, ru_maxrss, and so on.""")),
+    PVersionInfo("version_info", PTuple, new Builder().publishInModule("sys").disallowInstantiation().slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
+                    sys.version_info
+
+                    Version information as a named tuple.""")),
+    PWindowsVersion("windowsversion", PTuple, new Builder().publishInModule("sys").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
+                    sys.getwindowsversion
+
+                    Return info about the running version of Windows as a named tuple.""")),
+    PFlags("flags", PTuple, new Builder().publishInModule("sys").disallowInstantiation().slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
+                    sys.flags
+
+                    Flags provided through command line arguments or environment vars.""")),
+    PFloatInfo("float_info", PTuple, new Builder().publishInModule("sys").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
+                    sys.float_info
+
+                    A named tuple holding information about the float type. It contains low level
+                    information about the precision and internal representation. Please study
+                    your system's :file:`float.h` for more information.""")),
+    PIntInfo("int_info", PTuple, new Builder().publishInModule("sys").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
+                    sys.int_info
+
+                    A named tuple that holds information about Python's
+                    internal representation of integers.  The attributes are read only.""")),
+    PHashInfo("hash_info", PTuple, new Builder().publishInModule("sys").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
+                    hash_info
+
+                    A named tuple providing parameters used for computing
+                    hashes. The attributes are read only.""")),
+    PThreadInfo("thread_info", PTuple, new Builder().publishInModule("sys").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
+                    sys.thread_info
+
+                    A named tuple holding information about the thread implementation.""")),
+    PUnraisableHookArgs("UnraisableHookArgs", PTuple, new Builder().publishInModule("sys").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
+                    UnraisableHookArgs
+
+                    Type used to pass arguments to sys.unraisablehook.""")),
 
     PSSLSession("SSLSession", PythonObject, new Builder().publishInModule(J__SSL).disallowInstantiation()),
     PSSLContext("_SSLContext", PythonObject, new Builder().publishInModule(J__SSL).basetype()),

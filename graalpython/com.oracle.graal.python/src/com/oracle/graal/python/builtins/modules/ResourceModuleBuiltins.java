@@ -93,13 +93,6 @@ public final class ResourceModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor STRUCT_RUSAGE_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStructRusage,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "struct_rusage: Result from getrusage.\n\n" +
-                    "This object may be accessed either as a tuple of\n" +
-                    "    (utime,stime,maxrss,ixrss,idrss,isrss,minflt,majflt,\n" +
-                    "    nswap,inblock,oublock,msgsnd,msgrcv,nsignals,nvcsw,nivcsw)\n" +
-                    "or via the attributes ru_utime, ru_stime, ru_maxrss, and so on.",
-                    // @formatter:on
                     16,
                     new String[]{
                                     "ru_utime", "ru_stime", "ru_maxrss",

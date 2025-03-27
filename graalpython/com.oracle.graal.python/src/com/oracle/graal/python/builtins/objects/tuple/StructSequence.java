@@ -47,12 +47,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringArrayUncached;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -107,44 +105,15 @@ public class StructSequence {
      * type's name in the descriptor and this will improve code sharing.
      */
     public static sealed class Descriptor permits BuiltinTypeDescriptor {
-        public final TruffleString docString;
         public final int inSequence;
         public final TruffleString[] fieldNames;
         public final TruffleString[] fieldDocStrings;
-        public final boolean allowInstances;
 
-        public Descriptor(TruffleString docString, int inSequence, TruffleString[] fieldNames, TruffleString[] fieldDocStrings, boolean allowInstances) {
+        public Descriptor(int inSequence, TruffleString[] fieldNames, TruffleString[] fieldDocStrings) {
             assert fieldDocStrings == null || fieldNames.length == fieldDocStrings.length;
-            this.docString = docString;
             this.inSequence = inSequence;
             this.fieldNames = fieldNames;
             this.fieldDocStrings = fieldDocStrings;
-            this.allowInstances = allowInstances;
-        }
-
-        public Descriptor(TruffleString docString, int inSequence, TruffleString[] fieldNames, TruffleString[] fieldDocStrings) {
-            this(docString, inSequence, fieldNames, fieldDocStrings, true);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof Descriptor)) {
-                return false;
-            }
-            Descriptor that = (Descriptor) o;
-            return inSequence == that.inSequence && allowInstances == that.allowInstances && Objects.equals(docString, that.docString) && Arrays.equals(fieldNames, that.fieldNames) &&
-                            Arrays.equals(fieldDocStrings, that.fieldDocStrings);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = Objects.hash(docString, inSequence, allowInstances);
-            result = 31 * result + Arrays.hashCode(fieldNames);
-            result = 31 * result + Arrays.hashCode(fieldDocStrings);
-            return result;
         }
     }
 
@@ -156,15 +125,11 @@ public class StructSequence {
     public static final class BuiltinTypeDescriptor extends Descriptor {
         public final PythonBuiltinClassType type;
 
-        public BuiltinTypeDescriptor(PythonBuiltinClassType type, String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings, boolean allowInstances) {
-            super(docString == null ? null : toTruffleStringUncached(docString), inSequence, toTruffleStringArrayUncached(fieldNames), toTruffleStringArrayUncached(fieldDocStrings), allowInstances);
+        public BuiltinTypeDescriptor(PythonBuiltinClassType type, int inSequence, String[] fieldNames, String[] fieldDocStrings) {
+            super(inSequence, toTruffleStringArrayUncached(fieldNames), toTruffleStringArrayUncached(fieldDocStrings));
             assert type.getBase() == PythonBuiltinClassType.PTuple;
             assert !type.isAcceptableBase();
             this.type = type;
-        }
-
-        public BuiltinTypeDescriptor(PythonBuiltinClassType type, String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings) {
-            this(type, docString, inSequence, fieldNames, fieldDocStrings, true);
         }
 
         @Override
@@ -203,10 +168,6 @@ public class StructSequence {
             TypeNodes.SetTypeFlagsNode.executeUncached(klass, flags & ~TypeFlags.IMMUTABLETYPE);
         }
 
-        if (!desc.allowInstances) {
-            flags |= TypeFlags.DISALLOW_INSTANTIATION;
-        }
-
         // create descriptors for accessing named fields by their names
         int unnamedFields = 0;
         List<TruffleString> namedFields = new ArrayList<>(desc.fieldNames.length);
@@ -242,13 +203,6 @@ public class StructSequence {
             // native structseq subclasses
             PBuiltinFunction reprWrapperDescr = TpSlotBuiltin.createNativeReprWrapperDescriptor(context, StructSequenceBuiltins.SLOTS, klass);
             WriteAttributeToObjectNode.getUncached(true).execute(klass, T___REPR__, reprWrapperDescr);
-        }
-        /*
-         * Only set __doc__ if given. It may be 'null' e.g. in case of initializing a native class
-         * where 'tp_doc' is set in native code already.
-         */
-        if (desc.docString != null) {
-            writeAttrNode.execute(klass, T___DOC__, desc.docString);
         }
         writeAttrNode.execute(klass, T_N_SEQUENCE_FIELDS, desc.inSequence);
         writeAttrNode.execute(klass, T_N_FIELDS, desc.fieldNames.length);

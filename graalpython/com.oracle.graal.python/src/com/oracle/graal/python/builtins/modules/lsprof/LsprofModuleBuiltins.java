@@ -56,7 +56,6 @@ public final class LsprofModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor PROFILER_ENTRY_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PProfilerEntry,
-                    null,
                     6,
                     new String[]{
                                     "code", "callcount", "reccallcount", "totaltime", "inlinetime", "calls"
@@ -72,7 +71,6 @@ public final class LsprofModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor PROFILER_SUBENTRY_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PProfilerSubentry,
-                    null,
                     5,
                     new String[]{
                                     "code", "callcount", "reccallcount", "totaltime", "inlinetime"

@@ -157,17 +157,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor STAT_RESULT_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStatResult,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "stat_result: Result from stat, fstat, or lstat.\n\n" +
-                    "This object may be accessed either as a tuple of\n" +
-                    "  (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime)\n" +
-                    "or via the attributes st_mode, st_ino, st_dev, st_nlink, st_uid, and so on.\n" +
-                    "\n" +
-                    "Posix/windows: If your platform supports st_blksize, st_blocks, st_rdev,\n" +
-                    "or st_flags, they are available as attributes only.\n" +
-                    "\n" +
-                    "See os.stat for more information.",
-                    // @formatter:on
                     10,
                     new String[]{
                                     "st_mode", "st_ino", "st_dev", "st_nlink", "st_uid", "st_gid", "st_size",
@@ -185,14 +174,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor STATVFS_RESULT_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStatvfsResult,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "statvfs_result: Result from statvfs or fstatvfs.\n\n" +
-                    "This object may be accessed either as a tuple of\n" +
-                    "  (bsize, frsize, blocks, bfree, bavail, files, ffree, favail, flag, namemax),\n" +
-                    "or via the attributes f_bsize, f_frsize, f_blocks, f_bfree, and so on.\n" +
-                    "\n" +
-                    "See os.statvfs for more information.",
-                    // @formatter:on
                     10,
                     new String[]{
                                     "f_bsize", "f_frsize", "f_blocks", "f_bfree", "f_bavail", "f_files",
@@ -202,21 +183,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
     private static final StructSequence.BuiltinTypeDescriptor TERMINAL_SIZE_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PTerminalSize,
-                    "A tuple of (columns, lines) for holding terminal window size",
                     2,
                     new String[]{"columns", "lines"},
                     new String[]{"width of the terminal window in characters", "height of the terminal window in characters"});
 
     private static final StructSequence.BuiltinTypeDescriptor UNAME_RESULT_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PUnameResult,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "uname_result: Result from os.uname().\n\n" +
-                    "This object may be accessed either as a tuple of\n" +
-                    "  (sysname, nodename, release, version, machine),\n" +
-                    "or via the attributes sysname, nodename, release, version, and machine.\n" +
-                    "\n" +
-                    "See os.uname for more information.",
-                    // @formatter:on
                     5,
                     new String[]{"sysname", "nodename", "release", "version", "machine"},
                     new String[]{
