@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,30 +41,26 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.annotations.Slot;
-import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
+import com.oracle.graal.python.builtins.objects.itertools.CombinationsWithReplacementBuiltinsClinicProviders.CombinationsWithReplacementNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
-import com.oracle.graal.python.lib.IteratorExhausted;
-import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -73,82 +69,52 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
-@CoreFunctions(extendClasses = {PythonBuiltinClassType.PPairwise})
-public final class PairwiseBuiltins extends PythonBuiltins {
-
-    public static final TpSlots SLOTS = PairwiseBuiltinsSlotsGen.SLOTS;
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PCombinationsWithReplacement)
+public class CombinationsWithReplacementBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PairwiseBuiltinsFactory.getFactories();
+        return CombinationsWithReplacementBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "pairwise", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PPairwise)
+    @Builtin(name = J___NEW__, raiseErrorName = "combinations_with_replacement", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PCombinationsWithReplacement, parameterNames = {
+                    "cls", "iterable", "r"})
+    @ArgumentClinic(name = "r", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
-    public abstract static class PairwaiseNode extends PythonBinaryBuiltinNode {
+    public abstract static class CombinationsWithReplacementNode extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return CombinationsWithReplacementNodeClinicProviderGen.INSTANCE;
+        }
+
         @Specialization
-        static PPairwise construct(VirtualFrame frame, Object cls, Object iterable,
+        static Object construct(VirtualFrame frame, Object cls, Object iterable, int r,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Cached IteratorNodes.ToArrayNode toArrayNode,
+                        @Cached InlinedConditionProfile wrongTypeProfile,
+                        @Cached InlinedConditionProfile negativeProfile,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
-            if (!isTypeNode.execute(inliningTarget, cls)) {
-                // Note: @Fallback or other @Specialization generate data-class
+            if (!wrongTypeProfile.profile(inliningTarget, isTypeNode.execute(inliningTarget, cls))) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
-
-            PPairwise self = PFactory.createPairwise(language, cls, getInstanceShape.execute(cls));
-            self.setIterable(getIter.execute(frame, inliningTarget, iterable));
-            return self;
-        }
-    }
-
-    @Slot(value = SlotKind.tp_iter, isComplex = true)
-    @GenerateNodeFactory
-    public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object iter(PPairwise self) {
-            return self;
-        }
-    }
-
-    @Slot(value = SlotKind.tp_iternext, isComplex = true)
-    @GenerateNodeFactory
-    public abstract static class NextNode extends TpIterNextBuiltin {
-        @Specialization(guards = "self.getIterable() != null")
-        static Object next(VirtualFrame frame, PPairwise self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetObjectSlotsNode getSlots,
-                        @Cached CallSlotTpIterNextNode callIterNext,
-                        @Bind PythonLanguage language) {
-            Object item;
-            Object old = self.getOld();
-            Object iterable = self.getIterable();
-            try {
-                if (self.getOld() == null) {
-                    old = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, iterable).tp_iternext(), iterable);
-                    self.setOld(old);
-                    iterable = self.getIterable();
-                    if (iterable == null) {
-                        throw iteratorExhausted();
-                    }
-                }
-                item = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, iterable).tp_iternext(), iterable);
-                self.setOld(item);
-                return PFactory.createTuple(language, new Object[]{old, item});
-            } catch (IteratorExhausted | PException e) {
-                self.setOld(null);
-                self.setIterable(null);
-                throw e;
+            if (negativeProfile.profile(inliningTarget, r < 0)) {
+                throw raiseNode.raise(inliningTarget, ValueError, MUST_BE_NON_NEGATIVE, "r");
             }
-        }
+            PCombinationsWithReplacement self = PFactory.createCombinationsWithReplacement(language, cls, getInstanceShape.execute(cls));
+            self.setPool(toArrayNode.execute(frame, iterable));
+            self.setR(r);
 
-        @Specialization(guards = "self.getIterable() == null")
-        static Object next(@SuppressWarnings("unused") PPairwise self) {
-            throw iteratorExhausted();
+            self.setIndices(new int[r]);
+            self.setLastResult(null);
+            self.setStopped(self.getPool().length == 0 && r > 0);
+
+            return self;
         }
     }
 }

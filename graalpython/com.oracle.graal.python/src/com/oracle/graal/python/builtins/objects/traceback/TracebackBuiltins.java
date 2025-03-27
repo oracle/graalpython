@@ -32,10 +32,12 @@ import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_LINENO;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_NEXT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -44,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltinsClinicProviders.TracebackTypeNodeClinicProviderGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
@@ -53,7 +56,10 @@ import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleStackTrace;
@@ -79,6 +85,49 @@ public final class TracebackBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TracebackBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J___NEW__, raiseErrorName = "TracebackType", constructsClass = PythonBuiltinClassType.PTraceback, minNumOfPositionalArgs = 5, parameterNames = {"$cls", "tb_next", "tb_frame",
+                    "tb_lasti",
+                    "tb_lineno"})
+    @ArgumentClinic(name = "tb_lasti", conversion = ArgumentClinic.ClinicConversion.Index)
+    @ArgumentClinic(name = "tb_lineno", conversion = ArgumentClinic.ClinicConversion.Index)
+    @GenerateNodeFactory
+    public abstract static class TracebackTypeNode extends PythonClinicBuiltinNode {
+        @Specialization
+        static Object createTraceback(@SuppressWarnings("unused") Object cls, PTraceback next, PFrame pframe, int lasti, int lineno,
+                        @Bind PythonLanguage language) {
+            return PFactory.createTracebackWithLasti(language, pframe, lineno, lasti, next);
+        }
+
+        @Specialization
+        static Object createTraceback(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") PNone next, PFrame pframe, int lasti, int lineno,
+                        @Bind PythonLanguage language) {
+            return PFactory.createTracebackWithLasti(language, pframe, lineno, lasti, null);
+        }
+
+        @Specialization(guards = {"!isPTraceback(next)", "!isNone(next)"})
+        @SuppressWarnings("unused")
+        static Object errorNext(Object cls, Object next, Object frame, Object lasti, Object lineno,
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.EXPECTED_TRACEBACK_OBJ_OR_NONE, next);
+        }
+
+        @Specialization(guards = "!isPFrame(frame)")
+        @SuppressWarnings("unused")
+        static Object errorFrame(Object cls, Object next, Object frame, Object lasti, Object lineno,
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.TRACEBACK_TYPE_ARG_MUST_BE_FRAME, frame);
+        }
+
+        protected static boolean isPFrame(Object obj) {
+            return obj instanceof PFrame;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return TracebackTypeNodeClinicProviderGen.INSTANCE;
+        }
     }
 
     @Builtin(name = J___DIR__, minNumOfPositionalArgs = 1)

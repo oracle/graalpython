@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,69 +38,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.ellipsis;
+package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
-import com.oracle.graal.python.annotations.Slot;
-import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequenceBuiltins;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.PEllipsis)
-public final class EllipsisBuiltins extends PythonBuiltins {
-
-    public static final TruffleString T_ELLIPSIS = tsLiteral("Ellipsis");
-
-    public static final TpSlots SLOTS = EllipsisBuiltinsSlotsGen.SLOTS;
-
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PStatResult)
+public class StatResultBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return EllipsisBuiltinsFactory.getFactories();
+        return StatResultBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "ellipsis", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PEllipsis)
+    @Builtin(name = J___NEW__, raiseErrorName = "stat_result", minNumOfPositionalArgs = 1, parameterNames = {"$cls", "sequence", "dict"}, constructsClass = PythonBuiltinClassType.PStatResult)
     @GenerateNodeFactory
-    public abstract static class EllipsisTypeNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        public static PEllipsis call(Object cls) {
-            return PEllipsis.INSTANCE;
-        }
-    }
+    public abstract static class StatResultNode extends PythonTernaryBuiltinNode {
 
-    @Slot(value = SlotKind.tp_repr, isComplex = true)
-    @GenerateNodeFactory
-    abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @SuppressWarnings("unused")
-        static Object doit(PEllipsis self) {
-            return T_ELLIPSIS;
-        }
-    }
-
-    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        Object doit(PEllipsis self, Object ignored) {
-            return T_ELLIPSIS;
+        public static PTuple generic(VirtualFrame frame, Object cls, Object sequence, Object dict,
+                        @Cached StructSequenceBuiltins.NewNode newNode) {
+            PTuple p = (PTuple) newNode.execute(frame, cls, sequence, dict);
+            Object[] data = CompilerDirectives.castExact(p.getSequenceStorage(), ObjectSequenceStorage.class).getInternalObjectArray();
+            for (int i = 7; i <= 9; i++) {
+                if (data[i + 3] == PNone.NONE) {
+                    data[i + 3] = data[i];
+                }
+            }
+            return p;
         }
     }
 }

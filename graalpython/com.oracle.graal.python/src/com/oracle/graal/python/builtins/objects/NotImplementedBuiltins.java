@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NOT_IMPLEMENTED;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
@@ -53,6 +54,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -69,6 +71,16 @@ public final class NotImplementedBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return NotImplementedBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J___NEW__, raiseErrorName = "NotImplementedType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNotImplemented)
+    @GenerateNodeFactory
+    public abstract static class NotImplementedTypeNode extends PythonBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        public static PNotImplemented module(Object cls) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
     }
 
     @Slot(value = SlotKind.tp_repr, isComplex = true)

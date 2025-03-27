@@ -52,20 +52,14 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -93,64 +87,6 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
         final PickleState.PickleStateInitNode initNode = PickleStateFactory.PickleStateInitNodeGen.getUncached();
         initNode.execute(state);
         HiddenAttr.WriteNode.executeUncached(core.lookupType(PythonBuiltinClassType.Pickler), HiddenAttr.PICKLE_STATE, state);
-    }
-
-    // types
-    @Builtin(name = "PickleBuffer", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"}, constructsClass = PythonBuiltinClassType.PickleBuffer)
-    @GenerateNodeFactory
-    abstract static class ConstructPickleBufferNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
-        static PPickleBuffer construct(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object object,
-                        @Bind PythonLanguage language,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib) {
-            Object buffer = acquireLib.acquire(object, BufferFlags.PyBUF_FULL_RO, frame, indirectCallData);
-            return PFactory.createPickleBuffer(language, buffer);
-        }
-    }
-
-    @Builtin(name = "Pickler", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.Pickler, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
-    @GenerateNodeFactory
-    abstract static class ConstructPicklerNode extends PythonVarargsBuiltinNode {
-        @Specialization
-        PPickler construct(Object cls, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createPickler(language, cls, getInstanceShape.execute(cls));
-        }
-    }
-
-    @Builtin(name = "PicklerMemoProxy", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "pickler"}, constructsClass = PythonBuiltinClassType.PicklerMemoProxy)
-    @GenerateNodeFactory
-    abstract static class ConstructPicklerMemoProxyNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        PPicklerMemoProxy construct(Object cls, PPickler pickler,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createPicklerMemoProxy(language, pickler, cls, getInstanceShape.execute(cls));
-        }
-    }
-
-    @Builtin(name = "UnpicklerMemoProxy", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "unpickler"}, constructsClass = PythonBuiltinClassType.UnpicklerMemoProxy)
-    @GenerateNodeFactory
-    abstract static class ConstructUnpicklerMemoProxyNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        PUnpicklerMemoProxy construct(Object cls, PUnpickler unpickler,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createUnpicklerMemoProxy(language, unpickler, cls, getInstanceShape.execute(cls));
-        }
-    }
-
-    @Builtin(name = "Unpickler", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.Unpickler, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
-    @GenerateNodeFactory
-    abstract static class ConstructUnpicklerNode extends PythonVarargsBuiltinNode {
-        @Specialization
-        PUnpickler construct(Object cls, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createUnpickler(language, cls, getInstanceShape.execute(cls));
-        }
     }
 
     // methods

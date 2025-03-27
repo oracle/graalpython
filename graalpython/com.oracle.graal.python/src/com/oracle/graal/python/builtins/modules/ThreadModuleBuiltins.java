@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXIT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__THREAD;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.lang.ref.WeakReference;
@@ -59,14 +60,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
-import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
-import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
-import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -115,26 +110,6 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "_local", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PThreadLocal)
-    @GenerateNodeFactory
-    abstract static class ThreadLocalNode extends PythonBuiltinNode {
-        @Specialization
-        static PThreadLocal construct(Object cls, Object[] args, PKeyword[] keywordArgs,
-                        @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
-                        @Cached GetCachedTpSlotsNode getSlots,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            if (args.length != 0 || keywordArgs.length != 0) {
-                TpSlots slots = getSlots.execute(inliningTarget, cls);
-                if (slots.tp_init() == ObjectBuiltins.SLOTS.tp_init()) {
-                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.INITIALIZATION_ARGUMENTS_ARE_NOT_SUPPORTED);
-                }
-            }
-            return PFactory.createThreadLocal(language, cls, getInstanceShape.execute(cls), args, keywordArgs);
-        }
-    }
-
     @Builtin(name = "allocate_lock", maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class AllocateLockNode extends PythonBinaryBuiltinNode {
@@ -143,28 +118,6 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         PLock construct(Object self, Object unused,
                         @Bind PythonLanguage language) {
             return PFactory.createLock(language);
-        }
-    }
-
-    @Builtin(name = "LockType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PLock)
-    @GenerateNodeFactory
-    abstract static class ConstructLockNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        PLock construct(Object cls,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createLock(language, cls, getInstanceShape.execute(cls));
-        }
-    }
-
-    @Builtin(name = "RLock", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PRLock)
-    @GenerateNodeFactory
-    abstract static class ConstructRLockNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        PRLock construct(Object cls,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createRLock(language, cls, getInstanceShape.execute(cls));
         }
     }
 
@@ -220,7 +173,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "start_new_thread", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PThread)
+    @Builtin(name = J___NEW__, raiseErrorName = "start_new_thread", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PThread)
     @Builtin(name = "start_new", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class StartNewThreadNode extends PythonBuiltinNode {

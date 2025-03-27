@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules.pickle;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
@@ -50,14 +51,18 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.dsl.Bind;
@@ -74,6 +79,19 @@ public class PickleBufferBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PickleBufferBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J___NEW__, raiseErrorName = "PickleBuffer", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"}, constructsClass = PythonBuiltinClassType.PickleBuffer)
+    @GenerateNodeFactory
+    abstract static class ConstructPickleBufferNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "3")
+        static PPickleBuffer construct(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object object,
+                        @Bind PythonLanguage language,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib) {
+            Object buffer = acquireLib.acquire(object, BufferFlags.PyBUF_FULL_RO, frame, indirectCallData);
+            return PFactory.createPickleBuffer(language, buffer);
+        }
     }
 
     // functions

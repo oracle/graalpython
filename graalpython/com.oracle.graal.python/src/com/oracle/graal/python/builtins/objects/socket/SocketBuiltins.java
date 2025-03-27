@@ -51,6 +51,7 @@ import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EIS
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ENOTSOCK;
 import static com.oracle.graal.python.builtins.objects.socket.PSocket.INVALID_FD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SOCKET;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.PosixConstants.SOL_SOCKET;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_ERROR;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
@@ -76,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -88,6 +90,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
@@ -136,6 +139,19 @@ public final class SocketBuiltins extends PythonBuiltins {
 
     private static boolean isSelectable(PSocket socket) {
         return socket.getTimeoutNs() <= 0 || socket.getFd() < PosixConstants.FD_SETSIZE.value;
+    }
+
+    // socket(family=AF_INET, type=SOCK_STREAM, proto=0, fileno=None)
+    @Builtin(name = J___NEW__, raiseErrorName = "socket", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PSocket)
+    @GenerateNodeFactory
+    public abstract static class SocketNode extends PythonVarargsBuiltinNode {
+        // All the "real" work is done by __init__
+        @Specialization
+        Object socket(Object cls,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createSocket(language, cls, getInstanceShape.execute(cls));
+        }
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)

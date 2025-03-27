@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileN
 import static com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode.PyCF_TYPE_COMMENTS;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_NODE_GOT_P;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MATCH_ARGS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
@@ -116,7 +117,7 @@ public final class AstModuleBuiltins extends PythonBuiltins {
         astModule.setModuleState(state);
     }
 
-    @Builtin(name = "AST", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.AST)
+    @Builtin(name = J___NEW__, raiseErrorName = "AST", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.AST)
     @GenerateNodeFactory
     public abstract static class AstNode extends PythonVarargsBuiltinNode {
 

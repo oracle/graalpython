@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.bool;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_BOOL;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_FALSE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TRUE;
 
@@ -32,6 +34,7 @@ import java.util.List;
 
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -39,7 +42,9 @@ import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.truffle.api.dsl.Cached;
@@ -59,6 +64,17 @@ public final class BoolBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BoolBuiltinsFactory.getFactories();
+    }
+
+    // bool([x])
+    @Builtin(name = J___NEW__, raiseErrorName = J_BOOL, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.Boolean, base = PythonBuiltinClassType.PInt)
+    @GenerateNodeFactory
+    public abstract static class BoolNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        public static boolean bool(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
+                        @Cached PyObjectIsTrueNode isTrue) {
+            return isTrue.execute(frame, obj);
+        }
     }
 
     @Slot(value = SlotKind.tp_str, isComplex = true)

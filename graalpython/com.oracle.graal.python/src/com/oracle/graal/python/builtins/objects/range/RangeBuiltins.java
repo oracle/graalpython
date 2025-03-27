@@ -29,7 +29,11 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.common.IndexNodes.checkBounds;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_RANGE;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_NOT_BE_ZERO;
 import static com.oracle.graal.python.nodes.ErrorMessages.RANGE_OUT_OF_BOUNDS;
+import static com.oracle.graal.python.nodes.PGuards.isNoValue;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -67,7 +71,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBui
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
-import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.lib.IteratorExhausted;
@@ -75,22 +78,27 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -106,10 +114,12 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -120,6 +130,155 @@ public final class RangeBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return RangeBuiltinsFactory.getFactories();
+    }
+
+    // range(stop)
+    // range(start, stop[, step])
+    @Builtin(name = J___NEW__, raiseErrorName = J_RANGE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PRange)
+    @GenerateNodeFactory
+    @ReportPolymorphism
+    public abstract static class RangeNode extends PythonQuaternaryBuiltinNode {
+        // stop
+        @Specialization(guards = "isStop(start, stop, step)")
+        static Object doIntStop(Object cls, int stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
+                        @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
+                        @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            return doInt(cls, 0, stop, 1, inliningTarget, language, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, raiseNode);
+        }
+
+        @Specialization(guards = "isStop(start, stop, step)")
+        static Object doPintStop(Object cls, PInt stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            return doPint(cls, PFactory.createInt(language, BigInteger.ZERO), stop, PFactory.createInt(language, BigInteger.ONE), inliningTarget, language, lenOfRangeNode, raiseNode);
+        }
+
+        @Specialization(guards = "isStop(start, stop, step)")
+        static Object doGenericStop(VirtualFrame frame, Object cls, Object stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
+                        @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
+                        @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
+                        @Shared("cast") @Cached CastToJavaIntExactNode cast,
+                        @Shared("overflowProfile") @Cached IsBuiltinObjectProfile overflowProfile,
+                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            return doGeneric(frame, cls, 0, stop, 1, inliningTarget, language, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, cast, overflowProfile, indexNode, raiseNode);
+        }
+
+        // start stop
+        @Specialization(guards = "isStartStop(start, stop, step)")
+        static Object doIntStartStop(Object cls, int start, int stop, @SuppressWarnings("unused") PNone step,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
+                        @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
+                        @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            return doInt(cls, start, stop, 1, inliningTarget, language, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, raiseNode);
+        }
+
+        @Specialization(guards = "isStartStop(start, stop, step)")
+        static Object doPintStartStop(Object cls, PInt start, PInt stop, @SuppressWarnings("unused") PNone step,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            return doPint(cls, start, stop, PFactory.createInt(language, BigInteger.ONE), inliningTarget, language, lenOfRangeNode, raiseNode);
+        }
+
+        @Specialization(guards = "isStartStop(start, stop, step)")
+        static Object doGenericStartStop(VirtualFrame frame, Object cls, Object start, Object stop, @SuppressWarnings("unused") PNone step,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
+                        @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
+                        @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
+                        @Shared("cast") @Cached CastToJavaIntExactNode cast,
+                        @Shared("overflowProfile") @Cached IsBuiltinObjectProfile overflowProfile,
+                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            return doGeneric(frame, cls, start, stop, 1, inliningTarget, language, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, cast, overflowProfile, indexNode, raiseNode);
+        }
+
+        // start stop step
+        @Specialization
+        static Object doInt(@SuppressWarnings("unused") Object cls, int start, int stop, int step,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
+                        @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNode,
+                        @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            if (step == 0) {
+                throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ARG_MUST_NOT_BE_ZERO, "range()", 3);
+            }
+            try {
+                int len = lenOfRangeNode.executeInt(inliningTarget, start, stop, step);
+                return PFactory.createIntRange(language, start, stop, step, len);
+            } catch (OverflowException e) {
+                exceptionProfile.enter(inliningTarget);
+                return createBigRangeNode.execute(inliningTarget, start, stop, step);
+            }
+        }
+
+        @Specialization
+        static Object doPint(@SuppressWarnings("unused") Object cls, PInt start, PInt stop, PInt step,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            if (step.isZero()) {
+                throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ARG_MUST_NOT_BE_ZERO, "range()", 3);
+            }
+            BigInteger len = lenOfRangeNode.execute(inliningTarget, start.getValue(), stop.getValue(), step.getValue());
+            return PFactory.createBigRange(language, start, stop, step, PFactory.createInt(language, len));
+        }
+
+        @Specialization(guards = "isStartStopStep(start, stop, step)")
+        static Object doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object start, Object stop, Object step,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
+                        @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
+                        @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
+                        @Shared("cast") @Cached CastToJavaIntExactNode cast,
+                        @Shared("overflowProfile") @Cached IsBuiltinObjectProfile overflowProfile,
+                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            Object lstart = indexNode.execute(frame, inliningTarget, start);
+            Object lstop = indexNode.execute(frame, inliningTarget, stop);
+            Object lstep = indexNode.execute(frame, inliningTarget, step);
+
+            try {
+                int istart = cast.execute(inliningTarget, lstart);
+                int istop = cast.execute(inliningTarget, lstop);
+                int istep = cast.execute(inliningTarget, lstep);
+                return doInt(cls, istart, istop, istep, inliningTarget, language, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, raiseNode);
+            } catch (PException e) {
+                e.expect(inliningTarget, PythonErrorType.OverflowError, overflowProfile);
+                return createBigRangeNode.execute(inliningTarget, lstart, lstop, lstep);
+            }
+        }
+
+        protected static boolean isStop(Object start, Object stop, Object step) {
+            return isNoValue(start) && !isNoValue(stop) && isNoValue(step);
+        }
+
+        protected static boolean isStartStop(Object start, Object stop, Object step) {
+            return !isNoValue(start) && !isNoValue(stop) && isNoValue(step);
+        }
+
+        protected static boolean isStartStopStep(Object start, Object stop, Object step) {
+            return !isNoValue(start) && !isNoValue(stop) && !isNoValue(step);
+        }
     }
 
     @Slot(value = SlotKind.tp_hash, isComplex = true)

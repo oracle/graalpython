@@ -26,6 +26,8 @@
 package com.oracle.graal.python.builtins.objects.set;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ADD;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SET;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
@@ -60,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -109,6 +112,28 @@ public final class SetBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SetBuiltinsFactory.getFactories();
+    }
+
+    // set([iterable])
+    @Builtin(name = J___NEW__, raiseErrorName = J_SET, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PSet)
+    @GenerateNodeFactory
+    public abstract static class SetNode extends PythonBuiltinNode {
+        @Specialization(guards = "isBuiltinSet(cls)")
+        public PSet setEmpty(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object arg,
+                        @Bind PythonLanguage language) {
+            return PFactory.createSet(language);
+        }
+
+        @Fallback
+        public PSet setEmpty(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createSet(language, cls, getInstanceShape.execute(cls));
+        }
+
+        protected static boolean isBuiltinSet(Object cls) {
+            return cls == PythonBuiltinClassType.PSet;
+        }
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
@@ -716,5 +741,4 @@ public final class SetBuiltins extends PythonBuiltins {
             throw raiseNode.raise(inliningTarget, PythonErrorType.KeyError, ErrorMessages.POP_FROM_EMPTY_SET);
         }
     }
-
 }

@@ -40,8 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.random;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -60,9 +62,12 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -71,6 +76,7 @@ import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -81,12 +87,36 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PRandom)
 public final class RandomBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return RandomBuiltinsFactory.getFactories();
+    }
+
+    // _random.Random([seed])
+    @Builtin(name = J___NEW__, raiseErrorName = "Random", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PRandom, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    abstract static class PRandomNode extends PythonBuiltinNode {
+        private static final TruffleString T_SEED = tsLiteral("seed");
+
+        @Child LookupAndCallBinaryNode setSeed = LookupAndCallBinaryNode.create(T_SEED);
+
+        @Specialization
+        PRandom random(VirtualFrame frame, Object cls, Object seed,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            PRandom random = PFactory.createRandom(language, cls, getInstanceShape.execute(cls));
+            try {
+                setSeed.executeObject(frame, random, seed != PNone.NO_VALUE ? seed : PNone.NONE);
+            } catch (SpecialMethodNotFound ignore) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.SystemError);
+            }
+            return random;
+        }
     }
 
     @Builtin(name = "seed", minNumOfPositionalArgs = 1, parameterNames = {"$self", "seed"})

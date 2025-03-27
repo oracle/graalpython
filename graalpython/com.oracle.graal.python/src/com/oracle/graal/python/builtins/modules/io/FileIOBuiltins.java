@@ -86,6 +86,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.OPENER_RETURNED_D;
 import static com.oracle.graal.python.nodes.ErrorMessages.REENTRANT_CALL_INSIDE_P_REPR;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNBOUNDED_READ_RETURNED_MORE_BYTES;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNCLOSED_FILE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_FALSE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TRUE;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
@@ -126,6 +127,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -217,6 +219,18 @@ public final class FileIOBuiltins extends PythonBuiltins {
         if (fd >= 0) {
             self.setClosed();
             posixClose.execute(frame, fd);
+        }
+    }
+
+    @Builtin(name = J___NEW__, raiseErrorName = "FileIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PFileIO)
+    @GenerateNodeFactory
+    public abstract static class FileIONode extends PythonBuiltinNode {
+        @Specialization
+        static PFileIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            // data filled in subsequent __init__ call - see FileIOBuiltins.InitNode
+            return PFactory.createFileIO(language, cls, getInstanceShape.execute(cls));
         }
     }
 

@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.thread;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
+
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -50,6 +52,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -72,6 +75,17 @@ public final class RLockBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return RLockBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J___NEW__, raiseErrorName = "RLock", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PRLock)
+    @GenerateNodeFactory
+    public abstract static class ConstructRLockNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PRLock construct(Object cls,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createRLock(language, cls, getInstanceShape.execute(cls));
+        }
     }
 
     @Builtin(name = "_is_owned", minNumOfPositionalArgs = 1)

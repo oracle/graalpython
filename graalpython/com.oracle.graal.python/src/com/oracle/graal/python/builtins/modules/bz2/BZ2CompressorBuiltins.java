@@ -47,9 +47,11 @@ import static com.oracle.graal.python.builtins.modules.bz2.Bz2Nodes.errorHandlin
 import static com.oracle.graal.python.nodes.ErrorMessages.COMPRESSLEVEL_MUST_BE_BETWEEN_1_AND_9;
 import static com.oracle.graal.python.nodes.ErrorMessages.COMPRESSOR_HAS_BEEN_FLUSHED;
 import static com.oracle.graal.python.nodes.ErrorMessages.REPEATED_CALL_TO_FLUSH;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
@@ -66,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -93,6 +96,17 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BZ2CompressorBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J___NEW__, raiseErrorName = "BZ2Compressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = BZ2Compressor)
+    @GenerateNodeFactory
+    public abstract static class BZ2CompressorNode extends PythonBuiltinNode {
+        @Specialization
+        static BZ2Object.BZ2Compressor doNew(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object arg,
+                        @Bind PythonLanguage language) {
+            // data filled in subsequent __init__ call - see BZ2CompressorBuiltins.InitNode
+            return PFactory.createBZ2Compressor(language);
+        }
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)

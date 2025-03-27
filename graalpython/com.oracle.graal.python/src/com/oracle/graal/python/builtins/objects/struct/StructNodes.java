@@ -5,7 +5,6 @@
  */
 package com.oracle.graal.python.builtins.objects.struct;
 
-import static com.oracle.graal.python.builtins.modules.StructModuleBuiltins.ConstructStructNode.NUM_BYTES_LIMIT;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_BOOL;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_CHAR;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_DOUBLE;
@@ -14,6 +13,7 @@ import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_HAL
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_PASCAL_STRING;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_STRING;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_VOID_PTR;
+import static com.oracle.graal.python.builtins.objects.struct.StructBuiltins.ConstructStructNode.NUM_BYTES_LIMIT;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_FOR_N_MUST_BE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_NOT_T;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_O_O_RANGE;

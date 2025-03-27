@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.lzma;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PLZMACompressor;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.CHECK_CRC64;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.CHECK_NONE;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.FORMAT_RAW;
@@ -50,6 +51,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.COMPRESSOR_HAS_BEEN_FL
 import static com.oracle.graal.python.nodes.ErrorMessages.INTEGRITY_CHECKS_ONLY_SUPPORTED_BY;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_SPECIFY_FILTERS;
 import static com.oracle.graal.python.nodes.ErrorMessages.REPEATED_CALL_TO_FLUSH;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
@@ -72,9 +74,11 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -105,6 +109,19 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return LZMACompressorBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J___NEW__, raiseErrorName = "LZMACompressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PLZMACompressor)
+    @GenerateNodeFactory
+    abstract static class LZMACompressorNode extends PythonBuiltinNode {
+
+        @Specialization
+        LZMAObject doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            // data filled in subsequent __init__ call - see LZMACompressorBuiltins.InitNode
+            PythonContext context = getContext();
+            return PFactory.createLZMACompressor(context.getLanguage(this), cls, getInstanceShape.execute(cls), context.getNFILZMASupport().isAvailable());
+        }
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
@@ -273,5 +290,4 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
             return LZMACompressorBuiltinsFactory.ExpectUINT32NodeGen.create(defaultValue);
         }
     }
-
 }

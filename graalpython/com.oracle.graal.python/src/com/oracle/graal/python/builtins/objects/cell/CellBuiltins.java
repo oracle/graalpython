@@ -40,12 +40,15 @@
  */
 package com.oracle.graal.python.builtins.objects.cell;
 
+import static com.oracle.graal.python.nodes.PGuards.isNoValue;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -66,8 +69,13 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -91,7 +99,38 @@ public final class CellBuiltins extends PythonBuiltins {
         return CellBuiltinsFactory.getFactories();
     }
 
-    @Slot(value = Slot.SlotKind.tp_richcompare, isComplex = true)
+    @Builtin(name = J___NEW__, raiseErrorName = "cell", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PCell)
+    @GenerateNodeFactory
+    public abstract static class CellTypeNode extends PythonBinaryBuiltinNode {
+        @CompilerDirectives.CompilationFinal private Assumption sharedAssumption;
+
+        private Assumption getAssumption() {
+            if (sharedAssumption == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                sharedAssumption = Truffle.getRuntime().createAssumption("cell is effectively final");
+            }
+            if (CompilerDirectives.inCompiledCode()) {
+                return sharedAssumption;
+            } else {
+                return Truffle.getRuntime().createAssumption("cell is effectively final");
+            }
+        }
+
+        @Specialization
+        Object newCell(@SuppressWarnings("unused") Object cls, Object contents,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached InlinedConditionProfile nonEmptyProfile) {
+            Assumption assumption = getAssumption();
+            PCell cell = PFactory.createCell(language, assumption);
+            if (nonEmptyProfile.profile(inliningTarget, !isNoValue(contents))) {
+                cell.setRef(contents, assumption);
+            }
+            return cell;
+        }
+    }
+
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
     public abstract static class EqNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
@@ -196,5 +235,4 @@ public final class CellBuiltins extends PythonBuiltins {
             return self.getRef();
         }
     }
-
 }

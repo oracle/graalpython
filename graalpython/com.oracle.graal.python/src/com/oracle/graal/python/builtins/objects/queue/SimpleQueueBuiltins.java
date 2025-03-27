@@ -43,7 +43,9 @@ package com.oracle.graal.python.builtins.objects.queue;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.Empty;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SIMPLE_QUEUE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
@@ -56,6 +58,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.queue.SimpleQueueBuiltinsClinicProviders.SimpleQueueGetNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -88,6 +91,18 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SimpleQueueBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J___NEW__, raiseErrorName = J_SIMPLE_QUEUE, constructsClass = PythonBuiltinClassType.PSimpleQueue, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class SimpleQueueNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        static PSimpleQueue doGeneric(Object cls,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createSimpleQueue(language, cls, getInstanceShape.execute(cls));
+        }
     }
 
     @Builtin(name = "empty", minNumOfPositionalArgs = 1, //

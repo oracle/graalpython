@@ -75,6 +75,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J___BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BREAKPOINTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_EVAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_EXEC;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDOUT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
@@ -123,6 +124,7 @@ import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IONodes;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -142,6 +144,8 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.ellipsis.EllipsisBuiltins;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -322,6 +326,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         addBuiltinConstant(T_NONE, PNone.NONE);
         addBuiltinConstant(T_FALSE, false);
         addBuiltinConstant(T_TRUE, true);
+        addBuiltinConstant(T_NOT_IMPLEMENTED, PNotImplemented.NOT_IMPLEMENTED);
+        addBuiltinConstant(EllipsisBuiltins.T_ELLIPSIS, PEllipsis.INSTANCE);
         super.initialize(core);
     }
 

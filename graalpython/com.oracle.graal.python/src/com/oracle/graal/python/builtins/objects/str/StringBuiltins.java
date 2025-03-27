@@ -32,6 +32,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_FORMAT_MAP;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REMOVEPREFIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REMOVESUFFIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_STARTSWITH;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_STR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ENDSWITH;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_FORMAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STARTSWITH;
@@ -39,6 +40,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.FILL_CHAR_MUST_BE_UNIC
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETNEWARGS__;
@@ -48,6 +50,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -60,7 +63,6 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.lib.RichCmpOp;
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
 import org.graalvm.shadowed.com.ibm.icu.text.CaseMap;
@@ -78,8 +80,12 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -113,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
@@ -126,7 +133,9 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -143,6 +152,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -169,8 +179,10 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -197,6 +209,176 @@ public final class StringBuiltins extends PythonBuiltins {
     @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return StringBuiltinsFactory.getFactories();
+    }
+
+    // str(object='')
+    // str(object=b'', encoding='utf-8', errors='strict')
+    @Builtin(name = J___NEW__, raiseErrorName = J_STR, minNumOfPositionalArgs = 1, parameterNames = {"cls", "object", "encoding", "errors"}, constructsClass = PythonBuiltinClassType.PString)
+    @GenerateNodeFactory
+    public abstract static class StrNewNode extends PythonBuiltinNode {
+
+        public final Object executeWith(Object arg) {
+            return executeWith(null, PythonBuiltinClassType.PString, arg, PNone.NO_VALUE, PNone.NO_VALUE);
+        }
+
+        public final Object executeWith(VirtualFrame frame, Object arg) {
+            return executeWith(frame, PythonBuiltinClassType.PString, arg, PNone.NO_VALUE, PNone.NO_VALUE);
+        }
+
+        public abstract Object executeWith(VirtualFrame frame, Object cls, Object arg, Object encoding, Object errors);
+
+        @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "isNoValue(arg)"}, limit = "1")
+        @SuppressWarnings("unused")
+        static Object strNoArgs(Object cls, PNone arg, Object encoding, Object errors,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return asPString(cls, T_EMPTY_STRING, inliningTarget, isPrimitiveProfile, getInstanceShape);
+        }
+
+        @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "!isNoValue(obj)", "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
+        static Object strOneArg(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Exclusive @Cached InlinedConditionProfile isStringProfile,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Exclusive @Cached PyObjectStrAsObjectNode strNode,
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            Object result = strNode.execute(frame, inliningTarget, obj);
+
+            // try to return a primitive if possible
+            assertNoJavaString(result);
+            if (isStringProfile.profile(inliningTarget, result instanceof TruffleString)) {
+                return asPString(cls, (TruffleString) result, inliningTarget, isPrimitiveProfile, getInstanceShape);
+            }
+
+            if (isPrimitiveProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PString)) {
+                // PyObjectStrAsObjectNode guarantees that the returned object is an instanceof of
+                // 'str'
+                return result;
+            } else {
+                try {
+                    return asPString(cls, castToTruffleStringNode.execute(inliningTarget, result), inliningTarget, isPrimitiveProfile, getInstanceShape);
+                } catch (CannotCastException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException("asPstring result not castable to String");
+                }
+            }
+        }
+
+        @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "3")
+        static Object doBuffer(VirtualFrame frame, Object cls, Object obj, Object encoding, Object errors,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Exclusive @Cached InlinedConditionProfile isStringProfile,
+                        @Exclusive @Cached InlinedConditionProfile isPStringProfile,
+                        @Exclusive @CachedLibrary("obj") PythonBufferAcquireLibrary acquireLib,
+                        @Exclusive @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Exclusive @Cached BytesCommonBuiltins.DecodeNode decodeNode,
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            Object buffer;
+            try {
+                buffer = acquireLib.acquireReadonly(obj, frame, indirectCallData);
+            } catch (PException e) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NEED_BYTELIKE_OBJ, obj);
+            }
+            try {
+                // TODO(fa): we should directly call '_codecs.decode'
+                // TODO don't copy, CPython creates a memoryview
+                PBytes bytesObj = PFactory.createBytes(PythonLanguage.get(inliningTarget), bufferLib.getCopiedByteArray(buffer));
+                Object en = encoding == PNone.NO_VALUE ? T_UTF8 : encoding;
+                Object result = assertNoJavaString(decodeNode.execute(frame, bytesObj, en, errors));
+                if (isStringProfile.profile(inliningTarget, result instanceof TruffleString)) {
+                    return asPString(cls, (TruffleString) result, inliningTarget, isPrimitiveProfile, getInstanceShape);
+                } else if (isPStringProfile.profile(inliningTarget, result instanceof PString)) {
+                    return result;
+                }
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.P_S_RETURNED_NON_STRING, bytesObj, "decode", result);
+            } finally {
+                bufferLib.release(buffer, frame, indirectCallData);
+            }
+        }
+
+        /**
+         * logic similar to
+         * {@code unicode_subtype_new(PyTypeObject *type, PyObject *args, PyObject *kwds)} from
+         * CPython {@code unicodeobject.c} we have to first create a temporary string, then fill it
+         * into a natively allocated subtype structure
+         */
+        @Specialization(guards = {"needsNativeAllocationNode.execute(inliningTarget, cls)", "isSubtypeOfString(frame, isSubtype, cls)", //
+                        "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
+        static Object doNativeSubclass(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Shared @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
+                        @Exclusive @Cached PyObjectStrAsObjectNode strNode,
+                        @Shared @Cached(neverDefault = true) CExtNodes.StringSubtypeNew subtypeNew) {
+            if (obj == PNone.NO_VALUE) {
+                return subtypeNew.call(cls, T_EMPTY_STRING);
+            } else {
+                return subtypeNew.call(cls, strNode.execute(frame, inliningTarget, obj));
+            }
+        }
+
+        @Specialization(guards = {"needsNativeAllocationNode.execute(inliningTarget, cls)", "isSubtypeOfString(frame, isSubtype, cls)", //
+                        "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "1")
+        static Object doNativeSubclassEncodeErr(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Shared @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
+                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Exclusive @Cached InlinedConditionProfile isStringProfile,
+                        @Exclusive @Cached InlinedConditionProfile isPStringProfile,
+                        @Exclusive @CachedLibrary("obj") PythonBufferAcquireLibrary acquireLib,
+                        @Exclusive @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Exclusive @Cached BytesCommonBuiltins.DecodeNode decodeNode,
+                        @Shared @Cached(neverDefault = true) CExtNodes.StringSubtypeNew subtypeNew,
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            Object buffer;
+            try {
+                buffer = acquireLib.acquireReadonly(obj, frame, indirectCallData);
+            } catch (PException e) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NEED_BYTELIKE_OBJ, obj);
+            }
+            try {
+                PBytes bytesObj = PFactory.createBytes(PythonLanguage.get(inliningTarget), bufferLib.getCopiedByteArray(buffer));
+                Object en = encoding == PNone.NO_VALUE ? T_UTF8 : encoding;
+                Object result = assertNoJavaString(decodeNode.execute(frame, bytesObj, en, errors));
+                if (isStringProfile.profile(inliningTarget, result instanceof TruffleString)) {
+                    return subtypeNew.call(cls, asPString(cls, (TruffleString) result, inliningTarget, isPrimitiveProfile, getInstanceShape));
+                } else if (isPStringProfile.profile(inliningTarget, result instanceof PString)) {
+                    return subtypeNew.call(cls, result);
+                }
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.P_S_RETURNED_NON_STRING, bytesObj, "decode", result);
+            } finally {
+                bufferLib.release(buffer, frame, indirectCallData);
+            }
+        }
+
+        protected static boolean isSubtypeOfString(VirtualFrame frame, IsSubtypeNode isSubtypeNode, Object cls) {
+            return isSubtypeNode.execute(frame, cls, PythonBuiltinClassType.PString);
+        }
+
+        private static Object asPString(Object cls, TruffleString str, Node inliningTarget, IsBuiltinClassExactProfile isPrimitiveProfile,
+                        TypeNodes.GetInstanceShape getInstanceShape) {
+            if (isPrimitiveProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PString)) {
+                return str;
+            } else {
+                return PFactory.createString(PythonLanguage.get(inliningTarget), cls, getInstanceShape.execute(cls), str);
+            }
+        }
+
+        @NeverDefault
+        public static StrNewNode create() {
+            return StringBuiltinsFactory.StrNewNodeFactory.create(null);
+        }
     }
 
     @Slot(value = SlotKind.tp_str, isComplex = true)

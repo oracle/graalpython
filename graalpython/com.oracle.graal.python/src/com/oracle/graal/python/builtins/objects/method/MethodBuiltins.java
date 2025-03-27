@@ -34,6 +34,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___KWDEFAULTS
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CODE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -47,12 +48,15 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -63,6 +67,7 @@ import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
@@ -89,6 +94,35 @@ public final class MethodBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return MethodBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J___NEW__, raiseErrorName = "method", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PMethod)
+    @GenerateNodeFactory
+    public abstract static class MethodTypeNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        static Object method(@SuppressWarnings("unused") Object cls, PFunction func, Object self,
+                        @Bind PythonLanguage language) {
+            return PFactory.createMethod(language, self, func);
+        }
+
+        @Specialization
+        static Object methodBuiltin(@SuppressWarnings("unused") Object cls, PBuiltinFunction func, Object self,
+                        @Bind PythonLanguage language) {
+            return PFactory.createMethod(language, self, func);
+        }
+
+        @Specialization
+        static Object methodGeneric(@SuppressWarnings("unused") Object cls, Object func, Object self,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached PyCallableCheckNode callableCheck,
+                        @Cached PRaiseNode raiseNode) {
+            if (callableCheck.execute(inliningTarget, func)) {
+                return PFactory.createMethod(language, self, func);
+            } else {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE_S, "");
+            }
+        }
     }
 
     @Builtin(name = J___FUNC__, minNumOfPositionalArgs = 1, isGetter = true)

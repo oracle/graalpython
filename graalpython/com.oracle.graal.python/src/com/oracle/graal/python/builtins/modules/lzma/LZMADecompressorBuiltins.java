@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules.lzma;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EOFError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PLZMADecompressor;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
@@ -52,6 +53,7 @@ import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.F
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.FORMAT_XZ;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.T_LZMA_JAVA_ERROR;
 import static com.oracle.graal.python.nodes.ErrorMessages.ALREADY_AT_END_OF_STREAM;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
@@ -71,16 +73,19 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -101,6 +106,19 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return LZMADecompressorBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J___NEW__, raiseErrorName = "LZMADecompressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PLZMADecompressor)
+    @GenerateNodeFactory
+    abstract static class LZMADecompressorNode extends PythonBuiltinNode {
+
+        @Specialization
+        LZMAObject doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            // data filled in subsequent __init__ call - see LZMADecompressorBuiltins.InitNode
+            PythonContext context = getContext();
+            return PFactory.createLZMADecompressor(context.getLanguage(this), cls, getInstanceShape.execute(cls), context.getNFILZMASupport().isAvailable());
+        }
     }
 
     @ImportStatic(PGuards.class)
@@ -286,5 +304,4 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
         }
 
     }
-
 }

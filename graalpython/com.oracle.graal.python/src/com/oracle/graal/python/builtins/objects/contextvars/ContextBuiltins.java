@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.contextvars;
 
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
@@ -84,6 +85,16 @@ public final class ContextBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ContextBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J___NEW__, raiseErrorName = "Context", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.ContextVarsContext)
+    @GenerateNodeFactory
+    public abstract static class ContextNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object construct(@SuppressWarnings("unused") Object cls,
+                        @Bind PythonLanguage language) {
+            return PFactory.createContextVarsContext(language);
+        }
     }
 
     @Slot(SlotKind.mp_length)

@@ -83,7 +83,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
-import com.oracle.graal.python.builtins.objects.tuple.StructSequenceBuiltins;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
@@ -104,7 +103,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
@@ -130,7 +128,6 @@ import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -395,24 +392,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             posix.setAttribute(toTruffleStringUncached("getegid"), PNone.NO_VALUE);
 
             posix.setAttribute(toTruffleStringUncached("WNOHANG"), EMULATED_WNOHANG);
-        }
-    }
-
-    @Builtin(name = "stat_result", minNumOfPositionalArgs = 1, parameterNames = {"$cls", "sequence", "dict"}, constructsClass = PythonBuiltinClassType.PStatResult)
-    @GenerateNodeFactory
-    public abstract static class StatResultNode extends PythonTernaryBuiltinNode {
-
-        @Specialization
-        public static PTuple generic(VirtualFrame frame, Object cls, Object sequence, Object dict,
-                        @Cached StructSequenceBuiltins.NewNode newNode) {
-            PTuple p = (PTuple) newNode.execute(frame, cls, sequence, dict);
-            Object[] data = CompilerDirectives.castExact(p.getSequenceStorage(), ObjectSequenceStorage.class).getInternalObjectArray();
-            for (int i = 7; i <= 9; i++) {
-                if (data[i + 3] == PNone.NONE) {
-                    data[i + 3] = data[i];
-                }
-            }
-            return p;
         }
     }
 

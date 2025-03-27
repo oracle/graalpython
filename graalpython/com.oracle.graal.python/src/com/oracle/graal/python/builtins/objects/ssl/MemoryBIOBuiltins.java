@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.nodes.ErrorMessages.SSL_CANNOT_WRITE_AFTER_EOF;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
@@ -80,7 +81,7 @@ public final class MemoryBIOBuiltins extends PythonBuiltins {
         return MemoryBIOBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "MemoryBIO", constructsClass = PythonBuiltinClassType.PMemoryBIO, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEW__, raiseErrorName = "MemoryBIO", constructsClass = PythonBuiltinClassType.PMemoryBIO, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class MemoryBIONode extends PythonUnaryBuiltinNode {
         @Specialization

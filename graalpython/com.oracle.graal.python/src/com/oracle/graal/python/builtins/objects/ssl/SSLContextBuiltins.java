@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.LOGGER;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -157,7 +158,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         return SSLContextBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "_SSLContext", constructsClass = PythonBuiltinClassType.PSSLContext, minNumOfPositionalArgs = 2, parameterNames = {"type", "protocol"})
+    @Builtin(name = J___NEW__, raiseErrorName = "_SSLContext", constructsClass = PythonBuiltinClassType.PSSLContext, minNumOfPositionalArgs = 2, parameterNames = {"type", "protocol"})
     @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class SSLContextNode extends PythonBinaryClinicBuiltinNode {

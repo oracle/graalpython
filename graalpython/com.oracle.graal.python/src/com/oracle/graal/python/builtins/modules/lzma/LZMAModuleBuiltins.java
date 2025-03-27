@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.lzma;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PLZMACompressor;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PLZMADecompressor;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.runtime.NFILZMASupport.CHECK_CRC32_INDEX;
 import static com.oracle.graal.python.runtime.NFILZMASupport.CHECK_CRC64_INDEX;
@@ -89,16 +87,13 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.NFILZMASupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Bind;
@@ -259,32 +254,6 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
         lzmaModule.setAttribute(tsLiteral("MF_BT4"), MF_BT4);
         lzmaModule.setAttribute(tsLiteral("MF_HC3"), MF_HC3);
         lzmaModule.setAttribute(tsLiteral("MF_HC4"), MF_HC4);
-    }
-
-    @Builtin(name = "LZMACompressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PLZMACompressor)
-    @GenerateNodeFactory
-    abstract static class LZMACompressorNode extends PythonBuiltinNode {
-
-        @Specialization
-        LZMAObject doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            // data filled in subsequent __init__ call - see LZMACompressorBuiltins.InitNode
-            PythonContext context = getContext();
-            return PFactory.createLZMACompressor(context.getLanguage(this), cls, getInstanceShape.execute(cls), context.getNFILZMASupport().isAvailable());
-        }
-    }
-
-    @Builtin(name = "LZMADecompressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PLZMADecompressor)
-    @GenerateNodeFactory
-    abstract static class LZMADecompressorNode extends PythonBuiltinNode {
-
-        @Specialization
-        LZMAObject doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            // data filled in subsequent __init__ call - see LZMADecompressorBuiltins.InitNode
-            PythonContext context = getContext();
-            return PFactory.createLZMADecompressor(context.getLanguage(this), cls, getInstanceShape.execute(cls), context.getNFILZMASupport().isAvailable());
-        }
     }
 
     @Builtin(name = "is_check_supported", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)

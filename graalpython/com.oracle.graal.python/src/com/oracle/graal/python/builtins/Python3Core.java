@@ -63,7 +63,6 @@ import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AsyncioModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AtexitModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BinasciiModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.CmathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
@@ -106,6 +105,7 @@ import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.StatResultBuiltins;
 import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.StructModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
@@ -234,6 +234,7 @@ import com.oracle.graal.python.builtins.objects.contextvars.ContextVarBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.TokenBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeIterBuiltins;
+import com.oracle.graal.python.builtins.objects.deque.DequeRevIterBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DefaultDictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictReprBuiltin;
@@ -280,11 +281,12 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.MemberDescripto
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
-import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.iterator.ZipBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.AccumulateBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ChainBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CombinationsBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CombinationsWithReplacementBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CompressBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CountBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CycleBuiltins;
@@ -350,7 +352,8 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.struct.StructBuiltins;
 import com.oracle.graal.python.builtins.objects.struct.StructUnpackIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
-import com.oracle.graal.python.builtins.objects.thread.LockBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.CommonLockBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.LockTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
@@ -459,7 +462,7 @@ public abstract class Python3Core {
     }
 
     private static PythonBuiltins[] initializeBuiltins(TruffleLanguage.Env env) {
-        List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(new BuiltinConstructors(),
+        List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
                         new AbcModuleBuiltins(),
                         new BuiltinFunctions(),
                         new DecoratedMethodBuiltins(),
@@ -501,7 +504,7 @@ public abstract class Python3Core {
                         new FrozenSetBuiltins(),
                         new IteratorBuiltins(),
                         new ReversedBuiltins(),
-                        new PZipBuiltins(),
+                        new ZipBuiltins(),
                         new EnumerateBuiltins(),
                         new MapBuiltins(),
                         new NotImplementedBuiltins(),
@@ -540,6 +543,7 @@ public abstract class Python3Core {
                         new CryptModuleBuiltins(),
                         new ScandirIteratorBuiltins(),
                         new DirEntryBuiltins(),
+                        new StatResultBuiltins(),
                         new ImpModuleBuiltins(),
                         new ArrayModuleBuiltins(),
                         new ArrayBuiltins(),
@@ -623,6 +627,7 @@ public abstract class Python3Core {
                         new CodecsTruffleModuleBuiltins(),
                         new DequeBuiltins(),
                         new DequeIterBuiltins(),
+                        new DequeRevIterBuiltins(),
                         new OrderedDictBuiltins(),
                         new OrderedDictKeysBuiltins(),
                         new OrderedDictValuesBuiltins(),
@@ -678,6 +683,7 @@ public abstract class Python3Core {
                         // itertools
                         new AccumulateBuiltins(),
                         new CombinationsBuiltins(),
+                        new CombinationsWithReplacementBuiltins(),
                         new CompressBuiltins(),
                         new DropwhileBuiltins(),
                         new ChainBuiltins(),
@@ -710,7 +716,8 @@ public abstract class Python3Core {
                         new ThreadModuleBuiltins(),
                         new ThreadBuiltins(),
                         new ThreadLocalBuiltins(),
-                        new LockBuiltins(),
+                        new CommonLockBuiltins(),
+                        new LockTypeBuiltins(),
                         new RLockBuiltins(),
                         new PwdModuleBuiltins(),
                         new ResourceModuleBuiltins(),

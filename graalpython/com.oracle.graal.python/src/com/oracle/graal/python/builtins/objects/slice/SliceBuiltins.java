@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.slice;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -49,13 +50,15 @@ import com.oracle.graal.python.builtins.objects.slice.SliceNodes.SliceExactCastT
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
-import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyObjectRichCompare;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.PySliceNew;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -83,6 +86,35 @@ public final class SliceBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SliceBuiltinsFactory.getFactories();
+    }
+
+    // slice(stop)
+    // slice(start, stop[, step])
+    @Builtin(name = J___NEW__, raiseErrorName = "slice", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PSlice)
+    @GenerateNodeFactory
+    public abstract static class SliceNode extends PythonQuaternaryBuiltinNode {
+        @Specialization(guards = {"isNoValue(second)"})
+        @SuppressWarnings("unused")
+        static Object singleArg(Object cls, Object first, Object second, Object third,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PySliceNew sliceNode) {
+            return sliceNode.execute(inliningTarget, PNone.NONE, first, PNone.NONE);
+        }
+
+        @Specialization(guards = {"!isNoValue(stop)", "isNoValue(step)"})
+        @SuppressWarnings("unused")
+        static Object twoArgs(Object cls, Object start, Object stop, Object step,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PySliceNew sliceNode) {
+            return sliceNode.execute(inliningTarget, start, stop, PNone.NONE);
+        }
+
+        @Fallback
+        static Object threeArgs(@SuppressWarnings("unused") Object cls, Object start, Object stop, Object step,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PySliceNew sliceNode) {
+            return sliceNode.execute(inliningTarget, start, stop, step);
+        }
     }
 
     @Slot(value = SlotKind.tp_repr, isComplex = true)

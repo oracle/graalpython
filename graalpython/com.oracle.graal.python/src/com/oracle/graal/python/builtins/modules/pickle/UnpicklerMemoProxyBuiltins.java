@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.pickle;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
@@ -53,7 +54,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -68,6 +71,17 @@ public class UnpicklerMemoProxyBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return UnpicklerMemoProxyBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J___NEW__, raiseErrorName = "UnpicklerMemoProxy", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "unpickler"}, constructsClass = PythonBuiltinClassType.UnpicklerMemoProxy)
+    @GenerateNodeFactory
+    abstract static class ConstructUnpicklerMemoProxyNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PUnpicklerMemoProxy construct(Object cls, PUnpickler unpickler,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createUnpicklerMemoProxy(language, unpickler, cls, getInstanceShape.execute(cls));
+        }
     }
 
     @Builtin(name = "clear", minNumOfPositionalArgs = 1, parameterNames = {"$self"})

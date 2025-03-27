@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.modules.bz2;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EOFError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins.INITIAL_BUFFER_SIZE;
 import static com.oracle.graal.python.nodes.ErrorMessages.COMPRESSED_FILE_ENDED_BEFORE_EOS;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_DATA_STREAM;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_PARAMETERS_PASSED_TO_LIBBZIP2;
@@ -93,6 +92,8 @@ public class Bz2Nodes {
     protected static final int BZ_UNEXPECTED_EOF = (-7);
     protected static final int BZ_OUTBUFF_FULL = (-8);
     protected static final int BZ_CONFIG_ERROR = (-9);
+
+    protected static final int INITIAL_BUFFER_SIZE = 8192;
 
     @SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 21
     public abstract static class Bz2NativeCompress extends Node {

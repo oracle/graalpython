@@ -40,16 +40,19 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_TUPLE_GETTER;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANT_DELETE_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANT_SET_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.ErrorMessages.DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.TUPLE_OUT_OF_BOUNDS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -57,6 +60,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltinsClinicProviders.TupleGetterNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.DescrSetBuiltinNode;
@@ -65,7 +69,9 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -86,6 +92,22 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TupleGetterBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J___NEW__, raiseErrorName = J_TUPLE_GETTER, parameterNames = {"cls", "index", "doc"}, constructsClass = PythonBuiltinClassType.PTupleGetter)
+    @ArgumentClinic(name = "index", conversion = ArgumentClinic.ClinicConversion.Index)
+    @GenerateNodeFactory
+    public abstract static class TupleGetterNode extends PythonTernaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return TupleGetterNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object construct(@SuppressWarnings("unused") Object cls, int index, Object doc,
+                        @Bind PythonLanguage language) {
+            return PFactory.createTupleGetter(language, index, doc);
+        }
     }
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)

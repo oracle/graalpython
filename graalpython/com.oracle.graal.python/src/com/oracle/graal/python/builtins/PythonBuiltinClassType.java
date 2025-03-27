@@ -206,8 +206,8 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescripto
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.MemberDescriptorBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
-import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.iterator.ZipBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.AccumulateBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ChainBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CombinationsBuiltins;
@@ -265,7 +265,7 @@ import com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.struct.StructUnpackIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
-import com.oracle.graal.python.builtins.objects.thread.LockBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.CommonLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceBuiltins;
@@ -309,7 +309,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     /** See {@link com.oracle.graal.python.builtins.objects.function.PBuiltinFunction} */
     PBuiltinFunction("method_descriptor", PythonObject, new Builder().disallowInstantiation().slots(MethodDescriptorBuiltins.SLOTS)),
     /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
-    PBuiltinFunctionOrMethod("builtin_function_or_method", PythonObject, new Builder().slots(TpSlots.merge(AbstractMethodBuiltins.SLOTS, BuiltinFunctionOrMethodBuiltins.SLOTS))),
+    PBuiltinFunctionOrMethod(
+                    "builtin_function_or_method",
+                    PythonObject,
+                    new Builder().disallowInstantiation().slots(TpSlots.merge(AbstractMethodBuiltins.SLOTS, BuiltinFunctionOrMethodBuiltins.SLOTS))),
     /** See {@link com.oracle.graal.python.builtins.objects.function.PBuiltinFunction} */
     WrapperDescriptor(J_WRAPPER_DESCRIPTOR, PythonObject, new Builder().disallowInstantiation().slots(WrapperDescriptorBuiltins.SLOTS)),
     /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
@@ -428,7 +431,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     PythonObject,
                     new Builder().publishInModule(J_BUILTINS).basetype().slots(FloatBuiltins.SLOTS).methodsFlags(FLOAT_M_FLAGS).doc(
                                     "Convert a string or number to a floating point number, if possible.")),
-    PFrame("frame", PythonObject, new Builder().slots(FrameBuiltins.SLOTS)),
+    PFrame("frame", PythonObject, new Builder().disallowInstantiation().slots(FrameBuiltins.SLOTS)),
     PFrozenSet(
                     "frozenset",
                     PythonObject,
@@ -584,7 +587,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PGenericAlias("GenericAlias", PythonObject, new Builder().publishInModule(J_TYPES).basetype().slots(GenericAliasBuiltins.SLOTS).methodsFlags(GENERIC_ALIAS_M_FLAGS)),
     PGenericAliasIterator("generic_alias_iterator", PythonObject, new Builder().slots(GenericAliasIteratorBuiltins.SLOTS)),
     PUnionType("UnionType", PythonObject, new Builder().publishInModule(J_TYPES).slots(UnionTypeBuiltins.SLOTS).methodsFlags(UNION_TYPE_M_FLAGS)),
-    PZip("zip", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(PZipBuiltins.SLOTS).doc("""
+    PZip(
+                    "zip",
+                    PythonObject,
+                    new Builder().publishInModule(J_BUILTINS).basetype().slots(ZipBuiltins.SLOTS).doc(
+                                    """
                     zip(*iterables, strict=False) --> Yield tuples until an input is exhausted.
 
                        >>> list(zip('abcdefg', range(3), range(4)))
@@ -599,8 +606,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     raise a ValueError.""")),
     PThread("start_new_thread", PythonObject, new Builder().publishInModule(J__THREAD).basetype()),
     PThreadLocal("_local", PythonObject, new Builder().publishInModule(J__THREAD).basetype().slots(ThreadLocalBuiltins.SLOTS)),
-    PLock("LockType", PythonObject, new Builder().publishInModule(J__THREAD).disallowInstantiation().slots(LockBuiltins.SLOTS)),
-    PRLock("RLock", PythonObject, new Builder().publishInModule(J__THREAD).basetype().slots(LockBuiltins.SLOTS)),
+    PLock("LockType", PythonObject, new Builder().publishInModule(J__THREAD).disallowInstantiation().slots(CommonLockBuiltins.SLOTS)),
+    PRLock("RLock", PythonObject, new Builder().publishInModule(J__THREAD).basetype().slots(CommonLockBuiltins.SLOTS)),
     PSemLock("SemLock", PythonObject, new Builder().publishInModule("_multiprocessing").basetype()),
     PGraalPySemLock("SemLock", PythonObject, new Builder().publishInModule("_multiprocessing_graalpy").basetype()),
     PSocket("socket", PythonObject, new Builder().publishInModule(J__SOCKET).basetype().slots(SocketBuiltins.SLOTS)),

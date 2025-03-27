@@ -86,7 +86,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.socket.SocketNodes;
 import com.oracle.graal.python.builtins.objects.socket.SocketNodes.IdnaFromStringOrBytesConverterNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -100,7 +99,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -204,19 +202,6 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     private void addConstant(PosixConstants.IntConstant constant) {
         if (constant.defined) {
             addBuiltinConstant(constant.name, constant.getValueIfDefined());
-        }
-    }
-
-    // socket(family=AF_INET, type=SOCK_STREAM, proto=0, fileno=None)
-    @Builtin(name = "socket", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PSocket)
-    @GenerateNodeFactory
-    public abstract static class SocketNode extends PythonVarargsBuiltinNode {
-        // All the "real" work is done by __init__
-        @Specialization
-        Object socket(Object cls,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createSocket(language, cls, getInstanceShape.execute(cls));
         }
     }
 

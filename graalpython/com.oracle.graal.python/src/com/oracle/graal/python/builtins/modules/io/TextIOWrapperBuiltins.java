@@ -117,6 +117,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_READ_SHOULD
 import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_STREAM_IS_NOT_SEEKABLE;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.PGuards.isPNone;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
@@ -145,6 +146,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNod
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
@@ -263,6 +265,18 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         protected boolean isOpen(VirtualFrame frame, PTextIO self) {
             checkClosedNode.execute(frame, self);
             return true;
+        }
+    }
+
+    @Builtin(name = J___NEW__, raiseErrorName = "TextIOWrapper", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PTextIOWrapper)
+    @GenerateNodeFactory
+    public abstract static class TextIOWrapperNode extends PythonBuiltinNode {
+        @Specialization
+        static PTextIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            // data filled in subsequent __init__ call - see TextIOWrapperBuiltins.InitNode
+            return PFactory.createTextIO(language, cls, getInstanceShape.execute(cls));
         }
     }
 

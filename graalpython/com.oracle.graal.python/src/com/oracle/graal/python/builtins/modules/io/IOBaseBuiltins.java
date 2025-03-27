@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIOBase;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSED;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_FLUSH;
@@ -77,6 +78,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_RETURN_BYTES_
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_FILENO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_FILENO;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IOUnsupportedOperation;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
@@ -98,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyErrChainExceptions;
@@ -150,6 +153,17 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return IOBaseBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J___NEW__, raiseErrorName = "_IOBase", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PIOBase)
+    @GenerateNodeFactory
+    public abstract static class IOBaseNode extends PythonBuiltinNode {
+        @Specialization
+        static PythonObject doGeneric(Object cls,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createPythonObject(language, cls, getInstanceShape.execute(cls));
+        }
     }
 
     @Builtin(name = J_CLOSED, minNumOfPositionalArgs = 1, isGetter = true)

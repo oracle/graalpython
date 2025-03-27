@@ -26,6 +26,7 @@
 
 package com.oracle.graal.python.builtins.objects.function;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T_LAMBDA_NAME;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CODE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
@@ -52,6 +53,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -73,6 +75,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -96,6 +99,81 @@ public final class FunctionBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return FunctionBuiltinsFactory.getFactories();
+    }
+
+    // function(code, globals[, name[, argdefs[, closure]]])
+    @Builtin(name = "function", minNumOfPositionalArgs = 3, parameterNames = {"$cls", "code", "globals", "name", "argdefs",
+                    "closure"}, constructsClass = PythonBuiltinClassType.PFunction)
+    @GenerateNodeFactory
+    public abstract static class FunctionNode extends PythonBuiltinNode {
+
+        @Specialization
+        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, @SuppressWarnings("unused") PNone defaultArgs,
+                        @SuppressWarnings("unused") PNone closure,
+                        @Bind PythonLanguage language) {
+            return PFactory.createFunction(language, name, code, globals, null);
+        }
+
+        @Specialization
+        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs,
+                        PTuple closure,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
+                        @Bind PythonLanguage language) {
+            return PFactory.createFunction(language, T_LAMBDA_NAME, code, globals, PCell.toCellArray(getObjectArrayNode.execute(inliningTarget, closure)));
+        }
+
+        @Specialization
+        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs,
+                        @SuppressWarnings("unused") PNone closure,
+                        @SuppressWarnings("unused") @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
+                        @Bind PythonLanguage language) {
+            return PFactory.createFunction(language, T_LAMBDA_NAME, code, globals, null);
+        }
+
+        @Specialization
+        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
+                        @Bind PythonLanguage language) {
+            return PFactory.createFunction(language, name, code, globals, PCell.toCellArray(getObjectArrayNode.execute(inliningTarget, closure)));
+        }
+
+        @Specialization
+        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, PTuple defaultArgs,
+                        @SuppressWarnings("unused") PNone closure,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
+                        @Bind PythonLanguage language) {
+            // TODO split defaults of positional args from kwDefaults
+            return PFactory.createFunction(language, code.getName(), code, globals, getObjectArrayNode.execute(inliningTarget, defaultArgs), null, null);
+        }
+
+        @Specialization
+        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
+                        @Bind PythonLanguage language) {
+            // TODO split defaults of positional args from kwDefaults
+            return PFactory.createFunction(language, name, code, globals, getObjectArrayNode.execute(inliningTarget, defaultArgs), null, null);
+        }
+
+        @Specialization
+        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, PTuple defaultArgs, PTuple closure,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
+                        @Bind PythonLanguage language) {
+            // TODO split defaults of positional args from kwDefaults
+            return PFactory.createFunction(language, name, code, globals, getObjectArrayNode.execute(inliningTarget, defaultArgs), null,
+                            PCell.toCellArray(getObjectArrayNode.execute(inliningTarget, closure)));
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static PFunction function(@SuppressWarnings("unused") Object cls, Object code, Object globals, Object name, Object defaultArgs, Object closure,
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.FUNC_CONSTRUCTION_NOT_SUPPORTED, cls, code, globals, name, defaultArgs, closure);
+        }
     }
 
     @Slot(SlotKind.tp_descr_get)

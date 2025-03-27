@@ -33,6 +33,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETFORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
 import static com.oracle.graal.python.runtime.formatting.FormattingUtils.validateForFloat;
@@ -56,25 +57,32 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils.PFloatUnboxing;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
-import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyFloatCheckNode;
+import com.oracle.graal.python.lib.PyFloatFromString;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberPowerNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -82,6 +90,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -102,12 +111,14 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -194,6 +205,124 @@ public final class FloatBuiltins extends PythonBuiltins {
                 errorProfile.enter();
                 throw PRaiseNode.raiseStatic(this, PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
+        }
+    }
+
+    // float([x])
+    @Builtin(name = J___NEW__, raiseErrorName = J_FLOAT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFloat)
+    @GenerateNodeFactory
+    public abstract static class FloatNewNode extends PythonBinaryBuiltinNode {
+
+        @Child NonPrimitiveFloatNode nonPrimitiveFloatNode;
+
+        @Specialization
+        Object doIt(VirtualFrame frame, Object cls, Object arg,
+                        @Bind("this") Node inliningTarget,
+                        @Cached BuiltinClassProfiles.IsBuiltinClassExactProfile isPrimitiveFloatProfile,
+                        @Cached PrimitiveFloatNode primitiveFloatNode,
+                        @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode) {
+            if (isPrimitiveFloat(inliningTarget, cls, isPrimitiveFloatProfile)) {
+                return primitiveFloatNode.execute(frame, inliningTarget, arg);
+            } else {
+                boolean needsNativeAllocation = needsNativeAllocationNode.execute(inliningTarget, cls);
+                if (nonPrimitiveFloatNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    nonPrimitiveFloatNode = insert(FloatBuiltinsFactory.FloatNewNodeFactory.NonPrimitiveFloatNodeGen.create());
+                }
+                return nonPrimitiveFloatNode.execute(frame, cls, arg, needsNativeAllocation);
+            }
+        }
+
+        @GenerateCached(false)
+        @GenerateInline
+        @ImportStatic(PGuards.class)
+        abstract static class PrimitiveFloatNode extends Node {
+            abstract double execute(VirtualFrame frame, Node inliningTarget, Object arg);
+
+            @Specialization
+            static double floatFromDouble(double arg) {
+                return arg;
+            }
+
+            @Specialization
+            static double floatFromInt(int arg) {
+                return arg;
+            }
+
+            @Specialization
+            static double floatFromLong(long arg) {
+                return arg;
+            }
+
+            @Specialization
+            static double floatFromBoolean(boolean arg) {
+                return arg ? 1d : 0d;
+            }
+
+            @Specialization(guards = "isNoValue(obj)")
+            static double floatFromNoValue(@SuppressWarnings("unused") PNone obj) {
+                return 0.0;
+            }
+
+            @Fallback
+            @InliningCutoff
+            static double floatFromObject(VirtualFrame frame, Node inliningTarget, Object obj,
+                            @Cached PyUnicodeCheckExactNode stringCheck,
+                            @Cached PyFloatFromString fromString,
+                            @Cached PyNumberFloatNode pyNumberFloat) {
+                if (stringCheck.execute(inliningTarget, obj)) {
+                    return fromString.execute(frame, inliningTarget, obj);
+                }
+                return pyNumberFloat.execute(frame, inliningTarget, obj);
+            }
+        }
+
+        @ImportStatic(PGuards.class)
+        @GenerateInline(false) // intentionally lazy
+        abstract static class NonPrimitiveFloatNode extends Node {
+            abstract Object execute(VirtualFrame frame, Object cls, Object arg, boolean needsNativeAllocation);
+
+            @Specialization(guards = {"!needsNativeAllocation", "isNoValue(obj)"})
+            @InliningCutoff
+            static Object floatFromNoneManagedSubclass(Object cls, PNone obj, @SuppressWarnings("unused") boolean needsNativeAllocation,
+                            @Bind PythonLanguage language,
+                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                Shape shape = getInstanceShape.execute(cls);
+                return PFactory.createFloat(language, cls, shape, PrimitiveFloatNode.floatFromNoValue(obj));
+            }
+
+            @Specialization(guards = "!needsNativeAllocation")
+            @InliningCutoff
+            static Object floatFromObjectManagedSubclass(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") boolean needsNativeAllocation,
+                            @Bind("this") @SuppressWarnings("unused") Node inliningTarget,
+                            @Bind PythonLanguage language,
+                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                            @Shared @Cached PrimitiveFloatNode recursiveCallNode) {
+                Shape shape = getInstanceShape.execute(cls);
+                return PFactory.createFloat(language, cls, shape, recursiveCallNode.execute(frame, inliningTarget, obj));
+            }
+
+            // logic similar to float_subtype_new(PyTypeObject *type, PyObject *x) from CPython
+            // floatobject.c we have to first create a temporary float, then fill it into
+            // a natively allocated subtype structure
+            @Specialization(guards = {"needsNativeAllocation", //
+                            "isSubtypeOfFloat(frame, isSubtype, cls)"}, limit = "1")
+            @InliningCutoff
+            static Object floatFromObjectNativeSubclass(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") boolean needsNativeAllocation,
+                            @Bind("this") @SuppressWarnings("unused") Node inliningTarget,
+                            @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
+                            @Cached CExtNodes.FloatSubtypeNew subtypeNew,
+                            @Shared @Cached PrimitiveFloatNode recursiveCallNode) {
+                return subtypeNew.call(cls, recursiveCallNode.execute(frame, inliningTarget, obj));
+            }
+
+            protected static boolean isSubtypeOfFloat(VirtualFrame frame, IsSubtypeNode isSubtypeNode, Object cls) {
+                return isSubtypeNode.execute(frame, cls, PythonBuiltinClassType.PFloat);
+            }
+        }
+
+        protected static boolean isPrimitiveFloat(Node inliningTarget, Object cls, BuiltinClassProfiles.IsBuiltinClassExactProfile isPrimitiveProfile) {
+            return isPrimitiveProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PFloat);
         }
     }
 

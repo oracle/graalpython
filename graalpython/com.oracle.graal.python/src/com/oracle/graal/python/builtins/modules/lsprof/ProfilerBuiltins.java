@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.lsprof;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.ArrayList;
@@ -57,13 +58,20 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.InstrumentInfo;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -71,6 +79,7 @@ import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.tools.profiler.CPUSampler;
 import com.oracle.truffle.tools.profiler.CPUSamplerData;
 import com.oracle.truffle.tools.profiler.ProfilerNode;
+import com.oracle.truffle.tools.profiler.impl.CPUSamplerInstrument;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.LsprofProfiler)
 public class ProfilerBuiltins extends PythonBuiltins {
@@ -80,6 +89,26 @@ public class ProfilerBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ProfilerBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J___NEW__, raiseErrorName = "Profiler", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.LsprofProfiler)
+    @GenerateNodeFactory
+    abstract static class LsprofNew extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Profiler doit(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
+            PythonContext context = getContext();
+            TruffleLanguage.Env env = context.getEnv();
+            Map<String, InstrumentInfo> instruments = env.getInstruments();
+            InstrumentInfo instrumentInfo = instruments.get(CPUSamplerInstrument.ID);
+            if (instrumentInfo != null) {
+                CPUSampler sampler = env.lookup(instrumentInfo, CPUSampler.class);
+                if (sampler != null) {
+                    return PFactory.createProfiler(context.getLanguage(), cls, TypeNodes.GetInstanceShape.executeUncached(cls), sampler);
+                }
+            }
+            throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.NotImplementedError, ErrorMessages.COVERAGE_TRACKER_NOT_AVAILABLE);
+        }
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)

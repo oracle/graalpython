@@ -46,7 +46,9 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___NOTES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -74,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyErrExceptionMatchesNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
@@ -82,11 +85,16 @@ import com.oracle.graal.python.lib.PyTupleCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -100,6 +108,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -128,6 +137,77 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         PDict dict = PFactory.createDict(language, dictStorage);
         Object exceptionGroupType = CallNode.executeUncached(typeBuiltin, T_EXCEPTION_GROUP, bases, dict);
         builtins.setAttribute(T_EXCEPTION_GROUP, exceptionGroupType);
+    }
+
+    @Builtin(name = J___NEW__, raiseErrorName = "BaseExceptionGroup", constructsClass = PythonBuiltinClassType.PBaseExceptionGroup, minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class BaseExceptionGroupNode extends PythonTernaryBuiltinNode {
+
+        @Specialization
+        static Object doManaged(VirtualFrame frame, Object cls, Object messageObj, Object exceptionsObj,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached PySequenceCheckNode sequenceCheckNode,
+                        @Cached TupleNodes.ConstructTupleNode toTupleNode,
+                        @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached InlinedLoopConditionProfile loopConditionProfile,
+                        @Cached GetClassNode getClassNode,
+                        @Cached BuiltinClassProfiles.IsBuiltinClassProfile exceptionProfile,
+                        @Cached BuiltinClassProfiles.IsBuiltinClassProfile baseExceptionProfile,
+                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                        @Cached PRaiseNode raiseNode) {
+            TruffleString message;
+            try {
+                message = castToStringNode.execute(inliningTarget, messageObj);
+            } catch (CannotCastException ex) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "BaseExceptionGroup", 1, "str", messageObj);
+            }
+            if (!sequenceCheckNode.execute(inliningTarget, exceptionsObj)) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SECOND_ARGUMENT_EXCEPTIONS_MUST_BE_A_SEQUENCE);
+            }
+            PTuple exceptionsTuple = toTupleNode.execute(frame, exceptionsObj);
+            Object[] exceptions = toArrayNode.execute(inliningTarget, exceptionsTuple.getSequenceStorage());
+            if (exceptions.length == 0) {
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.SECOND_ARGUMENT_EXCEPTIONS_MUST_BE_A_NON_EMPTY_SEQUENCE);
+            }
+            PythonContext context = PythonContext.get(inliningTarget);
+            Object exceptionGroupType = getAttr.execute(inliningTarget, context.getBuiltins(), T_EXCEPTION_GROUP);
+            boolean nestedBaseExceptions = false;
+            loopConditionProfile.profileCounted(inliningTarget, exceptions.length);
+            for (int i = 0; loopConditionProfile.inject(inliningTarget, i < exceptions.length); i++) {
+                Object exceptionType = getClassNode.execute(inliningTarget, exceptions[i]);
+                if (exceptionProfile.profileClass(inliningTarget, exceptionType, PythonBuiltinClassType.Exception)) {
+                    continue;
+                }
+                if (baseExceptionProfile.profileClass(inliningTarget, exceptionType, PythonBuiltinClassType.PBaseException)) {
+                    nestedBaseExceptions = true;
+                } else {
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.ITEM_D_OF_SECOND_ARGUMENT_EXCEPTIONS_IS_NOT_AN_EXCEPTION, i);
+                }
+            }
+            if (isSameTypeNode.execute(inliningTarget, cls, PythonBuiltinClassType.PBaseExceptionGroup)) {
+                if (!nestedBaseExceptions) {
+                    /*
+                     * All nested exceptions are Exception subclasses, wrap them in an
+                     * ExceptionGroup
+                     */
+                    cls = exceptionGroupType;
+                }
+            } else if (isSameTypeNode.execute(inliningTarget, cls, exceptionGroupType)) {
+                if (nestedBaseExceptions) {
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_NEST_BASE_EXCEPTIONS_IN_AN_EXCEPTION_GROUP);
+                }
+            } else {
+                /* user-defined subclass */
+                if (nestedBaseExceptions && exceptionProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.Exception)) {
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_NEST_BASE_EXCEPTIONS_IN_N, cls);
+                }
+            }
+            return PFactory.createBaseExceptionGroup(language, cls, getInstanceShape.execute(cls), message, exceptions, new Object[]{messageObj, exceptionsObj});
+        }
     }
 
     @Slot(value = SlotKind.tp_str, isComplex = true)
