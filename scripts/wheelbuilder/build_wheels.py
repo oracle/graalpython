@@ -198,7 +198,7 @@ def repair_wheels():
                     join(dirname(sys.executable), "auditwheel"),
                     "repair",
                     "--plat",
-                    "manylinux_2_28_x86_64",
+                    "manylinux_2_28_x86_64" if platform.processor() == "x86_64" else "manylinux_2_28_aarch64",
                     "-w",
                     "wheelhouse",
                     whl,
