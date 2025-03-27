@@ -294,8 +294,15 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ExportLibrary(ReflectionLibrary.class)
 public enum PythonBuiltinClassType implements TruffleObject {
 
-    PythonObject("object", null, new Builder().publishInModule(J_BUILTINS).basetype().slots(ObjectBuiltins.SLOTS)),
-    PythonClass("type", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().addDict().slots(TypeBuiltins.SLOTS).methodsFlags(TYPE_M_FLAGS)),
+    PythonObject("object", null, new Builder().publishInModule(J_BUILTINS).basetype().slots(ObjectBuiltins.SLOTS).doc("""
+                    The base class of the class hierarchy.
+
+                    When called, it accepts no arguments and returns a new featureless
+                    instance that has no instance attributes and cannot be given any.
+                    """)),
+    PythonClass("type", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().addDict().slots(TypeBuiltins.SLOTS).methodsFlags(TYPE_M_FLAGS).doc("""
+                    type(object) -> the object's type
+                    type(name, bases, dict, **kwds) -> a new type""")),
     PArray("array", PythonObject, new Builder().publishInModule("array").basetype().slots(ArrayBuiltins.SLOTS).methodsFlags(ARRAY_M_FLAGS)),
     PArrayIterator("arrayiterator", PythonObject, new Builder().disallowInstantiation().slots(IteratorBuiltins.SLOTS)),
     PIterator("iterator", PythonObject, new Builder().disallowInstantiation().slots(IteratorBuiltins.SLOTS)),
@@ -315,20 +322,75 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PByteArray(
                     "bytearray",
                     PythonObject,
-                    new Builder().publishInModule(J_BUILTINS).basetype().slots(TpSlots.merge(BytesCommonBuiltins.SLOTS, ByteArrayBuiltins.SLOTS)).methodsFlags(BYTE_ARRAY_M_FLAGS)),
-    PBytes("bytes", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(TpSlots.merge(BytesCommonBuiltins.SLOTS, BytesBuiltins.SLOTS)).methodsFlags(BYTES_M_FLAGS)),
+                    new Builder().publishInModule(J_BUILTINS).basetype().slots(TpSlots.merge(BytesCommonBuiltins.SLOTS, ByteArrayBuiltins.SLOTS)).methodsFlags(BYTE_ARRAY_M_FLAGS).doc("""
+                                    bytearray(iterable_of_ints) -> bytearray
+                                    bytearray(string, encoding[, errors]) -> bytearray
+                                    bytearray(bytes_or_buffer) -> mutable copy of bytes_or_buffer
+                                    bytearray(int) -> bytes array of size given by the parameter initialized with null bytes
+                                    bytearray() -> empty bytes array
+
+                                    Construct a mutable bytearray object from:
+                                      - an iterable yielding integers in range(256)
+                                      - a text string encoded using the specified encoding
+                                      - a bytes or a buffer object
+                                      - any object implementing the buffer API.
+                                      - an integer""")),
+    PBytes("bytes", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(TpSlots.merge(BytesCommonBuiltins.SLOTS, BytesBuiltins.SLOTS)).methodsFlags(BYTES_M_FLAGS).doc("""
+                    bytes(iterable_of_ints) -> bytes
+                    bytes(string, encoding[, errors]) -> bytes
+                    bytes(bytes_or_buffer) -> immutable copy of bytes_or_buffer
+                    bytes(int) -> bytes object of size given by the parameter initialized with null bytes
+                    bytes() -> empty bytes object
+
+                    Construct an immutable array of bytes from:
+                      - an iterable yielding integers in range(256)
+                      - a text string encoded using the specified encoding
+                      - any object implementing the buffer API.
+                      - an integer""")),
     PCell("cell", PythonObject, new Builder().slots(CellBuiltins.SLOTS)),
-    PSimpleNamespace("SimpleNamespace", PythonObject, new Builder().publishInModule("types").basetype().addDict().slots(SimpleNamespaceBuiltins.SLOTS)),
+    PSimpleNamespace("SimpleNamespace", PythonObject, new Builder().publishInModule("types").basetype().addDict().slots(SimpleNamespaceBuiltins.SLOTS).doc("""
+                    A simple attribute-based namespace.
+
+                    SimpleNamespace(**kwargs)""")),
     PKeyWrapper("KeyWrapper", PythonObject, new Builder().moduleName("functools").publishInModule("_functools").disallowInstantiation().slots(KeyWrapperBuiltins.SLOTS)),
-    PPartial(J_PARTIAL, PythonObject, new Builder().moduleName("functools").publishInModule("_functools").basetype().addDict().slots(PartialBuiltins.SLOTS)),
+    PPartial(J_PARTIAL, PythonObject, new Builder().moduleName("functools").publishInModule("_functools").basetype().addDict().slots(PartialBuiltins.SLOTS).doc("""
+                    partial(func, *args, **keywords) - new function with partial application
+                    of the given arguments and keywords.
+                    """)),
     PLruListElem("_lru_list_elem", PythonObject, new Builder().publishInModule("functools").disallowInstantiation()),
-    PLruCacheWrapper(J_LRU_CACHE_WRAPPER, PythonObject, new Builder().moduleName("functools").publishInModule("_functools").basetype().addDict().slots(LruCacheWrapperBuiltins.SLOTS)),
+    PLruCacheWrapper(J_LRU_CACHE_WRAPPER, PythonObject, new Builder().moduleName("functools").publishInModule("_functools").basetype().addDict().slots(LruCacheWrapperBuiltins.SLOTS).doc("""
+                    Create a cached callable that wraps another function.
+
+                    user_function:      the function being cached
+
+                    maxsize:  0         for no caching
+                              None      for unlimited cache size
+                              n         for a bounded cache
+
+                    typed:    False     cache f(3) and f(3.0) as identical calls
+                              True      cache f(3) and f(3.0) as distinct calls
+
+                    cache_info_type:    namedtuple class with the fields:
+                                           hits misses currsize maxsize
+                    """)),
     PDeque(J_DEQUE, PythonObject, new Builder().publishInModule("_collections").basetype().slots(DequeBuiltins.SLOTS).methodsFlags(DEQUE_M_FLAGS)),
     PTupleGetter(J_TUPLE_GETTER, PythonObject, new Builder().publishInModule("_collections").basetype().slots(TupleGetterBuiltins.SLOTS)),
     PDequeIter(J_DEQUE_ITER, PythonObject, new Builder().publishInModule("_collections").slots(DequeIterBuiltins.SLOTS)),
     PDequeRevIter(J_DEQUE_REV_ITER, PythonObject, new Builder().publishInModule("_collections").slots(DequeIterBuiltins.SLOTS)),
-    PComplex("complex", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(ComplexBuiltins.SLOTS).methodsFlags(COMPLEX_M_FLAGS)),
-    PDict("dict", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(TpSlots.merge(DictBuiltins.SLOTS, DictReprBuiltin.SLOTS)).methodsFlags(DICT_M_FLAGS)),
+    PComplex("complex", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(ComplexBuiltins.SLOTS).methodsFlags(COMPLEX_M_FLAGS).doc("""
+                    Create a complex number from a real part and an optional imaginary part.
+
+                    This is equivalent to (real + imag*1j) where imag defaults to 0.""")),
+    PDict("dict", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(TpSlots.merge(DictBuiltins.SLOTS, DictReprBuiltin.SLOTS)).methodsFlags(DICT_M_FLAGS).doc("""
+                    dict() -> new empty dictionary
+                    dict(mapping) -> new dictionary initialized from a mapping object's
+                        (key, value) pairs
+                    dict(iterable) -> new dictionary initialized as if via:
+                        d = {}
+                        for k, v in iterable:
+                            d[k] = v
+                    dict(**kwargs) -> new dictionary initialized with the name=value pairs
+                        in the keyword argument list.  For example:  dict(one=1, two=2)""")),
     PDefaultDict(J_DEFAULTDICT, PDict, new Builder().moduleName("collections").publishInModule("_collections").basetype().slots(DefaultDictBuiltins.SLOTS).methodsFlags(DEFAULTDICT_M_FLAGS)),
     POrderedDict(J_ORDERED_DICT, PDict, new Builder().publishInModule("_collections").basetype().addDict().slots(OrderedDictBuiltins.SLOTS).methodsFlags(DICT_M_FLAGS)),
     PDictItemIterator(J_DICT_ITEMITERATOR, PythonObject, new Builder().disallowInstantiation().slots(IteratorBuiltins.SLOTS)),
@@ -345,48 +407,196 @@ public enum PythonBuiltinClassType implements TruffleObject {
     POrderedDictItems("odict_items", PDictItemsView, new Builder().slots(OrderedDictItemsBuiltins.SLOTS).methodsFlags(DICTITEMSVIEW_M_FLAGS)),
     POrderedDictIterator("odict_iterator", PythonObject, new Builder().slots(OrderedDictIteratorBuiltins.SLOTS)),
     PEllipsis("ellipsis", PythonObject, new Builder().slots(EllipsisBuiltins.SLOTS)),
-    PEnumerate("enumerate", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(EnumerateBuiltins.SLOTS)),
-    PMap("map", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(MapBuiltins.SLOTS)),
-    PFloat("float", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(FloatBuiltins.SLOTS).methodsFlags(FLOAT_M_FLAGS)),
+    PEnumerate("enumerate", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(EnumerateBuiltins.SLOTS).doc("""
+                    Return an enumerate object.
+
+                      iterable
+                        an object supporting iteration
+
+                    The enumerate object yields pairs containing a count (from start, which
+                    defaults to zero) and a value yielded by the iterable argument.
+
+                    enumerate is useful for obtaining an indexed list:
+                        (0, seq[0]), (1, seq[1]), (2, seq[2]), ...""")),
+    PMap("map", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(MapBuiltins.SLOTS).doc("""
+                    map(func, *iterables) --> map object
+
+                    Make an iterator that computes the function using arguments from
+                    each of the iterables.  Stops when the shortest iterable is exhausted.""")),
+    PFloat(
+                    "float",
+                    PythonObject,
+                    new Builder().publishInModule(J_BUILTINS).basetype().slots(FloatBuiltins.SLOTS).methodsFlags(FLOAT_M_FLAGS).doc(
+                                    "Convert a string or number to a floating point number, if possible.")),
     PFrame("frame", PythonObject, new Builder().slots(FrameBuiltins.SLOTS)),
-    PFrozenSet("frozenset", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(TpSlots.merge(BaseSetBuiltins.SLOTS, FrozenSetBuiltins.SLOTS)).methodsFlags(FROZENSET_M_FLAGS)),
+    PFrozenSet(
+                    "frozenset",
+                    PythonObject,
+                    new Builder().publishInModule(J_BUILTINS).basetype().slots(TpSlots.merge(BaseSetBuiltins.SLOTS, FrozenSetBuiltins.SLOTS)).methodsFlags(FROZENSET_M_FLAGS).doc("""
+                                    frozenset() -> empty frozenset object
+                                    frozenset(iterable) -> frozenset object
+
+                                    Build an immutable unordered collection of unique elements.""")),
     PFunction("function", PythonObject, new Builder().addDict().slots(FunctionBuiltins.SLOTS)),
     PGenerator("generator", PythonObject, new Builder().disallowInstantiation().slots(GeneratorBuiltins.SLOTS).methodsFlags(GENERATOR_M_FLAGS)),
     PCoroutine("coroutine", PythonObject, new Builder().slots(CoroutineBuiltins.SLOTS).methodsFlags(COROUTINE_M_FLAGS)),
     PCoroutineWrapper("coroutine_wrapper", PythonObject, new Builder().slots(CoroutineWrapperBuiltins.SLOTS)),
     PAsyncGenerator("async_generator", PythonObject, new Builder().methodsFlags(ASYNC_GENERATOR_M_FLAGS)),
-    PInt("int", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(IntBuiltins.SLOTS).methodsFlags(INT_M_FLAGS)),
-    Boolean("bool", PInt, new Builder().publishInModule(J_BUILTINS).slots(BoolBuiltins.SLOTS).methodsFlags(BOOLEAN_M_FLAGS)),
-    PList("list", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(ListBuiltins.SLOTS).methodsFlags(LIST_M_FLAGS)),
+    PInt("int", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(IntBuiltins.SLOTS).methodsFlags(INT_M_FLAGS).doc("""
+                    int([x]) -> integer
+                    int(x, base=10) -> integer
+
+                    Convert a number or string to an integer, or return 0 if no arguments
+                    are given.  If x is a number, return x.__int__().  For floating point
+                    numbers, this truncates towards zero.
+
+                    If x is not a number or if base is given, then x must be a string,
+                    bytes, or bytearray instance representing an integer literal in the
+                    given base.  The literal can be preceded by '+' or '-' and be surrounded
+                    by whitespace.  The base defaults to 10.  Valid bases are 0 and 2-36.
+                    Base 0 means to interpret the base from the string as an integer literal.""")),
+    Boolean("bool", PInt, new Builder().publishInModule(J_BUILTINS).slots(BoolBuiltins.SLOTS).methodsFlags(BOOLEAN_M_FLAGS).doc("""
+                    bool(x) -> bool
+
+                    Returns True when the argument x is true, False otherwise.
+                    The builtins True and False are the only two instances of the class bool.
+                    The class bool is a subclass of the class int, and cannot be subclassed.""")),
+    PList("list", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(ListBuiltins.SLOTS).methodsFlags(LIST_M_FLAGS).doc("""
+                    Built-in mutable sequence.
+
+                    If no argument is given, the constructor creates a new empty list.
+                    The argument must be an iterable if specified.""")),
     PMappingproxy("mappingproxy", PythonObject, new Builder().slots(MappingproxyBuiltins.SLOTS).methodsFlags(MAPPINGPROXY_M_FLAGS)),
-    PMemoryView("memoryview", PythonObject, new Builder().publishInModule(J_BUILTINS).slots(MemoryViewBuiltins.SLOTS).methodsFlags(MEMORYVIEW_M_FLAGS)),
+    PMemoryView(
+                    "memoryview",
+                    PythonObject,
+                    new Builder().publishInModule(J_BUILTINS).slots(MemoryViewBuiltins.SLOTS).methodsFlags(MEMORYVIEW_M_FLAGS).doc(
+                                    "Create a new memoryview object which references the given object.")),
     PAsyncGenASend("async_generator_asend", PythonObject, new Builder().slots(AsyncGenSendBuiltins.SLOTS).methodsFlags(ASYNC_GENERATOR_ASEND_M_FLAGS)),
     PAsyncGenAThrow("async_generator_athrow", PythonObject, new Builder().slots(AsyncGenThrowBuiltins.SLOTS).methodsFlags(ASYNC_GENERATOR_ATHROW_M_FLAGS)),
     PAsyncGenAWrappedValue("async_generator_wrapped_value", PythonObject, new Builder()),
-    PMethod("method", PythonObject, new Builder().slots(TpSlots.merge(AbstractMethodBuiltins.SLOTS, MethodBuiltins.SLOTS))),
+    PMethod("method", PythonObject, new Builder().slots(TpSlots.merge(AbstractMethodBuiltins.SLOTS, MethodBuiltins.SLOTS)).doc("""
+                    Create a bound instance method object.""")),
     PMMap("mmap", PythonObject, new Builder().publishInModule("mmap").basetype().slots(MMapBuiltins.SLOTS).methodsFlags(MMAP_M_FLAGS)),
     PNone("NoneType", PythonObject, new Builder().slots(NoneBuiltins.SLOTS).methodsFlags(NONE_M_FLAGS)),
     PNotImplemented("NotImplementedType", PythonObject, new Builder().slots(NotImplementedBuiltins.SLOTS)),
-    PProperty(J_PROPERTY, PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(PropertyBuiltins.SLOTS)),
-    PSimpleQueue(J_SIMPLE_QUEUE, PythonObject, new Builder().publishInModule("_queue").basetype()),
+    PProperty(J_PROPERTY, PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(PropertyBuiltins.SLOTS).doc("""
+                    Property attribute.
+
+                      fget
+                        function to be used for getting an attribute value
+                      fset
+                        function to be used for setting an attribute value
+                      fdel
+                        function to be used for del'ing an attribute
+                      doc
+                        docstring
+
+                    Typical use is to define a managed attribute x:
+
+                    class C(object):
+                        def getx(self): return self._x
+                        def setx(self, value): self._x = value
+                        def delx(self): del self._x
+                        x = property(getx, setx, delx, "I'm the 'x' property.")
+
+                    Decorators make defining new properties or modifying existing ones easy:
+
+                    class C(object):
+                        @property
+                        def x(self):
+                            "I am the 'x' property."
+                            return self._x
+                        @x.setter
+                        def x(self, value):
+                            self._x = value
+                        @x.deleter
+                        def x(self):
+                            del self._x""")),
+    PSimpleQueue(J_SIMPLE_QUEUE, PythonObject, new Builder().publishInModule("_queue").basetype().doc("""
+                    SimpleQueue()
+                    --
+
+                    Simple, unbounded, reentrant FIFO queue.""")),
     PRandom("Random", PythonObject, new Builder().publishInModule("_random").basetype()),
-    PRange("range", PythonObject, new Builder().publishInModule(J_BUILTINS).slots(RangeBuiltins.SLOTS).methodsFlags(RANGE_M_FLAGS)),
+    PRange("range", PythonObject, new Builder().publishInModule(J_BUILTINS).slots(RangeBuiltins.SLOTS).methodsFlags(RANGE_M_FLAGS).doc("""
+                    range(stop) -> range object
+                    range(start, stop[, step]) -> range object
+
+                    Return an object that produces a sequence of integers from start (inclusive)
+                    to stop (exclusive) by step.  range(i, j) produces i, i+1, i+2, ..., j-1.
+                    start defaults to 0, and stop is omitted!  range(4) produces 0, 1, 2, 3.
+                    These are exactly the valid indices for a list of 4 elements.
+                    When step is given, it specifies the increment (or decrement).""")),
     PReferenceType("ReferenceType", PythonObject, new Builder().publishInModule("_weakref").basetype().slots(ReferenceTypeBuiltins.SLOTS)),
     PSentinelIterator("callable_iterator", PythonObject, new Builder().disallowInstantiation().slots(SentinelIteratorBuiltins.SLOTS)),
-    PReverseIterator("reversed", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(ReversedBuiltins.SLOTS)),
-    PSet("set", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(TpSlots.merge(BaseSetBuiltins.SLOTS, SetBuiltins.SLOTS)).methodsFlags(SET_M_FLAGS)),
-    PSlice("slice", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(SliceBuiltins.SLOTS)),
-    PString("str", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(StringBuiltins.SLOTS).methodsFlags(STRING_M_FLAGS)),
+    PReverseIterator("reversed", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(ReversedBuiltins.SLOTS).doc("""
+                    Return a reverse iterator over the values of the given sequence.""")),
+    PSet("set", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(TpSlots.merge(BaseSetBuiltins.SLOTS, SetBuiltins.SLOTS)).methodsFlags(SET_M_FLAGS).doc("""
+                    set() -> new empty set object
+                    set(iterable) -> new set object
+
+                    Build an unordered collection of unique elements.""")),
+    PSlice("slice", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(SliceBuiltins.SLOTS).doc("""
+                    slice(stop)
+                    slice(start, stop[, step])
+
+                    Create a slice object.  This is used for extended slicing (e.g. a[0:10:2]).""")),
+    PString("str", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(StringBuiltins.SLOTS).methodsFlags(STRING_M_FLAGS).doc("""
+                    str(object='') -> str
+                    str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+                    Create a new string object from the given object. If encoding or
+                    errors is specified, then the object must expose a data buffer
+                    that will be decoded using the given encoding and error handler.
+                    Otherwise, returns the result of object.__str__() (if defined)
+                    or repr(object).
+                    encoding defaults to sys.getdefaultencoding().
+                    errors defaults to 'strict'.""")),
     PTraceback("traceback", PythonObject, new Builder().basetype()),
-    PTuple("tuple", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(TupleBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
-    PythonModule("module", PythonObject, new Builder().basetype().addDict().slots(ModuleBuiltins.SLOTS)),
+    PTuple("tuple", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(TupleBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
+                    Built-in immutable sequence.
+
+                    If no argument is given, the constructor returns an empty tuple.
+                    If iterable is specified the tuple is initialized from iterable's items.
+
+                    If the argument is a tuple, the return value is the same object.""")),
+    PythonModule("module", PythonObject, new Builder().basetype().addDict().slots(ModuleBuiltins.SLOTS).doc("""
+                    Create a module object.
+
+                    The name must be a string; the optional doc argument can have any type.""")),
     PythonModuleDef("moduledef", PythonObject, new Builder()),
-    Super("super", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(SuperBuiltins.SLOTS)),
+    Super("super", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(SuperBuiltins.SLOTS).doc("""
+                    super() -> same as super(__class__, <first argument>)
+                    super(type) -> unbound super object
+                    super(type, obj) -> bound super object; requires isinstance(obj, type)
+                    super(type, type2) -> bound super object; requires issubclass(type2, type)
+                    Typical use to call a cooperative superclass method:
+                    class C(B):
+                        def meth(self, arg):
+                            super().meth(arg)
+                    This works for class methods too:
+                    class C(B):
+                        @classmethod
+                        def cmeth(cls, arg):
+                            super().cmeth(arg)""")),
     PCode("code", PythonObject, new Builder().slots(CodeBuiltins.SLOTS)),
     PGenericAlias("GenericAlias", PythonObject, new Builder().publishInModule(J_TYPES).basetype().slots(GenericAliasBuiltins.SLOTS).methodsFlags(GENERIC_ALIAS_M_FLAGS)),
     PGenericAliasIterator("generic_alias_iterator", PythonObject, new Builder().slots(GenericAliasIteratorBuiltins.SLOTS)),
     PUnionType("UnionType", PythonObject, new Builder().publishInModule(J_TYPES).slots(UnionTypeBuiltins.SLOTS).methodsFlags(UNION_TYPE_M_FLAGS)),
-    PZip("zip", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(PZipBuiltins.SLOTS)),
+    PZip("zip", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(PZipBuiltins.SLOTS).doc("""
+                    zip(*iterables, strict=False) --> Yield tuples until an input is exhausted.
+
+                       >>> list(zip('abcdefg', range(3), range(4)))
+                       [('a', 0, 0), ('b', 1, 1), ('c', 2, 2)]
+
+                    The zip object yields n-length tuples, where n is the number of iterables
+                    passed as positional arguments to zip().  The i-th element in every tuple
+                    comes from the i-th iterable argument to zip().  This continues until the
+                    shortest argument is exhausted.
+
+                    If strict is true and one of the arguments is exhausted before the others,
+                    raise a ValueError.""")),
     PThread("start_new_thread", PythonObject, new Builder().publishInModule(J__THREAD).basetype()),
     PThreadLocal("_local", PythonObject, new Builder().publishInModule(J__THREAD).basetype().slots(ThreadLocalBuiltins.SLOTS)),
     PLock("LockType", PythonObject, new Builder().publishInModule(J__THREAD).disallowInstantiation().slots(LockBuiltins.SLOTS)),
@@ -394,9 +604,50 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PSemLock("SemLock", PythonObject, new Builder().publishInModule("_multiprocessing").basetype()),
     PGraalPySemLock("SemLock", PythonObject, new Builder().publishInModule("_multiprocessing_graalpy").basetype()),
     PSocket("socket", PythonObject, new Builder().publishInModule(J__SOCKET).basetype().slots(SocketBuiltins.SLOTS)),
-    PStaticmethod("staticmethod", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().addDict().slots(StaticmethodBuiltins.SLOTS)),
-    PClassmethod("classmethod", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().addDict().slots(TpSlots.merge(ClassmethodCommonBuiltins.SLOTS, ClassmethodBuiltins.SLOTS))),
-    PInstancemethod("instancemethod", PythonObject, new Builder().basetype().addDict().slots(InstancemethodBuiltins.SLOTS)),
+    PStaticmethod("staticmethod", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().addDict().slots(StaticmethodBuiltins.SLOTS).doc("""
+                    staticmethod(function) -> method
+
+                    Convert a function to be a static method.
+
+                    A static method does not receive an implicit first argument.
+                    To declare a static method, use this idiom:
+
+                         class C:
+                             @staticmethod
+                             def f(arg1, arg2, argN):
+                                 ...
+
+                    It can be called either on the class (e.g. C.f()) or on an instance
+                    (e.g. C().f()). Both the class and the instance are ignored, and
+                    neither is passed implicitly as the first argument to the method.
+
+                    Static methods in Python are similar to those found in Java or C++.
+                    For a more advanced concept, see the classmethod builtin.""")),
+    PClassmethod("classmethod", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().addDict().slots(TpSlots.merge(ClassmethodCommonBuiltins.SLOTS, ClassmethodBuiltins.SLOTS)).doc("""
+                    classmethod(function) -> method
+
+                    Convert a function to be a class method.
+
+                    A class method receives the class as implicit first argument,
+                    just like an instance method receives the instance.
+                    To declare a class method, use this idiom:
+
+                      class C:
+                          @classmethod
+                          def f(cls, arg1, arg2, argN):
+                              ...
+
+                    It can be called either on the class (e.g. C.f()) or on an instance
+                    (e.g. C().f()).  The instance is ignored except for its class.
+                    If a class method is called for a derived class, the derived class
+                    object is passed as the implied first argument.
+
+                    Class methods are different than C++ or Java static methods.
+                    If you want those, see the staticmethod builtin.""")),
+    PInstancemethod("instancemethod", PythonObject, new Builder().basetype().addDict().slots(InstancemethodBuiltins.SLOTS).doc("""
+                    instancemethod(function)
+
+                    Bind a function to a class.""")),
     PScandirIterator("ScandirIterator", PythonObject, new Builder().moduleName(J_POSIX).disallowInstantiation().slots(ScandirIteratorBuiltins.SLOTS)),
     PDirEntry("DirEntry", PythonObject, new Builder().publishInModule(J_POSIX).disallowInstantiation().slots(DirEntryBuiltins.SLOTS)),
     LsprofProfiler("Profiler", PythonObject, new Builder().publishInModule("_lsprof").basetype().slots(ProfilerBuiltins.SLOTS)),
@@ -411,8 +662,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // Errors and exceptions:
 
     // everything after BaseException is considered to be an exception
-    PBaseException("BaseException", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().addDict().slots(BaseExceptionBuiltins.SLOTS)),
-    PBaseExceptionGroup("BaseExceptionGroup", PBaseException, new Builder().publishInModule(J_BUILTINS).basetype().addDict().slots(BaseExceptionGroupBuiltins.SLOTS)),
+    PBaseException("BaseException", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().addDict().slots(BaseExceptionBuiltins.SLOTS).doc("""
+                    Common base class for all exceptions""")),
+    PBaseExceptionGroup("BaseExceptionGroup", PBaseException, new Builder().publishInModule(J_BUILTINS).basetype().addDict().slots(BaseExceptionGroupBuiltins.SLOTS).doc("""
+                    A combination of multiple unrelated exceptions.""")),
     SystemExit("SystemExit", PBaseException, new Builder().publishInModule(J_BUILTINS).basetype().addDict().slots(SystemExitBuiltins.SLOTS)),
     KeyboardInterrupt("KeyboardInterrupt", PBaseException, new Builder().publishInModule(J_BUILTINS).basetype().addDict()),
     GeneratorExit("GeneratorExit", PBaseException, new Builder().publishInModule(J_BUILTINS).basetype().addDict()),
@@ -580,29 +833,155 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // itertools
     PTee("_tee", PythonObject, new Builder().publishInModule("itertools").slots(TeeBuiltins.SLOTS)),
     PTeeDataObject("_tee_dataobject", PythonObject, new Builder().publishInModule("itertools").slots(TeeDataObjectBuiltins.SLOTS)),
-    PAccumulate("accumulate", PythonObject, new Builder().publishInModule("itertools").basetype().slots(AccumulateBuiltins.SLOTS)),
-    PCombinations("combinations", PythonObject, new Builder().publishInModule("itertools").basetype().slots(CombinationsBuiltins.SLOTS)),
-    PCombinationsWithReplacement("combinations_with_replacement", PythonObject, new Builder().publishInModule("itertools").basetype().slots(CombinationsBuiltins.SLOTS)),
-    PCompress("compress", PythonObject, new Builder().publishInModule("itertools").basetype().slots(CompressBuiltins.SLOTS)),
-    PCycle("cycle", PythonObject, new Builder().publishInModule("itertools").basetype().slots(CycleBuiltins.SLOTS)),
-    PDropwhile("dropwhile", PythonObject, new Builder().publishInModule("itertools").basetype().slots(DropwhileBuiltins.SLOTS)),
-    PFilterfalse("filterfalse", PythonObject, new Builder().publishInModule("itertools").basetype().slots(FilterfalseBuiltins.SLOTS)),
-    PGroupBy("groupby", PythonObject, new Builder().publishInModule("itertools").basetype().slots(GroupByBuiltins.SLOTS)),
+    PAccumulate("accumulate", PythonObject, new Builder().publishInModule("itertools").basetype().slots(AccumulateBuiltins.SLOTS).doc("""
+                    accumulate(iterable) --> accumulate object
+
+                    Return series of accumulated sums.""")),
+    PCombinations("combinations", PythonObject, new Builder().publishInModule("itertools").basetype().slots(CombinationsBuiltins.SLOTS).doc("""
+                    combinations(iterable, r) --> combinations object
+
+                    Return successive r-length combinations of elements in the iterable.
+
+                    combinations(range(4), 3) --> (0,1,2), (0,1,3), (0,2,3), (1,2,3)""")),
+    PCombinationsWithReplacement("combinations_with_replacement", PythonObject, new Builder().publishInModule("itertools").basetype().slots(CombinationsBuiltins.SLOTS).doc("""
+                    combinations_with_replacement(iterable, r) --> combinations_with_replacement object
+
+                    Return successive r-length combinations of elements in the iterable
+                    allowing individual elements to have successive repeats.
+                        combinations_with_replacement('ABC', 2) --> AA AB AC BB BC CC""")),
+    PCompress("compress", PythonObject, new Builder().publishInModule("itertools").basetype().slots(CompressBuiltins.SLOTS).doc("""
+                    Make an iterator that filters elements from *data* returning
+                    only those that have a corresponding element in *selectors* that evaluates to
+                    ``True``.  Stops when either the *data* or *selectors* iterables has been
+                    exhausted.
+                    Equivalent to::
+
+                    \tdef compress(data, selectors):
+                    \t\t# compress('ABCDEF', [1,0,1,0,1,1]) --> A C E F
+                    \t\treturn (d for d, s in zip(data, selectors) if s)""")),
+    PCycle("cycle", PythonObject, new Builder().publishInModule("itertools").basetype().slots(CycleBuiltins.SLOTS).doc("""
+                    Make an iterator returning elements from the iterable and
+                        saving a copy of each. When the iterable is exhausted, return
+                        elements from the saved copy. Repeats indefinitely.
+
+                        Equivalent to :
+
+                        def cycle(iterable):
+                        \tsaved = []
+                        \tfor element in iterable:
+                        \t\tyield element
+                        \t\tsaved.append(element)
+                        \twhile saved:
+                        \t\tfor element in saved:
+                        \t\t\tyield element""")),
+    PDropwhile("dropwhile", PythonObject, new Builder().publishInModule("itertools").basetype().slots(DropwhileBuiltins.SLOTS).doc("""
+                    dropwhile(predicate, iterable) --> dropwhile object
+
+                    Drop items from the iterable while predicate(item) is true.
+                    Afterwards, return every element until the iterable is exhausted.""")),
+    PFilterfalse("filterfalse", PythonObject, new Builder().publishInModule("itertools").basetype().slots(FilterfalseBuiltins.SLOTS).doc("""
+                    filterfalse(function or None, sequence) --> filterfalse object
+
+                    Return those items of sequence for which function(item) is false.
+                    If function is None, return the items that are false.""")),
+    PGroupBy("groupby", PythonObject, new Builder().publishInModule("itertools").basetype().slots(GroupByBuiltins.SLOTS).doc("""
+                    Make an iterator that returns consecutive keys and groups from the
+                    iterable. The key is a function computing a key value for each
+                    element. If not specified or is None, key defaults to an identity
+                    function and returns the element unchanged. Generally, the
+                    iterable needs to already be sorted on the same key function.
+
+                    The returned group is itself an iterator that shares the
+                    underlying iterable with groupby(). Because the source is shared,
+                    when the groupby object is advanced, the previous group is no
+                    longer visible. So, if that data is needed later, it should be
+                    stored as a list:
+
+                    \tgroups = []
+                    \tuniquekeys = []
+                    \tfor k, g in groupby(data, keyfunc):
+                    \t\tgroups.append(list(g))      # Store group iterator as a list
+                    \t\tuniquekeys.append(k)""")),
     PGrouper("grouper", PythonObject, new Builder().publishInModule("itertools").slots(GrouperBuiltins.SLOTS)),
-    PPairwise("pairwise", PythonObject, new Builder().publishInModule("itertools").basetype().slots(PairwiseBuiltins.SLOTS)),
-    PPermutations("permutations", PythonObject, new Builder().publishInModule("itertools").basetype().slots(PermutationsBuiltins.SLOTS)),
-    PProduct("product", PythonObject, new Builder().publishInModule("itertools").basetype().slots(ProductBuiltins.SLOTS)),
-    PRepeat("repeat", PythonObject, new Builder().publishInModule("itertools").basetype().slots(RepeatBuiltins.SLOTS)),
-    PChain("chain", PythonObject, new Builder().publishInModule("itertools").basetype().slots(ChainBuiltins.SLOTS)),
+    PPairwise("pairwise", PythonObject, new Builder().publishInModule("itertools").basetype().slots(PairwiseBuiltins.SLOTS).doc("""
+                    Return an iterator of overlapping pairs taken from the input iterator.
+
+                        s -> (s0,s1), (s1,s2), (s2, s3), ...""")),
+    PPermutations("permutations", PythonObject, new Builder().publishInModule("itertools").basetype().slots(PermutationsBuiltins.SLOTS).doc("""
+                    permutations(iterable[, r]) --> permutations object
+
+                    Return successive r-length permutations of elements in the iterable.
+
+                    permutations(range(3), 2) --> (0,1), (0,2), (1,0), (1,2), (2,0), (2,1)""")),
+    PProduct("product", PythonObject, new Builder().publishInModule("itertools").basetype().slots(ProductBuiltins.SLOTS).doc("""
+                    Cartesian product of input iterables.
+
+                    Equivalent to nested for-loops in a generator expression. For example,
+                     ``product(A, B)`` returns the same as ``((x,y) for x in A for y in B)``.
+
+                    The nested loops cycle like an odometer with the rightmost element advancing
+                     on every iteration.  This pattern creates a lexicographic ordering so that if
+                     the input's iterables are sorted, the product tuples are emitted in sorted
+                     order.
+
+                    To compute the product of an iterable with itself, specify the number of
+                     repetitions with the optional *repeat* keyword argument.  For example,
+                     ``product(A, repeat=4)`` means the same as ``product(A, A, A, A)``.
+
+                    This function is equivalent to the following code, except that the
+                     actual implementation does not build up intermediate results in memory::
+
+                    def product(*args, **kwds):
+                    \t# product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy
+                    \t# product(range(2), repeat=3) --> 000 001 010 011 100 101 110 111
+                    \tpools = map(tuple, args) * kwds.get('repeat', 1)
+                    \tresult = [[]]
+                    \tfor pool in pools:
+                    \t\tresult = [x+[y] for x in result for y in pool]
+                    \tfor prod in result:
+                    \t\tyield tuple(prod)""")),
+    PRepeat("repeat", PythonObject, new Builder().publishInModule("itertools").basetype().slots(RepeatBuiltins.SLOTS).doc("""
+                    repeat(object [,times]) -> create an iterator which returns the object
+                    for the specified number of times.  If not specified, returns the object
+                    endlessly.""")),
+    PChain("chain", PythonObject, new Builder().publishInModule("itertools").basetype().slots(ChainBuiltins.SLOTS).doc("""
+                    Return a chain object whose .__next__() method returns elements from the
+                    first iterable until it is exhausted, then elements from the next
+                    iterable, until all of the iterables are exhausted.""")),
     PCount("count", PythonObject, new Builder().publishInModule("itertools").basetype().slots(CountBuiltins.SLOTS)),
     PIslice("islice", PythonObject, new Builder().publishInModule("itertools").basetype().slots(IsliceBuiltins.SLOTS)),
-    PStarmap("starmap", PythonObject, new Builder().publishInModule("itertools").basetype().slots(StarmapBuiltins.SLOTS)),
-    PTakewhile("takewhile", PythonObject, new Builder().publishInModule("itertools").basetype().slots(TakewhileBuiltins.SLOTS)),
-    PZipLongest("zip_longest", PythonObject, new Builder().publishInModule("itertools").basetype().slots(ZipLongestBuiltins.SLOTS)),
+    PStarmap("starmap", PythonObject, new Builder().publishInModule("itertools").basetype().slots(StarmapBuiltins.SLOTS).doc("""
+                    starmap(function, sequence) --> starmap object
+
+                    Return an iterator whose values are returned from the function evaluated
+                    with an argument tuple taken from the given sequence.""")),
+    PTakewhile("takewhile", PythonObject, new Builder().publishInModule("itertools").basetype().slots(TakewhileBuiltins.SLOTS).doc("""
+                    Make an iterator that returns elements from the iterable as
+                    long as the predicate is true.
+
+                    Equivalent to :
+
+                    def takewhile(predicate, iterable):
+                    \tfor x in iterable:
+                    \t\tif predicate(x):
+                    \t\t\tyield x
+                    \t\telse:
+                    \t\t\tbreak""")),
+    PZipLongest("zip_longest", PythonObject, new Builder().publishInModule("itertools").basetype().slots(ZipLongestBuiltins.SLOTS).doc("""
+                    zip_longest(iter1 [,iter2 [...]], [fillvalue=None]) --> zip_longest object
+
+                    Return a zip_longest object whose .next() method returns a tuple where
+                    the i-th element comes from the i-th iterable argument.  The .next()
+                    method continues until the longest iterable in the argument sequence
+                    is exhausted and then it raises StopIteration.  When the shorter iterables
+                    are exhausted, the fillvalue is substituted in their place.  The fillvalue
+                    defaults to None or can be specified by a keyword argument.""")),
 
     // json
-    JSONScanner("Scanner", PythonObject, new Builder().publishInModule("_json").basetype()),
-    JSONEncoder("Encoder", PythonObject, new Builder().publishInModule("_json").basetype()),
+    JSONScanner("Scanner", PythonObject, new Builder().publishInModule("_json").basetype().doc("""
+                    JSON scanner object""")),
+    JSONEncoder("Encoder", PythonObject, new Builder().publishInModule("_json").basetype().doc("""
+                    _iterencode(obj, _current_indent_level) -> iterable""")),
 
     // csv
     CSVDialect("Dialect", PythonObject, new Builder().publishInModule("_csv").basetype()),
@@ -693,6 +1072,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         private boolean disallowInstantiation;
         private TpSlots slots;
         private long methodsFlags = DEFAULT_M_FLAGS;
+        private String doc;
 
         public Builder publishInModule(String publishInModule) {
             this.publishInModule = publishInModule;
@@ -731,6 +1111,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
             this.methodsFlags = methodsFlags;
             return this;
         }
+
+        public Builder doc(String doc) {
+            this.doc = doc;
+            return this;
+        }
     }
 
     private final TruffleString name;
@@ -743,6 +1128,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     private final boolean basetype;
     private final boolean isBuiltinWithDict;
     private final boolean disallowInstantiation;
+    private final TruffleString doc;
 
     // initialized in static constructor
     @CompilationFinal private PythonBuiltinClassType type;
@@ -786,6 +1172,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         this.weaklistoffset = -1;
         this.declaredSlots = builder.slots != null ? builder.slots : TpSlots.createEmpty();
         this.slots = initSlots(base, declaredSlots);
+        this.doc = toTruffleStringUncached(builder.doc);
     }
 
     public boolean isAcceptableBase() {
@@ -822,6 +1209,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     public TruffleString getModuleName() {
         return moduleName;
+    }
+
+    public TruffleString getDoc() {
+        return doc;
     }
 
     /**

@@ -270,18 +270,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // bytes([source[, encoding[, errors]]])
-    @Builtin(name = J_BYTES, minNumOfPositionalArgs = 1, parameterNames = {"$self", "source", "encoding", "errors"}, constructsClass = PythonBuiltinClassType.PBytes, doc = """
-                    bytes(iterable_of_ints) -> bytes
-                    bytes(string, encoding[, errors]) -> bytes
-                    bytes(bytes_or_buffer) -> immutable copy of bytes_or_buffer
-                    bytes(int) -> bytes object of size given by the parameter initialized with null bytes
-                    bytes() -> empty bytes object
-
-                    Construct an immutable array of bytes from:
-                      - an iterable yielding integers in range(256)
-                      - a text string encoded using the specified encoding
-                      - any object implementing the buffer API.
-                      - an integer""")
+    @Builtin(name = J_BYTES, minNumOfPositionalArgs = 1, parameterNames = {"$self", "source", "encoding", "errors"}, constructsClass = PythonBuiltinClassType.PBytes)
     @ArgumentClinic(name = "encoding", conversionClass = BytesNodes.ExpectStringNode.class, args = "\"bytes()\"")
     @ArgumentClinic(name = "errors", conversionClass = BytesNodes.ExpectStringNode.class, args = "\"bytes()\"")
     @GenerateNodeFactory
@@ -376,19 +365,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_BYTEARRAY, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PByteArray, doc = """
-                    bytearray(iterable_of_ints) -> bytearray
-                    bytearray(string, encoding[, errors]) -> bytearray
-                    bytearray(bytes_or_buffer) -> mutable copy of bytes_or_buffer
-                    bytearray(int) -> bytes array of size given by the parameter initialized with null bytes
-                    bytearray() -> empty bytes array
-
-                    Construct a mutable bytearray object from:
-                      - an iterable yielding integers in range(256)
-                      - a text string encoded using the specified encoding
-                      - a bytes or a buffer object
-                      - any object implementing the buffer API.
-                      - an integer""")
+    @Builtin(name = J_BYTEARRAY, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PByteArray)
     @GenerateNodeFactory
     public abstract static class ByteArrayNode extends PythonBuiltinNode {
         @Specialization
@@ -403,10 +380,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // complex([real[, imag]])
-    @Builtin(name = J_COMPLEX, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PComplex, parameterNames = {"$cls", "real", "imag"}, doc = """
-                    Create a complex number from a real part and an optional imaginary part.
-
-                    This is equivalent to (real + imag*1j) where imag defaults to 0.""")
+    @Builtin(name = J_COMPLEX, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PComplex, parameterNames = {"$cls", "real", "imag"})
     @GenerateNodeFactory
     public abstract static class ComplexNode extends PythonTernaryBuiltinNode {
         @Child private PyObjectReprAsObjectNode reprNode;
@@ -887,16 +861,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // dict(**kwarg)
     // dict(mapping, **kwarg)
     // dict(iterable, **kwarg)
-    @Builtin(name = J_DICT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDict, doc = """
-                    dict() -> new empty dictionary
-                    dict(mapping) -> new dictionary initialized from a mapping object's
-                        (key, value) pairs
-                    dict(iterable) -> new dictionary initialized as if via:
-                        d = {}
-                        for k, v in iterable:
-                            d[k] = v
-                    dict(**kwargs) -> new dictionary initialized with the name=value pairs
-                        in the keyword argument list.  For example:  dict(one=1, two=2)""")
+    @Builtin(name = J_DICT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDict)
     @GenerateNodeFactory
     public abstract static class DictionaryNode extends PythonBuiltinNode {
         @Specialization(guards = "isBuiltinDict(cls)")
@@ -927,17 +892,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // enumerate(iterable, start=0)
-    @Builtin(name = J_ENUMERATE, minNumOfPositionalArgs = 2, parameterNames = {"cls", "iterable", "start"}, constructsClass = PythonBuiltinClassType.PEnumerate, doc = """
-                    Return an enumerate object.
-
-                      iterable
-                        an object supporting iteration
-
-                    The enumerate object yields pairs containing a count (from start, which
-                    defaults to zero) and a value yielded by the iterable argument.
-
-                    enumerate is useful for obtaining an indexed list:
-                        (0, seq[0]), (1, seq[1]), (2, seq[2]), ...""")
+    @Builtin(name = J_ENUMERATE, minNumOfPositionalArgs = 2, parameterNames = {"cls", "iterable", "start"}, constructsClass = PythonBuiltinClassType.PEnumerate)
     @GenerateNodeFactory
     public abstract static class EnumerateNode extends PythonBuiltinNode {
 
@@ -989,7 +944,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // reversed(seq)
-    @Builtin(name = J_REVERSED, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PReverseIterator, doc = "Return a reverse iterator over the values of the given sequence.")
+    @Builtin(name = J_REVERSED, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PReverseIterator)
     @GenerateNodeFactory
     @ImportStatic(SpecialMethodSlot.class)
     public abstract static class ReversedNode extends PythonBuiltinNode {
@@ -1080,7 +1035,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // float([x])
-    @Builtin(name = J_FLOAT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFloat, doc = "Convert a string or number to a floating point number, if possible.")
+    @Builtin(name = J_FLOAT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFloat)
     @GenerateNodeFactory
     abstract static class FloatNode extends PythonBinaryBuiltinNode {
 
@@ -1198,11 +1153,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // frozenset([iterable])
-    @Builtin(name = J_FROZENSET, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFrozenSet, doc = """
-                    frozenset() -> empty frozenset object
-                    frozenset(iterable) -> frozenset object
-
-                    Build an immutable unordered collection of unique elements.""")
+    @Builtin(name = J_FROZENSET, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFrozenSet)
     @GenerateNodeFactory
     public abstract static class FrozenSetNode extends PythonBinaryBuiltinNode {
 
@@ -1242,19 +1193,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     // int(x=0)
     // int(x, base=10)
-    @Builtin(name = J_INT, minNumOfPositionalArgs = 1, parameterNames = {"cls", "x", "base"}, numOfPositionalOnlyArgs = 2, constructsClass = PythonBuiltinClassType.PInt, doc = """
-                    int([x]) -> integer
-                    int(x, base=10) -> integer
-
-                    Convert a number or string to an integer, or return 0 if no arguments
-                    are given.  If x is a number, return x.__int__().  For floating point
-                    numbers, this truncates towards zero.
-
-                    If x is not a number or if base is given, then x must be a string,
-                    bytes, or bytearray instance representing an integer literal in the
-                    given base.  The literal can be preceded by '+' or '-' and be surrounded
-                    by whitespace.  The base defaults to 10.  Valid bases are 0 and 2-36.
-                    Base 0 means to interpret the base from the string as an integer literal.""")
+    @Builtin(name = J_INT, minNumOfPositionalArgs = 1, parameterNames = {"cls", "x", "base"}, numOfPositionalOnlyArgs = 2, constructsClass = PythonBuiltinClassType.PInt)
     @GenerateNodeFactory
     public abstract static class IntNode extends PythonTernaryBuiltinNode {
 
@@ -1357,12 +1296,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // bool([x])
-    @Builtin(name = J_BOOL, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.Boolean, base = PythonBuiltinClassType.PInt, doc = """
-                    bool(x) -> bool
-
-                    Returns True when the argument x is true, False otherwise.
-                    The builtins True and False are the only two instances of the class bool.
-                    The class bool is a subclass of the class int, and cannot be subclassed.""")
+    @Builtin(name = J_BOOL, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.Boolean, base = PythonBuiltinClassType.PInt)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -1373,11 +1307,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // list([iterable])
-    @Builtin(name = J_LIST, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PList, doc = """
-                    Built-in mutable sequence.
-
-                    If no argument is given, the constructor creates a new empty list.
-                    The argument must be an iterable if specified.""")
+    @Builtin(name = J_LIST, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PList)
     @GenerateNodeFactory
     public abstract static class ListNode extends PythonVarargsBuiltinNode {
         @Specialization(guards = "isBuiltinList(cls)")
@@ -1399,12 +1329,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // object()
-    @Builtin(name = J_OBJECT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonObject, doc = """
-                    The base class of the class hierarchy.
-
-                    When called, it accepts no arguments and returns a new featureless
-                    instance that has no instance attributes and cannot be given any.
-                    """)
+    @Builtin(name = J_OBJECT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonObject)
     @GenerateNodeFactory
     public abstract static class ObjectNode extends PythonVarargsBuiltinNode {
 
@@ -1544,15 +1469,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     // range(stop)
     // range(start, stop[, step])
-    @Builtin(name = J_RANGE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PRange, doc = """
-                    range(stop) -> range object
-                    range(start, stop[, step]) -> range object
-
-                    Return an object that produces a sequence of integers from start (inclusive)
-                    to stop (exclusive) by step.  range(i, j) produces i, i+1, i+2, ..., j-1.
-                    start defaults to 0, and stop is omitted!  range(4) produces 0, 1, 2, 3.
-                    These are exactly the valid indices for a list of 4 elements.
-                    When step is given, it specifies the increment (or decrement).""")
+    @Builtin(name = J_RANGE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PRange)
     @GenerateNodeFactory
     @ReportPolymorphism
     public abstract static class RangeNode extends PythonQuaternaryBuiltinNode {
@@ -1700,11 +1617,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // set([iterable])
-    @Builtin(name = J_SET, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PSet, doc = """
-                    set() -> new empty set object
-                    set(iterable) -> new set object
-
-                    Build an unordered collection of unique elements.""")
+    @Builtin(name = J_SET, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PSet)
     @GenerateNodeFactory
     public abstract static class SetNode extends PythonBuiltinNode {
         @Specialization(guards = "isBuiltinSet(cls)")
@@ -1728,17 +1641,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     // str(object='')
     // str(object=b'', encoding='utf-8', errors='strict')
-    @Builtin(name = J_STR, minNumOfPositionalArgs = 1, parameterNames = {"cls", "object", "encoding", "errors"}, constructsClass = PythonBuiltinClassType.PString, doc = """
-                    str(object='') -> str
-                    str(bytes_or_buffer[, encoding[, errors]]) -> str
-
-                    Create a new string object from the given object. If encoding or
-                    errors is specified, then the object must expose a data buffer
-                    that will be decoded using the given encoding and error handler.
-                    Otherwise, returns the result of object.__str__() (if defined)
-                    or repr(object).
-                    encoding defaults to sys.getdefaultencoding().
-                    errors defaults to 'strict'.""")
+    @Builtin(name = J_STR, minNumOfPositionalArgs = 1, parameterNames = {"cls", "object", "encoding", "errors"}, constructsClass = PythonBuiltinClassType.PString)
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonBuiltinNode {
 
@@ -1907,13 +1810,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // tuple([iterable])
-    @Builtin(name = J_TUPLE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PTuple, doc = """
-                    Built-in immutable sequence.
-
-                    If no argument is given, the constructor returns an empty tuple.
-                    If iterable is specified the tuple is initialized from iterable's items.
-
-                    If the argument is a tuple, the return value is the same object.""")
+    @Builtin(name = J_TUPLE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PTuple)
     @GenerateNodeFactory
     public abstract static class TupleNode extends PythonBinaryBuiltinNode {
 
@@ -1966,19 +1863,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // zip(*iterables)
-    @Builtin(name = J_ZIP, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PZip, doc = """
-                    zip(*iterables, strict=False) --> Yield tuples until an input is exhausted.
-
-                       >>> list(zip('abcdefg', range(3), range(4)))
-                       [('a', 0, 0), ('b', 1, 1), ('c', 2, 2)]
-
-                    The zip object yields n-length tuples, where n is the number of iterables
-                    passed as positional arguments to zip().  The i-th element in every tuple
-                    comes from the i-th iterable argument to zip().  This continues until the
-                    shortest argument is exhausted.
-
-                    If strict is true and one of the arguments is exhausted before the others,
-                    raise a ValueError.""")
+    @Builtin(name = J_ZIP, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PZip)
     @GenerateNodeFactory
     public abstract static class ZipNode extends PythonBuiltinNode {
         static boolean isNoneOrEmptyPKeyword(Object value) {
@@ -2225,10 +2110,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_MODULE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonModule, doc = """
-                    Create a module object.
-
-                    The name must be a string; the optional doc argument can have any type.""")
+    @Builtin(name = J_MODULE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonModule)
     @GenerateNodeFactory
     public abstract static class ModuleNode extends PythonBuiltinNode {
 
@@ -2272,7 +2154,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "method", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PMethod, doc = "Create a bound instance method object.")
+    @Builtin(name = "method", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PMethod)
     @GenerateNodeFactory
     public abstract static class MethodTypeNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -2458,7 +2340,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "BaseException", constructsClass = PythonBuiltinClassType.PBaseException, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, doc = "Common base class for all exceptions")
+    @Builtin(name = "BaseException", constructsClass = PythonBuiltinClassType.PBaseException, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BaseExceptionNode extends PythonVarargsBuiltinNode {
 
@@ -2493,7 +2375,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "BaseExceptionGroup", constructsClass = PythonBuiltinClassType.PBaseExceptionGroup, minNumOfPositionalArgs = 3, doc = "A combination of multiple unrelated exceptions.")
+    @Builtin(name = "BaseExceptionGroup", constructsClass = PythonBuiltinClassType.PBaseExceptionGroup, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class BaseExceptionGroupNode extends PythonTernaryBuiltinNode {
 
@@ -2590,11 +2472,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     // slice(stop)
     // slice(start, stop[, step])
-    @Builtin(name = "slice", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PSlice, doc = """
-                    slice(stop)
-                    slice(start, stop[, step])
-
-                    Create a slice object.  This is used for extended slicing (e.g. a[0:10:2]).""")
+    @Builtin(name = "slice", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PSlice)
     @GenerateNodeFactory
     abstract static class SliceNode extends PythonQuaternaryBuiltinNode {
         @Specialization(guards = {"isNoValue(second)"})
@@ -2622,8 +2500,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // memoryview(obj)
-    @Builtin(name = J_MEMORYVIEW, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"}, constructsClass = PythonBuiltinClassType.PMemoryView, //
-                    doc = "Create a new memoryview object which references the given object.")
+    @Builtin(name = J_MEMORYVIEW, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"}, constructsClass = PythonBuiltinClassType.PMemoryView)
     @GenerateNodeFactory
     public abstract static class MemoryViewNode extends PythonBuiltinNode {
 
@@ -2646,20 +2523,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // super()
-    @Builtin(name = J_SUPER, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.Super, doc = """
-                    super() -> same as super(__class__, <first argument>)
-                    super(type) -> unbound super object
-                    super(type, obj) -> bound super object; requires isinstance(obj, type)
-                    super(type, type2) -> bound super object; requires issubclass(type2, type)
-                    Typical use to call a cooperative superclass method:
-                    class C(B):
-                        def meth(self, arg):
-                            super().meth(arg)
-                    This works for class methods too:
-                    class C(B):
-                        @classmethod
-                        def cmeth(cls, arg):
-                            super().cmeth(arg)""")
+    @Builtin(name = J_SUPER, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.Super)
     @GenerateNodeFactory
     public abstract static class SuperInitNode extends PythonTernaryBuiltinNode {
         @Specialization(guards = "isBuiltinSuper(cls)")
@@ -2680,27 +2544,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_CLASSMETHOD, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PClassmethod, doc = """
-                    classmethod(function) -> method
-
-                    Convert a function to be a class method.
-
-                    A class method receives the class as implicit first argument,
-                    just like an instance method receives the instance.
-                    To declare a class method, use this idiom:
-
-                      class C:
-                          @classmethod
-                          def f(cls, arg1, arg2, argN):
-                              ...
-
-                    It can be called either on the class (e.g. C.f()) or on an instance
-                    (e.g. C().f()).  The instance is ignored except for its class.
-                    If a class method is called for a derived class, the derived class
-                    object is passed as the implied first argument.
-
-                    Class methods are different than C++ or Java static methods.
-                    If you want those, see the staticmethod builtin.""")
+    @Builtin(name = J_CLASSMETHOD, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PClassmethod)
     @GenerateNodeFactory
     public abstract static class ClassmethodNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -2711,7 +2555,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_INSTANCEMETHOD, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PInstancemethod, doc = "instancemethod(function)\n\nBind a function to a class.")
+    @Builtin(name = J_INSTANCEMETHOD, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PInstancemethod)
     @GenerateNodeFactory
     public abstract static class InstancemethodNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -2722,25 +2566,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_STATICMETHOD, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PStaticmethod, doc = """
-                    staticmethod(function) -> method
-
-                    Convert a function to be a static method.
-
-                    A static method does not receive an implicit first argument.
-                    To declare a static method, use this idiom:
-
-                         class C:
-                             @staticmethod
-                             def f(arg1, arg2, argN):
-                                 ...
-
-                    It can be called either on the class (e.g. C.f()) or on an instance
-                    (e.g. C().f()). Both the class and the instance are ignored, and
-                    neither is passed implicitly as the first argument to the method.
-
-                    Static methods in Python are similar to those found in Java or C++.
-                    For a more advanced concept, see the classmethod builtin.""")
+    @Builtin(name = J_STATICMETHOD, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PStaticmethod)
     @GenerateNodeFactory
     public abstract static class StaticmethodNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -2751,11 +2577,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_MAP, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PMap, doc = """
-                    map(func, *iterables) --> map object
-
-                    Make an iterator that computes the function using arguments from
-                    each of the iterables.  Stops when the shortest iterable is exhausted.""")
+    @Builtin(name = J_MAP, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PMap)
     @GenerateNodeFactory
     public abstract static class MapNode extends PythonVarargsBuiltinNode {
         @Specialization
@@ -2785,39 +2607,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_PROPERTY, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PProperty, doc = """
-                    Property attribute.
-
-                      fget
-                        function to be used for getting an attribute value
-                      fset
-                        function to be used for setting an attribute value
-                      fdel
-                        function to be used for del'ing an attribute
-                      doc
-                        docstring
-
-                    Typical use is to define a managed attribute x:
-
-                    class C(object):
-                        def getx(self): return self._x
-                        def setx(self, value): self._x = value
-                        def delx(self): del self._x
-                        x = property(getx, setx, delx, "I'm the 'x' property.")
-
-                    Decorators make defining new properties or modifying existing ones easy:
-
-                    class C(object):
-                        @property
-                        def x(self):
-                            "I am the 'x' property."
-                            return self._x
-                        @x.setter
-                        def x(self, value):
-                            self._x = value
-                        @x.deleter
-                        def x(self):
-                            del self._x""")
+    @Builtin(name = J_PROPERTY, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PProperty)
     @GenerateNodeFactory
     public abstract static class PropertyNode extends PythonVarargsBuiltinNode {
         @Specialization
@@ -2828,9 +2618,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "SimpleNamespace", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PSimpleNamespace, doc = "A simple attribute-based namespace.\n" +
-                    "\n" +
-                    "SimpleNamespace(**kwargs)")
+    @Builtin(name = "SimpleNamespace", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PSimpleNamespace)
     @GenerateNodeFactory
     public abstract static class SimpleNamespaceNode extends PythonVarargsBuiltinNode {
         @Specialization

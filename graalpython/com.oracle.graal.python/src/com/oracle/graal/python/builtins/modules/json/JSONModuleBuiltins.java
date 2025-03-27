@@ -176,8 +176,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "make_scanner", parameterNames = {"$cls", "context"}, constructsClass = PythonBuiltinClassType.JSONScanner, //
-                    doc = "_iterencode(obj, _current_indent_level) -> iterable")
+    @Builtin(name = "make_scanner", parameterNames = {"$cls", "context"}, constructsClass = PythonBuiltinClassType.JSONScanner)
     @GenerateNodeFactory
     public abstract static class MakeScanner extends PythonBinaryBuiltinNode {
 

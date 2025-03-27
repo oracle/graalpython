@@ -76,9 +76,7 @@ public final class QueueModuleBuiltins extends PythonBuiltins {
     }
 
     // _queue.SimpleQueue
-    @Builtin(name = J_SIMPLE_QUEUE, constructsClass = PythonBuiltinClassType.PSimpleQueue, //
-                    minNumOfPositionalArgs = 1, //
-                    doc = "SimpleQueue()\n--\n\nSimple, unbounded, reentrant FIFO queue.")
+    @Builtin(name = J_SIMPLE_QUEUE, constructsClass = PythonBuiltinClassType.PSimpleQueue, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SimpleQueueNode extends PythonUnaryBuiltinNode {
 

@@ -119,7 +119,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "accumulate", minNumOfPositionalArgs = 2, parameterNames = {"cls", "iterable", "func"}, keywordOnlyNames = {
-                    "initial"}, constructsClass = PythonBuiltinClassType.PAccumulate, doc = "accumulate(iterable) --> accumulate object\n\nReturn series of accumulated sums.")
+                    "initial"}, constructsClass = PythonBuiltinClassType.PAccumulate)
     @GenerateNodeFactory
     public abstract static class AccumulateNode extends PythonBuiltinNode {
 
@@ -138,10 +138,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "combinations", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PCombinations, parameterNames = {"cls", "iterable",
-                    "r"}, doc = "combinations(iterable, r) --> combinations object\n\n" +
-                                    "Return successive r-length combinations of elements in the iterable.\n\n" +
-                                    "combinations(range(4), 3) --> (0,1,2), (0,1,3), (0,2,3), (1,2,3)")
+    @Builtin(name = "combinations", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PCombinations, parameterNames = {"cls", "iterable", "r"})
     @ArgumentClinic(name = "r", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
     public abstract static class CombinationsNode extends PythonTernaryClinicBuiltinNode {
@@ -186,11 +183,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "combinations_with_replacement", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PCombinationsWithReplacement, parameterNames = {"cls", "iterable",
-                    "r"}, doc = "combinations_with_replacement(iterable, r) --> combinations_with_replacement object\n\n" +
-                                    "Return successive r-length combinations of elements in the iterable\n" +
-                                    "allowing individual elements to have successive repeats.\n" +
-                                    "    combinations_with_replacement('ABC', 2) --> AA AB AC BB BC CC")
+    @Builtin(name = "combinations_with_replacement", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PCombinationsWithReplacement, parameterNames = {"cls", "iterable", "r"})
     @ArgumentClinic(name = "r", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
     public abstract static class CombinationsWithReplacementNode extends PythonTernaryClinicBuiltinNode {
@@ -228,15 +221,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "compress", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PCompress, parameterNames = {"cls", "data",
-                    "selectors"}, doc = "Make an iterator that filters elements from *data* returning\n" +
-                                    "only those that have a corresponding element in *selectors* that evaluates to\n" +
-                                    "``True``.  Stops when either the *data* or *selectors* iterables has been\n" +
-                                    "exhausted.\n" +
-                                    "Equivalent to::\n\n" +
-                                    "\tdef compress(data, selectors):\n" +
-                                    "\t\t# compress('ABCDEF', [1,0,1,0,1,1]) --> A C E F\n" +
-                                    "\t\treturn (d for d, s in zip(data, selectors) if s)")
+    @Builtin(name = "compress", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PCompress, parameterNames = {"cls", "data", "selectors"})
     @GenerateNodeFactory
     public abstract static class CompressNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -257,18 +242,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "cycle", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PCycle, doc = "Make an iterator returning elements from the iterable and\n" +
-                    "    saving a copy of each. When the iterable is exhausted, return\n" +
-                    "    elements from the saved copy. Repeats indefinitely.\n\n" +
-                    "    Equivalent to :\n\n" +
-                    "    def cycle(iterable):\n" +
-                    "    \tsaved = []\n" +
-                    "    \tfor element in iterable:\n" +
-                    "    \t\tyield element\n" +
-                    "    \t\tsaved.append(element)\n" +
-                    "    \twhile saved:\n" +
-                    "    \t\tfor element in saved:\n" +
-                    "    \t\t\tyield element")
+    @Builtin(name = "cycle", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PCycle)
     @GenerateNodeFactory
     public abstract static class CycleNode extends PythonVarargsBuiltinNode {
 
@@ -300,9 +274,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dropwhile", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDropwhile, doc = "dropwhile(predicate, iterable) --> dropwhile object\n\n" +
-                    "Drop items from the iterable while predicate(item) is true.\n" +
-                    "Afterwards, return every element until the iterable is exhausted.")
+    @Builtin(name = "dropwhile", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDropwhile)
     @GenerateNodeFactory
     public abstract static class DropwhileNode extends PythonVarargsBuiltinNode {
         @Specialization
@@ -333,9 +305,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "filterfalse", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PFilterfalse, doc = "filterfalse(function or None, sequence) --> filterfalse object\n\n" +
-                    "Return those items of sequence for which function(item) is false.\n" +
-                    "If function is None, return the items that are false.")
+    @Builtin(name = "filterfalse", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PFilterfalse)
     @GenerateNodeFactory
     public abstract static class FilterFalseNode extends PythonVarargsBuiltinNode {
 
@@ -366,22 +336,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "groupby", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PGroupBy, parameterNames = {"cls", "iterable",
-                    "key"}, doc = "Make an iterator that returns consecutive keys and groups from the\n" +
-                                    "iterable. The key is a function computing a key value for each\n" +
-                                    "element. If not specified or is None, key defaults to an identity\n" +
-                                    "function and returns the element unchanged. Generally, the\n" +
-                                    "iterable needs to already be sorted on the same key function.\n\n" +
-                                    "The returned group is itself an iterator that shares the\n" +
-                                    "underlying iterable with groupby(). Because the source is shared,\n" +
-                                    "when the groupby object is advanced, the previous group is no\n" +
-                                    "longer visible. So, if that data is needed later, it should be\n" +
-                                    "stored as a list:\n\n" +
-                                    "\tgroups = []\n" +
-                                    "\tuniquekeys = []\n" +
-                                    "\tfor k, g in groupby(data, keyfunc):\n" +
-                                    "\t\tgroups.append(list(g))      # Store group iterator as a list\n" +
-                                    "\t\tuniquekeys.append(k)")
+    @Builtin(name = "groupby", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PGroupBy, parameterNames = {"cls", "iterable", "key"})
     @ArgumentClinic(name = "key", defaultValue = "PNone.NONE")
     @GenerateNodeFactory
     public abstract static class GroupByNode extends PythonTernaryClinicBuiltinNode {
@@ -430,9 +385,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "takewhile", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PTakewhile, doc = "Make an iterator that returns elements from the iterable as\n" +
-                    "long as the predicate is true.\n\nEquivalent to :\n\ndef takewhile(predicate, iterable):\n\tfor x in iterable:\n\t\tif predicate(x):\n\t\t\tyield x\n" +
-                    "\t\telse:\n\t\t\tbreak")
+    @Builtin(name = "takewhile", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PTakewhile)
     @GenerateNodeFactory
     public abstract static class TakewhileNode extends PythonVarargsBuiltinNode {
         @Specialization
@@ -534,9 +487,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "permutations", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PPermutations, parameterNames = {"cls", "iterable",
-                    "r"}, doc = "permutations(iterable[, r]) --> permutations object\n\n" +
-                                    "Return successive r-length permutations of elements in the iterable.\n\n" + "permutations(range(3), 2) --> (0,1), (0,2), (1,0), (1,2), (2,0), (2,1)")
+    @Builtin(name = "permutations", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PPermutations, parameterNames = {"cls", "iterable", "r"})
     @ArgumentClinic(name = "r", defaultValue = "PNone.NONE")
     @GenerateNodeFactory
     public abstract static class PermutationsNode extends PythonTernaryClinicBuiltinNode {
@@ -614,16 +565,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "product", minNumOfPositionalArgs = 1, takesVarArgs = true, constructsClass = PythonBuiltinClassType.PProduct, keywordOnlyNames = {
-                    "repeat"}, doc = "Cartesian product of input iterables.\n\n" +
-                                    "Equivalent to nested for-loops in a generator expression. For example,\n ``product(A, B)`` returns the same as ``((x,y) for x in A for y in B)``.\n\n" +
-                                    "The nested loops cycle like an odometer with the rightmost element advancing\n on every iteration.  This pattern creates a lexicographic ordering so that if\n" +
-                                    " the input's iterables are sorted, the product tuples are emitted in sorted\n order.\n\nTo compute the product of an iterable with itself, specify the number of\n" +
-                                    " repetitions with the optional *repeat* keyword argument.  For example,\n ``product(A, repeat=4)`` means the same as ``product(A, A, A, A)``.\n\n" +
-                                    "This function is equivalent to the following code, except that the\n actual implementation does not build up intermediate results in memory::\n\n" +
-                                    "def product(*args, **kwds):\n\t# product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy\n\t# product(range(2), repeat=3) --> 000 001 010 011 100 101 110 111\n" +
-                                    "\tpools = map(tuple, args) * kwds.get('repeat', 1)\n\tresult = [[]]\n\tfor pool in pools:\n\t\tresult = [x+[y] for x in result for y in pool]\n" +
-                                    "\tfor prod in result:\n\t\tyield tuple(prod)")
+    @Builtin(name = "product", minNumOfPositionalArgs = 1, takesVarArgs = true, constructsClass = PythonBuiltinClassType.PProduct, keywordOnlyNames = {"repeat"})
     @GenerateNodeFactory
     public abstract static class ProductNode extends PythonBuiltinNode {
 
@@ -730,9 +672,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "repeat", minNumOfPositionalArgs = 2, parameterNames = {"$self", "object",
-                    "times"}, constructsClass = PythonBuiltinClassType.PRepeat, doc = "repeat(object [,times]) -> create an iterator which returns the object\n" +
-                                    "for the specified number of times.  If not specified, returns the object\nendlessly.")
+    @Builtin(name = "repeat", minNumOfPositionalArgs = 2, parameterNames = {"$self", "object", "times"}, constructsClass = PythonBuiltinClassType.PRepeat)
     @GenerateNodeFactory
     public abstract static class RepeatNode extends PythonTernaryBuiltinNode {
 
@@ -754,8 +694,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "chain", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PChain, doc = "Return a chain object whose .__next__() method returns elements from the\n" +
-                    "first iterable until it is exhausted, then elements from the next\niterable, until all of the iterables are exhausted.")
+    @Builtin(name = "chain", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PChain)
     @GenerateNodeFactory
     public abstract static class ChainNode extends PythonVarargsBuiltinNode {
 
@@ -816,9 +755,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "starmap", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PStarmap, doc = "starmap(function, sequence) --> starmap object\n\n" +
-                    "Return an iterator whose values are returned from the function evaluated\n" +
-                    "with an argument tuple taken from the given sequence.")
+    @Builtin(name = "starmap", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PStarmap)
     @GenerateNodeFactory
     public abstract static class StarmapNode extends PythonVarargsBuiltinNode {
         @Specialization
@@ -953,14 +890,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "zip_longest", minNumOfPositionalArgs = 1, takesVarArgs = true, constructsClass = PythonBuiltinClassType.PZipLongest, keywordOnlyNames = {
-                    "fillvalue"}, doc = "zip_longest(iter1 [,iter2 [...]], [fillvalue=None]) --> zip_longest object\n\n" +
-                                    "Return a zip_longest object whose .next() method returns a tuple where\n" +
-                                    "the i-th element comes from the i-th iterable argument.  The .next()\n" +
-                                    "method continues until the longest iterable in the argument sequence\n" +
-                                    "is exhausted and then it raises StopIteration.  When the shorter iterables\n" +
-                                    "are exhausted, the fillvalue is substituted in their place.  The fillvalue\n" +
-                                    "defaults to None or can be specified by a keyword argument.")
+    @Builtin(name = "zip_longest", minNumOfPositionalArgs = 1, takesVarArgs = true, constructsClass = PythonBuiltinClassType.PZipLongest, keywordOnlyNames = {"fillvalue"})
     @GenerateNodeFactory
     public abstract static class ZipLongestNode extends PythonBuiltinNode {
         @Specialization
@@ -1000,8 +930,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "pairwise", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PPairwise, doc = "Return an iterator of overlapping pairs taken from the input iterator.\n\n" +
-                    "    s -> (s0,s1), (s1,s2), (s2, s3), ...")
+    @Builtin(name = "pairwise", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PPairwise)
     @GenerateNodeFactory
     public abstract static class PairwaiseNode extends PythonBinaryBuiltinNode {
         @Specialization

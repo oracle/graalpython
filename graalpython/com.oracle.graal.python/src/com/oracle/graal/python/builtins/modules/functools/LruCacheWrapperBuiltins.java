@@ -119,20 +119,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___NEW__, minNumOfPositionalArgs = 5, takesVarArgs = true, takesVarKeywordArgs = true, //
                     constructsClass = PythonBuiltinClassType.PLruCacheWrapper, //
-                    parameterNames = {"$cls", "user_function", "maxsize", "typed", "cache_info_type"}, //
-                    doc = "Create a cached callable that wraps another function.\n" + //
-                                    "\n" + //
-                                    "user_function:      the function being cached\n" + //
-                                    "\n" + //
-                                    "maxsize:  0         for no caching\n" + //
-                                    "          None      for unlimited cache size\n" + //
-                                    "          n         for a bounded cache\n" + //
-                                    "\n" + //
-                                    "typed:    False     cache f(3) and f(3.0) as identical calls\n" + //
-                                    "          True      cache f(3) and f(3.0) as distinct calls\n" + //
-                                    "\n" + //
-                                    "cache_info_type:    namedtuple class with the fields:\n" + //
-                                    "                       hits misses currsize maxsize\n")
+                    parameterNames = {"$cls", "user_function", "maxsize", "typed", "cache_info_type"})
     @ArgumentClinic(name = "typed", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     protected abstract static class LruCacheNewNode extends PythonClinicBuiltinNode {

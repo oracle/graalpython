@@ -152,10 +152,7 @@ public final class PartialBuiltins extends PythonBuiltins {
     }
 
     // functools.partial(func, /, *args, **keywords)
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, //
-                    takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PPartial, //
-                    doc = "partial(func, *args, **keywords) - new function with partial application\n" + //
-                                    "of the given arguments and keywords.\n")
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PPartial)
     @GenerateNodeFactory
     public abstract static class PartialNewNode extends PythonBuiltinNode {
         protected boolean isPartialWithoutDict(Node inliningTarget, GetDictIfExistsNode getDict, Object[] args, HashingStorageLen lenNode, boolean withKwDict) {

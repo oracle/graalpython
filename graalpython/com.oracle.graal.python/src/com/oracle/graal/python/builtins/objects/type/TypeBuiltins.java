@@ -66,12 +66,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSHOOK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_MRO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_UPDATE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.Arrays;
 import java.util.List;
@@ -152,7 +150,6 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectGetBasesNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectIsSubclassNode;
@@ -162,7 +159,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -234,37 +230,35 @@ public final class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___DOC__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
     @GenerateNodeFactory
-    @ImportStatic(SpecialAttributeNames.class)
     public abstract static class DocNode extends PythonBinaryBuiltinNode {
 
-        private static final TruffleString BUILTIN_DOC = tsLiteral("type(object_or_name, bases, dict)\n" + //
-                        "type(object) -> the object's type\n" + //
-                        "type(name, bases, dict) -> a new type");
-
         @Specialization(guards = "isNoValue(value)")
-        Object getDoc(PythonBuiltinClassType self, @SuppressWarnings("unused") PNone value) {
-            return getDoc(getContext().lookupType(self), value);
+        static Object getDoc(PythonBuiltinClassType self, @SuppressWarnings("unused") PNone value) {
+            return self.getDoc() != null ? self.getDoc() : PNone.NONE;
         }
 
         @Specialization(guards = "isNoValue(value)")
         @TruffleBoundary
         static Object getDoc(PythonBuiltinClass self, @SuppressWarnings("unused") PNone value) {
-            // see type.c#type_get_doc()
-            if (IsBuiltinClassExactProfile.profileClassSlowPath(self, PythonBuiltinClassType.PythonClass)) {
-                return BUILTIN_DOC;
-            } else {
-                return self.getAttribute(T___DOC__);
-            }
+            return getDoc(self.getType(), value);
         }
 
         @Specialization(guards = {"isNoValue(value)", "!isPythonBuiltinClass(self)"})
-        static Object getDoc(VirtualFrame frame, PythonClass self, @SuppressWarnings("unused") PNone value) {
+        static Object getDoc(VirtualFrame frame, PythonClass self, @SuppressWarnings("unused") PNone value,
+                        @Bind Node inliningTarget,
+                        @Cached ReadAttributeFromObjectNode read,
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetCachedTpSlotsNode getSlots,
+                        @Cached CallSlotDescrGet callGet) {
             // see type.c#type_get_doc()
-            Object res = self.getAttribute(T___DOC__);
-            Object resClass = GetClassNode.executeUncached(res);
-            Object get = LookupAttributeInMRONode.Dynamic.getUncached().execute(resClass, T___GET__);
-            if (PGuards.isCallable(get)) {
-                return CallTernaryMethodNode.getUncached().execute(frame, get, res, PNone.NONE, self);
+            Object res = read.execute(self, T___DOC__);
+            if (res == NO_VALUE) {
+                return PNone.NONE;
+            }
+            Object resClass = getClassNode.execute(inliningTarget, res);
+            TpSlots resSlots = getSlots.execute(inliningTarget, resClass);
+            if (resSlots.tp_descr_get() != null) {
+                return callGet.execute(frame, inliningTarget, resSlots.tp_descr_get(), res, NO_VALUE, self);
             }
             return res;
         }

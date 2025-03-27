@@ -123,7 +123,6 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -187,10 +186,6 @@ public abstract class PythonBuiltins {
                 PBuiltinMethod newMethod = PFactory.createBuiltinMethod(language, constructsClass, newFunc);
                 PythonBuiltinClass builtinClass = core.lookupType(constructsClass);
                 builtinClass.setAttributeUnsafe(T___NEW__, newMethod);
-                final Object currentBuiltinDoc = builtinClass.getAttribute(T___DOC__);
-                if (PGuards.isPNone(currentBuiltinDoc)) {
-                    builtinClass.setAttribute(T___DOC__, builtinDoc);
-                }
             } else {
                 PBuiltinFunction function;
                 if (isSlotMethod(builtin)) {
