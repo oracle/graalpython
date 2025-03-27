@@ -66,11 +66,11 @@ from tempfile import TemporaryDirectory
 from urllib.request import urlretrieve
 
 
-def ensure_installed(name):
+def ensure_installed(name, *extra):
     try:
         return importlib.import_module(name)
     except ImportError:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", name])
+        subprocess.check_call([sys.executable, "-m", "pip", "install", name, *extra])
         return importlib.import_module(name)
 
 
@@ -170,11 +170,12 @@ def build_wheels(pip):
 
 def repair_wheels():
     whls = glob("*graalpy*.whl")
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PATH"] = abspath(dirname(sys.executable)) + os.pathsep + env["PATH"]
     for whl in whls:
         if sys.platform == "win32":
             ensure_installed("delvewheel")
-            env = os.environ.copy()
-            env["PYTHONUTF8"] = "1"
             p = subprocess.run(
                 [
                     sys.executable,
@@ -191,7 +192,7 @@ def repair_wheels():
                 env=env,
             )
         elif sys.platform == "linux":
-            ensure_installed("auditwheel")
+            ensure_installed("auditwheel", "patchelf")
             p = subprocess.run(
                 [
                     join(dirname(sys.executable), "auditwheel"),
@@ -201,7 +202,8 @@ def repair_wheels():
                     "-w",
                     "wheelhouse",
                     whl,
-                ]
+                ],
+                env=env,
             )
         elif sys.platform == "darwin":
             ensure_installed("delocate")
@@ -216,6 +218,7 @@ def repair_wheels():
                     "wheelhouse",
                     whl,
                 ],
+                env=env,
             )
         if p.returncode != 0:
             print("Repairing", whl, "failed, copying as is.")
