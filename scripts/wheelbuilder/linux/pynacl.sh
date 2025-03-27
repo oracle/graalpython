@@ -37,6 +37,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-if command -v manylinux-interpreters 2>&1 >/dev/null; then
+if [ -n "$GITHUB_RUN_ID" ]; then
     dnf install -y libffi-devel
 fi
