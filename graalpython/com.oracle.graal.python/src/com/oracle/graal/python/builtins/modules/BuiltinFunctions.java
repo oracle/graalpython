@@ -215,6 +215,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.bytecode.GetAIterNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
@@ -271,6 +272,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -1150,7 +1152,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (AstModuleBuiltins.isAst(context, wSource)) {
                 ModTy mod = AstModuleBuiltins.obj2sst(inliningTarget, context, wSource, getParserInputType(mode, flags));
                 Source source = PythonUtils.createFakeSource(filename);
-                RootCallTarget rootCallTarget = context.getLanguage(inliningTarget).compileForBytecodeInterpreter(context, mod, source, false, optimize, null, null, flags);
+                RootCallTarget rootCallTarget = context.getLanguage(inliningTarget).compileModule(context, mod, source, false, optimize, null, null, flags);
                 return wrapRootCallTarget(rootCallTarget);
             }
             TruffleString source = sourceAsString(frame, inliningTarget, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode,
@@ -1161,8 +1163,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         private static PCode wrapRootCallTarget(RootCallTarget rootCallTarget) {
             RootNode rootNode = rootCallTarget.getRootNode();
-            if (rootNode instanceof PBytecodeRootNode) {
-                ((PBytecodeRootNode) rootNode).triggerDeferredDeprecationWarnings();
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                if (rootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
+                    bytecodeDSLRootNode.triggerDeferredDeprecationWarnings();
+                }
+            } else if (rootNode instanceof PBytecodeRootNode bytecodeRootNode) {
+                bytecodeRootNode.triggerDeferredDeprecationWarnings();
             }
             return PFactory.createCode(PythonLanguage.get(null), rootCallTarget);
         }
@@ -1922,6 +1928,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // format(object, [format_spec])
     @Builtin(name = J_FORMAT, minNumOfPositionalArgs = 1, parameterNames = {"object", "format_spec"})
     @GenerateNodeFactory
+    @OperationProxy.Proxyable
     @ImportStatic(PGuards.class)
     public abstract static class FormatNode extends PythonBinaryBuiltinNode {
 
@@ -2082,9 +2089,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         Object ternary(VirtualFrame frame, Object x, Object y, Object z,
-                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberPowerNode power) {
-            return power.execute(frame, inliningTarget, x, y, z);
+            return power.execute(frame, x, y, z);
         }
     }
 
@@ -2133,9 +2139,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         longResult = PythonUtils.addExact(longResult, next);
                     } catch (OverflowException e) {
                         overflowProfile.enter(inliningTarget);
-                        Object objectResult = addNode.execute(frame, inliningTarget, longResult, next);
+                        Object objectResult = addNode.execute(frame, longResult, next);
                         while (loopProfileGeneric.profile(inliningTarget, iterator.hasNext())) {
-                            objectResult = addNode.execute(frame, inliningTarget, objectResult, iterator.next());
+                            objectResult = addNode.execute(frame, objectResult, iterator.next());
                         }
                         return objectResult;
                     }
@@ -2157,9 +2163,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         longResult = PythonUtils.addExact(longResult, next);
                     } catch (OverflowException e) {
                         overflowProfile.enter(inliningTarget);
-                        Object objectResult = addNode.execute(frame, inliningTarget, longResult, next);
+                        Object objectResult = addNode.execute(frame, longResult, next);
                         while (loopProfileGeneric.profile(inliningTarget, iterator.hasNext())) {
-                            objectResult = addNode.execute(frame, inliningTarget, objectResult, iterator.next());
+                            objectResult = addNode.execute(frame, objectResult, iterator.next());
                         }
                         return objectResult;
                     }
@@ -2199,7 +2205,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                  */
                 Object next = nextNode.execute(frame, inliningTarget, iterator);
                 if (!PyIterNextNode.isExhausted(next)) {
-                    Object acc = addNode.execute(frame, inliningTarget, start, next);
+                    Object acc = addNode.execute(frame, start, next);
                     /*
                      * We try to process integers/longs/doubles as long as we can. Then we always
                      * fall through to the generic path. `next` and `acc` are always properly set so
@@ -2239,7 +2245,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     if (!PyIterNextNode.isExhausted(next)) {
                         seenObject.enter(inliningTarget);
                         do {
-                            acc = addNode.execute(frame, inliningTarget, acc, next);
+                            acc = addNode.execute(frame, acc, next);
                         } while (loopProfileGeneric.profile(inliningTarget, !PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, iterator))));
                     }
                     return acc;

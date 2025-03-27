@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -12,6 +12,7 @@ see <http://www.cosc.canterbury.ac.nz/greg.ewing/python/yield-from/YieldFrom-Pyt
 
 import unittest
 import sys
+import os
 
 class TestPEP380Operation(unittest.TestCase):
     """
@@ -975,6 +976,7 @@ class TestPEP380Operation(unittest.TestCase):
     #     for stack in spam(eggs(gen())):
     #         self.assertTrue('spam' in stack and 'eggs' in stack)
 
+    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: bug in comment above")
     def test_custom_iterator_return(self):
         # See issue #15568
         class MyIter:

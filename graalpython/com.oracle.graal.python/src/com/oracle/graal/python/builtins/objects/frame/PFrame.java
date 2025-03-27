@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,22 +50,27 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 public final class PFrame extends PythonBuiltinObject {
+    private static final int UNINITIALIZED_LINE = -2;
+
     private Object[] arguments;
     private final MaterializedFrame locals;
     private Object localsDict;
     private final Reference virtualFrameInfo;
     private Node location;
     private RootCallTarget callTarget;
-    private int line = -2;
+    private int line = UNINITIALIZED_LINE;
     private int bci = -1;
 
     /*
@@ -187,7 +192,7 @@ public final class PFrame extends PythonBuiltinObject {
         this.virtualFrameInfo = curFrameInfo;
         curFrameInfo.setPyFrame(this);
         this.location = GetCodeRootNode.executeUncached(code);
-        this.line = this.location == null ? code.getFirstLineNo() : -2;
+        this.line = this.location == null ? code.getFirstLineNo() : UNINITIALIZED_LINE;
         this.arguments = frameArgs;
         this.locals = null;
         this.localsDict = localsDict;
@@ -254,11 +259,16 @@ public final class PFrame extends PythonBuiltinObject {
 
     @TruffleBoundary
     public int getLine() {
-        if (line == -2) {
+        if (line == UNINITIALIZED_LINE) {
             if (location == null) {
                 line = -1;
-            } else if (location instanceof PBytecodeRootNode) {
-                return ((PBytecodeRootNode) location).bciToLine(bci);
+            } else if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                if (location instanceof BytecodeNode bytecodeNode) {
+                    PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) bytecodeNode.getRootNode();
+                    return rootNode.bciToLine(bci, bytecodeNode);
+                }
+            } else if (location instanceof PBytecodeRootNode bytecodeRootNode) {
+                return bytecodeRootNode.bciToLine(bci);
             }
         }
         return line;
@@ -304,6 +314,10 @@ public final class PFrame extends PythonBuiltinObject {
         return location;
     }
 
+    public BytecodeNode getBytecodeNode() {
+        return (location instanceof BytecodeNode bytecodeNode) ? bytecodeNode : null;
+    }
+
     public int getBci() {
         return bci;
     }
@@ -313,15 +327,21 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public int getLasti() {
-        return bciToLasti(bci);
+        return bciToLasti(bci, location);
     }
 
     @TruffleBoundary
-    public int bciToLasti(int bci) {
-        if (location instanceof PBytecodeRootNode bytecodeRootNode) {
-            return bytecodeRootNode.bciToLasti(bci);
-        } else if (location instanceof PBytecodeGeneratorRootNode generatorRootNode) {
-            return generatorRootNode.getBytecodeRootNode().bciToLasti(bci);
+    public static int bciToLasti(int bci, Node location) {
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            if (bci >= 0 && location instanceof BytecodeNode bytecodeNode) {
+                return PBytecodeDSLRootNode.bciToLasti(bci, bytecodeNode);
+            }
+        } else {
+            if (location instanceof PBytecodeRootNode bytecodeRootNode) {
+                return bytecodeRootNode.bciToLasti(bci);
+            } else if (location instanceof PBytecodeGeneratorRootNode generatorRootNode) {
+                return generatorRootNode.getBytecodeRootNode().bciToLasti(bci);
+            }
         }
         return -1;
     }

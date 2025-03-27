@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,12 +72,12 @@ public abstract class WriteGlobalNode extends PNodeWithContext {
     }
 
     public final void executeObject(VirtualFrame frame, TruffleString name, Object value) {
-        CompilerAsserts.partialEvaluationConstant(name);
+        CompilerAsserts.compilationConstant(name);
         executeObjectWithGlobals(frame, PArguments.getGlobals(frame), name, value);
     }
 
     public final void write(Frame frame, Object globals, TruffleString name, Object value) {
-        CompilerAsserts.partialEvaluationConstant(name);
+        CompilerAsserts.compilationConstant(name);
         executeObjectWithGlobals((VirtualFrame) frame, globals, name, value);
     }
 

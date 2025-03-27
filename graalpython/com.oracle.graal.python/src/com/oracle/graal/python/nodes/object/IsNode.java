@@ -54,6 +54,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLGeneratorFunctionRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.expression.BinaryOp;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -61,6 +63,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -79,6 +82,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
+@OperationProxy.Proxyable
 @SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 26
 public abstract class IsNode extends Node implements BinaryOp {
 
@@ -234,14 +238,28 @@ public abstract class IsNode extends Node implements BinaryOp {
             if (leftCt != null && rightCt != null) {
                 RootNode leftRootNode = leftCt.getRootNode();
                 RootNode rightRootNode = rightCt.getRootNode();
-                if (leftRootNode instanceof PBytecodeGeneratorFunctionRootNode) {
-                    leftRootNode = ((PBytecodeGeneratorFunctionRootNode) leftRootNode).getBytecodeRootNode();
-                }
-                if (rightRootNode instanceof PBytecodeGeneratorFunctionRootNode) {
-                    rightRootNode = ((PBytecodeGeneratorFunctionRootNode) rightRootNode).getBytecodeRootNode();
-                }
-                if (leftRootNode instanceof PBytecodeRootNode && rightRootNode instanceof PBytecodeRootNode) {
-                    return ((PBytecodeRootNode) leftRootNode).getCodeUnit() == ((PBytecodeRootNode) rightRootNode).getCodeUnit();
+                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                    if (leftRootNode instanceof PBytecodeDSLGeneratorFunctionRootNode l) {
+                        leftRootNode = l.getBytecodeRootNode();
+                    }
+                    if (rightRootNode instanceof PBytecodeDSLGeneratorFunctionRootNode r) {
+                        rightRootNode = r.getBytecodeRootNode();
+                    }
+
+                    if (leftRootNode instanceof PBytecodeDSLRootNode l && rightRootNode instanceof PBytecodeDSLRootNode r) {
+                        return l.getCodeUnit() == r.getCodeUnit();
+                    }
+                } else {
+                    if (leftRootNode instanceof PBytecodeGeneratorFunctionRootNode l) {
+                        leftRootNode = l.getBytecodeRootNode();
+                    }
+                    if (rightRootNode instanceof PBytecodeGeneratorFunctionRootNode r) {
+                        rightRootNode = r.getBytecodeRootNode();
+                    }
+
+                    if (leftRootNode instanceof PBytecodeRootNode l && rightRootNode instanceof PBytecodeRootNode r) {
+                        return l.getCodeUnit() == r.getCodeUnit();
+                    }
                 }
                 return leftRootNode == rightRootNode;
             } else {
@@ -251,7 +269,7 @@ public abstract class IsNode extends Node implements BinaryOp {
         return true;
     }
 
-    static boolean someIsNone(Object left, Object right) {
+    public static boolean someIsNone(Object left, Object right) {
         return PGuards.isPNone(left) || PGuards.isPNone(right);
     }
 

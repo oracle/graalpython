@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLGeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -66,10 +67,14 @@ public abstract class InvokeNode extends Node {
 
     protected static void optionallySetGeneratorFunction(Node inliningTarget, Object[] arguments, CallTarget callTarget, InlinedConditionProfile isGeneratorFunctionProfile, PFunction callee) {
         RootNode rootNode = ((RootCallTarget) callTarget).getRootNode();
-        if (isGeneratorFunctionProfile.profile(inliningTarget, rootNode instanceof PBytecodeGeneratorFunctionRootNode)) {
+        if (isGeneratorFunctionProfile.profile(inliningTarget, isGeneratorFunction(rootNode))) {
             assert callee != null : "generator function callee not passed to invoke node";
             PArguments.setGeneratorFunction(arguments, callee);
         }
+    }
+
+    private static boolean isGeneratorFunction(RootNode rootNode) {
+        return rootNode instanceof PBytecodeGeneratorFunctionRootNode || rootNode instanceof PBytecodeDSLGeneratorFunctionRootNode;
     }
 
     protected static boolean isBuiltin(Object callee) {
