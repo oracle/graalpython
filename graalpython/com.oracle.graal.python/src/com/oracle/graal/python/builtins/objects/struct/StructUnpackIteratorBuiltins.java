@@ -87,7 +87,7 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization(guards = "self.isExhausted()")
         static Object nextExhausted(@SuppressWarnings("unused") PStructUnpackIterator self) {
-            return iteratorExhausted();
+            throw iteratorExhausted();
         }
 
         @Specialization(guards = "!self.isExhausted()", limit = "3")
@@ -103,7 +103,7 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
             if (struct == null || self.index >= bufferLen) {
                 self.setExhausted();
                 bufferLib.release(buffer, frame, indirectCallData);
-                return iteratorExhausted();
+                throw iteratorExhausted();
             }
 
             assert self.index + struct.getSize() <= bufferLen;

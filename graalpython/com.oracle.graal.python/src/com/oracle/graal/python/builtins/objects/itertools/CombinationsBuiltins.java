@@ -109,7 +109,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.isStopped()")
         static Object nextStopped(PAbstractCombinations self,
                         @Bind("this") Node inliningTarget) {
-            return iteratorExhausted();
+            throw iteratorExhausted();
         }
 
         @Specialization(guards = {"!self.isStopped()", "isLastResultNull(self)"})
@@ -162,7 +162,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
             // If i is negative, then the indices are all at their maximum value and we're done
             if (i < 0) {
                 self.setStopped(true);
-                return iteratorExhausted();
+                throw iteratorExhausted();
             }
 
             // Increment the current index which we know is not at its maximum.

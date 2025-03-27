@@ -90,7 +90,7 @@ public final class ReversedBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isExhausted()")
         static Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
-            return iteratorExhausted();
+            throw iteratorExhausted();
         }
 
         @Specialization(guards = "!self.isExhausted()")
@@ -106,7 +106,7 @@ public final class ReversedBuiltins extends PythonBuiltins {
                 }
             }
             self.setExhausted();
-            return iteratorExhausted();
+            throw iteratorExhausted();
         }
 
         @Specialization(guards = "!self.isExhausted()")
@@ -116,7 +116,7 @@ public final class ReversedBuiltins extends PythonBuiltins {
                 return substringNode.execute(self.value, self.index--, 1, TS_ENCODING, false);
             }
             self.setExhausted();
-            return iteratorExhausted();
+            throw iteratorExhausted();
         }
     }
 

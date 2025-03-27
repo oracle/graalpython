@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
@@ -883,48 +884,53 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             double xsave;
             int i, j, n = 0, arayLength = 32;
             double[] p = new double[arayLength];
-            Object next;
-            while (loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, iterator)))) {
-                x = asDoubleNode.execute(frame, inliningTarget, next);
-                xsave = x;
-                for (i = j = 0; j < n; j++) { /* for y in partials */
-                    y = p[j];
-                    if (Math.abs(x) < Math.abs(y)) {
-                        t = x;
-                        x = y;
-                        y = t;
+            boolean exhausted = false;
+            while (loopProfile.profile(inliningTarget, !exhausted)) {
+                try {
+                    Object next = nextNode.execute(frame, inliningTarget, iterator);
+                    x = asDoubleNode.execute(frame, inliningTarget, next);
+                    xsave = x;
+                    for (i = j = 0; j < n; j++) { /* for y in partials */
+                        y = p[j];
+                        if (Math.abs(x) < Math.abs(y)) {
+                            t = x;
+                            x = y;
+                            y = t;
+                        }
+                        hi = x + y;
+                        yr = hi - x;
+                        lo = y - yr;
+                        if (lo != 0.0) {
+                            p[i++] = lo;
+                        }
+                        x = hi;
                     }
-                    hi = x + y;
-                    yr = hi - x;
-                    lo = y - yr;
-                    if (lo != 0.0) {
-                        p[i++] = lo;
-                    }
-                    x = hi;
-                }
 
-                n = i;
-                if (x != 0.0) {
-                    if (!Double.isFinite(x)) {
-                        /*
-                         * a nonfinite x could arise either as a result of intermediate overflow, or
-                         * as a result of a nan or inf in the summands
-                         */
-                        if (Double.isFinite(xsave)) {
-                            throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.INTERMEDIATE_OVERFLOW_IN, "fsum");
+                    n = i;
+                    if (x != 0.0) {
+                        if (!Double.isFinite(x)) {
+                            /*
+                             * a nonfinite x could arise either as a result of intermediate
+                             * overflow, or as a result of a nan or inf in the summands
+                             */
+                            if (Double.isFinite(xsave)) {
+                                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.INTERMEDIATE_OVERFLOW_IN, "fsum");
+                            }
+                            if (Double.isInfinite(xsave)) {
+                                inf_sum += xsave;
+                            }
+                            special_sum += xsave;
+                            /* reset partials */
+                            n = 0;
+                        } else if (n >= arayLength) {
+                            arayLength += arayLength;
+                            p = Arrays.copyOf(p, arayLength);
+                        } else {
+                            p[n++] = x;
                         }
-                        if (Double.isInfinite(xsave)) {
-                            inf_sum += xsave;
-                        }
-                        special_sum += xsave;
-                        /* reset partials */
-                        n = 0;
-                    } else if (n >= arayLength) {
-                        arayLength += arayLength;
-                        p = Arrays.copyOf(p, arayLength);
-                    } else {
-                        p[n++] = x;
                     }
+                } catch (IteratorExhausted e) {
+                    exhausted = true;
                 }
             }
 
@@ -2500,9 +2506,14 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             Object start = startIsNoValueProfile.profile(inliningTarget, PGuards.isNoValue(startIn)) ? 1 : startIn;
             Object iterator = getIter.execute(frame, inliningTarget, iterable);
             Object acc = start;
-            Object next;
-            while (loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, iterator)))) {
-                acc = multiplyNode.execute(frame, inliningTarget, acc, next);
+            boolean exhausted = false;
+            while (loopProfile.profile(inliningTarget, !exhausted)) {
+                try {
+                    Object next = nextNode.execute(frame, inliningTarget, iterator);
+                    acc = multiplyNode.execute(frame, inliningTarget, acc, next);
+                } catch (IteratorExhausted e) {
+                    exhausted = true;
+                }
             }
             return acc;
         }

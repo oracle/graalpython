@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyDictCheckNode;
 import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyIterNextNode;
@@ -579,8 +580,10 @@ public final class DictBuiltins extends PythonBuiltins {
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             Object it = getIter.execute(frame, inliningTarget, iterable);
             while (true) {
-                Object key = nextNode.execute(frame, inliningTarget, it);
-                if (PyIterNextNode.isExhausted(key)) {
+                Object key;
+                try {
+                    key = nextNode.execute(frame, inliningTarget, it);
+                } catch (IteratorExhausted e) {
                     break;
                 }
                 setItem.execute(frame, inliningTarget, dict, key, val);

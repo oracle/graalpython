@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -77,7 +78,7 @@ public final class PZipBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isEmpty(self.getIterators())")
         static Object doEmpty(@SuppressWarnings("unused") PZip self) {
-            return iteratorExhausted();
+            throw iteratorExhausted();
         }
 
         @Specialization(guards = {"!isEmpty(self.getIterators())", "!self.isStrict()"})
@@ -95,9 +96,6 @@ public final class PZipBuiltins extends PythonBuiltins {
                  * StopIteration
                  */
                 tupleElements[i] = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, it).tp_iternext(), it);
-                if (PyIterNextNode.isExhausted(tupleElements[i])) {
-                    return iteratorExhausted();
-                }
             }
             return PFactory.createTuple(language, tupleElements);
         }
@@ -112,18 +110,21 @@ public final class PZipBuiltins extends PythonBuiltins {
             Object[] tupleElements = new Object[iterators.length];
             int i = 0;
             for (; i < iterators.length; i++) {
-                tupleElements[i] = nextNode.execute(frame, inliningTarget, iterators[i]);
-                if (PyIterNextNode.isExhausted(tupleElements[i])) {
+                try {
+                    tupleElements[i] = nextNode.execute(frame, inliningTarget, iterators[i]);
+                } catch (IteratorExhausted e) {
                     if (i > 0) {
                         throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
                     }
                     for (i = 1; i < iterators.length; i++) {
-                        Object next = nextNode.execute(frame, inliningTarget, iterators[i]);
-                        if (!PyIterNextNode.isExhausted(next)) {
-                            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_LONGER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
+                        try {
+                            nextNode.execute(frame, inliningTarget, iterators[i]);
+                        } catch (IteratorExhausted e1) {
+                            continue;
                         }
+                        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_LONGER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
                     }
-                    return iteratorExhausted();
+                    throw e;
                 }
             }
             return PFactory.createTuple(language, tupleElements);

@@ -88,9 +88,9 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
-import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -739,16 +739,19 @@ public class PPickler extends PythonBuiltinObject {
             Object obj;
             do {
                 // Get first item
-                final Object firstItem = getNextItem(frame, iterator);
-                if (PyIterNextNode.isExhausted(firstItem)) {
+                final Object firstItem;
+                try {
+                    firstItem = getNextItem(frame, iterator);
+                } catch (IteratorExhausted e) {
                     // nothing more to add
                     break;
                 }
                 checkItem.accept(firstItem);
 
                 // Try to get a second item
-                obj = getNextItem(frame, iterator);
-                if (PyIterNextNode.isExhausted(obj)) {
+                try {
+                    obj = getNextItem(frame, iterator);
+                } catch (IteratorExhausted e) {
                     // Only one item to write
                     saveItem.accept(firstItem);
                     write(pickler, opcodeOneItem);
@@ -769,8 +772,9 @@ public class PPickler extends PythonBuiltinObject {
                         break;
                     }
 
-                    obj = getNextItem(frame, iterator);
-                    if (PyIterNextNode.isExhausted(obj)) {
+                    try {
+                        obj = getNextItem(frame, iterator);
+                    } catch (IteratorExhausted e) {
                         break;
                     }
                 }
@@ -801,8 +805,10 @@ public class PPickler extends PythonBuiltinObject {
 
         private void saveIterator(VirtualFrame frame, PPickler pickler, Object iterator, byte opcode, Consumer<Object> itemConsumer) {
             while (true) {
-                Object item = getNextItem(frame, iterator);
-                if (PyIterNextNode.isExhausted(item)) {
+                Object item;
+                try {
+                    item = getNextItem(frame, iterator);
+                } catch (IteratorExhausted e) {
                     break;
                 }
                 itemConsumer.accept(item);
@@ -1495,8 +1501,10 @@ public class PPickler extends PythonBuiltinObject {
                 i = 0;
                 write(pickler, PickleUtils.OPCODE_MARK);
                 while (true) {
-                    Object item = getNextItem(frame, iterator);
-                    if (PyIterNextNode.isExhausted(item)) {
+                    Object item;
+                    try {
+                        item = getNextItem(frame, iterator);
+                    } catch (IteratorExhausted e) {
                         break;
                     }
                     save(frame, pickler, item, 0);

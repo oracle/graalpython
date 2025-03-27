@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -2423,6 +2424,7 @@ public abstract class SequenceStorageNodes {
                         @Cached GetObjectSlotsNode getSlots,
                         @Cached CallSlotTpIterNextNode callIterNext,
                         @Cached IsBuiltinObjectProfile stopIterationProfile,
+                        @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached AppendNode appendNode) {
             SequenceStorage currentStore = left;
             int lenLeft = currentStore.length();
@@ -2431,17 +2433,17 @@ public abstract class SequenceStorageNodes {
             if (len > 0) {
                 ensureCapacityNode.execute(inliningTarget, left, lengthResult(lenLeft, len));
             }
-            try {
-                while (true) {
-                    Object value;
-                    value = callIterNext.execute(frame, inliningTarget, iterNext, it);
-                    if (PyIterNextNode.isExhausted(value)) {
-                        break;
-                    }
+            boolean exhausted = false;
+            while (loopProfile.profile(inliningTarget, !exhausted)) {
+                try {
+                    Object value = callIterNext.execute(frame, inliningTarget, iterNext, it);
                     currentStore = appendNode.execute(inliningTarget, currentStore, value, genNodeProvider);
+                } catch (IteratorExhausted e) {
+                    exhausted = true;
+                } catch (PException e) {
+                    e.expectStopIteration(inliningTarget, stopIterationProfile);
+                    exhausted = true;
                 }
-            } catch (PException e) {
-                e.expectStopIteration(inliningTarget, stopIterationProfile);
             }
             return currentStore;
         }
@@ -4148,8 +4150,10 @@ public abstract class SequenceStorageNodes {
                             boolean[] elements = new boolean[size];
                             array = elements;
                             while (true) {
-                                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                                if (PyIterNextNode.isExhausted(next)) {
+                                Object next;
+                                try {
+                                    next = nextNode.execute(frame, inliningTarget, iterator);
+                                } catch (IteratorExhausted e) {
                                     LoopNode.reportLoopCount(this, i);
                                     break;
                                 }
@@ -4165,8 +4169,10 @@ public abstract class SequenceStorageNodes {
                             byte[] elements = new byte[size];
                             array = elements;
                             while (true) {
-                                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                                if (PyIterNextNode.isExhausted(next)) {
+                                Object next;
+                                try {
+                                    next = nextNode.execute(frame, inliningTarget, iterator);
+                                } catch (IteratorExhausted e) {
                                     LoopNode.reportLoopCount(this, i);
                                     break;
                                 }
@@ -4188,8 +4194,10 @@ public abstract class SequenceStorageNodes {
                             int[] elements = new int[size];
                             array = elements;
                             while (true) {
-                                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                                if (PyIterNextNode.isExhausted(next)) {
+                                Object next;
+                                try {
+                                    next = nextNode.execute(frame, inliningTarget, iterator);
+                                } catch (IteratorExhausted e) {
                                     LoopNode.reportLoopCount(this, i);
                                     break;
                                 }
@@ -4205,8 +4213,10 @@ public abstract class SequenceStorageNodes {
                             long[] elements = new long[size];
                             array = elements;
                             while (true) {
-                                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                                if (PyIterNextNode.isExhausted(next)) {
+                                Object next;
+                                try {
+                                    next = nextNode.execute(frame, inliningTarget, iterator);
+                                } catch (IteratorExhausted e) {
                                     LoopNode.reportLoopCount(this, i);
                                     break;
                                 }
@@ -4222,8 +4232,10 @@ public abstract class SequenceStorageNodes {
                             double[] elements = new double[size];
                             array = elements;
                             while (true) {
-                                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                                if (PyIterNextNode.isExhausted(next)) {
+                                Object next;
+                                try {
+                                    next = nextNode.execute(frame, inliningTarget, iterator);
+                                } catch (IteratorExhausted e) {
                                     LoopNode.reportLoopCount(this, i);
                                     break;
                                 }
@@ -4238,8 +4250,10 @@ public abstract class SequenceStorageNodes {
                         case Generic: {
                             Object[] elements = new Object[size];
                             while (true) {
-                                Object value = nextNode.execute(frame, inliningTarget, iterator);
-                                if (PyIterNextNode.isExhausted(value)) {
+                                Object value;
+                                try {
+                                    value = nextNode.execute(frame, inliningTarget, iterator);
+                                } catch (IteratorExhausted e) {
                                     LoopNode.reportLoopCount(this, i);
                                     break;
                                 }
@@ -4264,8 +4278,10 @@ public abstract class SequenceStorageNodes {
             Object[] elements = new Object[size];
             int i = 0;
             while (true) {
-                Object value = nextNode.execute(frame, inliningTarget, iterator);
-                if (PyIterNextNode.isExhausted(value)) {
+                Object value;
+                try {
+                    value = nextNode.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
                     LoopNode.reportLoopCount(this, i);
                     return SequenceStorageFactory.createStorage(PythonUtils.arrayCopyOf(elements, i));
                 }
@@ -4287,8 +4303,10 @@ public abstract class SequenceStorageNodes {
             }
             elements[i++] = result;
             while (true) {
-                Object value = nextNode.execute(frame, inliningTarget, iterator);
-                if (PyIterNextNode.isExhausted(value)) {
+                Object value;
+                try {
+                    value = nextNode.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
                     LoopNode.reportLoopCount(this, i);
                     return new ObjectSequenceStorage(elements, i);
                 }
@@ -4306,120 +4324,146 @@ public abstract class SequenceStorageNodes {
         protected static SequenceStorage createStorageFromBuiltin(VirtualFrame frame, PBuiltinIterator iterator, int len, StorageType type, NextHelperNode nextNode,
                         IsBuiltinObjectProfile errorProfile, Node inliningTarget, InlinedCountingConditionProfile growArrayProfile, InlinedLoopConditionProfile loopProfile) {
             final int size = len > 0 ? len : START_SIZE;
+            int i = 0;
+            boolean exhausted = false;
             if (type == Uninitialized || type == Empty) {
                 Object[] elements = new Object[size];
-                int i = 0;
-                try {
-                    Object value;
-                    for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
+                while (loopProfile.profile(inliningTarget, !exhausted)) {
+                    try {
+                        Object value = nextNode.execute(frame, inliningTarget, iterator);
                         if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                             elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                         }
-                        elements[i] = value;
+                        elements[i++] = value;
+                    } catch (IteratorExhausted e) {
+                        exhausted = true;
+                    } catch (PException e) {
+                        e.expectStopIteration(inliningTarget, errorProfile);
+                        exhausted = true;
                     }
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
                 }
                 return SequenceStorageFactory.createStorage(PythonUtils.arrayCopyOf(elements, i));
             } else {
-                int i = 0;
                 Object array = null;
                 try {
-                    Object value;
                     switch (type) {
                         case Boolean: {
                             boolean[] elements = new boolean[size];
                             array = elements;
-                            try {
-                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
+                            while (loopProfile.profile(inliningTarget, !exhausted)) {
+                                try {
+                                    Object value = nextNode.execute(frame, inliningTarget, iterator);
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                         array = elements;
                                     }
                                     elements[i] = PGuards.expectBoolean(value);
+                                } catch (IteratorExhausted e) {
+                                    exhausted = true;
+                                } catch (PException e) {
+                                    e.expectStopIteration(inliningTarget, errorProfile);
+                                    exhausted = true;
                                 }
-                            } catch (PException e) {
-                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new BoolSequenceStorage(elements, i);
                         }
                         case Byte: {
                             byte[] elements = new byte[size];
                             array = elements;
-                            try {
-                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
+                            while (loopProfile.profile(inliningTarget, !exhausted)) {
+                                try {
+                                    Object value = nextNode.execute(frame, inliningTarget, iterator);
                                     byte bvalue;
                                     try {
                                         bvalue = PInt.byteValueExact(PGuards.expectInteger(value));
-                                        if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
-                                            array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
-                                        }
-                                        elements[i] = bvalue;
                                     } catch (OverflowException e) {
                                         throw new UnexpectedResultException(value);
                                     }
+                                    if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
+                                        array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
+                                    }
+                                    elements[i++] = bvalue;
+                                } catch (IteratorExhausted e) {
+                                    exhausted = true;
+                                } catch (PException e) {
+                                    e.expectStopIteration(inliningTarget, errorProfile);
+                                    exhausted = true;
                                 }
-                            } catch (PException e) {
-                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new ByteSequenceStorage(elements, i);
                         }
                         case Int: {
                             int[] elements = new int[size];
                             array = elements;
-                            try {
-                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
+                            while (loopProfile.profile(inliningTarget, !exhausted)) {
+                                try {
+                                    Object value = nextNode.execute(frame, inliningTarget, iterator);
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
-                                    elements[i] = PGuards.expectInteger(value);
+                                    elements[i++] = PGuards.expectInteger(value);
+                                } catch (IteratorExhausted e) {
+                                    exhausted = true;
+                                } catch (PException e) {
+                                    e.expectStopIteration(inliningTarget, errorProfile);
+                                    exhausted = true;
                                 }
-                            } catch (PException e) {
-                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new IntSequenceStorage(elements, i);
                         }
                         case Long: {
                             long[] elements = new long[size];
                             array = elements;
-                            try {
-                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
+                            while (loopProfile.profile(inliningTarget, !exhausted)) {
+                                try {
+                                    Object value = nextNode.execute(frame, inliningTarget, iterator);
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
-                                    elements[i] = PGuards.expectLong(value);
+                                    elements[i++] = PGuards.expectLong(value);
+                                } catch (IteratorExhausted e) {
+                                    exhausted = true;
+                                } catch (PException e) {
+                                    e.expectStopIteration(inliningTarget, errorProfile);
+                                    exhausted = true;
                                 }
-                            } catch (PException e) {
-                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new LongSequenceStorage(elements, i);
                         }
                         case Double: {
                             double[] elements = new double[size];
                             array = elements;
-                            try {
-                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
+                            while (loopProfile.profile(inliningTarget, !exhausted)) {
+                                try {
+                                    Object value = nextNode.execute(frame, inliningTarget, iterator);
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
-                                    elements[i] = PGuards.expectDouble(value);
+                                    elements[i++] = PGuards.expectDouble(value);
+                                } catch (IteratorExhausted e) {
+                                    exhausted = true;
+                                } catch (PException e) {
+                                    e.expectStopIteration(inliningTarget, errorProfile);
+                                    exhausted = true;
                                 }
-                            } catch (PException e) {
-                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new DoubleSequenceStorage(elements, i);
                         }
                         case Generic: {
                             Object[] elements = new Object[size];
-                            try {
-                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
+                            while (loopProfile.profile(inliningTarget, !exhausted)) {
+                                try {
+                                    Object value = nextNode.execute(frame, inliningTarget, iterator);
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
-                                    elements[i] = value;
+                                    elements[i++] = value;
+                                } catch (IteratorExhausted e) {
+                                    exhausted = true;
+                                } catch (PException e) {
+                                    e.expectStopIteration(inliningTarget, errorProfile);
+                                    exhausted = true;
                                 }
-                            } catch (PException e) {
-                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new ObjectSequenceStorage(elements, i);
                         }
@@ -4428,7 +4472,7 @@ public abstract class SequenceStorageNodes {
                             throw new RuntimeException("unexpected state");
                     }
                 } catch (UnexpectedResultException e) {
-                    return genericFallback(frame, iterator, array, i, e.getResult(), nextNode, inliningTarget, errorProfile);
+                    return genericFallback(frame, iterator, array, i - 1, e.getResult(), nextNode, inliningTarget, errorProfile);
                 }
             }
         }
@@ -4441,16 +4485,18 @@ public abstract class SequenceStorageNodes {
                 elements[i] = Array.get(array, i);
             }
             elements[i++] = result;
-            Object value;
-            try {
-                while (!PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))) {
+            while (true) {
+                try {
+                    Object value = nextNode.execute(frame, inliningTarget, iterator);
                     if (i >= elements.length) {
                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                     }
                     elements[i++] = value;
+                } catch (IteratorExhausted e) {
+                    break;
+                } catch (PException e) {
+                    e.expectStopIteration(inliningTarget, errorProfile);
                 }
-            } catch (PException e) {
-                e.expectStopIteration(inliningTarget, errorProfile);
             }
             return new ObjectSequenceStorage(elements, i);
         }

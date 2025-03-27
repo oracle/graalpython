@@ -142,7 +142,7 @@ public final class ProductBuiltins extends PythonBuiltins {
 
             if (self.isStopped()) {
                 wasStoppedProfile.enter(inliningTarget);
-                return iteratorExhausted();
+                throw iteratorExhausted();
             }
 
             // the existing lst array can be changed in a following next call
@@ -153,7 +153,7 @@ public final class ProductBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isStopped()")
         static Object nextStopped(@SuppressWarnings("unused") PProduct self) {
-            return iteratorExhausted();
+            throw iteratorExhausted();
         }
 
         private static void rotatePreviousGear(Node inliningTarget, PProduct self, InlinedLoopConditionProfile loopProfile, InlinedBranchProfile doneProfile) {

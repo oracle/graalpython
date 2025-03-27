@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqIt
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -852,8 +853,10 @@ public final class ArrayBuiltins extends PythonBuiltins {
             Object iter = getIter.execute(frame, inliningTarget, value);
             int length = self.getLength();
             while (true) {
-                Object nextValue = nextNode.execute(frame, inliningTarget, iter);
-                if (PyIterNextNode.isExhausted(nextValue)) {
+                Object nextValue;
+                try {
+                    nextValue = nextNode.execute(frame, inliningTarget, iter);
+                } catch (IteratorExhausted e) {
                     break;
                 }
                 // The whole extend is not atomic, just individual inserts are. That's the same as

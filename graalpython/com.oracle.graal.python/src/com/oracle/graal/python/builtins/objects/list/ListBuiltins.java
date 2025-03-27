@@ -253,7 +253,7 @@ public final class ListBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
+        @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)", "!isPIntRange(iterable)"})
         static PNone listIterable(VirtualFrame frame, PList list, Object iterable,
                         @Bind("this") Node inliningTarget,
                         // exclusive for truffle-interpreted-performance
@@ -276,6 +276,10 @@ public final class ListBuiltins extends PythonBuiltins {
             clearStorageNode.execute(inliningTarget, list);
             extendNode.execute(frame, list, iterable);
             return PNone.NONE;
+        }
+
+        protected static boolean isPIntRange(Object object) {
+            return object instanceof PIntRange;
         }
     }
 

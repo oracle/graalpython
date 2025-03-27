@@ -77,7 +77,7 @@ public final class SentinelIteratorBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyObjectRichCompareBool eqNode) {
             if (iterator.sentinelReached()) {
-                return iteratorExhausted();
+                throw iteratorExhausted();
             }
             Object nextValue;
             try {
@@ -85,12 +85,12 @@ public final class SentinelIteratorBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 e.expectStopIteration(inliningTarget, errorProfile);
                 iterator.markSentinelReached();
-                return iteratorExhausted();
+                throw iteratorExhausted();
             }
             boolean iteratorDone = eqNode.executeEq(frame, inliningTarget, nextValue, iterator.getSentinel());
             if (iteratorDone) {
                 iterator.markSentinelReached();
-                return iteratorExhausted();
+                throw iteratorExhausted();
             }
             return nextValue;
         }

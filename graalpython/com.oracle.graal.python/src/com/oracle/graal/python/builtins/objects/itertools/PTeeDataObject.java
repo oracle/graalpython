@@ -134,9 +134,7 @@ public final class PTeeDataObject extends PythonBuiltinObject {
             running = true;
             try {
                 Object value = nextNode.execute(frame, inliningTarget, it);
-                if (!PyIterNextNode.isExhausted(value)) {
-                    values[numread++] = value;
-                }
+                values[numread++] = value;
                 return value;
             } finally {
                 running = false;

@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -286,8 +287,10 @@ public final class SetBuiltins extends PythonBuiltins {
             HashingStorage curStorage = collection.getDictStorage();
             Object iterator = getIter.execute(frame, inliningTarget, other);
             while (true) {
-                Object key = nextNode.execute(frame, inliningTarget, iterator);
-                if (PyIterNextNode.isExhausted(key)) {
+                Object key;
+                try {
+                    key = nextNode.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
                     collection.setDictStorage(curStorage);
                     return;
                 }

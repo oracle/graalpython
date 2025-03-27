@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinN
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -310,8 +311,10 @@ public final class DictViewBuiltins extends PythonBuiltins {
             int i = 0;
             try {
                 while (loopConditionProfile.profile(inliningTarget, checkAll && ok || !checkAll && !ok)) {
-                    Object item = nextNode.execute(frame, inliningTarget, iterator);
-                    if (PyIterNextNode.isExhausted(item)) {
+                    Object item;
+                    try {
+                        item = nextNode.execute(frame, inliningTarget, iterator);
+                    } catch (IteratorExhausted e) {
                         break;
                     }
                     ok = isTrueNode.execute(frame, containsNode.execute(frame, inliningTarget, other, item));

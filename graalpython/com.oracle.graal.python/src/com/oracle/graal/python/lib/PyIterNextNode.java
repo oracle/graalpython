@@ -42,8 +42,8 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -58,9 +58,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Obtains the next value of an iterator. It never raises {@code StopIteration}. Use
- * {@link PyIterNextNode#isExhausted(Object)} on the returned value to determine if the iterator was
- * exhausted.
+ * Obtains the next value of an iterator. It throws {@link IteratorExhausted} upon exhaustion. It
+ * never raises python {@code StopIteration}.
  */
 @GenerateUncached
 @GenerateInline(inlineByDefault = true)
@@ -75,10 +74,6 @@ public abstract class PyIterNextNode extends PNodeWithContext {
         return PyIterNextNodeGen.getUncached().execute(null, null, iterator);
     }
 
-    public static boolean isExhausted(Object value) {
-        return value == TpSlotIterNext.ITERATOR_EXHAUSTED;
-    }
-
     @Specialization
     static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object iterator,
                     @Cached GetClassNode getClassNode,
@@ -91,7 +86,7 @@ public abstract class PyIterNextNode extends PNodeWithContext {
             return callNext.execute(frame, inliningTarget, slots.tp_iternext(), iterator);
         } catch (PException e) {
             e.expectStopIteration(inliningTarget, stopIterationProfile);
-            return TpSlotIterNext.ITERATOR_EXHAUSTED;
+            throw TpIterNextBuiltin.iteratorExhausted();
         }
     }
 

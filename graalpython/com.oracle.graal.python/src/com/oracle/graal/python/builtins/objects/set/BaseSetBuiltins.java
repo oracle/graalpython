@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetStateNode;
@@ -471,8 +472,10 @@ public final class BaseSetBuiltins extends PythonBuiltins {
             HashingStorage selfStorage = ((PBaseSet) self).getDictStorage();
             Object iterator = getIter.execute(frame, inliningTarget, other);
             while (true) {
-                Object nextValue = nextNode.execute(frame, inliningTarget, iterator);
-                if (PyIterNextNode.isExhausted(nextValue)) {
+                Object nextValue;
+                try {
+                    nextValue = nextNode.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
                     return true;
                 }
                 if (getHashingStorageItem.hasKey(frame, inliningTarget, selfStorage, nextValue)) {
