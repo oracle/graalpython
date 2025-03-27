@@ -297,27 +297,27 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PythonObject("object", null, new Builder().publishInModule(J_BUILTINS).basetype().slots(ObjectBuiltins.SLOTS)),
     PythonClass("type", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().addDict().slots(TypeBuiltins.SLOTS).methodsFlags(TYPE_M_FLAGS)),
     PArray("array", PythonObject, new Builder().publishInModule("array").basetype().slots(ArrayBuiltins.SLOTS).methodsFlags(ARRAY_M_FLAGS)),
-    PArrayIterator("arrayiterator", PythonObject, new Builder().makePrivate().disallowInstantiation().slots(IteratorBuiltins.SLOTS)),
-    PIterator("iterator", PythonObject, new Builder().makePrivate().disallowInstantiation().slots(IteratorBuiltins.SLOTS)),
+    PArrayIterator("arrayiterator", PythonObject, new Builder().disallowInstantiation().slots(IteratorBuiltins.SLOTS)),
+    PIterator("iterator", PythonObject, new Builder().disallowInstantiation().slots(IteratorBuiltins.SLOTS)),
     /** See {@link com.oracle.graal.python.builtins.objects.function.PBuiltinFunction} */
-    PBuiltinFunction("method_descriptor", PythonObject, new Builder().makePrivate().disallowInstantiation().slots(MethodDescriptorBuiltins.SLOTS)),
+    PBuiltinFunction("method_descriptor", PythonObject, new Builder().disallowInstantiation().slots(MethodDescriptorBuiltins.SLOTS)),
     /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
-    PBuiltinFunctionOrMethod("builtin_function_or_method", PythonObject, new Builder().makePrivate().slots(TpSlots.merge(AbstractMethodBuiltins.SLOTS, BuiltinFunctionOrMethodBuiltins.SLOTS))),
+    PBuiltinFunctionOrMethod("builtin_function_or_method", PythonObject, new Builder().slots(TpSlots.merge(AbstractMethodBuiltins.SLOTS, BuiltinFunctionOrMethodBuiltins.SLOTS))),
     /** See {@link com.oracle.graal.python.builtins.objects.function.PBuiltinFunction} */
-    WrapperDescriptor(J_WRAPPER_DESCRIPTOR, PythonObject, new Builder().makePrivate().disallowInstantiation().slots(WrapperDescriptorBuiltins.SLOTS)),
+    WrapperDescriptor(J_WRAPPER_DESCRIPTOR, PythonObject, new Builder().disallowInstantiation().slots(WrapperDescriptorBuiltins.SLOTS)),
     /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
-    MethodWrapper("method-wrapper", PythonObject, new Builder().makePrivate().slots(TpSlots.merge(AbstractMethodBuiltins.SLOTS, MethodWrapperBuiltins.SLOTS))),
+    MethodWrapper("method-wrapper", PythonObject, new Builder().slots(TpSlots.merge(AbstractMethodBuiltins.SLOTS, MethodWrapperBuiltins.SLOTS))),
     /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
-    PBuiltinMethod("builtin_method", PBuiltinFunctionOrMethod, new Builder().makePrivate()),
-    PBuiltinClassMethod("classmethod_descriptor", PythonObject, new Builder().makePrivate().slots(TpSlots.merge(ClassmethodCommonBuiltins.SLOTS, BuiltinClassmethodBuiltins.SLOTS))),
-    GetSetDescriptor("getset_descriptor", PythonObject, new Builder().makePrivate().disallowInstantiation().slots(GetSetDescriptorTypeBuiltins.SLOTS)),
-    MemberDescriptor(J_MEMBER_DESCRIPTOR, PythonObject, new Builder().makePrivate().disallowInstantiation().slots(MemberDescriptorBuiltins.SLOTS)),
+    PBuiltinMethod("builtin_method", PBuiltinFunctionOrMethod, new Builder()),
+    PBuiltinClassMethod("classmethod_descriptor", PythonObject, new Builder().slots(TpSlots.merge(ClassmethodCommonBuiltins.SLOTS, BuiltinClassmethodBuiltins.SLOTS))),
+    GetSetDescriptor("getset_descriptor", PythonObject, new Builder().disallowInstantiation().slots(GetSetDescriptorTypeBuiltins.SLOTS)),
+    MemberDescriptor(J_MEMBER_DESCRIPTOR, PythonObject, new Builder().disallowInstantiation().slots(MemberDescriptorBuiltins.SLOTS)),
     PByteArray(
                     "bytearray",
                     PythonObject,
                     new Builder().publishInModule(J_BUILTINS).basetype().slots(TpSlots.merge(BytesCommonBuiltins.SLOTS, ByteArrayBuiltins.SLOTS)).methodsFlags(BYTE_ARRAY_M_FLAGS)),
     PBytes("bytes", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(TpSlots.merge(BytesCommonBuiltins.SLOTS, BytesBuiltins.SLOTS)).methodsFlags(BYTES_M_FLAGS)),
-    PCell("cell", PythonObject, new Builder().makePrivate().slots(CellBuiltins.SLOTS)),
+    PCell("cell", PythonObject, new Builder().slots(CellBuiltins.SLOTS)),
     PSimpleNamespace("SimpleNamespace", PythonObject, new Builder().publishInModule("types").basetype().addDict().slots(SimpleNamespaceBuiltins.SLOTS)),
     PKeyWrapper("KeyWrapper", PythonObject, new Builder().moduleName("functools").publishInModule("_functools").disallowInstantiation().slots(KeyWrapperBuiltins.SLOTS)),
     PPartial(J_PARTIAL, PythonObject, new Builder().moduleName("functools").publishInModule("_functools").basetype().addDict().slots(PartialBuiltins.SLOTS)),
@@ -331,69 +331,60 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PDict("dict", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(TpSlots.merge(DictBuiltins.SLOTS, DictReprBuiltin.SLOTS)).methodsFlags(DICT_M_FLAGS)),
     PDefaultDict(J_DEFAULTDICT, PDict, new Builder().moduleName("collections").publishInModule("_collections").basetype().slots(DefaultDictBuiltins.SLOTS).methodsFlags(DEFAULTDICT_M_FLAGS)),
     POrderedDict(J_ORDERED_DICT, PDict, new Builder().publishInModule("_collections").basetype().addDict().slots(OrderedDictBuiltins.SLOTS).methodsFlags(DICT_M_FLAGS)),
-    PDictItemIterator(J_DICT_ITEMITERATOR, PythonObject, new Builder().makePrivate().disallowInstantiation().slots(IteratorBuiltins.SLOTS)),
-    PDictReverseItemIterator(J_DICT_REVERSE_ITEMITERATOR, PythonObject, new Builder().makePrivate().slots(IteratorBuiltins.SLOTS)),
-    PDictItemsView(
-                    J_DICT_ITEMS,
-                    PythonObject,
-                    new Builder().makePrivate().disallowInstantiation().slots(TpSlots.merge(DictViewBuiltins.SLOTS, DictReprBuiltin.SLOTS)).methodsFlags(DICTITEMSVIEW_M_FLAGS)),
-    PDictKeyIterator(J_DICT_KEYITERATOR, PythonObject, new Builder().makePrivate().disallowInstantiation().slots(IteratorBuiltins.SLOTS)),
-    PDictReverseKeyIterator(J_DICT_REVERSE_KEYITERATOR, PythonObject, new Builder().makePrivate().slots(IteratorBuiltins.SLOTS)),
-    PDictKeysView(
-                    J_DICT_KEYS,
-                    PythonObject,
-                    new Builder().makePrivate().disallowInstantiation().slots(TpSlots.merge(DictViewBuiltins.SLOTS, DictReprBuiltin.SLOTS)).methodsFlags(DICTKEYSVIEW_M_FLAGS)),
-    PDictValueIterator(J_DICT_VALUEITERATOR, PythonObject, new Builder().makePrivate().disallowInstantiation().slots(IteratorBuiltins.SLOTS)),
-    PDictReverseValueIterator(J_DICT_REVERSE_VALUEITERATOR, PythonObject, new Builder().makePrivate().slots(IteratorBuiltins.SLOTS)),
-    PDictValuesView(
-                    J_DICT_VALUES,
-                    PythonObject,
-                    new Builder().makePrivate().disallowInstantiation().slots(TpSlots.merge(DictValuesBuiltins.SLOTS, DictReprBuiltin.SLOTS)).methodsFlags(DICTVALUESVIEW_M_FLAGS)),
-    POrderedDictKeys("odict_keys", PDictKeysView, new Builder().makePrivate().slots(OrderedDictKeysBuiltins.SLOTS).methodsFlags(DICTKEYSVIEW_M_FLAGS)),
-    POrderedDictValues("odict_values", PDictValuesView, new Builder().makePrivate().slots(OrderedDictValuesBuiltins.SLOTS).methodsFlags(DICTVALUESVIEW_M_FLAGS)),
-    POrderedDictItems("odict_items", PDictItemsView, new Builder().makePrivate().slots(OrderedDictItemsBuiltins.SLOTS).methodsFlags(DICTITEMSVIEW_M_FLAGS)),
-    POrderedDictIterator("odict_iterator", PythonObject, new Builder().makePrivate().slots(OrderedDictIteratorBuiltins.SLOTS)),
-    PEllipsis("ellipsis", PythonObject, new Builder().makePrivate().slots(EllipsisBuiltins.SLOTS)),
+    PDictItemIterator(J_DICT_ITEMITERATOR, PythonObject, new Builder().disallowInstantiation().slots(IteratorBuiltins.SLOTS)),
+    PDictReverseItemIterator(J_DICT_REVERSE_ITEMITERATOR, PythonObject, new Builder().slots(IteratorBuiltins.SLOTS)),
+    PDictItemsView(J_DICT_ITEMS, PythonObject, new Builder().disallowInstantiation().slots(TpSlots.merge(DictViewBuiltins.SLOTS, DictReprBuiltin.SLOTS)).methodsFlags(DICTITEMSVIEW_M_FLAGS)),
+    PDictKeyIterator(J_DICT_KEYITERATOR, PythonObject, new Builder().disallowInstantiation().slots(IteratorBuiltins.SLOTS)),
+    PDictReverseKeyIterator(J_DICT_REVERSE_KEYITERATOR, PythonObject, new Builder().slots(IteratorBuiltins.SLOTS)),
+    PDictKeysView(J_DICT_KEYS, PythonObject, new Builder().disallowInstantiation().slots(TpSlots.merge(DictViewBuiltins.SLOTS, DictReprBuiltin.SLOTS)).methodsFlags(DICTKEYSVIEW_M_FLAGS)),
+    PDictValueIterator(J_DICT_VALUEITERATOR, PythonObject, new Builder().disallowInstantiation().slots(IteratorBuiltins.SLOTS)),
+    PDictReverseValueIterator(J_DICT_REVERSE_VALUEITERATOR, PythonObject, new Builder().slots(IteratorBuiltins.SLOTS)),
+    PDictValuesView(J_DICT_VALUES, PythonObject, new Builder().disallowInstantiation().slots(TpSlots.merge(DictValuesBuiltins.SLOTS, DictReprBuiltin.SLOTS)).methodsFlags(DICTVALUESVIEW_M_FLAGS)),
+    POrderedDictKeys("odict_keys", PDictKeysView, new Builder().slots(OrderedDictKeysBuiltins.SLOTS).methodsFlags(DICTKEYSVIEW_M_FLAGS)),
+    POrderedDictValues("odict_values", PDictValuesView, new Builder().slots(OrderedDictValuesBuiltins.SLOTS).methodsFlags(DICTVALUESVIEW_M_FLAGS)),
+    POrderedDictItems("odict_items", PDictItemsView, new Builder().slots(OrderedDictItemsBuiltins.SLOTS).methodsFlags(DICTITEMSVIEW_M_FLAGS)),
+    POrderedDictIterator("odict_iterator", PythonObject, new Builder().slots(OrderedDictIteratorBuiltins.SLOTS)),
+    PEllipsis("ellipsis", PythonObject, new Builder().slots(EllipsisBuiltins.SLOTS)),
     PEnumerate("enumerate", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(EnumerateBuiltins.SLOTS)),
     PMap("map", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(MapBuiltins.SLOTS)),
     PFloat("float", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(FloatBuiltins.SLOTS).methodsFlags(FLOAT_M_FLAGS)),
-    PFrame("frame", PythonObject, new Builder().makePrivate().slots(FrameBuiltins.SLOTS)),
+    PFrame("frame", PythonObject, new Builder().slots(FrameBuiltins.SLOTS)),
     PFrozenSet("frozenset", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(TpSlots.merge(BaseSetBuiltins.SLOTS, FrozenSetBuiltins.SLOTS)).methodsFlags(FROZENSET_M_FLAGS)),
-    PFunction("function", PythonObject, new Builder().makePrivate().addDict().slots(FunctionBuiltins.SLOTS)),
-    PGenerator("generator", PythonObject, new Builder().makePrivate().disallowInstantiation().slots(GeneratorBuiltins.SLOTS).methodsFlags(GENERATOR_M_FLAGS)),
-    PCoroutine("coroutine", PythonObject, new Builder().makePrivate().slots(CoroutineBuiltins.SLOTS).methodsFlags(COROUTINE_M_FLAGS)),
-    PCoroutineWrapper("coroutine_wrapper", PythonObject, new Builder().makePrivate().slots(CoroutineWrapperBuiltins.SLOTS)),
-    PAsyncGenerator("async_generator", PythonObject, new Builder().makePrivate().methodsFlags(ASYNC_GENERATOR_M_FLAGS)),
+    PFunction("function", PythonObject, new Builder().addDict().slots(FunctionBuiltins.SLOTS)),
+    PGenerator("generator", PythonObject, new Builder().disallowInstantiation().slots(GeneratorBuiltins.SLOTS).methodsFlags(GENERATOR_M_FLAGS)),
+    PCoroutine("coroutine", PythonObject, new Builder().slots(CoroutineBuiltins.SLOTS).methodsFlags(COROUTINE_M_FLAGS)),
+    PCoroutineWrapper("coroutine_wrapper", PythonObject, new Builder().slots(CoroutineWrapperBuiltins.SLOTS)),
+    PAsyncGenerator("async_generator", PythonObject, new Builder().methodsFlags(ASYNC_GENERATOR_M_FLAGS)),
     PInt("int", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(IntBuiltins.SLOTS).methodsFlags(INT_M_FLAGS)),
     Boolean("bool", PInt, new Builder().publishInModule(J_BUILTINS).slots(BoolBuiltins.SLOTS).methodsFlags(BOOLEAN_M_FLAGS)),
     PList("list", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(ListBuiltins.SLOTS).methodsFlags(LIST_M_FLAGS)),
-    PMappingproxy("mappingproxy", PythonObject, new Builder().makePrivate().slots(MappingproxyBuiltins.SLOTS).methodsFlags(MAPPINGPROXY_M_FLAGS)),
+    PMappingproxy("mappingproxy", PythonObject, new Builder().slots(MappingproxyBuiltins.SLOTS).methodsFlags(MAPPINGPROXY_M_FLAGS)),
     PMemoryView("memoryview", PythonObject, new Builder().publishInModule(J_BUILTINS).slots(MemoryViewBuiltins.SLOTS).methodsFlags(MEMORYVIEW_M_FLAGS)),
-    PAsyncGenASend("async_generator_asend", PythonObject, new Builder().makePrivate().slots(AsyncGenSendBuiltins.SLOTS).methodsFlags(ASYNC_GENERATOR_ASEND_M_FLAGS)),
-    PAsyncGenAThrow("async_generator_athrow", PythonObject, new Builder().makePrivate().slots(AsyncGenThrowBuiltins.SLOTS).methodsFlags(ASYNC_GENERATOR_ATHROW_M_FLAGS)),
-    PAsyncGenAWrappedValue("async_generator_wrapped_value", PythonObject, new Builder().makePrivate()),
-    PMethod("method", PythonObject, new Builder().makePrivate().slots(TpSlots.merge(AbstractMethodBuiltins.SLOTS, MethodBuiltins.SLOTS))),
+    PAsyncGenASend("async_generator_asend", PythonObject, new Builder().slots(AsyncGenSendBuiltins.SLOTS).methodsFlags(ASYNC_GENERATOR_ASEND_M_FLAGS)),
+    PAsyncGenAThrow("async_generator_athrow", PythonObject, new Builder().slots(AsyncGenThrowBuiltins.SLOTS).methodsFlags(ASYNC_GENERATOR_ATHROW_M_FLAGS)),
+    PAsyncGenAWrappedValue("async_generator_wrapped_value", PythonObject, new Builder()),
+    PMethod("method", PythonObject, new Builder().slots(TpSlots.merge(AbstractMethodBuiltins.SLOTS, MethodBuiltins.SLOTS))),
     PMMap("mmap", PythonObject, new Builder().publishInModule("mmap").basetype().slots(MMapBuiltins.SLOTS).methodsFlags(MMAP_M_FLAGS)),
-    PNone("NoneType", PythonObject, new Builder().makePrivate().slots(NoneBuiltins.SLOTS).methodsFlags(NONE_M_FLAGS)),
-    PNotImplemented("NotImplementedType", PythonObject, new Builder().makePrivate().slots(NotImplementedBuiltins.SLOTS)),
+    PNone("NoneType", PythonObject, new Builder().slots(NoneBuiltins.SLOTS).methodsFlags(NONE_M_FLAGS)),
+    PNotImplemented("NotImplementedType", PythonObject, new Builder().slots(NotImplementedBuiltins.SLOTS)),
     PProperty(J_PROPERTY, PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(PropertyBuiltins.SLOTS)),
     PSimpleQueue(J_SIMPLE_QUEUE, PythonObject, new Builder().publishInModule("_queue").basetype()),
     PRandom("Random", PythonObject, new Builder().publishInModule("_random").basetype()),
     PRange("range", PythonObject, new Builder().publishInModule(J_BUILTINS).slots(RangeBuiltins.SLOTS).methodsFlags(RANGE_M_FLAGS)),
     PReferenceType("ReferenceType", PythonObject, new Builder().publishInModule("_weakref").basetype().slots(ReferenceTypeBuiltins.SLOTS)),
-    PSentinelIterator("callable_iterator", PythonObject, new Builder().makePrivate().disallowInstantiation().slots(SentinelIteratorBuiltins.SLOTS)),
+    PSentinelIterator("callable_iterator", PythonObject, new Builder().disallowInstantiation().slots(SentinelIteratorBuiltins.SLOTS)),
     PReverseIterator("reversed", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(ReversedBuiltins.SLOTS)),
     PSet("set", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(TpSlots.merge(BaseSetBuiltins.SLOTS, SetBuiltins.SLOTS)).methodsFlags(SET_M_FLAGS)),
     PSlice("slice", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(SliceBuiltins.SLOTS)),
     PString("str", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(StringBuiltins.SLOTS).methodsFlags(STRING_M_FLAGS)),
-    PTraceback("traceback", PythonObject, new Builder().makePrivate().basetype()),
+    PTraceback("traceback", PythonObject, new Builder().basetype()),
     PTuple("tuple", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(TupleBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
-    PythonModule("module", PythonObject, new Builder().makePrivate().basetype().addDict().slots(ModuleBuiltins.SLOTS)),
-    PythonModuleDef("moduledef", PythonObject, new Builder().makePrivate()),
+    PythonModule("module", PythonObject, new Builder().basetype().addDict().slots(ModuleBuiltins.SLOTS)),
+    PythonModuleDef("moduledef", PythonObject, new Builder()),
     Super("super", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(SuperBuiltins.SLOTS)),
-    PCode("code", PythonObject, new Builder().makePrivate().slots(CodeBuiltins.SLOTS)),
+    PCode("code", PythonObject, new Builder().slots(CodeBuiltins.SLOTS)),
     PGenericAlias("GenericAlias", PythonObject, new Builder().publishInModule(J_TYPES).basetype().slots(GenericAliasBuiltins.SLOTS).methodsFlags(GENERIC_ALIAS_M_FLAGS)),
-    PGenericAliasIterator("generic_alias_iterator", PythonObject, new Builder().makePrivate().slots(GenericAliasIteratorBuiltins.SLOTS)),
+    PGenericAliasIterator("generic_alias_iterator", PythonObject, new Builder().slots(GenericAliasIteratorBuiltins.SLOTS)),
     PUnionType("UnionType", PythonObject, new Builder().publishInModule(J_TYPES).slots(UnionTypeBuiltins.SLOTS).methodsFlags(UNION_TYPE_M_FLAGS)),
     PZip("zip", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(PZipBuiltins.SLOTS)),
     PThread("start_new_thread", PythonObject, new Builder().publishInModule(J__THREAD).basetype()),
@@ -406,7 +397,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PStaticmethod("staticmethod", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().addDict().slots(StaticmethodBuiltins.SLOTS)),
     PClassmethod("classmethod", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().addDict().slots(TpSlots.merge(ClassmethodCommonBuiltins.SLOTS, ClassmethodBuiltins.SLOTS))),
     PInstancemethod("instancemethod", PythonObject, new Builder().basetype().addDict().slots(InstancemethodBuiltins.SLOTS)),
-    PScandirIterator("ScandirIterator", PythonObject, new Builder().publishInModule(J_POSIX).makePrivate().disallowInstantiation().slots(ScandirIteratorBuiltins.SLOTS)),
+    PScandirIterator("ScandirIterator", PythonObject, new Builder().moduleName(J_POSIX).disallowInstantiation().slots(ScandirIteratorBuiltins.SLOTS)),
     PDirEntry("DirEntry", PythonObject, new Builder().publishInModule(J_POSIX).disallowInstantiation().slots(DirEntryBuiltins.SLOTS)),
     LsprofProfiler("Profiler", PythonObject, new Builder().publishInModule("_lsprof").basetype().slots(ProfilerBuiltins.SLOTS)),
     PStruct("Struct", PythonObject, new Builder().publishInModule(J__STRUCT).basetype()),
@@ -561,7 +552,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PIncrementalNewlineDecoder("IncrementalNewlineDecoder", PythonObject, new Builder().publishInModule("_io").basetype().slots(IncrementalNewlineDecoderBuiltins.SLOTS)),
     PStringIO("StringIO", PTextIOBase, new Builder().publishInModule("_io").basetype().addDict().slots(StringIOBuiltins.SLOTS)),
     PBytesIO("BytesIO", PBufferedIOBase, new Builder().publishInModule("_io").basetype().addDict().slots(BytesIOBuiltins.SLOTS)),
-    PBytesIOBuf("_BytesIOBuffer", PythonObject, new Builder().publishInModule("_io").makePrivate().basetype()),
+    PBytesIOBuf("_BytesIOBuffer", PythonObject, new Builder().moduleName("_io").basetype()),
 
     PStatResult("stat_result", PTuple, new Builder().publishInModule("os").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
     PStatvfsResult("statvfs_result", PTuple, new Builder().publishInModule("os").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS)),
@@ -619,7 +610,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     CSVWriter("Writer", PythonObject, new Builder().publishInModule("_csv").basetype().disallowInstantiation()),
 
     // codecs
-    PEncodingMap("EncodingMap", PythonObject, new Builder().makePrivate().disallowInstantiation()),
+    PEncodingMap("EncodingMap", PythonObject, new Builder().disallowInstantiation()),
 
     // hashlib
     MD5Type("md5", PythonObject, new Builder().publishInModule("_md5").basetype().disallowInstantiation()),
@@ -647,7 +638,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // _ctype
     CArgObject("CArgObject", PythonObject, new Builder().basetype().slots(CArgObjectBuiltins.SLOTS)),
     CThunkObject("CThunkObject", PythonObject, new Builder().publishInModule(J__CTYPES).basetype()),
-    StgDict("StgDict", PDict, new Builder().makePrivate().slots(StgDictBuiltins.SLOTS).methodsFlags(DICT_M_FLAGS)),
+    StgDict("StgDict", PDict, new Builder().slots(StgDictBuiltins.SLOTS).methodsFlags(DICT_M_FLAGS)),
     PyCStructType(
                     "PyCStructType",
                     PythonClass,
@@ -687,19 +678,18 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // CPython uses separate keys, values, items python types for the iterators.
     ContextIterator("context_iterator", PythonObject, new Builder().publishInModule(J__CONTEXTVARS).slots(ContextIteratorBuiltins.SLOTS)),
 
-    Capsule("PyCapsule", PythonObject, new Builder().makePrivate().basetype()),
+    Capsule("PyCapsule", PythonObject, new Builder().basetype()),
 
     PTokenizerIter("TokenizerIter", PythonObject, new Builder().publishInModule("_tokenize").basetype().slots(TokenizerIterBuiltins.SLOTS)),
 
     // A marker for @Builtin that is not a class. Must always come last.
-    nil("nil", PythonObject, new Builder().makePrivate().basetype());
+    nil("nil", PythonObject, new Builder());
 
     private static final class Builder {
         private String publishInModule;
         private String moduleName;
         private boolean basetype;
         private boolean addDict;
-        private boolean isPrivate;
         private boolean disallowInstantiation;
         private TpSlots slots;
         private long methodsFlags = DEFAULT_M_FLAGS;
@@ -724,12 +714,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
         public Builder addDict() {
             this.addDict = true;
-            return this;
-        }
-
-        // TODO msimacek: this seems to just affect the name, we should probably do this differently
-        public Builder makePrivate() {
-            this.isPrivate = true;
             return this;
         }
 
@@ -789,7 +773,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         this.name = toTruffleStringUncached(name);
         this.base = base;
         this.publishInModule = toTruffleStringUncached(builder.publishInModule);
-        this.moduleName = !builder.isPrivate && builder.moduleName != null ? toTruffleStringUncached(builder.moduleName) : null;
+        this.moduleName = builder.moduleName != null ? toTruffleStringUncached(builder.moduleName) : null;
         if (builder.moduleName != null && builder.moduleName != J_BUILTINS) {
             printName = toTruffleStringUncached(builder.moduleName + "." + name);
         } else {
