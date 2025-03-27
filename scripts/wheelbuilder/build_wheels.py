@@ -193,7 +193,15 @@ def repair_wheels():
         elif sys.platform == "linux":
             ensure_installed("auditwheel")
             p = subprocess.run(
-                [join(dirname(sys.executable), "auditwheel"), "repair", "-w", "wheelhouse", whl]
+                [
+                    join(dirname(sys.executable), "auditwheel"),
+                    "repair",
+                    "--plat",
+                    "manylinux_2_28_x86_64",
+                    "-w",
+                    "wheelhouse",
+                    whl,
+                ]
             )
         elif sys.platform == "darwin":
             ensure_installed("delocate")
