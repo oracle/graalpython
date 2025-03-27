@@ -355,7 +355,6 @@ import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.CommonLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.LockTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
-import com.oracle.graal.python.builtins.objects.thread.ThreadBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
@@ -714,7 +713,6 @@ public abstract class Python3Core {
                         new SimpleQueueBuiltins(),
                         new QueueModuleBuiltins(),
                         new ThreadModuleBuiltins(),
-                        new ThreadBuiltins(),
                         new ThreadLocalBuiltins(),
                         new CommonLockBuiltins(),
                         new LockTypeBuiltins(),

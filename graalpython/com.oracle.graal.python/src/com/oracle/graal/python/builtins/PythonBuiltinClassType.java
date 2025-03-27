@@ -604,7 +604,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
                     If strict is true and one of the arguments is exhausted before the others,
                     raise a ValueError.""")),
-    PThread("start_new_thread", PythonObject, new Builder().publishInModule(J__THREAD).basetype()),
     PThreadLocal("_local", PythonObject, new Builder().publishInModule(J__THREAD).basetype().slots(ThreadLocalBuiltins.SLOTS)),
     PLock("LockType", PythonObject, new Builder().publishInModule(J__THREAD).disallowInstantiation().slots(CommonLockBuiltins.SLOTS)),
     PRLock("RLock", PythonObject, new Builder().publishInModule(J__THREAD).basetype().slots(CommonLockBuiltins.SLOTS)),

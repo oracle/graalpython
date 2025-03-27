@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXIT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__THREAD;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.lang.ref.WeakReference;
@@ -72,6 +71,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -173,21 +173,21 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "start_new_thread", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PThread)
-    @Builtin(name = "start_new", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4)
+    @Builtin(name = "start_new_thread", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = "start_new", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class StartNewThreadNode extends PythonBuiltinNode {
+    abstract static class StartNewThreadNode extends PythonTernaryBuiltinNode {
 
         private static final TruffleString IN_THREAD_STARTED_BY = tsLiteral("in thread started by");
 
         @Specialization
         @SuppressWarnings("try")
-        long start(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object callable, Object args, Object kwargs,
+        static long start(VirtualFrame frame, Object callable, Object args, Object kwargs,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached CallNode callNode,
                         @Cached ExecutePositionalStarargsNode getArgsNode,
                         @Cached ExpandKeywordStarargsNode getKwArgsNode) {
-            PythonContext context = getContext();
             TruffleLanguage.Env env = context.getEnv();
             PythonModule threadModule = context.lookupBuiltinModule(T__THREAD);
 
@@ -222,9 +222,14 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                 }
             }).context(env.getContext()).threadGroup(context.getThreadGroup());
 
-            PThread pThread = PFactory.createPythonThread(PythonLanguage.get(inliningTarget), threadBuilder.build());
-            pThread.start();
-            return pThread.getId();
+            Thread thread = threadBuilder.build();
+            startThread(thread);
+            return thread.getId();
+        }
+
+        @TruffleBoundary
+        private static void startThread(Thread thread) {
+            thread.start();
         }
     }
 

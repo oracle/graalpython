@@ -209,7 +209,6 @@ import com.oracle.graal.python.builtins.objects.struct.PStruct;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
-import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.builtins.objects.tokenize.PTokenizerIter;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
@@ -1136,14 +1135,6 @@ public final class PFactory {
 
     public static PRLock createRLock(PythonLanguage language, Object cls, Shape shape) {
         return trace(language, new PRLock(cls, shape));
-    }
-
-    public static PThread createPythonThread(PythonLanguage language, Thread thread) {
-        return createPythonThread(language, PythonBuiltinClassType.PThread, PythonBuiltinClassType.PThread.getInstanceShape(language), thread);
-    }
-
-    public static PThread createPythonThread(PythonLanguage language, Object cls, Shape shape, Thread thread) {
-        return trace(language, new PThread(cls, shape, thread));
     }
 
     public static PSemLock createSemLock(PythonLanguage language, Object cls, Shape shape, long handle, int kind, int maxValue, TruffleString name) {
