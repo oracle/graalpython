@@ -151,23 +151,19 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return DumpNodeClinicProviderGen.INSTANCE;
         }
 
-        @NeverDefault
-        protected static LookupAndCallBinaryNode createCallWriteNode() {
-            return LookupAndCallBinaryNode.create(T_WRITE);
-        }
-
         @Specialization
         static Object doit(VirtualFrame frame, Object value, Object file, int version,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @Cached("createCallWriteNode()") LookupAndCallBinaryNode callNode,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PRaiseNode raiseNode) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonContext.PythonThreadState threadState = context.getThreadState(language);
             Object savedState = IndirectCallContext.enter(frame, threadState, indirectCallData);
+            byte[] data;
             try {
-                return callNode.executeObject(frame, file, PFactory.createBytes(language, Marshal.dump(context, value, version)));
+                data = Marshal.dump(context, value, version);
             } catch (IOException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
@@ -175,6 +171,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } finally {
                 IndirectCallContext.exit(frame, threadState, savedState);
             }
+            return callMethod.execute(frame, inliningTarget, file, T_WRITE, PFactory.createBytes(language, data));
         }
     }
 

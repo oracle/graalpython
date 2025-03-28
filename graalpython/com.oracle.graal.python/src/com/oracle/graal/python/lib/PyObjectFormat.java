@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -55,6 +54,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
@@ -124,14 +124,15 @@ public abstract class PyObjectFormat extends PNodeWithContext {
         static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object obj, Object formatSpec,
                         @Cached(parameters = "Format", inline = false) LookupAndCallBinaryNode callFormat,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            Object res = callFormat.executeObject(frame, obj, formatSpec);
-            if (res == NO_VALUE) {
+            try {
+                Object res = callFormat.executeObject(frame, obj, formatSpec);
+                if (!PGuards.isString(res)) {
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, T___FORMAT__, "str", res);
+                }
+                return res;
+            } catch (SpecialMethodNotFound ignore) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_FORMAT, obj);
             }
-            if (!PGuards.isString(res)) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, T___FORMAT__, "str", res);
-            }
-            return res;
         }
 
         @Specialization(guards = "isString(formatSpec)", replaces = "doGeneric")

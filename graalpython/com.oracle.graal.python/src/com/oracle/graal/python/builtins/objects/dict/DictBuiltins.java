@@ -84,8 +84,8 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -94,7 +94,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -341,15 +340,13 @@ public final class DictBuiltins extends PythonBuiltins {
         @Specialization
         static Object missing(VirtualFrame frame, Object self, Object key,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Cached("create(Missing)") LookupSpecialMethodSlotNode lookupMissingNode,
-                        @Cached CallBinaryMethodNode callMissingNode,
+                        @Cached("create(Missing)") LookupAndCallBinaryNode callMissing,
                         @Cached PRaiseNode raiseNode) {
-            Object missingFun = lookupMissingNode.execute(frame, getClassNode.execute(inliningTarget, self), self);
-            if (PGuards.isNoValue(missingFun)) {
+            try {
+                return callMissing.executeObject(frame, self, key);
+            } catch (SpecialMethodNotFound ignored) {
                 throw raiseNode.raise(inliningTarget, KeyError, new Object[]{key});
             }
-            return callMissingNode.executeObject(frame, missingFun, self, key);
         }
     }
 

@@ -33,7 +33,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.builtins.objects.PNone.NONE;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
-import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
 import static com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback.raiseSyntaxError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ABS;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ALL;
@@ -166,7 +165,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
-import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.lib.IteratorExhausted;
@@ -200,6 +198,7 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -224,6 +223,7 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -1450,11 +1450,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         private static TriState isInstanceCheckInternal(VirtualFrame frame, Object instance, Object cls, LookupAndCallBinaryNode instanceCheckNode,
                         PyObjectIsTrueNode castToBooleanNode) {
-            Object instanceCheckResult = instanceCheckNode.executeObject(frame, cls, instance);
-            if (instanceCheckResult == NOT_IMPLEMENTED) {
+            try {
+                Object instanceCheckResult = instanceCheckNode.executeObject(frame, cls, instance);
+                return TriState.valueOf(castToBooleanNode.execute(frame, instanceCheckResult));
+            } catch (SpecialMethodNotFound ignore) {
                 return TriState.UNDEFINED;
             }
-            return TriState.valueOf(castToBooleanNode.execute(frame, instanceCheckResult));
         }
 
         @Specialization(guards = "isPythonClass(cls)")
@@ -1508,11 +1509,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("create(Subclasscheck)") LookupAndCallBinaryNode subclassCheckNode,
                         @Cached PyObjectIsTrueNode castToBooleanNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
-            Object instanceCheckResult = subclassCheckNode.executeObject(frame, cls, derived);
-            if (instanceCheckResult != NOT_IMPLEMENTED) {
+            try {
+                Object instanceCheckResult = subclassCheckNode.executeObject(frame, cls, derived);
                 return castToBooleanNode.execute(frame, instanceCheckResult);
+            } catch (SpecialMethodNotFound ignore) {
+                return isSubtypeNode.execute(frame, derived, cls);
             }
-            return isSubtypeNode.execute(frame, derived, cls);
         }
 
         @NeverDefault
@@ -1930,14 +1932,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached InlinedConditionProfile formatIsNoValueProfile,
                         @Cached PRaiseNode raiseNode) {
             Object format = formatIsNoValueProfile.profile(inliningTarget, isNoValue(formatSpec)) ? T_EMPTY_STRING : formatSpec;
-            Object res = callFormat.executeObject(frame, obj, format);
-            if (res == NO_VALUE) {
+            try {
+                Object res = callFormat.executeObject(frame, obj, format);
+                if (!PGuards.isString(res)) {
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, T___FORMAT__, "str", res);
+                }
+                return res;
+            } catch (SpecialMethodNotFound ignore) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_FORMAT, obj);
             }
-            if (!PGuards.isString(res)) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, T___FORMAT__, "str", res);
-            }
-            return res;
         }
 
         @NeverDefault
@@ -1980,11 +1983,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached("create(Round)") LookupAndCallBinaryNode callRound,
                         @Shared @Cached PRaiseNode raiseNode) {
-            Object result = callRound.executeObject(frame, x, n);
-            if (result == NOT_IMPLEMENTED) {
+            try {
+                return callRound.executeObject(frame, x, n);
+            } catch (SpecialMethodNotFound ignore) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, x, T___ROUND__);
             }
-            return result;
         }
     }
 
