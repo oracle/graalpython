@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -6220,16 +6220,17 @@ _PyUnicode_DecodeRawUnicodeEscapeStateful(const char *s,
     Py_XDECREF(exc);
     return NULL;
 }
-
+#endif // GraalPy change
 PyObject *
 PyUnicode_DecodeRawUnicodeEscape(const char *s,
                                  Py_ssize_t size,
                                  const char *errors)
 {
-    return _PyUnicode_DecodeRawUnicodeEscapeStateful(s, size, errors, NULL);
+    return PyUnicode_Decode(s, size, "raw_unicode_escape", errors);
+    // return _PyUnicode_DecodeRawUnicodeEscapeStateful(s, size, errors, NULL);
 }
 
-
+#if 0 // GraalPy change
 PyObject *
 PyUnicode_AsRawUnicodeEscapeString(PyObject *unicode)
 {

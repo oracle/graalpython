@@ -476,6 +476,15 @@ version = ">= 4.8.0"
 patch = 'pymongo-4.8.0.patch'
 license = 'Apache-2.0'
 
+[[PyMuPDF.rules]]
+version = "== 1.25.4"
+patch = "pymupdf.patch"
+# That project is AGPL, so do not actually include *any* code of pymupdf in the patch, not even an
+# empty line, in the diff context. The code we write in the patch is UPL - that is compatible with
+# AGPL in the sense that if someone were to apply it and distribute *that*, our patch is now part
+# of the AGPL'd codebase
+license = 'UPL'
+
 [[pyOpenSSL.rules]]
 # Pin this version to avoid pulling newer cryptography than we have patch for
 version = "== 23.2.0"
