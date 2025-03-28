@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -96,7 +96,12 @@ def _get_posix_vars():
     g['CFLAGS'] = ' '.join(cflags_default + [gnu_source])
     g['LDFLAGS'] = ""
     g['CCSHARED'] = fpic
-    g['MACOSX_DEPLOYMENT_TARGET'] = "" # for linux it should return empty string and for macOS we should figure out how to get that value
+    if darwin_native:
+        # MACOSX_DEPLOYMENT_TARGET is taken from the minimum version we build
+        # GraalPy for, which is currently BigSur
+        g['MACOSX_DEPLOYMENT_TARGET'] = "11"
+    else:
+        g['MACOSX_DEPLOYMENT_TARGET'] = ""
     if darwin_native:
         g['LDFLAGS'] = "-bundle -undefined dynamic_lookup"
         ldshared_common = g['LDFLAGS']
