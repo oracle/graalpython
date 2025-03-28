@@ -112,6 +112,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -207,7 +208,6 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -1823,7 +1823,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Exclusive @Cached InlinedConditionProfile isPStringProfile,
                         @Exclusive @CachedLibrary("obj") PythonBufferAcquireLibrary acquireLib,
                         @Exclusive @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Exclusive @Cached("create(T_DECODE)") LookupAndCallTernaryNode callDecodeNode,
+                        @Exclusive @Cached BytesCommonBuiltins.DecodeNode decodeNode,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             Object buffer;
@@ -1837,7 +1837,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 // TODO don't copy, CPython creates a memoryview
                 PBytes bytesObj = PFactory.createBytes(PythonLanguage.get(inliningTarget), bufferLib.getCopiedByteArray(buffer));
                 Object en = encoding == PNone.NO_VALUE ? T_UTF8 : encoding;
-                Object result = assertNoJavaString(callDecodeNode.execute(frame, bytesObj, en, errors));
+                Object result = assertNoJavaString(decodeNode.execute(frame, bytesObj, en, errors));
                 if (isStringProfile.profile(inliningTarget, result instanceof TruffleString)) {
                     return asPString(cls, (TruffleString) result, inliningTarget, isPrimitiveProfile, getInstanceShape);
                 } else if (isPStringProfile.profile(inliningTarget, result instanceof PString)) {
@@ -1882,7 +1882,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Exclusive @Cached InlinedConditionProfile isPStringProfile,
                         @Exclusive @CachedLibrary("obj") PythonBufferAcquireLibrary acquireLib,
                         @Exclusive @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Exclusive @Cached("create(T_DECODE)") LookupAndCallTernaryNode callDecodeNode,
+                        @Exclusive @Cached BytesCommonBuiltins.DecodeNode decodeNode,
                         @Shared @Cached(neverDefault = true) CExtNodes.StringSubtypeNew subtypeNew,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -1895,7 +1895,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             try {
                 PBytes bytesObj = PFactory.createBytes(PythonLanguage.get(inliningTarget), bufferLib.getCopiedByteArray(buffer));
                 Object en = encoding == PNone.NO_VALUE ? T_UTF8 : encoding;
-                Object result = assertNoJavaString(callDecodeNode.execute(frame, bytesObj, en, errors));
+                Object result = assertNoJavaString(decodeNode.execute(frame, bytesObj, en, errors));
                 if (isStringProfile.profile(inliningTarget, result instanceof TruffleString)) {
                     return subtypeNew.call(cls, asPString(cls, (TruffleString) result, inliningTarget, isPrimitiveProfile, getInstanceShape));
                 } else if (isPStringProfile.profile(inliningTarget, result instanceof PString)) {
