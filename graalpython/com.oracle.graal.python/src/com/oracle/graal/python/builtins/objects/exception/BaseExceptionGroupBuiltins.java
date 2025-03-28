@@ -139,7 +139,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         builtins.setAttribute(T_EXCEPTION_GROUP, exceptionGroupType);
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "BaseExceptionGroup", constructsClass = PythonBuiltinClassType.PBaseExceptionGroup, minNumOfPositionalArgs = 3)
+    @Builtin(name = J___NEW__, constructsClass = PythonBuiltinClassType.PBaseExceptionGroup, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class BaseExceptionGroupNode extends PythonTernaryBuiltinNode {
 
