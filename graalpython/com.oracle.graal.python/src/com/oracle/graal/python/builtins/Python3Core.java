@@ -36,6 +36,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_ZIPIMPORT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___IMPORT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PACKAGE__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
@@ -1237,6 +1238,9 @@ public abstract class Python3Core {
             PythonBuiltinClass pbc = lookupType(klass);
             TpSlots.addOperatorsToBuiltin(wrapped, this, klass, pbc);
             PythonBuiltins.addFunctionsToModuleObject(wrapped, pbc, getLanguage());
+            if (klass.getDoc() != null && pbc.getAttribute(T___DOC__) instanceof PNone) {
+                pbc.setAttribute(T___DOC__, klass.getDoc());
+            }
         }
 
         // core machinery
