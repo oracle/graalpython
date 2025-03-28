@@ -729,6 +729,7 @@ public abstract class ErrorMessages {
     public static final TruffleString SUBSECTION_NOT_FOUND = tsLiteral("subsection not found");
     public static final TruffleString SUBSTITUTION_OF_BARE_TYPEVARTUPLE_IS_NOT_SUPPORTED = tsLiteral("Substitution of bare TypeVarTuple is not supported");
     public static final TruffleString SUB_VIEWS_NOT_IMPLEMENTED = tsLiteral("sub-views are not implemented");
+    public static final TruffleString SUPER_ARG0_DELETED = tsLiteral("super(): arg[0] deleted");
     public static final TruffleString SUPER_OBJ_MUST_BE_INST_SUB_OR_TYPE = tsLiteral("super(type, obj): obj must be an instance or subtype of type");
     public static final TruffleString TAKES_A_DICT_AS_SECOND_ARG_IF_ANY = tsLiteral("%s() takes a dict as second arg, if any");
     public static final TruffleString TAKES_A_D_SEQUENCE = tsLiteral("%s() takes a %d-sequence (%d-sequence given)");
