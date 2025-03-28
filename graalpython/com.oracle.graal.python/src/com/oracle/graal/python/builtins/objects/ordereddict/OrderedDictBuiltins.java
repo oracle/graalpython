@@ -55,7 +55,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SIZEOF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_ITEMS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_PARENS;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
+import static com.oracle.graal.python.nodes.StringLiterals.T_RBRACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
@@ -74,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
+import com.oracle.graal.python.builtins.objects.dict.DictReprBuiltin.ReprOrderedDictItemsNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ordereddict.POrderedDict.ODictNode;
@@ -87,13 +90,11 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetStateNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
-import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -506,9 +507,7 @@ public class OrderedDictBuiltins extends PythonBuiltins {
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
-                        @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached ListNodes.ConstructListNode constructListNode,
-                        @Cached PyObjectReprAsTruffleStringNode repr) {
+                        @Cached ReprOrderedDictItemsNode reprDictItems) {
             TruffleString typeName = getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self));
             if (self.first == null) {
                 TruffleStringBuilder builder = TruffleStringBuilder.create(TS_ENCODING);
@@ -523,10 +522,10 @@ public class OrderedDictBuiltins extends PythonBuiltins {
             try {
                 TruffleStringBuilder builder = TruffleStringBuilder.create(TS_ENCODING);
                 appendStringNode.execute(builder, typeName);
-                Object items = callMethod.execute(frame, inliningTarget, self, T_ITEMS);
-                TruffleString itemsRepr = repr.execute(frame, inliningTarget, constructListNode.execute(frame, items));
                 appendStringNode.execute(builder, T_LPAREN);
-                appendStringNode.execute(builder, itemsRepr);
+                appendStringNode.execute(builder, T_LBRACE);
+                reprDictItems.execute(frame, self, builder);
+                appendStringNode.execute(builder, T_RBRACE);
                 appendStringNode.execute(builder, T_RPAREN);
                 return toStringNode.execute(builder);
             } finally {
