@@ -113,14 +113,28 @@ def create_venv():
 
 
 def build_wheels(pip):
-    packages_selected = [s for s in os.environ.get("PACKAGES_TO_BUILD", "").split(",") if s]
-    packages_to_build = set()
     with open(join(dirname(__file__), "packages.txt")) as f:
-        for line in f.readlines():
-            line = line.strip()
-            name, version = line.split("==")
-            if not packages_selected or name in packages_selected or line in packages_selected:
-                packages_to_build.add(line)
+        packages_from_txt = [tuple(l.strip().split("==")) for l in f]
+    packages_to_build = []
+    for s in os.environ.get("PACKAGES_TO_BUILD", "").split(","):
+        s = s.strip()
+        if not s:
+            continue
+        elif "==" in s:
+            name, version = s.split("==")
+        else:
+            name, version = s, None
+            for n, v in packages_from_txt:
+                if n == name:
+                    version = v
+                    break
+        if not version:
+            print("ERROR: Asked to build", s, "but no version given")
+            return False
+        packages_to_build.append((name, version))
+    if not packages_to_build:
+        packages_to_build = packages_from_txt
+    print("About to build", packages_to_build)
     scriptdir = abspath(join(dirname(__file__), sys.platform))
     if sys.platform == "win32":
         script_ext = "bat"
@@ -133,8 +147,7 @@ def build_wheels(pip):
     remaining_packages = 0
     while remaining_packages != len(packages_to_build):
         remaining_packages = len(packages_to_build)
-        for spec in packages_to_build.copy():
-            name, version = spec.split("==")
+        for name, version in packages_to_build.copy():
             whl_count = len(glob("*.whl"))
             script = f"{name}.{version}.{script_ext}".lower()
             if script not in available_scripts:
@@ -153,13 +166,13 @@ def build_wheels(pip):
                 if p.returncode != 0:
                     continue
                 if len(glob("*.whl")) > whl_count:
-                    packages_to_build.remove(spec)
+                    packages_to_build.remove((name, version))
                     continue
                 print(script, "did not build a wheel, we will do so now", flush=True)
             print("Building", name, version, flush=True)
-            p = subprocess.run([pip, "wheel", spec])
+            p = subprocess.run([pip, "wheel", f"{name}=={version}"])
             if p.returncode == 0:
-                packages_to_build.remove(spec)
+                packages_to_build.remove((name, version))
     if packages_to_build:
         print("Failed to build all packages, the following packages failed")
         print(packages_to_build)
