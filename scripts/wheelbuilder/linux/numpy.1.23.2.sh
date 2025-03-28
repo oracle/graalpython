@@ -38,18 +38,6 @@
 # SOFTWARE.
 
 if [ -n "$GITHUB_RUN_ID" ]; then
-    dnf install -y openblas-devel /usr/bin/cmake /usr/bin/sudo /usr/bin/curl java-11-openjdk-devel
+    dnf install -y gcc-toolset-9 gcc-toolset-9-gcc-gfortran openblas-devel
+    scl enable gcc-toolset-9 'pip wheel "numpy==1.23.2"'
 fi
-pip install pip numpy wheel packaging requests opt_einsum
-pip install keras_preprocessing --no-deps
-mkdir -p tmp_bazel
-curl -L https://github.com/bazelbuild/bazel/releases/download/6.4.0/bazel-6.4.0-linux-x86_64 -o $(pwd)/tmp_bazel/bazel
-chmod +x tmp_bazel/bazel
-export PATH=$(pwd)/tmp_bazel/:$PATH
-bazel --version
-if [ -n "$1" ]; then
-    pip wheel "tensorflow==$1"
-else
-    pip wheel tensorflow
-fi
-rm -rf tmp_bazel
