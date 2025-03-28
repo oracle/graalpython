@@ -61,7 +61,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.STRUCT_PACK_INTO_REQ_B
 import static com.oracle.graal.python.nodes.ErrorMessages.STRUCT_UNPACK_FROM_REQ_AT_LEAST_N_BYTES;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_NO_KEYWORD_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNPACK_REQ_A_BUFFER_OF_N_BYTES;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StructError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -73,6 +72,9 @@ import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -85,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.PStructUnpackIterator;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -143,13 +146,16 @@ public class StructBuiltins extends PythonBuiltins {
         return values;
     }
 
+    public static final TpSlots SLOTS = StructBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return StructBuiltinsFactory.getFactories();
     }
 
     @ImportStatic(PythonUtils.class)
-    @Builtin(name = J___NEW__, raiseErrorName = "Struct", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PStruct)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "Struct", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ConstructStructNode extends PythonBinaryBuiltinNode {
         public static final int NUM_BYTES_LIMIT;

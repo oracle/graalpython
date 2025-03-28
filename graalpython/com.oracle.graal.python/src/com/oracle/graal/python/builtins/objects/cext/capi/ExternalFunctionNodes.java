@@ -56,7 +56,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -100,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
@@ -111,7 +111,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
@@ -483,7 +482,6 @@ public abstract class ExternalFunctionNodes {
                 case CALL:
                 case INITPROC:
                 case KEYWORDS:
-                case NEW:
                     /*
                      * If no conversion is requested, this means we directly call a managed function
                      * (without argument conversion). Null indicates this
@@ -493,6 +491,13 @@ public abstract class ExternalFunctionNodes {
                     }
                     nodeKlass = MethKeywordsRoot.class;
                     rootNodeFunction = l -> new MethKeywordsRoot(l, name, isStatic, sig);
+                    break;
+                case NEW:
+                    if (!doArgAndResultConversion) {
+                        return null;
+                    }
+                    nodeKlass = MethNewRoot.class;
+                    rootNodeFunction = l -> new MethNewRoot(l, name, isStatic, sig);
                     break;
                 case VARARGS:
                     nodeKlass = MethVarargsRoot.class;
@@ -613,7 +618,7 @@ public abstract class ExternalFunctionNodes {
             return language.createCachedExternalFunWrapperCallTarget(rootNodeFunction, nodeKlass, sig, name, doArgAndResultConversion, isStatic);
         }
 
-        public static PBuiltinFunction createWrapperFunction(TruffleString name, Object callable, Object enclosingType, int flags, int sig,
+        public static PythonObject createWrapperFunction(TruffleString name, Object callable, Object enclosingType, int flags, int sig,
                         PythonLanguage language, boolean doArgAndResultConversion) {
             return createWrapperFunction(name, callable, enclosingType, flags, PExternalFunctionWrapper.fromValue(sig),
                             language, doArgAndResultConversion);
@@ -635,7 +640,7 @@ public abstract class ExternalFunctionNodes {
          *         wrapper.
          */
         @TruffleBoundary
-        public static PBuiltinFunction createWrapperFunction(TruffleString name, Object callable, Object enclosingType, int flags, PExternalFunctionWrapper sig, PythonLanguage language,
+        public static PythonObject createWrapperFunction(TruffleString name, Object callable, Object enclosingType, int flags, PExternalFunctionWrapper sig, PythonLanguage language,
                         boolean doArgAndResultConversion) {
             LOGGER.finer(() -> PythonUtils.formatJString("ExternalFunctions.createWrapperFunction(%s, %s)", name, callable));
             assert !isClosurePointer(PythonContext.get(null), callable, InteropLibrary.getUncached(callable));
@@ -693,7 +698,7 @@ public abstract class ExternalFunctionNodes {
             }
             Object[] defaults = PBuiltinFunction.generateDefaults(numDefaults);
 
-            Object type = (enclosingType == PNone.NO_VALUE || SpecialMethodNames.T___NEW__.equalsUncached(name, TS_ENCODING)) ? null : enclosingType;
+            Object type = enclosingType == PNone.NO_VALUE ? null : enclosingType;
             // TODO(fa): this should eventually go away
             switch (sig) {
                 case NOARGS:
@@ -704,6 +709,8 @@ public abstract class ExternalFunctionNodes {
                 case FASTCALL_WITH_KEYWORDS:
                 case METHOD:
                     return PFactory.createBuiltinFunction(language, name, type, defaults, kwDefaults, flags, callTarget);
+                case NEW:
+                    return PFactory.createBuiltinMethod(language, type, PFactory.createBuiltinFunction(language, name, type, defaults, kwDefaults, flags, callTarget));
             }
             return PFactory.createWrapperDescriptor(language, name, type, defaults, kwDefaults, flags, callTarget, slot, sig);
         }
@@ -1105,14 +1112,14 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    public static final class MethKeywordsRoot extends MethodDescriptorRoot {
+    public static class MethKeywordsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(true, 1, tsArray("self"), true, true);
-        @Child private ReadVarArgsNode readVarargsNode;
-        @Child private ReadVarKeywordsNode readKwargsNode;
-        @Child private CreateArgsTupleNode createArgsTupleNode;
-        @Child private ReleaseNativeSequenceStorageNode freeNode;
+        @Child protected ReadVarArgsNode readVarargsNode;
+        @Child protected ReadVarKeywordsNode readKwargsNode;
+        @Child protected CreateArgsTupleNode createArgsTupleNode;
+        @Child protected ReleaseNativeSequenceStorageNode freeNode;
 
-        private boolean seenNativeArgsTupleStorage;
+        protected boolean seenNativeArgsTupleStorage;
 
         public MethKeywordsRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
             super(language, name, isStatic);
@@ -1241,6 +1248,25 @@ public abstract class ExternalFunctionNodes {
         @Override
         public Signature getSignature() {
             return SIGNATURE;
+        }
+    }
+
+    public static final class MethNewRoot extends MethKeywordsRoot {
+
+        public MethNewRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
+            super(language, name, isStatic, provider);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object methodSelf = readSelf(frame);
+            Object[] args = readVarargsNode.executeObjectArray(frame);
+            // TODO checks
+            Object self = args[0];
+            args = PythonUtils.arrayCopyOfRange(args, 1, args.length);
+            PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
+            PythonLanguage language = getLanguage(PythonLanguage.class);
+            return new Object[]{self, createArgsTupleNode.execute(language, args, seenNativeArgsTupleStorage), PFactory.createDict(language, kwargs)};
         }
     }
 

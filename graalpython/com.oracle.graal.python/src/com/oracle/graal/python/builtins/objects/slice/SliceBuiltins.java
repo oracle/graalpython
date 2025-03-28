@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.slice;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -36,6 +35,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -90,7 +90,8 @@ public final class SliceBuiltins extends PythonBuiltins {
 
     // slice(stop)
     // slice(start, stop[, step])
-    @Builtin(name = J___NEW__, raiseErrorName = "slice", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PSlice)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "slice", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     public abstract static class SliceNode extends PythonQuaternaryBuiltinNode {
         @Specialization(guards = {"isNoValue(second)"})

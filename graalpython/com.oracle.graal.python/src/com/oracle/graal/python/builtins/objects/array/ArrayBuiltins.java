@@ -43,7 +43,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_AT_LEAST_D_ARG
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_NO_KEYWORD_ARGS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
@@ -60,6 +59,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -175,7 +175,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
     }
 
     // array.array(typecode[, initializer])
-    @Builtin(name = J___NEW__, raiseErrorName = J_ARRAY, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PArray, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_ARRAY, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class ArrayNode extends PythonVarargsBuiltinNode {
 

@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.lsprof;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.ArrayList;
@@ -91,7 +90,8 @@ public class ProfilerBuiltins extends PythonBuiltins {
         return ProfilerBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "Profiler", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.LsprofProfiler)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "Profiler", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class LsprofNew extends PythonBuiltinNode {
         @Specialization

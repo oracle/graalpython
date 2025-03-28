@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.itertools;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.NUMBER_IS_REQUIRED;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
@@ -52,6 +51,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -98,7 +98,8 @@ public final class CountBuiltins extends PythonBuiltins {
         return CountBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "count", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PCount, parameterNames = {"cls", "start", "step"})
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "count", minNumOfPositionalArgs = 1, parameterNames = {"cls", "start", "step"})
     @ArgumentClinic(name = "start", defaultValue = "0", useDefaultForNone = true)
     @ArgumentClinic(name = "step", defaultValue = "1", useDefaultForNone = true)
     @GenerateNodeFactory

@@ -29,7 +29,6 @@ import static com.oracle.graal.python.builtins.objects.bytes.BytesNodes.compareB
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_BYTES_SUBTYPE_NEW;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BYTES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BYTES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -115,7 +114,8 @@ public class BytesBuiltins extends PythonBuiltins {
     }
 
     // bytes([source[, encoding[, errors]]])
-    @Builtin(name = J___NEW__, raiseErrorName = J_BYTES, minNumOfPositionalArgs = 1, parameterNames = {"$self", "source", "encoding", "errors"}, constructsClass = PythonBuiltinClassType.PBytes)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_BYTES, minNumOfPositionalArgs = 1, parameterNames = {"$self", "source", "encoding", "errors"})
     @ArgumentClinic(name = "encoding", conversionClass = BytesNodes.ExpectStringNode.class, args = "\"bytes()\"")
     @ArgumentClinic(name = "errors", conversionClass = BytesNodes.ExpectStringNode.class, args = "\"bytes()\"")
     @GenerateNodeFactory

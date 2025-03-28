@@ -45,19 +45,22 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowEr
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SIMPLE_QUEUE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.queue.SimpleQueueBuiltinsClinicProviders.SimpleQueueGetNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -88,12 +91,15 @@ import com.oracle.truffle.api.nodes.Node;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSimpleQueue)
 public final class SimpleQueueBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = SimpleQueueBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SimpleQueueBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = J_SIMPLE_QUEUE, constructsClass = PythonBuiltinClassType.PSimpleQueue, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_SIMPLE_QUEUE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class SimpleQueueNode extends PythonUnaryBuiltinNode {
 

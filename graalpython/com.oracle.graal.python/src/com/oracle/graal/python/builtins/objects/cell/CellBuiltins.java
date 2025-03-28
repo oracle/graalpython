@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cell;
 
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -51,6 +50,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -99,7 +99,8 @@ public final class CellBuiltins extends PythonBuiltins {
         return CellBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "cell", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PCell)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "cell", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class CellTypeNode extends PythonBinaryBuiltinNode {
         @CompilerDirectives.CompilationFinal private Assumption sharedAssumption;

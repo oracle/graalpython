@@ -49,13 +49,15 @@ import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.ffi_type_p
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_CDATA_INSTANCE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_MUST_BE_A_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_MUST_HAVE_STORAGE_INFO;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_AMPERSAND;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -75,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -100,6 +103,8 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCPointerType)
 public final class PyCPointerTypeBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = PyCPointerTypeBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PyCPointerTypeBuiltinsFactory.getFactories();
@@ -112,7 +117,8 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
     protected static final TruffleString T_UPPER_T_LEFTBRACE = tsLiteral("T{");
 
     @ImportStatic(PyCPointerTypeBuiltins.class)
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PyCPointerTypeNewNode extends PythonBuiltinNode {
 

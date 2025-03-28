@@ -41,12 +41,15 @@
 package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CreateArgsTupleNode;
@@ -56,9 +59,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
@@ -99,12 +105,14 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public final class TpSlotInit {
-    private TpSlotInit() {
+public final class TpSlotVarargs {
+    private TpSlotVarargs() {
     }
 
-    public abstract static class TpSlotInitBuiltin<T extends PythonBuiltinBaseNode> extends TpSlotBuiltin<T> {
+    public abstract static class TpSlotVarargsBuiltin<T extends PythonBuiltinBaseNode> extends TpSlotBuiltin<T> {
         final int callTargetIndex = TpSlotBuiltinCallTargetRegistry.getNextCallTargetIndex();
+        private final String name;
+        private final TruffleString tsName;
         /*
          * TODO these should be just final, but we currently can't initialize them in the
          * constructor because of circular dependency between @Builtin and PBCT.nil
@@ -114,8 +122,10 @@ public final class TpSlotInit {
         @CompilationFinal Object[] defaults;
         @CompilationFinal PKeyword[] kwDefaults;
 
-        protected TpSlotInitBuiltin(NodeFactory<T> nodeFactory) {
+        protected TpSlotVarargsBuiltin(NodeFactory<T> nodeFactory, String name) {
             super(nodeFactory);
+            this.name = name;
+            this.tsName = PythonUtils.tsLiteral(name);
         }
 
         final PythonBuiltinBaseNode createSlotNodeIfDirect() {
@@ -134,23 +144,65 @@ public final class TpSlotInit {
             return kwDefaults;
         }
 
+        public TruffleString getName() {
+            return tsName;
+        }
+
+        protected boolean takesClass() {
+            return false;
+        }
+
         @Override
         public final void initialize(PythonLanguage language) {
             Class<T> nodeClass = getNodeFactory().getNodeClass();
             SlotSignature slotSignature = nodeClass.getAnnotation(SlotSignature.class);
-            Slot2Builtin builtin = new Slot2Builtin(slotSignature, J___INIT__, null);
-            signature = BuiltinFunctionRootNode.createSignature(getNodeFactory(), builtin, true, false);
+            Slot2Builtin builtin = new Slot2Builtin(slotSignature, name, null);
+            signature = BuiltinFunctionRootNode.createSignature(getNodeFactory(), builtin, true, takesClass());
             defaults = PBuiltinFunction.generateDefaults(PythonBuiltins.numDefaults(builtin));
             kwDefaults = PBuiltinFunction.generateKwDefaults(signature);
             directInvocation = PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass) || //
                             PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonVarargsBuiltinNode.class.isAssignableFrom(nodeClass);
-            RootCallTarget callTarget = createSlotCallTarget(language, null, getNodeFactory(), J___INIT__);
+            RootCallTarget callTarget = createSlotCallTarget(language, null, getNodeFactory(), name);
             language.setBuiltinSlotCallTarget(callTargetIndex, callTarget);
         }
 
         @Override
-        public PBuiltinFunction createBuiltin(Python3Core core, Object type, TruffleString tsName, PExternalFunctionWrapper wrapper) {
+        public PythonObject createBuiltin(Python3Core core, Object type, TruffleString tsName, PExternalFunctionWrapper wrapper) {
             return createBuiltin(core, type, tsName, null, wrapper, getNodeFactory());
+        }
+    }
+
+    public abstract static class TpSlotNewBuiltin<T extends PythonBuiltinBaseNode> extends TpSlotVarargsBuiltin<T> {
+
+        protected TpSlotNewBuiltin(NodeFactory<T> nodeFactory) {
+            super(nodeFactory, J___NEW__);
+        }
+
+        @Override
+        protected boolean takesClass() {
+            return true;
+        }
+
+        @Override
+        public PBuiltinMethod createBuiltin(Python3Core core, Object type, TruffleString tsName, PExternalFunctionWrapper wrapper) {
+            PythonLanguage language = core.getLanguage();
+            NodeFactory<T> factory = getNodeFactory();
+            Class<T> nodeClass = factory.getNodeClass();
+            SlotSignature slotSignature = nodeClass.getAnnotation(SlotSignature.class);
+            Slot2Builtin builtin = new Slot2Builtin(slotSignature, J___NEW__, null);
+            PythonBuiltinClassType builtinType = type instanceof PythonBuiltinClassType bt ? bt : PythonBuiltinClassType.nil;
+            /*
+             * Note: '__new__' is not a 'wrapper_descriptor', but a 'builtin_function_or_method'.
+             * The method holds the declaring type as self and the actual 'cls' argument comes after
+             * it. The underlying slot doesn't take the first self. In CPython 'tp_new_wrapper' uses
+             * the self to check the call safety and then drops it for the slot call. Our
+             * 'WrapTpNew' holds the type in a field and uses that to do the check. The dropping is
+             * achieved by using `declaresExplicitSelf = false`.
+             */
+            RootCallTarget callTarget = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, false, builtinType),
+                            nodeClass, nodeClass, builtinType, J___NEW__);
+            PBuiltinFunction newFunc = PFactory.createBuiltinFunction(language, T___NEW__, type, defaults.length, CExtContext.METH_VARARGS | CExtContext.METH_KEYWORDS, callTarget);
+            return PFactory.createBuiltinMethod(language, type, newFunc);
         }
     }
 
@@ -164,8 +216,8 @@ public final class TpSlotInit {
         public abstract void execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, Object[] args, PKeyword[] keywords);
 
         @Specialization(guards = "cachedSlot == slot", limit = "3")
-        static void callCachedBuiltin(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") TpSlotInitBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
-                        @SuppressWarnings("unused") @Cached("slot") TpSlotInitBuiltin<?> cachedSlot,
+        static void callCachedBuiltin(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Cached("slot") TpSlotVarargsBuiltin<?> cachedSlot,
                         @Cached("cachedSlot.createSlotNodeIfDirect()") PythonBuiltinBaseNode slotNode,
                         @Cached DispatchSlotFullDirectNode dispatchFullNode) {
             if (slotNode != null) {
@@ -208,10 +260,10 @@ public final class TpSlotInit {
         @GenerateCached(false)
         abstract static class DispatchSlotFullDirectNode extends Node {
 
-            public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlotInitBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords);
+            public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords);
 
             @Specialization
-            static Object call(VirtualFrame frame, Node inliningTarget, TpSlotInitBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
+            static Object call(VirtualFrame frame, Node inliningTarget, TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
                             @Bind PythonLanguage language,
                             @Bind("language.getBuiltinSlotCallTarget(slot.callTargetIndex)") RootCallTarget callTarget,
                             @Cached CreateAndCheckArgumentsNode createArgumentsNode,
@@ -219,7 +271,7 @@ public final class TpSlotInit {
                             @Cached InlinedConditionProfile frameProfile,
                             @Cached(parameters = "callTarget") DirectCallNode callNode) {
                 CompilerAsserts.partialEvaluationConstant(slot);
-                Object[] arguments = createArgumentsNode.execute(inliningTarget, T___INIT__, args, keywords, slot.getSignature(), self, null, slot.getDefaults(), slot.getKwDefaults(), false);
+                Object[] arguments = createArgumentsNode.execute(inliningTarget, slot.getName(), args, keywords, slot.getSignature(), self, null, slot.getDefaults(), slot.getKwDefaults(), false);
                 if (frameProfile.profile(inliningTarget, frame != null)) {
                     callContext.prepareCall(frame, arguments, callTarget, inliningTarget);
                     return callNode.call(arguments);
@@ -279,12 +331,12 @@ public final class TpSlotInit {
         }
 
         @Specialization(replaces = "callCachedBuiltin")
-        static void callGenericBuiltin(VirtualFrame frame, Node inliningTarget, TpSlotInitBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
+        static void callGenericBuiltin(VirtualFrame frame, Node inliningTarget, TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached CreateAndCheckArgumentsNode createArgumentsNode,
                         @Cached(inline = false) CallContext callContext,
                         @Cached InlinedConditionProfile isNullFrameProfile,
                         @Cached(inline = false) IndirectCallNode indirectCallNode) {
-            Object[] arguments = createArgumentsNode.execute(inliningTarget, T___INIT__, args, keywords, slot.getSignature(), self, null, slot.getDefaults(), slot.getKwDefaults(),
+            Object[] arguments = createArgumentsNode.execute(inliningTarget, slot.getName(), args, keywords, slot.getSignature(), self, null, slot.getDefaults(), slot.getKwDefaults(),
                             false);
             BuiltinDispatchers.callGenericBuiltin(frame, inliningTarget, slot.callTargetIndex, arguments, callContext, isNullFrameProfile, indirectCallNode);
         }

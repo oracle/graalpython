@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EOFError;
 import static com.oracle.graal.python.builtins.modules.bz2.Bz2Nodes.BZ_OK;
 import static com.oracle.graal.python.builtins.modules.bz2.Bz2Nodes.errorHandling;
 import static com.oracle.graal.python.nodes.ErrorMessages.END_OF_STREAM_ALREADY_REACHED;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
@@ -92,7 +91,8 @@ public final class BZ2DecompressorBuiltins extends PythonBuiltins {
         return BZ2DecompressorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "BZ2Decompressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = BZ2Decompressor)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "BZ2Decompressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BZ2DecompressorNode extends PythonBuiltinNode {
         @Specialization

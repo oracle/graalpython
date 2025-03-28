@@ -41,13 +41,13 @@
 package com.oracle.graal.python.builtins.objects;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NOT_IMPLEMENTED;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -73,7 +73,8 @@ public final class NotImplementedBuiltins extends PythonBuiltins {
         return NotImplementedBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "NotImplementedType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNotImplemented)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "NotImplementedType", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NotImplementedTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")

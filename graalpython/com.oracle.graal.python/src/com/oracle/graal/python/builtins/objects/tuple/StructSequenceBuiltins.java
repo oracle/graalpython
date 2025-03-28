@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EQ;
@@ -57,6 +56,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -196,7 +196,8 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "sequence", "dict"})
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 2, parameterNames = {"$cls", "sequence", "dict"})
     @GenerateNodeFactory
     public abstract static class NewNode extends PythonTernaryBuiltinNode {
 

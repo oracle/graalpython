@@ -60,7 +60,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J_MRO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___PREPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSCHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSES__;
@@ -133,8 +132,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Binary
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInit.CallSlotTpInitNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInit.TpSlotInitBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpInitNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -329,7 +328,8 @@ public final class TypeBuiltins extends PythonBuiltins {
     }
 
     // type(object, bases, dict)
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, needsFrame = true, constructsClass = PythonBuiltinClassType.PythonClass)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, needsFrame = true)
     @GenerateNodeFactory
     public abstract static class TypeNode extends PythonVarargsBuiltinNode {
         @Child private IsSubtypeNode isSubtypeNode;
@@ -1530,7 +1530,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             if (!TypeNodes.CheckCallableIsSpecificBuiltinNode.executeUncached(newSlot, ObjectNodeFactory.getInstance())) {
                 return fromMethod(LookupAttributeInMRONode.Dynamic.getUncached().execute(type, T___NEW__));
             }
-            if (slots.tp_init() instanceof TpSlotInitBuiltin<?> builtin && builtin != ObjectBuiltins.SLOTS.tp_init()) {
+            if (slots.tp_init() instanceof TpSlotVarargs.TpSlotVarargsBuiltin<?> builtin && builtin != ObjectBuiltins.SLOTS.tp_init()) {
                 return AbstractFunctionBuiltins.TextSignatureNode.signatureToText(builtin.getSignature(), true);
             }
             // object() signature

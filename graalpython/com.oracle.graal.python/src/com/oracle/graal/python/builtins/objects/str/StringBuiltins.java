@@ -40,7 +40,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.FILL_CHAR_MUST_BE_UNIC
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETNEWARGS__;
@@ -72,6 +71,7 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -213,7 +213,8 @@ public final class StringBuiltins extends PythonBuiltins {
 
     // str(object='')
     // str(object=b'', encoding='utf-8', errors='strict')
-    @Builtin(name = J___NEW__, raiseErrorName = J_STR, minNumOfPositionalArgs = 1, parameterNames = {"cls", "object", "encoding", "errors"}, constructsClass = PythonBuiltinClassType.PString)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_STR, minNumOfPositionalArgs = 1, parameterNames = {"cls", "object", "encoding", "errors"})
     @GenerateNodeFactory
     public abstract static class StrNewNode extends PythonBuiltinNode {
 

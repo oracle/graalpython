@@ -31,7 +31,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -140,7 +139,8 @@ public final class DictBuiltins extends PythonBuiltins {
     // dict(**kwarg)
     // dict(mapping, **kwarg)
     // dict(iterable, **kwarg)
-    @Builtin(name = J___NEW__, raiseErrorName = J_DICT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDict)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_DICT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class DictionaryNode extends PythonBuiltinNode {
         @Specialization(guards = "isBuiltinDict(cls)")

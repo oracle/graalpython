@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.random;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -54,6 +53,9 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -62,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -91,13 +94,17 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PRandom)
 public final class RandomBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = RandomBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return RandomBuiltinsFactory.getFactories();
     }
 
     // _random.Random([seed])
-    @Builtin(name = J___NEW__, raiseErrorName = "Random", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PRandom, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "Random", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class PRandomNode extends PythonBuiltinNode {
         private static final TruffleString T_SEED = tsLiteral("seed");

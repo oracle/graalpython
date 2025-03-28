@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.thread;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
 import java.util.List;
@@ -49,6 +48,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -102,7 +102,8 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
         return ThreadLocalBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "_local", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PThreadLocal)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "_local", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class ThreadLocalNode extends PythonBuiltinNode {
         @Specialization

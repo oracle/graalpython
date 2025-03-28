@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
@@ -52,6 +51,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -98,7 +98,8 @@ public final class GroupByBuiltins extends PythonBuiltins {
         return GroupByBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "groupby", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PGroupBy, parameterNames = {"cls", "iterable", "key"})
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "groupby", minNumOfPositionalArgs = 2, parameterNames = {"cls", "iterable", "key"})
     @ArgumentClinic(name = "key", defaultValue = "PNone.NONE")
     @GenerateNodeFactory
     public abstract static class GroupByNode extends PythonTernaryClinicBuiltinNode {

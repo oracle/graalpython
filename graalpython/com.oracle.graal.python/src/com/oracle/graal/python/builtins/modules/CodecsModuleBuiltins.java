@@ -223,7 +223,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile xmlcharrefreplaceProfile,
                         @Cached PRaiseNode raiseNode,
                         @Cached(inline = false) TruffleString.EqualNode equalNode,
-                        // TODO: (blocked by GR-46101) make this CallNode.PRaiseNode
+                        // TODO: (blocked by GR-46101) make this CallNode.Lazy
                         @Cached(inline = false) CallNode lazyCallNode) {
             boolean fixed;
             try {

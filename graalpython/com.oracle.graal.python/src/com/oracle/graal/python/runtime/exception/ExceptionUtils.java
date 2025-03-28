@@ -224,7 +224,7 @@ public final class ExceptionUtils {
         if (hook != PNone.NO_VALUE) {
             try {
                 // Note: it is important to pass frame 'null' because that will cause the
-                // CallNode to tread the invoke like a foreign call and access the top frame ref
+                // NewNode to tread the invoke like a foreign call and access the top frame ref
                 // in the context.
                 CallNode.executeUncached(hook, new Object[]{type, pythonException, tb}, PKeyword.EMPTY_KEYWORDS);
             } catch (PException internalError) {

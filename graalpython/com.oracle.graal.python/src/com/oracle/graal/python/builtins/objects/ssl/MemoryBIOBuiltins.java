@@ -42,12 +42,14 @@ package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.nodes.ErrorMessages.SSL_CANNOT_WRITE_AFTER_EOF;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -55,6 +57,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -76,12 +79,16 @@ import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMemoryBIO)
 public final class MemoryBIOBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = MemoryBIOBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return MemoryBIOBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "MemoryBIO", constructsClass = PythonBuiltinClassType.PMemoryBIO, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "MemoryBIO", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class MemoryBIONode extends PythonUnaryBuiltinNode {
         @Specialization

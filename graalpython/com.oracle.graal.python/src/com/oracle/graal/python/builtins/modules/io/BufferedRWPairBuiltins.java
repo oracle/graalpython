@@ -67,7 +67,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_UNINIT;
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_S_OBJECT_IS_BEING_GARBAGE_COLLECTED;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -118,7 +117,8 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
         return BufferedRWPairBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "BufferedRWPair", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PBufferedRWPair)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "BufferedRWPair", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BufferedRWPairNode extends PythonBuiltinNode {
         @Specialization

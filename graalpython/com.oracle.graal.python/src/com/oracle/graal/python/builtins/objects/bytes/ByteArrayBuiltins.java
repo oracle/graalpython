@@ -30,7 +30,6 @@ import static com.oracle.graal.python.builtins.objects.bytes.BytesNodes.compareB
 import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BYTEARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
@@ -137,7 +136,8 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         return ByteArrayBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = J_BYTEARRAY, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PByteArray)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_BYTEARRAY, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class ByteArrayNode extends PythonBuiltinNode {
         @Specialization

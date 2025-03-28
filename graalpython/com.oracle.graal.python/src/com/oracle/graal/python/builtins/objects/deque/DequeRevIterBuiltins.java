@@ -41,16 +41,18 @@
 package com.oracle.graal.python.builtins.objects.deque;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DEQUE_REV_ITER;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -71,13 +73,15 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDequeRevIter)
 public class DequeRevIterBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = DequeRevIterBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return DequeRevIterBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = J_DEQUE_REV_ITER, constructsClass = PythonBuiltinClassType.PDequeRevIter, //
-                    minNumOfPositionalArgs = 2, parameterNames = {"$self", "iterable", "index"})
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_DEQUE_REV_ITER, minNumOfPositionalArgs = 2, parameterNames = {"$self", "iterable", "index"})
     @GenerateNodeFactory
     public abstract static class DequeRevIterNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -87,7 +91,7 @@ public class DequeRevIterBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile indexNoneProfile,
                         @Cached PyNumberIndexNode toIndexNode,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
-                        @Cached DequeIterBuiltins.DequeIterNextNode getNextNode,
+                        @Cached DequeIterCommonBuiltins.DequeIterNextNode getNextNode,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
             if (!dequeProfile.profile(inliningTarget, deque instanceof PDeque)) {

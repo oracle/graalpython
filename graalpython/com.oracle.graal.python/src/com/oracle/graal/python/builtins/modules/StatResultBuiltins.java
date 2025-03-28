@@ -40,17 +40,18 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
-
 import java.util.List;
 
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -63,12 +64,16 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PStatResult)
 public class StatResultBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = StatResultBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return StatResultBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "stat_result", minNumOfPositionalArgs = 1, parameterNames = {"$cls", "sequence", "dict"}, constructsClass = PythonBuiltinClassType.PStatResult)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "stat_result", minNumOfPositionalArgs = 1, parameterNames = {"$cls", "sequence", "dict"})
     @GenerateNodeFactory
     public abstract static class StatResultNode extends PythonTernaryBuiltinNode {
 

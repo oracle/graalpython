@@ -50,7 +50,6 @@ import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.J_METH
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.J_METHOD_PERSISTENT_ID;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_ATTR_DISPATCH_TABLE;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_METHOD_PERSISTENT_ID;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SIZEOF__;
 
 import java.util.List;
@@ -114,7 +113,8 @@ public class PicklerBuiltins extends PythonBuiltins {
         return PicklerBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "Pickler", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.Pickler, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "Pickler", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class ConstructPicklerNode extends PythonVarargsBuiltinNode {
         @Specialization

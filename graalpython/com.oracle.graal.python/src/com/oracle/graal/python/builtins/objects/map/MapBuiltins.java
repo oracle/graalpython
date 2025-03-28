@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.map;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MAP;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -50,6 +49,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -89,7 +89,8 @@ public final class MapBuiltins extends PythonBuiltins {
         return MapBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = J_MAP, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PMap)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_MAP, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class MapNode extends PythonVarargsBuiltinNode {
         @Specialization

@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
@@ -66,6 +65,7 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -197,7 +197,8 @@ public final class IntBuiltins extends PythonBuiltins {
 
     // int(x=0)
     // int(x, base=10)
-    @Builtin(name = J___NEW__, raiseErrorName = J_INT, minNumOfPositionalArgs = 1, parameterNames = {"cls", "x", "base"}, numOfPositionalOnlyArgs = 2, constructsClass = PythonBuiltinClassType.PInt)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_INT, minNumOfPositionalArgs = 1, parameterNames = {"cls", "x", "base"}, numOfPositionalOnlyArgs = 2)
     @GenerateNodeFactory
     public abstract static class IntNewNode extends PythonTernaryBuiltinNode {
 

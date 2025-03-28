@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_COMPLEX;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -61,6 +60,7 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -223,7 +223,8 @@ public final class ComplexBuiltins extends PythonBuiltins {
     }
 
     // complex([real[, imag]])
-    @Builtin(name = J___NEW__, raiseErrorName = J_COMPLEX, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PComplex, parameterNames = {"$cls", "real", "imag"})
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_COMPLEX, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "real", "imag"})
     @GenerateNodeFactory
     public abstract static class ComplexNewNode extends PythonTernaryBuiltinNode {
         @Child private PyObjectReprAsObjectNode reprNode;

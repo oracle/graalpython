@@ -47,7 +47,6 @@ import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.syst
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMORYVIEW;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.BufferFormat.T_UINT_8_TYPE_CODE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -60,6 +59,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -155,7 +155,8 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = J_MEMORYVIEW, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"}, constructsClass = PythonBuiltinClassType.PMemoryView)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_MEMORYVIEW, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"})
     @GenerateNodeFactory
     public abstract static class MemoryViewNode extends PythonBuiltinNode {
 

@@ -52,7 +52,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.CLASS_MUST_DEFINE_A_TY
 import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_S_NOT_SUPPORTED;
 import static com.oracle.graal.python.nodes.ErrorMessages.WHICH_MUST_BE_A_SINGLE_CHARACTER_STRING_CONTAINING_ONE_OF_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.WRONG_TYPE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -62,6 +61,9 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -80,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -122,13 +125,16 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
     protected static final TruffleString T_CTYPE_BE = tsLiteral("__ctype_be__");
     protected static final TruffleString T_CTYPE_LE = tsLiteral("__ctype_le__");
 
+    public static final TpSlots SLOTS = PyCSimpleTypeBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PyCSimpleTypeBuiltinsFactory.getFactories();
     }
 
     @ImportStatic(PyCPointerTypeBuiltins.class)
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PyCSimpleTypeNewNode extends PythonBuiltinNode {
 

@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImpleme
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.PosixConstants.O_CREAT;
 import static com.oracle.graal.python.runtime.PosixConstants.O_EXCL;
 
@@ -52,6 +51,9 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -60,6 +62,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.multiprocessing.SemLockBuiltinsClinicProviders.SemLockNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -90,6 +93,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSemLock)
 public class SemLockBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = SemLockBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SemLockBuiltinsFactory.getFactories();
@@ -101,7 +107,8 @@ public class SemLockBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "SemLock", parameterNames = {"$cls", "kind", "value", "maxvalue", "name", "unlink"}, constructsClass = PythonBuiltinClassType.PSemLock)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "SemLock", parameterNames = {"$cls", "kind", "value", "maxvalue", "name", "unlink"})
     @ArgumentClinic(name = "kind", conversion = ArgumentClinic.ClinicConversion.Int)
     @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Int)
     @ArgumentClinic(name = "maxvalue", conversion = ArgumentClinic.ClinicConversion.Int)

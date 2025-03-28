@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.J_METH
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.J_METHOD_LOAD;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.J_METHOD_PERSISTENT_LOAD;
 import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.T_METHOD_PERSISTENT_LOAD;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
@@ -105,7 +104,8 @@ public class UnpicklerBuiltins extends PythonBuiltins {
         return UnpicklerBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "Unpickler", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.Unpickler, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "Unpickler", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class ConstructUnpicklerNode extends PythonVarargsBuiltinNode {
         @Specialization

@@ -8,13 +8,13 @@ package com.oracle.graal.python.builtins.objects.struct;
 import static com.oracle.graal.python.builtins.objects.struct.StructBuiltins.unpackInternal;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CREATE_P_OBJECTS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -49,7 +49,8 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
         return StructUnpackIteratorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization

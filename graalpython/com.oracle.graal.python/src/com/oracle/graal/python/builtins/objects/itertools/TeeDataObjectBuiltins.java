@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.ARG_D_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.TDATAOBJECT_SHOULDNT_HAVE_NEXT;
 import static com.oracle.graal.python.nodes.ErrorMessages.TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
@@ -100,7 +99,8 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         return TeeDataObjectBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "_tee_dataobject", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PTeeDataObject)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "_tee_dataobject", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class TeeDataObjectNode extends PythonVarargsBuiltinNode {
         @SuppressWarnings("unused")

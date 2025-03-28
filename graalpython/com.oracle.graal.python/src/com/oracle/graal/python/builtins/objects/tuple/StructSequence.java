@@ -58,6 +58,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -69,7 +70,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.TpSlotUnaryFuncBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotNewBuiltin;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -191,18 +193,14 @@ public class StructSequence {
         } else if (klass instanceof PythonAbstractNativeObject) {
             /*
              * We need to add the methods. Note that PyType_Ready already ran, so we just write the
-             * method wrappers. We take them from any builtin that doesn't override them and rebind
-             * them to the type. Field names are already populated in tp_members on the native side.
+             * method wrappers. Field names are already populated in tp_members on the native side.
              */
+            TpSlotNewBuiltin<?> newSlot = (TpSlotNewBuiltin<?>) StructSequenceBuiltins.SLOTS.tp_new();
+            writeAttrNode.execute(klass, T___NEW__, newSlot.createBuiltin(context, klass, T___NEW__, PExternalFunctionWrapper.NEW));
+            TpSlotUnaryFuncBuiltin<?> reprSlot = (TpSlotUnaryFuncBuiltin<?>) StructSequenceBuiltins.SLOTS.tp_repr();
+            writeAttrNode.execute(klass, T___REPR__, reprSlot.createBuiltin(context, klass, T___REPR__, PExternalFunctionWrapper.UNARYFUNC));
             PythonBuiltinClass template = context.lookupType(PythonBuiltinClassType.PFloatInfo);
-            copyMethod(language, klass, T___NEW__, template);
             copyMethod(language, klass, T___REDUCE__, template);
-
-            // Wrappers of "new" slots perform self type validation according to CPython semantics,
-            // so we cannot reuse them, but we create and cache one call-target shared among all
-            // native structseq subclasses
-            PBuiltinFunction reprWrapperDescr = TpSlotBuiltin.createNativeReprWrapperDescriptor(context, StructSequenceBuiltins.SLOTS, klass);
-            WriteAttributeToObjectNode.getUncached(true).execute(klass, T___REPR__, reprWrapperDescr);
         }
         writeAttrNode.execute(klass, T_N_SEQUENCE_FIELDS, desc.inSequence);
         writeAttrNode.execute(klass, T_N_FIELDS, desc.fieldNames.length);

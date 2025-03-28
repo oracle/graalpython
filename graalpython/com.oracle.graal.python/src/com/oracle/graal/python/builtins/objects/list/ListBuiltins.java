@@ -30,7 +30,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_LIST;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_SORT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_BRACKETS;
@@ -153,9 +152,10 @@ public final class ListBuiltins extends PythonBuiltins {
     @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ListBuiltinsFactory.getFactories();
-    }    // list([iterable])
+    }
 
-    @Builtin(name = J___NEW__, raiseErrorName = J_LIST, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PList)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_LIST, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class ListNode extends PythonVarargsBuiltinNode {
         @Specialization(guards = "isBuiltinList(cls)")

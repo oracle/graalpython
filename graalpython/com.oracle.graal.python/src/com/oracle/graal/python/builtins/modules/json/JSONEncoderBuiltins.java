@@ -23,6 +23,9 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -48,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
@@ -92,15 +96,16 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
     private static final TruffleString T_BRACES = tsLiteral("{}");
     private static final TruffleString T_BRACKETS = tsLiteral("[]");
 
+    public static final TpSlots SLOTS = JSONEncoderBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return JSONEncoderBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "make_encoder", minNumOfPositionalArgs = 10, //
-                    parameterNames = {"$cls", "markers", "default", "encoder", "indent", "key_separator", "item_separator", "sort_keys", "skipkeys", "allow_nan"}, //
-                    constructsClass = PythonBuiltinClassType.JSONEncoder, //
-                    doc = "JSON scanner object")
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "make_encoder", minNumOfPositionalArgs = 10, //
+                    parameterNames = {"$cls", "markers", "default", "encoder", "indent", "key_separator", "item_separator", "sort_keys", "skipkeys", "allow_nan"})
     @ArgumentClinic(name = "key_separator", conversion = ArgumentClinic.ClinicConversion.TString)
     @ArgumentClinic(name = "item_separator", conversion = ArgumentClinic.ClinicConversion.TString)
     @ArgumentClinic(name = "sort_keys", conversion = ArgumentClinic.ClinicConversion.Boolean)

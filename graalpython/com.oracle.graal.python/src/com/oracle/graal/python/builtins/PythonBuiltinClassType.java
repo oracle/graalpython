@@ -113,7 +113,7 @@ import java.util.stream.Collectors;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
-import com.oracle.graal.python.builtins.modules.lsprof.ProfilerBuiltins;
+import com.oracle.graal.python.builtins.modules.StatResultBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ast.AstBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
@@ -122,22 +122,30 @@ import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteIncrementalDe
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteIncrementalEncoderBuiltins;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteStreamReaderBuiltins;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteStreamWriterBuiltins;
+import com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CArgObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeSequenceBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.PyCArrayBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCArrayTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.PyCPointerBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCSimpleTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.PyCStructTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.SimpleCDataBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StructureBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.KeyWrapperBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.LruCacheWrapperBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.PartialBuiltins;
+import com.oracle.graal.python.builtins.modules.hashlib.Blake2bObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.HashObjectBuiltins;
+import com.oracle.graal.python.builtins.modules.hashlib.Sha3Builtins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOMixinBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedRWPairBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedRandomBuiltins;
@@ -150,10 +158,18 @@ import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IncrementalNewlineDecoderBuiltins;
 import com.oracle.graal.python.builtins.modules.io.StringIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperBuiltins;
+import com.oracle.graal.python.builtins.modules.json.JSONEncoderBuiltins;
+import com.oracle.graal.python.builtins.modules.json.JSONScannerBuiltins;
+import com.oracle.graal.python.builtins.modules.lsprof.ProfilerBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMACompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMADecompressorBuiltins;
+import com.oracle.graal.python.builtins.modules.multiprocessing.GraalPySemLockBuiltins;
+import com.oracle.graal.python.builtins.modules.multiprocessing.SemLockBuiltins;
+import com.oracle.graal.python.builtins.modules.pickle.PickleBufferBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.PicklerBuiltins;
+import com.oracle.graal.python.builtins.modules.pickle.PicklerMemoProxyBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.UnpicklerBuiltins;
+import com.oracle.graal.python.builtins.modules.pickle.UnpicklerMemoProxyBuiltins;
 import com.oracle.graal.python.builtins.objects.NoneBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
@@ -169,9 +185,12 @@ import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.ContextBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.ContextIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.contextvars.ContextVarBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.TokenBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeIterBuiltins;
+import com.oracle.graal.python.builtins.objects.deque.DequeIterCommonBuiltins;
+import com.oracle.graal.python.builtins.objects.deque.DequeRevIterBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DefaultDictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictReprBuiltin;
@@ -192,6 +211,7 @@ import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuil
 import com.oracle.graal.python.builtins.objects.exception.UnicodeTranslateErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignBooleanBuiltins;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignInstantiableBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignIterableBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
@@ -211,6 +231,7 @@ import com.oracle.graal.python.builtins.objects.iterator.ZipBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.AccumulateBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ChainBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CombinationsBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CombinationsWithReplacementBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CompressBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CountBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CycleBuiltins;
@@ -253,6 +274,8 @@ import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictValuesBui
 import com.oracle.graal.python.builtins.objects.posix.DirEntryBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.property.PropertyBuiltins;
+import com.oracle.graal.python.builtins.objects.queue.SimpleQueueBuiltins;
+import com.oracle.graal.python.builtins.objects.random.RandomBuiltins;
 import com.oracle.graal.python.builtins.objects.range.RangeBuiltins;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.reversed.ReversedBuiltins;
@@ -261,13 +284,19 @@ import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltins;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.slice.SliceBuiltins;
 import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.MemoryBIOBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.SSLContextBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
+import com.oracle.graal.python.builtins.objects.struct.StructBuiltins;
 import com.oracle.graal.python.builtins.objects.struct.StructUnpackIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.CommonLockBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.LockTypeBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltins;
+import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltins;
@@ -378,8 +407,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     """)),
     PDeque(J_DEQUE, PythonObject, new Builder().publishInModule("_collections").basetype().slots(DequeBuiltins.SLOTS).methodsFlags(DEQUE_M_FLAGS)),
     PTupleGetter(J_TUPLE_GETTER, PythonObject, new Builder().publishInModule("_collections").basetype().slots(TupleGetterBuiltins.SLOTS)),
-    PDequeIter(J_DEQUE_ITER, PythonObject, new Builder().publishInModule("_collections").slots(DequeIterBuiltins.SLOTS)),
-    PDequeRevIter(J_DEQUE_REV_ITER, PythonObject, new Builder().publishInModule("_collections").slots(DequeIterBuiltins.SLOTS)),
+    PDequeIter(J_DEQUE_ITER, PythonObject, new Builder().publishInModule("_collections").slots(TpSlots.merge(DequeIterCommonBuiltins.SLOTS, DequeIterBuiltins.SLOTS))),
+    PDequeRevIter(J_DEQUE_REV_ITER, PythonObject, new Builder().publishInModule("_collections").slots(TpSlots.merge(DequeIterCommonBuiltins.SLOTS, DequeRevIterBuiltins.SLOTS))),
     PComplex("complex", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(ComplexBuiltins.SLOTS).methodsFlags(COMPLEX_M_FLAGS).doc("""
                     Create a complex number from a real part and an optional imaginary part.
 
@@ -429,8 +458,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PFloat(
                     "float",
                     PythonObject,
-                    new Builder().publishInModule(J_BUILTINS).basetype().slots(FloatBuiltins.SLOTS).methodsFlags(FLOAT_M_FLAGS).doc(
-                                    "Convert a string or number to a floating point number, if possible.")),
+                    new Builder().publishInModule(J_BUILTINS).basetype().slots(FloatBuiltins.SLOTS).methodsFlags(FLOAT_M_FLAGS).doc("""
+                                    Convert a string or number to a floating point number, if possible.""")),
     PFrame("frame", PythonObject, new Builder().disallowInstantiation().slots(FrameBuiltins.SLOTS)),
     PFrozenSet(
                     "frozenset",
@@ -473,8 +502,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PMemoryView(
                     "memoryview",
                     PythonObject,
-                    new Builder().publishInModule(J_BUILTINS).slots(MemoryViewBuiltins.SLOTS).methodsFlags(MEMORYVIEW_M_FLAGS).doc(
-                                    "Create a new memoryview object which references the given object.")),
+                    new Builder().publishInModule(J_BUILTINS).slots(MemoryViewBuiltins.SLOTS).methodsFlags(MEMORYVIEW_M_FLAGS).doc("""
+                                    Create a new memoryview object which references the given object.""")),
     PAsyncGenASend("async_generator_asend", PythonObject, new Builder().slots(AsyncGenSendBuiltins.SLOTS).methodsFlags(ASYNC_GENERATOR_ASEND_M_FLAGS)),
     PAsyncGenAThrow("async_generator_athrow", PythonObject, new Builder().slots(AsyncGenThrowBuiltins.SLOTS).methodsFlags(ASYNC_GENERATOR_ATHROW_M_FLAGS)),
     PAsyncGenAWrappedValue("async_generator_wrapped_value", PythonObject, new Builder()),
@@ -516,12 +545,15 @@ public enum PythonBuiltinClassType implements TruffleObject {
                         @x.deleter
                         def x(self):
                             del self._x""")),
-    PSimpleQueue(J_SIMPLE_QUEUE, PythonObject, new Builder().publishInModule("_queue").basetype().doc("""
-                    SimpleQueue()
-                    --
+    PSimpleQueue(
+                    J_SIMPLE_QUEUE,
+                    PythonObject,
+                    new Builder().publishInModule("_queue").basetype().slots(SimpleQueueBuiltins.SLOTS).doc("""
+                                    SimpleQueue()
+                                    --
 
-                    Simple, unbounded, reentrant FIFO queue.""")),
-    PRandom("Random", PythonObject, new Builder().publishInModule("_random").basetype()),
+                                    Simple, unbounded, reentrant FIFO queue.""")),
+    PRandom("Random", PythonObject, new Builder().publishInModule("_random").basetype().slots(RandomBuiltins.SLOTS)),
     PRange("range", PythonObject, new Builder().publishInModule(J_BUILTINS).slots(RangeBuiltins.SLOTS).methodsFlags(RANGE_M_FLAGS).doc("""
                     range(stop) -> range object
                     range(start, stop[, step]) -> range object
@@ -556,7 +588,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     or repr(object).
                     encoding defaults to sys.getdefaultencoding().
                     errors defaults to 'strict'.""")),
-    PTraceback("traceback", PythonObject, new Builder().basetype()),
+    PTraceback("traceback", PythonObject, new Builder().basetype().slots(TracebackBuiltins.SLOTS)),
     PTuple("tuple", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().slots(TupleBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
                     Built-in immutable sequence.
 
@@ -590,25 +622,24 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PZip(
                     "zip",
                     PythonObject,
-                    new Builder().publishInModule(J_BUILTINS).basetype().slots(ZipBuiltins.SLOTS).doc(
-                                    """
-                    zip(*iterables, strict=False) --> Yield tuples until an input is exhausted.
+                    new Builder().publishInModule(J_BUILTINS).basetype().slots(ZipBuiltins.SLOTS).doc("""
+                                    zip(*iterables, strict=False) --> Yield tuples until an input is exhausted.
 
-                       >>> list(zip('abcdefg', range(3), range(4)))
-                       [('a', 0, 0), ('b', 1, 1), ('c', 2, 2)]
+                                       >>> list(zip('abcdefg', range(3), range(4)))
+                                       [('a', 0, 0), ('b', 1, 1), ('c', 2, 2)]
 
-                    The zip object yields n-length tuples, where n is the number of iterables
-                    passed as positional arguments to zip().  The i-th element in every tuple
-                    comes from the i-th iterable argument to zip().  This continues until the
-                    shortest argument is exhausted.
+                                    The zip object yields n-length tuples, where n is the number of iterables
+                                    passed as positional arguments to zip().  The i-th element in every tuple
+                                    comes from the i-th iterable argument to zip().  This continues until the
+                                    shortest argument is exhausted.
 
-                    If strict is true and one of the arguments is exhausted before the others,
-                    raise a ValueError.""")),
+                                    If strict is true and one of the arguments is exhausted before the others,
+                                    raise a ValueError.""")),
     PThreadLocal("_local", PythonObject, new Builder().publishInModule(J__THREAD).basetype().slots(ThreadLocalBuiltins.SLOTS)),
-    PLock("LockType", PythonObject, new Builder().publishInModule(J__THREAD).disallowInstantiation().slots(CommonLockBuiltins.SLOTS)),
-    PRLock("RLock", PythonObject, new Builder().publishInModule(J__THREAD).basetype().slots(CommonLockBuiltins.SLOTS)),
-    PSemLock("SemLock", PythonObject, new Builder().publishInModule("_multiprocessing").basetype()),
-    PGraalPySemLock("SemLock", PythonObject, new Builder().publishInModule("_multiprocessing_graalpy").basetype()),
+    PLock("LockType", PythonObject, new Builder().publishInModule(J__THREAD).disallowInstantiation().slots(TpSlots.merge(CommonLockBuiltins.SLOTS, LockTypeBuiltins.SLOTS))),
+    PRLock("RLock", PythonObject, new Builder().publishInModule(J__THREAD).basetype().slots(TpSlots.merge(CommonLockBuiltins.SLOTS, RLockBuiltins.SLOTS))),
+    PSemLock("SemLock", PythonObject, new Builder().publishInModule("_multiprocessing").basetype().slots(SemLockBuiltins.SLOTS)),
+    PGraalPySemLock("SemLock", PythonObject, new Builder().publishInModule("_multiprocessing_graalpy").basetype().slots(GraalPySemLockBuiltins.SLOTS)),
     PSocket("socket", PythonObject, new Builder().publishInModule(J__SOCKET).basetype().slots(SocketBuiltins.SLOTS)),
     PStaticmethod("staticmethod", PythonObject, new Builder().publishInModule(J_BUILTINS).basetype().addDict().slots(StaticmethodBuiltins.SLOTS).doc("""
                     staticmethod(function) -> method
@@ -657,13 +688,13 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PScandirIterator("ScandirIterator", PythonObject, new Builder().moduleName(J_POSIX).disallowInstantiation().slots(ScandirIteratorBuiltins.SLOTS)),
     PDirEntry("DirEntry", PythonObject, new Builder().publishInModule(J_POSIX).disallowInstantiation().slots(DirEntryBuiltins.SLOTS)),
     LsprofProfiler("Profiler", PythonObject, new Builder().publishInModule("_lsprof").basetype().slots(ProfilerBuiltins.SLOTS)),
-    PStruct("Struct", PythonObject, new Builder().publishInModule(J__STRUCT).basetype()),
+    PStruct("Struct", PythonObject, new Builder().publishInModule(J__STRUCT).basetype().slots(StructBuiltins.SLOTS)),
     PStructUnpackIterator("unpack_iterator", PythonObject, new Builder().publishInModule(J__STRUCT).basetype().slots(StructUnpackIteratorBuiltins.SLOTS)),
     Pickler("Pickler", PythonObject, new Builder().publishInModule("_pickle").basetype().slots(PicklerBuiltins.SLOTS)),
-    PicklerMemoProxy("PicklerMemoProxy", PythonObject, new Builder().publishInModule("_pickle").basetype()),
-    UnpicklerMemoProxy("UnpicklerMemoProxy", PythonObject, new Builder().publishInModule("_pickle").basetype()),
+    PicklerMemoProxy("PicklerMemoProxy", PythonObject, new Builder().publishInModule("_pickle").basetype().slots(PicklerMemoProxyBuiltins.SLOTS)),
+    UnpicklerMemoProxy("UnpicklerMemoProxy", PythonObject, new Builder().publishInModule("_pickle").basetype().slots(UnpicklerMemoProxyBuiltins.SLOTS)),
     Unpickler("Unpickler", PythonObject, new Builder().publishInModule("_pickle").basetype().slots(UnpicklerBuiltins.SLOTS)),
-    PickleBuffer("PickleBuffer", PythonObject, new Builder().publishInModule("_pickle").basetype()),
+    PickleBuffer("PickleBuffer", PythonObject, new Builder().publishInModule("_pickle").basetype().slots(PickleBufferBuiltins.SLOTS)),
 
     // Errors and exceptions:
 
@@ -776,7 +807,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     ForeignBoolean("ForeignBoolean", ForeignNumber, new Builder().publishInModule(J_POLYGLOT).basetype().addDict().slots(ForeignBooleanBuiltins.SLOTS).methodsFlags(FOREIGNNUMBER_M_FLAGS)),
     ForeignAbstractClass("ForeignAbstractClass", ForeignObject, new Builder().publishInModule(J_POLYGLOT).basetype().addDict()),
     ForeignExecutable("ForeignExecutable", ForeignObject, new Builder().publishInModule(J_POLYGLOT).basetype().addDict()),
-    ForeignInstantiable("ForeignInstantiable", ForeignObject, new Builder().publishInModule(J_POLYGLOT).basetype().addDict()),
+    ForeignInstantiable("ForeignInstantiable", ForeignObject, new Builder().publishInModule(J_POLYGLOT).basetype().addDict().slots(ForeignInstantiableBuiltins.SLOTS)),
     ForeignIterable("ForeignIterable", ForeignObject, new Builder().publishInModule(J_POLYGLOT).basetype().addDict().slots(ForeignIterableBuiltins.SLOTS)),
 
     // bz2
@@ -813,17 +844,20 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PBytesIO("BytesIO", PBufferedIOBase, new Builder().publishInModule("_io").basetype().addDict().slots(BytesIOBuiltins.SLOTS)),
     PBytesIOBuf("_BytesIOBuffer", PythonObject, new Builder().moduleName("_io").basetype()),
 
-    PStatResult("stat_result", PTuple, new Builder().publishInModule("os").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
-                    stat_result: Result from stat, fstat, or lstat.
+    PStatResult(
+                    "stat_result",
+                    PTuple,
+                    new Builder().publishInModule("os").slots(TpSlots.merge(StructSequenceBuiltins.SLOTS, StatResultBuiltins.SLOTS)).methodsFlags(TUPLE_M_FLAGS).doc("""
+                                    stat_result: Result from stat, fstat, or lstat.
 
-                    This object may be accessed either as a tuple of
-                      (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime)
-                    or via the attributes st_mode, st_ino, st_dev, st_nlink, st_uid, and so on.
+                                    This object may be accessed either as a tuple of
+                                      (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime)
+                                    or via the attributes st_mode, st_ino, st_dev, st_nlink, st_uid, and so on.
 
-                    Posix/windows: If your platform supports st_blksize, st_blocks, st_rdev,
-                    or st_flags, they are available as attributes only.
+                                    Posix/windows: If your platform supports st_blksize, st_blocks, st_rdev,
+                                    or st_flags, they are available as attributes only.
 
-                    See os.stat for more information.""")),
+                                    See os.stat for more information.""")),
     PStatvfsResult("statvfs_result", PTuple, new Builder().publishInModule("os").slots(StructSequenceBuiltins.SLOTS).methodsFlags(TUPLE_M_FLAGS).doc("""
                     statvfs_result: Result from statvfs or fstatvfs.
 
@@ -904,9 +938,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     Type used to pass arguments to sys.unraisablehook.""")),
 
     PSSLSession("SSLSession", PythonObject, new Builder().publishInModule(J__SSL).disallowInstantiation()),
-    PSSLContext("_SSLContext", PythonObject, new Builder().publishInModule(J__SSL).basetype()),
+    PSSLContext("_SSLContext", PythonObject, new Builder().publishInModule(J__SSL).basetype().slots(SSLContextBuiltins.SLOTS)),
     PSSLSocket("_SSLSocket", PythonObject, new Builder().publishInModule(J__SSL).basetype()),
-    PMemoryBIO("MemoryBIO", PythonObject, new Builder().publishInModule(J__SSL).basetype()),
+    PMemoryBIO("MemoryBIO", PythonObject, new Builder().publishInModule(J__SSL).basetype().slots(MemoryBIOBuiltins.SLOTS)),
 
     // itertools
     PTee("_tee", PythonObject, new Builder().publishInModule("itertools").slots(TeeBuiltins.SLOTS)),
@@ -921,12 +955,15 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     Return successive r-length combinations of elements in the iterable.
 
                     combinations(range(4), 3) --> (0,1,2), (0,1,3), (0,2,3), (1,2,3)""")),
-    PCombinationsWithReplacement("combinations_with_replacement", PythonObject, new Builder().publishInModule("itertools").basetype().slots(CombinationsBuiltins.SLOTS).doc("""
-                    combinations_with_replacement(iterable, r) --> combinations_with_replacement object
+    PCombinationsWithReplacement(
+                    "combinations_with_replacement",
+                    PythonObject,
+                    new Builder().publishInModule("itertools").basetype().slots(TpSlots.merge(CombinationsBuiltins.SLOTS, CombinationsWithReplacementBuiltins.SLOTS)).doc("""
+                                    combinations_with_replacement(iterable, r) --> combinations_with_replacement object
 
-                    Return successive r-length combinations of elements in the iterable
-                    allowing individual elements to have successive repeats.
-                        combinations_with_replacement('ABC', 2) --> AA AB AC BB BC CC""")),
+                                    Return successive r-length combinations of elements in the iterable
+                                    allowing individual elements to have successive repeats.
+                                        combinations_with_replacement('ABC', 2) --> AA AB AC BB BC CC""")),
     PCompress("compress", PythonObject, new Builder().publishInModule("itertools").basetype().slots(CompressBuiltins.SLOTS).doc("""
                     Make an iterator that filters elements from *data* returning
                     only those that have a corresponding element in *selectors* that evaluates to
@@ -1056,13 +1093,19 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     defaults to None or can be specified by a keyword argument.""")),
 
     // json
-    JSONScanner("Scanner", PythonObject, new Builder().publishInModule("_json").basetype().doc("""
-                    JSON scanner object""")),
-    JSONEncoder("Encoder", PythonObject, new Builder().publishInModule("_json").basetype().doc("""
-                    _iterencode(obj, _current_indent_level) -> iterable""")),
+    JSONScanner(
+                    "Scanner",
+                    PythonObject,
+                    new Builder().publishInModule("_json").basetype().slots(JSONScannerBuiltins.SLOTS).doc("""
+                                    JSON scanner object""")),
+    JSONEncoder(
+                    "Encoder",
+                    PythonObject,
+                    new Builder().publishInModule("_json").basetype().slots(JSONEncoderBuiltins.SLOTS).doc("""
+                                    _iterencode(obj, _current_indent_level) -> iterable""")),
 
     // csv
-    CSVDialect("Dialect", PythonObject, new Builder().publishInModule("_csv").basetype()),
+    CSVDialect("Dialect", PythonObject, new Builder().publishInModule("_csv").basetype().slots(CSVDialectBuiltins.SLOTS)),
     CSVReader("Reader", PythonObject, new Builder().publishInModule("_csv").basetype().disallowInstantiation().slots(CSVReaderBuiltins.SLOTS)),
     CSVWriter("Writer", PythonObject, new Builder().publishInModule("_csv").basetype().disallowInstantiation()),
 
@@ -1076,14 +1119,15 @@ public enum PythonBuiltinClassType implements TruffleObject {
     SHA256Type("sha256", PythonObject, new Builder().publishInModule("_sha256").basetype().disallowInstantiation()),
     SHA384Type("sha384", PythonObject, new Builder().publishInModule("_sha512").basetype().disallowInstantiation()),
     SHA512Type("sha512", PythonObject, new Builder().publishInModule("_sha512").basetype().disallowInstantiation()),
-    Sha3SHA224Type("sha3_224", PythonObject, new Builder().publishInModule("_sha3").basetype()),
-    Sha3SHA256Type("sha3_256", PythonObject, new Builder().publishInModule("_sha3").basetype()),
-    Sha3SHA384Type("sha3_384", PythonObject, new Builder().publishInModule("_sha3").basetype()),
-    Sha3SHA512Type("sha3_512", PythonObject, new Builder().publishInModule("_sha3").basetype()),
-    Sha3Shake128Type("shake_128", PythonObject, new Builder().publishInModule("_sha3").basetype()),
-    Sha3Shake256Type("shake_256", PythonObject, new Builder().publishInModule("_sha3").basetype()),
-    Blake2bType("blake2b", PythonObject, new Builder().publishInModule("_blake2").basetype()),
-    Blake2sType("blake2s", PythonObject, new Builder().publishInModule("_blake2").basetype()),
+    Sha3SHA224Type("sha3_224", PythonObject, new Builder().publishInModule("_sha3").basetype().slots(Sha3Builtins.SLOTS)),
+    Sha3SHA256Type("sha3_256", PythonObject, new Builder().publishInModule("_sha3").basetype().slots(Sha3Builtins.SLOTS)),
+    Sha3SHA384Type("sha3_384", PythonObject, new Builder().publishInModule("_sha3").basetype().slots(Sha3Builtins.SLOTS)),
+    Sha3SHA512Type("sha3_512", PythonObject, new Builder().publishInModule("_sha3").basetype().slots(Sha3Builtins.SLOTS)),
+    Sha3Shake128Type("shake_128", PythonObject, new Builder().publishInModule("_sha3").basetype().slots(Sha3Builtins.SLOTS)),
+    Sha3Shake256Type("shake_256", PythonObject, new Builder().publishInModule("_sha3").basetype().slots(Sha3Builtins.SLOTS)),
+    Blake2bType("blake2b", PythonObject, new Builder().publishInModule("_blake2").basetype().slots(Blake2bObjectBuiltins.SLOTS)),
+    /* Note we reuse the blake2b slots */
+    Blake2sType("blake2s", PythonObject, new Builder().publishInModule("_blake2").basetype().slots(Blake2bObjectBuiltins.SLOTS)),
     HashlibHash("HASH", PythonObject, new Builder().publishInModule("_hashlib").basetype().disallowInstantiation().slots(HashObjectBuiltins.SLOTS)),
     HashlibHashXof("HASHXOF", HashlibHash, new Builder().publishInModule("_hashlib").disallowInstantiation()),
     HashlibHmac("HMAC", PythonObject, new Builder().publishInModule("_hashlib").basetype().disallowInstantiation().slots(HashObjectBuiltins.SLOTS)),
@@ -1099,16 +1143,31 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PyCStructType(
                     "PyCStructType",
                     PythonClass,
-                    new Builder().publishInModule(J__CTYPES).basetype().slots(TpSlots.merge(CDataTypeSequenceBuiltins.SLOTS, PyCStructTypeBuiltins.SLOTS)).methodsFlags(PYCSTRUCTTYPE_M_FLAGS)),
+                    new Builder().publishInModule(J__CTYPES).basetype().slots(TpSlots.merge(CDataTypeSequenceBuiltins.SLOTS, StructUnionTypeBuiltins.SLOTS, PyCStructTypeBuiltins.SLOTS)).methodsFlags(
+                                    PYCSTRUCTTYPE_M_FLAGS)),
     UnionType(
                     "UnionType",
                     PythonClass,
                     new Builder().publishInModule(J__CTYPES).basetype().slots(
-                                    TpSlots.merge(CDataTypeSequenceBuiltins.SLOTS, com.oracle.graal.python.builtins.modules.ctypes.UnionTypeBuiltins.SLOTS)).methodsFlags(UNIONTYPE_M_FLAGS)),
-    PyCPointerType("PyCPointerType", PythonClass, new Builder().publishInModule(J__CTYPES).basetype().slots(CDataTypeSequenceBuiltins.SLOTS).methodsFlags(PYCPOINTERTYPE_M_FLAGS)),
-    PyCArrayType("PyCArrayType", PythonClass, new Builder().publishInModule(J__CTYPES).basetype().slots(CDataTypeSequenceBuiltins.SLOTS).methodsFlags(PYCARRAYTYPE_M_FLAGS)),
-    PyCSimpleType("PyCSimpleType", PythonClass, new Builder().publishInModule(J__CTYPES).basetype().slots(CDataTypeSequenceBuiltins.SLOTS).methodsFlags(PYCSIMPLETYPE_M_FLAGS)),
-    PyCFuncPtrType("PyCFuncPtrType", PythonClass, new Builder().publishInModule(J__CTYPES).basetype().slots(CDataTypeSequenceBuiltins.SLOTS).methodsFlags(PYCFUNCPTRTYPE_M_FLAGS)),
+                                    TpSlots.merge(CDataTypeSequenceBuiltins.SLOTS, StructUnionTypeBuiltins.SLOTS,
+                                                    com.oracle.graal.python.builtins.modules.ctypes.UnionTypeBuiltins.SLOTS)).methodsFlags(UNIONTYPE_M_FLAGS)),
+    PyCPointerType(
+                    "PyCPointerType",
+                    PythonClass,
+                    new Builder().publishInModule(J__CTYPES).basetype().slots(TpSlots.merge(CDataTypeSequenceBuiltins.SLOTS, PyCPointerTypeBuiltins.SLOTS)).methodsFlags(PYCPOINTERTYPE_M_FLAGS)),
+    PyCArrayType(
+                    "PyCArrayType",
+                    PythonClass,
+                    new Builder().publishInModule(J__CTYPES).basetype().slots(TpSlots.merge(CDataTypeSequenceBuiltins.SLOTS, PyCArrayTypeBuiltins.SLOTS)).methodsFlags(PYCARRAYTYPE_M_FLAGS)),
+    PyCSimpleType(
+                    "PyCSimpleType",
+                    PythonClass,
+                    new Builder().publishInModule(J__CTYPES).basetype().slots(TpSlots.merge(CDataTypeSequenceBuiltins.SLOTS, PyCPointerTypeBuiltins.SLOTS, PyCSimpleTypeBuiltins.SLOTS)).methodsFlags(
+                                    PYCSIMPLETYPE_M_FLAGS)),
+    PyCFuncPtrType(
+                    "PyCFuncPtrType",
+                    PythonClass,
+                    new Builder().publishInModule(J__CTYPES).basetype().slots(TpSlots.merge(CDataTypeSequenceBuiltins.SLOTS, PyCFuncPtrTypeBuiltins.SLOTS)).methodsFlags(PYCFUNCPTRTYPE_M_FLAGS)),
     PyCData("_CData", PythonObject, new Builder().publishInModule(J__CTYPES).basetype().slots(CDataBuiltins.SLOTS)), /*- type = PyCStructType */
     Structure("Structure", PyCData, new Builder().publishInModule(J__CTYPES).basetype().slots(StructureBuiltins.SLOTS)), /*- type = PyCStructType */
     Union("Union", PyCData, new Builder().publishInModule(J__CTYPES).basetype().slots(StructureBuiltins.SLOTS)), /*- type = UnionType */
@@ -1131,7 +1190,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // contextvars
     ContextVarsToken("Token", PythonObject, new Builder().publishInModule(J__CONTEXTVARS).slots(TokenBuiltins.SLOTS)),
     ContextVarsContext("Context", PythonObject, new Builder().publishInModule(J__CONTEXTVARS).slots(ContextBuiltins.SLOTS).methodsFlags(CONTEXT_M_FLAGS)),
-    ContextVar("ContextVar", PythonObject, new Builder().publishInModule(J__CONTEXTVARS)),
+    ContextVar("ContextVar", PythonObject, new Builder().publishInModule(J__CONTEXTVARS).slots(ContextVarBuiltins.SLOTS)),
     // CPython uses separate keys, values, items python types for the iterators.
     ContextIterator("context_iterator", PythonObject, new Builder().publishInModule(J__CONTEXTVARS).slots(ContextIteratorBuiltins.SLOTS)),
 

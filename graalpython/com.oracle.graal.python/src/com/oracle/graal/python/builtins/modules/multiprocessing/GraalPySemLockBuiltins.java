@@ -42,13 +42,15 @@ package com.oracle.graal.python.builtins.modules.multiprocessing;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -56,6 +58,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.multiprocessing.GraalPySemLockBuiltinsClinicProviders.SemLockNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -84,6 +87,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PGraalPySemLock})
 public final class GraalPySemLockBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = GraalPySemLockBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return GraalPySemLockBuiltinsFactory.getFactories();
@@ -95,7 +100,8 @@ public final class GraalPySemLockBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "SemLock", parameterNames = {"cls", "kind", "value", "maxvalue", "name", "unlink"}, constructsClass = PythonBuiltinClassType.PGraalPySemLock)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "SemLock", parameterNames = {"cls", "kind", "value", "maxvalue", "name", "unlink"})
     @ArgumentClinic(name = "kind", conversion = ArgumentClinic.ClinicConversion.Int)
     @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Int)
     @ArgumentClinic(name = "maxvalue", conversion = ArgumentClinic.ClinicConversion.Int)

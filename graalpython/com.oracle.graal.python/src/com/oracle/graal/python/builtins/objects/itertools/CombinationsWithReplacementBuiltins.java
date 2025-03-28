@@ -43,18 +43,20 @@ package com.oracle.graal.python.builtins.objects.itertools;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.itertools.CombinationsWithReplacementBuiltinsClinicProviders.CombinationsWithReplacementNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -74,12 +76,15 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCombinationsWithReplacement)
 public class CombinationsWithReplacementBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = CombinationsWithReplacementBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CombinationsWithReplacementBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "combinations_with_replacement", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PCombinationsWithReplacement, parameterNames = {
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "combinations_with_replacement", minNumOfPositionalArgs = 3, parameterNames = {
                     "cls", "iterable", "r"})
     @ArgumentClinic(name = "r", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory

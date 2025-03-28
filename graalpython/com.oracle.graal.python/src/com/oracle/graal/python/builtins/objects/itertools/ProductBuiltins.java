@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_CANNOT_BE_NEGATIVE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
@@ -51,6 +50,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -96,7 +96,8 @@ public final class ProductBuiltins extends PythonBuiltins {
         return ProductBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "product", minNumOfPositionalArgs = 1, takesVarArgs = true, constructsClass = PythonBuiltinClassType.PProduct, keywordOnlyNames = {"repeat"})
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "product", minNumOfPositionalArgs = 1, takesVarArgs = true, keywordOnlyNames = {"repeat"})
     @GenerateNodeFactory
     public abstract static class ProductNode extends PythonBuiltinNode {
 

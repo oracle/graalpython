@@ -33,7 +33,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETFORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
 import static com.oracle.graal.python.runtime.formatting.FormattingUtils.validateForFloat;
@@ -51,6 +50,7 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -209,7 +209,8 @@ public final class FloatBuiltins extends PythonBuiltins {
     }
 
     // float([x])
-    @Builtin(name = J___NEW__, raiseErrorName = J_FLOAT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFloat)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_FLOAT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class FloatNewNode extends PythonBinaryBuiltinNode {
 

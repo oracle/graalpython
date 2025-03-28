@@ -74,7 +74,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.THE_HANDLE_ATTRIBUTE_O
 import static com.oracle.graal.python.nodes.ErrorMessages.THIS_FUNCTION_TAKES_AT_LEAST_D_ARGUMENT_S_D_GIVEN;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIS_FUNCTION_TAKES_D_ARGUMENT_S_D_GIVEN;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -86,6 +85,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -181,7 +181,8 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
      * object (with an integer handle)), paramflags "is|..." - vtable index, method name, creates
      * callable calling COM vtbl
      */
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PyCFuncPtrNewNode extends PythonBuiltinNode {
 

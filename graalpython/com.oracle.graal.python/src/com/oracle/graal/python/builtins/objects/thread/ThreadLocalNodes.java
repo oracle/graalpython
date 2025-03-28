@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInit.CallSlotTpInitNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpInitNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;

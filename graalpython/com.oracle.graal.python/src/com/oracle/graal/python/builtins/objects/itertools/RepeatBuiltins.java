@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.LEN_OF_UNSIZED_OBJECT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
@@ -52,6 +51,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -93,7 +93,8 @@ public final class RepeatBuiltins extends PythonBuiltins {
         return RepeatBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "repeat", minNumOfPositionalArgs = 2, parameterNames = {"$self", "object", "times"}, constructsClass = PythonBuiltinClassType.PRepeat)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "repeat", minNumOfPositionalArgs = 2, parameterNames = {"$self", "object", "times"})
     @GenerateNodeFactory
     public abstract static class RepeatNode extends PythonTernaryBuiltinNode {
 

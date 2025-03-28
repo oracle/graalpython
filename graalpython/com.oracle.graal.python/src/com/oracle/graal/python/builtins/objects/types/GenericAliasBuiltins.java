@@ -58,7 +58,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MRO_ENTRIES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSCHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COPY__;
@@ -74,6 +73,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -157,7 +157,8 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
         return GenericAliasBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "GenericAlias", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PGenericAlias)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "GenericAlias", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class GenericAliasNode extends PythonTernaryBuiltinNode {
         @Specialization

@@ -47,7 +47,6 @@ import static com.oracle.graal.python.builtins.modules.bz2.Bz2Nodes.errorHandlin
 import static com.oracle.graal.python.nodes.ErrorMessages.COMPRESSLEVEL_MUST_BE_BETWEEN_1_AND_9;
 import static com.oracle.graal.python.nodes.ErrorMessages.COMPRESSOR_HAS_BEEN_FLUSHED;
 import static com.oracle.graal.python.nodes.ErrorMessages.REPEATED_CALL_TO_FLUSH;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
@@ -98,7 +97,8 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
         return BZ2CompressorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "BZ2Compressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = BZ2Compressor)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "BZ2Compressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BZ2CompressorNode extends PythonBuiltinNode {
         @Specialization

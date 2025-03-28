@@ -51,7 +51,6 @@ import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EIS
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ENOTSOCK;
 import static com.oracle.graal.python.builtins.objects.socket.PSocket.INVALID_FD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SOCKET;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.PosixConstants.SOL_SOCKET;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_ERROR;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
@@ -142,7 +141,8 @@ public final class SocketBuiltins extends PythonBuiltins {
     }
 
     // socket(family=AF_INET, type=SOCK_STREAM, proto=0, fileno=None)
-    @Builtin(name = J___NEW__, raiseErrorName = "socket", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PSocket)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "socket", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class SocketNode extends PythonVarargsBuiltinNode {
         // All the "real" work is done by __init__

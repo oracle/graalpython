@@ -41,11 +41,13 @@
 package com.oracle.graal.python.builtins.modules.pickle;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -56,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -76,12 +79,16 @@ import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PickleBuffer)
 public class PickleBufferBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = PickleBufferBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PickleBufferBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "PickleBuffer", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"}, constructsClass = PythonBuiltinClassType.PickleBuffer)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "PickleBuffer", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"})
     @GenerateNodeFactory
     abstract static class ConstructPickleBufferNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")

@@ -46,7 +46,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.LOGGER;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -81,6 +80,9 @@ import org.bouncycastle.util.encoders.DecoderException;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -103,6 +105,7 @@ import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils.NeedsPasswordException;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils.NoCertificateFoundException;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -153,12 +156,15 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
     private static final TruffleString T_ENVIRON = tsLiteral("environ");
 
+    public static final TpSlots SLOTS = SSLContextBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SSLContextBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "_SSLContext", constructsClass = PythonBuiltinClassType.PSSLContext, minNumOfPositionalArgs = 2, parameterNames = {"type", "protocol"})
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "_SSLContext", minNumOfPositionalArgs = 2, parameterNames = {"type", "protocol"})
     @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class SSLContextNode extends PythonBinaryClinicBuiltinNode {

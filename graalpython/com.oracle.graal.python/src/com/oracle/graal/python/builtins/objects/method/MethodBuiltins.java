@@ -34,7 +34,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___KWDEFAULTS
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CODE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -43,6 +42,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -96,7 +96,8 @@ public final class MethodBuiltins extends PythonBuiltins {
         return MethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "method", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PMethod)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "method", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class MethodTypeNode extends PythonTernaryBuiltinNode {
         @Specialization

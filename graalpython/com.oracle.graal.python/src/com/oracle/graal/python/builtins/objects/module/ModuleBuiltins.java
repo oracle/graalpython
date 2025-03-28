@@ -52,7 +52,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PACKAGE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___SPEC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
@@ -133,7 +132,8 @@ public final class ModuleBuiltins extends PythonBuiltins {
         return ModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = J_MODULE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonModule)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_MODULE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class ModuleNewNode extends PythonBuiltinNode {
 

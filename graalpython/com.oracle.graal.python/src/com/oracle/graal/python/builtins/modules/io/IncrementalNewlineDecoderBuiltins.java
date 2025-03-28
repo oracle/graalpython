@@ -53,7 +53,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_RESET;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_SETSTATE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ILLEGAL_STATE_ARGUMENT;
 import static com.oracle.graal.python.nodes.ErrorMessages.STATE_ARGUMENT_MUST_BE_A_TUPLE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_CR;
 import static com.oracle.graal.python.nodes.StringLiterals.T_CRLF;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
@@ -118,7 +117,8 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
     public static final int SEEN_CRLF = 4;
     public static final int SEEN_ALL = (SEEN_CR | SEEN_LF | SEEN_CRLF);
 
-    @Builtin(name = J___NEW__, raiseErrorName = "IncrementalNewlineDecoder", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PIncrementalNewlineDecoder)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "IncrementalNewlineDecoder", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class IncrementalNewlineDecoderNode extends PythonBuiltinNode {
         @Specialization

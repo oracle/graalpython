@@ -35,7 +35,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___SUPPRESS_CONTEXT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TRACEBACK__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_PARENS;
@@ -131,7 +130,8 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
         return BaseExceptionBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "BaseException", constructsClass = PythonBuiltinClassType.PBaseException, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "BaseException", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BaseExceptionNode extends PythonVarargsBuiltinNode {
 

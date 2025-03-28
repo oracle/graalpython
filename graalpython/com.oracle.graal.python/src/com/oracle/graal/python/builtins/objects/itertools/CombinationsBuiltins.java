@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.itertools;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
@@ -54,6 +53,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -103,7 +103,8 @@ public final class CombinationsBuiltins extends PythonBuiltins {
         return CombinationsBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "combinations", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PCombinations, parameterNames = {"cls", "iterable", "r"})
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "combinations", minNumOfPositionalArgs = 3, parameterNames = {"cls", "iterable", "r"})
     @ArgumentClinic(name = "r", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
     public abstract static class CombinationsNode extends PythonTernaryClinicBuiltinNode {

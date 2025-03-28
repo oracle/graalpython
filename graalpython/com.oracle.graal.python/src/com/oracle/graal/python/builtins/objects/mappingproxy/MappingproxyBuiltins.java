@@ -32,7 +32,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_COPY;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_GET;
@@ -99,7 +98,8 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         return MappingproxyBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "mappingproxy", constructsClass = PythonBuiltinClassType.PMappingproxy, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "mappingproxy", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "!isNoValue(obj)")

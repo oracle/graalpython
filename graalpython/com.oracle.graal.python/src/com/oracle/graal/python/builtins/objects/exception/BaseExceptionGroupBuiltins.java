@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___NOTES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -58,6 +57,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -139,7 +139,8 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         builtins.setAttribute(T_EXCEPTION_GROUP, exceptionGroupType);
     }
 
-    @Builtin(name = J___NEW__, constructsClass = PythonBuiltinClassType.PBaseExceptionGroup, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class BaseExceptionGroupNode extends PythonTernaryBuiltinNode {
 

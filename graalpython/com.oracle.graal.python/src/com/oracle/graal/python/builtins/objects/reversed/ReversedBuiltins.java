@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.reversed;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REVERSED;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_HAS_NO_LEN;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -44,6 +43,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -111,7 +111,8 @@ public final class ReversedBuiltins extends PythonBuiltins {
     }
 
     // reversed(seq)
-    @Builtin(name = J___NEW__, raiseErrorName = J_REVERSED, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PReverseIterator)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_REVERSED, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(SpecialMethodSlot.class)
     public abstract static class ReversedNode extends PythonBuiltinNode {

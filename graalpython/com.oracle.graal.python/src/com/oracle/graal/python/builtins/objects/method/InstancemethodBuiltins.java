@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___FUNC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
@@ -104,7 +103,8 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
         return InstancemethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = J_INSTANCEMETHOD, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PInstancemethod)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_INSTANCEMETHOD, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class InstancemethodNode extends PythonBinaryBuiltinNode {
         @Specialization

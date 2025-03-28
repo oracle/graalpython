@@ -32,12 +32,14 @@ import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_LINENO;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_NEXT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -47,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltinsClinicProviders.TracebackTypeNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
@@ -82,12 +85,16 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTraceback)
 public final class TracebackBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = TracebackBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TracebackBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "TracebackType", constructsClass = PythonBuiltinClassType.PTraceback, minNumOfPositionalArgs = 5, parameterNames = {"$cls", "tb_next", "tb_frame",
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "TracebackType", minNumOfPositionalArgs = 5, parameterNames = {"$cls", "tb_next", "tb_frame",
                     "tb_lasti",
                     "tb_lineno"})
     @ArgumentClinic(name = "tb_lasti", conversion = ArgumentClinic.ClinicConversion.Index)

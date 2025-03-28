@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___SELF_CLASS
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___SELF__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___THISCLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
@@ -198,7 +197,8 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = J_SUPER, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.Super)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_SUPER, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SuperNode extends PythonTernaryBuiltinNode {
         @Specialization(guards = "isBuiltinSuper(cls)")

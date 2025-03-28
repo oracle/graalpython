@@ -154,11 +154,11 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
-import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
@@ -2106,13 +2106,13 @@ public abstract class CExtNodes {
                 }
                 doArgAndResultConversion = true;
             }
-            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, managedCallable, type, flags, signature, language, doArgAndResultConversion);
+            PythonObject function = PExternalFunctionWrapper.createWrapperFunction(name, managedCallable, type, flags, signature, language, doArgAndResultConversion);
             return function != null ? function : castToPythonObject(managedCallable);
         }
 
         @Specialization
         @TruffleBoundary
-        static PBuiltinFunction doPyCFunctionWrapper(TruffleString name, PyCFunctionWrapper wrapper, int signature, Object type, int flags) {
+        static PythonObject doPyCFunctionWrapper(TruffleString name, PyCFunctionWrapper wrapper, int signature, Object type, int flags) {
             Object delegate = wrapper.getDelegate();
             assert !(delegate instanceof PythonAbstractObject);
             PythonContext context = PythonContext.get(null);
@@ -2166,7 +2166,7 @@ public abstract class CExtNodes {
                 resolvedCallable = callable;
             }
             PythonLanguage language = context.getLanguage();
-            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, resolvedCallable, type, flags, signature, language, doArgAndResultConversion);
+            PythonObject function = PExternalFunctionWrapper.createWrapperFunction(name, resolvedCallable, type, flags, signature, language, doArgAndResultConversion);
             return function != null ? function : castToPythonObject(resolvedCallable);
         }
 

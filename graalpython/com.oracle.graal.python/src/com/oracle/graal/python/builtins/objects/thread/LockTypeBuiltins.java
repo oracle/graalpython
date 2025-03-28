@@ -40,15 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.thread;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
-
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -61,12 +62,16 @@ import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PLock)
 public class LockTypeBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = LockTypeBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return LockTypeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "LockType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PLock)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "LockType", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ConstructLockNode extends PythonUnaryBuiltinNode {
         @Specialization

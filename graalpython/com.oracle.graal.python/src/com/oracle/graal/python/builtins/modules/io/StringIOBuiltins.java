@@ -73,7 +73,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_HAVE_RETURNED
 import static com.oracle.graal.python.nodes.ErrorMessages.THIRD_ITEM_OF_STATE_MUST_BE_AN_INTEGER_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIRD_ITEM_OF_STATE_SHOULD_BE_A_DICT_GOT_A_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETSTATE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
@@ -265,7 +264,8 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "StringIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PStringIO)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "StringIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class StringIONode extends PythonBuiltinNode {
         @Specialization

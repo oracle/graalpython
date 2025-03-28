@@ -47,7 +47,6 @@ import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteIncrem
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.MBERR_TOOFEW;
 import static com.oracle.graal.python.nodes.ErrorMessages.CODEC_IS_UNEXPECTED_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.STREAM_FUNCTION_RETURNED_A_NON_BYTES_OBJECT_S;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -102,7 +101,8 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
         return MultibyteStreamReaderBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "stream", "errors"})
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 2, parameterNames = {"$cls", "stream", "errors"})
     @GenerateNodeFactory
     protected abstract static class NewNode extends PythonTernaryBuiltinNode {
 

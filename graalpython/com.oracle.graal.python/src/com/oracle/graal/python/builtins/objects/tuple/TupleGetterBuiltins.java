@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.CANT_SET_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.ErrorMessages.DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.TUPLE_OUT_OF_BOUNDS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
@@ -55,6 +54,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -94,7 +94,8 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
         return TupleGetterBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = J_TUPLE_GETTER, parameterNames = {"cls", "index", "doc"}, constructsClass = PythonBuiltinClassType.PTupleGetter)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_TUPLE_GETTER, parameterNames = {"cls", "index", "doc"})
     @ArgumentClinic(name = "index", conversion = ArgumentClinic.ClinicConversion.Index)
     @GenerateNodeFactory
     public abstract static class TupleGetterNode extends PythonTernaryClinicBuiltinNode {

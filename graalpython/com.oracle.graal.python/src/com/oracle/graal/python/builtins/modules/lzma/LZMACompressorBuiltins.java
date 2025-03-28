@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.lzma;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PLZMACompressor;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.CHECK_CRC64;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.CHECK_NONE;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.FORMAT_RAW;
@@ -51,7 +50,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.COMPRESSOR_HAS_BEEN_FL
 import static com.oracle.graal.python.nodes.ErrorMessages.INTEGRITY_CHECKS_ONLY_SUPPORTED_BY;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_SPECIFY_FILTERS;
 import static com.oracle.graal.python.nodes.ErrorMessages.REPEATED_CALL_TO_FLUSH;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
@@ -111,7 +109,8 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
         return LZMACompressorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "LZMACompressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PLZMACompressor)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "LZMACompressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class LZMACompressorNode extends PythonBuiltinNode {
 

@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.INDICES_MUST_BE_INTEGE
 import static com.oracle.graal.python.nodes.ErrorMessages.INDICES_MUST_BE_INTEGERS;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_INDEX;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -127,7 +126,8 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
         core.getContext().registerCApiHook(() -> PCallCapiFunction.callUncached(FUN_PY_TRUFFLE_CDATA_INIT_BUFFER_PROTOCOL, PythonToNativeNode.executeUncached(PyCArray)));
     }
 
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization

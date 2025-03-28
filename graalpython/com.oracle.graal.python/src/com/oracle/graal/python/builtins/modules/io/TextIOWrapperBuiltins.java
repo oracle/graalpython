@@ -117,7 +117,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_READ_SHOULD
 import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_STREAM_IS_NOT_SEEKABLE;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.PGuards.isPNone;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
@@ -268,7 +267,8 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "TextIOWrapper", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PTextIOWrapper)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "TextIOWrapper", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class TextIOWrapperNode extends PythonBuiltinNode {
         @Specialization

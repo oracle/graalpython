@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIOBase;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSED;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_FLUSH;
@@ -78,7 +77,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_RETURN_BYTES_
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_FILENO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_FILENO;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IOUnsupportedOperation;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
@@ -91,6 +89,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -155,7 +154,8 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         return IOBaseBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "_IOBase", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PIOBase)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "_IOBase", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class IOBaseNode extends PythonBuiltinNode {
         @Specialization

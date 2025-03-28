@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.method;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_STATICMETHOD;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -94,7 +93,8 @@ public final class StaticmethodBuiltins extends PythonBuiltins {
         return StaticmethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = J_STATICMETHOD, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PStaticmethod)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_STATICMETHOD, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class StaticmethodNode extends PythonBinaryBuiltinNode {
         @Specialization

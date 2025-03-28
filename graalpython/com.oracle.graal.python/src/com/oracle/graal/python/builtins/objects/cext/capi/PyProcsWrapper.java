@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
@@ -62,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSl
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.CallSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.CallManagedSlotGetAttrNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.CallSlotHashFunNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInit.CallSlotTpInitNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CallSlotNbBoolNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
@@ -75,12 +75,14 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.Call
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.CallSlotSqAssItemNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.CallSlotSqContainsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpInitNode;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
@@ -830,6 +832,64 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         @Override
         protected String getSignature() {
             return "(POINTER,POINTER,POINTER):SINT32";
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class NewWrapper extends TpSlotWrapper {
+
+        public NewWrapper(TpSlotManaged delegate) {
+            super(delegate);
+        }
+
+        @Override
+        public TpSlotWrapper cloneWith(TpSlotManaged slot) {
+            return new NewWrapper(slot);
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Bind Node inliningTarget,
+                        @Cached NativeToPythonNode toJavaNode,
+                        @Cached PythonToNativeNewRefNode toSulongNode,
+                        @Cached CallNode callNode,
+                        @Cached ExecutePositionalStarargsNode posStarargsNode,
+                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                try {
+                    // convert args
+                    Object receiver = toJavaNode.execute(arguments[0]);
+                    Object starArgs = toJavaNode.execute(arguments[1]);
+                    Object kwArgs = toJavaNode.execute(arguments[2]);
+
+                    Object[] pArgs;
+                    if (starArgs != PNone.NO_VALUE) {
+                        Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
+                        pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
+                    } else {
+                        pArgs = new Object[]{receiver};
+                    }
+                    PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
+
+                    // execute
+                    return toSulongNode.execute(callNode.execute(null, getDelegate(), pArgs, kwArgsArray));
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "MethKeywords", getDelegate());
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(inliningTarget, e);
+                return PythonContext.get(callNode).getNativeNull();
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+
+        @Override
+        protected String getSignature() {
+            return "(POINTER,POINTER,POINTER):POINTER";
         }
     }
 

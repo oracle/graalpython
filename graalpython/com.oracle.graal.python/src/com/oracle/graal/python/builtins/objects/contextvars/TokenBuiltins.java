@@ -41,13 +41,15 @@
 package com.oracle.graal.python.builtins.objects.contextvars;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.HashNotImplemented;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -79,7 +81,8 @@ public final class TokenBuiltins extends PythonBuiltins {
         return TokenBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "Token", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.ContextVarsToken)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "Token", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class TokenNode extends PythonUnaryBuiltinNode {
         @Specialization

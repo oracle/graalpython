@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,104 +38,112 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules.pickle;
+package com.oracle.graal.python.builtins.objects.deque;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
-import java.util.LinkedHashMap;
+import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.pickle.MemoTable.MemoIterator;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.PicklerMemoProxy)
-public class PicklerMemoProxyBuiltins extends PythonBuiltins {
-
-    public static final TpSlots SLOTS = PicklerMemoProxyBuiltinsSlotsGen.SLOTS;
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.PDequeIter, PythonBuiltinClassType.PDequeRevIter})
+public final class DequeIterCommonBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = DequeIterCommonBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PicklerMemoProxyBuiltinsFactory.getFactories();
+        return DequeIterCommonBuiltinsFactory.getFactories();
     }
 
-    @Slot(value = SlotKind.tp_new, isComplex = true)
-    @SlotSignature(name = "PicklerMemoProxy", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "pickler"})
+    // _deque_iterator.__iter__()
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
-    abstract static class ConstructPicklerMemoProxyNode extends PythonBinaryBuiltinNode {
+    public abstract static class DequeIterIterNode extends PythonUnaryBuiltinNode {
+
         @Specialization
-        PPicklerMemoProxy construct(Object cls, PPickler pickler,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createPicklerMemoProxy(language, pickler, cls, getInstanceShape.execute(cls));
+        static PDequeIter doGeneric(PDequeIter self) {
+            return self;
         }
     }
 
-    @Builtin(name = "clear", minNumOfPositionalArgs = 1, parameterNames = {"$self"})
+    // _deque_iterator.__next__()
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class PicklerMemoProxyClearNode extends PythonUnaryBuiltinNode {
+    public abstract static class DequeIterNextNode extends TpIterNextBuiltin {
+
+        public abstract Object execute(PDequeIter self);
+
         @Specialization
-        Object clear(PPicklerMemoProxy self) {
-            final MemoTable memoTable = self.getPickler().getMemo();
-            memoTable.clear();
-            return PNone.NONE;
+        @TruffleBoundary
+        Object doGeneric(PDequeIter self) {
+            try {
+                if (self.startState == self.deque.getState()) {
+                    if (!self.hasNext()) {
+                        assert self.lengthHint() == 0;
+                        throw iteratorExhausted();
+                    }
+                    return self.next();
+                }
+            } catch (NoSuchElementException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            } catch (ConcurrentModificationException e) {
+                // fall through
+            }
+            self.reset();
+            throw PRaiseNode.raiseStatic(this, RuntimeError, ErrorMessages.DEQUE_MUTATED_DURING_ITERATION);
         }
     }
 
-    @TruffleBoundary
-    public static PDict picklerMemoCopyImpl(MemoTable memoTable) {
-        PythonLanguage language = PythonLanguage.get(null);
-        LinkedHashMap<Object, Object> copy = new LinkedHashMap<>();
-        MemoIterator iterator = memoTable.iterator();
-        while (iterator.advance()) {
-            copy.put(System.identityHashCode(iterator.key()),
-                            PFactory.createTuple(language, new Object[]{iterator.value(), iterator.key()}));
-
-        }
-        return PFactory.createDictFromMapGeneric(language, copy);
-    }
-
-    @Builtin(name = "copy", minNumOfPositionalArgs = 1, parameterNames = {"$self"})
+    // _deque_iterator.__length_hint__()
+    @Builtin(name = J___LENGTH_HINT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class PicklerMemoProxyCopyNode extends PythonUnaryBuiltinNode {
+    public abstract static class DequeIterLengthHintNode extends PythonUnaryBuiltinNode {
+
         @Specialization
-        Object copy(PPicklerMemoProxy self) {
-            final MemoTable memoTable = self.getPickler().getMemo();
-            return picklerMemoCopyImpl(memoTable);
+        static int doGeneric(PDequeIter self) {
+            return self.lengthHint();
         }
     }
 
-    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1, parameterNames = {"$self"})
+    // _deque_iterator.__reduce__()
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class PicklerMemoProxyReduceNode extends PythonUnaryBuiltinNode {
+    public abstract static class DequeIterReduceNode extends PythonUnaryBuiltinNode {
+
         @Specialization
-        static Object reduce(PPicklerMemoProxy self,
+        static PTuple doGeneric(PDequeIter self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetClassNode getClassNode,
                         @Bind PythonLanguage language) {
-            final MemoTable memoTable = self.getPickler().getMemo();
-            final PDict dictMemoCopy = picklerMemoCopyImpl(memoTable);
-            final PTuple dictArgs = PFactory.createTuple(language, new Object[]{dictMemoCopy});
-            return PFactory.createTuple(language, new Object[]{PythonBuiltinClassType.PDict, dictArgs});
+            Object clazz = getClassNode.execute(inliningTarget, self);
+            return PFactory.createTuple(language, new Object[]{clazz, PFactory.createTuple(language, new Object[]{self.deque, self.deque.getSize() - self.lengthHint()})});
         }
     }
 }

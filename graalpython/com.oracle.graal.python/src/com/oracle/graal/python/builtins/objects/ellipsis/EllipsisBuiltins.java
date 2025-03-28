@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.ellipsis;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -48,6 +47,7 @@ import java.util.List;
 
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -74,7 +74,8 @@ public final class EllipsisBuiltins extends PythonBuiltins {
         return EllipsisBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "ellipsis", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PEllipsis)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "ellipsis", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class EllipsisTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")

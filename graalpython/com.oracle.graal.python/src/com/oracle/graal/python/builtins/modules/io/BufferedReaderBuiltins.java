@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.modules.io;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedReader;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_FLUSH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
@@ -83,7 +82,8 @@ public final class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
         return BufferedReaderBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "BufferedReader", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PBufferedReader)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "BufferedReader", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BufferedReaderNode extends PythonBuiltinNode {
         @Specialization

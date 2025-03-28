@@ -73,7 +73,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.P_SETSTATE_ARGUMENT_SH
 import static com.oracle.graal.python.nodes.ErrorMessages.SECOND_ITEM_OF_STATE_MUST_BE_AN_INTEGER_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIRD_ITEM_OF_STATE_SHOULD_BE_A_DICT_GOT_A_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETSTATE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -180,7 +179,8 @@ public final class BytesIOBuiltins extends PythonBuiltins {
 
     protected static final byte[] EMPTY_BYTE_ARRAY = PythonUtils.EMPTY_BYTE_ARRAY;
 
-    @Builtin(name = J___NEW__, raiseErrorName = "BytesIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PBytesIO)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "BytesIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BytesIONode extends PythonBuiltinNode {
         @Specialization

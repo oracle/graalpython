@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALLBACK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.lang.ref.ReferenceQueue;
@@ -118,7 +117,8 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
         return ReferenceTypeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "ReferenceType", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PReferenceType)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "ReferenceType", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class ReferenceTypeNode extends PythonBuiltinNode {
         @Child private CStructAccess.ReadI64Node getTpWeaklistoffsetNode;

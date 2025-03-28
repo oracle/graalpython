@@ -42,7 +42,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT_SUBCLASS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SIZEOF__;
@@ -238,7 +237,8 @@ public final class ObjectBuiltins extends PythonBuiltins {
     }
 
     // object()
-    @Builtin(name = J___NEW__, raiseErrorName = J_OBJECT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonObject)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_OBJECT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class ObjectNode extends PythonVarargsBuiltinNode {
 

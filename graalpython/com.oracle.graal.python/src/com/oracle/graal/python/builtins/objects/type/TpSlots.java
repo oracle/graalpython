@@ -85,6 +85,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEG__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
@@ -127,7 +128,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -188,7 +188,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.TpSlotG
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.TpSlotGetAttrPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.TpSlotHashBuiltin;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInit.TpSlotInitBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.TpSlotInquiryBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpSlotIterNextBuiltin;
@@ -205,6 +204,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.TpSlo
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.TpSlotSqAssItemPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.TpSlotSqContainsBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.TpSlotUnaryFuncBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotNewBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotVarargsBuiltin;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -242,7 +243,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * <pre>
  *     Builtins:
  *      - initialization of the slots: static ctor of {@link PythonBuiltinClassType}
- *      - initialization of the wrappers: context initialization calls {@link TpSlots#addOperatorsToBuiltin(Map, Python3Core, PythonBuiltinClassType, PythonBuiltinClass)}
+ *      - initialization of the wrappers: context initialization calls {@link #addOperatorsToBuiltin(Python3Core, PythonBuiltinClassType, PythonBuiltinClass)}
  *      - all the slots are static and shared per JVM, builtins do not allow to update attributes after ctx initialization
  *
  *     Native classes:
@@ -349,6 +350,7 @@ public record TpSlots(TpSlot nb_bool, //
                 TpSlot tp_repr, //
                 TpSlot tp_str, //
                 TpSlot tp_init, //
+                TpSlot tp_new, //
                 boolean has_as_number,
                 boolean has_as_sequence,
                 boolean has_as_mapping) {
@@ -916,10 +918,19 @@ public record TpSlots(TpSlot nb_bool, //
         TP_INIT(
                         TpSlots::tp_init,
                         TpSlotPythonSingle.class,
-                        TpSlotInitBuiltin.class,
+                        TpSlotVarargsBuiltin.class,
                         TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_init,
                         PExternalFunctionWrapper.INITPROC,
+                        PyProcsWrapper.InitWrapper::new),
+        TP_NEW(
+                        TpSlots::tp_new,
+                        TpSlotPythonSingle.class,
+                        TpSlotNewBuiltin.class,
+                        TpSlotGroup.NO_GROUP,
+                        CFields.PyTypeObject__tp_new,
+                        PExternalFunctionWrapper.NEW,
+                        // TODO fix wrapper
                         PyProcsWrapper.InitWrapper::new);
 
         public static final TpSlotMeta[] VALUES = values();
@@ -1113,6 +1124,7 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.TP_STR, TpSlotDef.withSimpleFunction(T___STR__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.TP_REPR, TpSlotDef.withSimpleFunction(T___REPR__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.TP_INIT, TpSlotDef.withSimpleFunction(T___INIT__, PExternalFunctionWrapper.INITPROC));
+        addSlotDef(s, TpSlotMeta.TP_NEW, TpSlotDef.withSimpleFunction(T___NEW__, PExternalFunctionWrapper.NEW));
         addSlotDef(s, TpSlotMeta.NB_ADD,
                         TpSlotDef.withoutHPy(T___ADD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
                         TpSlotDef.withoutHPy(T___RADD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
@@ -1619,7 +1631,7 @@ public record TpSlots(TpSlot nb_bool, //
         return true;
     }
 
-    public static void addOperatorsToBuiltin(Map<TruffleString, BoundBuiltinCallable<?>> builtins, Python3Core core, PythonBuiltinClassType type, PythonBuiltinClass pythonBuiltinClass) {
+    public static void addOperatorsToBuiltin(Python3Core core, PythonBuiltinClassType type, PythonBuiltinClass pythonBuiltinClass) {
         TpSlots slots = type.getDeclaredSlots();
         assert checkNoMagicOverrides(core, type);
 
@@ -1635,9 +1647,9 @@ public record TpSlots(TpSlot nb_bool, //
                 continue;
             }
             for (TpSlotDef slotDef : slotDefGroup.getValue()) {
-                if (slotDef.wrapper() != null && !builtins.containsKey(slotDef.name())) {
+                if (slotDef.wrapper() != null && pythonBuiltinClass.getAttribute(slotDef.name()) == PNone.NO_VALUE) {
                     var value = builtinSlot.createBuiltin(core, type, slotDef.name(), slotDef.wrapper());
-                    builtins.put(slotDef.name(), value);
+                    pythonBuiltinClass.setAttribute(slotDef.name(), value);
                 }
             }
         }
@@ -1805,7 +1817,6 @@ public record TpSlots(TpSlot nb_bool, //
                 TpSlot current = values[def.ordinal()];
                 TpSlot otherValue = def.getter.get(other);
                 if (otherValue != null) {
-                    assert current == null : def.name();
                     set(def, otherValue);
                 }
             }
@@ -1902,6 +1913,7 @@ public record TpSlots(TpSlot nb_bool, //
                             get(TpSlotMeta.TP_REPR), //
                             get(TpSlotMeta.TP_STR), //
                             get(TpSlotMeta.TP_INIT), //
+                            get(TpSlotMeta.TP_NEW), //
                             hasGroup(TpSlotGroup.AS_NUMBER),
                             hasGroup(TpSlotGroup.AS_SEQUENCE),
                             hasGroup(TpSlotGroup.AS_MAPPING));

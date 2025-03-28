@@ -47,6 +47,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -101,9 +102,8 @@ public final class FunctionBuiltins extends PythonBuiltins {
         return FunctionBuiltinsFactory.getFactories();
     }
 
-    // function(code, globals[, name[, argdefs[, closure]]])
-    @Builtin(name = "function", minNumOfPositionalArgs = 3, parameterNames = {"$cls", "code", "globals", "name", "argdefs",
-                    "closure"}, constructsClass = PythonBuiltinClassType.PFunction)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "function", minNumOfPositionalArgs = 3, parameterNames = {"$cls", "code", "globals", "name", "argdefs", "closure"})
     @GenerateNodeFactory
     public abstract static class FunctionNode extends PythonBuiltinNode {
 

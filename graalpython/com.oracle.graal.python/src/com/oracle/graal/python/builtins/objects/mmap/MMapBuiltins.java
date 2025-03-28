@@ -60,7 +60,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.READ_BYTE_OUT_OF_RANGE
 import static com.oracle.graal.python.nodes.PGuards.isPNone;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.PosixConstants.MAP_ANONYMOUS;
 import static com.oracle.graal.python.runtime.PosixConstants.MAP_PRIVATE;
 import static com.oracle.graal.python.runtime.PosixConstants.MAP_SHARED;
@@ -78,6 +77,7 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -176,8 +176,9 @@ public final class MMapBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "mmap", minNumOfPositionalArgs = 3, parameterNames = {"cls", "fd", "length", "flags", "prot", "access",
-                    "offset"}, constructsClass = PythonBuiltinClassType.PMMap)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "mmap", minNumOfPositionalArgs = 3, parameterNames = {"cls", "fd", "length", "flags", "prot", "access",
+                    "offset"})
     @GenerateNodeFactory
     // Note: it really should not call fileno on fd as per Python spec
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)

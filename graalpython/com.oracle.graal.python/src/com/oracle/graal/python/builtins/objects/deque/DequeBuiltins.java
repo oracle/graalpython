@@ -53,7 +53,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.DEQUE_MUTATED_DURING_R
 import static com.oracle.graal.python.nodes.ErrorMessages.DEQUE_REMOVE_X_NOT_IN_DEQUE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_BRACKETS;
@@ -147,7 +146,8 @@ public final class DequeBuiltins extends PythonBuiltins {
         return DequeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = J_DEQUE, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PDeque, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_DEQUE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class DequeNode extends PythonVarargsBuiltinNode {
 

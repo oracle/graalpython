@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.set;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ADD;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SET;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
@@ -115,7 +114,8 @@ public final class SetBuiltins extends PythonBuiltins {
     }
 
     // set([iterable])
-    @Builtin(name = J___NEW__, raiseErrorName = J_SET, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PSet)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_SET, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class SetNode extends PythonBuiltinNode {
         @Specialization(guards = "isBuiltinSet(cls)")

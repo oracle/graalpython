@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.tokenize;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -50,7 +49,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -84,7 +83,8 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
         return TokenizerIterBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "TokenizerIter", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "source"}, constructsClass = PythonBuiltinClassType.PTokenizerIter)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "TokenizerIter", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "source"})
     @ArgumentClinic(name = "source", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     public abstract static class TokenizerIterNode extends PythonBinaryClinicBuiltinNode {

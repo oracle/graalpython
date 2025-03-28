@@ -33,7 +33,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_NOT_BE_ZERO;
 import static com.oracle.graal.python.nodes.ErrorMessages.RANGE_OUT_OF_BOUNDS;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -43,6 +42,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -134,7 +134,8 @@ public final class RangeBuiltins extends PythonBuiltins {
 
     // range(stop)
     // range(start, stop[, step])
-    @Builtin(name = J___NEW__, raiseErrorName = J_RANGE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PRange)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_RANGE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     @ReportPolymorphism
     public abstract static class RangeNode extends PythonQuaternaryBuiltinNode {

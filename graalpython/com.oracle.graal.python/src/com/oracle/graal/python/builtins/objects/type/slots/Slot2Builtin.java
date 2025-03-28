@@ -44,7 +44,6 @@ import java.lang.annotation.Annotation;
 
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.util.PythonUtils;
 
@@ -84,16 +83,6 @@ class Slot2Builtin implements Builtin {
     }
 
     @Override
-    public PythonBuiltinClassType constructsClass() {
-        return PythonBuiltinClassType.nil;
-    }
-
-    @Override
-    public PythonBuiltinClassType[] base() {
-        return new PythonBuiltinClassType[0];
-    }
-
-    @Override
     public int minNumOfPositionalArgs() {
         return signature != null ? signature.minNumOfPositionalArgs() : annotation.minNumOfPositionalArgs();
     }
@@ -105,7 +94,7 @@ class Slot2Builtin implements Builtin {
 
     @Override
     public int numOfPositionalOnlyArgs() {
-        return -1;
+        return annotation != null ? annotation.numOfPositionalOnlyArgs() : -1;
     }
 
     @Override

@@ -6,7 +6,6 @@
 package com.oracle.graal.python.builtins.modules.json;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -16,6 +15,9 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -27,6 +29,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
@@ -66,12 +69,15 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
         int value;
     }
 
+    public static final TpSlots SLOTS = JSONScannerBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return JSONScannerBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "make_scanner", parameterNames = {"$cls", "context"}, constructsClass = PythonBuiltinClassType.JSONScanner)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "make_scanner", parameterNames = {"$cls", "context"})
     @GenerateNodeFactory
     public abstract static class MakeScanner extends PythonBinaryBuiltinNode {
 

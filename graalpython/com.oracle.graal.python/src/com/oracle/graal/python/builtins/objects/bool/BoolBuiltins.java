@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.bool;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BOOL;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_FALSE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TRUE;
 
@@ -34,7 +33,7 @@ import java.util.List;
 
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -66,8 +65,8 @@ public final class BoolBuiltins extends PythonBuiltins {
         return BoolBuiltinsFactory.getFactories();
     }
 
-    // bool([x])
-    @Builtin(name = J___NEW__, raiseErrorName = J_BOOL, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.Boolean, base = PythonBuiltinClassType.PInt)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_BOOL, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonBinaryBuiltinNode {
         @Specialization

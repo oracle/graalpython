@@ -46,7 +46,6 @@ import static com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBui
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_CDATA_INIT_BUFFER_PROTOCOL;
 import static com.oracle.graal.python.nodes.ErrorMessages.DUPLICATE_VALUES_FOR_FIELD_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_MANY_INITIALIZERS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
@@ -54,7 +53,6 @@ import java.util.List;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -110,7 +108,8 @@ public final class StructureBuiltins extends PythonBuiltins {
         });
     }
 
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class NewNode extends PythonBuiltinNode {
 

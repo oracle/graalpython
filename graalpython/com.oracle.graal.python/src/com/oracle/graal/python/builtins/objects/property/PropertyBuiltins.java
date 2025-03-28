@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_PROPERTY;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ISABSTRACTMETHOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SET_NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISABSTRACTMETHOD__;
 
@@ -111,7 +110,8 @@ public final class PropertyBuiltins extends PythonBuiltins {
         return PropertyBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = J_PROPERTY, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PProperty)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_PROPERTY, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class PropertyNode extends PythonVarargsBuiltinNode {
         @Specialization

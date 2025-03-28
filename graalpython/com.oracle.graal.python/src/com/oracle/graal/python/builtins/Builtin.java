@@ -45,10 +45,6 @@ public @interface Builtin {
      */
     PythonOS os() default PythonOS.PLATFORM_ANY;
 
-    PythonBuiltinClassType constructsClass() default PythonBuiltinClassType.nil;
-
-    PythonBuiltinClassType[] base() default {};
-
     int minNumOfPositionalArgs() default 0;
 
     int maxNumOfPositionalArgs() default -1;

@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DEFAULTDICT;
 import static com.oracle.graal.python.nodes.ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE_S;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MISSING__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
@@ -99,7 +98,8 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
         return DefaultDictBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = J_DEFAULTDICT, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PDefaultDict, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_DEFAULTDICT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class DefaultDictNode extends PythonVarargsBuiltinNode {
         @Specialization

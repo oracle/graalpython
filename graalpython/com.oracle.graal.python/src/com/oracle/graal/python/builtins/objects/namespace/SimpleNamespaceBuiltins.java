@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.namespace;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.NO_POSITIONAL_ARGUMENTS_EXPECTED;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
@@ -122,7 +121,8 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
         return SimpleNamespaceBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "SimpleNamespace", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PSimpleNamespace)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "SimpleNamespace", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class SimpleNamespaceNode extends PythonVarargsBuiltinNode {
         @Specialization

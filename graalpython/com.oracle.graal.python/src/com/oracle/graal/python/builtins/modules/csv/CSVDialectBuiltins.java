@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.NOT
 import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.T__CSV;
 import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_MINIMAL;
 import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA;
 import static com.oracle.graal.python.nodes.StringLiterals.T_CRLF;
@@ -58,6 +57,9 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -66,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
@@ -112,12 +115,15 @@ public final class CSVDialectBuiltins extends PythonBuiltins {
     private static final TruffleString T_ATTR_STRICT = T_STRICT;
     private static final TruffleString T_NOT_SET = tsLiteral("NOT_SET");
 
+    public static final TpSlots SLOTS = CSVDialectBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CSVDialectBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "CSVDialect", constructsClass = PythonBuiltinClassType.CSVDialect, parameterNames = {"class", "dialect", "delimiter", "doublequote", "escapechar",
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "CSVDialect", parameterNames = {"class", "dialect", "delimiter", "doublequote", "escapechar",
                     "lineterminator", "quotechar",
                     "quoting", "skipinitialspace", "strict"})
     @GenerateNodeFactory

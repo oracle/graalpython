@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_INT_AS_R;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
@@ -56,6 +55,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -106,7 +106,8 @@ public final class PermutationsBuiltins extends PythonBuiltins {
         return PermutationsBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "permutations", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PPermutations, parameterNames = {"cls", "iterable", "r"})
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "permutations", minNumOfPositionalArgs = 2, parameterNames = {"cls", "iterable", "r"})
     @ArgumentClinic(name = "r", defaultValue = "PNone.NONE")
     @GenerateNodeFactory
     public abstract static class PermutationsNode extends PythonTernaryClinicBuiltinNode {

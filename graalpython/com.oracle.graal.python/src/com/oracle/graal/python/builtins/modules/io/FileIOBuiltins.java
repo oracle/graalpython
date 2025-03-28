@@ -86,7 +86,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.OPENER_RETURNED_D;
 import static com.oracle.graal.python.nodes.ErrorMessages.REENTRANT_CALL_INSIDE_P_REPR;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNBOUNDED_READ_RETURNED_MORE_BYTES;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNCLOSED_FILE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_FALSE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TRUE;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
@@ -222,7 +221,8 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "FileIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PFileIO)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "FileIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class FileIONode extends PythonBuiltinNode {
         @Specialization

@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.tuple;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TUPLE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_PARENS;
@@ -45,6 +44,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -124,7 +124,8 @@ public final class TupleBuiltins extends PythonBuiltins {
     }
 
     // tuple([iterable])
-    @Builtin(name = J___NEW__, raiseErrorName = J_TUPLE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PTuple)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_TUPLE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class TupleNode extends PythonBinaryBuiltinNode {
 

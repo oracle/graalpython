@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedWriter;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
 
@@ -49,7 +48,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins.CheckBoolMethodHelperNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -81,7 +79,8 @@ public final class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
         return BufferedWriterBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, raiseErrorName = "BufferedWriter", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PBufferedWriter)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "BufferedWriter", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BufferedWriterNode extends PythonBuiltinNode {
         @Specialization

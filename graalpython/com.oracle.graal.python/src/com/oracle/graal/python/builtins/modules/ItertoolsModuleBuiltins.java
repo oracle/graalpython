@@ -35,21 +35,16 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IterNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.itertools.PAccumulate;
 import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
-import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -69,26 +64,6 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ItertoolsModuleBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = "accumulate", minNumOfPositionalArgs = 2, parameterNames = {"cls", "iterable", "func"}, keywordOnlyNames = {
-                    "initial"}, constructsClass = PythonBuiltinClassType.PAccumulate)
-    @GenerateNodeFactory
-    public abstract static class AccumulateNode extends PythonBuiltinNode {
-
-        @Specialization
-        protected static PAccumulate construct(VirtualFrame frame, Object cls, Object iterable, Object func, Object initial,
-                        @Bind("this") Node inliningTarget,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Cached PyObjectGetIter getIter) {
-            PAccumulate self = PFactory.createAccumulate(language, cls, getInstanceShape.execute(cls));
-            self.setIterable(getIter.execute(frame, inliningTarget, iterable));
-            self.setFunc(func instanceof PNone ? null : func);
-            self.setTotal(null);
-            self.setInitial(initial instanceof PNone ? null : initial);
-            return self;
-        }
     }
 
     @Builtin(name = "tee", minNumOfPositionalArgs = 1, parameterNames = {"iterable", "n"})
