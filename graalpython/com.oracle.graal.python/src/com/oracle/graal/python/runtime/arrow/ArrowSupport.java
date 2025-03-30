@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,6 @@ package com.oracle.graal.python.runtime.arrow;
 
 import com.oracle.graal.python.nodes.arrow.capsule.ArrowArrayCapsuleDestructor;
 import com.oracle.graal.python.nodes.arrow.capsule.ArrowSchemaCapsuleDestructor;
-import com.oracle.graal.python.nodes.arrow.release_callback.ArrowSchemaReleaseCallback;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -66,18 +65,14 @@ public class ArrowSupport {
 
     // ArrowSchema destructor
     private Object arrowSchemaDestructorNFIClosure;
-    @CompilationFinal private long arrowSchemaDestructorCallback;
-
-    // ArrowSchema release callback
-    private Object arrowSchemaNFIClosure;
-    @CompilationFinal private long arrowSchemaReleaseCallback;
+    @CompilationFinal private long arrowSchemaDestructor;
 
     public long getArrowSchemaDestructor() {
-        if (arrowSchemaDestructorCallback == 0) {
+        if (arrowSchemaDestructor == 0) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             initArrowSchemaDestructor();
         }
-        return arrowSchemaDestructorCallback;
+        return arrowSchemaDestructor;
     }
 
     public long getArrowArrayDestructor() {
@@ -86,14 +81,6 @@ public class ArrowSupport {
             initArrowArrayDestructor();
         }
         return arrowArrayDestructor;
-    }
-
-    public long getArrowSchemaReleaseCallback() {
-        if (arrowSchemaReleaseCallback == 0) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            initArrowSchemaReleaseCallback();
-        }
-        return arrowSchemaReleaseCallback;
     }
 
     @TruffleBoundary
@@ -111,15 +98,6 @@ public class ArrowSupport {
         var signature = ArrowUtil.createNfiSignature("(POINTER):VOID", ctx);
         var executable = new ArrowSchemaCapsuleDestructor();
         this.arrowSchemaDestructorNFIClosure = SignatureLibrary.getUncached().createClosure(signature, executable);
-        this.arrowSchemaDestructorCallback = PythonUtils.coerceToLong(arrowSchemaDestructorNFIClosure, InteropLibrary.getUncached());
-    }
-
-    @TruffleBoundary
-    private void initArrowSchemaReleaseCallback() {
-        CompilerAsserts.neverPartOfCompilation();
-        var signature = ArrowUtil.createNfiSignature("(UINT64):VOID", ctx);
-        var executable = new ArrowSchemaReleaseCallback();
-        this.arrowSchemaNFIClosure = SignatureLibrary.getUncached().createClosure(signature, executable);
-        this.arrowSchemaReleaseCallback = PythonUtils.coerceToLong(arrowSchemaNFIClosure, InteropLibrary.getUncached());
+        this.arrowSchemaDestructor = PythonUtils.coerceToLong(arrowSchemaDestructorNFIClosure, InteropLibrary.getUncached());
     }
 }

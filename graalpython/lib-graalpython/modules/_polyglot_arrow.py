@@ -39,6 +39,8 @@
 
 import polyglot
 import java
+import gc
+import atexit
 
 try:
     java.type("org.apache.arrow.vector.BaseFixedWidthVector")
@@ -56,7 +58,7 @@ class TinyIntVector:
         return self.getValueCount()
 
     def __arrow_c_array__(self, requested_schema=None):
-        return __graalpython__.export_arrow_vector(self)
+        return Data.export_vector(self)
 
 
 class SmallIntVector:
@@ -65,7 +67,7 @@ class SmallIntVector:
         return self.getValueCount()
 
     def __arrow_c_array__(self, requested_schema=None):
-        return __graalpython__.export_arrow_vector(self)
+        return Data.export_vector(self)
 
 
 class IntVector:
@@ -74,7 +76,7 @@ class IntVector:
         return self.getValueCount()
 
     def __arrow_c_array__(self, requested_schema=None):
-        return __graalpython__.export_arrow_vector(self)
+        return Data.export_vector(self)
 
 
 class BigIntVector:
@@ -83,7 +85,7 @@ class BigIntVector:
         return self.getValueCount()
 
     def __arrow_c_array__(self, requested_schema=None):
-        return __graalpython__.export_arrow_vector(self)
+        return Data.export_vector(self)
 
 
 class BitVector:
@@ -92,7 +94,7 @@ class BitVector:
         return self.getValueCount()
 
     def __arrow_c_array__(self, requested_schema=None):
-        return __graalpython__.export_arrow_vector(self)
+        return Data.export_vector(self)
 
 
 class Float2Vector:
@@ -101,7 +103,7 @@ class Float2Vector:
         return self.getValueCount()
 
     def __arrow_c_array__(self, requested_schema=None):
-        return __graalpython__.export_arrow_vector(self)
+        return Data.export_vector(self)
 
 
 class Float4Vector:
@@ -110,7 +112,7 @@ class Float4Vector:
         return self.getValueCount()
 
     def __arrow_c_array__(self, requested_schema=None):
-        return __graalpython__.export_arrow_vector(self)
+        return Data.export_vector(self)
 
 
 class Float8Vector:
@@ -119,7 +121,94 @@ class Float8Vector:
         return self.getValueCount()
 
     def __arrow_c_array__(self, requested_schema=None):
-        return __graalpython__.export_arrow_vector(self)
+        return Data.export_vector(self)
+
+class Table:
+
+    def __arrow_c_array__(self, requested_schema=None):
+        return Data.export_table(self)
+
+class ArrowArray:
+    _jarrow_array_class = java.type("org.apache.arrow.c.ArrowArray")
+    _graalpy_arrow_array_class = java.type("com.oracle.graal.python.nodes.arrow.ArrowArray")
+
+    @staticmethod
+    def allocate_new(allocator):
+        return ArrowArray._jarrow_array_class.allocateNew(allocator)
+
+    @staticmethod
+    def transfer_to_managed(arrow_array):
+        snapshot = arrow_array.snapshot()
+        managed_arrow_array = ArrowArray._graalpy_arrow_array_class.allocate(
+            snapshot.length,
+            snapshot.null_count,
+            snapshot.offset,
+            snapshot.n_buffers,
+            snapshot.n_children,
+            snapshot.buffers,
+            snapshot.children,
+            snapshot.dictionary,
+            snapshot.release,
+            snapshot.private_data
+        )
+
+        arrow_array.close()
+        return managed_arrow_array
+
+
+class ArrowSchema:
+    _jarrow_schema_class = java.type("org.apache.arrow.c.ArrowSchema")
+    _graalpy_arrow_schema_class = java.type("com.oracle.graal.python.nodes.arrow.ArrowSchema")
+
+    @staticmethod
+    def allocate_new(allocator):
+        return ArrowSchema._jarrow_schema_class.allocateNew(allocator)
+
+    @staticmethod
+    def transfer_to_managed(arrow_schema):
+        snapshot = arrow_schema.snapshot()
+        managed_arrow_schema = ArrowSchema._graalpy_arrow_schema_class.allocate(
+            snapshot.format,
+            snapshot.name,
+            snapshot.metadata,
+            snapshot.flags,
+            snapshot.n_children,
+            snapshot.children,
+            snapshot.dictionary,
+            snapshot.release,
+            snapshot.private_data
+        )
+        arrow_schema.close()
+        return managed_arrow_schema
+
+
+class Data:
+    _jdata_class = java.type("org.apache.arrow.c.Data")
+
+    @staticmethod
+    def export_table(table: Table):
+        vector_schema_root = table.toVectorSchemaRoot()
+        allocator = vector_schema_root.getFieldVectors().getFirst().getAllocator().getRoot()
+        arrow_array = ArrowArray.allocate_new(allocator)
+        arrow_schema = ArrowSchema.allocate_new(allocator)
+        Data._jdata_class.exportVectorSchemaRoot(allocator, vector_schema_root, None, arrow_array, arrow_schema)
+        vector_schema_root.close()
+        managed_arrow_array = ArrowArray.transfer_to_managed(arrow_array)
+        managed_arrow_schema = ArrowSchema.transfer_to_managed(arrow_schema)
+
+        return __graalpython__.create_arrow_py_capsule(managed_arrow_array.memoryAddress(), managed_arrow_schema.memoryAddress())
+
+    @staticmethod
+    def export_vector(vector):
+        allocator = vector.getAllocator()
+        arrow_array = ArrowArray.allocate_new(allocator)
+        arrow_schema = ArrowSchema.allocate_new(allocator)
+
+        Data._jdata_class.exportVector(allocator, vector, None, arrow_array, arrow_schema)
+        managed_arrow_array = ArrowArray.transfer_to_managed(arrow_array)
+        managed_arrow_schema = ArrowSchema.transfer_to_managed(arrow_schema)
+
+        return __graalpython__.create_arrow_py_capsule(managed_arrow_array.memoryAddress(), managed_arrow_schema.memoryAddress())
 
 
 __enabled_java_integration = False
@@ -137,30 +226,42 @@ def enable_java_integration(allow_method_overwrites: bool = False):
     if not __enabled_java_integration:
         __enabled_java_integration = True
         # Ints
-        int8_vector_class_path = java.type("org.apache.arrow.vector.TinyIntVector")
-        int16_vector_class_path = java.type("org.apache.arrow.vector.SmallIntVector")
-        int32_vector_class_path = java.type("org.apache.arrow.vector.IntVector")
-        int64_vector_class_path = java.type("org.apache.arrow.vector.BigIntVector")
+        int8_vector_class = java.type("org.apache.arrow.vector.TinyIntVector")
+        int16_vector_class = java.type("org.apache.arrow.vector.SmallIntVector")
+        int32_vector_class = java.type("org.apache.arrow.vector.IntVector")
+        int64_vector_class = java.type("org.apache.arrow.vector.BigIntVector")
         # Boolean
-        boolean_vector_class_path = java.type("org.apache.arrow.vector.BitVector")
+        boolean_vector_class = java.type("org.apache.arrow.vector.BitVector")
         # Floats
-        float2_vector_class_path = java.type("org.apache.arrow.vector.Float2Vector")
-        float4_vector_class_path = java.type("org.apache.arrow.vector.Float4Vector")
-        float8_vector_class_path = java.type("org.apache.arrow.vector.Float8Vector")
+        float2_vector_class = java.type("org.apache.arrow.vector.Float2Vector")
+        float4_vector_class = java.type("org.apache.arrow.vector.Float4Vector")
+        float8_vector_class = java.type("org.apache.arrow.vector.Float8Vector")
+        # Table
+        table_class = java.type("org.apache.arrow.vector.table.Table")
 
-        polyglot.register_interop_type(int8_vector_class_path, TinyIntVector,
+        polyglot.register_interop_type(int8_vector_class, TinyIntVector,
                                        allow_method_overwrites=allow_method_overwrites)
-        polyglot.register_interop_type(int16_vector_class_path, SmallIntVector,
+        polyglot.register_interop_type(int16_vector_class, SmallIntVector,
                                        allow_method_overwrites=allow_method_overwrites)
-        polyglot.register_interop_type(int32_vector_class_path, IntVector,
+        polyglot.register_interop_type(int32_vector_class, IntVector,
                                        allow_method_overwrites=allow_method_overwrites)
-        polyglot.register_interop_type(int64_vector_class_path, BigIntVector,
+        polyglot.register_interop_type(int64_vector_class, BigIntVector,
                                        allow_method_overwrites=allow_method_overwrites)
-        polyglot.register_interop_type(boolean_vector_class_path, BitVector,
+        polyglot.register_interop_type(boolean_vector_class, BitVector,
                                        allow_method_overwrites=allow_method_overwrites)
-        polyglot.register_interop_type(float2_vector_class_path, Float2Vector,
+        polyglot.register_interop_type(float2_vector_class, Float2Vector,
                                        allow_method_overwrites=allow_method_overwrites)
-        polyglot.register_interop_type(float4_vector_class_path, Float4Vector,
+        polyglot.register_interop_type(float4_vector_class, Float4Vector,
                                        allow_method_overwrites=allow_method_overwrites)
-        polyglot.register_interop_type(float8_vector_class_path, Float8Vector,
+        polyglot.register_interop_type(float8_vector_class, Float8Vector,
                                        allow_method_overwrites=allow_method_overwrites)
+        polyglot.register_interop_type(table_class, Table, allow_method_overwrites=allow_method_overwrites)
+
+
+
+        def force_gc():
+            gc.collect()
+            gc.collect()
+            gc.collect()
+
+        atexit.register(force_gc)

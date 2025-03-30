@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.nodes.arrow.ArrowSchema;
-import com.oracle.graal.python.nodes.arrow.release_callback.ArrowSchemaReleaseCallbackNode;
+import com.oracle.graal.python.nodes.arrow.InvokeArrowReleaseCallbackNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -74,19 +74,17 @@ public class ArrowSchemaCapsuleDestructor implements TruffleObject {
         static Object doRelease(ArrowSchemaCapsuleDestructor self, Object[] args,
                         @Bind("$node") Node inliningTarget,
                         @CachedLibrary(limit = "1") InteropLibrary interopLib,
-                        @Cached ArrowSchemaReleaseCallbackNode releaseCallbackNode,
                         @Cached NativeToPythonNode nativeToPythonNode,
-                        @Cached PyCapsuleGetPointerNode pyCapsuleGetPointerNode) {
+                        @Cached PyCapsuleGetPointerNode pyCapsuleGetPointerNode, @Cached InvokeArrowReleaseCallbackNode.Lazy invokeReleaseCallbackNode) {
             Object capsule = nativeToPythonNode.execute(args[0]);
             var capsuleName = new CArrayWrappers.CByteArrayWrapper(ArrowSchema.CAPSULE_NAME);
-            long arrowSchemaPointer = (long) pyCapsuleGetPointerNode.execute(inliningTarget, capsule, capsuleName);
-            ArrowSchema arrowSchema = ArrowSchema.wrap(arrowSchemaPointer);
+            var arrowSchema = ArrowSchema.wrap((long) pyCapsuleGetPointerNode.execute(inliningTarget, capsule, capsuleName));
 
             if (!arrowSchema.isReleased()) {
-                releaseCallbackNode.execute(inliningTarget, arrowSchema);
+                invokeReleaseCallbackNode.get(inliningTarget).executeCached(arrowSchema.releaseCallback(), arrowSchema.memoryAddress());
             }
 
-            PythonContext.get(inliningTarget).getUnsafe().freeMemory(arrowSchemaPointer);
+            PythonContext.get(inliningTarget).getUnsafe().freeMemory(arrowSchema.memoryAddress());
             return PNone.NO_VALUE;
         }
 
