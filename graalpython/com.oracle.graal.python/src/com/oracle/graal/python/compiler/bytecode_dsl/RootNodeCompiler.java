@@ -54,6 +54,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
@@ -116,11 +117,28 @@ import com.oracle.truffle.api.instrumentation.StandardTags.StatementTag;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
- * Visitor that compiles a top-level AST (modules, functions, classes, etc.) to a root node.
- * Produces a {@link BytecodeDSLCompilerResult}.
+ * Compiles a top-level AST (modules, functions, classes, etc.) to a root node. Produces a
+ * {@link BytecodeDSLCompilerResult}. Every instance is associated with corresponding
+ * {@link SSTNode} that represents the compiled top level AST.
  * <p>
- * This visitor is a small wrapper that calls into another visitor, {@link StatementCompiler}, to
- * produce bytecode for the various statements/expressions within the AST.
+ * The class implements SST visitor, so that it can have a separate handler for each top-level AST
+ * node type, the handler (one of the {@code visit} methods) then creates a lambda of type
+ * {@link BytecodeParser}, which captures the node being compiled and the instance of
+ * {@link RootNodeCompiler}, and it uses the {@link RootNodeCompiler} to do the parsing itself. The
+ * {@link BytecodeParser} instance is passed to Truffle API
+ * {@link PBytecodeDSLRootNodeGen#create(PythonLanguage, BytecodeConfig, BytecodeParser)} to trigger
+ * the parsing. Truffle keeps the lambda, and it may invoke it again when it needs to perform the
+ * parsing of the given node again.
+ * <p>
+ * The parsing must happen within the {@link BytecodeParser} lambda invocation.
+ * <p>
+ * This visitor also captures compilation unit state, such as the map of local variables, and serves
+ * the same purpose as the {@code compiler_unit} struct in the CPython compiler. Instead of explicit
+ * stack of compiler units, we use implicitly Java stack and new instances of
+ * {@link RootNodeCompiler}.
+ * <p>
+ * For the parsing of the body of the top level AST element, this visitor delegates to the
+ * {@link StatementCompiler}, which does all the heavy lifting.
  */
 public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompilerResult> {
     /**
@@ -144,7 +162,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     private final int[] cell2arg;
     private final String selfCellName;
 
-    // Updated idempotently
+    // Updated idempotently: the keys are filled during first parsing, on subsequent parsings the
+    // values will be just overridden, but no new keys should be added.
     private final Map<String, BytecodeLocal> locals = new HashMap<>();
     private final Map<String, BytecodeLocal> cellLocals = new HashMap<>();
     private final Map<String, BytecodeLocal> freeLocals = new HashMap<>();
@@ -212,12 +231,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 return CompilationScope.Lambda;
             } else if (rootNode instanceof AsyncFunctionDef) {
                 return CompilationScope.AsyncFunction;
+            } else if (rootNode instanceof DictComp || rootNode instanceof ListComp || rootNode instanceof SetComp || rootNode instanceof GeneratorExp) {
+                return CompilationScope.Comprehension;
             } else {
                 return CompilationScope.Function;
             }
         } else {
-            assert rootNode instanceof DictComp || rootNode instanceof ListComp || rootNode instanceof SetComp || rootNode instanceof GeneratorExp;
-            return CompilationScope.Comprehension;
+            throw new IllegalStateException("Unexpected scope: " + scope);
         }
     }
 
@@ -1326,6 +1346,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.Await node) {
+            // TODO if !IS_TOP_LEVEL_AWAIT
+            // TODO handle await in comprehension correctly (currently, it is always allowed)
             if (!scope.isFunction()) {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'await' outside function");
             }
