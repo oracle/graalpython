@@ -103,7 +103,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -177,7 +176,6 @@ public enum SpecialMethodSlot {
     public static final SpecialMethodSlot[] VALUES = values();
 
     private final TruffleString name;
-    @CompilationFinal private SpecialMethodSlot reverse;
     /**
      * Indicates if given slot may or must not store context independent (AST cacheable)
      * {@link BuiltinMethodDescriptor} objects.
@@ -217,15 +215,10 @@ public enum SpecialMethodSlot {
 
     static {
         assert checkFind();
-        assert checkReverseSlots();
     }
 
     public TruffleString getName() {
         return name;
-    }
-
-    public SpecialMethodSlot getReverse() {
-        return reverse;
     }
 
     public long getMethodsFlag() {
@@ -818,24 +811,6 @@ public enum SpecialMethodSlot {
                 break;
         }
         return null;
-    }
-
-    private static boolean checkReverseSlots() {
-        TruffleString prefix = tsLiteral("__");
-        TruffleString rPrefix = tsLiteral("__r");
-        for (SpecialMethodSlot slot : VALUES) {
-            TruffleString slotName = slot.getName();
-            if (rPrefix.regionEqualsUncached(0, slotName, 0, 3, TS_ENCODING)) {
-                int slotNameLen = slotName.codePointLengthUncached(TS_ENCODING);
-                TruffleString slotNamePart = slotName.substringUncached(3, slotNameLen - 3, TS_ENCODING, true);
-                SpecialMethodSlot rslot = findSpecialSlotUncached(prefix.concatUncached(slotNamePart, TS_ENCODING, false));
-                if (rslot != null && rslot.reverse != slot) {
-                    assert false : slotName;
-                    return false;
-                }
-            }
-        }
-        return true;
     }
 
     private static boolean checkFind() {

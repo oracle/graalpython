@@ -56,7 +56,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonSenaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.WrapBinaryfuncR;
 import com.oracle.graal.python.nodes.function.builtins.WrapTpNew;
 import com.oracle.graal.python.nodes.function.builtins.WrapperDescrCall;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
@@ -330,9 +329,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 }
             }
 
-            if (builtin.reverseOperation()) {
-                body = insert(new WrapBinaryfuncR(newBody));
-            } else if (constructsClass != PythonBuiltinClassType.nil) {
+            if (constructsClass != PythonBuiltinClassType.nil) {
                 body = insert(new WrapTpNew(newBody, constructsClass));
             } else if (wrapsSlotForClass != PythonBuiltinClassType.nil) {
                 body = insert(new WrapperDescrCall(newBody, name, wrapsSlotForClass));

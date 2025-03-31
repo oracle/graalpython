@@ -81,6 +81,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -609,7 +610,11 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
                         @Cached UnboxNode unboxNode,
                         @Cached("create(Round)") LookupAndCallBinaryNode callRound) {
             Object unboxed = unboxNode.execute(inliningTarget, self);
-            return callRound.executeObject(frame, unboxed, n);
+            try {
+                return callRound.executeObject(frame, unboxed, n);
+            } catch (SpecialMethodNotFound ignore) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
         }
     }
 

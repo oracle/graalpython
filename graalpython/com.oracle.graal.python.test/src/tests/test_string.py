@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -1195,3 +1195,12 @@ def test_str_add_result_type():
 def test_literal_with_nonbmp_and_escapes():
     # Check that escape processing didn't accidentally break the emoji into surrogates
     assert len("\\🤗\\") == 3
+
+
+def test_str_from_mmap():
+    import mmap
+    size = len("GraalPy")
+    with mmap.mmap(-1, size) as mm:
+        mm.write(b"GraalPy")
+        mm.seek(0)
+        assert str(mm, encoding='utf-8') == 'GraalPy'

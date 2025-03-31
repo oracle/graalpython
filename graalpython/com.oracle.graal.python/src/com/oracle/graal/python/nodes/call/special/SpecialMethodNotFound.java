@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,13 +40,14 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 
-abstract class CallReversibleMethodNode extends AbstractCallMethodNode {
-    protected boolean isForReverseBinaryOperation(RootCallTarget ct) {
-        CompilerAsserts.neverPartOfCompilation();
-        return PBuiltinFunction.isReverseOperationSlot(ct);
+/**
+ * Thrown from {@code LookupAndCallNAry} nodes when the method does not exist.
+ */
+public final class SpecialMethodNotFound extends ControlFlowException {
+    public static final SpecialMethodNotFound INSTANCE = new SpecialMethodNotFound();
+
+    private SpecialMethodNotFound() {
     }
 }
