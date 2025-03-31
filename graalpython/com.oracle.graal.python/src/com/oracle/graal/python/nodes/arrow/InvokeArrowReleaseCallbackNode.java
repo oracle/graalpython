@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,31 +38,63 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.arrow.release_callback;
+package com.oracle.graal.python.nodes.arrow;
 
-import com.oracle.graal.python.nodes.arrow.ArrowArray;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.arrow.ArrowUtil;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
-@GenerateCached(false)
-@GenerateInline
+@GenerateCached
+@GenerateInline(inlineByDefault = true)
 @GenerateUncached
-public abstract class ArrowArrayReleaseCallbackNode extends Node {
+public abstract class InvokeArrowReleaseCallbackNode extends PNodeWithContext {
 
-    public abstract void execute(Node inliningTarget, ArrowArray arrowArray);
+    public abstract void execute(Node inliningTarget, long releaseCallback, long baseStructure);
+
+    public final void executeCached(long releaseCallback, long baseStructure) {
+        execute(this, releaseCallback, baseStructure);
+    }
 
     @Specialization
-    static void release(Node inliningTarget, ArrowArray arrowArray) {
-        /*
-         * This callback should be used for ArrowArray where we manage the memory. Since right now
-         * we are supporting only Apache Arrow Vectors the memory is managed on Java side. We use
-         * this callback in the capsule destructor which is only called when the consumer doesn't
-         * properly handle the take over the data from ArrowArray.
-         */
-        throw CompilerDirectives.shouldNotReachHere();
+    static void doIt(Node inliningTarget, long releaseCallback, long baseStructure,
+                    @Bind("getContext(inliningTarget)") PythonContext ctx,
+                    @Cached(value = "createReleaseCallbackSignature(ctx)", allowUncached = true) Object callbackSignature,
+                    @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
+        try {
+            signatureLibrary.call(callbackSignature, new NativePointer(releaseCallback), baseStructure);
+        } catch (Exception e) {
+            throw CompilerDirectives.shouldNotReachHere("Unable to call release callback. Error:", e);
+        }
+    }
+
+    static Object createReleaseCallbackSignature(PythonContext context) {
+        return ArrowUtil.createNfiSignature("(UINT64):VOID", context);
+    }
+
+    @GenerateCached(false)
+    @GenerateInline
+    @GenerateUncached
+    public abstract static class Lazy extends Node {
+        public final InvokeArrowReleaseCallbackNode get(Node inliningTarget) {
+            return execute(inliningTarget);
+        }
+
+        abstract InvokeArrowReleaseCallbackNode execute(Node inliningTarget);
+
+        @Specialization
+        static InvokeArrowReleaseCallbackNode doIt(@Cached(inline = false) InvokeArrowReleaseCallbackNode node) {
+            return node;
+        }
     }
 }
