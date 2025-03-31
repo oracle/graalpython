@@ -113,7 +113,7 @@ import java.util.stream.Collectors;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
-import com.oracle.graal.python.builtins.modules.ProfilerBuiltins;
+import com.oracle.graal.python.builtins.modules.lsprof.ProfilerBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ast.AstBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;

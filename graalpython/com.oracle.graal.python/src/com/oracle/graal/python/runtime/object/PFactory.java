@@ -38,7 +38,7 @@ import javax.net.ssl.SSLEngine;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
-import com.oracle.graal.python.builtins.modules.Profiler;
+import com.oracle.graal.python.builtins.modules.lsprof.Profiler;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodec;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodecObject;
