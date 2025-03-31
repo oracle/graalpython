@@ -506,16 +506,16 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         return SysModuleBuiltinsFactory.getFactories();
     }
 
-    private static PSimpleNamespace makeImplementation(PythonLanguage language, PTuple versionInfo, TruffleString gmultiarch) {
+    private static PSimpleNamespace makeImplementation(PythonLanguage language, PTuple graalpyVersionInfo, TruffleString gmultiarch) {
         final PSimpleNamespace ns = PFactory.createSimpleNamespace(language);
         ns.setAttribute(tsLiteral("name"), T_GRAALPYTHON_ID);
         /*- 'cache_tag' must match the format of mx.graalpython/mx_graalpython.py:graalpy_ext */
         ns.setAttribute(T_CACHE_TAG, toTruffleStringUncached(J_GRAALPYTHON_ID +
                         PythonLanguage.GRAALVM_MAJOR + PythonLanguage.GRAALVM_MINOR + PythonLanguage.DEV_TAG +
                         "-" + PythonLanguage.MAJOR + PythonLanguage.MINOR));
-        ns.setAttribute(T_VERSION, versionInfo);
+        ns.setAttribute(T_VERSION, graalpyVersionInfo);
         ns.setAttribute(T__MULTIARCH, gmultiarch);
-        ns.setAttribute(tsLiteral("hexversion"), PythonLanguage.VERSION_HEX);
+        ns.setAttribute(tsLiteral("hexversion"), PythonLanguage.GRAALVM_MAJOR << 16 | PythonLanguage.GRAALVM_MINOR << 8 | PythonLanguage.GRAALVM_MICRO);
         return ns;
     }
 
@@ -588,7 +588,10 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant(T_STDOUT, PNone.NONE);
         addBuiltinConstant(T_STDERR, PNone.NONE);
 
-        addBuiltinConstant("implementation", makeImplementation(language, versionInfo, gmultiarch));
+        PTuple graalpyVersion = PFactory.createStructSeq(language, VERSION_INFO_DESC, PythonLanguage.GRAALVM_MAJOR, PythonLanguage.GRAALVM_MINOR, PythonLanguage.GRAALVM_MICRO,
+                        PythonLanguage.RELEASE_LEVEL_STRING, PythonLanguage.RELEASE_SERIAL);
+        addBuiltinConstant("graalpy_version_info", graalpyVersion);
+        addBuiltinConstant("implementation", makeImplementation(language, graalpyVersion, gmultiarch));
         addBuiltinConstant("hexversion", PythonLanguage.VERSION_HEX);
 
         if (os == PLATFORM_WIN32) {
