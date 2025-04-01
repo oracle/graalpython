@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -59,7 +58,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -201,8 +199,7 @@ public final class TpSlotVarargs {
              */
             RootCallTarget callTarget = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, false, builtinType),
                             nodeClass, nodeClass, builtinType, J___NEW__);
-            PBuiltinFunction newFunc = PFactory.createBuiltinFunction(language, T___NEW__, type, defaults.length, CExtContext.METH_VARARGS | CExtContext.METH_KEYWORDS, callTarget);
-            return PFactory.createBuiltinMethod(language, type, newFunc);
+            return PFactory.createNewWrapper(language, type, defaults, kwDefaults, callTarget, this);
         }
     }
 

@@ -710,7 +710,7 @@ public abstract class ExternalFunctionNodes {
                 case METHOD:
                     return PFactory.createBuiltinFunction(language, name, type, defaults, kwDefaults, flags, callTarget);
                 case NEW:
-                    return PFactory.createBuiltinMethod(language, type, PFactory.createBuiltinFunction(language, name, type, defaults, kwDefaults, flags, callTarget));
+                    return PFactory.createNewWrapper(language, type, defaults, kwDefaults, callTarget, slot);
             }
             return PFactory.createWrapperDescriptor(language, name, type, defaults, kwDefaults, flags, callTarget, slot, sig);
         }

@@ -165,6 +165,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.Write
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.TpSlotsFactory.GetObjectSlotsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TpSlotsFactory.GetTpSlotsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
@@ -1553,9 +1554,27 @@ public record TpSlots(TpSlot nb_bool, //
                          */
                         useGeneric = true;
                     }
-
-                    // TODO: special cases:
-                    // PyCFunction_Type && tp_new (looks like just optimization)
+                } else if (slot == TpSlotMeta.TP_NEW && descr instanceof PBuiltinMethod method && method.getBuiltinFunction().getSlot() != null) {
+                    /*
+                     * From CPython: The __new__ wrapper is not a wrapper descriptor, so must be
+                     * special-cased differently. If we don't do this, creating an instance will
+                     * always use slot_tp_new which will look up __new__ in the MRO which will call
+                     * tp_new_wrapper which will look through the base classes looking for a static
+                     * base and call its tp_new (usually PyType_GenericNew), after performing
+                     * various sanity checks and constructing a new argument list. Cut all that
+                     * nonsense short -- this speeds up instance creation tremendously.
+                     */
+                    /*
+                     * msimacek note: This optimization is not implemented correctly in CPython -
+                     * it's missing a check that the method is for the same type. This can manifest
+                     * with multiple-inheritance when the __new__ method inherited from the MRO is
+                     * different from the current value in tp_new, which was populated from
+                     * tp_base->tp_new earlier. If the one from tp_base is a wrapper, it will pass
+                     * this check and stay in the slot, diverging from the __new__ wrapper inherited
+                     * in MRO. This behavior is already relied upon in the wild (pandas) so we don't
+                     * check the type either.
+                     */
+                    specific = slots.get(TpSlotMeta.TP_NEW);
                 } else if (descr == PNone.NONE && slot == TpSlotMeta.TP_HASH) {
                     specific = TpSlotHashFun.HASH_NOT_IMPLEMENTED;
                 } else {
