@@ -606,7 +606,8 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     def subgroup(self):
         return SUBGROUP_GRAAL_PYTHON
 
-    def with_branch_and_commit_dict(self, d):
+    @staticmethod
+    def with_branch_and_commit_dict(d):
         """
         We run our benchmark from the graalpython directories, but with other
         suites as primary suites in the CI, so we potentially want to update
@@ -1062,7 +1063,7 @@ class LiveHeapTracker(mx_benchmark.Tracker):
             deciles = statistics.quantiles(heap_mb, n=10)
             print(f"Heap size deciles (MiB): {deciles}")
             return [
-                {
+                PythonBaseBenchmarkSuite.with_branch_and_commit_dict({
                     "benchmark": self.tracker.bmSuite.currently_running_benchmark(),
                     "bench-suite": self.tracker.bmSuite.benchSuiteName(self.bmSuiteArgs),
                     "config.vm-flags": ' '.join(self.tracker.bmSuite.vmArgs(self.bmSuiteArgs)),
@@ -1073,7 +1074,7 @@ class LiveHeapTracker(mx_benchmark.Tracker):
                     "metric.score-function": "id",
                     "metric.better": "lower",
                     "metric.iteration": 0
-                }
+                })
             ]
 
 

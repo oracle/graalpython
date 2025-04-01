@@ -43,19 +43,20 @@ package com.oracle.graal.python.builtins.objects.exception;
 import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_PARENTHESES_IN_CALL_TO_EXEC;
 import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_PARENTHESES_IN_CALL_TO_PRINT;
 import static com.oracle.graal.python.nodes.ErrorMessages.TUPLE_OUT_OF_BOUNDS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -72,7 +73,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -105,7 +105,8 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         return SyntaxErrorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class SyntaxErrorInitNode extends PythonBuiltinNode {
         private static final String PREFIX_PRINT = "print ";
@@ -115,7 +116,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         private static final char CHR_COMMA = ',';
         private static final char CHR_SEMICOLON = ';';
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         private static String getLegacyPrintStatementMsg(String text) {
             int endPos = text.indexOf(CHR_SEMICOLON);
             if (endPos == -1) {
@@ -132,7 +133,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
             return String.format(MISSING_PARENTHESES_IN_CALL_TO_PRINT.toJavaStringUncached(), data, maybeEndArg);
         }
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         private static Object checkForLegacyStatements(String text, int start) {
             // Ignore leading whitespace
             final String trimmedText = trimLeft(text, start);
@@ -153,7 +154,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
             return null;
         }
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         private static Object reportMissingParentheses(Object msg, String text) {
             // Skip entirely if there is an opening parenthesis
             final int leftParenIndex = text.indexOf(CHR_LEFTPAREN);
@@ -187,14 +188,14 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object init(VirtualFrame frame, PBaseException self, Object[] args,
+        static Object init(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached TupleNodes.ConstructTupleNode constructTupleNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode,
                         @Cached PRaiseNode raiseNode) {
-            baseExceptionInitNode.execute(self, args);
+            baseExceptionInitNode.execute(frame, self, args, keywords);
             Object[] attrs = SYNTAX_ERROR_ATTR_FACTORY.create();
             if (args.length >= 1) {
                 attrs[IDX_MSG] = args[0];

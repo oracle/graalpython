@@ -149,7 +149,7 @@ import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.property.PProperty;
 import com.oracle.graal.python.builtins.objects.range.PBigRange;
@@ -163,6 +163,8 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -229,7 +231,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -1419,7 +1420,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ObjectNode extends PythonVarargsBuiltinNode {
 
-        @Child private SplitArgsNode splitArgsNode;
         @Child private ReportAbstractClassNode reportAbstractClassNode;
 
         @GenerateInline(false) // Used lazily
@@ -1458,26 +1458,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
             @Fallback
             @SuppressWarnings("unused")
             static void check(Node inliningTarget, Object type, Object[] args, PKeyword[] kwargs,
-                            @Cached(parameters = "Init", inline = false) LookupCallableSlotInMRONode lookupInit,
+                            @Cached GetCachedTpSlotsNode getSlots,
                             @Cached(parameters = "New", inline = false) LookupCallableSlotInMRONode lookupNew,
                             @Cached TypeNodes.CheckCallableIsSpecificBuiltinNode checkSlotIs,
                             @Cached PRaiseNode raiseNode) {
+                TpSlots slots = getSlots.execute(inliningTarget, type);
                 if (!checkSlotIs.execute(inliningTarget, lookupNew.execute(type), BuiltinConstructorsFactory.ObjectNodeFactory.getInstance())) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NEW_TAKES_ONE_ARG);
                 }
-                if (checkSlotIs.execute(inliningTarget, lookupInit.execute(type), ObjectBuiltinsFactory.InitNodeFactory.getInstance())) {
+                if (slots.tp_init() == ObjectBuiltins.SLOTS.tp_init()) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NEW_TAKES_NO_ARGS, type);
                 }
             }
-        }
-
-        @Override
-        public final Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            if (splitArgsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                splitArgsNode = insert(SplitArgsNode.create());
-            }
-            return execute(frame, arguments[0], splitArgsNode.executeCached(arguments), keywords);
         }
 
         @Specialization(guards = {"!self.needsNativeAllocation()"})
@@ -2152,18 +2144,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
-            if (arguments.length == 4) {
-                return execute(frame, arguments[0], arguments[1], arguments[2], arguments[3], keywords);
-            } else if (arguments.length == 3) {
-                return execute(frame, self, arguments[0], arguments[1], arguments[2], keywords);
-            } else {
-                errorProfile.enter();
-                throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, "type.__new__", 3, arguments.length);
-            }
-        }
-
         @Specialization(guards = "isString(wName)")
         @SuppressWarnings("truffle-static-method")
         Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespaceOrig, PKeyword[] kwds,
@@ -2615,18 +2595,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "BaseException", constructsClass = PythonBuiltinClassType.PBaseException, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, doc = "Common base class for all exceptions")
     @GenerateNodeFactory
     public abstract static class BaseExceptionNode extends PythonVarargsBuiltinNode {
-        @Override
-        public final Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            if (arguments.length == 0) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw VarargsBuiltinDirectInvocationNotSupported.INSTANCE;
-            }
-            if (arguments.length == 1) {
-                return execute(frame, arguments[0], PythonUtils.EMPTY_OBJECT_ARRAY, keywords);
-            }
-            Object[] argsWithoutSelf = PythonUtils.arrayCopyOfRange(arguments, 1, arguments.length);
-            return execute(frame, arguments[0], argsWithoutSelf, keywords);
-        }
 
         @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
         static Object doManaged(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,

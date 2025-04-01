@@ -47,13 +47,13 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___FUNC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -78,7 +78,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -102,7 +101,8 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
         return InstancemethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(name = "instancemethod", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InitNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "checkCallableNode.execute(this, callable)")
@@ -168,12 +168,6 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
             return callNode.execute(frame, self.getCallable(), arguments, keywords);
         }
 
-        @Override
-        public Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            Object[] argsWithoutSelf = new Object[arguments.length - 1];
-            PythonUtils.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
-            return execute(frame, arguments[0], argsWithoutSelf, keywords);
-        }
     }
 
     @Slot(SlotKind.tp_descr_get)

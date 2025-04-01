@@ -1092,7 +1092,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isclose", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2, varArgsMarker = true, keywordOnlyNames = {"rel_tol", "abs_tol"})
+    @Builtin(name = "isclose", minNumOfPositionalArgs = 2, parameterNames = {"a", "b"}, keywordOnlyNames = {"rel_tol", "abs_tol"})
     @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory

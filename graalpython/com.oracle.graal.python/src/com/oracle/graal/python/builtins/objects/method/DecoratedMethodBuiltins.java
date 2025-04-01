@@ -49,7 +49,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ISABSTRACTMETHOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISABSTRACTMETHOD__;
 
@@ -86,42 +85,24 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PClassmethod})
 public final class DecoratedMethodBuiltins extends PythonBuiltins {
 
+    static void wraps(VirtualFrame frame, PDecoratedMethod self, Object callable, Node inliningTarget, PyObjectLookupAttr lookup, PyObjectSetAttr setAttr) {
+        copyAttr(frame, inliningTarget, callable, self, T___MODULE__, lookup, setAttr);
+        copyAttr(frame, inliningTarget, callable, self, T___NAME__, lookup, setAttr);
+        copyAttr(frame, inliningTarget, callable, self, T___QUALNAME__, lookup, setAttr);
+        copyAttr(frame, inliningTarget, callable, self, T___DOC__, lookup, setAttr);
+        copyAttr(frame, inliningTarget, callable, self, T___ANNOTATIONS__, lookup, setAttr);
+    }
+
+    private static void copyAttr(VirtualFrame frame, Node inliningTarget, Object wrapped, Object wrapper, TruffleString name, PyObjectLookupAttr lookup, PyObjectSetAttr set) {
+        Object attr = lookup.execute(frame, inliningTarget, wrapped, name);
+        if (attr != PNone.NO_VALUE) {
+            set.execute(frame, inliningTarget, wrapper, name, attr);
+        }
+    }
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return DecoratedMethodBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class InitNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        protected PNone init(VirtualFrame frame, PDecoratedMethod self, Object callable,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookupModule,
-                        @Cached PyObjectSetAttr setModule,
-                        @Cached PyObjectLookupAttr lookupName,
-                        @Cached PyObjectSetAttr setName,
-                        @Cached PyObjectLookupAttr lookupQualname,
-                        @Cached PyObjectSetAttr setQualname,
-                        @Cached PyObjectLookupAttr lookupDoc,
-                        @Cached PyObjectSetAttr setDoc,
-                        @Cached PyObjectLookupAttr lookupAnnotations,
-                        @Cached PyObjectSetAttr setAnnotations) {
-            self.setCallable(callable);
-            copyAttr(frame, inliningTarget, callable, self, T___MODULE__, lookupModule, setModule);
-            copyAttr(frame, inliningTarget, callable, self, T___NAME__, lookupName, setName);
-            copyAttr(frame, inliningTarget, callable, self, T___QUALNAME__, lookupQualname, setQualname);
-            copyAttr(frame, inliningTarget, callable, self, T___DOC__, lookupDoc, setDoc);
-            copyAttr(frame, inliningTarget, callable, self, T___ANNOTATIONS__, lookupAnnotations, setAnnotations);
-            return PNone.NONE;
-        }
-
-        private static void copyAttr(VirtualFrame frame, Node inliningTarget, Object wrapped, Object wrapper, TruffleString name, PyObjectLookupAttr lookup, PyObjectSetAttr set) {
-            Object attr = lookup.execute(frame, inliningTarget, wrapped, name);
-            if (attr != PNone.NO_VALUE) {
-                set.execute(frame, inliningTarget, wrapper, name, attr);
-            }
-        }
     }
 
     @Builtin(name = J___FUNC__, minNumOfPositionalArgs = 1, isGetter = true)

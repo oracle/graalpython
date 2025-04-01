@@ -154,7 +154,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
     }
 
     // methods
-    @Builtin(name = "dump", minNumOfPositionalArgs = 3, declaresExplicitSelf = true, varArgsMarker = true, //
+    @Builtin(name = "dump", minNumOfPositionalArgs = 3, declaresExplicitSelf = true, //
                     parameterNames = {"$self", "obj", "file", "protocol"}, //
                     keywordOnlyNames = {"fix_imports", "buffer_callback"})
     @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = J_DEFAULT_PICKLE_PROTOCOL, useDefaultForNone = true)
@@ -184,7 +184,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dumps", minNumOfPositionalArgs = 2, declaresExplicitSelf = true, varArgsMarker = true, //
+    @Builtin(name = "dumps", minNumOfPositionalArgs = 2, declaresExplicitSelf = true, //
                     parameterNames = {"$self", "obj", "protocol"}, //
                     keywordOnlyNames = {"fix_imports", "buffer_callback"})
     @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = J_DEFAULT_PICKLE_PROTOCOL, useDefaultForNone = true)
@@ -210,7 +210,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "load", minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"$self", "file"}, varArgsMarker = true, keywordOnlyNames = {"fix_imports", "encoding", "errors",
+    @Builtin(name = "load", minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"$self", "file"}, keywordOnlyNames = {"fix_imports", "encoding", "errors",
                     "buffers"})
     @ArgumentClinic(name = "fix_imports", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true")
     @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_ASCII_UPPERCASE")
@@ -239,7 +239,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "loads", minNumOfPositionalArgs = 2, declaresExplicitSelf = true, varArgsMarker = true, //
+    @Builtin(name = "loads", minNumOfPositionalArgs = 2, declaresExplicitSelf = true, //
                     parameterNames = {"$self", "data"}, //
                     keywordOnlyNames = {"fix_imports", "encoding", "errors", "buffers"})
     @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)

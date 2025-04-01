@@ -60,7 +60,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MISSING__;
@@ -147,7 +146,6 @@ public enum SpecialMethodSlot {
     ANext(T___ANEXT__, AM_ANEXT),
 
     New(T___NEW__, NO_BUILTIN_DESCRIPTORS),
-    Init(T___INIT__, NO_BUILTIN_DESCRIPTORS),
     SetName(T___SET_NAME__, NO_BUILTIN_DESCRIPTORS),
     InstanceCheck(T___INSTANCECHECK__),
     Subclasscheck(T___SUBCLASSCHECK__),
@@ -717,9 +715,6 @@ public enum SpecialMethodSlot {
                 }
                 break;
             case 'i' * 26 + 'n':    // in
-                if (eqNode.execute(name, T___INIT__, TS_ENCODING)) {
-                    return Init;
-                }
                 if (eqNode.execute(name, T___INSTANCECHECK__, TS_ENCODING)) {
                     return InstanceCheck;
                 }

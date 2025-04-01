@@ -42,10 +42,11 @@ package com.oracle.graal.python.builtins.objects.thread;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInit.CallSlotTpInitNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -61,18 +62,20 @@ public abstract class ThreadLocalNodes {
         public abstract PDict execute(VirtualFrame frame, PThreadLocal self);
 
         @Specialization
-        PDict get(VirtualFrame frame, PThreadLocal self,
+        static PDict get(VirtualFrame frame, PThreadLocal self,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedBranchProfile create,
-                        @Cached PyObjectLookupAttr lookup,
-                        @Cached CallNode callNode) {
+                        @Cached GetObjectSlotsNode getSlots,
+                        @Cached CallSlotTpInitNode callInit) {
             PDict dict = self.getThreadLocalDict();
             if (dict == null) {
                 create.enter(inliningTarget);
                 dict = PFactory.createDict(PythonLanguage.get(inliningTarget));
                 self.setThreadLocalDict(dict);
-                Object initMethod = lookup.execute(frame, inliningTarget, self, SpecialMethodNames.T___INIT__);
-                callNode.execute(frame, initMethod, self.getArgs(), self.getKeywords());
+                TpSlots slots = getSlots.execute(inliningTarget, self);
+                if (slots.tp_init() != ObjectBuiltins.SLOTS.tp_init()) {
+                    callInit.execute(frame, inliningTarget, slots.tp_init(), self, self.getArgs(), self.getKeywords());
+                }
             }
             return dict;
         }

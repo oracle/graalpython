@@ -74,7 +74,7 @@ import com.oracle.graal.python.lib.PyNumberPowerNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -539,11 +539,11 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPythonBuiltinClass(cl)")
-        Object fromhexO(Object cl, TruffleString arg,
-                        @Cached("create(T___CALL__)") LookupAndCallVarargsNode constr,
+        Object fromhexO(VirtualFrame frame, Object cl, TruffleString arg,
+                        @Cached CallNode callNode,
                         @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
             double value = fromHex(toJavaStringNode.execute(arg));
-            return constr.execute(null, cl, new Object[]{cl, value});
+            return callNode.execute(frame, cl, value);
         }
 
         @Fallback

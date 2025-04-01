@@ -67,7 +67,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_UNINIT;
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_S_OBJECT_IS_BEING_GARBAGE_COLLECTED;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -75,10 +74,14 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -105,12 +108,15 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 @CoreFunctions(extendClasses = PBufferedRWPair)
 public final class BufferedRWPairBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = BufferedRWPairBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BufferedRWPairBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 3, parameterNames = {"$self", "reader", "writer", "buffer_size"})
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(name = "BufferedRWPair", minNumOfPositionalArgs = 3, parameterNames = {"$self", "reader", "writer", "buffer_size"})
     @ArgumentClinic(name = "buffer_size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonQuaternaryClinicBuiltinNode {

@@ -83,7 +83,7 @@ public abstract class GraalHPyObjectBuiltins {
         private static final TruffleString KW_SUPERCONS = tsLiteral("$supercons");
         private static final TruffleString[] KEYWORDS_HIDDEN_SUPERCONS = {KW_SUPERCONS};
 
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, tsArray("self"), KEYWORDS_HIDDEN_SUPERCONS, false);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, tsArray("self"), KEYWORDS_HIDDEN_SUPERCONS, false);
 
         private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(HPyObjectNewNode.class);
 

@@ -52,7 +52,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.DEQUE_MUTATED_DURING_R
 import static com.oracle.graal.python.nodes.ErrorMessages.DEQUE_REMOVE_X_NOT_IN_DEQUE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_BRACKETS;
@@ -70,6 +69,7 @@ import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -150,7 +150,8 @@ public final class DequeBuiltins extends PythonBuiltins {
     }
 
     // deque.__init__(self, [iterable, [maxlen]])
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "iterable", "maxlen"})
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(name = "deque", minNumOfPositionalArgs = 1, parameterNames = {"$self", "iterable", "maxlen"})
     @GenerateNodeFactory
     public abstract static class DequeInitNode extends PythonTernaryBuiltinNode {
 

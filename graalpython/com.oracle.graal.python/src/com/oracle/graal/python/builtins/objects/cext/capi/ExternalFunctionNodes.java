@@ -150,6 +150,9 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.InlineSupport.InlineTarget;
+import com.oracle.truffle.api.dsl.InlineSupport.RequiredField;
+import com.oracle.truffle.api.dsl.InlineSupport.StateField;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
@@ -786,11 +789,11 @@ public abstract class ExternalFunctionNodes {
     }
 
     private static Signature createSignature(boolean takesVarKeywordArgs, int varArgIndex, TruffleString[] parameters, boolean checkEnclosingType, boolean hidden) {
-        return new Signature(-1, takesVarKeywordArgs, varArgIndex, false, parameters, KEYWORDS_HIDDEN_CALLABLE, checkEnclosingType, T_EMPTY_STRING, hidden);
+        return new Signature(-1, takesVarKeywordArgs, varArgIndex, parameters, KEYWORDS_HIDDEN_CALLABLE, checkEnclosingType, T_EMPTY_STRING, hidden);
     }
 
     private static Signature createSignatureWithClosure(boolean takesVarKeywordArgs, int varArgIndex, TruffleString[] parameters, boolean checkEnclosingType, boolean hidden) {
-        return new Signature(-1, takesVarKeywordArgs, varArgIndex, false, parameters, KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE, checkEnclosingType, T_EMPTY_STRING, hidden);
+        return new Signature(-1, takesVarKeywordArgs, varArgIndex, parameters, KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE, checkEnclosingType, T_EMPTY_STRING, hidden);
     }
 
     static final class MethDirectRoot extends MethodDescriptorRoot {
@@ -2142,6 +2145,52 @@ public abstract class ExternalFunctionNodes {
     }
 
     /**
+     * An inlined node-like object for keeping track of eager native allocation state bit. Should be
+     * {@code @Cached} and passed into
+     * {@link CreateArgsTupleNode#execute(Node, PythonLanguage, Object[], EagerTupleState)}. Then
+     * the {@link #report(Node, PTuple)} method should be called with the tuple after the native
+     * call returns.
+     */
+    public static final class EagerTupleState {
+        private final StateField state;
+
+        private static final EagerTupleState UNCACHED = new EagerTupleState();
+
+        private EagerTupleState() {
+            this.state = null;
+        }
+
+        private EagerTupleState(InlineTarget target) {
+            this.state = target.getState(0, 1);
+        }
+
+        public boolean isEager(Node inliningTarget) {
+            if (state == null) {
+                return false;
+            }
+            return state.get(inliningTarget) != 0;
+        }
+
+        public void report(Node inliningTarget, PTuple tuple) {
+            if (state != null) {
+                if (!isEager(inliningTarget) && tuple.getSequenceStorage() instanceof NativeSequenceStorage) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    state.set(inliningTarget, 1);
+                }
+            }
+        }
+
+        public static EagerTupleState inline(
+                        @RequiredField(value = StateField.class, bits = 1) InlineTarget target) {
+            return new EagerTupleState(target);
+        }
+
+        public static EagerTupleState getUncached() {
+            return UNCACHED;
+        }
+    }
+
+    /**
      * We need to inflate all primitives in order to avoid memory leaks. Explanation: Primitives
      * would currently be wrapped into a PrimitiveNativeWrapper. If any of those will receive a
      * toNative message, the managed code will be the only owner of those wrappers. But we will
@@ -2150,8 +2199,13 @@ public abstract class ExternalFunctionNodes {
      * arguments after the call returned.
      */
     @GenerateInline(false)
-    abstract static class CreateArgsTupleNode extends Node {
+    @GenerateUncached
+    public abstract static class CreateArgsTupleNode extends Node {
         public abstract PTuple execute(PythonLanguage language, Object[] args, boolean eagerNative);
+
+        public final PTuple execute(Node inliningTarget, PythonLanguage language, Object[] args, EagerTupleState state) {
+            return execute(language, args, state.isEager(inliningTarget));
+        }
 
         @Specialization(guards = {"args.length == cachedLen", "cachedLen <= 8", "!eagerNative"}, limit = "1")
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
@@ -2249,6 +2303,7 @@ public abstract class ExternalFunctionNodes {
      * reference is owned by managed code only.
      */
     @GenerateInline(false)
+    @GenerateUncached
     abstract static class MaterializePrimitiveNode extends Node {
 
         public abstract Object execute(PythonLanguage language, Object object);

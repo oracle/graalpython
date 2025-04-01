@@ -464,7 +464,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isCSVDialect(dialectObj)", "!isPythonClass(dialectObj)", "!isString(dialectObj)", "!isPNone(dialectObj)"})
-        static Object doGeneric(VirtualFrame frame, PythonBuiltinClassType cls, Object dialectObj, Object delimiterObj, Object doublequoteObj, Object escapecharObj, Object lineterminatorObj,
+        static Object doGeneric(VirtualFrame frame, Object cls, Object dialectObj, Object delimiterObj, Object doublequoteObj, Object escapecharObj, Object lineterminatorObj,
                         Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PyObjectLookupAttr getFirstAttributesNode,
@@ -492,7 +492,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             return dialect instanceof CSVDialect;
         }
 
-        private static Object createCSVDialect(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType cls, Object delimiterObj, Object doublequoteObj, Object escapecharObj,
+        private static Object createCSVDialect(VirtualFrame frame, Node inliningTarget, Object cls, Object delimiterObj, Object doublequoteObj, Object escapecharObj,
                         Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
                         PyObjectIsTrueNode isTrueNode, PyLongCheckExactNode pyLongCheckExactNode, PyLongAsIntNode pyLongAsIntNode, PRaiseNode raiseNode) {
             TruffleString delimiter = getChar(inliningTarget, T_ATTR_DELIMITER, delimiterObj, T_COMMA, false);
@@ -510,7 +510,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object createCSVDialect(Node raisingNode, PythonBuiltinClassType cls, TruffleString delimiter, boolean doubleQuote, TruffleString escapeChar, TruffleString lineTerminator,
+        private static Object createCSVDialect(Node raisingNode, Object cls, TruffleString delimiter, boolean doubleQuote, TruffleString escapeChar, TruffleString lineTerminator,
                         TruffleString quoteChar, QuoteStyle quoting, boolean skipInitialSpace, boolean strict) {
             if (TruffleString.EqualNode.getUncached().execute(delimiter, T_NOT_SET, TS_ENCODING)) {
                 throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.DELIMITER_MUST_BE_ONE_CHAR_STRING);

@@ -59,10 +59,13 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -116,9 +119,18 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ThreadLocalNode extends PythonBuiltinNode {
         @Specialization
-        PThreadLocal construct(Object cls, Object[] args, PKeyword[] keywordArgs,
+        static PThreadLocal construct(Object cls, Object[] args, PKeyword[] keywordArgs,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
+                        @Cached GetCachedTpSlotsNode getSlots,
+                        @Cached PRaiseNode raiseNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            if (args.length != 0 || keywordArgs.length != 0) {
+                TpSlots slots = getSlots.execute(inliningTarget, cls);
+                if (slots.tp_init() == ObjectBuiltins.SLOTS.tp_init()) {
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.INITIALIZATION_ARGUMENTS_ARE_NOT_SUPPORTED);
+                }
+            }
             return PFactory.createThreadLocal(language, cls, getInstanceShape.execute(cls), args, keywordArgs);
         }
     }

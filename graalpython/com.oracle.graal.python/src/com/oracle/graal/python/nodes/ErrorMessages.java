@@ -177,6 +177,7 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_CONVERT_S_TO_INT_RATIO = tsLiteral("cannot convert %s to integer ratio");
     public static final TruffleString CANNOT_CREATE_CALL_TARGET = tsLiteral("cannot create a call target from the code object: %p");
     public static final TruffleString CANNOT_CREATE_INSTANCES = tsLiteral("cannot create '%s' instances");
+    public static final TruffleString CANNOT_CREATE_N_INSTANCES = tsLiteral("cannot create '%N' instances");
     public static final TruffleString CANNOT_CREATE_WEAK_REFERENCE_TO = tsLiteral("cannot create weak reference to '%p' object");
     public static final TruffleString CANNOT_DELETE_ATTRIBUTE = tsLiteral("can't delete %s.%s");
     public static final TruffleString CANNOT_DELETE_MEMORY = tsLiteral("cannot delete memory");
@@ -383,6 +384,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D = tsLiteral("index out of bounds on dimension %d");
     public static final TruffleString INDEX_OUT_OF_RANGE = tsLiteral("index out of range");
     public static final TruffleString INDEX_RETURNED_NON_INT = tsLiteral("__index__ returned non-int (type %p)");
+    public static final TruffleString INITIALIZATION_ARGUMENTS_ARE_NOT_SUPPORTED = tsLiteral("Initialization arguments are not supported");
     public static final TruffleString INPUT_TOO_LONG = tsLiteral("input too long");
     public static final TruffleString INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE = tsLiteral("instance exception may not have a separate value");
     public static final TruffleString INT_CANT_CONVERT_STRING_WITH_EXPL_BASE = tsLiteral("int() can't convert non-string with explicit base");

@@ -113,7 +113,15 @@ import java.util.stream.Collectors;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.builtins.modules.lsprof.ProfilerBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ast.AstBuiltins;
+import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
+import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteIncrementalDecoderBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteIncrementalEncoderBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteStreamReaderBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteStreamWriterBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CArgObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataBuiltins;
@@ -125,17 +133,27 @@ import com.oracle.graal.python.builtins.modules.ctypes.PyCPointerBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.PyCStructTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.SimpleCDataBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.StructureBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.KeyWrapperBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.LruCacheWrapperBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.PartialBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.HashObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOMixinBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedRWPairBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedRandomBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedReaderMixinBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedWriterBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BytesIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.FileIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins;
+import com.oracle.graal.python.builtins.modules.io.IncrementalNewlineDecoderBuiltins;
 import com.oracle.graal.python.builtins.modules.io.StringIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperBuiltins;
+import com.oracle.graal.python.builtins.modules.lzma.LZMACompressorBuiltins;
+import com.oracle.graal.python.builtins.modules.lzma.LZMADecompressorBuiltins;
+import com.oracle.graal.python.builtins.modules.pickle.PicklerBuiltins;
+import com.oracle.graal.python.builtins.modules.pickle.UnpicklerBuiltins;
 import com.oracle.graal.python.builtins.objects.NoneBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
@@ -166,7 +184,9 @@ import com.oracle.graal.python.builtins.objects.exception.BaseExceptionGroupBuil
 import com.oracle.graal.python.builtins.objects.exception.ImportErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.KeyErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.UnicodeDecodeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.UnicodeTranslateErrorBuiltins;
@@ -206,6 +226,7 @@ import com.oracle.graal.python.builtins.objects.itertools.RepeatBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.StarmapBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TakewhileBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ZipLongestBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
@@ -376,13 +397,13 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PInstancemethod("instancemethod", PythonObject, Flags.PUBLIC_BASE_WDICT, InstancemethodBuiltins.SLOTS),
     PScandirIterator("ScandirIterator", PythonObject, J_POSIX, Flags.PRIVATE_DERIVED_WODICT, ScandirIteratorBuiltins.SLOTS),
     PDirEntry("DirEntry", PythonObject, J_POSIX, Flags.PUBLIC_DERIVED_WODICT, DirEntryBuiltins.SLOTS),
-    LsprofProfiler("Profiler", PythonObject, "_lsprof"),
+    LsprofProfiler("Profiler", PythonObject, "_lsprof", ProfilerBuiltins.SLOTS),
     PStruct("Struct", PythonObject, J__STRUCT),
     PStructUnpackIterator("unpack_iterator", PythonObject, J__STRUCT, StructUnpackIteratorBuiltins.SLOTS),
-    Pickler("Pickler", PythonObject, "_pickle"),
+    Pickler("Pickler", PythonObject, "_pickle", PicklerBuiltins.SLOTS),
     PicklerMemoProxy("PicklerMemoProxy", PythonObject, "_pickle"),
     UnpicklerMemoProxy("UnpicklerMemoProxy", PythonObject, "_pickle"),
-    Unpickler("Unpickler", PythonObject, "_pickle"),
+    Unpickler("Unpickler", PythonObject, "_pickle", UnpicklerBuiltins.SLOTS),
     PickleBuffer("PickleBuffer", PythonObject, "_pickle"),
 
     // Errors and exceptions:
@@ -390,7 +411,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // everything after BaseException is considered to be an exception
     PBaseException("BaseException", PythonObject, J_BUILTINS, Flags.EXCEPTION, BaseExceptionBuiltins.SLOTS),
     PBaseExceptionGroup("BaseExceptionGroup", PBaseException, J_BUILTINS, Flags.EXCEPTION, BaseExceptionGroupBuiltins.SLOTS),
-    SystemExit("SystemExit", PBaseException, J_BUILTINS, Flags.EXCEPTION),
+    SystemExit("SystemExit", PBaseException, J_BUILTINS, Flags.EXCEPTION, SystemExitBuiltins.SLOTS),
     KeyboardInterrupt("KeyboardInterrupt", PBaseException, J_BUILTINS, Flags.EXCEPTION),
     GeneratorExit("GeneratorExit", PBaseException, J_BUILTINS, Flags.EXCEPTION),
     Exception("Exception", PBaseException, J_BUILTINS, Flags.EXCEPTION),
@@ -403,7 +424,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     SystemError("SystemError", Exception, J_BUILTINS, Flags.EXCEPTION),
     TypeError("TypeError", Exception, J_BUILTINS, Flags.EXCEPTION),
     ValueError("ValueError", Exception, J_BUILTINS, Flags.EXCEPTION),
-    StopIteration("StopIteration", Exception, J_BUILTINS, Flags.EXCEPTION),
+    StopIteration("StopIteration", Exception, J_BUILTINS, Flags.EXCEPTION, StopIterationBuiltins.SLOTS),
     StopAsyncIteration("StopAsyncIteration", Exception, J_BUILTINS, Flags.EXCEPTION),
     ArithmeticError("ArithmeticError", Exception, J_BUILTINS, Flags.EXCEPTION),
     FloatingPointError("FloatingPointError", ArithmeticError, J_BUILTINS, Flags.EXCEPTION),
@@ -498,12 +519,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
     ForeignIterable("ForeignIterable", ForeignObject, J_POLYGLOT, J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, ForeignIterableBuiltins.SLOTS),
 
     // bz2
-    BZ2Compressor("BZ2Compressor", PythonObject, "_bz2"),
-    BZ2Decompressor("BZ2Decompressor", PythonObject, "_bz2"),
+    BZ2Compressor("BZ2Compressor", PythonObject, "_bz2", BZ2CompressorBuiltins.SLOTS),
+    BZ2Decompressor("BZ2Decompressor", PythonObject, "_bz2", BZ2DecompressorBuiltins.SLOTS),
 
     // lzma
-    PLZMACompressor("LZMACompressor", PythonObject, "_lzma"),
-    PLZMADecompressor("LZMADecompressor", PythonObject, "_lzma"),
+    PLZMACompressor("LZMACompressor", PythonObject, "_lzma", LZMACompressorBuiltins.SLOTS),
+    PLZMADecompressor("LZMADecompressor", PythonObject, "_lzma", LZMADecompressorBuiltins.SLOTS),
 
     // zlib
     ZlibCompress("Compress", PythonObject, "zlib"),
@@ -514,13 +535,13 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PRawIOBase("_RawIOBase", PIOBase, "_io", IOBaseBuiltins.SLOTS),
     PTextIOBase("_TextIOBase", PIOBase, "_io", IOBaseBuiltins.SLOTS),
     PBufferedIOBase("_BufferedIOBase", PIOBase, "_io", IOBaseBuiltins.SLOTS),
-    PBufferedReader("BufferedReader", PBufferedIOBase, "_io", Flags.PUBLIC_BASE_WDICT, TpSlots.merge(BufferedReaderMixinBuiltins.SLOTS, BufferedIOMixinBuiltins.SLOTS)),
-    PBufferedWriter("BufferedWriter", PBufferedIOBase, "_io", Flags.PUBLIC_BASE_WDICT, BufferedIOMixinBuiltins.SLOTS),
-    PBufferedRWPair("BufferedRWPair", PBufferedIOBase, "_io", Flags.PUBLIC_BASE_WDICT),
-    PBufferedRandom("BufferedRandom", PBufferedIOBase, "_io", Flags.PUBLIC_BASE_WDICT, TpSlots.merge(BufferedReaderMixinBuiltins.SLOTS, BufferedIOMixinBuiltins.SLOTS)),
+    PBufferedReader("BufferedReader", PBufferedIOBase, "_io", Flags.PUBLIC_BASE_WDICT, TpSlots.merge(BufferedReaderMixinBuiltins.SLOTS, BufferedIOMixinBuiltins.SLOTS, BufferedReaderBuiltins.SLOTS)),
+    PBufferedWriter("BufferedWriter", PBufferedIOBase, "_io", Flags.PUBLIC_BASE_WDICT, TpSlots.merge(BufferedIOMixinBuiltins.SLOTS, BufferedWriterBuiltins.SLOTS)),
+    PBufferedRWPair("BufferedRWPair", PBufferedIOBase, "_io", Flags.PUBLIC_BASE_WDICT, BufferedRWPairBuiltins.SLOTS),
+    PBufferedRandom("BufferedRandom", PBufferedIOBase, "_io", Flags.PUBLIC_BASE_WDICT, TpSlots.merge(BufferedReaderMixinBuiltins.SLOTS, BufferedIOMixinBuiltins.SLOTS, BufferedRandomBuiltins.SLOTS)),
     PFileIO("FileIO", PRawIOBase, "_io", Flags.PUBLIC_BASE_WDICT, FileIOBuiltins.SLOTS),
     PTextIOWrapper("TextIOWrapper", PTextIOBase, "_io", Flags.PUBLIC_BASE_WDICT, TextIOWrapperBuiltins.SLOTS),
-    PIncrementalNewlineDecoder("IncrementalNewlineDecoder", PythonObject, "_io", Flags.PUBLIC_BASE_WODICT),
+    PIncrementalNewlineDecoder("IncrementalNewlineDecoder", PythonObject, "_io", Flags.PUBLIC_BASE_WODICT, IncrementalNewlineDecoderBuiltins.SLOTS),
     PStringIO("StringIO", PTextIOBase, "_io", Flags.PUBLIC_BASE_WDICT, StringIOBuiltins.SLOTS),
     PBytesIO("BytesIO", PBufferedIOBase, "_io", Flags.PUBLIC_BASE_WDICT, BytesIOBuiltins.SLOTS),
     PBytesIOBuf("_BytesIOBuffer", PythonObject, "_io", Flags.PRIVATE_BASE_WODICT),
@@ -550,7 +571,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     // itertools
     PTee("_tee", PythonObject, "itertools", Flags.PUBLIC_DERIVED_WODICT, TeeBuiltins.SLOTS),
-    PTeeDataObject("_tee_dataobject", PythonObject, "itertools", Flags.PUBLIC_DERIVED_WODICT),
+    PTeeDataObject("_tee_dataobject", PythonObject, "itertools", Flags.PUBLIC_DERIVED_WODICT, TeeDataObjectBuiltins.SLOTS),
     PAccumulate("accumulate", PythonObject, "itertools", AccumulateBuiltins.SLOTS),
     PCombinations("combinations", PythonObject, "itertools", CombinationsBuiltins.SLOTS),
     PCombinationsWithReplacement("combinations_with_replacement", PythonObject, "itertools", CombinationsBuiltins.SLOTS),
@@ -604,7 +625,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     UnsupportedDigestmodError("UnsupportedDigestmodError", ValueError, "_hashlib", Flags.EXCEPTION),
 
     // _ast (rest of the classes are not builtin, they are generated in AstModuleBuiltins)
-    AST("AST", PythonObject, "_ast", "ast", Flags.PUBLIC_BASE_WDICT),
+    AST("AST", PythonObject, "_ast", "ast", Flags.PUBLIC_BASE_WDICT, AstBuiltins.SLOTS),
 
     // _ctype
     CArgObject("CArgObject", PythonObject, Flags.PUBLIC_BASE_WODICT, CArgObjectBuiltins.SLOTS),
@@ -624,8 +645,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PyCSimpleType("PyCSimpleType", PythonClass, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCSIMPLETYPE_M_FLAGS, CDataTypeSequenceBuiltins.SLOTS),
     PyCFuncPtrType("PyCFuncPtrType", PythonClass, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCFUNCPTRTYPE_M_FLAGS, CDataTypeSequenceBuiltins.SLOTS),
     PyCData("_CData", PythonObject, J__CTYPES, Flags.PUBLIC_BASE_WODICT, CDataBuiltins.SLOTS), /*- type = PyCStructType */
-    Structure("Structure", PyCData, J__CTYPES, Flags.PUBLIC_BASE_WODICT), /*- type = PyCStructType */
-    Union("Union", PyCData, J__CTYPES, Flags.PUBLIC_BASE_WODICT), /*- type = UnionType */
+    Structure("Structure", PyCData, J__CTYPES, Flags.PUBLIC_BASE_WODICT, StructureBuiltins.SLOTS), /*- type = PyCStructType */
+    Union("Union", PyCData, J__CTYPES, Flags.PUBLIC_BASE_WODICT, StructureBuiltins.SLOTS), /*- type = UnionType */
     PyCPointer("_Pointer", PyCData, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCPOINTER_M_FLAGS, PyCPointerBuiltins.SLOTS), /*- type = PyCPointerType */
     PyCArray("Array", PyCData, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCARRAY_M_FLAGS, PyCArrayBuiltins.SLOTS), /*- type = PyCArrayType */
     SimpleCData("_SimpleCData", PyCData, J__CTYPES, J__CTYPES, Flags.PUBLIC_BASE_WODICT, SIMPLECDATA_M_FLAGS, SimpleCDataBuiltins.SLOTS), /*- type = PyCStructType */
@@ -637,10 +658,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     // _multibytecodec
     MultibyteCodec("MultibyteCodec", PythonObject, "_multibytecodec", Flags.PUBLIC_BASE_WDICT),
-    MultibyteIncrementalEncoder("MultibyteIncrementalEncoder", PythonObject, "_multibytecodec", Flags.PUBLIC_BASE_WDICT),
-    MultibyteIncrementalDecoder("MultibyteIncrementalDecoder", PythonObject, "_multibytecodec", Flags.PUBLIC_BASE_WDICT),
-    MultibyteStreamReader("MultibyteStreamReader", PythonObject, "_multibytecodec", Flags.PUBLIC_BASE_WDICT),
-    MultibyteStreamWriter("MultibyteStreamWriter", PythonObject, "_multibytecodec", Flags.PUBLIC_BASE_WDICT),
+    MultibyteIncrementalEncoder("MultibyteIncrementalEncoder", PythonObject, "_multibytecodec", Flags.PUBLIC_BASE_WDICT, MultibyteIncrementalEncoderBuiltins.SLOTS),
+    MultibyteIncrementalDecoder("MultibyteIncrementalDecoder", PythonObject, "_multibytecodec", Flags.PUBLIC_BASE_WDICT, MultibyteIncrementalDecoderBuiltins.SLOTS),
+    MultibyteStreamReader("MultibyteStreamReader", PythonObject, "_multibytecodec", Flags.PUBLIC_BASE_WDICT, MultibyteStreamReaderBuiltins.SLOTS),
+    MultibyteStreamWriter("MultibyteStreamWriter", PythonObject, "_multibytecodec", Flags.PUBLIC_BASE_WDICT, MultibyteStreamWriterBuiltins.SLOTS),
 
     // contextvars
     ContextVarsToken("Token", PythonObject, J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT, TokenBuiltins.SLOTS),

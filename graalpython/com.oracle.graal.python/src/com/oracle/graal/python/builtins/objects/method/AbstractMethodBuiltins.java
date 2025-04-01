@@ -132,12 +132,6 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
             return callNode.execute(frame, self.getFunction(), PythonUtils.prependArgument(self.getSelf(), arguments), keywords);
         }
 
-        @Override
-        public Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            Object[] argsWithoutSelf = new Object[arguments.length - 1];
-            PythonUtils.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
-            return execute(frame, arguments[0], argsWithoutSelf, keywords);
-        }
     }
 
     @Builtin(name = J___SELF__, minNumOfPositionalArgs = 1, isGetter = true)

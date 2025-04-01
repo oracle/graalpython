@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -37,11 +37,10 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class Signature {
-    public static final Signature EMPTY = new Signature(-1, false, -1, false, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
+    public static final Signature EMPTY = new Signature(-1, false, -1, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
 
     private final int varArgIndex;
     private final int positionalOnlyArgIndex;
-    private final boolean isVarArgsMarker;
     private final boolean takesVarKeywordArgs;
     private final boolean checkEnclosingType;
     // See javadoc for isHidden
@@ -52,32 +51,31 @@ public final class Signature {
 
     private final TruffleString raiseErrorName;
 
-    public Signature(boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
+    public Signature(boolean takesVarKeywordArgs, int takesVarArgs,
                     TruffleString[] parameterIds, TruffleString[] keywordNames) {
-        this(-1, takesVarKeywordArgs, takesVarArgs, varArgsMarker, parameterIds, keywordNames);
+        this(-1, takesVarKeywordArgs, takesVarArgs, parameterIds, keywordNames);
     }
 
-    public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
+    public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs,
                     TruffleString[] parameterIds, TruffleString[] keywordNames) {
-        this(positionOnlyArgIndex, takesVarKeywordArgs, takesVarArgs, varArgsMarker, parameterIds, keywordNames, false);
+        this(positionOnlyArgIndex, takesVarKeywordArgs, takesVarArgs, parameterIds, keywordNames, false);
     }
 
-    public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
+    public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs,
                     TruffleString[] parameterIds, TruffleString[] keywordNames, boolean checkEnclosingType) {
-        this(positionOnlyArgIndex, takesVarKeywordArgs, takesVarArgs, varArgsMarker, parameterIds, keywordNames, checkEnclosingType, T_EMPTY_STRING);
+        this(positionOnlyArgIndex, takesVarKeywordArgs, takesVarArgs, parameterIds, keywordNames, checkEnclosingType, T_EMPTY_STRING);
     }
 
-    public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
+    public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs,
                     TruffleString[] parameterIds, TruffleString[] keywordNames, boolean checkEnclosingType, TruffleString raiseErrorName) {
-        this(positionOnlyArgIndex, takesVarKeywordArgs, takesVarArgs, varArgsMarker, parameterIds, keywordNames, checkEnclosingType, raiseErrorName, false);
+        this(positionOnlyArgIndex, takesVarKeywordArgs, takesVarArgs, parameterIds, keywordNames, checkEnclosingType, raiseErrorName, false);
     }
 
-    public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
+    public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs,
                     TruffleString[] parameterIds, TruffleString[] keywordNames, boolean checkEnclosingType, TruffleString raiseErrorName, boolean hidden) {
         this.positionalOnlyArgIndex = positionOnlyArgIndex;
         this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.varArgIndex = takesVarArgs;
-        this.isVarArgsMarker = varArgsMarker;
         this.positionalParameterNames = (parameterIds != null) ? parameterIds : PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
         this.keywordOnlyNames = (keywordNames != null) ? keywordNames : PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
         this.checkEnclosingType = checkEnclosingType;
@@ -86,7 +84,7 @@ public final class Signature {
     }
 
     public static Signature createVarArgsAndKwArgsOnly() {
-        return new Signature(-1, true, 0, false, null, null);
+        return new Signature(-1, true, 0, null, null);
     }
 
     public int getNumOfRequiredKeywords() {
@@ -106,16 +104,8 @@ public final class Signature {
         return positionalOnlyArgIndex;
     }
 
-    public int getVarargsIdx() {
-        return varArgIndex;
-    }
-
     public boolean takesVarArgs() {
         return varArgIndex != -1;
-    }
-
-    public boolean isVarArgsMarker() {
-        return isVarArgsMarker;
     }
 
     public boolean takesVarKeywordArgs() {
@@ -150,7 +140,7 @@ public final class Signature {
     }
 
     public boolean takesPositionalOnly() {
-        return !takesVarArgs() && !takesVarKeywordArgs && !isVarArgsMarker && keywordOnlyNames.length == 0;
+        return !takesVarArgs() && !takesVarKeywordArgs && keywordOnlyNames.length == 0;
     }
 
     public boolean takesNoArguments() {

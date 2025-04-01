@@ -43,35 +43,8 @@ package com.oracle.graal.python.nodes.function.builtins;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.ControlFlowException;
 
-/**
- * Subclasses must override {@link #varArgExecute(VirtualFrame, Object, Object[], PKeyword[])} to
- * call the e.g. {@link #execute(VirtualFrame, Object, Object[], PKeyword[])} or whatever is right
- * for them, otherwise they will never be on the direct call path.
- */
 public abstract class PythonVarargsBuiltinNode extends PythonBuiltinBaseNode {
 
-    public static final class VarargsBuiltinDirectInvocationNotSupported extends ControlFlowException {
-        public static final VarargsBuiltinDirectInvocationNotSupported INSTANCE = new VarargsBuiltinDirectInvocationNotSupported();
-        private static final long serialVersionUID = 1L;
-
-        private VarargsBuiltinDirectInvocationNotSupported() {
-        }
-    }
-
-    /**
-     * {@code frame} may be null. This function must not be called "execute"
-     */
-    @SuppressWarnings("unused")
-    public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords)
-                    throws VarargsBuiltinDirectInvocationNotSupported {
-        throw VarargsBuiltinDirectInvocationNotSupported.INSTANCE;
-    }
-
-    /**
-     * {@code frame} may be null. Most varargs invocations will be (self, *args, *kwargs), so this
-     * execute method won't hurt.
-     */
     public abstract Object execute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords);
 }

@@ -50,7 +50,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.COMPRESSOR_HAS_BEEN_FL
 import static com.oracle.graal.python.nodes.ErrorMessages.INTEGRITY_CHECKS_ONLY_SUPPORTED_BY;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_SPECIFY_FILTERS;
 import static com.oracle.graal.python.nodes.ErrorMessages.REPEATED_CALL_TO_FLUSH;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
@@ -59,6 +58,9 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -69,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -97,12 +100,15 @@ import com.oracle.truffle.api.nodes.Node;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PLZMACompressor)
 public final class LZMACompressorBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = LZMACompressorBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return LZMACompressorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "format", "check", "preset", "filters"})
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(name = "LZMACompressor", minNumOfPositionalArgs = 1, parameterNames = {"$self", "format", "check", "preset", "filters"})
     @ArgumentClinic(name = "format", conversion = ClinicConversion.Int, defaultValue = "LZMAModuleBuiltins.FORMAT_XZ", useDefaultForNone = true)
     @ArgumentClinic(name = "check", conversion = ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ArgumentClinic(name = "preset", conversionClass = ExpectUINT32Node.class, defaultValue = "PNone.NO_VALUE")

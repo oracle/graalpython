@@ -599,7 +599,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
      * Python objects.
      */
     private static final class HPyNativeSpaceCleanerRootNode extends PRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("refs"), EMPTY_TRUFFLESTRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, tsArray("refs"), EMPTY_TRUFFLESTRING_ARRAY);
         private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(HPyNativeSpaceCleanerRootNode.class);
 
         @Child private GraalHPyCAccess.BulkFreeHandleReferencesNode callBulkFree;

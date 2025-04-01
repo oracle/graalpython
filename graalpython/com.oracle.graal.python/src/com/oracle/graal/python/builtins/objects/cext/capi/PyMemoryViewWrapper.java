@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_ADD;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemoryViewObject__exports;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemoryViewObject__flags;
@@ -59,8 +58,6 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.GetEl
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -91,9 +88,6 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
 
     @TruffleBoundary
     private static Object allocate(PMemoryView object) {
-        if (object.isReleased()) {
-            throw PRaiseNode.raiseStatic(null, ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
-        }
         GetElementPtrNode getElementNode = GetElementPtrNode.getUncached();
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
         CStructAccess.WriteLongNode writeI64Node = CStructAccess.WriteLongNode.getUncached();
@@ -115,31 +109,33 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
 
         Object view = getElementNode.getElementPtr(mem, CFields.PyMemoryViewObject__view);
 
-        Object buf = object.getBufferPointer();
-        if (buf == null) {
-            buf = PythonBufferAccessLibrary.getUncached().getNativePointer(object.getBuffer());
+        if (object.getBuffer() != null) {
+            Object buf = object.getBufferPointer();
             if (buf == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw shouldNotReachHere("Cannot convert managed object to native storage: " + object.getBuffer().getClass().getSimpleName());
-            }
-        }
-        if (object.getOffset() != 0) {
-            if (buf instanceof Long ptr) {
-                buf = ptr + object.getOffset();
-            } else {
-                InteropLibrary ptrLib = InteropLibrary.getUncached(buf);
-                if (ptrLib.isPointer(buf)) {
-                    try {
-                        buf = ptrLib.asPointer(buf) + object.getOffset();
-                    } catch (UnsupportedMessageException e) {
-                        throw CompilerDirectives.shouldNotReachHere(e);
-                    }
-                } else {
-                    buf = CExtNodes.PCallCapiFunction.callUncached(FUN_PTR_ADD, buf, (long) object.getOffset());
+                buf = PythonBufferAccessLibrary.getUncached().getNativePointer(object.getBuffer());
+                if (buf == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw shouldNotReachHere("Cannot convert managed object to native storage: " + object.getBuffer().getClass().getSimpleName());
                 }
             }
+            if (object.getOffset() != 0) {
+                if (buf instanceof Long ptr) {
+                    buf = ptr + object.getOffset();
+                } else {
+                    InteropLibrary ptrLib = InteropLibrary.getUncached(buf);
+                    if (ptrLib.isPointer(buf)) {
+                        try {
+                            buf = ptrLib.asPointer(buf) + object.getOffset();
+                        } catch (UnsupportedMessageException e) {
+                            throw CompilerDirectives.shouldNotReachHere(e);
+                        }
+                    } else {
+                        buf = CExtNodes.PCallCapiFunction.callUncached(FUN_PTR_ADD, buf, (long) object.getOffset());
+                    }
+                }
+            }
+            writePointerNode.write(view, CFields.Py_buffer__buf, buf);
         }
-        writePointerNode.write(view, CFields.Py_buffer__buf, buf);
 
         if (object.getOwner() != null) {
             writePointerNode.write(view, CFields.Py_buffer__obj, PythonToNativeNewRefNode.executeUncached(object.getOwner()));

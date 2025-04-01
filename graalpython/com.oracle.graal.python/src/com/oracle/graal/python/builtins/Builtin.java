@@ -63,8 +63,6 @@ public @interface Builtin {
 
     boolean takesVarArgs() default false;
 
-    boolean varArgsMarker() default false;
-
     boolean takesVarKeywordArgs() default false;
 
     String[] parameterNames() default {};
