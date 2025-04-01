@@ -90,9 +90,7 @@ To manage third-party Python packages, a [Python virtual environment](https://do
 Whether deployed in a virtual filesystem or an external directory, its contents are managed by the plugin based on the Python packages
 specified in the plugin configuration.
 
-## Python Dependency Management
-
-for Reproducible Builds
+## Python Dependency Management for Reproducible Builds
 
 In Python ecosystem, it is common that packages specify their dependencies as ranges rather than a fixed version.
 For example, package A depends on package B of any version higher or equal to 2.0.0 (denoted as `B>=2.0.0`).
