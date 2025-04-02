@@ -41,6 +41,8 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.PythonLanguage.J_GRAALPYTHON_ID;
+import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL;
+import static com.oracle.graal.python.PythonLanguage.RELEASE_SERIAL;
 import static com.oracle.graal.python.PythonLanguage.T_GRAALPYTHON_ID;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
@@ -515,7 +517,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         "-" + PythonLanguage.MAJOR + PythonLanguage.MINOR));
         ns.setAttribute(T_VERSION, graalpyVersionInfo);
         ns.setAttribute(T__MULTIARCH, gmultiarch);
-        ns.setAttribute(tsLiteral("hexversion"), PythonLanguage.GRAALVM_MAJOR << 16 | PythonLanguage.GRAALVM_MINOR << 8 | PythonLanguage.GRAALVM_MICRO);
+        ns.setAttribute(tsLiteral("hexversion"), PythonLanguage.GRAALVM_MAJOR << 24 | PythonLanguage.GRAALVM_MINOR << 16 | PythonLanguage.GRAALVM_MICRO << 8 | RELEASE_LEVEL << 4 | RELEASE_SERIAL);
         return ns;
     }
 
