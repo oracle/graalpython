@@ -69,7 +69,7 @@ public abstract class PyNumberInPlacePowerNode extends BinaryOpNode {
     }
 
     @Specialization
-    static Object doIt(VirtualFrame frame, Object v, Object w, Object z,
+    public static Object doIt(VirtualFrame frame, Object v, Object w, Object z,
                     @Bind Node inliningTarget,
                     @Cached CallTernaryIOpNode callTernaryOpNode,
                     @Cached PRaiseNode raiseNode) {

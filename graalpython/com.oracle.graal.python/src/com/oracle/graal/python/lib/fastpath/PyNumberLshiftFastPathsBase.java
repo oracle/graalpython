@@ -38,37 +38,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.lib;
+package com.oracle.graal.python.lib.fastpath;
 
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.InplaceSlot;
-import com.oracle.graal.python.lib.fastpath.PyNumberSubtractFastPathsBase;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.Specialization;
 
-@GenerateInline(false)
-@GenerateUncached
-public abstract class PyNumberInPlaceSubtractNode extends PyNumberSubtractFastPathsBase {
-    @Fallback
-    @InliningCutoff
-    public static Object doIt(VirtualFrame frame, Object v, Object w,
-                    @Bind Node inliningTarget,
-                    @Cached CallBinaryIOpNode callBinaryOpNode) {
-        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_SUBTRACT, "-=");
+/**
+ * Helper class with shared fast-paths. Must be public so that it is accessible by the Bytecode DSL
+ * generated code.
+ */
+@GenerateCached(false)
+public abstract class PyNumberLshiftFastPathsBase extends BinaryOpNode {
+
+    @Specialization(guards = {"right < 32", "right >= 0"}, rewriteOn = OverflowException.class)
+    public static int doII(int left, int right) throws OverflowException {
+        int result = left << right;
+        if (left != result >> right) {
+            throw OverflowException.INSTANCE;
+        }
+        return result;
     }
 
-    @NeverDefault
-    public static PyNumberInPlaceSubtractNode create() {
-        return PyNumberInPlaceSubtractNodeGen.create();
-    }
-
-    public static PyNumberInPlaceSubtractNode getUncached() {
-        return PyNumberInPlaceSubtractNodeGen.getUncached();
+    @Specialization(guards = {"right < 64", "right >= 0"}, rewriteOn = OverflowException.class)
+    public static long doLL(long left, long right) throws OverflowException {
+        long result = left << right;
+        if (left != result >> right) {
+            throw OverflowException.INSTANCE;
+        }
+        return result;
     }
 }

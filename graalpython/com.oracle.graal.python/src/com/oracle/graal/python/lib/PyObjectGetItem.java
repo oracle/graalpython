@@ -124,7 +124,7 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    abstract static class PyObjectGetItemGeneric extends PNodeWithContext {
+    public abstract static class PyObjectGetItemGeneric extends PNodeWithContext {
         public abstract Object execute(Frame frame, Node inliningTarget, Object object, TpSlots objectKlassSlots, Object key);
 
         @Specialization(guards = "slots.mp_subscript() != null")

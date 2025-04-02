@@ -49,44 +49,25 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
+import com.oracle.graal.python.lib.fastpath.PyNumberRshiftFastPathsBase;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@GenerateCached(false)
-@TypeSystemReference(PythonIntegerTypes.class)
-abstract class PyNumberRshiftBaseNode extends BinaryOpNode {
-
-    @Specialization(guards = {"right < 32", "right >= 0"})
-    public static int doIISmall(int left, int right) {
-        return left >> right;
-    }
-
-    @Specialization(guards = {"right < 64", "right >= 0"})
-    public static long doIISmall(long left, long right) {
-        return left >> right;
-    }
-}
-
 @GenerateInline(false)
 @GenerateUncached
-public abstract class PyNumberRshiftNode extends PyNumberRshiftBaseNode {
+public abstract class PyNumberRshiftNode extends PyNumberRshiftFastPathsBase {
 
     @Fallback
     public static Object doIt(VirtualFrame frame, Object v, Object w,

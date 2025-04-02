@@ -2496,7 +2496,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             while (loopProfile.profile(inliningTarget, !exhausted)) {
                 try {
                     Object next = nextNode.execute(frame, inliningTarget, iterator);
-                    acc = multiplyNode.execute(frame, inliningTarget, acc, next);
+                    acc = multiplyNode.execute(frame, acc, next);
                 } catch (IteratorExhausted e) {
                     exhausted = true;
                 }

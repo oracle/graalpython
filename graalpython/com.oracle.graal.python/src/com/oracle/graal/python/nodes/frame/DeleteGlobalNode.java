@@ -50,6 +50,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -58,6 +59,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 @SuppressWarnings("truffle-inlining")       // footprint reduction 52 -> 36
 public abstract class DeleteGlobalNode extends PNodeWithContext {
+    @NeverDefault
     public static DeleteGlobalNode create() {
         return DeleteGlobalNodeGen.create();
     }

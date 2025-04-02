@@ -52,6 +52,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false)
+
 @GenerateUncached
 public abstract class PyNumberMatrixMultiplyNode extends BinaryOpNode {
 

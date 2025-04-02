@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -59,23 +60,19 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@GenerateInline(inlineByDefault = true)
+@GenerateInline(false)
 @GenerateUncached
 public abstract class PyNumberPowerNode extends BinaryOpNode {
-
-    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w, Object z);
+    public abstract Object execute(VirtualFrame frame, Object v, Object w, Object z);
 
     @Override
     public final Object execute(VirtualFrame frame, Object left, Object right) {
-        return executeCached(frame, left, right, PNone.NONE);
-    }
-
-    public final Object executeCached(VirtualFrame frame, Object v, Object w, Object z) {
-        return execute(frame, this, v, w, z);
+        return execute(frame, left, right, PNone.NONE);
     }
 
     @Specialization
-    static Object doIt(VirtualFrame frame, Node inliningTarget, Object v, Object w, Object z,
+    public static Object doIt(VirtualFrame frame, Object v, Object w, Object z,
+                    @Bind Node inliningTarget,
                     @Cached GetClassNode getVClass,
                     @Cached GetClassNode getWClass,
                     @Cached GetCachedTpSlotsNode getVSlots,
