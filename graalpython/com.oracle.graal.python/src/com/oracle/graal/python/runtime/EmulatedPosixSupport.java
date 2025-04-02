@@ -210,7 +210,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import com.oracle.truffle.api.TruffleOptions;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.io.ProcessHandler.Redirect;
@@ -252,6 +251,7 @@ import com.oracle.truffle.api.TruffleFile.Attributes;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -1290,7 +1290,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     public Object[] uname(
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-        return new Object[]{getPythonOS().getName(), fromJavaStringNode.execute(getHostName(withoutIOSocket), TS_ENCODING),
+        return new Object[]{getPythonOS().getUname(), fromJavaStringNode.execute(getHostName(withoutIOSocket), TS_ENCODING),
                         fromJavaStringNode.execute(getOsVersion(), TS_ENCODING), T_EMPTY_STRING, PythonUtils.getPythonArch()};
     }
 

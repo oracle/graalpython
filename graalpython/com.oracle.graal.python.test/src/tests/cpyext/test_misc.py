@@ -359,14 +359,12 @@ def test_graalpy_version():
         {"get_version_num", (PyCFunction)get_version_num, METH_NOARGS | METH_STATIC, ""}
         ''',
     )
-    expected_version = __graalpython__.get_graalvm_version().removesuffix('-dev')
-    assert tester.get_version_str() == expected_version
-    parts = [int(v) for v in expected_version.split('.')] + [0]
-    expected_num = 0
-    for i in range(3):
-        expected_num <<= 8
-        expected_num |= parts[i]
-    assert tester.get_version_num() == expected_num
+    version = sys.implementation.version
+    assert tester.get_version_str() == f'{version.major}.{version.minor}.{version.micro}'
+    assert tester.get_version_num() == sys.implementation.hexversion
+    # This is an anti-backport trap. The commit that changed the hexversion format should not be backported because
+    # existing projects might already contain tests for the next feature release in the old format (pybind11 does)
+    assert version.major >= 25
 
 
 def test_unicode_docstring():
