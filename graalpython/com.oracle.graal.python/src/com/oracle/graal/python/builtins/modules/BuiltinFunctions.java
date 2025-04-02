@@ -2083,9 +2083,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         Object ternary(VirtualFrame frame, Object x, Object y, Object z,
-                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberPowerNode power) {
-            return power.execute(frame, inliningTarget, x, y, z);
+            return power.execute(frame, x, y, z);
         }
     }
 
@@ -2134,9 +2133,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         longResult = PythonUtils.addExact(longResult, next);
                     } catch (OverflowException e) {
                         overflowProfile.enter(inliningTarget);
-                        Object objectResult = addNode.execute(frame, inliningTarget, longResult, next);
+                        Object objectResult = addNode.execute(frame, longResult, next);
                         while (loopProfileGeneric.profile(inliningTarget, iterator.hasNext())) {
-                            objectResult = addNode.execute(frame, inliningTarget, objectResult, iterator.next());
+                            objectResult = addNode.execute(frame, objectResult, iterator.next());
                         }
                         return objectResult;
                     }
@@ -2158,9 +2157,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         longResult = PythonUtils.addExact(longResult, next);
                     } catch (OverflowException e) {
                         overflowProfile.enter(inliningTarget);
-                        Object objectResult = addNode.execute(frame, inliningTarget, longResult, next);
+                        Object objectResult = addNode.execute(frame, longResult, next);
                         while (loopProfileGeneric.profile(inliningTarget, iterator.hasNext())) {
-                            objectResult = addNode.execute(frame, inliningTarget, objectResult, iterator.next());
+                            objectResult = addNode.execute(frame, objectResult, iterator.next());
                         }
                         return objectResult;
                     }
@@ -2205,7 +2204,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 } catch (IteratorExhausted e) {
                     return start;
                 }
-                Object acc = addNode.execute(frame, inliningTarget, start, next);
+                Object acc = addNode.execute(frame, start, next);
                 /*
                  * We try to process integers/longs/doubles as long as we can. Then we always fall
                  * through to the generic path. `next` and `acc` are always properly set so that the
@@ -2268,7 +2267,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
                 boolean exhausted = false;
                 do {
-                    acc = addNode.execute(frame, inliningTarget, acc, next);
+                    acc = addNode.execute(frame, acc, next);
                     try {
                         next = nextNode.execute(frame, inliningTarget, iterator);
                     } catch (IteratorExhausted e) {

@@ -41,39 +41,20 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
-import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
+import com.oracle.graal.python.lib.fastpath.PyNumberRemainderFastPathsBase;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@GenerateCached(false)
-@TypeSystemReference(PythonIntegerTypes.class)
-abstract class PyNumberRemainderBaseNode extends BinaryOpNode {
-
-    @Specialization(guards = "right != 0")
-    static int doII(int left, int right) {
-        return Math.floorMod(left, right);
-    }
-
-    @Specialization(guards = "right != 0")
-    static long doLL(long left, long right) {
-        return Math.floorMod(left, right);
-    }
-}
-
 @GenerateInline(false)
 @GenerateUncached
-public abstract class PyNumberRemainderNode extends PyNumberRemainderBaseNode {
+public abstract class PyNumberRemainderNode extends PyNumberRemainderFastPathsBase {
 
     @Fallback
     @InliningCutoff

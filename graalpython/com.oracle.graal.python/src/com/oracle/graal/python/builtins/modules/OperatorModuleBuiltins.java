@@ -133,9 +133,8 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
     abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doObject(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberMultiplyNode mulNode) {
-            return mulNode.execute(frame, inliningTarget, left, right);
+            return mulNode.execute(frame, left, right);
         }
     }
 

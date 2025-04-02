@@ -101,10 +101,9 @@ public final class CountBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PCount self,
-                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberAddNode addNode) {
             Object cnt = self.getCnt();
-            self.setCnt(addNode.execute(frame, inliningTarget, self.getCnt(), self.getStep()));
+            self.setCnt(addNode.execute(frame, self.getCnt(), self.getStep()));
             return cnt;
         }
     }

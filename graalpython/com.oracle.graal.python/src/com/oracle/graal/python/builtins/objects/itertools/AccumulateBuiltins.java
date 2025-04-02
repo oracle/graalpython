@@ -123,7 +123,7 @@ public final class AccumulateBuiltins extends PythonBuiltins {
                 return value;
             }
             if (hasFuncProfile.profile(inliningTarget, self.getFunc() == null)) {
-                self.setTotal(addNode.execute(frame, inliningTarget, self.getTotal(), value));
+                self.setTotal(addNode.execute(frame, self.getTotal(), value));
             } else {
                 self.setTotal(callNode.execute(frame, self.getFunc(), self.getTotal(), value));
             }

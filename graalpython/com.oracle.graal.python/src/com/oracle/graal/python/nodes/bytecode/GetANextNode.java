@@ -59,7 +59,7 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
@@ -67,7 +67,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 @ImportStatic(SpecialMethodSlot.class)
 @GenerateInline(false) // used in bytecode root node
 public abstract class GetANextNode extends PNodeWithContext {
-    public abstract Object execute(Frame frame, Object receiver);
+    public abstract Object execute(VirtualFrame frame, Object receiver);
 
     public static GetANextNode getUncached() {
         return GetANextNodeGen.getUncached();
@@ -78,7 +78,7 @@ public abstract class GetANextNode extends PNodeWithContext {
     }
 
     @Specialization
-    Object doGeneric(Frame frame, Object receiver,
+    Object doGeneric(VirtualFrame frame, Object receiver,
                     @Bind("this") Node inliningTarget,
                     @Cached(parameters = "ANext") LookupSpecialMethodSlotNode getANext,
                     @Cached GetClassNode getAsyncIterType,

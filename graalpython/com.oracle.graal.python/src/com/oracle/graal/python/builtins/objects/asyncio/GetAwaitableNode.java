@@ -57,14 +57,14 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 @SuppressWarnings("truffle-inlining")
 public abstract class GetAwaitableNode extends Node {
-    public abstract Object execute(Frame frame, Object arg);
+    public abstract Object execute(VirtualFrame frame, Object arg);
 
     @Specialization
     public static Object doGenerator(PGenerator generator,
@@ -83,7 +83,7 @@ public abstract class GetAwaitableNode extends Node {
     }
 
     @Specialization
-    public static Object doGeneric(Frame frame, Object awaitable,
+    public static Object doGeneric(VirtualFrame frame, Object awaitable,
                     @Bind("this") Node inliningTarget,
                     @Exclusive @Cached PRaiseNode raiseNoAwait,
                     @Exclusive @Cached PRaiseNode raiseNotIter,
