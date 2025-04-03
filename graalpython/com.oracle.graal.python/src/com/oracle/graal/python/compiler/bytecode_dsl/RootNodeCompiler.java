@@ -3510,20 +3510,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 return result;
             }
 
-            public void copySubjectToTemporaryWithLookup(String name) {
-                BytecodeLocal temporary = lookupOrAllocateBindVariable(name);
-                b.beginStoreLocal(temporary);
-                b.emitLoadLocal(subject);
-                b.endStoreLocal();
-            }
-
-            private BytecodeLocal lookupOrAllocateBindVariable(String name) {
-                if (!bindVariables.containsKey(name)) {
-                    return allocateBindVariable(name);
-                }
-                return bindVariables.get(name);
-            }
-
             private void duplicateStoreError(String name) {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "multiple assignments to name '%s' in pattern", name);
             }
