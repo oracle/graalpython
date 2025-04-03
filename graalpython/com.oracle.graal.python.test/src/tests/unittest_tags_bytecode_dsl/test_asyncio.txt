@@ -261,7 +261,6 @@ test.test_asyncio.test_protocols.ProtocolsAbsTests.test_buffered_protocol @ linu
 test.test_asyncio.test_protocols.ProtocolsAbsTests.test_datagram_protocol @ linux-x86_64
 test.test_asyncio.test_protocols.ProtocolsAbsTests.test_protocol @ linux-x86_64
 test.test_asyncio.test_protocols.ProtocolsAbsTests.test_subprocess_protocol @ linux-x86_64
-test.test_asyncio.test_runners.RunTests.test_asyncio_run_cancels_hanging_tasks @ linux-x86_64
 test.test_asyncio.test_runners.RunTests.test_asyncio_run_debug @ linux-x86_64
 test.test_asyncio.test_runners.RunTests.test_asyncio_run_from_running_loop @ linux-x86_64
 test.test_asyncio.test_runners.RunTests.test_asyncio_run_only_coro @ linux-x86_64

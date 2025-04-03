@@ -40,6 +40,12 @@
  */
 package com.oracle.graal.python.nodes.builtins;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyListObject__allocated;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyListObject__ob_item;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
+import static com.oracle.graal.python.nodes.ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -85,12 +91,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyListObject__allocated;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyListObject__ob_item;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
-import static com.oracle.graal.python.nodes.ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 /** See the docs on {@link com.oracle.graal.python.builtins.objects.list.ListBuiltins}. */
 public abstract class ListNodes {
