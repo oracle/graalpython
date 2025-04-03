@@ -61,7 +61,7 @@ import zipfile
 
 from argparse import ArgumentParser
 from glob import glob
-from os.path import abspath, basename, dirname, exists, isabs, join, splitext
+from os.path import abspath, basename, dirname, exists, expanduser, isabs, isdir, join, splitext
 from tempfile import TemporaryDirectory
 from urllib.request import urlretrieve
 
@@ -112,6 +112,17 @@ def create_venv():
     return pip
 
 
+def prepare_environment(pip_exe):
+    env = os.environ.copy()
+    env["PATH"] = abspath(dirname(pip_exe)) + os.pathsep + env["PATH"]
+    env["VIRTUAL_ENV"] = abspath(dirname(dirname(pip_exe)))
+    if not shutil.which("cargo"):
+        cargo_bin = join(expanduser("~"), ".cargo", "bin")
+        if isdir(cargo_bin):
+            env["PATH"] += os.pathsep + cargo_bin
+    return env
+
+
 def build_wheels(pip):
     with open(join(dirname(__file__), "packages.txt")) as f:
         packages_from_txt = [tuple(l.strip().split("==")) for l in f]
@@ -154,9 +165,7 @@ def build_wheels(pip):
                 script = f"{name}.{script_ext}".lower()
             if script in available_scripts:
                 script = join(scriptdir, available_scripts[script])
-                env = os.environ.copy()
-                env["PATH"] = abspath(dirname(pip)) + os.pathsep + env["PATH"]
-                env["VIRTUAL_ENV"] = abspath(dirname(dirname(pip)))
+                env = prepare_environment(pip)
                 print("Building", name, version, "with", script, flush=True)
                 if sys.platform == "win32":
                     cmd = [script, version]  # Python's subprocess.py does the quoting we need
