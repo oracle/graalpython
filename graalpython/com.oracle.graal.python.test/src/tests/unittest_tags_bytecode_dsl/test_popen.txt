@@ -1,0 +1,5 @@
+test.test_popen.PopenTest.test_contextmanager @ linux-x86_64
+test.test_popen.PopenTest.test_iterating @ linux-x86_64
+test.test_popen.PopenTest.test_keywords @ linux-x86_64
+test.test_popen.PopenTest.test_popen @ linux-x86_64
+test.test_popen.PopenTest.test_return_code @ linux-x86_64

@@ -1,0 +1,7 @@
+test.test_signal.GenericTests.test_enums @ linux-x86_64
+test.test_signal.GenericTests.test_functions_module_attr @ linux-x86_64
+test.test_signal.ItimerTest.test_setitimer_tiny @ linux-x86_64
+test.test_signal.PosixTests.test_getsignal @ linux-x86_64
+test.test_signal.PosixTests.test_setting_signal_handler_to_none_raises_error @ linux-x86_64
+test.test_signal.PosixTests.test_valid_signals @ linux-x86_64
+test.test_signal.SiginterruptTest.test_siginterrupt_off @ linux-x86_64

@@ -392,7 +392,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 // Negative numbers raised to fractional powers become complex.
                 PythonLanguage language = PythonLanguage.get(inliningTarget);
-                throw new UnexpectedResultException(powerNode.execute(frame, inliningTarget, PFactory.createComplex(language, left, 0), PFactory.createComplex(language, right, 0), none));
+                throw new UnexpectedResultException(powerNode.execute(frame, PFactory.createComplex(language, left, 0), PFactory.createComplex(language, right, 0), none));
             }
             return Math.pow(left, right);
         }
@@ -409,7 +409,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             if (left < 0 && Double.isFinite(left) && Double.isFinite(right) && (right % 1 != 0)) {
                 // Negative numbers raised to fractional powers become complex.
                 PythonLanguage language = PythonLanguage.get(inliningTarget);
-                return powerNode.execute(frame, inliningTarget, PFactory.createComplex(language, left, 0), PFactory.createComplex(language, right, 0), none);
+                return powerNode.execute(frame, PFactory.createComplex(language, left, 0), PFactory.createComplex(language, right, 0), none);
             }
             return Math.pow(left, right);
         }

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -196,6 +196,7 @@ class ExceptionTests(unittest.TestCase):
         except TypeError:
             pass
 
+    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: bug in comment above")
     def test_generator(self):
         def gen():
             try:
@@ -207,6 +208,7 @@ class ExceptionTests(unittest.TestCase):
         self.assertEqual(next(g), 1)
         self.assertRaises(ZeroDivisionError, lambda: next(g))
 
+    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: bug in comment above")
     def test_generator_nested(self):
         def gen():
             try:
@@ -446,6 +448,7 @@ class ExceptionTests(unittest.TestCase):
         self.assertEqual(e.__context__.__context__.args[0], "first")
         self.assertIsNone(e.__context__.__context__.__context__)
 
+    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: bug in comment above")
     def test_implicit_chaining_generator(self):
         def gen():
             try:
@@ -485,6 +488,7 @@ class ExceptionTests(unittest.TestCase):
         self.assertEqual(e.__context__.__context__.args[0], "first")
         self.assertIsNone(e.__context__.__context__.__context__)
 
+    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: bug in comment above")
     def test_implicit_chaining_generator_finally(self):
         def gen():
             try:

@@ -1,0 +1,7 @@
+test.test_rlcompleter.TestRlcompleter.test_complete @ linux-x86_64
+test.test_rlcompleter.TestRlcompleter.test_duplicate_globals @ linux-x86_64
+test.test_rlcompleter.TestRlcompleter.test_excessive_getattr @ linux-x86_64
+test.test_rlcompleter.TestRlcompleter.test_global_matches @ linux-x86_64
+test.test_rlcompleter.TestRlcompleter.test_namespace @ linux-x86_64
+test.test_rlcompleter.TestRlcompleter.test_property_method_not_called @ linux-x86_64
+test.test_rlcompleter.TestRlcompleter.test_uncreated_attr @ linux-x86_64

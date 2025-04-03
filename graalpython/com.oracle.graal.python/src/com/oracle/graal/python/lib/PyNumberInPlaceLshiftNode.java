@@ -41,7 +41,9 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.InplaceSlot;
+import com.oracle.graal.python.lib.fastpath.PyNumberLshiftFastPathsBase;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -53,8 +55,9 @@ import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false)
 @GenerateUncached
-public abstract class PyNumberInPlaceLshiftNode extends BinaryOpNode {
-    @Specialization
+@OperationProxy.Proxyable
+public abstract class PyNumberInPlaceLshiftNode extends PyNumberLshiftFastPathsBase {
+    @Specialization(replaces = {"doII", "doLL"})
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
                     @Cached CallBinaryIOpNode callBinaryOpNode) {

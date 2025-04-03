@@ -48,9 +48,11 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNod
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.CallSlotBinaryFuncNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.InplaceSlot;
+import com.oracle.graal.python.lib.fastpath.PyNumberAddFastPathsBase;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -64,7 +66,8 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateInline(false)
 @GenerateUncached
-public abstract class PyNumberInPlaceAddNode extends PyNumberAddBaseNode {
+@OperationProxy.Proxyable
+public abstract class PyNumberInPlaceAddNode extends PyNumberAddFastPathsBase {
 
     @Fallback
     @InliningCutoff

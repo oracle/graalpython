@@ -596,7 +596,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
             if (v == null || w == null || z == null) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return power.execute(frame, inliningTarget, v, w, z);
+            return power.execute(frame, v, w, z);
         }
     }
 
