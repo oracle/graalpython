@@ -40,9 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.type.slots;
 
+import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -52,20 +54,27 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CreateArgsTupleNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.EagerTupleState;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.InitCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode.CreateAndCheckArgumentsNode;
@@ -90,6 +99,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -203,90 +213,88 @@ public final class TpSlotVarargs {
         }
     }
 
+    @GenerateCached(false)
+    abstract static class CallVarargsTpSlotBaseNode extends Node {
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, Object[] args, PKeyword[] keywords);
+
+        @Specialization(guards = {"frame != null", "cachedSlot == slot"}, limit = "3")
+        static Object callCachedBuiltin(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Cached("slot") TpSlotVarargsBuiltin<?> cachedSlot,
+                        @Cached("cachedSlot.createSlotNodeIfDirect()") PythonBuiltinBaseNode slotNode,
+                        @Cached DispatchVarargsBuiltinFullDirectNode dispatchFullNode) {
+            if (slotNode != null) {
+                if (slotNode instanceof PythonUnaryBuiltinNode unaryBuiltinNode) {
+                    if (keywords.length == 0 && args.length == 0) {
+                        return unaryBuiltinNode.execute(frame, self);
+                    }
+                } else if (slotNode instanceof PythonBinaryBuiltinNode binaryBuiltinNode) {
+                    if (keywords.length == 0 && (args.length == 1 || args.length == 0 && cachedSlot.getDefaults().length >= 1)) {
+                        return binaryBuiltinNode.execute(frame, self, args.length == 1 ? args[0] : PNone.NO_VALUE);
+                    }
+                } else if (slotNode instanceof PythonTernaryBuiltinNode ternaryBuiltinNode) {
+                    if (keywords.length == 0 && (args.length == 2 || args.length == 1 && cachedSlot.getDefaults().length >= 1 || args.length == 0 && cachedSlot.getDefaults().length >= 2)) {
+                        return ternaryBuiltinNode.execute(frame, self, args.length >= 1 ? args[0] : PNone.NO_VALUE, (args.length == 2) ? args[1] : PNone.NO_VALUE);
+                    }
+                } else if (slotNode instanceof PythonVarargsBuiltinNode varargsBuiltinNode) {
+                    return varargsBuiltinNode.execute(frame, self, args, keywords);
+                }
+            }
+            return dispatchFullNode.execute(frame, inliningTarget, cachedSlot, self, args, keywords);
+        }
+
+        @Specialization(replaces = "callCachedBuiltin")
+        static Object callGenericBuiltin(VirtualFrame frame, Node inliningTarget, TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
+                        @Cached CreateAndCheckArgumentsNode createArgumentsNode,
+                        @Cached(inline = false) CallContext callContext,
+                        @Cached InlinedConditionProfile isNullFrameProfile,
+                        @Cached(inline = false) IndirectCallNode indirectCallNode) {
+            Object[] arguments = createArgumentsNode.execute(inliningTarget, slot.getName(), args, keywords, slot.getSignature(), self, null, slot.getDefaults(), slot.getKwDefaults(),
+                            false);
+            return BuiltinDispatchers.callGenericBuiltin(frame, inliningTarget, slot.callTargetIndex, arguments, callContext, isNullFrameProfile, indirectCallNode);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class DispatchVarargsBuiltinFullDirectNode extends Node {
+
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords);
+
+        @Specialization
+        static Object call(VirtualFrame frame, Node inliningTarget, TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
+                        @Bind PythonLanguage language,
+                        @Bind("language.getBuiltinSlotCallTarget(slot.callTargetIndex)") RootCallTarget callTarget,
+                        @Cached CreateAndCheckArgumentsNode createArgumentsNode,
+                        @Cached CallContext callContext,
+                        @Cached InlinedConditionProfile frameProfile,
+                        @Cached(parameters = "callTarget") DirectCallNode callNode) {
+            CompilerAsserts.partialEvaluationConstant(slot);
+            Object[] arguments = createArgumentsNode.execute(inliningTarget, slot.getName(), args, keywords, slot.getSignature(), self, null, slot.getDefaults(), slot.getKwDefaults(), false);
+            if (frameProfile.profile(inliningTarget, frame != null)) {
+                callContext.prepareCall(frame, arguments, callTarget, inliningTarget);
+                return callNode.call(arguments);
+            } else {
+                PythonContext context = PythonContext.get(inliningTarget);
+                PythonThreadState threadState = context.getThreadState(language);
+                Object state = IndirectCalleeContext.enter(threadState, arguments, callTarget);
+                try {
+                    return callNode.call(arguments);
+                } finally {
+                    IndirectCalleeContext.exit(threadState, state);
+                }
+            }
+        }
+    }
+
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
     @ReportPolymorphism
-    public abstract static class CallSlotTpInitNode extends Node {
+    public abstract static class CallSlotTpInitNode extends CallVarargsTpSlotBaseNode {
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, J___INIT__);
 
-        public abstract void execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, Object[] args, PKeyword[] keywords);
-
-        @Specialization(guards = "cachedSlot == slot", limit = "3")
-        static void callCachedBuiltin(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
-                        @SuppressWarnings("unused") @Cached("slot") TpSlotVarargsBuiltin<?> cachedSlot,
-                        @Cached("cachedSlot.createSlotNodeIfDirect()") PythonBuiltinBaseNode slotNode,
-                        @Cached DispatchSlotFullDirectNode dispatchFullNode) {
-            if (slotNode != null) {
-                if (slotNode instanceof PythonUnaryBuiltinNode unaryBuiltinNode && keywords.length == 0 && args.length == 0) {
-                    unaryBuiltinNode.execute(frame, self);
-                    return;
-                } else if (slotNode instanceof PythonBinaryBuiltinNode binaryBuiltinNode && keywords.length == 0) {
-                    if (args.length == 1) {
-                        binaryBuiltinNode.execute(frame, self, args[0]);
-                        return;
-                    }
-                    int numDefaults = cachedSlot.getDefaults().length;
-                    if (args.length == 0 && numDefaults >= 1) {
-                        binaryBuiltinNode.execute(frame, self, PNone.NO_VALUE);
-                        return;
-                    }
-                } else if (slotNode instanceof PythonTernaryBuiltinNode ternaryBuiltinNode && keywords.length == 0) {
-                    if (args.length == 2) {
-                        ternaryBuiltinNode.execute(frame, self, args[0], args[1]);
-                        return;
-                    }
-                    int numDefaults = cachedSlot.getDefaults().length;
-                    if (args.length == 1 && numDefaults >= 1) {
-                        ternaryBuiltinNode.execute(frame, self, args[0], PNone.NO_VALUE);
-                        return;
-                    }
-                    if (args.length == 0 && numDefaults >= 2) {
-                        ternaryBuiltinNode.execute(frame, self, PNone.NO_VALUE, PNone.NO_VALUE);
-                        return;
-                    }
-                } else if (slotNode instanceof PythonVarargsBuiltinNode varargsBuiltinNode) {
-                    varargsBuiltinNode.execute(frame, self, args, keywords);
-                    return;
-                }
-            }
-            dispatchFullNode.execute(frame, inliningTarget, cachedSlot, self, args, keywords);
-        }
-
-        @GenerateInline
-        @GenerateCached(false)
-        abstract static class DispatchSlotFullDirectNode extends Node {
-
-            public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords);
-
-            @Specialization
-            static Object call(VirtualFrame frame, Node inliningTarget, TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
-                            @Bind PythonLanguage language,
-                            @Bind("language.getBuiltinSlotCallTarget(slot.callTargetIndex)") RootCallTarget callTarget,
-                            @Cached CreateAndCheckArgumentsNode createArgumentsNode,
-                            @Cached CallContext callContext,
-                            @Cached InlinedConditionProfile frameProfile,
-                            @Cached(parameters = "callTarget") DirectCallNode callNode) {
-                CompilerAsserts.partialEvaluationConstant(slot);
-                Object[] arguments = createArgumentsNode.execute(inliningTarget, slot.getName(), args, keywords, slot.getSignature(), self, null, slot.getDefaults(), slot.getKwDefaults(), false);
-                if (frameProfile.profile(inliningTarget, frame != null)) {
-                    callContext.prepareCall(frame, arguments, callTarget, inliningTarget);
-                    return callNode.call(arguments);
-                } else {
-                    PythonContext context = PythonContext.get(inliningTarget);
-                    PythonThreadState threadState = context.getThreadState(language);
-                    Object state = IndirectCalleeContext.enter(threadState, arguments, callTarget);
-                    try {
-                        return callNode.call(arguments);
-                    } finally {
-                        IndirectCalleeContext.exit(threadState, state);
-                    }
-                }
-            }
-        }
-
         @Specialization
-        static void callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object[] args, PKeyword[] keywords,
+        static Object callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached MaybeBindDescriptorNode bindDescriptorNode,
                         @Cached(inline = false) CallNode callNode,
                         @Cached PRaiseNode raiseNode) {
@@ -306,10 +314,11 @@ public final class TpSlotVarargs {
             if (result != PNone.NONE) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SHOULD_RETURN_NONE, "__init__()");
             }
+            return PNone.NO_VALUE;
         }
 
         @Specialization
-        static void callNative(VirtualFrame frame, Node inliningTarget, TpSlot.TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
+        static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
                         @Bind PythonContext context,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
@@ -323,19 +332,83 @@ public final class TpSlotVarargs {
             Object kwargsDict = PFactory.createDict(language, keywords);
             Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___INIT__, slot.callable,
                             toNativeNode.execute(self), toNativeNode.execute(argsTuple), toNativeNode.execute(kwargsDict));
-            checkResult.execute(state, T___INIT__, nativeResult);
             eagerTupleState.report(inliningTarget, argsTuple);
+            checkResult.execute(state, T___INIT__, nativeResult);
+            return PNone.NO_VALUE;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class BindNewMethodNode extends Node {
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object descriptor, Object type);
+
+        @Specialization(guards = "isStaticmethod(descriptor)")
+        static Object doStaticmethod(PDecoratedMethod descriptor, @SuppressWarnings("unused") Object type) {
+            return descriptor.getCallable();
         }
 
-        @Specialization(replaces = "callCachedBuiltin")
-        static void callGenericBuiltin(VirtualFrame frame, Node inliningTarget, TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
-                        @Cached CreateAndCheckArgumentsNode createArgumentsNode,
-                        @Cached(inline = false) CallContext callContext,
-                        @Cached InlinedConditionProfile isNullFrameProfile,
-                        @Cached(inline = false) IndirectCallNode indirectCallNode) {
-            Object[] arguments = createArgumentsNode.execute(inliningTarget, slot.getName(), args, keywords, slot.getSignature(), self, null, slot.getDefaults(), slot.getKwDefaults(),
-                            false);
-            BuiltinDispatchers.callGenericBuiltin(frame, inliningTarget, slot.callTargetIndex, arguments, callContext, isNullFrameProfile, indirectCallNode);
+        protected static boolean isStaticmethod(PDecoratedMethod descriptor) {
+            return descriptor.getInitialPythonClass() == PythonBuiltinClassType.PStaticmethod;
+        }
+
+        @Specialization
+        static Object doBuiltinMethod(PBuiltinMethod descriptor, @SuppressWarnings("unused") Object type) {
+            return descriptor;
+        }
+
+        @Specialization
+        static Object doFunction(PFunction descriptor, @SuppressWarnings("unused") Object type) {
+            return descriptor;
+        }
+
+        @Fallback
+        static Object doBind(VirtualFrame frame, Node inliningTarget, Object descriptor, Object type,
+                        @Cached GetObjectSlotsNode getSlotsNode,
+                        @Cached CallSlotDescrGet callGetSlot) {
+            var getMethod = getSlotsNode.execute(inliningTarget, descriptor).tp_descr_get();
+            if (getMethod != null) {
+                return callGetSlot.execute(frame, inliningTarget, getMethod, descriptor, NO_VALUE, type);
+            }
+            return descriptor;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    @ReportPolymorphism
+    public abstract static class CallSlotTpNewNode extends CallVarargsTpSlotBaseNode {
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, J___NEW__);
+
+        @Specialization
+        static Object callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object[] args, PKeyword[] keywords,
+                        @Cached BindNewMethodNode bindNew,
+                        @Cached(inline = false) CallNode callNode) {
+            Object callable = bindNew.execute(frame, inliningTarget, slot.getCallable(), self);
+            return callNode.execute(frame, callable, PythonUtils.prependArgument(self, args), keywords);
+        }
+
+        @Specialization
+        static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
+                        @Bind PythonContext context,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached(inline = false) PythonToNativeNode toNativeNode,
+                        @Cached CreateArgsTupleNode createArgsTupleNode,
+                        @Cached EagerTupleState eagerTupleState,
+                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Cached DefaultCheckFunctionResultNode checkResult,
+                        @Cached(inline = false) NativeToPythonTransferNode toPythonNode) {
+            PythonLanguage language = context.getLanguage(inliningTarget);
+            PythonThreadState state = getThreadStateNode.execute(inliningTarget, context);
+            PTuple argsTuple = createArgsTupleNode.execute(inliningTarget, language, args, eagerTupleState);
+            Object kwargsDict = PFactory.createDict(language, keywords);
+            Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___NEW__, slot.callable,
+                            toNativeNode.execute(self), toNativeNode.execute(argsTuple), toNativeNode.execute(kwargsDict));
+            eagerTupleState.report(inliningTarget, argsTuple);
+            checkResult.execute(state, T___NEW__, nativeResult);
+            return toPythonNode.execute(nativeResult);
         }
     }
 }

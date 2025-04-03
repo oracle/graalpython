@@ -58,7 +58,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -67,11 +66,11 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescripto
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.TpSlotUnaryFuncBuiltin;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotNewBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -190,15 +189,21 @@ public class StructSequence {
              * names.
              */
             HiddenAttr.WriteNode.executeUncached(managedClass, HiddenAttr.STRUCTSEQ_FIELD_NAMES, namedFields.toArray(new TruffleString[0]));
-        } else if (klass instanceof PythonAbstractNativeObject) {
+        } else if (klass instanceof PythonAbstractNativeObject nativeClass) {
             /*
              * We need to add the methods. Note that PyType_Ready already ran, so we just write the
              * method wrappers. Field names are already populated in tp_members on the native side.
              */
-            TpSlotNewBuiltin<?> newSlot = (TpSlotNewBuiltin<?>) StructSequenceBuiltins.SLOTS.tp_new();
-            writeAttrNode.execute(klass, T___NEW__, newSlot.createBuiltin(context, klass, T___NEW__, PExternalFunctionWrapper.NEW));
-            TpSlotUnaryFuncBuiltin<?> reprSlot = (TpSlotUnaryFuncBuiltin<?>) StructSequenceBuiltins.SLOTS.tp_repr();
-            writeAttrNode.execute(klass, T___REPR__, reprSlot.createBuiltin(context, klass, T___REPR__, PExternalFunctionWrapper.UNARYFUNC));
+            TpSlotBuiltin<?> newSlot = (TpSlotBuiltin<?>) StructSequenceBuiltins.SLOTS.tp_new();
+            writeAttrNode.execute(klass, T___NEW__, newSlot.createBuiltin(context, klass, T___NEW__, TpSlots.TpSlotMeta.TP_NEW.getNativeSignature()));
+            /*
+             * The tp_new slot doesn't get updated by writing the python wrapper. See the comments
+             * about tp_new in TpSlots.updateSlots. We have to write it manually
+             */
+            nativeClass.setTpSlots(nativeClass.getTpSlots().copy().set(TpSlots.TpSlotMeta.TP_NEW, newSlot).build());
+            TpSlots.toNative(nativeClass.getPtr(), TpSlots.TpSlotMeta.TP_NEW, newSlot, context.getNativeNull());
+            TpSlotBuiltin<?> reprSlot = (TpSlotBuiltin<?>) StructSequenceBuiltins.SLOTS.tp_repr();
+            writeAttrNode.execute(klass, T___REPR__, reprSlot.createBuiltin(context, klass, T___REPR__, TpSlots.TpSlotMeta.TP_REPR.getNativeSignature()));
             PythonBuiltinClass template = context.lookupType(PythonBuiltinClassType.PFloatInfo);
             copyMethod(language, klass, T___REDUCE__, template);
         }

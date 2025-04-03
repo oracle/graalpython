@@ -67,7 +67,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSHOOK_
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_MRO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_UPDATE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MRO_ENTRIES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -97,17 +96,10 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectAr
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.ObjectNodeFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
@@ -132,9 +124,10 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Binary
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpInitNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpNewNode;
 import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -149,11 +142,8 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.builtins.FunctionNodes;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectGetBasesNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectIsSubclassNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -353,12 +343,11 @@ public final class TypeBuiltins extends PythonBuiltins {
         Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespaceOrig, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached("create(New)") LookupCallableSlotInMRONode getNewFuncNode,
-                        @Cached BindNew bindNew,
-                        @Exclusive @Cached IsTypeNode isTypeNode,
+                        @Cached GetCachedTpSlotsNode getSlots,
+                        @Cached CallSlotTpNewNode callNew,
+                        @Cached IsTypeNode isTypeNode,
                         @Cached PyObjectLookupAttr lookupMroEntriesNode,
                         @Cached CastToTruffleStringNode castStr,
-                        @Cached com.oracle.graal.python.nodes.call.CallNode callNewFuncNode,
                         @Cached TypeNodes.CreateTypeNode createType,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             // Determine the proper metatype to deal with this
@@ -366,14 +355,12 @@ public final class TypeBuiltins extends PythonBuiltins {
             Object metaclass = cls;
             Object winner = calculateMetaclass(frame, inliningTarget, metaclass, bases, getClassNode, isTypeNode, lookupMroEntriesNode, getObjectArrayNode);
             if (winner != metaclass) {
-                Object newFunc = getNewFuncNode.execute(winner);
-                if (newFunc instanceof PBuiltinMethod && (((PBuiltinMethod) newFunc).getBuiltinFunction().getFunctionRootNode().getCallTarget() == getRootNode().getCallTarget())) {
-                    metaclass = winner;
-                    // the new metaclass has the same __new__ function as we are in, continue
-                } else {
+                TpSlot winnerNew = getSlots.execute(inliningTarget, winner).tp_new();
+                if (winnerNew != SLOTS.tp_new()) {
                     // Pass it to the winner
-                    return callNewFuncNode.execute(frame, bindNew.execute(frame, inliningTarget, newFunc, winner), new Object[]{winner, name, bases, namespaceOrig}, kwds);
+                    return callNew.execute(frame, inliningTarget, winnerNew, winner, new Object[]{name, bases, namespaceOrig}, kwds);
                 }
+                metaclass = winner;
             }
 
             return createType.execute(frame, namespaceOrig, name, bases, metaclass, kwds);
@@ -496,38 +483,6 @@ public final class TypeBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
-    public abstract static class BindNew extends Node {
-        public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object descriptor, Object type);
-
-        @Specialization
-        static Object doBuiltinMethod(PBuiltinMethod descriptor, @SuppressWarnings("unused") Object type) {
-            return descriptor;
-        }
-
-        @Specialization
-        static Object doBuiltinDescriptor(BuiltinMethodDescriptor descriptor, @SuppressWarnings("unused") Object type) {
-            return descriptor;
-        }
-
-        @Specialization
-        static Object doFunction(PFunction descriptor, @SuppressWarnings("unused") Object type) {
-            return descriptor;
-        }
-
-        @Fallback
-        static Object doBind(VirtualFrame frame, Node inliningTarget, Object descriptor, Object type,
-                        @Cached GetObjectSlotsNode getSlotsNode,
-                        @Cached CallSlotDescrGet callGetSlot) {
-            var getMethod = getSlotsNode.execute(inliningTarget, descriptor).tp_descr_get();
-            if (getMethod != null) {
-                return callGetSlot.execute(frame, inliningTarget, getMethod, descriptor, NO_VALUE, type);
-            }
-            return descriptor;
-        }
-    }
-
-    @GenerateInline
-    @GenerateCached(false)
     abstract static class CheckTypeFlagsNode extends Node {
         abstract void execute(Node inliningTarget, Object type);
 
@@ -575,27 +530,25 @@ public final class TypeBuiltins extends PythonBuiltins {
         static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object type, Object[] arguments, PKeyword[] keywords,
                         @Cached CheckTypeFlagsNode checkTypeFlagsNode,
                         @Cached InlinedConditionProfile builtinProfile,
-                        @Cached GetCachedTpSlotsNode getSlots,
-                        @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNew,
-                        @Cached BindNew bindNew,
-                        @Cached CallVarargsMethodNode dispatchNew,
+                        @Cached GetCachedTpSlotsNode getTypeSlots,
+                        @Cached GetCachedTpSlotsNode getInstanceSlots,
                         @Cached GetClassNode getInstanceClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached CallSlotTpNewNode callNew,
                         @Cached CallSlotTpInitNode callInit) {
             if (builtinProfile.profile(inliningTarget, type instanceof PythonBuiltinClass)) {
                 // PythonBuiltinClassType should help the code after this to optimize better
                 type = ((PythonBuiltinClass) type).getType();
             }
             checkTypeFlagsNode.execute(inliningTarget, type);
-            Object newMethod = lookupNew.execute(type);
-            assert newMethod != NO_VALUE;
-            Object[] newArgs = PythonUtils.prependArgument(type, arguments);
-            Object newInstance = dispatchNew.execute(frame, bindNew.execute(frame, inliningTarget, newMethod, type), newArgs, keywords);
+            TpSlots typeSlots = getTypeSlots.execute(inliningTarget, type);
+            // TODO check null
+            Object newInstance = callNew.execute(frame, inliningTarget, typeSlots.tp_new(), type, arguments, keywords);
             Object newInstanceKlass = getInstanceClassNode.execute(inliningTarget, newInstance);
             if (isSubtypeNode.execute(newInstanceKlass, type)) {
-                TpSlots slots = getSlots.execute(inliningTarget, newInstanceKlass);
-                if (slots.tp_init() != null) {
-                    callInit.execute(frame, inliningTarget, slots.tp_init(), newInstance, arguments, keywords);
+                TpSlots instanceSlots = getInstanceSlots.execute(inliningTarget, newInstanceKlass);
+                if (instanceSlots.tp_init() != null) {
+                    callInit.execute(frame, inliningTarget, instanceSlots.tp_init(), newInstance, arguments, keywords);
                 }
             }
             return newInstance;
@@ -1526,23 +1479,14 @@ public final class TypeBuiltins extends PythonBuiltins {
             }
             TpSlots slots = GetTpSlotsNode.executeUncached(type);
             /* Best effort at getting at least something */
-            Object newSlot = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.New).execute(type);
-            if (!TypeNodes.CheckCallableIsSpecificBuiltinNode.executeUncached(newSlot, ObjectNodeFactory.getInstance())) {
-                return fromMethod(LookupAttributeInMRONode.Dynamic.getUncached().execute(type, T___NEW__));
+            if (slots.tp_new() instanceof TpSlotVarargs.TpSlotVarargsBuiltin<?> builtin && builtin != ObjectBuiltins.SLOTS.tp_new()) {
+                return AbstractFunctionBuiltins.TextSignatureNode.signatureToText(builtin.getSignature(), true);
             }
             if (slots.tp_init() instanceof TpSlotVarargs.TpSlotVarargsBuiltin<?> builtin && builtin != ObjectBuiltins.SLOTS.tp_init()) {
                 return AbstractFunctionBuiltins.TextSignatureNode.signatureToText(builtin.getSignature(), true);
             }
             // object() signature
             return StringLiterals.T_EMPTY_PARENS;
-        }
-
-        private static Object fromMethod(Object method) {
-            if (method instanceof PBuiltinFunction || method instanceof PBuiltinMethod || method instanceof PFunction || method instanceof PMethod) {
-                Signature signature = FunctionNodes.GetSignatureNode.executeUncached(method);
-                return AbstractFunctionBuiltins.TextSignatureNode.signatureToText(signature, true);
-            }
-            return PNone.NONE;
         }
     }
 }

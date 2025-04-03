@@ -142,11 +142,13 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrGe
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrSetFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.GetAttrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.HashfuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InitWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InquiryWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.IterNextWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.LenfuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NbInPlacePowerWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NbPowerWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NewWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.ObjobjargWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.RichcmpFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SetattrWrapper;
@@ -923,7 +925,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_init,
                         PExternalFunctionWrapper.INITPROC,
-                        PyProcsWrapper.InitWrapper::new),
+                        InitWrapper::new),
         TP_NEW(
                         TpSlots::tp_new,
                         TpSlotPythonSingle.class,
@@ -931,8 +933,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_new,
                         PExternalFunctionWrapper.NEW,
-                        // TODO fix wrapper
-                        PyProcsWrapper.InitWrapper::new);
+                        NewWrapper::new);
 
         public static final TpSlotMeta[] VALUES = values();
 
@@ -1320,7 +1321,7 @@ public record TpSlots(TpSlot nb_bool, //
         return builder.build();
     }
 
-    private static void toNative(Object ptrToWrite, TpSlotMeta def, TpSlot value, Object nullValue) {
+    public static void toNative(Object ptrToWrite, TpSlotMeta def, TpSlot value, Object nullValue) {
         assert !(ptrToWrite instanceof PythonAbstractNativeObject); // this should be the pointer
         Object slotNativeValue = def.getNativeValue(value, nullValue);
         toNative(ptrToWrite, def, slotNativeValue, nullValue);
@@ -1365,6 +1366,10 @@ public record TpSlots(TpSlot nb_bool, //
         Builder klassSlots = newBuilder();
         if (allocateAllGroups) {
             klassSlots.allocateAllGroups();
+        }
+        if (klass.getBase() != null) {
+            // tp_new is first inherited from tp_base in type_ready_set_new
+            klassSlots.set(TpSlotMeta.TP_NEW, GetTpSlotsNode.executeUncached(klass.getBase()).tp_new());
         }
         for (int i = 0; i < mro.length(); i++) {
             PythonAbstractClass type = mro.getPythonClassItemNormalized(i);

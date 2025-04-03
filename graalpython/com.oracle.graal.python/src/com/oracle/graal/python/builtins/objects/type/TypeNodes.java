@@ -141,7 +141,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -150,7 +149,6 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescripto
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.IndexedSlotDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
@@ -191,7 +189,6 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -200,7 +197,6 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
@@ -233,7 +229,6 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -2763,22 +2758,20 @@ public abstract class TypeNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    @ImportStatic(SpecialMethodSlot.class)
     public abstract static class HasSameConstructorNode extends Node {
 
         public abstract boolean execute(Node inliningTarget, Object leftClass, Object rightClass);
 
         @Specialization
         static boolean doGeneric(Node inliningTarget, Object left, Object right,
-                        @Cached(parameters = "New", inline = false) LookupCallableSlotInMRONode lookupLeftNode,
-                        @Cached(parameters = "New", inline = false) LookupCallableSlotInMRONode lookupRightNode,
+                        @Cached(inline = false) LookupAttributeInMRONode.Dynamic lookupNew,
                         @Cached InlinedExactClassProfile leftNewProfile,
                         @Cached InlinedExactClassProfile rightNewProfile) {
             assert IsTypeNode.executeUncached(left);
             assert IsTypeNode.executeUncached(right);
 
-            Object leftNew = leftNewProfile.profile(inliningTarget, lookupLeftNode.execute(left));
-            Object rightNew = rightNewProfile.profile(inliningTarget, lookupRightNode.execute(right));
+            Object leftNew = leftNewProfile.profile(inliningTarget, lookupNew.execute(left, T___NEW__));
+            Object rightNew = rightNewProfile.profile(inliningTarget, lookupNew.execute(right, T___NEW__));
             return isSameFunction(leftNew, rightNew);
         }
 
@@ -2798,44 +2791,6 @@ public abstract class TypeNodes {
                 }
             }
             return leftResolved == rightResolved;
-        }
-    }
-
-    /**
-     * Check whether a given function, method or slot descriptor is a specific builtin function.
-     * Used in cases where CPython compares slot for referential equality with a C function to check
-     * for overriding, for example {@code type->tp_init == object_init}. For object {@code __init__}
-     * in particular, there is a shortcut node {@link HasObjectInitNode}.
-     */
-    @GenerateInline
-    @GenerateCached(false)
-    @GenerateUncached
-    public abstract static class CheckCallableIsSpecificBuiltinNode extends Node {
-        public abstract boolean execute(Node inliningTarget, Object methodOrDescriptor, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory);
-
-        public static boolean executeUncached(Object methodOrDescriptor, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
-            return TypeNodesFactory.CheckCallableIsSpecificBuiltinNodeGen.getUncached().execute(null, methodOrDescriptor, nodeFactory);
-        }
-
-        @Specialization
-        static boolean check(PBuiltinFunction function, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
-            return function.getBuiltinNodeFactory() == nodeFactory;
-        }
-
-        @Specialization
-        static boolean check(PBuiltinMethod method, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
-            return method.getBuiltinFunction().getBuiltinNodeFactory() == nodeFactory;
-        }
-
-        @Specialization
-        static boolean check(BuiltinMethodDescriptor descriptor, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
-            return descriptor.getFactory() == nodeFactory;
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static boolean check(Object descriptor, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
-            return false;
         }
     }
 

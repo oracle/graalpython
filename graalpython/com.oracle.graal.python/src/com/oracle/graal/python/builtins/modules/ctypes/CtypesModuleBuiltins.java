@@ -148,7 +148,6 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -560,7 +559,6 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @ImportStatic(SpecialMethodNames.class)
     @Builtin(name = J_UNPICKLE, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     protected abstract static class UnpickleNode extends PythonBinaryBuiltinNode {
@@ -568,7 +566,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object unpickle(VirtualFrame frame, Object typ, PTuple state,
                         @Cached CallNode callNode,
-                        @Cached("create(New)") LookupAndCallUnaryNode lookupAndCallUnaryNode,
+                        // This shouldn't call the slot directly to make sure the check in the
+                        // wrapper runs
+                        @Cached("create(T___NEW__)") LookupAndCallUnaryNode lookupAndCallUnaryNode,
                         @Cached("create(T___SETSTATE__)") GetAttributeNode setStateAttr) {
             Object obj = lookupAndCallUnaryNode.executeObject(frame, typ);
             Object meth = setStateAttr.executeObject(frame, obj);

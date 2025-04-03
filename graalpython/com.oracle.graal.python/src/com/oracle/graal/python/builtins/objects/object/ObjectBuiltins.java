@@ -88,7 +88,6 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProvi
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.ReduceExNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.ObjectNodeFactory;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -120,7 +119,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -281,11 +279,9 @@ public final class ObjectBuiltins extends PythonBuiltins {
             @SuppressWarnings("unused")
             static void check(Node inliningTarget, Object type, Object[] args, PKeyword[] kwargs,
                             @Cached GetCachedTpSlotsNode getSlots,
-                            @Cached(parameters = "New", inline = false) LookupCallableSlotInMRONode lookupNew,
-                            @Cached TypeNodes.CheckCallableIsSpecificBuiltinNode checkSlotIs,
                             @Cached PRaiseNode raiseNode) {
                 TpSlots slots = getSlots.execute(inliningTarget, type);
-                if (!checkSlotIs.execute(inliningTarget, lookupNew.execute(type), ObjectNodeFactory.getInstance())) {
+                if (slots.tp_new() != SLOTS.tp_new()) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NEW_TAKES_ONE_ARG);
                 }
                 if (slots.tp_init() == SLOTS.tp_init()) {
@@ -394,8 +390,6 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetCachedTpSlotsNode getSlots,
-                        @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNew,
-                        @Cached TypeNodes.CheckCallableIsSpecificBuiltinNode checkSlotIs,
                         @Cached PRaiseNode raiseNode) {
             if (arguments.length != 0 || keywords.length != 0) {
                 Object type = getClassNode.execute(inliningTarget, self);
@@ -404,7 +398,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INIT_TAKES_ONE_ARG_OBJECT);
                 }
 
-                if (checkSlotIs.execute(inliningTarget, lookupNew.execute(type), ObjectNodeFactory.getInstance())) {
+                if (slots.tp_new() == SLOTS.tp_new()) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INIT_TAKES_ONE_ARG, type);
                 }
             }

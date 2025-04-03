@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -76,13 +77,13 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.CallS
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.CallSlotSqContainsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpInitNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpNewNode;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
@@ -836,7 +837,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    static final class NewWrapper extends TpSlotWrapper {
+    public static final class NewWrapper extends TpSlotWrapper {
 
         public NewWrapper(TpSlotManaged delegate) {
             super(delegate);
@@ -851,8 +852,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         Object execute(Object[] arguments,
                         @Bind Node inliningTarget,
                         @Cached NativeToPythonNode toJavaNode,
-                        @Cached PythonToNativeNewRefNode toSulongNode,
-                        @Cached CallNode callNode,
+                        @Cached PythonToNativeNewRefNode toNativeNode,
+                        @Cached CallSlotTpNewNode callNew,
                         @Cached ExecutePositionalStarargsNode posStarargsNode,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -867,21 +868,20 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
                     Object[] pArgs;
                     if (starArgs != PNone.NO_VALUE) {
-                        Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                        pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
+                        pArgs = posStarargsNode.executeWith(null, starArgs);
                     } else {
-                        pArgs = new Object[]{receiver};
+                        pArgs = EMPTY_OBJECT_ARRAY;
                     }
                     PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
 
-                    // execute
-                    return toSulongNode.execute(callNode.execute(null, getDelegate(), pArgs, kwArgsArray));
+                    Object result = callNew.execute(null, inliningTarget, getSlot(), receiver, pArgs, kwArgsArray);
+                    return toNativeNode.execute(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "MethKeywords", getDelegate());
+                    throw checkThrowableBeforeNative(t, "NewWrapper", getDelegate());
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(inliningTarget, e);
-                return PythonContext.get(callNode).getNativeNull();
+                return PythonContext.get(inliningTarget).getNativeNull();
             } finally {
                 gil.release(mustRelease);
             }
