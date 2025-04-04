@@ -38,25 +38,8 @@
 # SOFTWARE.
 
 if [ -n "$GITHUB_RUN_ID" ]; then
-    dnf install -y /usr/bin/c++ /usr/bin/make /usr/bin/which
-
-    # Make sure system Python is first on PATH, not the GraalPy symlink :(
-    # Installing a new Python3.11 might break the outer pip, so we just symlink
-    # whatever the outer python is :((
-    current_path="$PATH"
-    builder_pip=`which pip`
-    builder_pip_dirname=`dirname $pip`
-    path_without_builder_venv=`echo $PATH | sed "s#$pip_dirname##"`
-    export PATH="$path_without_builder_venv"
-    outer_python3=`which python3`
-    outer_python3_dir=`dirname $outer_python3_dir`
-    rm -f "${pip_dirname}/python3.11"
-    if which python3.11; then
-        echo "Python3.11 is available"
-    else
-        echo "Symlinking $outer_python3 to be Python3.11"
-        ln -sf "$outer_python3" "${outer_python3_dir}/python3.11"
-    fi
+    dnf install -y /usr/bin/c++ /usr/bin/make /usr/bin/which /usr/bin/python3
+    export CPYTHON_EXE=/usr/bin/python3
 fi
 
 export USE_SONAME="no"

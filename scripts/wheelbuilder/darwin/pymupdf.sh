@@ -38,20 +38,16 @@
 # SOFTWARE.
 
 if [ -n "$GITHUB_RUN_ID" ]; then
-    brew install python@3.11
-    # Make sure homebrew Python 3.11 is first on PATH, not the GraalPy symlink
-    # Also, BSD patch fails to apply our no-context pymupdf patch, so use
-    # python-patch-ng
-    $HOMEBREW_PREFIX/bin/python3.11 -m venv 311venv
-    311venv/bin/pip install git+https://github.com/timfel/python-patch-ng
-    311venv/bin/pip uninstall -y pip
-    export PATH="$(pwd)/311venv/bin:$PATH"
+    export CPYTHON_EXE="$HOMEBREW_PREFIX/bin/python"
 fi
 
-mkdir cc_bin
-export PATH="$(pwd)/cc_bin:$PATH"
+# BSD patch fails to apply our pymupdf.patch
+pip install git+https://github.com/timfel/python-patch-ng
+
 # darwin's linker does not support --gc-sections but mupdf passes that we wrap
 # cc and pass all arguments on, but we remove the argument -Wl,--gc-sections
+mkdir cc_bin
+export PATH="$(pwd)/cc_bin:$PATH"
 original_cc=`which cc`
 cat <<EOF> cc_bin/cc
 #!/bin/bash
@@ -83,7 +79,3 @@ else
 fi
 
 rm -rf cc_bin
-
-if [ -n "$GITHUB_RUN_ID" ]; then
-    rm -rf 311venv
-fi
