@@ -106,7 +106,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -444,23 +443,6 @@ public final class PicklerNodes {
                 cls = getClass(object);
             }
             return cls;
-        }
-
-        protected Object callNew(VirtualFrame frame, Object tpNew, Object cls) {
-            return ensureCallVarargsNode().execute(frame, tpNew, new Object[]{cls}, PKeyword.EMPTY_KEYWORDS);
-        }
-
-        protected Object callNew(VirtualFrame frame, Object tpNew, Object cls, Object args) {
-            return callNew(frame, tpNew, cls, args, null);
-        }
-
-        protected Object callNew(VirtualFrame frame, Object tpNew, Object cls, Object args, Object kwargs) {
-            final Object[] stargs = ensureGetArgsNode().executeWith(frame, args);
-            final Object[] newArgs = new Object[stargs.length + 1];
-            newArgs[0] = cls;
-            PythonUtils.arraycopy(stargs, 0, newArgs, 1, stargs.length);
-            PKeyword[] keywords = kwargs == null ? PKeyword.EMPTY_KEYWORDS : ensureExpandKwArgsNode().executeCached(kwargs);
-            return ensureCallVarargsNode().execute(frame, tpNew, newArgs, keywords);
         }
 
         protected Object call(VirtualFrame frame, Object method, Object... args) {

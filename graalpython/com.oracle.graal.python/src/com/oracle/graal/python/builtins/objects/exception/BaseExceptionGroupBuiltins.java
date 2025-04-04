@@ -140,7 +140,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_new, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 3)
+    @SlotSignature(name = "BaseExceptionGroup.__new__", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class BaseExceptionGroupNode extends PythonTernaryBuiltinNode {
 
