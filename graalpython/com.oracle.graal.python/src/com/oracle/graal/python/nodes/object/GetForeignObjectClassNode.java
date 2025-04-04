@@ -52,6 +52,9 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -252,6 +255,10 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
 
         PythonClass pythonClass = PFactory.createPythonClassAndFixupSlots(context.getLanguage(), name, base, bases);
         pythonClass.setAttribute(T___MODULE__, T_POLYGLOT);
+        if (!Trait.INSTANTIABLE.isSet(traits)) {
+            pythonClass.setTpSlots(pythonClass.getTpSlots().copy().set(TpSlots.TpSlotMeta.TP_NEW, null).build());
+            TypeNodes.SetTypeFlagsNode.executeUncached(pythonClass, TypeNodes.GetTypeFlagsNode.executeUncached(pythonClass) | TypeFlags.DISALLOW_INSTANTIATION);
+        }
 
         assert polyglotModule.getAttribute(name) == PNone.NO_VALUE : name;
         polyglotModule.setAttribute(name, pythonClass);

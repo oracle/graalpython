@@ -803,13 +803,19 @@ public enum PythonBuiltinClassType implements TruffleObject {
     EncodingWarning("EncodingWarning", Warning, new Builder().publishInModule(J_BUILTINS).basetype().addDict()),
 
     // Foreign
-    ForeignObject("ForeignObject", PythonObject, new Builder().publishInModule(J_POLYGLOT).basetype().addDict().slots(ForeignObjectBuiltins.SLOTS)),
-    ForeignNumber("ForeignNumber", ForeignObject, new Builder().publishInModule(J_POLYGLOT).basetype().addDict().slots(ForeignNumberBuiltins.SLOTS).methodsFlags(FOREIGNNUMBER_M_FLAGS)),
-    ForeignBoolean("ForeignBoolean", ForeignNumber, new Builder().publishInModule(J_POLYGLOT).basetype().addDict().slots(ForeignBooleanBuiltins.SLOTS).methodsFlags(FOREIGNNUMBER_M_FLAGS)),
-    ForeignAbstractClass("ForeignAbstractClass", ForeignObject, new Builder().publishInModule(J_POLYGLOT).basetype().addDict()),
-    ForeignExecutable("ForeignExecutable", ForeignObject, new Builder().publishInModule(J_POLYGLOT).basetype().addDict()),
+    ForeignObject("ForeignObject", PythonObject, new Builder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignObjectBuiltins.SLOTS)),
+    ForeignNumber(
+                    "ForeignNumber",
+                    ForeignObject,
+                    new Builder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignNumberBuiltins.SLOTS).methodsFlags(FOREIGNNUMBER_M_FLAGS)),
+    ForeignBoolean(
+                    "ForeignBoolean",
+                    ForeignNumber,
+                    new Builder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignBooleanBuiltins.SLOTS).methodsFlags(FOREIGNNUMBER_M_FLAGS)),
+    ForeignAbstractClass("ForeignAbstractClass", ForeignObject, new Builder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation()),
+    ForeignExecutable("ForeignExecutable", ForeignObject, new Builder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation()),
     ForeignInstantiable("ForeignInstantiable", ForeignObject, new Builder().publishInModule(J_POLYGLOT).basetype().addDict().slots(ForeignInstantiableBuiltins.SLOTS)),
-    ForeignIterable("ForeignIterable", ForeignObject, new Builder().publishInModule(J_POLYGLOT).basetype().addDict().slots(ForeignIterableBuiltins.SLOTS)),
+    ForeignIterable("ForeignIterable", ForeignObject, new Builder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignIterableBuiltins.SLOTS)),
 
     // bz2
     BZ2Compressor("BZ2Compressor", PythonObject, new Builder().publishInModule("_bz2").basetype().slots(BZ2CompressorBuiltins.SLOTS)),
