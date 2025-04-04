@@ -289,7 +289,7 @@ public final class ExceptionUtils {
     @TruffleBoundary
     public static String getExceptionMessage(Object exception) {
         final Object type = GetClassNode.executeUncached(exception);
-        String typeName = TypeNodes.GetNameNode.doSlowPath(type).toJavaStringUncached();
+        String typeName = TypeNodes.GetNameNode.executeUncached(type).toJavaStringUncached();
         String str;
         try {
             str = PyObjectStrAsTruffleStringNode.executeUncached(exception).toJavaStringUncached();

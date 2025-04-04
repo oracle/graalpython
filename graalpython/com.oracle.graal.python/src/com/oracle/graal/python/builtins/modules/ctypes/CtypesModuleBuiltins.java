@@ -53,8 +53,8 @@ import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuil
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CTYPES;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__CTYPES;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENT_D;
-import static com.oracle.graal.python.nodes.ErrorMessages.BYREF_ARGUMENT_MUST_BE_A_CTYPES_INSTANCE_NOT_S;
-import static com.oracle.graal.python.nodes.ErrorMessages.CAST_ARGUMENT_2_MUST_BE_A_POINTER_TYPE_NOT_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.BYREF_ARGUMENT_MUST_BE_A_CTYPES_INSTANCE_NOT_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.CAST_ARGUMENT_2_MUST_BE_A_POINTER_TYPE_NOT_N;
 import static com.oracle.graal.python.nodes.ErrorMessages.DON_T_KNOW_HOW_TO_CONVERT_PARAMETER_D;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXCEPTED_CTYPES_INSTANCE;
 import static com.oracle.graal.python.nodes.ErrorMessages.FFI_CALL_FAILED;
@@ -970,12 +970,11 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doit(CDataObject obj, int offset,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached GetClassNode getClassNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             if (!pyTypeCheck.isCDataObject(inliningTarget, obj)) {
-                return error(null, obj, offset, inliningTarget, getClassNode, raiseNode);
+                return error(null, obj, offset, inliningTarget, raiseNode);
             }
             PyCArgObject parg = PFactory.createCArgObject(language);
             parg.tag = 'P';
@@ -990,11 +989,8 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @Fallback
         static Object error(VirtualFrame frame, Object obj, Object off,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached GetClassNode getClassNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            Object clazz = getClassNode.execute(inliningTarget, obj);
-            TruffleString name = GetNameNode.executeUncached(clazz);
-            throw raiseNode.raise(inliningTarget, TypeError, BYREF_ARGUMENT_MUST_BE_A_CTYPES_INSTANCE_NOT_S, name);
+            throw raiseNode.raise(inliningTarget, TypeError, BYREF_ARGUMENT_MUST_BE_A_CTYPES_INSTANCE_NOT_P, obj);
         }
     }
 
@@ -1755,10 +1751,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode,
                         @Cached IsTypeNode isTypeNode,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Cached GetNameNode getNameNode) {
+                        @Cached GetClassNode getClassNode) {
             Object clazz = isTypeNode.execute(inliningTarget, arg) ? arg : getClassNode.execute(inliningTarget, arg);
-            throw raiseNode.raise(inliningTarget, TypeError, CAST_ARGUMENT_2_MUST_BE_A_POINTER_TYPE_NOT_S, getNameNode.execute(inliningTarget, clazz));
+            throw raiseNode.raise(inliningTarget, TypeError, CAST_ARGUMENT_2_MUST_BE_A_POINTER_TYPE_NOT_N, clazz);
         }
     }
 

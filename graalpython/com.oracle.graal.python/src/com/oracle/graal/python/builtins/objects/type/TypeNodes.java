@@ -169,6 +169,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNod
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSolidBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesAsArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTpNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.InstancesOfTypeHaveDictNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.InstancesOfTypeHaveWeakrefsNodeGen;
@@ -641,7 +642,7 @@ public abstract class TypeNodes {
             // call 'PyType_Ready' on the type
             int res = (int) PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TYPE_READY, PythonToNativeNodeGen.getUncached().execute(obj));
             if (res < 0) {
-                throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, GetNameNode.executeUncached(obj));
+                throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, obj);
             }
 
             Object tupleObj = getTpMroNode.readFromObj(obj, PyTypeObject__tp_mro);
@@ -683,16 +684,16 @@ public abstract class TypeNodes {
         }
     }
 
+    /**
+     * Equivalent of {@code _PyType_Name}. Returns unqualified name. Different from
+     * {@code GetTpNameNode}.
+     */
     @GenerateUncached
-    @GenerateInline(inlineByDefault = true)
-    @GenerateCached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GetNameNode extends Node {
 
         public abstract TruffleString execute(Node inliningTarget, Object obj);
-
-        public final TruffleString executeCached(Object obj) {
-            return execute(this, obj);
-        }
 
         public static TruffleString executeUncached(Object obj) {
             return GetNameNodeGen.getUncached().execute(null, obj);
@@ -710,26 +711,55 @@ public abstract class TypeNodes {
 
         @Specialization
         TruffleString doNativeClass(PythonNativeClass obj,
+                        @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.LastIndexOfCodePointNode indexOfCodePointNode,
+                        @Cached TruffleString.SubstringNode substringNode) {
+            // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
+            TruffleString tpName = getTpNameNode.readFromObj(obj, PyTypeObject__tp_name);
+            int nameLen = codePointLengthNode.execute(tpName, TS_ENCODING);
+            int lastDot = indexOfCodePointNode.execute(tpName, '.', nameLen, 0, TS_ENCODING);
+            if (lastDot < 0) {
+                return tpName;
+            }
+            return substringNode.execute(tpName, lastDot + 1, nameLen - lastDot - 1, TS_ENCODING, true);
+        }
+    }
+
+    /*
+     * Equivalent of getting {@code tp_name} field. Returns unqualified name for heaptypes, but
+     * qualified name for builtins. Typically used in exception messages.
+     */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GetTpNameNode extends Node {
+
+        public abstract TruffleString execute(Node inliningTarget, Object obj);
+
+        public static TruffleString executeUncached(Object obj) {
+            return GetTpNameNodeGen.getUncached().execute(null, obj);
+        }
+
+        @Specialization
+        static TruffleString doPythonClass(PythonClass obj) {
+            return obj.getName();
+        }
+
+        @Specialization
+        static TruffleString doBuiltinClass(PythonBuiltinClass obj) {
+            return doBuiltinClassType(obj.getType());
+        }
+
+        @Specialization
+        static TruffleString doBuiltinClassType(PythonBuiltinClassType obj) {
+            return obj.getPrintName();
+        }
+
+        @Specialization
+        TruffleString doNativeClass(PythonNativeClass obj,
                         @Cached(inline = false) CStructAccess.ReadCharPtrNode getTpNameNode) {
             return getTpNameNode.readFromObj(obj, PyTypeObject__tp_name);
-        }
-
-        @Specialization(replaces = {"doManagedClass", "doBuiltinClassType", "doNativeClass"})
-        @TruffleBoundary
-        public static TruffleString doSlowPath(Object obj) {
-            if (obj instanceof PythonManagedClass) {
-                return ((PythonManagedClass) obj).getName();
-            } else if (obj instanceof PythonBuiltinClassType) {
-                return ((PythonBuiltinClassType) obj).getName();
-            } else if (PGuards.isNativeClass(obj)) {
-                return CStructAccess.ReadCharPtrNode.getUncached().readFromObj((PythonNativeClass) obj, PyTypeObject__tp_name);
-            }
-            throw new IllegalStateException("unknown type " + obj.getClass().getName());
-        }
-
-        @NeverDefault
-        public static GetNameNode create() {
-            return GetNameNodeGen.create();
         }
     }
 
@@ -981,7 +1011,7 @@ public abstract class TypeNodes {
                 return result;
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.INVALID_BASE_TYPE_OBJ_FOR_CLASS, GetNameNode.doSlowPath(obj), result);
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.INVALID_BASE_TYPE_OBJ_FOR_CLASS, obj, result);
         }
 
         public static GetBaseClassNode getUncached() {
@@ -1082,7 +1112,6 @@ public abstract class TypeNodes {
         @Child private LookupAttributeInMRONode lookupSlotsNode;
         @Child private LookupAttributeInMRONode lookupNewNode;
         @Child private PyObjectSizeNode sizeNode;
-        @Child private GetNameNode getTypeNameNode;
         @Child private ReadAttributeFromObjectNode readAttr;
         @Child private InstancesOfTypeHaveDictNode instancesHaveDictNode;
 
@@ -1096,7 +1125,7 @@ public abstract class TypeNodes {
                         @Cached GetBaseClassNode getBaseClassNode) {
             if (!compatibleForAssignment(frame, inliningTarget, oldBase, newBase, isSameTypeNode, getBaseClassNode)) {
                 errorSlotsBranch.enter(inliningTarget);
-                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CLASS_ASSIGNMENT_S_LAYOUT_DIFFERS_FROM_S, getTypeName(newBase), getTypeName(oldBase));
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CLASS_ASSIGNMENT_N_LAYOUT_DIFFERS_FROM_N, newBase, oldBase);
             }
             return true;
         }
@@ -1189,14 +1218,6 @@ public abstract class TypeNodes {
             int aSize = aSlots != PNone.NO_VALUE ? getSizeNode().executeCached(frame, aSlots) : 0;
             int bSize = bSlots != PNone.NO_VALUE ? getSizeNode().executeCached(frame, bSlots) : 0;
             return aSize == bSize;
-        }
-
-        private TruffleString getTypeName(Object clazz) {
-            if (getTypeNameNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getTypeNameNode = insert(TypeNodes.GetNameNode.create());
-            }
-            return getTypeNameNode.executeCached(clazz);
         }
 
         private Object getSlotsFromType(Object type) {
@@ -1704,9 +1725,9 @@ public abstract class TypeNodes {
             }
             if (!notMerged.isEmpty()) {
                 Iterator<PythonAbstractClass> it = notMerged.iterator();
-                StringBuilder bases = new StringBuilder(GetNameNode.doSlowPath(it.next()).toJavaStringUncached());
+                StringBuilder bases = new StringBuilder(GetNameNode.executeUncached(it.next()).toJavaStringUncached());
                 while (it.hasNext()) {
-                    bases.append(", ").append(GetNameNode.doSlowPath(it.next()));
+                    bases.append(", ").append(GetNameNode.executeUncached(it.next()));
                 }
                 throw PRaiseNode.raiseStatic(node, TypeError, ErrorMessages.CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION, bases.toString());
             }

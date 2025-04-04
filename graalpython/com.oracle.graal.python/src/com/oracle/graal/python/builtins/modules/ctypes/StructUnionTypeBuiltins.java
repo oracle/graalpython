@@ -49,7 +49,7 @@ import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES.
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T_UPPER_B;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T_UPPER_T_LEFTBRACE;
 import static com.oracle.graal.python.builtins.modules.ctypes.StgDictObject.DICTFLAG_FINAL;
-import static com.oracle.graal.python.nodes.ErrorMessages.BIT_FIELDS_NOT_ALLOWED_FOR_TYPE_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.BIT_FIELDS_NOT_ALLOWED_FOR_TYPE_N;
 import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_IS_FINAL;
 import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_MUST_BE_A_SEQUENCE_OF_NAME_C_TYPE_PAIRS;
 import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_MUST_BE_A_SEQUENCE_OF_PAIRS;
@@ -91,7 +91,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -224,7 +223,6 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached PyCFieldFromDesc cFieldFromDesc,
-                        @Cached GetNameNode getNameNode,
                         @Cached CheckIsSequenceNode isSequenceNode,
                         @Cached PyObjectGetItem getItemNode,
                         @Cached PyObjectSizeNode sizeNode,
@@ -394,7 +392,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                             }
                             /* else fall through */
                         default:
-                            throw raiseNode.raise(inliningTarget, TypeError, BIT_FIELDS_NOT_ALLOWED_FOR_TYPE_S, getNameNode.execute(inliningTarget, desc));
+                            throw raiseNode.raise(inliningTarget, TypeError, BIT_FIELDS_NOT_ALLOWED_FOR_TYPE_N, desc);
                     }
                     if (bitsize <= 0 || bitsize > dict.size * 8) {
                         throw raiseNode.raise(inliningTarget, ValueError, NUMBER_OF_BITS_INVALID_FOR_BIT_FIELD);

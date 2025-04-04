@@ -990,18 +990,14 @@ public abstract class ObjectNodes {
             static void doIt(Object object, Object key, Object type,
                             @Bind("this") Node inliningTarget,
                             @Cached PRaiseNode raiseNode,
-                            @Cached IsSubtypeNode isSubtypeNode,
-                            @Cached TypeNodes.GetNameNode getTypeName) {
+                            @Cached IsSubtypeNode isSubtypeNode) {
                 TruffleString message;
-                Object firstArg;
                 if (isSubtypeNode.execute(type, PythonBuiltinClassType.PythonClass)) {
-                    message = ErrorMessages.TYPE_S_HAS_NO_ATTR;
-                    firstArg = getTypeName.execute(inliningTarget, object);
+                    message = ErrorMessages.TYPE_N_HAS_NO_ATTR;
                 } else {
                     message = ErrorMessages.HAS_NO_ATTR;
-                    firstArg = object;
                 }
-                raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError, message, firstArg, key);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError, message, object, key);
             }
         }
 

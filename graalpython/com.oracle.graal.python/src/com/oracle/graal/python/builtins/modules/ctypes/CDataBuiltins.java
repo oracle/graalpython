@@ -47,7 +47,7 @@ import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuilti
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_CDATA_INIT_BUFFER_PROTOCOL;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__CTYPES;
 import static com.oracle.graal.python.nodes.ErrorMessages.CTYPES_OBJECTS_CONTAINING_POINTERS_CANNOT_BE_PICKLED;
-import static com.oracle.graal.python.nodes.ErrorMessages.S_DICT_MUST_BE_A_DICTIONARY_NOT_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.P_DICT_MUST_BE_A_DICTIONARY_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNHASHABLE_TYPE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
@@ -76,7 +76,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -211,8 +210,6 @@ public final class CDataBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached("create(T___DICT__)") GetAttributeNode getAttributeNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached GetNameNode getNameNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached PRaiseNode raiseNode) {
@@ -232,9 +229,7 @@ public final class CDataBuiltins extends PythonBuiltins {
             memmove(inliningTarget, self.b_ptr, data, len);
             Object mydict = getAttributeNode.executeObject(frame, self);
             if (!PGuards.isDict(mydict)) {
-                throw raiseNode.raise(inliningTarget, TypeError, S_DICT_MUST_BE_A_DICTIONARY_NOT_S,
-                                getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self)),
-                                getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, mydict)));
+                throw raiseNode.raise(inliningTarget, TypeError, P_DICT_MUST_BE_A_DICTIONARY_NOT_P, self, mydict);
             }
             PDict selfDict = (PDict) mydict;
             addAllToOtherNode.execute(frame, inliningTarget, dict.getDictStorage(), selfDict);

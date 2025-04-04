@@ -700,7 +700,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         baseClasses[i] = (PythonAbstractClass) a[i];
                     }
                 } else {
-                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_TUPLE_OF_CLASSES_NOT_P, getName.execute(inliningTarget, cls), "__bases__", a[i]);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_TUPLE_OF_CLASSES_NOT_P, cls, "__bases__", a[i]);
                 }
             }
 
@@ -956,29 +956,10 @@ public final class TypeBuiltins extends PythonBuiltins {
                     allowsDelete = true /* Delete handled by CheckSetSpecialTypeAttrNode */)
     abstract static class NameNode extends AbstractSlotNode {
         @Specialization(guards = "isNoValue(value)")
-        static TruffleString getNameType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value) {
-            return cls.getName();
-        }
-
-        @Specialization(guards = "isNoValue(value)")
-        static TruffleString getNameBuiltin(PythonManagedClass cls, @SuppressWarnings("unused") PNone value) {
-            return cls.getName();
-        }
-
-        @Specialization(guards = "isNoValue(value)")
-        static Object getName(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
-                        @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
-                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.LastIndexOfCodePointNode indexOfCodePointNode,
-                        @Cached TruffleString.SubstringNode substringNode) {
-            // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            TruffleString tpName = getTpNameNode.readFromObj(cls, PyTypeObject__tp_name);
-            int nameLen = codePointLengthNode.execute(tpName, TS_ENCODING);
-            int lastDot = indexOfCodePointNode.execute(tpName, '.', nameLen, 0, TS_ENCODING);
-            if (lastDot < 0) {
-                return tpName;
-            }
-            return substringNode.execute(tpName, lastDot + 1, nameLen - lastDot - 1, TS_ENCODING, true);
+        static TruffleString getNameType(Object cls, @SuppressWarnings("unused") PNone value,
+                        @Bind Node inliningTarget,
+                        @Cached GetNameNode getNameNode) {
+            return getNameNode.execute(inliningTarget, cls);
         }
 
         @GenerateInline
@@ -1012,10 +993,10 @@ public final class TypeBuiltins extends PythonBuiltins {
         static Object setName(VirtualFrame frame, Object cls, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached CheckSetSpecialTypeAttrNode check,
-                        @Exclusive @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TruffleString.IsValidNode isValidNode,
-                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached SetNameInnerNode innerNode,
                         @Cached PRaiseNode raiseNode) {
@@ -1141,23 +1122,14 @@ public final class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static Object getNative(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
+                        @Bind Node inliningTarget,
                         @Cached GetTypeFlagsNode getTypeFlagsNode,
                         @Cached CStructAccess.ReadObjectNode getHtName,
-                        @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
-                        @Cached TruffleString.SubstringNode substringNode) {
+                        @Cached GetNameNode getNameNode) {
             if ((getTypeFlagsNode.execute(cls) & TypeFlags.HEAPTYPE) != 0) {
                 return getHtName.readFromObj(cls, PyHeapTypeObject__ht_qualname);
             } else {
-                // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-                TruffleString tpName = getTpNameNode.readFromObj(cls, PyTypeObject__tp_name);
-                int nameLen = codePointLengthNode.execute(tpName, TS_ENCODING);
-                int firstDot = indexOfCodePointNode.execute(tpName, '.', 0, nameLen, TS_ENCODING);
-                if (firstDot < 0) {
-                    return tpName;
-                }
-                return substringNode.execute(tpName, firstDot + 1, nameLen - firstDot - 1, TS_ENCODING, true);
+                return getNameNode.execute(inliningTarget, cls);
             }
         }
 

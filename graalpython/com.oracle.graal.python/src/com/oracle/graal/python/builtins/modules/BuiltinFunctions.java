@@ -165,7 +165,6 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
@@ -2633,13 +2632,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached(parameters = "ANext") LookupSpecialMethodSlotNode getANext,
                         @Cached GetClassNode getAsyncIterType,
                         @Cached PRaiseNode raiseNoANext,
-                        @Cached CallUnaryMethodNode callANext,
-                        @Cached TypeNodes.GetNameNode getName) {
+                        @Cached CallUnaryMethodNode callANext) {
             // TODO: two argument anext
             Object type = getAsyncIterType.execute(inliningTarget, asyncIter);
             Object getter = getANext.execute(frame, type, asyncIter);
             if (getter == NO_VALUE) {
-                throw raiseNoANext.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OBJECT_NOT_ASYNCGEN, getName.execute(inliningTarget, type));
+                throw raiseNoANext.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OBJECT_NOT_ASYNCGEN, type);
             }
             return callANext.executeObject(frame, getter, asyncIter);
         }

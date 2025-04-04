@@ -124,8 +124,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.Builder;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.HasSameConstructorNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
@@ -2680,13 +2680,13 @@ public abstract class GraalHPyNodes {
 
         @Specialization(replaces = "doTpName")
         static Object doGeneric(Node inliningTarget, GraalHPyContext ctx, Object type,
-                        @Cached GetNameNode getName,
+                        @Cached TypeNodes.GetTpNameNode getTpNameNode,
                         @Cached(parameters = "ctx", inline = false) HPyAsCharPointerNode asCharPointerNode) {
             if (type instanceof PythonClass pythonClass && pythonClass.getTpName() != null) {
                 return pythonClass.getTpName();
             }
-            TruffleString baseName = getName.execute(inliningTarget, type);
-            return asCharPointerNode.execute(ctx, baseName, Encoding.UTF_8);
+            TruffleString tpName = getTpNameNode.execute(inliningTarget, type);
+            return asCharPointerNode.execute(ctx, tpName, Encoding.UTF_8);
         }
     }
 
