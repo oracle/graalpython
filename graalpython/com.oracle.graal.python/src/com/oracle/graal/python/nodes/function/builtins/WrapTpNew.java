@@ -40,47 +40,87 @@
  */
 package com.oracle.graal.python.nodes.function.builtins;
 
-import org.graalvm.collections.Pair;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 /**
  * Implements cpython://Objects/typeobject.c#tp_new_wrapper.
  */
 public final class WrapTpNew extends SlotWrapper {
-    @Child private IsTypeNode isType;
-    @Child private IsSubtypeNode isSubtype;
-    @Child private LookupAttributeInMRONode lookupNewNode;
-    @CompilationFinal private ValueProfile builtinProfile;
-    @CompilationFinal private byte state = 0;
     private final PythonBuiltinClassType owner;
-    // we cache two node classes here, otherwise we use a truffle boundary lookup
-    @CompilationFinal(dimensions = 1) private final Pair<?, ?>[] cachedFactoriesNodeClasses = new Pair<?, ?>[2];
-
-    private static final byte NOT_SUBTP_STATE = 0b100;
-    private static final byte NOT_CLASS_STATE = 0b010;
-    private static final byte IS_UNSAFE_STATE = 0b001;
+    @Child private CheckNode checkNode;
 
     public WrapTpNew(BuiltinCallNode func, PythonBuiltinClassType owner) {
         super(func);
         this.owner = owner;
+    }
+
+    @GenerateInline(false)
+    abstract static class CheckNode extends Node {
+        abstract void execute(PythonBuiltinClassType owner, Object cls);
+
+        @Specialization
+        static void check(PythonBuiltinClassType owner, Object cls,
+                        @Bind Node inliningTarget,
+                        @Cached IsTypeNode isTypeNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached GetCachedTpSlotsNode getSlotsCls,
+                        @Cached GetCachedTpSlotsNode getSlotsBase1,
+                        @Cached GetCachedTpSlotsNode getSlotsBase2,
+                        @Cached GetBaseClassNode getBase1,
+                        @Cached GetBaseClassNode getBase2,
+                        @Cached InlinedLoopConditionProfile loopProfile,
+                        @Cached PRaiseNode raiseNotType,
+                        @Cached PRaiseNode raiseNotSubytpe,
+                        @Cached PRaiseNode raiseNotSafe) {
+            if (!isTypeNode.execute(inliningTarget, cls)) {
+                throw raiseNotType.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.NEW_X_ISNT_TYPE_OBJ, owner.getName(), cls);
+            }
+            if (!isSubtypeNode.execute(cls, owner)) {
+                throw raiseNotSubytpe.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_SUBTYPE_OF, owner.getName(), cls, cls, owner.getName());
+            }
+            /*
+             * CPython comment: Check that the use doesn't do something silly and unsafe like
+             * object.__new__(dict). To do this, we check that the most derived base that's not a
+             * heap type is this type.
+             */
+            // We unroll the first iteration for better specialization
+            Object staticBase = cls;
+            TpSlot staticBaseNew = getSlotsCls.execute(inliningTarget, staticBase).tp_new();
+            if (staticBaseNew instanceof TpSlotPythonSingle) {
+                staticBase = getBase1.execute(inliningTarget, staticBase);
+                staticBaseNew = getSlotsBase1.execute(inliningTarget, staticBase).tp_new();
+                while (loopProfile.profile(inliningTarget, staticBaseNew instanceof TpSlotPythonSingle)) {
+                    staticBase = getBase2.execute(inliningTarget, staticBase);
+                    staticBaseNew = getSlotsBase2.execute(inliningTarget, staticBase).tp_new();
+                }
+            }
+            if (staticBaseNew != owner.getSlots().tp_new()) {
+                throw raiseNotSafe.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.NEW_IS_NOT_SAFE_USE_ELSE, owner.getName(), cls, cls);
+            }
+        }
+
+        @NeverDefault
+        public static CheckNode create() {
+            return WrapTpNewFactory.CheckNodeGen.create();
+        }
     }
 
     @Override
@@ -94,86 +134,12 @@ public final class WrapTpNew extends SlotWrapper {
             throw new IllegalStateException(owner.getName() + ".__new__ called without arguments");
         }
         if (cls != owner) {
-            if (isType == null) {
+            if (checkNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                reportPolymorphicSpecialize();
-                isType = insert(IsTypeNode.create());
+                checkNode = insert(CheckNode.create());
             }
-            if (!isType.executeCached(cls)) {
-                if ((state & NOT_CLASS_STATE) == 0) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    reportPolymorphicSpecialize();
-                    state |= NOT_CLASS_STATE;
-                }
-                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.NEW_X_ISNT_TYPE_OBJ, owner.getName(), cls);
-            }
-            if (isSubtype == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                reportPolymorphicSpecialize();
-                isSubtype = insert(IsSubtypeNode.create());
-            }
-            if (!isSubtype.execute(cls, owner)) {
-                if ((state & NOT_SUBTP_STATE) == 0) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    reportPolymorphicSpecialize();
-                    state |= NOT_SUBTP_STATE;
-                }
-                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError,
-                                ErrorMessages.IS_NOT_SUBTYPE_OF,
-                                owner.getName(), cls, cls, owner.getName());
-            }
-            // CPython walks the bases and checks that the first non-heaptype base has the new that
-            // we're in. We have our optimizations for this lookup that the compiler can then
-            // (hopefully) merge with the initial lookup of the new method before entering it.
-            if (lookupNewNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                reportPolymorphicSpecialize();
-                lookupNewNode = insert(LookupAttributeInMRONode.createForLookupOfUnmanagedClasses(SpecialMethodNames.T___NEW__));
-            }
-            Object newMethod = lookupNewNode.execute(cls);
-            if (newMethod instanceof PBuiltinMethod) {
-                if (builtinProfile == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    builtinProfile = PythonUtils.createValueIdentityProfile();
-                }
-                NodeFactory<? extends PythonBuiltinBaseNode> factory = ((PBuiltinMethod) builtinProfile.profile(newMethod)).getBuiltinFunction().getBuiltinNodeFactory();
-                if (factory != null) {
-                    if (!getFactoryNodeClass(factory).isInstance(getNode())) {
-                        if ((state & IS_UNSAFE_STATE) == 0) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            reportPolymorphicSpecialize();
-                            state |= IS_UNSAFE_STATE;
-                        }
-                        throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.NEW_IS_NOT_SAFE_USE_ELSE, owner.getName(), cls, cls);
-                    }
-                }
-                // we explicitly allow non-Java functions to pass here, since a PythonBuiltinClass
-                // with a non-java function is explicitly written in the core to allow this
-            }
+            checkNode.execute(owner, cls);
         }
         return super.execute(frame);
-    }
-
-    @ExplodeLoop
-    @SuppressWarnings("unchecked")
-    private final Class<? extends PythonBuiltinBaseNode> getFactoryNodeClass(NodeFactory<? extends PythonBuiltinBaseNode> factory) {
-        for (int i = 0; i < cachedFactoriesNodeClasses.length; i++) {
-            Pair<NodeFactory<? extends PythonBuiltinBaseNode>, Class<? extends PythonBuiltinBaseNode>> pair = (Pair<NodeFactory<? extends PythonBuiltinBaseNode>, Class<? extends PythonBuiltinBaseNode>>) cachedFactoriesNodeClasses[i];
-            if (pair == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                reportPolymorphicSpecialize();
-                Class<? extends PythonBuiltinBaseNode> nodeclass = factory.getNodeClass();
-                cachedFactoriesNodeClasses[i] = Pair.create(factory, nodeclass);
-                return nodeclass;
-            } else if (pair.getLeft() == factory) {
-                return pair.getRight();
-            }
-        }
-        return getFactoryNodeClassUncached(factory);
-    }
-
-    @TruffleBoundary
-    private static final Class<? extends PythonBuiltinBaseNode> getFactoryNodeClassUncached(NodeFactory<? extends PythonBuiltinBaseNode> factory) {
-        return factory.getNodeClass();
     }
 }
