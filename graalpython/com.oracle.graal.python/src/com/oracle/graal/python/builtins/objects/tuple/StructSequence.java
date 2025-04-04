@@ -194,8 +194,11 @@ public class StructSequence {
              * We need to add the methods. Note that PyType_Ready already ran, so we just write the
              * method wrappers. Field names are already populated in tp_members on the native side.
              */
-            TpSlotBuiltin<?> newSlot = (TpSlotBuiltin<?>) StructSequenceBuiltins.SLOTS.tp_new();
-            writeAttrNode.execute(klass, T___NEW__, newSlot.createBuiltin(context, klass, T___NEW__, TpSlots.TpSlotMeta.TP_NEW.getNativeSignature()));
+            TpSlotBuiltin<?> newSlot = null;
+            if ((flags & TypeFlags.DISALLOW_INSTANTIATION) == 0) {
+                newSlot = (TpSlotBuiltin<?>) InstantiableStructSequenceBuiltins.SLOTS.tp_new();
+                writeAttrNode.execute(klass, T___NEW__, newSlot.createBuiltin(context, klass, T___NEW__, TpSlots.TpSlotMeta.TP_NEW.getNativeSignature()));
+            }
             /*
              * The tp_new slot doesn't get updated by writing the python wrapper. See the comments
              * about tp_new in TpSlots.updateSlots. We have to write it manually

@@ -49,8 +49,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.tuple.InstantiableStructSequenceBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.StructSequenceBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -79,7 +79,7 @@ public class StatResultBuiltins extends PythonBuiltins {
 
         @Specialization
         public static PTuple generic(VirtualFrame frame, Object cls, Object sequence, Object dict,
-                        @Cached StructSequenceBuiltins.NewNode newNode) {
+                        @Cached InstantiableStructSequenceBuiltins.NewNode newNode) {
             PTuple p = (PTuple) newNode.execute(frame, cls, sequence, dict);
             Object[] data = CompilerDirectives.castExact(p.getSequenceStorage(), ObjectSequenceStorage.class).getInternalObjectArray();
             for (int i = 7; i <= 9; i++) {

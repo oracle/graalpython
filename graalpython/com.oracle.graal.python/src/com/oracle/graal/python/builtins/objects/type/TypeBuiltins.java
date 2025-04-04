@@ -483,66 +483,28 @@ public final class TypeBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
-    abstract static class CheckTypeFlagsNode extends Node {
-        abstract void execute(Node inliningTarget, Object type);
-
-        @Specialization
-        static void doPBCT(Node inliningTarget, PythonBuiltinClassType type,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            if (type.disallowInstantiation()) {
-                throw raiseException(inliningTarget, type, raiseNode);
-            }
-        }
-
-        @Specialization
-        static void doNative(Node inliningTarget, PythonAbstractNativeObject type,
-                        @Cached GetTypeFlagsNode getTypeFlagsNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            if ((getTypeFlagsNode.execute(type) & TypeFlags.DISALLOW_INSTANTIATION) != 0) {
-                throw raiseException(inliningTarget, type, raiseNode);
-            }
-        }
-
-        @Fallback
-        static void doManaged(@SuppressWarnings("unused") Object type) {
-            // Guaranteed by caller
-            assert !(type instanceof PythonBuiltinClass);
-        }
-
-        @InliningCutoff
-        private static PException raiseException(Node inliningTarget, PythonAbstractNativeObject type, PRaiseNode raiseNode) {
-            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_N_INSTANCES, type);
-        }
-
-        @InliningCutoff
-        private static PException raiseException(Node inliningTarget, PythonBuiltinClassType type, PRaiseNode raiseNode) {
-            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, type.getPrintName());
-        }
-    }
-
-    @GenerateInline
-    @GenerateCached(false)
     protected abstract static class CreateInstanceNode extends PNodeWithContext {
 
         abstract Object execute(VirtualFrame frame, Node inliningTarget, Object self, Object[] args, PKeyword[] keywords);
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object type, Object[] arguments, PKeyword[] keywords,
-                        @Cached CheckTypeFlagsNode checkTypeFlagsNode,
                         @Cached InlinedConditionProfile builtinProfile,
                         @Cached GetCachedTpSlotsNode getTypeSlots,
                         @Cached GetCachedTpSlotsNode getInstanceSlots,
                         @Cached GetClassNode getInstanceClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached CallSlotTpNewNode callNew,
-                        @Cached CallSlotTpInitNode callInit) {
+                        @Cached CallSlotTpInitNode callInit,
+                        @Cached PRaiseNode raiseNode) {
             if (builtinProfile.profile(inliningTarget, type instanceof PythonBuiltinClass)) {
                 // PythonBuiltinClassType should help the code after this to optimize better
                 type = ((PythonBuiltinClass) type).getType();
             }
-            checkTypeFlagsNode.execute(inliningTarget, type);
             TpSlots typeSlots = getTypeSlots.execute(inliningTarget, type);
-            // TODO check null
+            if (typeSlots.tp_new() == null) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_N_INSTANCES, type);
+            }
             Object newInstance = callNew.execute(frame, inliningTarget, typeSlots.tp_new(), type, arguments, keywords);
             Object newInstanceKlass = getInstanceClassNode.execute(inliningTarget, newInstance);
             if (isSubtypeNode.execute(newInstanceKlass, type)) {

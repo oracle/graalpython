@@ -359,6 +359,7 @@ import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
+import com.oracle.graal.python.builtins.objects.tuple.InstantiableStructSequenceBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltins;
@@ -498,6 +499,7 @@ public abstract class Python3Core {
                         new SliceBuiltins(),
                         new TupleBuiltins(),
                         new StructSequenceBuiltins(),
+                        new InstantiableStructSequenceBuiltins(),
                         new StringBuiltins(),
                         new BaseSetBuiltins(),
                         new SetBuiltins(),
