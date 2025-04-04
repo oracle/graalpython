@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,13 +49,13 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @GenerateInline(false) // used in BCI root node
 public abstract class GetYieldFromIterNode extends Node {
-    public abstract Object execute(Frame frame, Object receiver);
+    public abstract Object execute(VirtualFrame frame, Object receiver);
 
     @Specialization
     public static Object getGeneratorOrCoroutine(PGenerator arg) {
@@ -64,7 +64,7 @@ public abstract class GetYieldFromIterNode extends Node {
     }
 
     @Specialization
-    public static Object getGeneric(Frame frame, Object arg,
+    public static Object getGeneric(VirtualFrame frame, Object arg,
                     @Bind("this") Node inliningTarget,
                     @Cached PyObjectGetIter getIter,
                     @Cached IsBuiltinObjectExactProfile isCoro) {

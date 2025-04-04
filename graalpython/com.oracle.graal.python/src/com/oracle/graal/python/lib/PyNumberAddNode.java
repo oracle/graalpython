@@ -40,24 +40,21 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.objects.ints.IntBuiltins.AddNode.add;
 import static com.oracle.graal.python.lib.CallBinaryOpNode.raiseNotSupported;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.CallSlotBinaryFuncNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
+import com.oracle.graal.python.lib.fastpath.PyNumberAddFastPathsBase;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -65,105 +62,46 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@GenerateCached(false)
-@TypeSystemReference(PythonIntegerTypes.class)
-abstract class PyNumberAddBaseNode extends BinaryOpNode {
-
-    /*
-     * All the following fast paths need to be kept in sync with the corresponding builtin functions
-     * in IntBuiltins
-     */
-    @Specialization(rewriteOn = ArithmeticException.class)
-    static int doII(int left, int right) {
-        return Math.addExact(left, right);
-    }
-
-    @Specialization(replaces = "doII", rewriteOn = ArithmeticException.class)
-    static long doLL(long left, long right) {
-        return Math.addExact(left, right);
-    }
-
-    @Specialization(replaces = "doLL")
-    static Object doLLOvf(long x, long y,
-                    @Bind PythonLanguage language) {
-        /* Inlined version of Math.addExact(x, y) with BigInteger fallback. */
-        long r = x + y;
-        // HD 2-12 Overflow iff both arguments have the opposite sign of the result
-        if (((x ^ r) & (y ^ r)) < 0) {
-            return PFactory.createInt(language, add(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
-        }
-        return r;
-    }
-
-    /*
-     * All the following fast paths need to be kept in sync with the corresponding builtin functions
-     * in FloatBuiltins
-     */
-    @Specialization
-    public static double doDD(double left, double right) {
-        return left + right;
-    }
-
-    @Specialization
-    public static double doDL(double left, long right) {
-        return left + right;
-    }
-
-    @Specialization
-    public static double doLD(long left, double right) {
-        return left + right;
-    }
-}
-
-@GenerateInline(inlineByDefault = true)
+@GenerateInline(false)
 @GenerateUncached
-public abstract class PyNumberAddNode extends PyNumberAddBaseNode {
-    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w);
-
-    @Override
-    public final Object execute(VirtualFrame frame, Object left, Object right) {
-        return executeCached(frame, left, right);
-    }
-
-    public final Object executeCached(VirtualFrame frame, Object v, Object w) {
-        return execute(frame, this, v, w);
-    }
+public abstract class PyNumberAddNode extends PyNumberAddFastPathsBase {
 
     @Specialization(guards = {"isBuiltinList(left)", "isBuiltinList(right)"})
-    static PList doPList(Node inliningTarget, PList left, PList right,
-                    @Shared @Cached SequenceStorageNodes.ConcatListOrTupleNode concatNode,
-                    @Bind PythonLanguage language) {
+    public static PList doPList(PList left, PList right,
+                    @Bind PythonLanguage language,
+                    @Bind Node inliningTarget,
+                    @Shared @Cached SequenceStorageNodes.ConcatListOrTupleNode concatNode) {
         SequenceStorage newStore = concatNode.execute(inliningTarget, left.getSequenceStorage(), right.getSequenceStorage());
         return PFactory.createList(language, newStore);
     }
 
     @Specialization(guards = {"isBuiltinTuple(left)", "isBuiltinTuple(right)"})
-    static PTuple doTuple(Node inliningTarget, PTuple left, PTuple right,
-                    @Shared @Cached SequenceStorageNodes.ConcatListOrTupleNode concatNode,
-                    @Bind PythonLanguage language) {
+    public static PTuple doTuple(PTuple left, PTuple right,
+                    @Bind PythonLanguage language,
+                    @Bind Node inliningTarget,
+                    @Shared @Cached SequenceStorageNodes.ConcatListOrTupleNode concatNode) {
         SequenceStorage concatenated = concatNode.execute(inliningTarget, left.getSequenceStorage(), right.getSequenceStorage());
         return PFactory.createTuple(language, concatenated);
     }
 
     @Specialization
-    static TruffleString doIt(TruffleString left, TruffleString right,
+    public static TruffleString doIt(TruffleString left, TruffleString right,
                     @Cached(inline = false) TruffleString.ConcatNode concatNode) {
         return concatNode.execute(left, right, TS_ENCODING, false);
     }
 
     @Fallback
-    static Object doIt(VirtualFrame frame, Node inliningTarget, Object v, Object w,
+    public static Object doIt(VirtualFrame frame, Object v, Object w,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached GetClassNode getVClass,
                     @Cached GetCachedTpSlotsNode getVSlots,
                     @Cached GetCachedTpSlotsNode getWSlots,

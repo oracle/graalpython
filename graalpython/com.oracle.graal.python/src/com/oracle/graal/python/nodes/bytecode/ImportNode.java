@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,6 +63,7 @@ public abstract class ImportNode extends AbstractImportNode {
         return importModule(frame, name, globals, cachedFromList, level, importName);
     }
 
+    @NeverDefault
     public static ImportNode create() {
         return ImportNodeGen.create();
     }
