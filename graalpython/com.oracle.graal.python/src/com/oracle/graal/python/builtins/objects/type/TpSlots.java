@@ -1559,7 +1559,8 @@ public record TpSlots(TpSlot nb_bool, //
                          */
                         useGeneric = true;
                     }
-                } else if (slot == TpSlotMeta.TP_NEW && descr instanceof PBuiltinMethod method && method.getBuiltinFunction().getSlot() != null) {
+                } else if (slot == TpSlotMeta.TP_NEW && descr instanceof PBuiltinMethod method && method.getBuiltinFunction().getSlot() != null &&
+                                !(slots.get(TpSlotMeta.TP_NEW) instanceof TpSlotPythonSingle)) {
                     /*
                      * From CPython: The __new__ wrapper is not a wrapper descriptor, so must be
                      * special-cased differently. If we don't do this, creating an instance will
@@ -1578,6 +1579,12 @@ public record TpSlots(TpSlot nb_bool, //
                      * this check and stay in the slot, diverging from the __new__ wrapper inherited
                      * in MRO. This behavior is already relied upon in the wild (pandas) so we don't
                      * check the type either.
+                     *
+                     * The last part of the condition is GraalPy-specific because we cache the
+                     * Python method in the slot. So we make it go to the generic path to make sure
+                     * it creates a new wrapper for the right method.
+                     *
+                     * See test_tp_new_bug_to_bug_compatibility in cpyext/test_object.py
                      */
                     specific = slots.get(TpSlotMeta.TP_NEW);
                 } else if (descr == PNone.NONE && slot == TpSlotMeta.TP_HASH) {
