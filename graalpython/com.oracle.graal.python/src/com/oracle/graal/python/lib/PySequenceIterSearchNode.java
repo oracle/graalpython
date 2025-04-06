@@ -91,7 +91,7 @@ public abstract class PySequenceIterSearchNode extends PNodeWithContext {
                     @Cached PRaiseNode raiseNode,
                     @Cached PyIterNextNode nextNode,
                     @Cached InlinedLoopConditionProfile loopProfile,
-                    @Cached(inline = false) PyObjectRichCompareBool.EqNode eqNode,
+                    @Cached PyObjectRichCompareBool eqNode,
                     @Cached InlinedIntValueProfile opProfile) {
         Object iterator;
         try {
@@ -104,34 +104,39 @@ public abstract class PySequenceIterSearchNode extends PNodeWithContext {
         int i = 0;
         int n = 0;
         boolean wrapped = false;
-        Object next;
-        while (loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, iterator)))) {
-            if (eqNode.compare(frame, inliningTarget, next, key)) {
-                switch (operation) {
-                    case PY_ITERSEARCH_COUNT:
-                        n++;
-                        break;
-                    case PY_ITERSEARCH_INDEX:
-                        if (CompilerDirectives.hasNextTier()) {
-                            LoopNode.reportLoopCount(inliningTarget, wrapped ? Integer.MAX_VALUE : i + 1);
-                        }
-                        if (wrapped) {
-                            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.INDEX_EXCEEDS_INT);
-                        } else {
-                            return i;
-                        }
-                    case PY_ITERSEARCH_CONTAINS:
-                        if (CompilerDirectives.hasNextTier()) {
-                            LoopNode.reportLoopCount(inliningTarget, wrapped ? Integer.MAX_VALUE : i + 1);
-                        }
-                        return 1;
+        boolean exhausted = false;
+        do {
+            try {
+                Object next = nextNode.execute(frame, inliningTarget, iterator);
+                if (eqNode.executeEq(frame, inliningTarget, next, key)) {
+                    switch (operation) {
+                        case PY_ITERSEARCH_COUNT:
+                            n++;
+                            break;
+                        case PY_ITERSEARCH_INDEX:
+                            if (CompilerDirectives.hasNextTier()) {
+                                LoopNode.reportLoopCount(inliningTarget, wrapped ? Integer.MAX_VALUE : i + 1);
+                            }
+                            if (wrapped) {
+                                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.INDEX_EXCEEDS_INT);
+                            } else {
+                                return i;
+                            }
+                        case PY_ITERSEARCH_CONTAINS:
+                            if (CompilerDirectives.hasNextTier()) {
+                                LoopNode.reportLoopCount(inliningTarget, wrapped ? Integer.MAX_VALUE : i + 1);
+                            }
+                            return 1;
+                    }
                 }
+                if (operation == PY_ITERSEARCH_INDEX && i == Integer.MAX_VALUE) {
+                    wrapped = true;
+                }
+                i++;
+            } catch (IteratorExhausted e) {
+                exhausted = true;
             }
-            if (operation == PY_ITERSEARCH_INDEX && i == Integer.MAX_VALUE) {
-                wrapped = true;
-            }
-            i++;
-        }
+        } while (loopProfile.profile(inliningTarget, !exhausted));
         if (CompilerDirectives.hasNextTier()) {
             LoopNode.reportLoopCount(inliningTarget, wrapped ? Integer.MAX_VALUE : i + 1);
         }

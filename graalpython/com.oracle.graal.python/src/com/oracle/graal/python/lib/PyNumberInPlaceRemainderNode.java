@@ -41,6 +41,7 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.InplaceSlot;
+import com.oracle.graal.python.lib.fastpath.PyNumberRemainderFastPathsBase;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -53,7 +54,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false)
 @GenerateUncached
-public abstract class PyNumberInPlaceRemainderNode extends PyNumberRemainderBaseNode {
+public abstract class PyNumberInPlaceRemainderNode extends PyNumberRemainderFastPathsBase {
     @Fallback
     @InliningCutoff
     public static Object doIt(VirtualFrame frame, Object v, Object w,

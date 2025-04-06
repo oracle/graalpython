@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
-import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -119,16 +118,13 @@ public final class AccumulateBuiltins extends PythonBuiltins {
             }
             Object it = self.getIterable();
             Object value = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, it).tp_iternext(), it);
-            if (PyIterNextNode.isExhausted(value)) {
-                return iteratorExhausted();
-            }
             if (self.getTotal() == null) {
                 markerProfile.enter(inliningTarget);
                 self.setTotal(value);
                 return value;
             }
             if (hasFuncProfile.profile(inliningTarget, self.getFunc() == null)) {
-                self.setTotal(addNode.execute(frame, inliningTarget, self.getTotal(), value));
+                self.setTotal(addNode.execute(frame, self.getTotal(), value));
             } else {
                 self.setTotal(callNode.execute(frame, self.getFunc(), self.getTotal(), value));
             }

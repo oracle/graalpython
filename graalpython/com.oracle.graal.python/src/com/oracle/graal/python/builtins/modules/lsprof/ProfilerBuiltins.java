@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,9 +38,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.builtins.modules.lsprof;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.ArrayList;
@@ -50,115 +49,41 @@ import java.util.List;
 import java.util.Map;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.InstrumentInfo;
-import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.tools.profiler.CPUSampler;
-import com.oracle.truffle.tools.profiler.CPUSampler.Payload;
 import com.oracle.truffle.tools.profiler.CPUSamplerData;
 import com.oracle.truffle.tools.profiler.ProfilerNode;
-import com.oracle.truffle.tools.profiler.impl.CPUSamplerInstrument;
-
-@CoreFunctions(defineModule = "_lsprof")
-public final class LsprofModuleBuiltins extends PythonBuiltins {
-
-    static final StructSequence.BuiltinTypeDescriptor PROFILER_ENTRY_DESC = new StructSequence.BuiltinTypeDescriptor(
-                    PythonBuiltinClassType.PProfilerEntry,
-                    null,
-                    6,
-                    new String[]{
-                                    "code", "callcount", "reccallcount", "totaltime", "inlinetime", "calls"
-                    },
-                    new String[]{
-                                    "code object or built-in function name",
-                                    "how many times this was called",
-                                    "how many times called recursively",
-                                    "total time in this entry",
-                                    "inline time in this entry (not in subcalls)",
-                                    "details of the calls"
-                    });
-
-    static final StructSequence.BuiltinTypeDescriptor PROFILER_SUBENTRY_DESC = new StructSequence.BuiltinTypeDescriptor(
-                    PythonBuiltinClassType.PProfilerSubentry,
-                    null,
-                    5,
-                    new String[]{
-                                    "code", "callcount", "reccallcount", "totaltime", "inlinetime"
-                    },
-                    new String[]{
-                                    "called code object or built-in function name",
-                                    "how many times this is called",
-                                    "how many times this is called recursively",
-                                    "total time spent in this call",
-                                    "inline time (not in further subcalls)"
-                    });
-
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return LsprofModuleBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-        StructSequence.initType(core, PROFILER_ENTRY_DESC);
-        StructSequence.initType(core, PROFILER_SUBENTRY_DESC);
-    }
-
-    public static PythonBuiltins newProfilerBuiltins() {
-        return new ProfilerBuiltins();
-    }
-
-    @Builtin(name = "Profiler", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.LsprofProfiler)
-    @GenerateNodeFactory
-    abstract static class LsprofNew extends PythonBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        Profiler doit(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            PythonContext context = getContext();
-            Env env = context.getEnv();
-            Map<String, InstrumentInfo> instruments = env.getInstruments();
-            InstrumentInfo instrumentInfo = instruments.get(CPUSamplerInstrument.ID);
-            if (instrumentInfo != null) {
-                CPUSampler sampler = env.lookup(instrumentInfo, CPUSampler.class);
-                if (sampler != null) {
-                    return PFactory.createProfiler(context.getLanguage(), cls, TypeNodes.GetInstanceShape.executeUncached(cls), sampler);
-                }
-            }
-            throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.NotImplementedError, ErrorMessages.COVERAGE_TRACKER_NOT_AVAILABLE);
-        }
-    }
-}
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.LsprofProfiler)
-class ProfilerBuiltins extends PythonBuiltins {
+public class ProfilerBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = ProfilerBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ProfilerBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "timer", "timeunit", "subcalls", "builtins"})
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(name = "Profiler", minNumOfPositionalArgs = 1, parameterNames = {"$self", "timer", "timeunit", "subcalls", "builtins"})
     @GenerateNodeFactory
     abstract static class Init extends PythonBuiltinNode {
         @Specialization
@@ -264,9 +189,9 @@ class ProfilerBuiltins extends PythonBuiltins {
             double avgSampleSeconds = self.sampler.getPeriod() / 1000D;
             List<PTuple> entries = new ArrayList<>();
             for (CPUSamplerData data : self.sampler.getDataList()) {
-                Map<Thread, Collection<ProfilerNode<Payload>>> threads = data.getThreadData();
+                Map<Thread, Collection<ProfilerNode<CPUSampler.Payload>>> threads = data.getThreadData();
                 for (Thread thread : threads.keySet()) {
-                    for (ProfilerNode<Payload> node : threads.get(thread)) {
+                    for (ProfilerNode<CPUSampler.Payload> node : threads.get(thread)) {
                         countNode(entries, node, avgSampleSeconds);
                     }
                 }
@@ -276,13 +201,13 @@ class ProfilerBuiltins extends PythonBuiltins {
             return PFactory.createList(PythonLanguage.get(null), entries.toArray());
         }
 
-        private static void countNode(List<PTuple> entries, ProfilerNode<Payload> node, double avgSampleTime) {
+        private static void countNode(List<PTuple> entries, ProfilerNode<CPUSampler.Payload> node, double avgSampleTime) {
             PythonLanguage language = PythonLanguage.get(null);
-            Collection<ProfilerNode<Payload>> children = node.getChildren();
+            Collection<ProfilerNode<CPUSampler.Payload>> children = node.getChildren();
             Object[] profilerEntry = getProfilerEntry(node, avgSampleTime);
             Object[] calls = new Object[children.size()];
             int callIdx = 0;
-            for (ProfilerNode<Payload> childNode : children) {
+            for (ProfilerNode<CPUSampler.Payload> childNode : children) {
                 countNode(entries, childNode, avgSampleTime);
                 calls[callIdx++] = PFactory.createStructSeq(language, LsprofModuleBuiltins.PROFILER_SUBENTRY_DESC, getProfilerEntry(childNode, avgSampleTime));
             }
@@ -292,7 +217,7 @@ class ProfilerBuiltins extends PythonBuiltins {
             entries.add(PFactory.createStructSeq(language, LsprofModuleBuiltins.PROFILER_ENTRY_DESC, profilerEntry));
         }
 
-        private static Object[] getProfilerEntry(ProfilerNode<Payload> node, double avgSampleTime) {
+        private static Object[] getProfilerEntry(ProfilerNode<CPUSampler.Payload> node, double avgSampleTime) {
             SourceSection sec = node.getSourceSection();
             String rootName;
             if (sec == null) {

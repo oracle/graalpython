@@ -40,12 +40,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ARRAY;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
@@ -86,10 +80,12 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSu
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -97,16 +93,16 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyObjectRichCompare;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -125,7 +121,6 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
-import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -135,8 +130,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -283,204 +276,91 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @GenerateInline
-    @GenerateCached(false)
-    @ImportStatic({BufferFormat.class, PGuards.class})
-    abstract static class EqNeHelperNode extends Node {
-
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object left, Object right, ComparisonOp op);
-
-        @Specialization(guards = {"left.getFormat() == right.getFormat()", "!isFloatingPoint(left.getFormat())"})
-        static boolean eqBytes(PArray left, PArray right, ComparisonOp op,
-                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-            if (left.getBytesLength() != right.getBytesLength()) {
-                return op == ComparisonOp.NE;
-            }
-            for (int i = 0; i < left.getBytesLength(); i++) {
-                if (bufferLib.readByte(left.getBuffer(), i) != bufferLib.readByte(right.getBuffer(), i)) {
-                    return op == ComparisonOp.NE;
-                }
-            }
-            return op == ComparisonOp.EQ;
-        }
-
-        @Specialization(guards = "left.getFormat() != right.getFormat()")
-        static boolean eqItems(VirtualFrame frame, Node inliningTarget, PArray left, PArray right, ComparisonOp op,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
-                        @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
-            if (left.getLength() != right.getLength()) {
-                return op == ComparisonOp.NE;
-            }
-            for (int i = 0; i < left.getLength(); i++) {
-                if (!eqNode.compare(frame, inliningTarget, getLeft.execute(inliningTarget, left, i), getRight.execute(inliningTarget, right, i))) {
-                    return op == ComparisonOp.NE;
-                }
-            }
-            return op == ComparisonOp.EQ;
-        }
-
-        // Separate specialization for float/double is needed because of NaN comparisons
-        @Specialization(guards = {"left.getFormat() == right.getFormat()", "isFloatingPoint(left.getFormat())"})
-        static boolean eqDoubles(Node inliningTarget, PArray left, PArray right, ComparisonOp op,
-                        @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
-                        @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
-            if (left.getLength() != right.getLength()) {
-                return op == ComparisonOp.NE;
-            }
-            for (int i = 0; i < left.getLength(); i++) {
-                double leftValue = (Double) getLeft.execute(inliningTarget, left, i);
-                double rightValue = (Double) getRight.execute(inliningTarget, right, i);
-                if (leftValue != rightValue) {
-                    return op == ComparisonOp.NE;
-                }
-            }
-            return op == ComparisonOp.EQ;
-        }
-
-        @Specialization(guards = "!isArray(right)")
-        @SuppressWarnings("unused")
-        static Object eq(PArray left, Object right, ComparisonOp op) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        @Specialization(guards = "!isArray(left)")
-        @SuppressWarnings("unused")
-        static Object error(Object left, Object right, ComparisonOp op,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.builtinName, J_ARRAY + "." + J_ARRAY, left);
-        }
-    }
-
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    abstract static class EqNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object eqBytes(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached EqNeHelperNode helperNode) {
-            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.EQ);
-        }
-    }
-
-    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class NeNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object eqBytes(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached EqNeHelperNode helperNode) {
-            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.NE);
-        }
-    }
-
-    @GenerateInline
-    @GenerateCached(false)
     @ImportStatic({BufferFormat.class, PGuards.class})
-    abstract static class ComparisonHelperNode extends Node {
-
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object left, Object right, ComparisonOp op, BinaryComparisonNode compareNode);
+    abstract static class ArrayRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
 
         @Specialization(guards = "!isFloatingPoint(left.getFormat()) || (left.getFormat() != right.getFormat())")
-        static boolean cmpItems(VirtualFrame frame, Node inliningTarget, PArray left, PArray right, ComparisonOp op, BinaryComparisonNode compareNode,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Exclusive @Cached PyObjectIsTrueNode coerceToBooleanNode,
+        static Object cmpItems(VirtualFrame frame, PArray left, PArray right, RichCmpOp op,
+                        @Bind Node inliningTarget,
+                        @Exclusive @Cached InlinedBranchProfile fullCmpProfile,
+                        @Exclusive @Cached PyObjectRichCompareBool richCmpEqNode,
+                        @Exclusive @Cached PyObjectRichCompare richCmpOpNode,
                         @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
-                        @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
+                        @Exclusive @Cached ArrayNodes.GetValueNode getRight,
+                        @Exclusive @Cached InlinedLoopConditionProfile loopProfile) {
+            if (left.getLength() != right.getLength() && op.isEqOrNe()) {
+                // the same fast-path as CPython
+                return op == RichCmpOp.Py_NE;
+            }
+            fullCmpProfile.enter(inliningTarget);
             int commonLength = Math.min(left.getLength(), right.getLength());
-            for (int i = 0; i < commonLength; i++) {
+            loopProfile.profileCounted(inliningTarget, commonLength); // ignoring the early exit
+            for (int i = 0; loopProfile.inject(inliningTarget, i < commonLength); i++) {
                 Object leftValue = getLeft.execute(inliningTarget, left, i);
                 Object rightValue = getRight.execute(inliningTarget, right, i);
-                if (!eqNode.compare(frame, inliningTarget, leftValue, rightValue)) {
-                    return coerceToBooleanNode.execute(frame, compareNode.execute(frame, leftValue, rightValue));
+                if (!richCmpEqNode.execute(frame, inliningTarget, leftValue, rightValue, RichCmpOp.Py_EQ)) {
+                    if (op == RichCmpOp.Py_EQ) {
+                        return false;
+                    } else if (op == RichCmpOp.Py_NE) {
+                        return true;
+                    }
+                    return richCmpOpNode.execute(frame, inliningTarget, leftValue, rightValue, op);
                 }
             }
-            return op.cmpResultToBool(left.getLength() - right.getLength());
+            if (op.isEqOrNe()) {
+                return op.isEq();
+            }
+            return op.compareResultToBool(left.getLength() - right.getLength());
         }
 
-        // Separate specialization for float/double is needed because of NaN comparisons
+        // Separate specialization for float/double is needed because, normally in
+        // PyObjectRichCompareBool we treat NaNs as equals, this is because CPython does identity
+        // check in PyObjectRichCompareBool. We do not really have identity for doubles, so we
+        // cannot say if NaNs, which are by definition not equal (PyObjectRichCompare always returns
+        // false for NaN and Nan), are identical or not. So we choose that all NaNs with equal bit
+        // patterns are identical. This is however different for arrays, where the identity cannot
+        // be preserved, so here we know for sure that if we see two NaNs, PyObjectRichCompareBool
+        // would return false on CPython, and so we do the same. This is tested in CPython tests.
         @Specialization(guards = {"isFloatingPoint(left.getFormat())", "left.getFormat() == right.getFormat()"})
-        static boolean cmpDoubles(VirtualFrame frame, Node inliningTarget, PArray left, PArray right, ComparisonOp op, BinaryComparisonNode compareNode,
-                        @Exclusive @Cached PyObjectIsTrueNode coerceToBooleanNode,
+        static boolean cmpDoubles(VirtualFrame frame, PArray left, PArray right, RichCmpOp op,
+                        @Bind("$node") Node inliningTarget,
+                        @Exclusive @Cached InlinedBranchProfile fullCmpProfile,
                         @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
-                        @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
+                        @Exclusive @Cached ArrayNodes.GetValueNode getRight,
+                        @Exclusive @Cached InlinedLoopConditionProfile loopProfile) {
+            if (left.getLength() != right.getLength() && op.isEqOrNe()) {
+                // the same fast-path as CPython
+                return op == RichCmpOp.Py_NE;
+            }
+            fullCmpProfile.enter(inliningTarget);
             int commonLength = Math.min(left.getLength(), right.getLength());
-            for (int i = 0; i < commonLength; i++) {
+            loopProfile.profileCounted(inliningTarget, commonLength); // ignoring the early exit
+            for (int i = 0; loopProfile.inject(inliningTarget, i < commonLength); i++) {
                 double leftValue = (Double) getLeft.execute(inliningTarget, left, i);
                 double rightValue = (Double) getRight.execute(inliningTarget, right, i);
                 if (leftValue != rightValue) {
-                    return coerceToBooleanNode.execute(frame, compareNode.execute(frame, leftValue, rightValue));
+                    return op.compare(leftValue, rightValue);
                 }
             }
-            return op.cmpResultToBool(left.getLength() - right.getLength());
+            if (op.isEqOrNe()) {
+                return op.isEq();
+            }
+            return op.compareResultToBool(left.getLength() - right.getLength());
         }
 
         @Specialization(guards = "!isArray(right)")
         @SuppressWarnings("unused")
-        static Object cmp(PArray left, Object right, ComparisonOp op, BinaryComparisonNode compareNode) {
+        static Object cmp(PArray left, Object right, RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
         @Specialization(guards = "!isArray(left)")
         @SuppressWarnings("unused")
-        static Object error(Object left, Object right, ComparisonOp op, BinaryComparisonNode compareNode,
+        static Object error(Object left, Object right, RichCmpOp op,
                         @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.builtinName, J_ARRAY + "." + J_ARRAY, left);
-        }
-
-    }
-
-    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class LtNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object cmp(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ComparisonHelperNode helperNode,
-                        @Cached BinaryComparisonNode.LtNode cmpNode) {
-            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.LT, cmpNode);
-        }
-    }
-
-    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class GtNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object cmp(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ComparisonHelperNode helperNode,
-                        @Cached BinaryComparisonNode.GtNode cmpNode) {
-            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.GT, cmpNode);
-        }
-    }
-
-    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class LeNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object cmp(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ComparisonHelperNode helperNode,
-                        @Cached BinaryComparisonNode.LeNode cmpNode) {
-            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.LE, cmpNode);
-        }
-    }
-
-    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class GeNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object cmp(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ComparisonHelperNode helperNode,
-                        @Cached BinaryComparisonNode.GeNode cmpNode) {
-            return helperNode.execute(frame, inliningTarget, left, right, ComparisonOp.GE, cmpNode);
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.getPythonName(), J_ARRAY + "." + J_ARRAY, left);
         }
     }
 
@@ -490,10 +370,10 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         static boolean contains(VirtualFrame frame, PArray self, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached PyObjectRichCompareBool eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             for (int i = 0; i < self.getLength(); i++) {
-                if (eqNode.compare(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value)) {
+                if (eqNode.execute(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value, RichCmpOp.Py_EQ)) {
                     return true;
                 }
             }
@@ -973,8 +853,10 @@ public final class ArrayBuiltins extends PythonBuiltins {
             Object iter = getIter.execute(frame, inliningTarget, value);
             int length = self.getLength();
             while (true) {
-                Object nextValue = nextNode.execute(frame, inliningTarget, iter);
-                if (PyIterNextNode.isExhausted(nextValue)) {
+                Object nextValue;
+                try {
+                    nextValue = nextNode.execute(frame, inliningTarget, iter);
+                } catch (IteratorExhausted e) {
                     break;
                 }
                 // The whole extend is not atomic, just individual inserts are. That's the same as
@@ -1043,13 +925,13 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         static Object remove(VirtualFrame frame, PArray self, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached PyObjectRichCompareBool eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode,
                         @Cached DeleteArraySliceNode deleteSliceNode,
                         @Cached PRaiseNode raiseNode) {
             for (int i = 0; i < self.getLength(); i++) {
                 Object item = getValueNode.execute(inliningTarget, self, i);
-                if (eqNode.compare(frame, inliningTarget, item, value)) {
+                if (eqNode.execute(frame, inliningTarget, item, value, RichCmpOp.Py_EQ)) {
                     self.checkCanResize(inliningTarget, raiseNode);
                     deleteSliceNode.execute(inliningTarget, self, i, 1);
                     return PNone.NONE;
@@ -1382,7 +1264,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         static int index(VirtualFrame frame, PArray self, Object value, int start, int stop,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached PyObjectRichCompareBool eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode,
                         @Cached PRaiseNode raiseNode) {
             int length = self.getLength();
@@ -1396,7 +1278,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 stop += length;
             }
             for (int i = start; i < stop && i < length; i++) {
-                if (eqNode.compare(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value)) {
+                if (eqNode.execute(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value, RichCmpOp.Py_EQ)) {
                     return i;
                 }
             }
@@ -1415,11 +1297,11 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         static int count(VirtualFrame frame, PArray self, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached PyObjectRichCompareBool eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             int count = 0;
             for (int i = 0; i < self.getLength(); i++) {
-                if (eqNode.compare(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value)) {
+                if (eqNode.execute(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value, RichCmpOp.Py_EQ)) {
                     count++;
                 }
             }

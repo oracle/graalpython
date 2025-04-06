@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -63,8 +63,6 @@ public @interface Builtin {
 
     boolean takesVarArgs() default false;
 
-    boolean varArgsMarker() default false;
-
     boolean takesVarKeywordArgs() default false;
 
     String[] parameterNames() default {};
@@ -96,15 +94,6 @@ public @interface Builtin {
      * self argument, set this to true.
      */
     boolean declaresExplicitSelf() default false;
-
-    /**
-     * Declares that this builtin needs to reverse the first and second argument it receives. This
-     * implements the reverse operation wrappers from CPython. This only applies to binary and
-     * ternary nodes.
-     *
-     * @see com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode BuiltinFunctionRootNode
-     */
-    boolean reverseOperation() default false;
 
     String raiseErrorName() default StringLiterals.J_EMPTY_STRING;
 

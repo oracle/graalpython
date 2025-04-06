@@ -536,7 +536,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethNoargsRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(1, false, -1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = new Signature(1, false, -1, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
 
         public HPyMethNoargsRoot(PythonLanguage language, TruffleString name, boolean nativePrimitiveResult) {
             super(language, name, nativePrimitiveResult ? HPyCheckPrimitiveResultNodeGen.create() : HPyCheckHandleResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
@@ -554,7 +554,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethORoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "arg"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, tsArray("self", "arg"), KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadIndexedArgumentNode readArgNode;
 
@@ -582,7 +582,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethVarargsRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadVarArgsNode readVarargsNode;
 
@@ -617,7 +617,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethKeywordsRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -690,7 +690,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethInitProcRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -742,7 +742,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethTernaryRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(3, false, -1, false, tsArray("x", "y", "z"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = new Signature(3, false, -1, tsArray("x", "y", "z"), KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
@@ -780,7 +780,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static class HPyMethSSizeArgFuncRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(2, false, -1, false, tsArray("$self", "n"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = new Signature(2, false, -1, tsArray("$self", "n"), KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
 
@@ -860,7 +860,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethSSizeSSizeArgFuncRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(3, false, -1, false, tsArray("$self", "n", "m"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = new Signature(3, false, -1, tsArray("$self", "n", "m"), KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
@@ -900,7 +900,7 @@ public abstract class HPyExternalFunctionNodes {
      * Very similar to {@link HPyMethNoargsRoot} but converts the result to a boolean.
      */
     static final class HPyMethInquiryRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE);
 
         public HPyMethInquiryRoot(PythonLanguage language, TruffleString name) {
             super(language, name, HPyCheckPrimitiveResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
@@ -924,7 +924,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethObjObjArgProcRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, tsArray("$self", "x"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, tsArray("$self", "x"), KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadVarArgsNode readVarargsNode;
@@ -977,7 +977,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethObjObjProcRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(2, false, -1, false, tsArray("$self", "other"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = new Signature(2, false, -1, tsArray("$self", "other"), KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
 
@@ -1011,7 +1011,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static class HPyMethSSizeObjArgProcRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(3, false, -1, false, tsArray("$self", "arg0", "arg1"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = new Signature(3, false, -1, tsArray("$self", "arg0", "arg1"), KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
@@ -1048,7 +1048,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethReverseBinaryRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "other"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, tsArray("self", "other"), KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadIndexedArgumentNode readOtherNode;
 
@@ -1168,7 +1168,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethRichcmpOpRootNode extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "other"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, tsArray("self", "other"), KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private ReadIndexedArgumentNode readArgNode;
 
         private final int op;
@@ -1304,7 +1304,7 @@ public abstract class HPyExternalFunctionNodes {
      * call target and the native closure pointer are passed as Python closure.
      */
     static final class HPyGetSetDescriptorGetterRootNode extends HPyGetSetDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("$self"), KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE, true);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, tsArray("$self"), KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE, true);
 
         HPyGetSetDescriptorGetterRootNode(PythonLanguage language, TruffleString name) {
             super(language, name);
@@ -1389,7 +1389,7 @@ public abstract class HPyExternalFunctionNodes {
      * call target and the native closure pointer are passed as Python closure.
      */
     static final class HPyGetSetDescriptorSetterRootNode extends HPyGetSetDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("$self", "value"), KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE, true);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, tsArray("$self", "value"), KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE, true);
 
         private HPyGetSetDescriptorSetterRootNode(PythonLanguage language, TruffleString name) {
             super(language, name);
@@ -1474,7 +1474,7 @@ public abstract class HPyExternalFunctionNodes {
      * {@link CExtPyBuffer}.
      */
     static final class HPyGetBufferRootNode extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, tsArray("self", "flags"), KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, tsArray("self", "flags"), KEYWORDS_HIDDEN_CALLABLE);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private FromCharPointerNode fromCharPointerNode;
@@ -1643,7 +1643,7 @@ public abstract class HPyExternalFunctionNodes {
      * {@code void (*HPyFunc_releasebufferproc)(HPyContext ctx, HPy self, HPy_buffer *buffer)} .
      */
     static final class HPyReleaseBufferRootNode extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, tsArray("self", "buffer"), KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, tsArray("self", "buffer"), KEYWORDS_HIDDEN_CALLABLE);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private GraalHPyCAccess.FreeNode freeNode;
@@ -1731,7 +1731,7 @@ public abstract class HPyExternalFunctionNodes {
      * Very similar to {@link HPyMethNoargsRoot} but converts the result to a boolean.
      */
     static final class HPyMethHashRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE);
 
         public HPyMethHashRoot(PythonLanguage language, TruffleString name) {
             super(language, name, HPyCheckPrimitiveResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
@@ -1749,7 +1749,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethCallRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, tsArray("self"), KEYWORDS_HIDDEN_CONTEXT, true);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, tsArray("self"), KEYWORDS_HIDDEN_CONTEXT, true);
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;

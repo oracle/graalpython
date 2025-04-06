@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,6 +63,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.JavaFileObject;
 
+import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.Slots;
@@ -72,11 +73,27 @@ public class SlotsProcessor extends AbstractProcessor {
     private static final boolean LOGGING = false;
 
     public record TpSlotData(Slot slot, TypeElement enclosingType, TypeElement slotNodeType) {
+        public boolean isHashNotImplemented() {
+            return slotNodeType == null;
+        }
+
+        public static TpSlotData createHashNotImplemented(TypeElement enclosingType) {
+            return new TpSlotData(null, enclosingType, null);
+        }
+
+        public String builderCall() {
+            if (isHashNotImplemented()) {
+                return ".set(TpSlots.TpSlotMeta.TP_HASH, com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HASH_NOT_IMPLEMENTED)";
+            }
+            return String.format(".set(TpSlots.TpSlotMeta.%s, %s.INSTANCE)", //
+                            slot.value().name().toUpperCase(Locale.ROOT), //
+                            getSlotImplName(slot.value()));
+        }
     }
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
-        return Set.of(Slot.class.getName());
+        return Set.of(Slot.class.getName(), HashNotImplemented.class.getName());
     }
 
     @Override
@@ -109,7 +126,14 @@ public class SlotsProcessor extends AbstractProcessor {
     private void validate(HashMap<TypeElement, Set<TpSlotData>> enclosingTypes) throws ProcessingError {
         var typeCache = new TypeCache(processingEnv);
         for (Entry<TypeElement, Set<TpSlotData>> enclosingType : enclosingTypes.entrySet()) {
+            boolean seenHashNotImplemented = false;
+            boolean seenHash = false;
             for (TpSlotData slot : enclosingType.getValue()) {
+                if (slot.isHashNotImplemented()) {
+                    seenHashNotImplemented = true;
+                    continue;
+                }
+                seenHash |= slot.slot.value() == SlotKind.tp_hash;
                 if (slot.slot.isComplex()) {
                     if (!SlotsMapping.supportsComplex(slot.slot().value())) {
                         throw error(slot.slotNodeType, "Slot does not support complex builtins. The support can be added.");
@@ -125,14 +149,22 @@ public class SlotsProcessor extends AbstractProcessor {
                     throw error(slot.slotNodeType, "Slot does not inherit from expected base class '%s'", baseName);
                 }
             }
+            if (seenHash && seenHashNotImplemented) {
+                throw error(enclosingType.getKey(), "Annotation %s cannot be use when there is also %s(tp_hash). Remove one or the other.",
+                                HashNotImplemented.class.getSimpleName(),
+                                Slot.class.getSimpleName());
+            }
         }
     }
 
     @SuppressWarnings("try")
     private void writeCode(HashMap<TypeElement, Set<TpSlotData>> enclosingTypes) throws IOException {
-        for (Entry<TypeElement, Set<TpSlotData>> enclosingType : enclosingTypes.entrySet()) {
-            String pkgName = getPackage(enclosingType.getKey());
-            String className = enclosingType.getKey().getSimpleName() + "SlotsGen";
+        for (Entry<TypeElement, Set<TpSlotData>> enclosingTypeAndSlots : enclosingTypes.entrySet()) {
+            Set<TpSlotData> slots = enclosingTypeAndSlots.getValue();
+            TypeElement enclosingType = enclosingTypeAndSlots.getKey();
+
+            String pkgName = getPackage(enclosingType);
+            String className = enclosingType.getSimpleName() + "SlotsGen";
             String sourceFile = pkgName + "." + className;
             log("Generating file '%s'", sourceFile);
 
@@ -146,10 +178,10 @@ public class SlotsProcessor extends AbstractProcessor {
                 w.writeLn();
                 w.writeLn("public class %s {", className);
                 try (Block i = w.newIndent()) {
-                    for (TpSlotData slot : enclosingType.getValue()) {
+                    for (TpSlotData slot : slots) {
                         writeSlot(w, slot);
                     }
-                    writeSlotsStaticField(w, enclosingType.getValue());
+                    writeSlotsStaticField(w, enclosingType, slots);
                 }
                 w.writeLn("}");
             }
@@ -168,6 +200,9 @@ public class SlotsProcessor extends AbstractProcessor {
 
     @SuppressWarnings("try")
     private void writeSlot(CodeWriter w, TpSlotData slot) throws IOException {
+        if (slot.isHashNotImplemented()) {
+            return;
+        }
         log("Writing slot node %s", slot.slotNodeType);
         String slotImplName = getSlotImplName(slot.slot.value());
         String genericArg = "";
@@ -202,13 +237,11 @@ public class SlotsProcessor extends AbstractProcessor {
     }
 
     @SuppressWarnings("try")
-    private static void writeSlotsStaticField(CodeWriter w, Set<TpSlotData> slots) throws IOException {
+    private static void writeSlotsStaticField(CodeWriter w, TypeElement enclosingType, Set<TpSlotData> slots) throws IOException {
         w.writeLn("static final TpSlots SLOTS = TpSlots.newBuilder()");
         try (Block i3 = w.newIndent()) {
             String defs = slots.stream().//
-                            map(s -> String.format(".set(TpSlots.TpSlotMeta.%s, %s.INSTANCE)", //
-                                            s.slot.value().name().toUpperCase(Locale.ROOT), //
-                                            getSlotImplName(s.slot.value()))).//
+                            map(TpSlotData::builderCall).//
                             collect(Collectors.joining("\n"));
             w.writeLn("%s.", defs);
             w.writeLn("build();");
@@ -236,6 +269,12 @@ public class SlotsProcessor extends AbstractProcessor {
                 var tpSlotDataSet = enclosingTypes.computeIfAbsent(enclosingType, k -> new HashSet<>());
                 tpSlotDataSet.add(new TpSlotData(slotAnnotation, enclosingType, type));
             }
+        }
+        elements = new HashSet<>(roundEnv.getElementsAnnotatedWithAny(Set.of(HashNotImplemented.class)));
+        for (Element element : elements) {
+            TypeElement typeElement = (TypeElement) element;
+            enclosingTypes.computeIfAbsent(typeElement, key -> new HashSet<>()).//
+                            add(TpSlotData.createHashNotImplemented(typeElement));
         }
         return enclosingTypes;
     }

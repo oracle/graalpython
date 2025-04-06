@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,23 +45,29 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public enum PythonOS {
-    PLATFORM_JAVA("java"),
-    PLATFORM_CYGWIN("cygwin"),
-    PLATFORM_LINUX("linux"),
-    PLATFORM_DARWIN("darwin"),
-    PLATFORM_WIN32("win32"),
-    PLATFORM_SUNOS("sunos"),
-    PLATFORM_FREEBSD("freebsd"),
-    PLATFORM_ANY(null);
+    PLATFORM_JAVA("java", "Java"),
+    PLATFORM_CYGWIN("cygwin", "CYGWIN"),
+    PLATFORM_LINUX("linux", "Linux"),
+    PLATFORM_DARWIN("darwin", "Darwin"),
+    PLATFORM_WIN32("win32", "Windows"),
+    PLATFORM_SUNOS("sunos", "SunOS"),
+    PLATFORM_FREEBSD("freebsd", "FreeBSD"),
+    PLATFORM_ANY(null, null);
 
     private final TruffleString name;
+    private final TruffleString uname;
 
-    PythonOS(String name) {
+    PythonOS(String name, String uname) {
         this.name = toTruffleStringUncached(name);
+        this.uname = toTruffleStringUncached(uname);
     }
 
     public TruffleString getName() {
         return name;
+    }
+
+    public TruffleString getUname() {
+        return uname;
     }
 
     private static final PythonOS current;

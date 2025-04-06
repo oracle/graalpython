@@ -73,7 +73,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.P_SETSTATE_ARGUMENT_SH
 import static com.oracle.graal.python.nodes.ErrorMessages.SECOND_ITEM_OF_STATE_MUST_BE_AN_INTEGER_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIRD_ITEM_OF_STATE_SHOULD_BE_A_DICT_GOT_A_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETSTATE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -84,6 +83,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -100,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
@@ -176,7 +177,8 @@ public final class BytesIOBuiltins extends PythonBuiltins {
 
     protected static final byte[] EMPTY_BYTE_ARRAY = PythonUtils.EMPTY_BYTE_ARRAY;
 
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "initial_bytes"})
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(name = "BytesIO", minNumOfPositionalArgs = 1, parameterNames = {"$self", "initial_bytes"})
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryBuiltinNode {
 
@@ -481,8 +483,10 @@ public final class BytesIOBuiltins extends PythonBuiltins {
             self.checkExports(inliningTarget, raiseNode);
             Object iter = getIter.execute(frame, inliningTarget, lines);
             while (true) {
-                Object line = nextNode.execute(frame, inliningTarget, iter);
-                if (PyIterNextNode.isExhausted(line)) {
+                Object line;
+                try {
+                    line = nextNode.execute(frame, inliningTarget, iter);
+                } catch (IteratorExhausted e) {
                     break;
                 }
                 writeNode.execute(frame, self, line);
@@ -777,7 +781,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             int n = scanEOL(self, -1, bufferLib);
             if (n == 0) {
-                return TpIterNextBuiltin.iteratorExhausted();
+                throw TpIterNextBuiltin.iteratorExhausted();
             }
             return readBytes(self, n, bufferLib, language);
         }

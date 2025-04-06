@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -98,7 +99,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization(guards = "zeroSize(self)")
         static Object nextNoFillValue(@SuppressWarnings("unused") PZipLongest self) {
-            return iteratorExhausted();
+            throw iteratorExhausted();
         }
 
         @Specialization(guards = "!zeroSize(self)")
@@ -120,18 +121,17 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                 } else {
                     try {
                         item = nextNode.execute(frame, inliningTarget, it);
-                    } catch (PException e) {
-                        self.setNumActive(0);
-                        throw e;
-                    }
-                    if (PyIterNextNode.isExhausted(item)) {
+                    } catch (IteratorExhausted e) {
                         self.setNumActive(self.getNumActive() - 1);
                         if (noActiveProfile.profile(inliningTarget, self.getNumActive() == 0)) {
-                            return iteratorExhausted();
+                            throw iteratorExhausted();
                         } else {
                             item = fillValue;
                             self.getItTuple()[i] = PNone.NONE;
                         }
+                    } catch (PException e) {
+                        self.setNumActive(0);
+                        throw e;
                     }
                 }
                 result[i] = item;

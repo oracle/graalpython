@@ -166,7 +166,6 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
 import com.oracle.graal.python.runtime.arrow.ArrowSupport;
-import com.oracle.graal.python.runtime.arrow.ArrowVectorSupport;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
@@ -224,7 +223,6 @@ public final class PythonContext extends Python3Core {
 
     public final HandleContext nativeContext = new HandleContext(DEBUG_CAPI);
     public final NativeBufferContext nativeBufferContext = new NativeBufferContext();
-    public final ArrowVectorSupport arrowVectorSupport = new ArrowVectorSupport(this);
     public final ArrowSupport arrowSupport = new ArrowSupport(this);
     private volatile boolean finalizing;
 

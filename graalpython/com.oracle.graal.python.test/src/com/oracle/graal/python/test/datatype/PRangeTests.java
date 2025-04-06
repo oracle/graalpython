@@ -33,6 +33,7 @@ import org.junit.Test;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.range.PRange;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
@@ -69,13 +70,14 @@ public class PRangeTests {
             Object iter = PyObjectGetIter.executeUncached(range);
 
             while (true) {
-                Object next = PyIterNextNode.executeUncached(iter);
-                if (PyIterNextNode.isExhausted(next)) {
+                try {
+                    Object next = PyIterNextNode.executeUncached(iter);
+                    int item = PGuards.expectInteger(next);
+                    assertEquals(index, item);
+                    index++;
+                } catch (IteratorExhausted e) {
                     break;
                 }
-                int item = PGuards.expectInteger(next);
-                assertEquals(index, item);
-                index++;
             }
         } finally {
             PythonTests.closeContext();
@@ -92,13 +94,14 @@ public class PRangeTests {
             Object iter = PyObjectGetIter.executeUncached(range);
 
             while (true) {
-                Object next = PyIterNextNode.executeUncached(iter);
-                if (PyIterNextNode.isExhausted(next)) {
+                try {
+                    Object next = PyIterNextNode.executeUncached(iter);
+                    int item = PGuards.expectInteger(next);
+                    assertEquals(index, item);
+                    index += 2;
+                } catch (IteratorExhausted e) {
                     break;
                 }
-                int item = PGuards.expectInteger(next);
-                assertEquals(index, item);
-                index += 2;
             }
         } finally {
             PythonTests.closeContext();

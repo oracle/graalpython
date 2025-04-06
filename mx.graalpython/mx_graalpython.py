@@ -1861,6 +1861,8 @@ def graal_version_short(variant=None, **kwargs):
         for i in range(3):
             num <<= 8
             num |= int(parts[i]) if i < len(parts) else 0
+        num <<= 8
+        num |= release_level('int') << 4
         return hex(num)
     else:
         return '.'.join(GRAAL_VERSION.split('.')[:3])
@@ -1871,14 +1873,16 @@ def release_level(variant=None):
     level = 'alpha'
     if SUITE.suiteDict['release']:
         level = 'final'
-    if variant == 'binary':
+    if variant in ('binary', 'int'):
         level_num = {
             'alpha': 0xA,
             'beta': 0xB,
             'candidate': 0xC,
             'final': 0xF,
         }[level]
-        return chr(level_num + ord(VERSION_BASE))
+        if variant == 'binary':
+            return chr(level_num + ord(VERSION_BASE))
+        return level_num
     return level
 
 

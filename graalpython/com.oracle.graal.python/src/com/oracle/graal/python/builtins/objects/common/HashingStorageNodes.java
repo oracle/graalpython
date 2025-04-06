@@ -1247,7 +1247,7 @@ public class HashingStorageNodes {
                         @Cached HashingStorageIteratorKey aIterKey,
                         @Cached HashingStorageIteratorValue aIterValue,
                         @Cached HashingStorageIteratorKeyHash aIterHash,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached PyObjectRichCompareBool eqNode,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached InlinedLoopConditionProfile earlyExitProfile) {
             if (lenANode.execute(inliningTarget, aStorage) != lenBNode.execute(inliningTarget, bStorage)) {
@@ -1265,7 +1265,7 @@ public class HashingStorageNodes {
                     long aHash = aIterHash.execute(frame, inliningTarget, aStorage, aIter);
                     Object bValue = getBNode.execute(frame, inliningTarget, bStorage, aKey, aHash);
                     Object aValue = aIterValue.execute(inliningTarget, aStorage, aIter);
-                    if (earlyExitProfile.profile(inliningTarget, !(bValue == null || !eqNode.compare(frame, inliningTarget, bValue, aValue)))) {
+                    if (earlyExitProfile.profile(inliningTarget, !(bValue == null || !eqNode.executeEq(frame, inliningTarget, bValue, aValue)))) {
                         // if->continue such that the "true" count of the profile represents the
                         // loop iterations and the "false" count the early exit
                         continue;
@@ -1530,17 +1530,17 @@ public class HashingStorageNodes {
     @GenerateInline
     @GenerateCached(false)
     @ImportStatic({PGuards.class})
-    public abstract static class HashingStorageCompareKeys extends Node {
-        public abstract int execute(Frame frame, Node inliningTarget, HashingStorage a, HashingStorage b);
+    public abstract static class IsKeysSubset extends Node {
+        public abstract boolean execute(Frame frame, Node inliningTarget, HashingStorage a, HashingStorage b);
 
         @Specialization(guards = "aStorage == bStorage")
         @SuppressWarnings("unused")
-        static int doSame(HashingStorage aStorage, HashingStorage bStorage) {
-            return 0;
+        static boolean doSame(HashingStorage aStorage, HashingStorage bStorage) {
+            return true;
         }
 
         @Specialization(guards = "aStorage != bStorage")
-        static int doGeneric(Frame frame, Node inliningTarget, HashingStorage aStorage, HashingStorage bStorage,
+        static boolean doGeneric(Frame frame, Node inliningTarget, HashingStorage aStorage, HashingStorage bStorage,
                         @Cached HashingStorageLen aLenNode,
                         @Cached HashingStorageLen bLenNode,
                         @Cached HashingStorageForEach forEachA,
@@ -1548,18 +1548,14 @@ public class HashingStorageNodes {
             int aLen = aLenNode.execute(inliningTarget, aStorage);
             int bLen = bLenNode.execute(inliningTarget, bStorage);
             if (aLen > bLen) {
-                return 1;
+                return false;
             }
             try {
                 forEachA.execute(frame, inliningTarget, aStorage, callback, bStorage);
             } catch (AbortIteration ignored) {
-                return 1;
+                return false;
             }
-            if (aLen == bLen) {
-                return 0;
-            } else {
-                return -1;
-            }
+            return true;
         }
     }
 

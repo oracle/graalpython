@@ -56,7 +56,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonSenaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.WrapBinaryfuncR;
 import com.oracle.graal.python.nodes.function.builtins.WrapTpNew;
 import com.oracle.graal.python.nodes.function.builtins.WrapperDescrCall;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
@@ -127,7 +126,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     /**
      * Should return a signature compatible with {@link #createArgumentsList(Builtin, boolean)}
      */
-    private static Signature createSignature(NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin, boolean declaresExplicitSelf, boolean constructsClass) {
+    public static Signature createSignature(NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin, boolean declaresExplicitSelf, boolean constructsClass) {
         TruffleString[] parameterNames = toTruffleStringArrayUncached(builtin.parameterNames());
         int maxNumPosArgs = Math.max(builtin.minNumOfPositionalArgs(), parameterNames.length);
 
@@ -190,7 +189,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         assert canUseSpecialBuiltinNode(builtin) || !usesSpecialBuiltinNode(factory.getNodeClass()) : factory.getNodeClass().getName() +
                         " must not use PythonUnary/Binary/Ternary/QuaternaryBultinNode";
         return new Signature(posOnlyArgs, builtin.takesVarKeywordArgs(), builtin.takesVarArgs() ? parameterNames.length : -1,
-                        builtin.varArgsMarker(), parameterNames, toTruffleStringArrayUncached(builtin.keywordOnlyNames()), false, toTruffleStringUncached(builtin.raiseErrorName()));
+                        parameterNames, toTruffleStringArrayUncached(builtin.keywordOnlyNames()), false, toTruffleStringUncached(builtin.raiseErrorName()));
     }
 
     private static boolean validateBuiltin(NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin) {
@@ -206,6 +205,9 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         } else if (PythonVarargsBuiltinNode.class.isAssignableFrom(nodeClass)) {
             assert builtin.takesVarArgs() : "PythonVararagsBuiltin subclass must take varargs, builtin " + nodeClass.getName();
             assert builtin.takesVarKeywordArgs() : "PythonVararagsBuiltin subclass must take varkwargs, builtin " + nodeClass.getName();
+            assert builtin.minNumOfPositionalArgs() != 0 || builtin.maxNumOfPositionalArgs() != -1 || builtin.numOfPositionalOnlyArgs() != 0 || builtin.parameterNames().length > 0 ||
+                            builtin.keywordOnlyNames().length > 0 : "PythonVararagsBuiltin subclass must not define any parameters on the @Builtin annotation, it must do all parameter parsing and validation themselves, builtin" +
+                                            nodeClass.getName();
         }
         return true;
     }
@@ -228,7 +230,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     // (Note that this does not apply to PythonVarargsBuiltinNode which can be used with
     // varargs/kwargs builtins.)
     private static boolean canUseSpecialBuiltinNode(Builtin builtin) {
-        return !builtin.takesVarArgs() && !builtin.takesVarKeywordArgs() && !builtin.varArgsMarker();
+        return !builtin.takesVarArgs() && !builtin.takesVarKeywordArgs();
     }
 
     private static boolean usesSpecialBuiltinNode(Class<? extends PythonBuiltinBaseNode> clazz) {
@@ -330,9 +332,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 }
             }
 
-            if (builtin.reverseOperation()) {
-                body = insert(new WrapBinaryfuncR(newBody));
-            } else if (constructsClass != PythonBuiltinClassType.nil) {
+            if (constructsClass != PythonBuiltinClassType.nil) {
                 body = insert(new WrapTpNew(newBody, constructsClass));
             } else if (wrapsSlotForClass != PythonBuiltinClassType.nil) {
                 body = insert(new WrapperDescrCall(newBody, name, wrapsSlotForClass));

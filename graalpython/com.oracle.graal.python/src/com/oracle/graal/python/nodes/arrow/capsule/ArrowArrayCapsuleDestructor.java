@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.nodes.arrow.ArrowArray;
-import com.oracle.graal.python.nodes.arrow.release_callback.ArrowArrayReleaseCallbackNode;
+import com.oracle.graal.python.nodes.arrow.InvokeArrowReleaseCallbackNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -72,15 +72,14 @@ public class ArrowArrayCapsuleDestructor implements TruffleObject {
 
         @Specialization(guards = "isPointer(args, interopLib)")
         static Object doRelease(ArrowArrayCapsuleDestructor self, Object[] args,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Bind("$node") Node inliningTarget,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached NativeToPythonNode nativeToPythonNode,
                         @Cached PyCapsuleGetPointerNode capsuleGetPointerNode,
-                        @Cached ArrowArrayReleaseCallbackNode arrayReleaseNode) {
+                        @Cached InvokeArrowReleaseCallbackNode.Lazy invokeReleaseCallbackNode) {
             Object capsule = nativeToPythonNode.execute(args[0]);
             var capsuleName = new CArrayWrappers.CByteArrayWrapper(ArrowArray.CAPSULE_NAME);
-            var arrowArrayPointer = (long) capsuleGetPointerNode.execute(inliningTarget, capsule, capsuleName);
-            var arrowArray = ArrowArray.wrap(arrowArrayPointer);
+            var arrowArray = ArrowArray.wrap((long) capsuleGetPointerNode.execute(inliningTarget, capsule, capsuleName));
             /*
              * The exported PyCapsules should have a destructor that calls the release callback of
              * the Arrow struct, if it is not already null. This prevents a memory leak in case the
@@ -91,9 +90,9 @@ public class ArrowArrayCapsuleDestructor implements TruffleObject {
              * semantics
              */
             if (!arrowArray.isReleased()) {
-                arrayReleaseNode.execute(inliningTarget, arrowArray);
+                invokeReleaseCallbackNode.get(inliningTarget).executeCached(arrowArray.releaseCallback(), arrowArray.memoryAddress());
             }
-            PythonContext.get(inliningTarget).getUnsafe().freeMemory(arrowArrayPointer);
+            PythonContext.get(inliningTarget).getUnsafe().freeMemory(arrowArray.memoryAddress());
             return PNone.NO_VALUE;
         }
 

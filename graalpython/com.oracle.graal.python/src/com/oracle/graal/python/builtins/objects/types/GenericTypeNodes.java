@@ -120,7 +120,7 @@ public abstract class GenericTypeNodes {
             Object module = lookup.execute(null, null, obj, T___MODULE__);
             if (!(module instanceof PNone)) {
                 // Looks like a class
-                if (PyUnicodeCheckNode.executeUncached(module) && PyObjectRichCompareBool.EqNode.compareUncached(module, BuiltinNames.T_BUILTINS)) {
+                if (PyUnicodeCheckNode.executeUncached(module) && PyObjectRichCompareBool.executeEqUncached(module, BuiltinNames.T_BUILTINS)) {
                     // builtins don't need a module name
                     sb.appendStringUncached(str.execute(null, null, qualname));
                     return;
@@ -376,7 +376,7 @@ public abstract class GenericTypeNodes {
     @TruffleBoundary
     private static Object[] dedupAndFlattenArgs(Object[] args) {
         args = flattenArgs(args);
-        PyObjectRichCompareBool.EqNode eq = PyObjectRichCompareBool.EqNode.getUncached();
+        PyObjectRichCompareBool eq = PyObjectRichCompareBool.getUncached();
         Object[] newArgs = new Object[args.length];
         int addedItems = 0;
         for (int i = 0; i < args.length; i++) {
@@ -386,7 +386,7 @@ public abstract class GenericTypeNodes {
                 Object jElement = newArgs[j];
                 boolean isGA = iElement instanceof PGenericAlias && jElement instanceof PGenericAlias;
                 // RichCompare to also deduplicate GenericAlias types (slower)
-                isDuplicate = isGA ? eq.compare(null, null, iElement, jElement) : IsNode.getUncached().execute(iElement, jElement);
+                isDuplicate = isGA ? eq.executeEq(null, null, iElement, jElement) : IsNode.getUncached().execute(iElement, jElement);
                 if (isDuplicate) {
                     break;
                 }

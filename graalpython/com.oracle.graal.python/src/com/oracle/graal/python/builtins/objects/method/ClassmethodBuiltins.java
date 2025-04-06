@@ -50,9 +50,13 @@ import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -72,6 +76,21 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ClassmethodBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @Slot.SlotSignature(name = "classmethod", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class InitNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        protected PNone init(VirtualFrame frame, PDecoratedMethod self, Object callable,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectLookupAttr lookup,
+                        @Cached PyObjectSetAttr setAttr) {
+            self.setCallable(callable);
+            DecoratedMethodBuiltins.wraps(frame, self, callable, inliningTarget, lookup, setAttr);
+            return PNone.NONE;
+        }
     }
 
     @Slot(value = SlotKind.tp_repr, isComplex = true)

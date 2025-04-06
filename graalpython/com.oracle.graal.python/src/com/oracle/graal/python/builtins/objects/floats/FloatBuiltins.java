@@ -29,17 +29,10 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowEr
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FLOAT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETFORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
 import static com.oracle.graal.python.runtime.formatting.FormattingUtils.validateForFloat;
@@ -70,7 +63,10 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyFloatCheckNode;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -78,7 +74,7 @@ import com.oracle.graal.python.lib.PyNumberPowerNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -396,7 +392,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 // Negative numbers raised to fractional powers become complex.
                 PythonLanguage language = PythonLanguage.get(inliningTarget);
-                throw new UnexpectedResultException(powerNode.execute(frame, inliningTarget, PFactory.createComplex(language, left, 0), PFactory.createComplex(language, right, 0), none));
+                throw new UnexpectedResultException(powerNode.execute(frame, PFactory.createComplex(language, left, 0), PFactory.createComplex(language, right, 0), none));
             }
             return Math.pow(left, right);
         }
@@ -413,7 +409,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             if (left < 0 && Double.isFinite(left) && Double.isFinite(right) && (right % 1 != 0)) {
                 // Negative numbers raised to fractional powers become complex.
                 PythonLanguage language = PythonLanguage.get(inliningTarget);
-                return powerNode.execute(frame, inliningTarget, PFactory.createComplex(language, left, 0), PFactory.createComplex(language, right, 0), none);
+                return powerNode.execute(frame, PFactory.createComplex(language, left, 0), PFactory.createComplex(language, right, 0), none);
             }
             return Math.pow(left, right);
         }
@@ -466,12 +462,19 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
-    abstract static class HashNode extends AbstractNumericUnaryBuiltin {
-        @Override
-        protected Object op(double self) {
-            return PyObjectHashNode.hash(self);
+    abstract static class HashNode extends HashBuiltinNode {
+        @Specialization
+        static long doDouble(double num) {
+            return PyObjectHashNode.hash(num);
+        }
+
+        @Specialization(replaces = "doDouble")
+        static long doOther(Object object,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToJavaDoubleNode cast) {
+            return doDouble(castToDoubleChecked(inliningTarget, object, cast));
         }
     }
 
@@ -536,11 +539,11 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPythonBuiltinClass(cl)")
-        Object fromhexO(Object cl, TruffleString arg,
-                        @Cached("create(T___CALL__)") LookupAndCallVarargsNode constr,
+        Object fromhexO(VirtualFrame frame, Object cl, TruffleString arg,
+                        @Cached CallNode callNode,
                         @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
             double value = fromHex(toJavaStringNode.execute(arg));
-            return constr.execute(null, cl, new Object[]{cl, value});
+            return callNode.execute(frame, cl, value);
         }
 
         @Fallback
@@ -718,72 +721,70 @@ public final class FloatBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     @TypeSystemReference(PFloatUnboxing.class)
     public abstract static class ComparisonHelperNode extends Node {
 
-        @FunctionalInterface
-        interface Op {
-            boolean compute(double a, double b);
-        }
-
-        abstract Object execute(Node inliningTarget, Object left, Object right, Op op);
+        abstract Object execute(Node inliningTarget, Object left, Object right, RichCmpOp op);
 
         @Specialization
-        static boolean doDD(double a, double b, Op op) {
-            return op.compute(a, b);
+        static boolean doDD(double a, double b, RichCmpOp op) {
+            return op.compare(a, b);
         }
 
         @Specialization
-        static boolean doDI(double a, int b, Op op) {
-            return op.compute(a, b);
+        static boolean doDI(double a, int b, RichCmpOp op) {
+            return op.compare(a, b);
         }
 
         @Specialization(guards = "check.execute(inliningTarget, bObj)", replaces = "doDD", limit = "1")
         @InliningCutoff
-        static boolean doOO(Node inliningTarget, Object aObj, Object bObj, Op op,
+        static boolean doOO(Node inliningTarget, Object aObj, Object bObj, RichCmpOp op,
                         @SuppressWarnings("unused") @Cached PyFloatCheckNode check,
                         @Exclusive @Cached CastToJavaDoubleNode cast) {
             double a = castToDoubleChecked(inliningTarget, aObj, cast);
             double b = castToDoubleChecked(inliningTarget, bObj, cast);
-            return op.compute(a, b);
+            return op.compare(a, b);
         }
 
         @Specialization(replaces = "doDI")
         @InliningCutoff
-        static boolean doOI(Node inliningTarget, Object aObj, int b, Op op,
+        static boolean doOI(Node inliningTarget, Object aObj, int b, RichCmpOp op,
                         @Shared @Cached CastToJavaDoubleNode cast) {
             double a = castToDoubleChecked(inliningTarget, aObj, cast);
-            return op.compute(a, b);
+            return op.compare(a, b);
         }
 
         @Specialization
         @InliningCutoff
-        static boolean doOL(Node inliningTarget, Object aObj, long b, Op op,
+        static boolean doOL(Node inliningTarget, Object aObj, long b, RichCmpOp op,
                         @Exclusive @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile longFitsToDoubleProfile) {
             double a = castToDoubleChecked(inliningTarget, aObj, cast);
-            return op.compute(compareDoubleToLong(inliningTarget, a, b, longFitsToDoubleProfile), 0.0);
+            double a1 = compareDoubleToLong(inliningTarget, a, b, longFitsToDoubleProfile);
+            return op.compare(a1, 0.0);
         }
 
         @Specialization
         @InliningCutoff
-        static boolean doOPInt(Node inliningTarget, Object aObj, PInt b, Op op,
+        static boolean doOPInt(Node inliningTarget, Object aObj, PInt b, RichCmpOp op,
                         @Shared @Cached CastToJavaDoubleNode cast) {
             double a = castToDoubleChecked(inliningTarget, aObj, cast);
-            return op.compute(compareDoubleToLargeInt(a, b), 0.0);
+            double a1 = compareDoubleToLargeInt(a, b);
+            return op.compare(a1, 0.0);
         }
 
         @Specialization
         @InliningCutoff
-        static boolean doOB(Node inliningTarget, Object aObj, boolean b, Op op,
+        static boolean doOB(Node inliningTarget, Object aObj, boolean b, RichCmpOp op,
                         @Shared @Cached CastToJavaDoubleNode cast) {
             double a = castToDoubleChecked(inliningTarget, aObj, cast);
-            return op.compute(a, b ? 1 : 0);
+            return op.compare(a, b ? 1 : 0);
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        static PNotImplemented fallback(Object a, Object b, Op op) {
+        static PNotImplemented fallback(Object a, Object b, RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -823,69 +824,15 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @Slot(SlotKind.tp_richcompare)
     @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBinaryBuiltinNode {
+    @GenerateUncached
+    public abstract static class EqNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        static Object doIt(Object left, Object right,
+        static Object doIt(Object left, Object right, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
                         @Cached ComparisonHelperNode comparisonHelperNode) {
-            return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a == b);
-        }
-    }
-
-    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class NeNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static Object doIt(Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ComparisonHelperNode comparisonHelperNode) {
-            return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a != b);
-        }
-    }
-
-    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class LtNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static Object doIt(Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ComparisonHelperNode comparisonHelperNode) {
-            return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a < b);
-        }
-    }
-
-    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class LeNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static Object doIt(Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ComparisonHelperNode comparisonHelperNode) {
-            return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a <= b);
-        }
-    }
-
-    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class GtNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static Object doIt(Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ComparisonHelperNode comparisonHelperNode) {
-            return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a > b);
-        }
-    }
-
-    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class GeNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static Object doIt(Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ComparisonHelperNode comparisonHelperNode) {
-            return comparisonHelperNode.execute(inliningTarget, left, right, (a, b) -> a >= b);
+            return comparisonHelperNode.execute(inliningTarget, left, right, op);
         }
     }
 

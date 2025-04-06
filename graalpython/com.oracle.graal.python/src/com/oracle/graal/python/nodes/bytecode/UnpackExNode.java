@@ -47,6 +47,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -147,11 +148,12 @@ public abstract class UnpackExNode extends PNodeWithContext {
         CompilerAsserts.partialEvaluationConstant(length);
         int stackTop = initialStackTop;
         for (int i = 0; i < length; i++) {
-            Object item = nextNode.execute(frame, inliningTarget, iterator);
-            if (PyIterNextNode.isExhausted(item)) {
+            try {
+                Object item = nextNode.execute(frame, inliningTarget, iterator);
+                frame.setObject(stackTop--, item);
+            } catch (IteratorExhausted e) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, totalLength, offset + i);
             }
-            frame.setObject(stackTop--, item);
         }
         return stackTop;
     }

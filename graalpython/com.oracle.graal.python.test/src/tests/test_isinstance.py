@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -272,3 +272,23 @@ def test_isinstance_recursive():
     called_instancecheck = 0
     assert isinstance(expected_other, tpl) is True
     assert called_instancecheck == 190
+
+
+def test_instancecheck_and_subclass_returns_not_iplemented():
+    class MyMetaType(type):
+        def __instancecheck__(cls, instance):
+            return NotImplemented
+        def __subclasscheck__(cls, instance):
+            return NotImplemented
+
+    class MyMetaTypeInstance(metaclass=MyMetaType):
+        pass
+
+    class UnrelatedClass():
+        pass
+
+    o = UnrelatedClass
+    # gives: DeprecationWarning: NotImplemented should not be used in a boolean context
+    # but should still treat NotImplemented as True
+    assert isinstance(o, MyMetaTypeInstance)
+    assert issubclass(UnrelatedClass, MyMetaTypeInstance)

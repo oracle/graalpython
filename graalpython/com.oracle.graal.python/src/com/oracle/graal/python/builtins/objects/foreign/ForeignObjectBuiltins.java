@@ -30,7 +30,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeE
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.simpleTruffleStringFormatUncached;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
@@ -55,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -112,11 +112,11 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         return ForeignObjectBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
-    abstract static class HashNode extends PythonUnaryBuiltinNode {
+    abstract static class HashNode extends HashBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        static int hash(Object self,
+        static long hash(Object self,
                         @CachedLibrary("self") InteropLibrary library) {
             if (library.hasIdentity(self)) {
                 try {

@@ -42,30 +42,28 @@ package com.oracle.graal.python.builtins.modules.functools;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.OTHER_ARG_MUST_BE_KEY;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.HashNotImplemented;
+import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectRichCompare;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -76,7 +74,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PKeyWrapper)
+@HashNotImplemented
 public final class KeyWrapperBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = KeyWrapperBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return KeyWrapperBuiltinsFactory.getFactories();
@@ -85,90 +86,26 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        core.lookupType(PythonBuiltinClassType.PKeyWrapper).setAttribute(T___HASH__, PNone.NONE);
     }
 
-    abstract static class WrapperKeyCompareNode extends PythonBinaryBuiltinNode {
-        @Child private BinaryComparisonNode comparisonNode;
-        @Child private CallNode callNode;
-
-        protected BinaryComparisonNode ensureComparisonNode() {
-            if (comparisonNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                comparisonNode = insert(createCmp());
-            }
-            return comparisonNode;
-        }
-
-        protected CallNode ensureCallNode() {
-            if (callNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNode = insert(CallNode.create());
-            }
-            return callNode;
-        }
-
-        BinaryComparisonNode createCmp() {
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-
+    @Slot(value = Slot.SlotKind.tp_richcompare, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class KeyWrapperRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        boolean doCompare(VirtualFrame frame, PKeyWrapper self, PKeyWrapper other,
+        boolean doCompare(VirtualFrame frame, PKeyWrapper self, PKeyWrapper other, RichCmpOp op,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CallNode callNode,
+                        @Cached PyObjectRichCompare richCompareNode,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            final Object cmpResult = ensureCallNode().execute(frame, self.getCmp(), self.getObject(), other.getObject());
-            return isTrueNode.execute(frame, ensureComparisonNode().execute(frame, cmpResult, 0));
+            final Object cmpResult = callNode.execute(frame, self.getCmp(), self.getObject(), other.getObject());
+            return isTrueNode.execute(frame, richCompareNode.execute(frame, inliningTarget, cmpResult, 0, op));
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        static boolean fallback(Object self, Object other,
+        static boolean fallback(Object self, Object other, RichCmpOp op,
                         @Bind("this") Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, OTHER_ARG_MUST_BE_KEY);
-        }
-    }
-
-    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class KWLeNode extends WrapperKeyCompareNode {
-        @Override
-        BinaryComparisonNode createCmp() {
-            return BinaryComparisonNode.LeNode.create();
-        }
-    }
-
-    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class KWLtNode extends WrapperKeyCompareNode {
-        @Override
-        BinaryComparisonNode createCmp() {
-            return BinaryComparisonNode.LtNode.create();
-        }
-    }
-
-    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class KWGeNode extends WrapperKeyCompareNode {
-        @Override
-        BinaryComparisonNode createCmp() {
-            return BinaryComparisonNode.GeNode.create();
-        }
-    }
-
-    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class KWGtNode extends WrapperKeyCompareNode {
-        @Override
-        BinaryComparisonNode createCmp() {
-            return BinaryComparisonNode.GtNode.create();
-        }
-    }
-
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class KWEqNode extends WrapperKeyCompareNode {
-        @Override
-        BinaryComparisonNode createCmp() {
-            return BinaryComparisonNode.EqNode.create();
         }
     }
 

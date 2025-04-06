@@ -218,7 +218,7 @@ public final class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "stat", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, varArgsMarker = true, keywordOnlyNames = {
+    @Builtin(name = "stat", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, keywordOnlyNames = {
                     "follow_symlinks"}, doc = "return stat_result object for the entry; cached per entry")
     @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "true")
     @GenerateNodeFactory
@@ -388,7 +388,7 @@ public final class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_file", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, varArgsMarker = true, keywordOnlyNames = {"follow_symlinks"})
+    @Builtin(name = "is_file", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, keywordOnlyNames = {"follow_symlinks"})
     @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "true")
     @GenerateNodeFactory
     abstract static class IsFileNode extends PythonClinicBuiltinNode {
@@ -405,7 +405,7 @@ public final class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_dir", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, varArgsMarker = true, keywordOnlyNames = {"follow_symlinks"})
+    @Builtin(name = "is_dir", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, keywordOnlyNames = {"follow_symlinks"})
     @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "true")
     @GenerateNodeFactory
     abstract static class IsDirNode extends PythonClinicBuiltinNode {

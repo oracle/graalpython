@@ -111,7 +111,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.isStopped()")
         static Object next(PPermutations self) {
             self.setRaisedStopIteration(true);
-            return iteratorExhausted();
+            throw iteratorExhausted();
         }
 
         @Specialization(guards = "!self.isStopped()")
@@ -159,7 +159,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
             self.setStopped(true);
             if (isStartedProfile.profile(inliningTarget, self.isStarted())) {
-                return iteratorExhausted();
+                throw iteratorExhausted();
             } else {
                 self.setStarted(true);
             }

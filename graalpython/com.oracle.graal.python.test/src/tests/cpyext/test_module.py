@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,22 @@ def _reference_add_object(args):
         raise TypeError
     args[0].__dict__[args[1]] = args[2]
     return 0
+
+
+def _reference_get_filename(args):
+    if not isinstance(args[0], ModuleType):
+        raise TypeError
+    file = getattr(args[0], '__file__', None)
+    if isinstance(file, str):
+        return file
+    raise SystemError
+
+
+module_with_file = ModuleType("module")
+module_with_file.__file__ = 'file.py'
+module_with_broken_file = ModuleType("module")
+module_with_broken_file.__file__ = 1
+
 
 class TestPyModule(CPyExtTestCase):
 
@@ -173,5 +189,33 @@ class TestPyModule(CPyExtTestCase):
         resultspec="i",
         argspec='OsO',
         arguments=["PyObject* m", "const char* k", "PyObject* v"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyModule_GetFilenameObject = CPyExtFunction(
+        _reference_get_filename,
+        lambda: (
+            (module_with_file,),
+            (module_with_broken_file,),
+            (ModuleType("no-file"),),
+            (1,),
+        ),
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* m"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyModule_GetFilename = CPyExtFunction(
+        _reference_get_filename,
+        lambda: (
+            (module_with_file,),
+            (module_with_broken_file,),
+            (ModuleType("no-file"),),
+            (1,),
+        ),
+        resultspec="s",
+        argspec='O',
+        arguments=["PyObject* m"],
         cmpfunc=unhandled_error_compare
     )

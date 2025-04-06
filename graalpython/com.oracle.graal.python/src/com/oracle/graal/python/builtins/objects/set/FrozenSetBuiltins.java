@@ -25,17 +25,16 @@
  */
 package com.oracle.graal.python.builtins.objects.set;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
-
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetSetStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -49,6 +48,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXor;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -58,7 +59,6 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -70,6 +70,7 @@ import com.oracle.truffle.api.nodes.Node;
  */
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PFrozenSet})
 public final class FrozenSetBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = FrozenSetBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -251,9 +252,9 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class HashNode extends PythonUnaryBuiltinNode {
+    public abstract static class HashNode extends HashBuiltinNode {
         protected static long HASH_UNSET = -1;
 
         @Specialization(guards = {"self.getHash() != HASH_UNSET"})
@@ -309,11 +310,6 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         private static long shuffleBits(long value) {
             return ((value ^ 0x55b4db3) ^ (value << 16)) * 0xd93f34d7;
-        }
-
-        @Fallback
-        static Object genericHash(@SuppressWarnings("unused") Object self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 }

@@ -61,7 +61,6 @@ import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -104,27 +103,23 @@ public final class GrouperBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyIterNextNode nextNode,
                         @Cached CallNode callNode,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached PyObjectRichCompareBool eqNode,
                         @Cached InlinedBranchProfile currGrouperProfile,
                         @Cached InlinedBranchProfile currValueMarkerProfile,
                         @Cached InlinedBranchProfile currValueTgtProfile,
-                        @Cached InlinedConditionProfile hasFuncProfile,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached InlinedConditionProfile hasFuncProfile) {
             PGroupBy gbo = self.getParent();
             if (gbo.getCurrGrouper() != self) {
                 currGrouperProfile.enter(inliningTarget);
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+                throw iteratorExhausted();
             }
             if (gbo.getCurrValue() == null) {
                 currValueMarkerProfile.enter(inliningTarget);
-                boolean cont = gbo.groupByStep(frame, inliningTarget, nextNode, callNode, hasFuncProfile);
-                if (!cont) {
-                    return iteratorExhausted();
-                }
+                gbo.groupByStep(frame, inliningTarget, nextNode, callNode, hasFuncProfile);
             }
-            if (!eqNode.compare(frame, inliningTarget, self.getTgtKey(), gbo.getCurrKey())) {
+            if (!eqNode.executeEq(frame, inliningTarget, self.getTgtKey(), gbo.getCurrKey())) {
                 currValueTgtProfile.enter(inliningTarget);
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+                throw iteratorExhausted();
             }
             Object r = gbo.getCurrValue();
             gbo.setCurrValue(null);

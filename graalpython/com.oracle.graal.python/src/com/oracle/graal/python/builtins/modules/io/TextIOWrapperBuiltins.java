@@ -117,7 +117,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_READ_SHOULD
 import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_STREAM_IS_NOT_SEEKABLE;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.PGuards.isPNone;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
@@ -131,6 +130,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -157,6 +157,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -265,7 +266,8 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "buffer", "encoding", "errors", "newline", "line_buffering", "write_through"})
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(name = "TextIOWrapper", minNumOfPositionalArgs = 2, parameterNames = {"$self", "buffer", "encoding", "errors", "newline", "line_buffering", "write_through"})
     @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "PNone.NONE", useDefaultForNone = true)
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_STRICT", useDefaultForNone = true)
     @ArgumentClinic(name = "newline", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "PNone.NONE", useDefaultForNone = true)
@@ -680,7 +682,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethodFlush,
                         @Cached PyObjectCallMethodObjArgs callMethodSeek,
                         @Cached PyObjectCallMethodObjArgs callMethodRead,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached PyObjectRichCompareBool eqNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode) {
@@ -694,7 +696,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             switch (whence) {
                 case SEEK_CUR:
                     /* seek relative to current position */
-                    if (!eqNode.compare(frame, inliningTarget, cookieObj, 0)) {
+                    if (!eqNode.execute(frame, inliningTarget, cookieObj, 0, RichCmpOp.Py_EQ)) {
                         throw raiseNode.raise(inliningTarget, IOUnsupportedOperation, CAN_T_DO_NONZERO_CUR_RELATIVE_SEEKS);
                     }
 
@@ -707,7 +709,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
                 case SEEK_END:
                     /* seek relative to end of file */
-                    if (!eqNode.compare(frame, inliningTarget, cookieObj, 0)) {
+                    if (!eqNode.executeEq(frame, inliningTarget, cookieObj, 0)) {
                         throw raiseNode.raise(inliningTarget, IOUnsupportedOperation, CAN_T_DO_NONZERO_END_RELATIVE_SEEKS);
                     }
 
@@ -722,7 +724,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                     Object res = callMethodSeek.execute(frame, inliningTarget, self.getBuffer(), T_SEEK, 0, 2);
                     if (self.hasEncoder()) {
                         /* If seek() == 0, we are at the start of stream, otherwise not */
-                        encoderResetNode.execute(frame, inliningTarget, self, eqNode.compare(frame, inliningTarget, res, 0));
+                        encoderResetNode.execute(frame, inliningTarget, self, eqNode.executeEq(frame, inliningTarget, res, 0));
                     }
                     return res;
 
@@ -1215,7 +1217,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             if (line.isEmpty()) {
                 self.clearSnapshot();
                 self.setTelling(self.isSeekable());
-                return TpIterNextBuiltin.iteratorExhausted();
+                throw TpIterNextBuiltin.iteratorExhausted();
             }
             return line;
         }

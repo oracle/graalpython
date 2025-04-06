@@ -73,15 +73,19 @@ public class SlotsMapping {
             case mp_subscript -> "TpSlotBinaryFunc.TpSlotMpSubscript";
             case mp_ass_subscript -> "TpSlotMpAssSubscript.TpSlotMpAssSubscriptBuiltin";
             case tp_getattro -> "TpSlotGetAttr.TpSlotGetAttrBuiltin";
+            case tp_richcompare -> "TpSlotRichCompare.TpSlotRichCmpBuiltin" + getSuffix(s.isComplex());
             case tp_descr_get -> "TpSlotDescrGet.TpSlotDescrGetBuiltin" + getSuffix(s.isComplex());
             case tp_descr_set -> "TpSlotDescrSet.TpSlotDescrSetBuiltin";
             case tp_setattro -> "TpSlotSetAttr.TpSlotSetAttrBuiltin";
             case tp_iternext -> "TpSlotIterNext.TpSlotIterNextBuiltin";
+            case tp_hash -> "TpSlotHashFun.TpSlotHashBuiltin";
+            case tp_init -> "TpSlotInit.TpSlotInitBuiltin";
         };
     }
 
     static String getSlotNodeBaseClass(Slot s) {
         return switch (s.value()) {
+            case tp_richcompare -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode";
             case tp_descr_get -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode";
             case nb_bool -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode";
             case nb_index, nb_int, nb_float, nb_absolute, nb_positive, nb_negative, nb_invert,
@@ -107,12 +111,15 @@ public class SlotsMapping {
             case tp_getattro -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode";
             case tp_descr_set -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.DescrSetBuiltinNode";
             case tp_setattro -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode";
+            case tp_hash -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode";
+            case tp_init -> "com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode";
         };
     }
 
     static String getUncachedExecuteSignature(SlotKind s) {
         return switch (s) {
             case nb_bool -> "boolean executeUncached(Object self)";
+            case tp_richcompare -> "Object executeUncached(Object self, Object obj, com.oracle.graal.python.lib.RichCmpOp op)";
             case tp_descr_get -> "Object executeUncached(Object self, Object obj, Object type)";
             case sq_length, mp_length -> "int executeUncached(Object self)";
             default -> throw new AssertionError("Should not reach here: should be always complex");
@@ -128,7 +135,7 @@ public class SlotsMapping {
 
     static boolean supportsSimple(SlotKind s) {
         return switch (s) {
-            case nb_bool, sq_length, mp_length, tp_descr_get -> true;
+            case nb_bool, sq_length, mp_length, tp_descr_get, tp_richcompare -> true;
             default -> false;
         };
     }
@@ -136,6 +143,7 @@ public class SlotsMapping {
     static String getUncachedExecuteCall(SlotKind s) {
         return switch (s) {
             case nb_bool -> "executeBool(null, self)";
+            case tp_richcompare -> "execute(null, self, obj, op)";
             case sq_length, mp_length -> "executeInt(null, self)";
             case tp_descr_get -> "execute(null, self, obj, type)";
             default -> throw new AssertionError("Should not reach here: should be always complex");

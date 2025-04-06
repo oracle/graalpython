@@ -113,7 +113,7 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
             if (slotSignature.needsFrame() || nargs < slotSignature.minNumOfPositionalArgs()) {
                 return null;
             }
-            int maxArgs = Math.max(slotSignature.minNumOfPositionalArgs(), slotSignature.parameterNames().length);
+            int maxArgs = Math.max(Math.max(slotSignature.maxNumOfPositionalArgs(), slotSignature.minNumOfPositionalArgs()), slotSignature.parameterNames().length);
             if (nargs > maxArgs) {
                 return null;
             }
@@ -129,9 +129,6 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
                 if (nargs < builtinAnnotation.minNumOfPositionalArgs() || nargs > maxArgs) {
                     return null;
                 }
-            } else {
-                // for slots without SlotSignature the max args is implied by the node class
-                assert TpSlotBuiltin.isSlotFactory(builtinNodeFactory) : nodeClass.getName();
             }
         }
         PythonBuiltinBaseNode builtinNode = builtinNodeFactory.createNode();
@@ -237,13 +234,22 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
             if (builtinNodeFactory == null) {
                 return null; // see for example MethodDescriptorRoot and subclasses
             }
-            if (!PythonVarargsBuiltinNode.class.isAssignableFrom(builtinNodeFactory.getNodeClass())) {
+            Class<? extends PythonBuiltinBaseNode> nodeClass = builtinNodeFactory.getNodeClass();
+            if (!PythonVarargsBuiltinNode.class.isAssignableFrom(nodeClass)) {
                 // This filters out slots for now. They do not have @Builtin annotation
                 return null;
             }
-            assert builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class).length > 0 : "PBuiltinFunction " + builtinFunc + " is expected to have a Builtin annotated node.";
-            if (builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class)[0].needsFrame() && frame == null) {
-                return null;
+            SlotSignature slotSignature = nodeClass.getAnnotation(SlotSignature.class);
+            if (slotSignature != null) {
+                if (slotSignature.needsFrame() && frame == null) {
+                    return null;
+                }
+            } else {
+                Builtin[] builtinAnnotations = nodeClass.getAnnotationsByType(Builtin.class);
+                assert builtinAnnotations.length > 0 : "PBuiltinFunction " + builtinFunc + " is expected to have a Builtin annotated node.";
+                if (builtinAnnotations[0].needsFrame() && frame == null) {
+                    return null;
+                }
             }
             PythonVarargsBuiltinNode builtinNode = (PythonVarargsBuiltinNode) builtinFunc.getBuiltinNodeFactory().createNode();
             if (!callerExceedsMaxSize(builtinNode)) {

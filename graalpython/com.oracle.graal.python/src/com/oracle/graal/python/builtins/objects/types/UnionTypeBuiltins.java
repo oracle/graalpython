@@ -44,8 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ARGS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___PARAMETERS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSCHECK__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -73,6 +71,9 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSu
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.lib.PyNumberOrNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -170,9 +171,9 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
-    abstract static class HashNode extends PythonUnaryBuiltinNode {
+    abstract static class HashNode extends HashBuiltinNode {
         @Specialization
         static long hash(VirtualFrame frame, PUnionType self,
                         @Bind("this") Node inliningTarget,
@@ -263,23 +264,23 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    abstract static class EqNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static boolean eq(VirtualFrame frame, PUnionType self, PUnionType other,
+    abstract static class EqNode extends RichCmpBuiltinNode {
+        @Specialization(guards = "op.isEqOrNe()")
+        static boolean eq(VirtualFrame frame, PUnionType self, PUnionType other, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached PyObjectRichCompareBool eqNode,
                         @Bind PythonLanguage language) {
             PFrozenSet argSet1 = PFactory.createFrozenSet(language, getHashingStorageNode.doNoValue(frame, inliningTarget, self.getArgs()));
             PFrozenSet argSet2 = PFactory.createFrozenSet(language, getHashingStorageNode.doNoValue(frame, inliningTarget, other.getArgs()));
-            return eqNode.compare(frame, inliningTarget, argSet1, argSet2);
+            return eqNode.execute(frame, inliningTarget, argSet1, argSet2, op);
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        Object eq(Object self, Object other) {
+        Object eq(Object self, Object other, RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

@@ -56,22 +56,14 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LENGTH_HINT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET_NAME__;
@@ -110,7 +102,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -155,7 +146,6 @@ public enum SpecialMethodSlot {
     ANext(T___ANEXT__, AM_ANEXT),
 
     New(T___NEW__, NO_BUILTIN_DESCRIPTORS),
-    Init(T___INIT__, NO_BUILTIN_DESCRIPTORS),
     SetName(T___SET_NAME__, NO_BUILTIN_DESCRIPTORS),
     InstanceCheck(T___INSTANCECHECK__),
     Subclasscheck(T___SUBCLASSCHECK__),
@@ -165,17 +155,9 @@ public enum SpecialMethodSlot {
     Enter(T___ENTER__),
 
     LengthHint(T___LENGTH_HINT__),
-    Hash(T___HASH__),
     // Note: __format__ does not seem to be actual slot in CPython, but it is looked up frequently
     Format(T___FORMAT__),
     Missing(T___MISSING__),
-
-    Eq(T___EQ__),
-    Ne(T___NE__),
-    Lt(T___LT__),
-    Le(T___LE__),
-    Gt(T___GT__),
-    Ge(T___GE__),
 
     Round(T___ROUND__),
 
@@ -192,7 +174,6 @@ public enum SpecialMethodSlot {
     public static final SpecialMethodSlot[] VALUES = values();
 
     private final TruffleString name;
-    @CompilationFinal private SpecialMethodSlot reverse;
     /**
      * Indicates if given slot may or must not store context independent (AST cacheable)
      * {@link BuiltinMethodDescriptor} objects.
@@ -232,15 +213,10 @@ public enum SpecialMethodSlot {
 
     static {
         assert checkFind();
-        assert checkReverseSlots();
     }
 
     public TruffleString getName() {
         return name;
-    }
-
-    public SpecialMethodSlot getReverse() {
-        return reverse;
     }
 
     public long getMethodsFlag() {
@@ -723,11 +699,6 @@ public enum SpecialMethodSlot {
         }
         int x = codePointAtIndexNode.execute(name, 2, TS_ENCODING) * 26 + codePointAtIndexNode.execute(name, 3, TS_ENCODING);
         switch (x) {
-            case 'g' * 26 + 'e':    // ge
-                if (eqNode.execute(name, T___GE__, TS_ENCODING)) {
-                    return Ge;
-                }
-                break;
             case 's' * 26 + 'e':    // se
                 if (eqNode.execute(name, T___SET_NAME__, TS_ENCODING)) {
                     return SetName;
@@ -742,14 +713,8 @@ public enum SpecialMethodSlot {
                 if (eqNode.execute(name, T___NEW__, TS_ENCODING)) {
                     return New;
                 }
-                if (eqNode.execute(name, T___NE__, TS_ENCODING)) {
-                    return Ne;
-                }
                 break;
             case 'i' * 26 + 'n':    // in
-                if (eqNode.execute(name, T___INIT__, TS_ENCODING)) {
-                    return Init;
-                }
                 if (eqNode.execute(name, T___INSTANCECHECK__, TS_ENCODING)) {
                     return InstanceCheck;
                 }
@@ -778,14 +743,6 @@ public enum SpecialMethodSlot {
                 if (eqNode.execute(name, T___LENGTH_HINT__, TS_ENCODING)) {
                     return LengthHint;
                 }
-                if (eqNode.execute(name, T___LE__, TS_ENCODING)) {
-                    return Le;
-                }
-                break;
-            case 'h' * 26 + 'a':    // ha
-                if (eqNode.execute(name, T___HASH__, TS_ENCODING)) {
-                    return Hash;
-                }
                 break;
             case 'r' * 26 + 'e':    // re
                 if (eqNode.execute(name, T___REVERSED__, TS_ENCODING)) {
@@ -803,19 +760,6 @@ public enum SpecialMethodSlot {
                 }
                 break;
             case 'e' * 26 + 'q':    // eq
-                if (eqNode.execute(name, T___EQ__, TS_ENCODING)) {
-                    return Eq;
-                }
-                break;
-            case 'l' * 26 + 't':    // lt
-                if (eqNode.execute(name, T___LT__, TS_ENCODING)) {
-                    return Lt;
-                }
-                break;
-            case 'g' * 26 + 't':    // gt
-                if (eqNode.execute(name, T___GT__, TS_ENCODING)) {
-                    return Gt;
-                }
                 break;
             case 'a' * 26 + 'n':    // an
                 if (eqNode.execute(name, T___ANEXT__, TS_ENCODING)) {
@@ -862,24 +806,6 @@ public enum SpecialMethodSlot {
                 break;
         }
         return null;
-    }
-
-    private static boolean checkReverseSlots() {
-        TruffleString prefix = tsLiteral("__");
-        TruffleString rPrefix = tsLiteral("__r");
-        for (SpecialMethodSlot slot : VALUES) {
-            TruffleString slotName = slot.getName();
-            if (rPrefix.regionEqualsUncached(0, slotName, 0, 3, TS_ENCODING)) {
-                int slotNameLen = slotName.codePointLengthUncached(TS_ENCODING);
-                TruffleString slotNamePart = slotName.substringUncached(3, slotNameLen - 3, TS_ENCODING, true);
-                SpecialMethodSlot rslot = findSpecialSlotUncached(prefix.concatUncached(slotNamePart, TS_ENCODING, false));
-                if (rslot != null && rslot.reverse != slot) {
-                    assert false : slotName;
-                    return false;
-                }
-            }
-        }
-        return true;
     }
 
     private static boolean checkFind() {

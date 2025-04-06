@@ -49,7 +49,6 @@ import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBui
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.UNICODE_ERROR_ATTR_FACTORY;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsInt;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsString;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -58,10 +57,11 @@ import java.util.List;
 
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -96,19 +96,19 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
         return UnicodeEncodeErrorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class UnicodeEncodeErrorInitNode extends PythonBuiltinNode {
-        public abstract Object execute(PBaseException self, Object[] args);
 
         @Specialization
-        static Object initNoArgs(PBaseException self, Object[] args,
+        static Object initNoArgs(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached CastToJavaIntExactNode toJavaIntExactNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode,
                         @Cached PRaiseNode raiseNode) {
-            baseInitNode.execute(self, args);
+            baseInitNode.execute(frame, self, args, keywords);
             // PyArg_ParseTuple(args, "UUnnU"), TODO: add proper error messages
             self.setExceptionAttributes(new Object[]{
                             getArgAsString(inliningTarget, args, 0, raiseNode, toStringNode),

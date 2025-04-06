@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ from pip._vendor.packaging.specifiers import SpecifierSet  # pylint: disable=no-
 
 # Approved license identifiers in SPDX "short identifier" format
 ALLOWED_LICENSES = {
+    'UPL',  # https://spdx.org/licenses/UPL-1.0.html
     'MIT',  # https://spdx.org/licenses/MIT.html
     'BSD-3-Clause',  # https://spdx.org/licenses/BSD-3-Clause.html
     'BSD-2-Clause',  # https://spdx.org/licenses/BSD-2-Clause.html

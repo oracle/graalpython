@@ -76,7 +76,14 @@ public @interface Slot {
      */
     @Retention(RetentionPolicy.RUNTIME)
     @interface SlotSignature {
+        /**
+         * Used to supply the function name for error messages from argument parsing.
+         */
+        String name() default "";
+
         int minNumOfPositionalArgs() default 0;
+
+        int maxNumOfPositionalArgs() default -1;
 
         boolean takesVarArgs() default false;
 
@@ -84,11 +91,11 @@ public @interface Slot {
 
         String[] parameterNames() default {};
 
+        String[] keywordOnlyNames() default {};
+
         boolean needsFrame() default false;
 
         boolean alwaysNeedsCallerFrame() default false;
-
-        String raiseErrorName() default "";
     }
 
     /** See <a href="https://docs.python.org/3/c-api/typeobj.html">slot documentation</a> */
@@ -185,10 +192,16 @@ public @interface Slot {
         mp_subscript("__getitem__"),
         /** o[key] = value */
         mp_ass_subscript("__setitem__"),
+        /** comparison operations: >,=>, ==, !=, <, <= */
+        tp_richcompare("__lt__, __le__, __eq__, __ne__, __gt__, __ge__"),
         /** type descriptor get */
         tp_descr_get("__get__"),
         /** type descriptor set/delete */
         tp_descr_set("__set__, __delete__"),
+        /**
+         * hash code. See also if {@link HashNotImplemented} is not more appropriate.
+         */
+        tp_hash("__hash__"),
         /** get object attribute */
         tp_getattro("__getattribute__, __getattr__"),
         /** set/delete object attribute */
@@ -200,7 +213,8 @@ public @interface Slot {
         /** str(obj) */
         tp_str("__str__"),
         /** repr(obj) */
-        tp_repr("__repr__");
+        tp_repr("__repr__"),
+        tp_init("__init__");
 
         SlotKind(@SuppressWarnings("unused") String specialMethods) {
         }

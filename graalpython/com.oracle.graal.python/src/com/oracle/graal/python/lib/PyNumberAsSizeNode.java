@@ -115,7 +115,7 @@ public abstract class PyNumberAsSizeNode extends PNodeWithContext {
         return execute(frame, inliningTarget, object, errorClass);
     }
 
-    protected abstract int execute(Frame frame, Node inliningTarget, Object object, Object errorClass);
+    public abstract int execute(Frame frame, Node inliningTarget, Object object, Object errorClass);
 
     @Specialization
     static int doInt(int object, @SuppressWarnings("unused") Object errorClass) {

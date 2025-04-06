@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyByteArrayCheckNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
@@ -85,6 +86,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyOSFSPathNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -105,7 +107,6 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -188,8 +189,10 @@ public abstract class BytesNodes {
             int partsTotalSize = 0;
             Object iterator = getIter.execute(frame, inliningTarget, iterable);
             while (true) {
-                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                if (PyIterNextNode.isExhausted(next)) {
+                Object next;
+                try {
+                    next = nextNode.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
                     return joinArrays(sep, parts, partsTotalSize);
                 }
                 partsTotalSize += append(parts, toBytesNode.execute(frame, next));
@@ -787,8 +790,10 @@ public abstract class BytesNodes {
             byte[] arr = new byte[len < 16 && len > 0 ? len : 16];
             int i = 0;
             while (true) {
-                Object next = nextNode.execute(frame, inliningTarget, it);
-                if (PyIterNextNode.isExhausted(next)) {
+                Object next;
+                try {
+                    next = nextNode.execute(frame, inliningTarget, it);
+                } catch (IteratorExhausted e) {
                     return resize(arr, i);
                 }
                 byte item = castToByteNode.execute(frame, next);
@@ -989,10 +994,10 @@ public abstract class BytesNodes {
         return endIn;
     }
 
-    static boolean compareByteArrays(ComparisonOp op, byte[] selfArray, int selfLength, byte[] otherArray, int otherLength) {
+    static boolean compareByteArrays(RichCmpOp op, byte[] selfArray, int selfLength, byte[] otherArray, int otherLength) {
         int compareResult = 0;
-        if ((op == ComparisonOp.EQ || op == ComparisonOp.NE) && selfLength != otherLength) {
-            return op == ComparisonOp.NE;
+        if (op.isEqOrNe() && selfLength != otherLength) {
+            return op == RichCmpOp.Py_NE;
         }
         for (int i = 0; i < Math.min(selfLength, otherLength); i++) {
             compareResult = Byte.compareUnsigned(selfArray[i], otherArray[i]);
@@ -1003,7 +1008,7 @@ public abstract class BytesNodes {
         if (compareResult == 0) {
             compareResult = Integer.compare(selfLength, otherLength);
         }
-        return op.cmpResultToBool(compareResult);
+        return op.compareResultToBool(compareResult);
     }
 
     @GenerateCached(false)

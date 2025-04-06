@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.thread;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
 import java.util.List;
@@ -94,15 +93,6 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ThreadLocalBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class InitNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        PNone repr(@SuppressWarnings("unused") PThreadLocal self) {
-            return PNone.NONE;
-        }
     }
 
     @Builtin(name = J___DICT__, minNumOfPositionalArgs = 1, isGetter = true)

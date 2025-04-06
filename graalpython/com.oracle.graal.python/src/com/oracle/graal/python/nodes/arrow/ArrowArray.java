@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -89,67 +89,41 @@ public class ArrowArray {
     private static final long RELEASE_CALLBACK_INDEX = 8 * POINTER_SIZE;
     private static final long PRIVATE_DATA_INDEX = 9 * POINTER_SIZE;
 
-    public final long memoryAddr;
+    private final long memoryAddr;
 
     private ArrowArray(long memoryAddr) {
         this.memoryAddr = memoryAddr;
     }
 
-    public static ArrowArray allocate() {
-        var arrowArray = new ArrowArray(unsafe.allocateMemory(SIZE_OF));
-        arrowArray.markReleased();
-        return arrowArray;
+    public static ArrowArray allocate(long length, long nullCount, long offset, long nBuffers, long nChildren, long buffers, long children, long dictionary, long release, long privateData) {
+        var memoryAddr = unsafe.allocateMemory(SIZE_OF);
+        unsafe.putLong(memoryAddr + LENGTH_INDEX, length);
+        unsafe.putLong(memoryAddr + NULL_COUNT_INDEX, nullCount);
+        unsafe.putLong(memoryAddr + OFFSET_INDEX, offset);
+        unsafe.putLong(memoryAddr + N_BUFFERS_INDEX, nBuffers);
+        unsafe.putLong(memoryAddr + N_CHILDREN_INDEX, nChildren);
+        unsafe.putLong(memoryAddr + BUFFERS_INDEX, buffers);
+        unsafe.putLong(memoryAddr + CHILDREN_INDEX, children);
+        unsafe.putLong(memoryAddr + DICTIONARY_INDEX, dictionary);
+        unsafe.putLong(memoryAddr + RELEASE_CALLBACK_INDEX, release);
+        unsafe.putLong(memoryAddr + PRIVATE_DATA_INDEX, privateData);
+
+        return new ArrowArray(memoryAddr);
     }
 
-    public static ArrowArray allocateFromSnapshot(Snapshot snapshot) {
-        var arrowArray = new ArrowArray(unsafe.allocateMemory(SIZE_OF));
-        arrowArray.load(snapshot);
-        return arrowArray;
+    public long memoryAddress() {
+        return memoryAddr;
+    }
+
+    public long releaseCallback() {
+        return unsafe.getLong(memoryAddr + RELEASE_CALLBACK_INDEX);
     }
 
     public static ArrowArray wrap(long arrowArrayPointer) {
         return new ArrowArray(arrowArrayPointer);
     }
 
-    public void markReleased() {
-        unsafe.putLong(memoryAddr + RELEASE_CALLBACK_INDEX, NULL);
-    }
-
     public boolean isReleased() {
-        return unsafe.getLong(memoryAddr + RELEASE_CALLBACK_INDEX) == NULL;
-    }
-
-    public long getBuffers() {
-        return unsafe.getLong(memoryAddr + BUFFERS_INDEX);
-    }
-
-    public long getValueBuffer() {
-        return unsafe.getLong(getBuffers() + POINTER_SIZE);
-    }
-
-    private void load(Snapshot snapshot) {
-        unsafe.putLong(memoryAddr + LENGTH_INDEX, snapshot.length);
-        unsafe.putLong(memoryAddr + NULL_COUNT_INDEX, snapshot.null_count);
-        unsafe.putLong(memoryAddr + OFFSET_INDEX, snapshot.offset);
-        unsafe.putLong(memoryAddr + N_BUFFERS_INDEX, snapshot.n_buffers);
-        unsafe.putLong(memoryAddr + N_CHILDREN_INDEX, snapshot.n_children);
-        unsafe.putLong(memoryAddr + BUFFERS_INDEX, snapshot.buffers);
-        unsafe.putLong(memoryAddr + CHILDREN_INDEX, snapshot.children);
-        unsafe.putLong(memoryAddr + DICTIONARY_INDEX, snapshot.dictionary);
-        unsafe.putLong(memoryAddr + RELEASE_CALLBACK_INDEX, snapshot.release);
-        unsafe.putLong(memoryAddr + PRIVATE_DATA_INDEX, snapshot.private_data);
-    }
-
-    public static class Snapshot {
-        public long length = 0L;
-        public long null_count = 0L;
-        public long offset = 0L;
-        public long n_buffers = 0L;
-        public long n_children = 0L;
-        public long buffers = 0L;
-        public long children = 0L;
-        public long dictionary = 0L;
-        public long release = 0L;
-        public long private_data = 0L;
+        return releaseCallback() == NULL;
     }
 }

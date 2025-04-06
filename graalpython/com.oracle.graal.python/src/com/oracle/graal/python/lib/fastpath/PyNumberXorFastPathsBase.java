@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,46 +38,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.arrow.release_callback;
+package com.oracle.graal.python.lib.fastpath;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.arrow.ArrowSchema;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 
-@ExportLibrary(InteropLibrary.class)
-public class ArrowSchemaReleaseCallback implements TruffleObject {
+/**
+ * Helper class with shared fast-paths. Must be public so that it is accessible by the Bytecode DSL
+ * generated code.
+ */
+@GenerateCached(false)
+@TypeSystemReference(PythonIntegerTypes.class)
+public abstract class PyNumberXorFastPathsBase extends BinaryOpNode {
 
-    @ExportMessage
-    boolean isExecutable() {
-        return true;
+    @Specialization
+    public static boolean op(boolean left, boolean right) {
+        return left != right;
     }
 
-    @ExportMessage
-    static class Execute {
+    @Specialization
+    public static int op(int left, int right) {
+        return left ^ right;
+    }
 
-        @Specialization(guards = "isPointer(args)")
-        static Object doRelease(ArrowSchemaReleaseCallback self, Object[] args,
-                        @Bind("$node") Node inliningTarget,
-                        @Bind("wrapArrowSchema(args)") ArrowSchema arrowSchema,
-                        @Cached ArrowSchemaReleaseCallbackNode releaseNode) {
-            releaseNode.execute(inliningTarget, arrowSchema);
-            return PNone.NO_VALUE;
-        }
-
-        static boolean isPointer(Object[] args) {
-            return args.length == 1 && args[0] instanceof Long;
-        }
-
-        static ArrowSchema wrapArrowSchema(Object[] args) {
-            long pointer = (long) args[0];
-            return ArrowSchema.wrap(pointer);
-        }
+    @Specialization
+    public static long op(long left, long right) {
+        return left ^ right;
     }
 }

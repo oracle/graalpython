@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.property;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ISABSTRACTMETHOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SET_NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISABSTRACTMETHOD__;
@@ -53,6 +52,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -107,7 +107,8 @@ public final class PropertyBuiltins extends PythonBuiltins {
         return PropertyBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___INIT__, parameterNames = {"$self", "fget", "fset", "fdel", "doc"})
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(name = "property", parameterNames = {"$self", "fget", "fset", "fdel", "doc"})
     @GenerateNodeFactory
     abstract static class PropertyInitNode extends PythonBuiltinNode {
 

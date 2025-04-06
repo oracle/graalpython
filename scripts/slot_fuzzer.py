@@ -1,4 +1,4 @@
-# Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,19 +37,34 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# Generates self-contained Python scripts that:
+
+# Simplistic fuzzer testing interactions between slots, magic methods and builtin functions
 #
-# 1) contain from 1 to 3 classes, each class is either pure Python or native heap type
-# (the script itself takes care of compiling and loading the extension). Python class
-# N inherits from class N-1.
+# How to use:
 #
-# 2) invoke various Python operations on the last class in the hierarchy. The results are
-# printed to the stdout. If there is an exception, only its type is printed to the stdout
+# Run the fuzzer as follows:
 #
-# After each such Python script is generated it is executed on both CPython and GraalPy
-# and the output is compared. If CPython segfaults, we ignore the test case.
+# python3 slot_fuzzer.py --graalpy /path/to/bin/graalpy --cpython /path/to/bin/python3 --iterations 100
 #
-# After the experiment, one can simply manually rerun the problematic test scripts.
+# It is recommended to use debug build of CPython, so that wrong usages of the C API fail the CPython run,
+# and we do not even run such bogus tests on GraalPy.
+#
+# Triaging a failed test, for example, test number 42:
+#   cpython42.out is the CPython output
+#   graalpy42.out is GraaPy output -> compare the two using some diff tool
+#   test42.py is the self-contained test, running it again is as simple as:
+#           `/path/to/bin/graalpy test42.py` or `/path/to/bin/python3 test42.py`
+#           the test itself compiles and loads the native extension
+#   test42.c is the native extension code
+#   backup test42.py and manually reduce the code in it to get a smaller reproducer suitable for debugging
+#
+# Adding a new slot:
+#   - add example implementations to "SLOTS" and "MAGIC"
+#       - single line implementation is assumed to be an expression and will be transformed to a proper function body
+#       - multiline implementation is taken as-is
+#   - add tests to 'slots_tester' function
+
+
 import os.path
 import sys
 import dataclasses
@@ -57,6 +72,7 @@ import random
 import itertools
 import subprocess
 import textwrap
+import time
 from argparse import ArgumentParser
 from collections import defaultdict
 
@@ -67,11 +83,14 @@ import re
 import traceback
 import operator
 def slots_tester(Klass, other_klasses):
+    def normalize_output(text):
+        return re.sub(r'object at 0x[0-9a-fA-F]+', '', text)
+
     def test(fun, name):
         try:
             print(f'{name}:', end='')
             result = repr(fun())
-            result = re.sub(r'object at 0x[0-9a-fA-F]+', '', result)
+            result = normalize_output(result)
             print(result)
         except Exception as e:
             if '--verbose' in sys.argv or '-v' in sys.argv:
@@ -81,9 +100,9 @@ def slots_tester(Klass, other_klasses):
 
     def test_dunder(obj, fun_name, *args):
         # avoid going through tp_getattr/o, which may be overridden to something funky
-        args_str = ','.join([repr(x) for x in args])
-        test(lambda: Klass.__dict__[fun_name](obj, *args), f"{fun_name} via class dict")
-        test(lambda: getattr(obj, fun_name)(*args), f"{fun_name}")
+        args_str = normalize_output(','.join([repr(x) for x in [obj, *args]]))
+        test(lambda: type(obj).__dict__[fun_name](obj, *args), f"{fun_name} via class dict for {args_str}")
+        test(lambda: getattr(obj, fun_name)(*args), f"{fun_name} for {args_str}")
 
     def write_attr(obj, attr, value):
         if attr == 'foo':
@@ -152,16 +171,32 @@ def slots_tester(Klass, other_klasses):
     other_objs = [K() for K in other_klasses] + [42, 3.14, 'string', (1,2,3)]
     for obj2 in other_objs:
         obj1 = Klass()
-        test(lambda: obj1 + obj2, f"{Klass} + {type(obj2)}")
-        test(lambda: obj2 + obj1, f"{type(obj2)} + {Klass}")
-        test(lambda: obj1 * obj2, f"{Klass} * {type(obj2)}")
-        test(lambda: obj2 * obj1, f"{type(obj2)} * {Klass}")
-        test(lambda: operator.concat(obj1, obj2), f"operator.concat({type(obj2)}, {Klass})")
-        test(lambda: operator.mul(obj1, obj2), f"operator.mul({type(obj2)}, {Klass})")
-        test_dunder(obj1, "__add__", obj2)
-        test_dunder(obj1, "__radd__", obj2)
-        test_dunder(obj1, "__mul__", obj2)
+        for op in [operator.add, operator.mul, operator.lt, operator.le, operator.eq,
+                   operator.ne, operator.gt, operator.ge, operator.concat]:
+            test(lambda: op(obj1, obj2), f"{op.__name__}: {Klass}, {type(obj2)}")
+            test(lambda: op(obj2, obj1), f"{op.__name__}: {type(obj2)}, {Klass}")
 
+        for dunder in ["__add__", "__radd__", "__mul__", "__rmul__", "__lt__", "__le__", "__eq__", "__ne__", "__gt__", "__ge__"]:
+            test_dunder(obj1, dunder, obj2)
+            test_dunder(obj2, dunder, obj1)
+
+    def safe_hashattr(x, name):
+        try:
+            return hasattr(x, name)
+        except:
+            return False
+
+    if safe_hashattr(Klass(), '__hash__'):
+        if Klass().__hash__ is None:
+            print("Klass().__hash__ is None")
+        else:
+            # just check presence/absence of exception
+            def test_hash():
+                hash(Klass())
+                return 'dummy result'
+            test(test_hash, '__hash__')
+    else:
+        print("Klass().__hash__ does not exist")
 '''
 
 # language=Python
@@ -282,7 +317,16 @@ SLOTS = [
             Py_XDECREF(global_stash2);
             global_stash2 = value;
             return 0;
-        '''])
+        ''']),
+    Slot(NO_GROUP, 'tp_hash', 'Py_hash_t $name$(PyObject* self)', ['0', None, '42', '-2', 'PY_SSIZE_T_MAX']),
+    Slot(NO_GROUP, 'tp_richcompare', 'PyObject* $name$(PyObject* v, PyObject* w, int op)', [
+        'Py_RETURN_FALSE', 'Py_RETURN_TRUE', None, 'Py_RETURN_NONE', 'Py_RETURN_NOTIMPLEMENTED',
+        *[f'''
+            if (op == {ops_true[0]} || op == {ops_true[1]}) Py_RETURN_TRUE;
+            if (op == {ops_false[0]} || op == {ops_false[1]}) Py_RETURN_FALSE;
+            Py_RETURN_NOTIMPLEMENTED;
+          ''' for ops_true in itertools.combinations(range(0, 6), 2)
+              for ops_false in itertools.combinations(set(range(0, 6)) - set(ops_true), 2)]]),
 ]
 
 PY_GLOBALS = '''
@@ -317,13 +361,11 @@ MAGIC = {
                                      del global_dict1[name]
                                      return None
                                      '''],
-    '__getitem__(self, index)': [None, 'True', 'repr(index)']
+    '__getitem__(self, index)': [None, 'True', 'repr(index)'],
+    '__hash__(self)': [None, '1', '-2', '44', '123456788901223442423234234'],
+    **{name + '(self, other)': [None, 'True', 'False', 'NotImplemented']
+       for name in ['__lt__', '__le__', '__eq__', '__ne__', '__gt__', '__ge__']}
 }
-
-
-def all_magic_impls(key):
-    for body in MAGIC[key]:
-        yield magic_impl(key, body)
 
 
 def magic_impl(magic_key, magic_body):
@@ -336,8 +378,8 @@ def magic_impl(magic_key, magic_body):
         return f" def {magic_key}:\n{b}"
 
 
-# One of the combinations is going to be all empty implementations
-magic_combinations = [x for x in itertools.product(*[all_magic_impls(key) for key in MAGIC.keys()])]
+def magic_combinations_choose_random():
+    return list([magic_impl(key, impls[rand.randint(0, len(impls)-1)]) for (key, impls) in MAGIC.items()])
 
 
 def managed_class_impl(name, bases, magic_impls):
@@ -349,11 +391,6 @@ def managed_class_impl(name, bases, magic_impls):
     else:
         code += '  pass'
     return code
-
-
-def all_slot_impls(slot:Slot):
-    for body in slot.impls:
-        yield (slot, body)
 
 
 def native_heap_type_impl(name, mod_name, slots):
@@ -432,20 +469,26 @@ def native_static_type_impl(name, mod_name, slots):
     ''')
 
 
-slot_combinations = [x for x in itertools.product(*[all_slot_impls(slot) for slot in SLOTS])]
+def slot_combinations_choose_random():
+    return list([(slot, slot.impls[rand.randint(0, len(slot.impls) - 1)]) for slot in SLOTS])
+
+
+def choose_random(l):
+    return l[rand.randint(0, len(l)-1)]
+
 
 parser = ArgumentParser()
 parser.add_argument('--graalpy', dest='graalpy', required=True)
 parser.add_argument('--cpython', dest='cpython', required=True)
 parser.add_argument('--iterations', type=int, default=200)
-parser.add_argument('--output-dir', dest='output_dir', required=True,
-                    help='where to store generated test cases and logs from test runs')
+parser.add_argument('--output-dir', dest='output_dir',
+                    help='Where to store generated test cases and logs from test runs. If not provided the program uses "experiment-{timestamp}"')
 parser.add_argument('--seed', type=int, default=0)
 args, _ = parser.parse_known_args()
 
 graalpy = args.graalpy
 cpython = args.cpython
-output_dir = args.output_dir
+output_dir = args.output_dir if args.output_dir else f'./experiment-{int(time.time())}'
 
 if os.path.exists(output_dir):
     if not os.path.isdir(output_dir):
@@ -474,12 +517,6 @@ log()
 log()
 rand = random.Random(seed)
 
-
-def choose_random(l):
-    index = rand.randint(0, len(l)-1)
-    return l[index]
-
-
 for test_case_idx in range(args.iterations):
     classes_count = max(3, rand.randint(1, 5))  # Make it more likely that it's 3...
     classes = []
@@ -493,14 +530,14 @@ for test_case_idx in range(args.iterations):
             class_name = 'Native' + str(i)
             native_classes.append(class_name)
             if i == 0 and rand.randint(0, 2) < 2:
-                c_source += native_static_type_impl(class_name, test_module_name, choose_random(slot_combinations))
+                c_source += native_static_type_impl(class_name, test_module_name, slot_combinations_choose_random())
             else:
-                c_source += native_heap_type_impl(class_name, test_module_name, choose_random(slot_combinations))
+                c_source += native_heap_type_impl(class_name, test_module_name, slot_combinations_choose_random())
             c_source += '\n'
             py_source += f"{class_name} = {test_module_name}.create_{class_name}(({base}, ))\n"
         else:
             class_name = 'Managed' + str(i)
-            py_source += managed_class_impl(class_name, (base,), choose_random(magic_combinations))
+            py_source += managed_class_impl(class_name, (base,), magic_combinations_choose_random())
             py_source += '\n'
 
         classes.append(class_name)
@@ -546,26 +583,28 @@ for test_case_idx in range(args.iterations):
     write_all(os.path.join(output_dir, py_filename), py_source)
 
     log(f"Test case {test_case_idx:5}: ", end='')
+    cpy_output_path = os.path.join(output_dir, f"cpython{test_case_idx}.out")
     try:
         cpython_out = subprocess.check_output([cpython, py_filename], stderr=subprocess.STDOUT, cwd=output_dir).decode()
-        write_all(os.path.join(output_dir, f"cpython{test_case_idx}.out"), cpython_out)
+        write_all(cpy_output_path, cpython_out)
     except subprocess.CalledProcessError as e:
         output = e.output.decode()
-        log("CPython error;     ⚠️")
-        write_all(os.path.join(output_dir, f"cpython{test_case_idx}.out"), output)
+        log(f"CPython error;     ⚠️       {os.path.abspath(cpy_output_path)}")
+        write_all(cpy_output_path, output)
         continue
 
     log("CPython succeeded; ", end='')
+    gpy_output_path = os.path.join(output_dir, f"graalpy{test_case_idx}.out")
     try:
         graalpy_out = subprocess.check_output([graalpy, '--vm.ea', '--vm.esa', py_filename], stderr=subprocess.STDOUT, cwd=output_dir).decode()
-        write_all(os.path.join(output_dir, f"graalpy{test_case_idx}.out"), graalpy_out)
+        write_all(gpy_output_path, graalpy_out)
     except subprocess.CalledProcessError as e:
         output = e.output.decode()
-        log("❌ fatal error in GraalPy")
-        write_all(os.path.join(output_dir, f"graalpy{test_case_idx}.out"), output)
+        log(f"❌ fatal error in GraalPy    {os.path.abspath(gpy_output_path)}")
+        write_all(gpy_output_path, output)
         continue
 
     if cpython_out != graalpy_out:
-        log(f"❌ output does not match!")
+        log(f"❌ output does not match!    {os.path.abspath(cpy_output_path)} {os.path.abspath(gpy_output_path)}")
     else:
         log("✅ GraalPy succeeded")

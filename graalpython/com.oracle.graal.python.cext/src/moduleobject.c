@@ -619,6 +619,7 @@ PyModule_GetFilenameObject(PyObject *m)
     }
     return Py_NewRef(fileobj);
 }
+#endif // GraalPy change
 
 const char *
 PyModule_GetFilename(PyObject *m)
@@ -632,7 +633,6 @@ PyModule_GetFilename(PyObject *m)
     Py_DECREF(fileobj);   /* module dict has still a reference */
     return utf8;
 }
-#endif // GraalPy change
 
 PyModuleDef*
 PyModule_GetDef(PyObject* m)

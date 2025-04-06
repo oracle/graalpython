@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,39 +38,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.call.special;
+package com.oracle.graal.python.builtins.modules.lsprof;
 
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.instrumentation.SourceSectionFilter;
+import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.tools.profiler.CPUSampler;
 
-@ImportStatic({SpecialMethodNames.class, PythonOptions.class})
-public abstract class LookupAndCallTernaryNode extends Node {
+public class Profiler extends PythonBuiltinObject {
+    boolean subcalls;
+    boolean builtins;
+    double timeunit;
+    Object externalTimer;
+    double time;
+    final CPUSampler sampler;
 
-    protected final TruffleString name;
-
-    public abstract Object execute(VirtualFrame frame, Object arg1, Object arg2, Object arg3);
-
-    @NeverDefault
-    public static LookupAndCallTernaryNode create(TruffleString name) {
-        // Use SpecialMethodSlot overload for special slots, if there is a need to create
-        // LookupAndCallBinaryNode for dynamic name, then we should change this method or the caller
-        // to try to lookup a slot and use that if found
-        assert SpecialMethodSlot.findSpecialSlotUncached(name) == null : name;
-        return LookupAndCallNonReversibleTernaryNodeGen.create(name);
-    }
-
-    LookupAndCallTernaryNode(TruffleString name) {
-        this.name = name;
-    }
-
-    @NeverDefault
-    protected final LookupSpecialBaseNode createLookup() {
-        return LookupSpecialMethodNode.create(name);
+    public Profiler(Object cls, Shape instanceShape, CPUSampler sampler) {
+        super(cls, instanceShape);
+        this.sampler = sampler;
+        this.sampler.setFilter(SourceSectionFilter.newBuilder().includeInternal(true).build());
+        this.sampler.setPeriod(1);
     }
 }

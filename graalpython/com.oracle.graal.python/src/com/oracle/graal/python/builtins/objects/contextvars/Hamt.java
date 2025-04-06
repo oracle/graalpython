@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -147,7 +147,7 @@ public final class Hamt {
         if (original instanceof Entry) {
             Entry existing = (Entry) original;
             if (newEntry.hash == existing.hash) {
-                if (PyObjectRichCompareBool.EqNode.compareUncached(newEntry.key, existing.key)) {
+                if (PyObjectRichCompareBool.executeEqUncached(newEntry.key, existing.key)) {
                     return newEntry;
                 } else {
                     return new CollisionPart(existing.hash, existing, newEntry);
@@ -230,7 +230,7 @@ public final class Hamt {
         }
         if (part instanceof Entry) {
             Entry existing = (Entry) part;
-            if (existing.hash == hash && PyObjectRichCompareBool.EqNode.compareUncached(existing.key, key)) {
+            if (existing.hash == hash && PyObjectRichCompareBool.executeEqUncached(existing.key, key)) {
                 return existing.value;
             }
             return null;
@@ -256,7 +256,7 @@ public final class Hamt {
                 return null;
             }
             for (Entry entry : existing.elems) {
-                if (PyObjectRichCompareBool.EqNode.compareUncached(entry.key, key)) {
+                if (PyObjectRichCompareBool.executeEqUncached(entry.key, key)) {
                     return entry.value;
                 }
             }
@@ -325,7 +325,7 @@ public final class Hamt {
         }
         if (root instanceof Entry) {
             Entry existing = (Entry) root;
-            if (existing.hash == hash && PyObjectRichCompareBool.EqNode.compareUncached(existing.key, key)) {
+            if (existing.hash == hash && PyObjectRichCompareBool.executeEqUncached(existing.key, key)) {
                 return null;
             }
             return root;
@@ -369,7 +369,7 @@ public final class Hamt {
             CollisionPart existing = (CollisionPart) root;
             if (existing.hash == hash) {
                 for (int i = 0; i < existing.elems.length; ++i) {
-                    if (PyObjectRichCompareBool.EqNode.compareUncached(existing.elems[i].key, key)) {
+                    if (PyObjectRichCompareBool.executeEqUncached(existing.elems[i].key, key)) {
                         if (existing.elems.length == 1) {
                             return null;
                         }

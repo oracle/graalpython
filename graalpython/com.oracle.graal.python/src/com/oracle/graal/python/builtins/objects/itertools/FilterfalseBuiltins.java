@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
-import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -115,15 +114,11 @@ public final class FilterfalseBuiltins extends PythonBuiltins {
             boolean cont;
             do {
                 result = callIterNext.execute(frame, inliningTarget, iterNext, sequence);
-                if (PyIterNextNode.isExhausted(result)) {
-                    cont = false;
-                } else {
-                    Object good = result;
-                    if (hasFunc) {
-                        good = callNode.execute(frame, func, result);
-                    }
-                    cont = isTrue.execute(frame, good);
+                Object good = result;
+                if (hasFunc) {
+                    good = callNode.execute(frame, func, result);
                 }
+                cont = isTrue.execute(frame, good);
             } while (loopConditionProfile.profile(inliningTarget, cont));
             return result;
         }

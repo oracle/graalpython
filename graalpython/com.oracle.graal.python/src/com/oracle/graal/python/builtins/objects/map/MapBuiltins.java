@@ -89,9 +89,6 @@ public final class MapBuiltins extends PythonBuiltins {
                         @Shared @Cached CallVarargsMethodNode callNode,
                         @Shared @Cached PyIterNextNode nextNode) {
             Object item = nextNode.execute(frame, inliningTarget, self.getIterators()[0]);
-            if (PyIterNextNode.isExhausted(item)) {
-                return iteratorExhausted();
-            }
             return callNode.execute(frame, self.getFunction(), new Object[]{item}, PKeyword.EMPTY_KEYWORDS);
         }
 
@@ -104,9 +101,6 @@ public final class MapBuiltins extends PythonBuiltins {
             Object[] arguments = new Object[iterators.length];
             for (int i = 0; i < iterators.length; i++) {
                 arguments[i] = nextNode.execute(frame, inliningTarget, iterators[i]);
-                if (PyIterNextNode.isExhausted(arguments[i])) {
-                    return iteratorExhausted();
-                }
             }
             return callNode.execute(frame, self.getFunction(), arguments, PKeyword.EMPTY_KEYWORDS);
         }

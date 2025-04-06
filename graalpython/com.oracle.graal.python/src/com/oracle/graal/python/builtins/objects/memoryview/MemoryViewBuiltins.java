@@ -45,9 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.systemHashCodeAsHexString;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.BufferFormat.T_UINT_8_TYPE_CODE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -82,16 +80,19 @@ import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
@@ -107,11 +108,14 @@ import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -303,17 +307,37 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBinaryBuiltinNode {
-        @Child private CExtNodes.PCallCapiFunction callCapiFunction;
+    public abstract static class MemoryViewRichCmp extends TpSlotRichCompare.RichCmpBuiltinNode {
+        @Specialization(guards = "op.isEqOrNe()")
+        static Object doIt(VirtualFrame frame, Object a, Object b, RichCmpOp op,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached MemoryViewEqNode eqNode) {
+            Object result = eqNode.execute(frame, inliningTarget, a, b);
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                return result;
+            }
+            return (boolean) result == op.isEq();
+        }
 
-        @Specialization
-        boolean eq(VirtualFrame frame, PMemoryView self, PMemoryView other,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Shared @Cached MemoryViewNodes.ReadItemAtNode readSelf,
-                        @Shared @Cached MemoryViewNodes.ReadItemAtNode readOther) {
+        @Specialization(guards = "!op.isEqOrNe()")
+        @SuppressWarnings("unused")
+        static Object doOthers(Object a, Object b, RichCmpOp op) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class MemoryViewEqNode extends PNodeWithContext {
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object self, Object other);
+
+        private static boolean eq(VirtualFrame frame, Node inliningTarget, PMemoryView self, PMemoryView other,
+                        PyObjectRichCompareBool eqNode,
+                        MemoryViewNodes.ReadItemAtNode readSelf,
+                        MemoryViewNodes.ReadItemAtNode readOther,
+                        CExtNodes.PCallCapiFunction callCapiFunction) {
             if (self.isReleased() || other.isReleased()) {
                 return self == other;
             }
@@ -338,31 +362,39 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
             if (ndim == 0) {
                 Object selfItem = readSelf.execute(frame, self, self.getBufferPointer(), 0);
                 Object otherItem = readOther.execute(frame, other, other.getBufferPointer(), 0);
-                return eqNode.compare(frame, inliningTarget, selfItem, otherItem);
+                return eqNode.executeEq(frame, inliningTarget, selfItem, otherItem);
             }
 
-            return recursive(frame, inliningTarget, eqNode, self, other, readSelf, readOther, 0, ndim,
+            return recursive(frame, inliningTarget, eqNode, callCapiFunction, self, other, readSelf, readOther, 0, ndim,
                             self.getBufferPointer(), self.getOffset(), other.getBufferPointer(), other.getOffset());
         }
 
-        @Specialization(guards = "!isMemoryView(other)")
-        Object eq(VirtualFrame frame, PMemoryView self, Object other,
-                        @Bind("this") Node inliningTarget,
+        @Specialization
+        static Object eq(VirtualFrame frame, Node inliningTarget, PMemoryView self, Object other,
+                        @Cached InlinedConditionProfile otherIsMemoryViewProfile,
                         @Cached PyMemoryViewFromObject memoryViewNode,
                         @Cached MemoryViewNodes.ReleaseNode releaseNode,
-                        @Shared @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Shared @Cached MemoryViewNodes.ReadItemAtNode readSelf,
-                        @Shared @Cached MemoryViewNodes.ReadItemAtNode readOther) {
+                        @Cached PyObjectRichCompareBool eqNode,
+                        @Cached MemoryViewNodes.ReadItemAtNode readSelf,
+                        @Cached MemoryViewNodes.ReadItemAtNode readOther,
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction) {
             PMemoryView memoryView;
-            try {
-                memoryView = memoryViewNode.execute(frame, other);
-            } catch (PException e) {
-                return PNotImplemented.NOT_IMPLEMENTED;
+            boolean otherIsMemoryView = otherIsMemoryViewProfile.profile(inliningTarget, other instanceof PMemoryView);
+            if (otherIsMemoryView) {
+                memoryView = (PMemoryView) other;
+            } else {
+                try {
+                    memoryView = memoryViewNode.execute(frame, other);
+                } catch (PException e) {
+                    return PNotImplemented.NOT_IMPLEMENTED;
+                }
             }
             try {
-                return eq(frame, self, memoryView, inliningTarget, eqNode, readSelf, readOther);
+                return eq(frame, inliningTarget, self, memoryView, eqNode, readSelf, readOther, callCapiFunction);
             } finally {
-                releaseNode.execute(frame, memoryView);
+                if (!otherIsMemoryView) {
+                    releaseNode.execute(frame, memoryView);
+                }
             }
         }
 
@@ -372,7 +404,10 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        private boolean recursive(VirtualFrame frame, Node inliningTarget, PyObjectRichCompareBool.EqNode eqNode, PMemoryView self, PMemoryView other,
+        // TODO: recursion in PE
+        @InliningCutoff
+        private static boolean recursive(VirtualFrame frame, Node inliningTarget, PyObjectRichCompareBool eqNode, CExtNodes.PCallCapiFunction callCapiFunction,
+                        PMemoryView self, PMemoryView other,
                         ReadItemAtNode readSelf, ReadItemAtNode readOther,
                         int dim, int ndim, Object selfPtr, int initialSelfOffset, Object otherPtr, int initialOtherOffset) {
             int selfOffset = initialSelfOffset;
@@ -383,21 +418,21 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                 Object otherXPtr = otherPtr;
                 int otherXOffset = otherOffset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    selfXPtr = getCallCapiFunction().call(NativeCAPISymbol.FUN_TRUFFLE_ADD_SUBOFFSET, selfPtr, selfOffset, self.getBufferSuboffsets()[dim]);
+                    selfXPtr = callCapiFunction.call(NativeCAPISymbol.FUN_TRUFFLE_ADD_SUBOFFSET, selfPtr, selfOffset, self.getBufferSuboffsets()[dim]);
                     selfXOffset = 0;
                 }
                 if (other.getBufferSuboffsets() != null && other.getBufferSuboffsets()[dim] >= 0) {
-                    otherXPtr = getCallCapiFunction().call(NativeCAPISymbol.FUN_TRUFFLE_ADD_SUBOFFSET, otherPtr, otherOffset, other.getBufferSuboffsets()[dim]);
+                    otherXPtr = callCapiFunction.call(NativeCAPISymbol.FUN_TRUFFLE_ADD_SUBOFFSET, otherPtr, otherOffset, other.getBufferSuboffsets()[dim]);
                     otherXOffset = 0;
                 }
                 if (dim == ndim - 1) {
                     Object selfItem = readSelf.execute(frame, self, selfXPtr, selfXOffset);
                     Object otherItem = readOther.execute(frame, other, otherXPtr, otherXOffset);
-                    if (!eqNode.compare(frame, inliningTarget, selfItem, otherItem)) {
+                    if (!eqNode.executeEq(frame, inliningTarget, selfItem, otherItem)) {
                         return false;
                     }
                 } else {
-                    if (!recursive(frame, inliningTarget, eqNode, self, other, readSelf, readOther, dim + 1, ndim, selfXPtr, selfXOffset, otherXPtr, otherXOffset)) {
+                    if (!recursive(frame, inliningTarget, eqNode, callCapiFunction, self, other, readSelf, readOther, dim + 1, ndim, selfXPtr, selfXOffset, otherXPtr, otherXOffset)) {
                         return false;
                     }
                 }
@@ -405,14 +440,6 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                 otherOffset += other.getBufferStrides()[dim];
             }
             return true;
-        }
-
-        private CExtNodes.PCallCapiFunction getCallCapiFunction() {
-            if (callCapiFunction == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callCapiFunction = insert(CExtNodes.PCallCapiFunction.create());
-            }
-            return callCapiFunction;
         }
     }
 
@@ -732,11 +759,11 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class HashNode extends PythonUnaryBuiltinNode {
+    public abstract static class HashNode extends HashBuiltinNode {
         @Specialization
-        static int hash(PMemoryView self,
+        static long hash(PMemoryView self,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile cachedProfile,
                         @Cached InlinedConditionProfile writableProfile,

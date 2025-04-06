@@ -37,10 +37,13 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.random.PRandom;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -70,7 +73,12 @@ public final class RandomModuleBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             PRandom random = PFactory.createRandom(language, cls, getInstanceShape.execute(cls));
-            setSeed.executeObject(frame, random, seed != PNone.NO_VALUE ? seed : PNone.NONE);
+            try {
+                setSeed.executeObject(frame, random, seed != PNone.NO_VALUE ? seed : PNone.NONE);
+            } catch (SpecialMethodNotFound ignore) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.SystemError);
+            }
             return random;
         }
     }

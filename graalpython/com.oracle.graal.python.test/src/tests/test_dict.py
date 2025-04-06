@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -1267,3 +1267,11 @@ def test_dict_values_eq():
     d1 = {1: 1, 2: 2, 4: 4}
     assert d1.values() != d1.values()
 
+
+def test_missing_and_not_implemented():
+    class MyDict(dict):
+        def __missing__(self, key):
+            return NotImplemented
+
+    d = MyDict()
+    assert d['bogus_key'] == NotImplemented

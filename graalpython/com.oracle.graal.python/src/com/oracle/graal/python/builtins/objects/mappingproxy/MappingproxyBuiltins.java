@@ -32,8 +32,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_COPY;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_GET;
@@ -47,6 +45,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -57,16 +56,18 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.lib.PyNumberOrNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
-import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.PyObjectRichCompare;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -93,7 +94,8 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         return MappingproxyBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(name = "mappingproxy", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryBuiltinNode {
 
@@ -217,14 +219,14 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBinaryBuiltinNode {
+    public abstract static class MappingproxyRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        Object eq(VirtualFrame frame, PMappingproxy self, Object other,
+        Object doIt(VirtualFrame frame, PMappingproxy self, Object other, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
-            return eqNode.compare(frame, inliningTarget, self.getMapping(), other);
+                        @Cached PyObjectRichCompare cmpNode) {
+            return cmpNode.execute(frame, inliningTarget, self.getMapping(), other, op);
         }
     }
 

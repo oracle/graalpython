@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -73,7 +74,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
-import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -119,7 +119,6 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
     @Builtin(name = J_ARRAY, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PArray, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class ArrayNode extends PythonVarargsBuiltinNode {
-        @Child private SplitArgsNode splitArgsNode;
 
         @Specialization(guards = "args.length == 1 || args.length == 2")
         static Object array2(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kwargs,
@@ -146,15 +145,6 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             } else {
                 throw PRaiseNode.raiseStatic(this, TypeError, S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN, T_ARRAY, 3, args.length);
             }
-        }
-
-        @Override
-        public final Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            if (splitArgsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                splitArgsNode = insert(SplitArgsNode.create());
-            }
-            return execute(frame, arguments[0], splitArgsNode.executeCached(arguments), keywords);
         }
 
         // multiple non-inlined specializations share nodes
@@ -295,18 +285,19 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
                 int length = 0;
                 while (true) {
-                    Object nextValue = nextNode.execute(frame, inliningTarget, iter);
-                    if (PyIterNextNode.isExhausted(nextValue)) {
+                    try {
+                        Object nextValue = nextNode.execute(frame, inliningTarget, iter);
+                        try {
+                            length = PythonUtils.addExact(length, 1);
+                            ensureCapacityNode.execute(inliningTarget, array, length);
+                        } catch (OverflowException e) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            throw PRaiseNode.raiseStatic(inliningTarget, MemoryError);
+                        }
+                        putValueNode.execute(frame, inliningTarget, array, length - 1, nextValue);
+                    } catch (IteratorExhausted e) {
                         break;
                     }
-                    try {
-                        length = PythonUtils.addExact(length, 1);
-                        ensureCapacityNode.execute(inliningTarget, array, length);
-                    } catch (OverflowException e) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw PRaiseNode.raiseStatic(inliningTarget, MemoryError);
-                    }
-                    putValueNode.execute(frame, inliningTarget, array, length - 1, nextValue);
                 }
 
                 setLengthNode.execute(inliningTarget, array, length);

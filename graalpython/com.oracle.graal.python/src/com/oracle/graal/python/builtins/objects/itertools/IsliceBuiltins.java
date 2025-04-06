@@ -63,7 +63,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
-import com.oracle.graal.python.lib.PyIterNextNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -109,7 +109,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization(guards = "isNone(self.getIterable())")
         static Object next(@SuppressWarnings("unused") PIslice self) {
-            return iteratorExhausted();
+            throw iteratorExhausted();
         }
 
         @Specialization(guards = "!isNone(self.getIterable())")
@@ -118,7 +118,6 @@ public final class IsliceBuiltins extends PythonBuiltins {
                         @Cached GetObjectSlotsNode getSlots,
                         @Cached CallSlotTpIterNextNode callIterNext,
                         @Cached InlinedLoopConditionProfile loopProfile,
-                        @Cached InlinedBranchProfile nextExceptionProfile,
                         @Cached InlinedBranchProfile setNextProfile) {
             Object it = self.getIterable();
             TpSlot iterNext = getSlots.execute(inliningTarget, it).tp_iternext();
@@ -126,22 +125,14 @@ public final class IsliceBuiltins extends PythonBuiltins {
             Object item;
             try {
                 while (loopProfile.profile(inliningTarget, self.getCnt() < self.getNext())) {
-                    item = callIterNext.execute(frame, inliningTarget, iterNext, it);
-                    if (PyIterNextNode.isExhausted(item)) {
-                        self.setIterable(PNone.NONE);
-                        return iteratorExhausted();
-                    }
+                    callIterNext.execute(frame, inliningTarget, iterNext, it);
                     self.setCnt(self.getCnt() + 1);
                 }
                 if (stop != -1 && self.getCnt() >= stop) {
                     self.setIterable(PNone.NONE);
-                    return iteratorExhausted();
+                    throw iteratorExhausted();
                 }
                 item = callIterNext.execute(frame, inliningTarget, iterNext, it);
-                if (PyIterNextNode.isExhausted(item)) {
-                    self.setIterable(PNone.NONE);
-                    return iteratorExhausted();
-                }
                 self.setCnt(self.getCnt() + 1);
                 int oldNext = self.getNext();
                 self.setNext(self.getNext() + self.getStep());
@@ -150,8 +141,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
                     self.setNext(stop);
                 }
                 return item;
-            } catch (PException e) {
-                nextExceptionProfile.enter(inliningTarget);
+            } catch (IteratorExhausted | PException e) {
                 self.setIterable(PNone.NONE);
                 throw e;
             }

@@ -50,7 +50,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.CODEC_IS_UNEXPECTED_TY
 import static com.oracle.graal.python.nodes.ErrorMessages.COULDN_T_CONVERT_THE_OBJECT_TO_STR;
 import static com.oracle.graal.python.nodes.ErrorMessages.PENDING_BUFFER_OVERFLOW;
 import static com.oracle.graal.python.nodes.ErrorMessages.PENDING_BUFFER_TOO_LARGE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
@@ -67,6 +66,9 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -75,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ints.IntNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
@@ -108,6 +111,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
 
     private static final int MAXENCPENDING = 2;
+
+    public static final TpSlots SLOTS = MultibyteIncrementalEncoderBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -148,7 +153,8 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self"})
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(name = "MultibyteIncrementalEncoder", minNumOfPositionalArgs = 1, parameterNames = {"$self"})
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonUnaryBuiltinNode {
 

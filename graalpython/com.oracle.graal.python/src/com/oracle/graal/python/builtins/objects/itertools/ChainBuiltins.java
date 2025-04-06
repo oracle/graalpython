@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -119,14 +120,13 @@ public final class ChainBuiltins extends PythonBuiltins {
                         Object next;
                         try {
                             next = nextNode.execute(frame, inliningTarget, self.getSource());
+                        } catch (IteratorExhausted e) {
+                            self.setSource(PNone.NONE);
+                            throw e;
                         } catch (PException e) {
                             nextExceptionProfile.enter(inliningTarget);
                             self.setSource(PNone.NONE);
                             throw e;
-                        }
-                        if (PyIterNextNode.isExhausted(next)) {
-                            self.setSource(PNone.NONE);
-                            return iteratorExhausted();
                         }
                         Object iter = getIter.execute(frame, inliningTarget, next);
                         self.setActive(iter);
@@ -136,13 +136,13 @@ public final class ChainBuiltins extends PythonBuiltins {
                         throw e;
                     }
                 }
-                Object next = nextNode.execute(frame, inliningTarget, self.getActive());
-                if (!PyIterNextNode.isExhausted(next)) {
-                    return next;
+                try {
+                    return nextNode.execute(frame, inliningTarget, self.getActive());
+                } catch (IteratorExhausted e) {
+                    self.setActive(PNone.NONE);
                 }
-                self.setActive(PNone.NONE);
             }
-            return iteratorExhausted();
+            throw iteratorExhausted();
         }
     }
 

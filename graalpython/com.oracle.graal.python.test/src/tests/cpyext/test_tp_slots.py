@@ -41,6 +41,7 @@ import sys
 
 import operator
 from . import CPyExtType, CPyExtHeapType, compile_module_from_string, assert_raises, compile_module_from_file
+from .test_indexed_slots import cmembers
 
 
 def get_delegate(o):
@@ -811,8 +812,8 @@ def test_tp_hash():
 
     def assert_has_no_hash(obj):
         assert_raises(TypeError, hash, obj)
-        assert type(obj).__hash__ is None
-        assert TypeWithoutHash.has_hash_not_implemented(obj)
+        assert type(obj).__hash__ is None, f"{type(obj).__hash__=}, {TypeWithoutHash.has_hash_not_implemented(obj)=}"
+        assert TypeWithoutHash.has_hash_not_implemented(obj), f"{type(obj).__hash__=}, {TypeWithoutHash.has_hash_not_implemented(obj)=}"
 
     assert_has_no_hash(TypeWithoutHash())
 
@@ -838,13 +839,27 @@ def test_tp_hash():
 
     assert_has_no_hash(DisablesHash2())
 
-    # TODO GR-55196
-    # TypeWithoutHashExplicit = CPyExtType(
-    #     "TypeWithoutHashExplicit",
-    #     tp_hash='PyObject_HashNotImplemented',
-    # )
-    #
-    # assert_has_no_hash(TypeWithoutHashExplicit())
+    TypeWithoutHashExplicit = CPyExtType(
+        "TypeWithoutHashExplicit",
+        tp_hash='PyObject_HashNotImplemented',
+        code = '''
+            // static hashfunc myglobal = PyObject_HashNotImplemented;
+            // typedef struct { hashfunc x; } _mystruct_t;
+            // static _mystruct_t mystruct = { PyObject_HashNotImplemented };
+        ''',
+        ready_code = '''
+            // printf("TypeWithoutHashExplicitType.tp_hash=%p, PyObject_HashNotImplemented=%p, myglobal=%p, mystruct.x=%p\\n", TypeWithoutHashExplicitType.tp_hash, &PyObject_HashNotImplemented, myglobal, mystruct.x);
+            // printf("TypeWithoutHashExplicitType.tp_as_mapping=%p, TypeWithoutHashExplicit_mapping_methods=%p\\n", TypeWithoutHashExplicitType.tp_as_mapping, &TypeWithoutHashExplicit_mapping_methods);
+            // printf("offsetof(PyTypeObject, tp_hash)=%p, tp_as_mapping=%p\\n", offsetof(PyTypeObject, tp_hash), offsetof(PyTypeObject, tp_as_mapping));
+            // For some reason MSVC initializes tp_hash to some different pointer that also seems to point to PyObject_HashNotImplemented (some dynamic linking issue?)
+            // This happens on both CPython 3.11 and GraalPy. The printouts above can help debug the issue in the future.
+            #if defined(_MSC_VER)
+              TypeWithoutHashExplicitType.tp_hash=PyObject_HashNotImplemented;
+            #endif
+        '''
+    )
+
+    assert_has_no_hash(TypeWithoutHashExplicit())
 
 
 def test_attr_update():
@@ -965,6 +980,26 @@ class DelegateInplaceSlot(DelegateSlot):
         return wrapper
 
 
+native_slot_proxy_template = '''
+static PyObject* get_delegate(PyObject* self) {
+    return ((ProxyObject*)self)->delegate;
+}
+static void set_delegate(PyObject* self, PyObject* delegate) {
+    Py_XSETREF(((ProxyObject*)self)->delegate, delegate);
+}
+static PyObject* proxy_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
+    PyObject* delegate;
+    if (!PyArg_UnpackTuple(args, "NativeSlotProxy", 0, 1, &delegate))
+        return NULL;
+    ProxyObject* obj = (ProxyObject*)type->tp_alloc(type, 0);
+    if (!obj)
+        return NULL;
+    obj->delegate = Py_NewRef(delegate);  // leaked
+    return (PyObject*)obj;
+}
+'''
+
+
 def test_nb_slot_calls():
     slots = [
         ('proxy_nb_binary_slot', 'nb_add'),
@@ -1008,22 +1043,7 @@ def test_nb_slot_calls():
         cmembers='PyObject* delegate;',
         code=r'''
             typedef NativeNbSlotProxyObject ProxyObject;
-            static PyObject* get_delegate(PyObject* self) {
-                return ((ProxyObject*)self)->delegate;
-            }
-            static void set_delegate(PyObject* self, PyObject* delegate) {
-                Py_XSETREF(((ProxyObject*)self)->delegate, delegate);
-            }
-            static PyObject* proxy_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
-                PyObject* delegate;
-                if (!PyArg_UnpackTuple(args, "NativeNbSlotProxy", 0, 1, &delegate))
-                    return NULL;
-                ProxyObject* obj = (ProxyObject*)type->tp_alloc(type, 0);
-                if (!obj)
-                    return NULL;
-                obj->delegate = Py_NewRef(delegate);  // leaked
-                return (PyObject*)obj;
-            }
+            ''' + native_slot_proxy_template + r'''
             static PyTypeObject NativeNbSlotProxyType;
             #define proxy_nb_unary_slot(slot) \
                 static PyObject* proxy_##slot(PyObject *a) { \
@@ -1234,22 +1254,7 @@ def test_sq_slot_calls():
         cmembers='PyObject* delegate;',
         code=r'''
             typedef NativeSqSlotProxyObject ProxyObject;
-            static PyObject* get_delegate(PyObject* self) {
-                return ((ProxyObject*)self)->delegate;
-            }
-            static void set_delegate(PyObject* self, PyObject* delegate) {
-                Py_XSETREF(((ProxyObject*)self)->delegate, delegate);
-            }
-            static PyObject* proxy_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
-                PyObject* delegate;
-                if (!PyArg_UnpackTuple(args, "NativeSqSlotProxy", 0, 1, &delegate))
-                    return NULL;
-                ProxyObject* obj = (ProxyObject*)type->tp_alloc(type, 0);
-                if (!obj)
-                    return NULL;
-                obj->delegate = Py_NewRef(delegate);  // leaked
-                return (PyObject*)obj;
-            }
+            ''' + native_slot_proxy_template + r'''
             static Py_ssize_t proxy_sq_length(PyObject* self) {
                 PyObject* delegate = get_delegate(self);
                 return Py_TYPE(delegate)->tp_as_sequence->sq_length(delegate);
@@ -1373,19 +1378,7 @@ def test_mp_slot_calls():
         cmembers='PyObject* delegate;',
         code=r'''
             typedef NativeMpSlotProxyObject ProxyObject;
-            static PyObject* get_delegate(PyObject* self) {
-                return ((ProxyObject*)self)->delegate;
-            }
-            static PyObject* proxy_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
-                PyObject* delegate;
-                if (!PyArg_UnpackTuple(args, "NativeMpSlotProxy", 0, 1, &delegate))
-                    return NULL;
-                ProxyObject* obj = (ProxyObject*)type->tp_alloc(type, 0);
-                if (!obj)
-                    return NULL;
-                obj->delegate = Py_NewRef(delegate);  // leaked
-                return (PyObject*)obj;
-            }
+            ''' + native_slot_proxy_template + r'''
             static Py_ssize_t proxy_mp_length(PyObject* self) {
                 PyObject* delegate = get_delegate(self);
                 return Py_TYPE(delegate)->tp_as_mapping->mp_length(delegate);
@@ -1432,25 +1425,13 @@ def test_mp_slot_calls():
         assert not bool(obj)
 
 
-def test_tp_slot_calls():
+def test_tp_iter_iternext_calls():
     NativeSlotProxy = CPyExtType(
-        name='TpSlotProxy',
+        name='TpIterSlotProxy',
         cmembers='PyObject* delegate;',
         code=r'''
-            typedef TpSlotProxyObject ProxyObject;
-            static PyObject* get_delegate(PyObject* self) {
-                return ((ProxyObject*)self)->delegate;
-            }
-            static PyObject* proxy_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
-                PyObject* delegate;
-                if (!PyArg_UnpackTuple(args, "NativeTpSlotProxy", 0, 1, &delegate))
-                    return NULL;
-                ProxyObject* obj = (ProxyObject*)type->tp_alloc(type, 0);
-                if (!obj)
-                    return NULL;
-                obj->delegate = Py_NewRef(delegate);  // leaked
-                return (PyObject*)obj;
-            }
+            typedef TpIterSlotProxyObject ProxyObject;
+            ''' + native_slot_proxy_template + r'''
             static PyObject* proxy_tp_iter(PyObject* self) {
                 PyObject* delegate = get_delegate(self);
                 return Py_TYPE(delegate)->tp_iter(delegate);
@@ -1553,3 +1534,151 @@ def test_tp_iternext_not_implemented():
         next(i)
     except TypeError as e:
         assert str(e).endswith("is not an iterator")
+
+
+def test_tp_str_repr_calls():
+    NativeSlotProxy = CPyExtType(
+        name='TpStrSlotProxy',
+        cmembers='PyObject* delegate;',
+        code=r'''
+            typedef TpStrSlotProxyObject ProxyObject;
+            ''' + native_slot_proxy_template + r'''
+            static PyObject* proxy_tp_str(PyObject* self) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_str(delegate);
+            }
+            static PyObject* proxy_tp_repr(PyObject* self) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_repr(delegate);
+            }
+        ''',
+        tp_new='proxy_tp_new',
+        tp_members='{"delegate", T_OBJECT, offsetof(ProxyObject, delegate), 0, NULL}',
+        tp_str='proxy_tp_str',
+        tp_repr='proxy_tp_repr',
+    )
+
+    class PureSlotProxy:
+        def __init__(self, delegate):
+            self.delegate = delegate
+
+        __str__ = DelegateSlot()
+        __repr__ = DelegateSlot()
+
+    for obj in [NativeSlotProxy("a\nb"), NativeSlotProxy(PureSlotProxy("a\nb"))]:
+        assert str(obj) == "a\nb"
+        assert repr(obj) == repr("a\nb")
+
+
+def test_tp_init_calls():
+    NativeSlotProxy = CPyExtType(
+        name='TpInitSlotProxy',
+        cmembers='PyObject* delegate;',
+        code=r'''
+            typedef TpInitSlotProxyObject ProxyObject;
+            ''' + native_slot_proxy_template + r'''
+            int proxy_tp_init(PyObject* self, PyObject* args, PyObject* kwargs) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_init(delegate, args, kwargs);
+            }
+        ''',
+        tp_new='proxy_tp_new',
+        tp_members='{"delegate", T_OBJECT, offsetof(ProxyObject, delegate), 0, NULL}',
+        tp_init='proxy_tp_init',
+    )
+
+    class PureSlotProxy:
+        def __new__(cls, delegate):
+            self = object.__new__(cls)
+            self.delegate = delegate
+            return self
+
+        def __init__(self, delegate, *args, **kwargs):
+            self.delegate.__init__(*args, **kwargs)
+
+    obj = NativeSlotProxy([1])
+    assert obj.delegate == []
+    assert obj.__init__({2}) is None
+    assert obj.delegate == [2]
+    assert_raises(TypeError, NativeSlotProxy, ([1],), {'a': 1})
+
+    obj = NativeSlotProxy(PureSlotProxy([1]))
+    assert obj.delegate.delegate == []
+
+
+def test_richcmp():
+    MyNativeIntSubType = CPyExtType("MyNativeIntSubTypeForRichCmpTest",
+                             ready_code = "MyNativeIntSubTypeForRichCmpTestType.tp_new = PyLong_Type.tp_new;",
+                             tp_base='&PyLong_Type',
+                             struct_base='PyLongObject base;')
+    assert MyNativeIntSubType(42) == 42
+    assert MyNativeIntSubType(42) == MyNativeIntSubType(42)
+
+    RichCmpMockType = CPyExtType("RichCmpMock",
+                                   cmembers="int results[Py_GE+1];",
+                                   code='''
+                                    static PyTypeObject RichCmpMockType;
+
+                                    static PyObject* set_values(PyObject* self, PyObject* values) {
+                                        RichCmpMockObject* richCmp = (RichCmpMockObject*) self;
+                                        for (int i = 0; i <= Py_GE; i++) {
+                                            richCmp->results[i] = (int) PyLong_AsLong(PyTuple_GET_ITEM(values, i));
+                                        }
+                                        Py_RETURN_NONE;
+                                    }
+
+                                    static PyObject *custom_type_richcmp(PyObject *v, PyObject *w, int op) {
+                                        if (!PyObject_TypeCheck(v, &RichCmpMockType)) Py_RETURN_NOTIMPLEMENTED;
+                                        RichCmpMockObject* richCmp = (RichCmpMockObject*) v;
+                                        if (richCmp->results[op] == 0) {
+                                            Py_RETURN_FALSE;
+                                        } else if (richCmp->results[op] == 1) {
+                                            Py_RETURN_TRUE;
+                                        } else {
+                                            Py_RETURN_NOTIMPLEMENTED;
+                                        }
+                                    };
+                                   ''',
+                                   tp_methods='{"set_values", (PyCFunction)set_values, METH_O, NULL}',
+                                   tp_richcompare='custom_type_richcmp')
+
+    def create_mock(lt=-1, le=-1, eq=-1, ne=-1, gt=-1, ge=-1):
+        mock = RichCmpMockType()
+        mock.set_values(tuple([lt, le, eq, ne, gt, ge]))
+        return mock
+
+    def expect_type_error(code):
+        try:
+            code()
+        except TypeError as e:
+            assert "not supported between instances " in str(e)
+
+    def test_cmp(op_lambda, rop_lambda, op_name, rop_name):
+        assert op_lambda(create_mock(**{op_name: 1}), "whatever")
+        assert op_lambda(create_mock(**{op_name: 1}), create_mock(**{rop_name: 0, op_name: 0}))
+        assert not op_lambda(create_mock(**{op_name: 0}), "whatever")
+        expect_type_error(lambda: op_lambda(create_mock(), "whatever"))
+
+        if rop_lambda:
+            assert rop_lambda("whatever", create_mock(**{op_name: 1}))
+            assert rop_lambda(create_mock(), create_mock(**{op_name: 1}))
+            assert not rop_lambda(create_mock(**{rop_name: 0}), create_mock(**{op_name: 1}))
+
+    import operator
+    test_cmp(operator.lt, operator.gt, "lt", "gt")
+    test_cmp(operator.le, operator.ge, "le", "ge")
+    test_cmp(operator.gt, operator.lt, "gt", "lt")
+    test_cmp(operator.ge, operator.le, "ge", "le")
+    test_cmp(operator.eq, operator.ne, "eq", "ne")
+    test_cmp(operator.ne, None, "ne", "eq")
+
+    test_cmp(lambda a,b: a.__lt__(b), lambda a,b: a.__gt__(b), "lt", "gt")
+    test_cmp(lambda a,b: a.__le__(b), lambda a,b: a.__ge__(b), "le", "ge")
+    test_cmp(lambda a,b: a.__gt__(b), lambda a,b: a.__lt__(b), "gt", "lt")
+    test_cmp(lambda a,b: a.__ge__(b), lambda a,b: a.__le__(b), "ge", "le")
+    test_cmp(lambda a,b: a.__eq__(b), lambda a,b: a.__ne__(b), "eq", "ne")
+    test_cmp(lambda a,b: a.__ne__(b), None, "ne", "eq")
+
+    assert create_mock(ne=1) == create_mock(eq=1)
+    assert create_mock(ne=1, eq=0) != create_mock(ne=0, eq=1)
+    assert not create_mock(ne=1, eq=0) == create_mock(ne=0, eq=1)

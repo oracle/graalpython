@@ -105,7 +105,7 @@ patch = 'cryptography-42.0.5.patch'
 license = 'Apache-2.0 OR BSD-3-Clause'
 
 [[Cython.rules]]
-version = '>= 3.0.10, < 3.0.12'
+version = '>= 3.0.10, <= 3.0.12'
 patch = 'Cython-3.0.10.patch'
 license = 'Apache-2.0'
 
@@ -302,6 +302,13 @@ license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
 [[numpy.rules]]
+version = '== 2.2.3'
+patch = 'numpy-2.2.3.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+install-priority = 0
+
+[[numpy.rules]]
 version = '== 1.26.4'
 patch = 'numpy-1.26.4.patch'
 license = 'BSD-3-Clause'
@@ -448,6 +455,11 @@ version = '== 19.0.0'
 patch = 'pyarrow-19.0.0.patch'
 license = 'Apache-2.0'
 
+[[pyarrow.rules]]
+version = '== 19.0.1'
+patch = 'pyarrow-19.0.1.patch'
+license = 'Apache-2.0'
+
 [[pybind11.rules]]
 # Upstreamed
 install-priority = 0
@@ -485,6 +497,11 @@ patch = 'pydantic-core-2.27.1.patch'
 license = 'MIT'
 
 [[pydantic-core.rules]]
+version = '== 2.27.2'
+patch = 'pydantic-core-2.27.1.patch'
+license = 'MIT'
+
+[[pydantic-core.rules]]
 version = '== 2.26.0'
 patch = 'pydantic-core-2.26.0.patch'
 license = 'MIT'
@@ -507,6 +524,15 @@ license = 'Apache-2.0'
 version = ">= 4.8.0"
 patch = 'pymongo-4.8.0.patch'
 license = 'Apache-2.0'
+
+[[PyMuPDF.rules]]
+version = "== 1.25.4"
+patch = "pymupdf.patch"
+# That project is AGPL, so do not actually include *any* code of pymupdf in the patch, not even an
+# empty line, in the diff context. The code we write in the patch is UPL - that is compatible with
+# AGPL in the sense that if someone were to apply it and distribute *that*, our patch is now part
+# of the AGPL'd codebase
+license = 'UPL'
 
 [[pyOpenSSL.rules]]
 # Pin this version to avoid pulling newer cryptography than we have patch for
@@ -563,8 +589,22 @@ license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
 [[rapidfuzz.rules]]
+version = '< 3.10'
 patch = 'rapidfuzz.patch'
 license = 'MIT'
+
+[[rapidfuzz.rules]]
+version = '>= 3.10.0, <= 3.12.2'
+patch = 'rapidfuzz-3.10.patch'
+license = 'MIT'
+
+[[levenshtein.add-sources]]
+version = '0.26.1'
+url = 'https://github.com/rapidfuzz/Levenshtein/archive/refs/tags/v0.26.1.zip'
+
+[[levenshtein.add-sources]]
+version = '0.27.1'
+url = 'https://github.com/rapidfuzz/Levenshtein/archive/refs/tags/v0.27.1.zip'
 
 [[ray.rules]]
 version = '== 2.3.0'
@@ -600,6 +640,11 @@ license = 'MIT'
 install-priority = 0
 version = '== 0.3.3'
 patch = 'safetensors-0.3.3.patch'
+license = 'Apache-2.0'
+
+[[scikit-build-core.rules]]
+version = '~= 0.11.0'
+patch = 'scikit-build-core.patch'
 license = 'Apache-2.0'
 
 [[scikit-learn.rules]]
@@ -749,6 +794,10 @@ version = '== 3.*'
 # transformers tends to depend on a specific version of tokenizers. Pin it to avoid pulling unpatched tokenizers
 version = '== 4.33.3'
 
+[[trio.rules]]
+patch = 'trio.patch'
+license = 'Apache-2.0 OR MIT'
+
 [[typing_extensions.rules]]
 patch = 'typing_extensions.patch'
 license = 'PSF-2.0'
@@ -764,6 +813,7 @@ version = '>= 2, < 2.0.3'
 install-priority = 0
 
 [[uvloop.rules]]
+version = '<= 0.19.0'
 patch = 'uvloop.patch'
 license = 'MIT'
 

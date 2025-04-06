@@ -34,7 +34,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.builtins.objects.PNone.NONE;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
-import static com.oracle.graal.python.compiler.ParserCallbacksImpl.raiseSyntaxError;
+import static com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback.raiseSyntaxError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ABS;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ALL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ANY;
@@ -168,6 +168,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyEvalGetGlobals;
 import com.oracle.graal.python.lib.PyEvalGetLocals;
@@ -191,12 +192,14 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttrO;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSetAttrO;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -221,8 +224,8 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -296,7 +299,6 @@ import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -487,13 +489,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             while (true) {
                 try {
                     Object next = nextNode.execute(frame, inliningTarget, iterator);
-                    if (PyIterNextNode.isExhausted(next)) {
-                        break;
-                    }
                     nbrIter++;
                     if (!isTrueNode.execute(frame, next)) {
                         return false;
                     }
+                } catch (IteratorExhausted e) {
+                    break;
                 } finally {
                     LoopNode.reportLoopCount(inliningTarget, nbrIter);
                 }
@@ -539,13 +540,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             while (true) {
                 try {
                     Object next = nextNode.execute(frame, inliningTarget, iterator);
-                    if (PyIterNextNode.isExhausted(next)) {
-                        break;
-                    }
                     nbrIter++;
                     if (isTrueNode.execute(frame, next)) {
                         return true;
                     }
+                } catch (IteratorExhausted e) {
+                    break;
                 } finally {
                     LoopNode.reportLoopCount(inliningTarget, nbrIter);
                 }
@@ -1464,11 +1464,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         private static TriState isInstanceCheckInternal(VirtualFrame frame, Object instance, Object cls, LookupAndCallBinaryNode instanceCheckNode,
                         PyObjectIsTrueNode castToBooleanNode) {
-            Object instanceCheckResult = instanceCheckNode.executeObject(frame, cls, instance);
-            if (instanceCheckResult == NOT_IMPLEMENTED) {
+            try {
+                Object instanceCheckResult = instanceCheckNode.executeObject(frame, cls, instance);
+                return TriState.valueOf(castToBooleanNode.execute(frame, instanceCheckResult));
+            } catch (SpecialMethodNotFound ignore) {
                 return TriState.UNDEFINED;
             }
-            return TriState.valueOf(castToBooleanNode.execute(frame, instanceCheckResult));
         }
 
         @Specialization(guards = "isPythonClass(cls)")
@@ -1522,11 +1523,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("create(Subclasscheck)") LookupAndCallBinaryNode subclassCheckNode,
                         @Cached PyObjectIsTrueNode castToBooleanNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
-            Object instanceCheckResult = subclassCheckNode.executeObject(frame, cls, derived);
-            if (instanceCheckResult != NOT_IMPLEMENTED) {
+            try {
+                Object instanceCheckResult = subclassCheckNode.executeObject(frame, cls, derived);
                 return castToBooleanNode.execute(frame, instanceCheckResult);
+            } catch (SpecialMethodNotFound ignore) {
+                return isSubtypeNode.execute(frame, derived, cls);
             }
-            return isSubtypeNode.execute(frame, derived, cls);
         }
 
         @NeverDefault
@@ -1579,11 +1581,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateCached(false)
     public abstract static class MinMaxNode extends Node {
 
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal, String name, BinaryComparisonNode comparisonNode);
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal, String name, RichCmpOp op);
 
         @Specialization(guards = "args.length == 0")
         static Object minmaxSequenceWithKey(VirtualFrame frame, Node inliningTarget, Object arg1, @SuppressWarnings("unused") Object[] args, Object keywordArgIn, Object defaultVal, String name,
-                        BinaryComparisonNode compare,
+                        RichCmpOp op,
+                        @Exclusive @Cached PyObjectRichCompareBool compareNode,
                         @Exclusive @Cached PyObjectGetIter getIter,
                         @Exclusive @Cached PyIterNextNode nextNode,
                         @Exclusive @Cached PyObjectIsTrueNode castToBooleanNode,
@@ -1596,8 +1599,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object keywordArg = kwArgsAreNone ? null : keywordArgIn;
 
             Object iterator = getIter.execute(frame, inliningTarget, arg1);
-            Object currentValue = nextNode.execute(frame, inliningTarget, iterator);
-            if (PyIterNextNode.isExhausted(currentValue)) {
+            Object currentValue;
+            try {
+                currentValue = nextNode.execute(frame, inliningTarget, iterator);
+            } catch (IteratorExhausted e) {
                 if (hasDefaultProfile.profile(inliningTarget, isNoValue(defaultVal))) {
                     throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.ARG_IS_EMPTY_SEQ, name);
                 } else {
@@ -1606,38 +1611,30 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             Object currentKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, currentValue);
             int loopCount = 0;
-            try {
-                while (true) {
+            while (true) {
+                try {
                     Object nextValue = nextNode.execute(frame, inliningTarget, iterator);
-                    if (PyIterNextNode.isExhausted(nextValue)) {
-                        break;
-                    }
                     Object nextKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, nextValue);
-                    boolean isTrue;
-                    if (!seenNonBoolean.wasEntered(inliningTarget)) {
-                        try {
-                            isTrue = compare.executeBool(frame, nextKey, currentKey);
-                        } catch (UnexpectedResultException e) {
-                            seenNonBoolean.enter(inliningTarget);
-                            isTrue = castToBooleanNode.execute(frame, e.getResult());
-                        }
-                    } else {
-                        isTrue = castToBooleanNode.execute(frame, compare.execute(frame, nextKey, currentKey));
-                    }
+                    boolean isTrue = compareNode.execute(frame, inliningTarget, nextKey, currentKey, op);
                     if (isTrue) {
                         currentKey = nextKey;
                         currentValue = nextValue;
                     }
                     loopCount++;
+                } catch (IteratorExhausted e) {
+                    break;
+                } finally {
+                    LoopNode.reportLoopCount(inliningTarget, loopCount < 0 ? Integer.MAX_VALUE : loopCount);
                 }
-            } finally {
-                LoopNode.reportLoopCount(inliningTarget, loopCount < 0 ? Integer.MAX_VALUE : loopCount);
             }
+
             return currentValue;
         }
 
         @Specialization(guards = {"args.length != 0"})
-        static Object minmaxBinaryWithKey(VirtualFrame frame, Node inliningTarget, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal, String name, BinaryComparisonNode compare,
+        static Object minmaxBinaryWithKey(VirtualFrame frame, Node inliningTarget, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal, String name,
+                        RichCmpOp op,
+                        @Exclusive @Cached PyObjectRichCompareBool compareNode,
                         @Exclusive @Cached CallNode.Lazy keyCall,
                         @Exclusive @Cached PyObjectIsTrueNode castToBooleanNode,
                         @Exclusive @Cached InlinedBranchProfile seenNonBoolean,
@@ -1657,17 +1654,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object currentKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, currentValue);
             Object nextValue = args[0];
             Object nextKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, nextValue);
-            boolean isTrue;
-            if (!seenNonBoolean.wasEntered(inliningTarget)) {
-                try {
-                    isTrue = compare.executeBool(frame, nextKey, currentKey);
-                } catch (UnexpectedResultException e) {
-                    seenNonBoolean.enter(inliningTarget);
-                    isTrue = castToBooleanNode.execute(frame, e.getResult());
-                }
-            } else {
-                isTrue = castToBooleanNode.execute(frame, compare.execute(frame, nextKey, currentKey));
-            }
+            boolean isTrue = compareNode.execute(frame, inliningTarget, nextKey, currentKey, op);
             if (isTrue) {
                 currentKey = nextKey;
                 currentValue = nextValue;
@@ -1678,16 +1665,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 for (int i = 0; loopProfile.inject(inliningTarget, i < args.length); i++) {
                     nextValue = args[i];
                     nextKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, nextValue);
-                    if (!seenNonBoolean.wasEntered(inliningTarget)) {
-                        try {
-                            isTrue = compare.executeBool(frame, nextKey, currentKey);
-                        } catch (UnexpectedResultException e) {
-                            seenNonBoolean.enter(inliningTarget);
-                            isTrue = castToBooleanNode.execute(frame, e.getResult());
-                        }
-                    } else {
-                        isTrue = castToBooleanNode.execute(frame, compare.execute(frame, nextKey, currentKey));
-                    }
+                    isTrue = compareNode.execute(frame, inliningTarget, nextKey, currentKey, op);
                     if (isTrue) {
                         currentKey = nextKey;
                         currentValue = nextValue;
@@ -1713,9 +1691,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         static Object max(VirtualFrame frame, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal,
                         @Bind("this") Node inliningTarget,
-                        @Cached MinMaxNode minMaxNode,
-                        @Cached BinaryComparisonNode.GtNode gtNode) {
-            return minMaxNode.execute(frame, inliningTarget, arg1, args, keywordArgIn, defaultVal, "max", gtNode);
+                        @Cached MinMaxNode minMaxNode) {
+            return minMaxNode.execute(frame, inliningTarget, arg1, args, keywordArgIn, defaultVal, "max", RichCmpOp.Py_GT);
         }
     }
 
@@ -1727,9 +1704,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         static Object min(VirtualFrame frame, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal,
                         @Bind("this") Node inliningTarget,
-                        @Cached MinMaxNode minMaxNode,
-                        @Cached BinaryComparisonNode.LtNode ltNode) {
-            return minMaxNode.execute(frame, inliningTarget, arg1, args, keywordArgIn, defaultVal, "min", ltNode);
+                        @Cached MinMaxNode minMaxNode) {
+            return minMaxNode.execute(frame, inliningTarget, arg1, args, keywordArgIn, defaultVal, "min", RichCmpOp.Py_LT);
         }
     }
 
@@ -1750,9 +1726,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (!PyIterCheckNode.checkSlots(slots)) {
                 throw raiseTypeError.raise(inliningTarget, TypeError, ErrorMessages.OBJ_ISNT_ITERATOR, iterator);
             }
-            Object result;
             try {
-                result = callIterNext.execute(frame, inliningTarget, slots.tp_iternext(), iterator);
+                return callIterNext.execute(frame, inliningTarget, slots.tp_iternext(), iterator);
+            } catch (IteratorExhausted e) {
+                if (defaultIsNoValue.profile(inliningTarget, defaultObject == NO_VALUE)) {
+                    throw raiseStopIteration.raise(inliningTarget, StopIteration);
+                } else {
+                    return defaultObject;
+                }
             } catch (PException e) {
                 if (defaultIsNoValue.profile(inliningTarget, defaultObject == NO_VALUE)) {
                     throw e;
@@ -1761,18 +1742,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     return defaultObject;
                 }
             }
-            if (PyIterNextNode.isExhausted(result)) {
-                if (defaultIsNoValue.profile(inliningTarget, defaultObject == NO_VALUE)) {
-                    throw raiseStopIteration.raise(inliningTarget, StopIteration);
-                } else {
-                    return defaultObject;
-                }
-            }
-            return result;
         }
     }
 
-    // ord(c)
+// ord(c)
     @Builtin(name = J_ORD, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
@@ -1818,7 +1791,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    // print(*objects, sep=' ', end='\n', file=sys.stdout, flush=False)
+// print(*objects, sep=' ', end='\n', file=sys.stdout, flush=False)
     @Builtin(name = J_PRINT, takesVarArgs = true, keywordOnlyNames = {"sep", "end", "file", "flush"}, doc = "\n" +
                     "print(value, ..., sep=' ', end='\\n', file=sys.stdout, flush=False)\n" +
                     "\n" +
@@ -1973,14 +1946,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached InlinedConditionProfile formatIsNoValueProfile,
                         @Cached PRaiseNode raiseNode) {
             Object format = formatIsNoValueProfile.profile(inliningTarget, isNoValue(formatSpec)) ? T_EMPTY_STRING : formatSpec;
-            Object res = callFormat.executeObject(frame, obj, format);
-            if (res == NO_VALUE) {
+            try {
+                Object res = callFormat.executeObject(frame, obj, format);
+                if (!PGuards.isString(res)) {
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, T___FORMAT__, "str", res);
+                }
+                return res;
+            } catch (SpecialMethodNotFound ignore) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_FORMAT, obj);
             }
-            if (!PGuards.isString(res)) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, T___FORMAT__, "str", res);
-            }
-            return res;
         }
 
         @NeverDefault
@@ -2023,11 +1997,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached("create(Round)") LookupAndCallBinaryNode callRound,
                         @Shared @Cached PRaiseNode raiseNode) {
-            Object result = callRound.executeObject(frame, x, n);
-            if (result == NOT_IMPLEMENTED) {
+            try {
+                return callRound.executeObject(frame, x, n);
+            } catch (SpecialMethodNotFound ignore) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, x, T___ROUND__);
             }
-            return result;
         }
     }
 
@@ -2123,9 +2097,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         Object ternary(VirtualFrame frame, Object x, Object y, Object z,
-                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberPowerNode power) {
-            return power.execute(frame, inliningTarget, x, y, z);
+            return power.execute(frame, x, y, z);
         }
     }
 
@@ -2174,9 +2147,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         longResult = PythonUtils.addExact(longResult, next);
                     } catch (OverflowException e) {
                         overflowProfile.enter(inliningTarget);
-                        Object objectResult = addNode.execute(frame, inliningTarget, longResult, next);
+                        Object objectResult = addNode.execute(frame, longResult, next);
                         while (loopProfileGeneric.profile(inliningTarget, iterator.hasNext())) {
-                            objectResult = addNode.execute(frame, inliningTarget, objectResult, iterator.next());
+                            objectResult = addNode.execute(frame, objectResult, iterator.next());
                         }
                         return objectResult;
                     }
@@ -2198,9 +2171,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         longResult = PythonUtils.addExact(longResult, next);
                     } catch (OverflowException e) {
                         overflowProfile.enter(inliningTarget);
-                        Object objectResult = addNode.execute(frame, inliningTarget, longResult, next);
+                        Object objectResult = addNode.execute(frame, longResult, next);
                         while (loopProfileGeneric.profile(inliningTarget, iterator.hasNext())) {
-                            objectResult = addNode.execute(frame, inliningTarget, objectResult, iterator.next());
+                            objectResult = addNode.execute(frame, objectResult, iterator.next());
                         }
                         return objectResult;
                     }
@@ -2232,61 +2205,90 @@ public final class BuiltinFunctions extends PythonBuiltins {
                             @Cached PyIterNextNode nextNode,
                             @Shared @Cached PyNumberAddNode addNode,
                             @Shared @Cached InlinedConditionProfile resultFitsInInt,
+                            @Exclusive @Cached InlinedBranchProfile seenObject,
                             @Exclusive @Cached InlinedBranchProfile seenInt,
                             @Exclusive @Cached InlinedBranchProfile seenDouble,
-                            @Exclusive @Cached InlinedBranchProfile seenObject) {
+                            @Exclusive @Cached InlinedBranchProfile genericBranch) {
                 /*
                  * Peel the first iteration to see what's the type.
                  */
-                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                if (!PyIterNextNode.isExhausted(next)) {
-                    Object acc = addNode.execute(frame, inliningTarget, start, next);
-                    /*
-                     * We try to process integers/longs/doubles as long as we can. Then we always
-                     * fall through to the generic path. `next` and `acc` are always properly set so
-                     * that the generic path can check if there are remaining items and resume if
-                     * necessary.
-                     */
-                    if (acc instanceof Integer || acc instanceof Long) {
-                        seenInt.enter(inliningTarget);
-                        long longAcc = acc instanceof Integer ? (int) acc : (long) acc;
-                        while (loopProfilePrimitive.profile(inliningTarget, !PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, iterator)))) {
-                            try {
-                                if (next instanceof Integer nextInt) {
-                                    longAcc = PythonUtils.addExact(longAcc, nextInt);
-                                } else if (next instanceof Long nextLong) {
-                                    longAcc = PythonUtils.addExact(longAcc, nextLong);
-                                } else {
-                                    break;
-                                }
-                            } catch (OverflowException e) {
-                                break;
+                Object next;
+                try {
+                    next = nextNode.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
+                    return start;
+                }
+                Object acc = addNode.execute(frame, start, next);
+                /*
+                 * We try to process integers/longs/doubles as long as we can. Then we always fall
+                 * through to the generic path. `next` and `acc` are always properly set so that the
+                 * generic path can check if there are remaining items and resume if necessary.
+                 */
+                if (acc instanceof Integer || acc instanceof Long) {
+                    seenInt.enter(inliningTarget);
+                    long longAcc = acc instanceof Integer ? (int) acc : (long) acc;
+                    boolean exitLoop = false, exhausted = false;
+                    while (loopProfilePrimitive.profile(inliningTarget, !exitLoop)) {
+                        try {
+                            next = nextNode.execute(frame, inliningTarget, iterator);
+                            if (next instanceof Integer nextInt) {
+                                longAcc = PythonUtils.addExact(longAcc, nextInt);
+                            } else if (next instanceof Long nextLong) {
+                                longAcc = PythonUtils.addExact(longAcc, nextLong);
+                            } else {
+                                exitLoop = true;
                             }
+                        } catch (OverflowException e) {
+                            exitLoop = true;
+                        } catch (IteratorExhausted e) {
+                            exitLoop = true;
+                            exhausted = true;
                         }
-                        acc = maybeInt(inliningTarget, resultFitsInInt, longAcc);
-                    } else if (acc instanceof Double doubleAcc) {
-                        seenDouble.enter(inliningTarget);
-                        while (loopProfilePrimitive.profile(inliningTarget, !PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, iterator)))) {
+                    }
+                    if (exhausted) {
+                        return maybeInt(inliningTarget, resultFitsInInt, longAcc);
+                    }
+                    genericBranch.enter(inliningTarget);
+                    acc = longAcc;
+                } else if (acc instanceof Double doubleAcc) {
+                    seenDouble.enter(inliningTarget);
+                    boolean exitLoop = false, exhausted = false;
+                    while (loopProfilePrimitive.profile(inliningTarget, !exitLoop)) {
+                        try {
+                            next = nextNode.execute(frame, inliningTarget, iterator);
                             if (next instanceof Double nextDouble) {
                                 doubleAcc += nextDouble;
                             } else {
-                                break;
+                                exitLoop = true;
                             }
+                        } catch (IteratorExhausted e) {
+                            exitLoop = true;
+                            exhausted = true;
                         }
-                        acc = doubleAcc;
-                    } else {
-                        next = nextNode.execute(frame, inliningTarget, iterator);
                     }
-                    if (!PyIterNextNode.isExhausted(next)) {
-                        seenObject.enter(inliningTarget);
-                        do {
-                            acc = addNode.execute(frame, inliningTarget, acc, next);
-                        } while (loopProfileGeneric.profile(inliningTarget, !PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, iterator))));
+                    if (exhausted) {
+                        return doubleAcc;
                     }
-                    return acc;
+                    genericBranch.enter(inliningTarget);
+                    acc = doubleAcc;
                 } else {
-                    return start;
+                    seenObject.enter(inliningTarget);
+                    try {
+                        next = nextNode.execute(frame, inliningTarget, iterator);
+                    } catch (IteratorExhausted e) {
+                        return acc;
+                    }
                 }
+                boolean exhausted = false;
+                do {
+                    acc = addNode.execute(frame, acc, next);
+                    try {
+                        next = nextNode.execute(frame, inliningTarget, iterator);
+                    } catch (IteratorExhausted e) {
+                        exhausted = true;
+                    }
+                } while (loopProfileGeneric.profile(inliningTarget, !exhausted));
+                return acc;
             }
 
             private static long maybeInt(Node inliningTarget, InlinedConditionProfile resultFitsInInt, long result) {

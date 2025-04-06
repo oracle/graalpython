@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.IsInternedStringNodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.StringMaterializeNodeGen;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -257,6 +258,7 @@ public abstract class StringNodes {
         }
 
         @Specialization(guards = "!isTruffleString(self)")
+        @InliningCutoff
         static TruffleString doConvert(Node inliningTarget, Object self, TruffleString errMsgFormat, Object[] errMsgArgs,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached PRaiseNode raiseNode) {
@@ -362,16 +364,19 @@ public abstract class StringNodes {
             }
             try {
                 TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                if (PyIterNextNode.isExhausted(next)) {
+                Object next;
+                try {
+                    next = nextNode.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
                     return T_EMPTY_STRING;
                 }
                 appendStringNode.execute(sb, checkItem(inliningTarget, next, 0, castToStringNode, raise));
                 int i = 1;
                 while (true) {
                     Object value;
-                    value = nextNode.execute(frame, inliningTarget, iterator);
-                    if (PyIterNextNode.isExhausted(value)) {
+                    try {
+                        value = nextNode.execute(frame, inliningTarget, iterator);
+                    } catch (IteratorExhausted e) {
                         return toStringNode.execute(sb);
                     }
                     appendStringNode.execute(sb, string);

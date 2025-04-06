@@ -109,11 +109,8 @@ public final class PGroupBy extends PythonBuiltinObject {
         this.currKey = currKey;
     }
 
-    boolean groupByStep(VirtualFrame frame, Node inliningTarget, PyIterNextNode nextNode, CallNode callNode, InlinedConditionProfile hasFuncProfile) {
+    void groupByStep(VirtualFrame frame, Node inliningTarget, PyIterNextNode nextNode, CallNode callNode, InlinedConditionProfile hasFuncProfile) {
         Object newValue = nextNode.execute(frame, inliningTarget, it);
-        if (PyIterNextNode.isExhausted(newValue)) {
-            return false;
-        }
         Object newKey;
         if (hasFuncProfile.profile(inliningTarget, keyFunc == null)) {
             newKey = newValue;
@@ -122,6 +119,5 @@ public final class PGroupBy extends PythonBuiltinObject {
         }
         currValue = newValue;
         currKey = newKey;
-        return true;
     }
 }

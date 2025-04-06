@@ -40,54 +40,49 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-// cpython://Objects/abstract.c#binary_op1
-// Order operations are tried until either a valid result or error: w.op(v,w)[*], v.op(v,w), w.op(v,w)
-//
-//       [*] only when v->ob_type != w->ob_type && w->ob_type is a subclass of v->ob_type
-//
-// The (long, double) and (double, long) specializations are needed since long->double conversion
-// is not always correct (it can lose information). See FloatBuiltins.EqNode.compareDoubleToLong().
-// The (int, double) and (double, int) specializations are needed to avoid int->long conversion.
-// Although it would produce correct results, the special handling of long to double comparison
-// is slower than converting int->double, which is always correct.
+/**
+ * Helper node for what would be a sequence of {@code _PyObject_LookupSpecial} and
+ * {@code PyObject_CallXXXA}. Callers should handle exception {@link SpecialMethodNotFound}, which
+ * indicates that the method was not found.
+ */
 @ImportStatic(PythonOptions.class)
 public abstract class LookupAndCallBinaryNode extends Node {
-
-    public abstract static class NotImplementedHandler extends PNodeWithContext {
-        public abstract Object execute(VirtualFrame frame, Object arg, Object arg2);
-    }
-
-    protected final Supplier<NotImplementedHandler> handlerFactory;
-    protected final boolean ignoreDescriptorException;
-
     @Child private CallBinaryMethodNode dispatchNode;
-    @Child private NotImplementedHandler handler;
+    protected final SpecialMethodSlot slot;
+    protected final TruffleString name;
 
-    LookupAndCallBinaryNode(Supplier<NotImplementedHandler> handlerFactory, boolean ignoreDescriptorException) {
-        this.handlerFactory = handlerFactory;
-        this.ignoreDescriptorException = ignoreDescriptorException;
+    LookupAndCallBinaryNode(TruffleString name) {
+        this.name = name;
+        this.slot = null;
     }
 
-    public abstract Object executeObject(VirtualFrame frame, Object arg, Object arg2);
+    LookupAndCallBinaryNode(SpecialMethodSlot slot) {
+        this.name = slot.getName();
+        this.slot = slot;
+    }
+
+    public abstract Object executeObject(VirtualFrame frame, Object arg, Object arg2) throws SpecialMethodNotFound;
 
     @NeverDefault
     public static LookupAndCallBinaryNode create(TruffleString name) {
@@ -95,104 +90,13 @@ public abstract class LookupAndCallBinaryNode extends Node {
         // LookupAndCallBinaryNode for dynamic name, then we should change this method or the caller
         // to try to lookup a slot and use that if found
         assert SpecialMethodSlot.findSpecialSlotUncached(name) == null : name;
-        return LookupAndCallNonReversibleBinaryNodeGen.create(name, null, false);
+        return LookupAndCallBinaryNodeGen.create(name);
     }
 
     @NeverDefault
     public static LookupAndCallBinaryNode create(SpecialMethodSlot slot) {
-        return LookupAndCallNonReversibleBinaryNodeGen.create(slot, null, false);
+        return LookupAndCallBinaryNodeGen.create(slot);
     }
-
-    @NeverDefault
-    public static LookupAndCallBinaryNode create(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallNonReversibleBinaryNodeGen.create(slot, handlerFactory, false);
-    }
-
-    @NeverDefault
-    public static LookupAndCallBinaryNode createReversible(SpecialMethodSlot slot, SpecialMethodSlot rslot, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallReversibleBinaryNodeGen.create(slot, rslot, handlerFactory, false, false);
-    }
-
-    @NeverDefault
-    public static LookupAndCallBinaryNode create(SpecialMethodSlot slot, SpecialMethodSlot rslot, boolean alwaysCheckReverse, boolean ignoreDescriptorException) {
-        return LookupAndCallReversibleBinaryNodeGen.create(slot, rslot, null, alwaysCheckReverse, ignoreDescriptorException);
-    }
-
-    @ImportStatic(PGuards.class)
-    @GenerateInline
-    @GenerateCached(false)
-    protected abstract static class AreSameCallables extends Node {
-        public abstract boolean execute(Node inliningTarget, Object left, Object right);
-
-        @Specialization(guards = "a == b")
-        static boolean areIdenticalFastPath(@SuppressWarnings("unused") Object a, @SuppressWarnings("unused") Object b) {
-            return true;
-        }
-
-        @Specialization(guards = "isNone(a) || isNone(b)")
-        static boolean noneFastPath(@SuppressWarnings("unused") Object a, @SuppressWarnings("unused") Object b) {
-            return a == b;
-        }
-
-        @Specialization(replaces = "areIdenticalFastPath")
-        static boolean doDescrs(BuiltinMethodDescriptor a, BuiltinMethodDescriptor b) {
-            return a == b;
-        }
-
-        @Specialization(replaces = "areIdenticalFastPath")
-        static boolean doDescrFun1(BuiltinMethodDescriptor a, PBuiltinFunction b) {
-            return a.isDescriptorOf(b);
-        }
-
-        @Specialization(replaces = "areIdenticalFastPath")
-        static boolean doDescrFun2(PBuiltinFunction a, BuiltinMethodDescriptor b) {
-            return b.isDescriptorOf(a);
-        }
-
-        @Specialization(replaces = "areIdenticalFastPath")
-        static boolean doDescrMeth1(BuiltinMethodDescriptor a, PBuiltinMethod b) {
-            return doDescrFun1(a, b.getBuiltinFunction());
-        }
-
-        @Specialization(replaces = "areIdenticalFastPath")
-        static boolean doDescrMeth2(PBuiltinMethod a, BuiltinMethodDescriptor b) {
-            return doDescrFun2(a.getBuiltinFunction(), b);
-        }
-
-        @Fallback
-        static boolean doGenericRuntimeObjects(Object a, Object b) {
-            return a == b;
-        }
-    }
-
-    @ImportStatic(PGuards.class)
-    @GenerateInline
-    @GenerateCached(false)
-    protected abstract static class GetEnclosingType extends Node {
-        public abstract Object execute(Node inliningTarget, Object callable);
-
-        @Specialization
-        static Object doDescrs(BuiltinMethodDescriptor descriptor) {
-            return descriptor.getEnclosingType();
-        }
-
-        @Specialization
-        static Object doBuiltinFun(PBuiltinFunction fun) {
-            return fun.getEnclosingType();
-        }
-
-        @Specialization
-        static Object doBuiltinMethod(PBuiltinMethod a) {
-            return doBuiltinFun(a.getBuiltinFunction());
-        }
-
-        @Fallback
-        static Object doOthers(@SuppressWarnings("unused") Object callable) {
-            return null;
-        }
-    }
-
-    public abstract TruffleString getName();
 
     protected final CallBinaryMethodNode ensureDispatch() {
         // this also serves as a branch profile
@@ -203,11 +107,80 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return dispatchNode;
     }
 
-    protected final Object runErrorHandler(VirtualFrame frame, Object left, Object right) {
-        if (handler == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            handler = insert(handlerFactory.get());
+    protected final PythonBinaryBuiltinNode getBinaryBuiltin(PythonBuiltinClassType clazz) {
+        if (slot != null) {
+            Object attribute = slot.getValue(clazz);
+            if (attribute instanceof BinaryBuiltinDescriptor) {
+                return ((BinaryBuiltinDescriptor) attribute).createNode();
+            }
+            // If the slot does not contain builtin, full lookup wouldn't find a builtin either
+            return null;
         }
-        return handler.execute(frame, left, right);
+        Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(clazz, name);
+        if (attribute instanceof PBuiltinFunction) {
+            PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
+            if (PythonBinaryBuiltinNode.class.isAssignableFrom(builtinFunction.getBuiltinNodeFactory().getNodeClass())) {
+                return (PythonBinaryBuiltinNode) builtinFunction.getBuiltinNodeFactory().createNode();
+            }
+        }
+        return null;
+    }
+
+    protected static PythonBuiltinClassType getBuiltinClass(Node inliningTarget, Object receiver, GetClassNode getClassNode) {
+        Object clazz = getClassNode.execute(inliningTarget, receiver);
+        return clazz instanceof PythonBuiltinClassType ? (PythonBuiltinClassType) clazz : null;
+    }
+
+    protected static boolean isClazz(Node inliningTarget, PythonBuiltinClassType clazz, Object receiver, GetClassNode getClassNode) {
+        return getClassNode.execute(inliningTarget, receiver) == clazz;
+    }
+
+    // Object, Object
+
+    @Specialization(guards = {"clazz != null", "function != null", "isClazz(inliningTarget, clazz, left, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    static Object callObjectBuiltin(VirtualFrame frame, Object left, Object right,
+                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Cached("getBuiltinClass(this, left, getClassNode)") PythonBuiltinClassType clazz,
+                    @Cached("getBinaryBuiltin(clazz)") PythonBinaryBuiltinNode function) {
+        return function.execute(frame, left, right);
+    }
+
+    @Specialization(guards = {"left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
+    @SuppressWarnings("truffle-static-method")
+    Object callObjectGeneric(VirtualFrame frame, Object left, Object right,
+                    @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
+                    @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
+                    @Exclusive @Cached GetClassNode getClassNode,
+                    @Exclusive @Cached("createLookup()") LookupSpecialBaseNode getattr) {
+        return doCallObject(frame, inliningTarget, left, right, getClassNode, getattr);
+    }
+
+    @Specialization(replaces = "callObjectGeneric")
+    @Megamorphic
+    @SuppressWarnings("truffle-static-method")
+    Object callObjectMegamorphic(VirtualFrame frame, Object left, Object right,
+                    @Bind("this") Node inliningTarget,
+                    @Exclusive @Cached GetClassNode getClassNode,
+                    @Exclusive @Cached("createLookup()") LookupSpecialBaseNode getattr) {
+        return doCallObject(frame, inliningTarget, left, right, getClassNode, getattr);
+    }
+
+    private Object doCallObject(VirtualFrame frame, Node inliningTarget, Object left, Object right, GetClassNode getClassNode, LookupSpecialBaseNode getattr) {
+        Object leftClass = getClassNode.execute(inliningTarget, left);
+        Object leftCallable = getattr.execute(frame, leftClass, left);
+        if (PGuards.isNoValue(leftCallable)) {
+            throw SpecialMethodNotFound.INSTANCE;
+        }
+        return ensureDispatch().executeObject(frame, leftCallable, left, right);
+    }
+
+    @NeverDefault
+    protected final LookupSpecialBaseNode createLookup() {
+        if (slot != null) {
+            return LookupSpecialMethodSlotNode.create(slot);
+        }
+        return LookupSpecialMethodNode.create(name);
     }
 }

@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -119,8 +120,10 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
             boolean first = true;
             boolean nullField = false;
             while (true) {
-                Object field = nextNode.execute(frame, inliningTarget, iter);
-                if (PyIterNextNode.isExhausted(field)) {
+                Object field;
+                try {
+                    field = nextNode.execute(frame, inliningTarget, iter);
+                } catch (IteratorExhausted e) {
                     break;
                 }
                 /* If this is not the first field we need a field separator */
@@ -311,8 +314,10 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                         @Cached WriteRowNode writeRow) {
             Object iter = getIter.execute(frame, inliningTarget, seq);
             while (true) {
-                Object row = nextNode.execute(frame, inliningTarget, iter);
-                if (PyIterNextNode.isExhausted(row)) {
+                Object row;
+                try {
+                    row = nextNode.execute(frame, inliningTarget, iter);
+                } catch (IteratorExhausted e) {
                     break;
                 }
                 writeRow.execute(frame, self, row);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -210,7 +210,8 @@ public class ConverterFactory {
     private static ConverterFactory[] forBuiltin(Elements elementUtils, String className) throws ProcessingError {
         TypeElement type = elementUtils.getTypeElement(CLINIC_PACKAGE + "." + className);
         if (type == null) {
-            throw new ProcessingError(null, "Unable to find built-in argument clinic conversion node " + CLINIC_PACKAGE + "." + className);
+            throw new ProcessingError(null, "Unable to find built-in argument clinic conversion node " + CLINIC_PACKAGE + "." + className +
+                            ". This may be also a sign that Truffle DSL annotation processor failed to process this class.");
         }
         return getForClass(type);
     }

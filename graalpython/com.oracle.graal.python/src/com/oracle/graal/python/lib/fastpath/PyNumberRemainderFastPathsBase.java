@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,15 +38,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.call.special;
+package com.oracle.graal.python.lib.fastpath;
 
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 
-abstract class CallReversibleMethodNode extends AbstractCallMethodNode {
-    protected boolean isForReverseBinaryOperation(RootCallTarget ct) {
-        CompilerAsserts.neverPartOfCompilation();
-        return PBuiltinFunction.isReverseOperationSlot(ct);
+/**
+ * Helper class with shared fast-paths. Must be public so that it is accessible by the Bytecode DSL
+ * generated code.
+ */
+@GenerateCached(false)
+@TypeSystemReference(PythonIntegerTypes.class)
+public abstract class PyNumberRemainderFastPathsBase extends BinaryOpNode {
+
+    @Specialization(guards = "right != 0")
+    public static int doII(int left, int right) {
+        return Math.floorMod(left, right);
+    }
+
+    @Specialization(guards = "right != 0")
+    public static long doLL(long left, long right) {
+        return Math.floorMod(left, right);
     }
 }

@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
-import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -104,9 +103,6 @@ public final class StarmapBuiltins extends PythonBuiltins {
                         @Cached ExecutePositionalStarargsNode getArgsNode) {
             Object it = self.getIterable();
             Object obj = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, it).tp_iternext(), it);
-            if (PyIterNextNode.isExhausted(obj)) {
-                return iteratorExhausted();
-            }
             Object[] args = getArgsNode.executeWith(frame, obj);
             return callNode.execute(frame, self.getFun(), args, PKeyword.EMPTY_KEYWORDS);
         }

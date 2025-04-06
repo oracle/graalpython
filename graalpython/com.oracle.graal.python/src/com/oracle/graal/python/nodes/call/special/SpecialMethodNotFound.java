@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,31 +38,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.arrow.release_callback;
+package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.nodes.arrow.ArrowArray;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 
-@GenerateCached(false)
-@GenerateInline
-@GenerateUncached
-public abstract class ArrowArrayReleaseCallbackNode extends Node {
+/**
+ * Thrown from {@code LookupAndCallNAry} nodes when the method does not exist.
+ */
+public final class SpecialMethodNotFound extends ControlFlowException {
+    public static final SpecialMethodNotFound INSTANCE = new SpecialMethodNotFound();
 
-    public abstract void execute(Node inliningTarget, ArrowArray arrowArray);
-
-    @Specialization
-    static void release(Node inliningTarget, ArrowArray arrowArray) {
-        /*
-         * This callback should be used for ArrowArray where we manage the memory. Since right now
-         * we are supporting only Apache Arrow Vectors the memory is managed on Java side. We use
-         * this callback in the capsule destructor which is only called when the consumer doesn't
-         * properly handle the take over the data from ArrowArray.
-         */
-        throw CompilerDirectives.shouldNotReachHere();
+    private SpecialMethodNotFound() {
     }
 }

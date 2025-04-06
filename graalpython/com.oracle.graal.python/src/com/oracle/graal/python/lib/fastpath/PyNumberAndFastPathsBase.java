@@ -38,25 +38,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.lib.fastpath;
 
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.instrumentation.SourceSectionFilter;
-import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.tools.profiler.CPUSampler;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 
-public class Profiler extends PythonBuiltinObject {
-    boolean subcalls;
-    boolean builtins;
-    double timeunit;
-    Object externalTimer;
-    double time;
-    final CPUSampler sampler;
+/**
+ * Helper class with shared fast-paths. Must be public so that it is accessible by the Bytecode DSL
+ * generated code.
+ */
+@GenerateCached(false)
+@TypeSystemReference(PythonIntegerTypes.class)
+public abstract class PyNumberAndFastPathsBase extends BinaryOpNode {
 
-    public Profiler(Object cls, Shape instanceShape, CPUSampler sampler) {
-        super(cls, instanceShape);
-        this.sampler = sampler;
-        this.sampler.setFilter(SourceSectionFilter.newBuilder().includeInternal(true).build());
-        this.sampler.setPeriod(1);
+    @Specialization
+    public static boolean op(boolean left, boolean right) {
+        return left && right;
+    }
+
+    @Specialization
+    public static int op(int left, int right) {
+        return left & right;
+    }
+
+    @Specialization
+    public static long op(long left, long right) {
+        return left & right;
     }
 }

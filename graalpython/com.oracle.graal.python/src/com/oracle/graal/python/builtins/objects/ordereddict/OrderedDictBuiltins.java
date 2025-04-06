@@ -46,9 +46,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_VALUES;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SIZEOF__;
@@ -67,6 +64,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -84,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -93,6 +92,7 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -128,7 +128,6 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.POrderedDict)
 public class OrderedDictBuiltins extends PythonBuiltins {
-
     public static final TpSlots SLOTS = OrderedDictBuiltinsSlotsGen.SLOTS;
 
     @Override
@@ -136,7 +135,8 @@ public class OrderedDictBuiltins extends PythonBuiltins {
         return OrderedDictBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @Builtin(name = "update", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class InitNode extends PythonBuiltinNode {
@@ -542,7 +542,7 @@ public class OrderedDictBuiltins extends PythonBuiltins {
         @Specialization
         static boolean cmp(VirtualFrame frame, Node inliningTarget, POrderedDict self, POrderedDict other,
                         @Cached HashingStorageNodes.HashingStorageGetItemWithHash getItem,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+                        @Cached PyObjectRichCompareBool eqNode) {
             ODictNode lnode = self.first;
             ODictNode rnode = other.first;
             do {
@@ -552,12 +552,12 @@ public class OrderedDictBuiltins extends PythonBuiltins {
                 if (lnode == null || rnode == null) {
                     return false;
                 }
-                if (!eqNode.compare(frame, inliningTarget, lnode.key, rnode.key)) {
+                if (!eqNode.executeEq(frame, inliningTarget, lnode.key, rnode.key)) {
                     return false;
                 }
                 Object lvalue = getItem.execute(frame, inliningTarget, self.getDictStorage(), lnode.key, lnode.hash);
                 Object rvalue = getItem.execute(frame, inliningTarget, other.getDictStorage(), rnode.key, rnode.hash);
-                if (!eqNode.compare(frame, inliningTarget, lvalue, rvalue)) {
+                if (!eqNode.executeEq(frame, inliningTarget, lvalue, rvalue)) {
                     return false;
                 }
                 lnode = lnode.next;
@@ -572,36 +572,19 @@ public class OrderedDictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    abstract static class EqNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static boolean cmp(VirtualFrame frame, POrderedDict self, PDict other,
+    abstract static class EqNode extends RichCmpBuiltinNode {
+        @Specialization(guards = "op.isEqOrNe()")
+        static boolean cmp(VirtualFrame frame, POrderedDict self, PDict other, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
                         @Cached EqHelperNode eqHelperNode) {
-            return eqHelperNode.execute(frame, inliningTarget, self, other);
+            return eqHelperNode.execute(frame, inliningTarget, self, other) == op.isEq();
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        static Object cmp(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class NeNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static boolean cmp(VirtualFrame frame, POrderedDict self, PDict other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached EqHelperNode eqHelperNode) {
-            return !eqHelperNode.execute(frame, inliningTarget, self, other);
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static Object cmp(Object self, Object other) {
+        static Object cmp(Object self, Object other, RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

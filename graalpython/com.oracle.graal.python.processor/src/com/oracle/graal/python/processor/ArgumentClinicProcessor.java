@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -83,6 +83,7 @@ import com.oracle.graal.python.processor.CodeWriter.Block;
 public class ArgumentClinicProcessor extends AbstractProcessor {
     private static final boolean LOGGING = false;
     private static final String BuiltinAnnotationClass = "com.oracle.graal.python.builtins.Builtin";
+    private static final String SlotSignatureAnnotationClass = "com.oracle.graal.python.annotations.Slot.SlotSignature";
     private static final String BuiltinsAnnotationClass = "com.oracle.graal.python.builtins.Builtins";
     private static final String BUILTINS_BASE_CLASSES_PACKAGE = "com.oracle.graal.python.nodes.function.builtins";
 
@@ -360,6 +361,9 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         int minNumOfPositionalArgs = -1;
         boolean takesVarArgs = false;
         AnnotationMirror annot = findAnnotationMirror(type, BuiltinAnnotationClass);
+        if (annot == null) {
+            annot = findAnnotationMirror(type, SlotSignatureAnnotationClass);
+        }
         if (annot == null) {
             annot = findAnnotationMirror(type, BuiltinsAnnotationClass);
             if (annot != null) {

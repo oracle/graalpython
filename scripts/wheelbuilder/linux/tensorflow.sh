@@ -1,4 +1,4 @@
-# Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,7 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-if command -v manylinux-interpreters 2>&1 >/dev/null; then
+if [ -n "$GITHUB_RUN_ID" ]; then
     dnf install -y openblas-devel /usr/bin/cmake /usr/bin/sudo /usr/bin/curl java-11-openjdk-devel
 fi
 pip install pip numpy wheel packaging requests opt_einsum

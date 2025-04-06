@@ -38,41 +38,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.arrow.release_callback;
+package com.oracle.graal.python.annotations;
 
-import static com.oracle.graal.python.nodes.ErrorMessages.ARROW_SCHEMA_ALREADY_RELEASED;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.arrow.ArrowSchema;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node;
-
-@GenerateCached(false)
-@GenerateInline
-@GenerateUncached
-public abstract class ArrowSchemaReleaseCallbackNode extends Node {
-
-    public abstract void execute(Node inliningTarget, ArrowSchema arrowSchema);
-
-    @Specialization
-    static void release(Node inliningTarget, ArrowSchema arrowSchema,
-                    @Cached PRaiseNode raiseNode) {
-        if (arrowSchema.isReleased()) {
-            throw raiseNode.raise(inliningTarget, ValueError, ARROW_SCHEMA_ALREADY_RELEASED);
-        }
-        var unsafe = PythonContext.get(inliningTarget).getUnsafe();
-        /*
-         * Releasing only format since that's the only thing we create during the creation of
-         * ArrowSchema. See VectorToArrowSchemaNode
-         */
-        unsafe.freeMemory(arrowSchema.getFormat());
-        arrowSchema.markRelease();
-    }
-
+/**
+ * Indicates that the annotated class inheriting {@code PythonBuiltins} should have slot
+ * {@code tp_hash} filled with the {@code PyObject_HashNotImplemented} placeholder. There is some
+ * special inheritance semantics for this specific slot value.
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface HashNotImplemented {
 }

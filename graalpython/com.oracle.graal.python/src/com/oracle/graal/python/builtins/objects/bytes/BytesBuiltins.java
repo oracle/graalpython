@@ -28,13 +28,6 @@ package com.oracle.graal.python.builtins.objects.bytes;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesNodes.compareByteArrays;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BYTES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BYTES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
@@ -43,47 +36,52 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageMpSubscriptNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageSqItemNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.PyBytesCheckExactNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -98,20 +96,34 @@ public class BytesBuiltins extends PythonBuiltins {
         return BytesBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(name = "bytes", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonVarargsBuiltinNode {
-
-        @SuppressWarnings("unused")
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            return PNone.NONE;
-        }
 
         @SuppressWarnings("unused")
         @Specialization
         static Object byteDone(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
             return PNone.NONE;
+        }
+    }
+
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class HashNode extends HashBuiltinNode {
+        @Specialization(limit = "3")
+        static long hash(VirtualFrame frame, Object self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @CachedLibrary("self") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached BytesNodes.HashBufferNode hashBufferNode) {
+            Object buffer = acquireLib.acquireReadonly(self, frame, indirectCallData);
+            try {
+                return hashBufferNode.execute(inliningTarget, buffer);
+            } finally {
+                bufferLib.release(buffer, frame, indirectCallData);
+            }
         }
     }
 
@@ -242,16 +254,15 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @GenerateInline
-    @GenerateCached(false)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = false)
+    @GenerateNodeFactory
+    @GenerateUncached
     // N.B. bytes only allow comparing to bytes, bytearray has its own implementation that uses
     // buffer API
-    abstract static class ComparisonHelperNode extends Node {
-
-        abstract Object execute(Node inliningTarget, Object self, Object other, ComparisonOp op);
-
+    abstract static class RichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
-        static boolean cmp(Node inliningTarget, PBytes self, PBytes other, ComparisonOp op,
+        static boolean cmp(PBytes self, PBytes other, RichCmpOp op,
+                        @Bind("$node") Node inliningTarget,
                         @Exclusive @Cached SequenceStorageNodes.GetInternalByteArrayNode getArray) {
             SequenceStorage selfStorage = self.getSequenceStorage();
             SequenceStorage otherStorage = other.getSequenceStorage();
@@ -259,7 +270,8 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        static Object cmp(Node inliningTarget, Object self, Object other, ComparisonOp op,
+        static Object cmp(Object self, Object other, RichCmpOp op,
+                        @Bind("$node") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyBytesCheckNode check,
                         @Cached BytesNodes.GetBytesStorage getBytesStorage,
                         @Exclusive @Cached SequenceStorageNodes.GetInternalByteArrayNode getArray,
@@ -273,79 +285,7 @@ public class BytesBuiltins extends PythonBuiltins {
                     return PNotImplemented.NOT_IMPLEMENTED;
                 }
             }
-            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.builtinName, J_BYTES, self);
-        }
-    }
-
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object cmp(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ComparisonHelperNode helperNode) {
-            return helperNode.execute(inliningTarget, self, other, ComparisonOp.EQ);
-        }
-    }
-
-    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class NeNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object cmp(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ComparisonHelperNode helperNode) {
-            return helperNode.execute(inliningTarget, self, other, ComparisonOp.NE);
-        }
-    }
-
-    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class LtNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object cmp(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ComparisonHelperNode helperNode) {
-            return helperNode.execute(inliningTarget, self, other, ComparisonOp.LT);
-        }
-    }
-
-    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class LeNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object cmp(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ComparisonHelperNode helperNode) {
-            return helperNode.execute(inliningTarget, self, other, ComparisonOp.LE);
-        }
-    }
-
-    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class GtNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object cmp(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ComparisonHelperNode helperNode) {
-            return helperNode.execute(inliningTarget, self, other, ComparisonOp.GT);
-        }
-    }
-
-    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class GeNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object cmp(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ComparisonHelperNode helperNode) {
-            return helperNode.execute(inliningTarget, self, other, ComparisonOp.GE);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.getPythonName(), J_BYTES, self);
         }
     }
 

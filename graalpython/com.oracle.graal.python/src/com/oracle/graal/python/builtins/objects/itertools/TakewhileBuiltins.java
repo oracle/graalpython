@@ -57,7 +57,6 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
-import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -105,12 +104,9 @@ public final class TakewhileBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language) {
             Object it = self.getIterable();
             Object value = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, it).tp_iternext(), it);
-            if (PyIterNextNode.isExhausted(value)) {
-                return iteratorExhausted();
-            }
             if (!isTrue.execute(frame, callNode.execute(frame, self.getPredicate(), value))) {
                 self.setIterable(PFactory.createSequenceIterator(language, PFactory.createList(language, PythonUtils.EMPTY_OBJECT_ARRAY)));
-                return iteratorExhausted();
+                throw iteratorExhausted();
             }
             return value;
         }

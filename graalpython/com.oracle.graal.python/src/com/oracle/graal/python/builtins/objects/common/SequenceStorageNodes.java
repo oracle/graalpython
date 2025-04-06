@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndex
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.AppendNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CmpNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CreateStorageFromIteratorNodeFactory.CreateStorageFromIteratorNodeCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.DeleteNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ExtendNodeGen;
@@ -72,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins.NextHelperNode;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes.BuiltinIteratorLengthHint;
@@ -89,12 +89,13 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -102,7 +103,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
@@ -181,7 +181,7 @@ public abstract class SequenceStorageNodes {
         @Specialization
         static Object doIt(Node inliningTarget, SequenceStorage self, int index, TruffleString errorMessage,
                         @Cached PRaiseNode raiseNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+                        @Cached GetItemScalarNode getItemNode) {
             return getItem(inliningTarget, self, index, errorMessage, raiseNode, getItemNode);
         }
 
@@ -219,7 +219,7 @@ public abstract class SequenceStorageNodes {
                         @Cached PyNumberAsSizeNode numberAsSizeNode,
                         @Cached InlinedConditionProfile negativeIndexProfile,
                         @Cached PRaiseNode raiseNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+                        @Cached GetItemScalarNode getItemNode) {
             int index = numberAsSizeNode.executeExact(frame, inliningTarget, idx, PythonBuiltinClassType.IndexError);
             if (negativeIndexProfile.profile(inliningTarget, index < 0)) {
                 index += storage.length();
@@ -267,7 +267,7 @@ public abstract class SequenceStorageNodes {
                 case Byte:
                     return rhsType == Byte || rhsType == Uninitialized || rhsType == Empty;
                 case Int:
-                    return rhsType == StorageType.Byte || rhsType == StorageType.Int || rhsType == Uninitialized || rhsType == Empty;
+                    return rhsType == Byte || rhsType == Int || rhsType == Uninitialized || rhsType == Empty;
                 case Long:
                     return rhsType == Byte || rhsType == Int || rhsType == Long || rhsType == Uninitialized || rhsType == Empty;
                 case Double:
@@ -331,11 +331,11 @@ public abstract class SequenceStorageNodes {
         }
 
         protected static boolean isBoolean(StorageType et) {
-            return et == StorageType.Boolean;
+            return et == Boolean;
         }
 
         protected static boolean isByte(StorageType et) {
-            return et == StorageType.Byte;
+            return et == Byte;
         }
 
         protected static boolean isByteLike(StorageType et) {
@@ -343,15 +343,15 @@ public abstract class SequenceStorageNodes {
         }
 
         protected static boolean isInt(StorageType et) {
-            return et == StorageType.Int;
+            return et == Int;
         }
 
         protected static boolean isLong(StorageType et) {
-            return et == StorageType.Long;
+            return et == Long;
         }
 
         protected static boolean isDouble(StorageType et) {
-            return et == StorageType.Double;
+            return et == Double;
         }
 
         protected static boolean isObject(StorageType et) {
@@ -510,13 +510,13 @@ public abstract class SequenceStorageNodes {
         }
 
         @NeverDefault
-        public static SequenceStorageNodes.GetItemNode createForList() {
-            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forList(), (s, l) -> PFactory.createList(l, s));
+        public static GetItemNode createForList() {
+            return GetItemNode.create(NormalizeIndexNode.forList(), (s, l) -> PFactory.createList(l, s));
         }
 
         @NeverDefault
-        public static SequenceStorageNodes.GetItemNode createForTuple() {
-            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forTuple(), (s, l) -> PFactory.createTuple(l, s));
+        public static GetItemNode createForTuple() {
+            return GetItemNode.create(NormalizeIndexNode.forTuple(), (s, l) -> PFactory.createTuple(l, s));
         }
     }
 
@@ -1202,8 +1202,8 @@ public abstract class SequenceStorageNodes {
         }
 
         @NeverDefault
-        public static SequenceStorageNodes.SetItemNode createForList() {
-            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forListAssign(), ListGeneralizationNode::create);
+        public static SetItemNode createForList() {
+            return SetItemNode.create(NormalizeIndexNode.forListAssign(), ListGeneralizationNode::create);
         }
     }
 
@@ -1879,180 +1879,199 @@ public abstract class SequenceStorageNodes {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class CmpNode extends SequenceStorageBaseNode {
-        @Child private BinaryComparisonNode cmpOp;
-        @Child private PyObjectIsTrueNode castToBooleanNode;
-
-        protected CmpNode(BinaryComparisonNode cmpOp) {
-            this.cmpOp = cmpOp;
-        }
-
-        public abstract boolean execute(VirtualFrame frame, SequenceStorage left, SequenceStorage right);
-
-        private boolean testingEqualsWithDifferingLengths(int llen, int rlen) {
-            // shortcut: if the lengths differ, the lists differ.
-            CompilerAsserts.compilationConstant(cmpOp.getClass());
-            if (cmpOp instanceof BinaryComparisonNode.EqNode) {
-                if (llen != rlen) {
-                    return true;
-                }
-            }
-            return false;
-        }
+        public abstract boolean execute(VirtualFrame frame, Node inliningTarget, SequenceStorage left, SequenceStorage right,
+                        boolean isListComparison, Object leftSeq, Object rightSeq, RichCmpOp op);
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"isEmpty(left)", "isEmpty(right)"})
-        boolean doEmpty(SequenceStorage left, SequenceStorage right) {
-            return cmpOp.cmp(0, 0);
+        static boolean doEmpty(SequenceStorage left, SequenceStorage right, boolean isListComparison, Object leftSeq, Object rightSeq, RichCmpOp op) {
+            return op.compare(0, 0);
         }
 
         @Specialization
-        boolean doBoolStorage(BoolSequenceStorage left, BoolSequenceStorage right) {
+        static boolean doBoolStorage(Node inliningTarget, BoolSequenceStorage left, BoolSequenceStorage right, boolean isListComparison, Object leftSeq, Object rightSeq,
+                        RichCmpOp op,
+                        @Shared @Cached InlinedLoopConditionProfile loopProfile) {
             int llen = left.length();
             int rlen = right.length();
-            if (testingEqualsWithDifferingLengths(llen, rlen)) {
-                return false;
+            if (op.isEqOrNe() && llen != rlen) {
+                return op == RichCmpOp.Py_NE;
             }
-            for (int i = 0; i < Math.min(llen, rlen); i++) {
+            // intentionally imprecise loop profile to avoid its overhead...
+            loopProfile.profileCounted(inliningTarget, Math.min(llen, rlen));
+            for (int i = 0; loopProfile.inject(inliningTarget, i < Math.min(llen, rlen)); i++) {
                 int litem = PInt.intValue(left.getBoolItemNormalized(i));
                 int ritem = PInt.intValue(right.getBoolItemNormalized(i));
                 if (litem != ritem) {
-                    return cmpOp.cmp(litem, ritem);
+                    LoopNode.reportLoopCount(inliningTarget, i);
+                    return op.compare(litem, ritem);
                 }
             }
-            return cmpOp.cmp(llen, rlen);
+            LoopNode.reportLoopCount(inliningTarget, Math.min(llen, rlen));
+            return op.compare(llen, rlen);
         }
 
         @Specialization
-        boolean doByteStorage(ByteSequenceStorage left, ByteSequenceStorage right) {
+        static boolean doByteStorage(Node inliningTarget, ByteSequenceStorage left, ByteSequenceStorage right, boolean isListComparison, Object leftSeq, Object rightSeq,
+                        RichCmpOp op,
+                        @Shared @Cached InlinedLoopConditionProfile loopProfile) {
             int llen = left.length();
             int rlen = right.length();
-            if (testingEqualsWithDifferingLengths(llen, rlen)) {
-                return false;
+            if (op.isEqOrNe() && llen != rlen) {
+                return op == RichCmpOp.Py_NE;
             }
-            for (int i = 0; i < Math.min(llen, rlen); i++) {
+            // intentionally imprecise loop profile to avoid its overhead...
+            loopProfile.profileCounted(inliningTarget, Math.min(llen, rlen));
+            for (int i = 0; loopProfile.inject(inliningTarget, i < Math.min(llen, rlen)); i++) {
                 byte litem = left.getByteItemNormalized(i);
                 byte ritem = right.getByteItemNormalized(i);
                 if (litem != ritem) {
-                    return cmpOp.cmp(litem, ritem);
+                    LoopNode.reportLoopCount(inliningTarget, i);
+                    return op.compare(litem, ritem);
                 }
             }
-            return cmpOp.cmp(llen, rlen);
+            LoopNode.reportLoopCount(inliningTarget, Math.min(llen, rlen));
+            return op.compare(llen, rlen);
         }
 
         @Specialization
-        boolean doIntStorage(IntSequenceStorage left, IntSequenceStorage right) {
+        static boolean doIntStorage(Node inliningTarget, IntSequenceStorage left, IntSequenceStorage right, boolean isListComparison, Object leftSeq, Object rightSeq, RichCmpOp op,
+                        @Shared @Cached InlinedLoopConditionProfile loopProfile) {
             int llen = left.length();
             int rlen = right.length();
-            if (testingEqualsWithDifferingLengths(llen, rlen)) {
-                return false;
+            if (op.isEqOrNe() && llen != rlen) {
+                return op == RichCmpOp.Py_NE;
             }
-            for (int i = 0; i < Math.min(llen, rlen); i++) {
+            // intentionally imprecise loop profile to avoid its overhead...
+            loopProfile.profileCounted(inliningTarget, Math.min(llen, rlen));
+            for (int i = 0; loopProfile.inject(inliningTarget, i < Math.min(llen, rlen)); i++) {
                 int litem = left.getIntItemNormalized(i);
                 int ritem = right.getIntItemNormalized(i);
                 if (litem != ritem) {
-                    return cmpOp.cmp(litem, ritem);
+                    LoopNode.reportLoopCount(inliningTarget, i);
+                    return op.compare(litem, ritem);
                 }
             }
-            return cmpOp.cmp(llen, rlen);
+            LoopNode.reportLoopCount(inliningTarget, Math.min(llen, rlen));
+            return op.compare(llen, rlen);
         }
 
         @Specialization
-        boolean doLongStorage(LongSequenceStorage left, LongSequenceStorage right) {
+        static boolean doLongStorage(Node inliningTarget, LongSequenceStorage left, LongSequenceStorage right, boolean isListComparison, Object leftSeq, Object rightSeq,
+                        RichCmpOp op,
+                        @Shared @Cached InlinedLoopConditionProfile loopProfile) {
             int llen = left.length();
             int rlen = right.length();
-            if (testingEqualsWithDifferingLengths(llen, rlen)) {
-                return false;
+            if (op.isEqOrNe() && llen != rlen) {
+                return op == RichCmpOp.Py_NE;
             }
-            for (int i = 0; i < Math.min(llen, rlen); i++) {
+            // intentionally imprecise loop profile to avoid its overhead...
+            loopProfile.profileCounted(inliningTarget, Math.min(llen, rlen));
+            for (int i = 0; loopProfile.inject(inliningTarget, i < Math.min(llen, rlen)); i++) {
                 long litem = left.getLongItemNormalized(i);
                 long ritem = right.getLongItemNormalized(i);
                 if (litem != ritem) {
-                    return cmpOp.cmp(litem, ritem);
+                    LoopNode.reportLoopCount(inliningTarget, i);
+                    return op.compare(litem, ritem);
                 }
             }
-            return cmpOp.cmp(llen, rlen);
+            LoopNode.reportLoopCount(inliningTarget, Math.min(llen, rlen));
+            return op.compare(llen, rlen);
         }
 
         @Specialization
-        boolean doDoubleStorage(DoubleSequenceStorage left, DoubleSequenceStorage right) {
+        static boolean doDoubleStorage(Node inliningTarget, DoubleSequenceStorage left, DoubleSequenceStorage right, boolean isListComparison, Object leftSeq, Object rightSeq,
+                        RichCmpOp op,
+                        @Shared @Cached InlinedLoopConditionProfile loopProfile) {
             int llen = left.length();
             int rlen = right.length();
-            if (testingEqualsWithDifferingLengths(llen, rlen)) {
-                return false;
+            if (op.isEqOrNe() && llen != rlen) {
+                return op == RichCmpOp.Py_NE;
             }
-            for (int i = 0; i < Math.min(llen, rlen); i++) {
+            // intentionally imprecise loop profile to avoid its overhead...
+            loopProfile.profileCounted(inliningTarget, Math.min(llen, rlen));
+            for (int i = 0; loopProfile.inject(inliningTarget, i < Math.min(llen, rlen)); i++) {
                 double litem = left.getDoubleItemNormalized(i);
                 double ritem = right.getDoubleItemNormalized(i);
-                if (java.lang.Double.compare(litem, ritem) != 0) {
-                    return cmpOp.cmp(litem, ritem);
+                if (!PFloat.areIdentical(litem, ritem)) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
+                    return op.compare(litem, ritem);
                 }
             }
-            return cmpOp.cmp(llen, rlen);
+            LoopNode.reportLoopCount(inliningTarget, Math.min(llen, rlen));
+            return op.compare(llen, rlen);
         }
 
         @Specialization
         @SuppressWarnings("truffle-static-method")
-        boolean doGeneric(VirtualFrame frame, SequenceStorage left, SequenceStorage right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+        static boolean doGeneric(VirtualFrame frame, Node inliningTarget, SequenceStorage left, SequenceStorage right, boolean isListComparison, Object leftSeq, Object rightSeq,
+                        RichCmpOp op,
+                        @Cached PyObjectRichCompareBool eqNode,
+                        @Cached PyObjectRichCompareBool cmpNode,
+                        @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
+                        @Cached InlinedBranchProfile storageHasChanged,
                         @Cached GetItemScalarNode getLeftItemNode,
-                        @Cached GetItemScalarNode getRightItemNode) {
+                        @Cached GetItemScalarNode getRightItemNode,
+                        @Cached ListNodes.GetListStorageNode getListStorageNode) {
             int llen = left.length();
             int rlen = right.length();
-            if (testingEqualsWithDifferingLengths(llen, rlen)) {
-                return false;
+            if (op.isEqOrNe() && llen != rlen) {
+                return op == RichCmpOp.Py_NE;
             }
-            for (int i = 0; i < Math.min(llen, rlen); i++) {
+            // intentionally imprecise loop profile to avoid its overhead...
+            loopProfile.profileCounted(inliningTarget, Math.min(left.length(), right.length()));
+            for (int i = 0; loopProfile.inject(inliningTarget, i < Math.min(left.length(), right.length())); i++) {
                 Object leftItem = getLeftItemNode.execute(inliningTarget, left, i);
                 Object rightItem = getRightItemNode.execute(inliningTarget, right, i);
-                if (!eqNode.compare(frame, inliningTarget, leftItem, rightItem)) {
-                    return cmpGeneric(frame, leftItem, rightItem);
+                if (!eqNode.execute(frame, inliningTarget, leftItem, rightItem, RichCmpOp.Py_EQ)) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
+                    // Following CPython semantics: we must compare the length again...
+                    SequenceStorage newLeft = null, newRight = null;
+                    if (isListComparison) {
+                        newLeft = getListStorageNode.execute(inliningTarget, leftSeq);
+                        newRight = getListStorageNode.execute(inliningTarget, rightSeq);
+                        if (i >= newLeft.length() || i >= newRight.length()) {
+                            storageHasChanged.enter(inliningTarget);
+                            return op.compare(newLeft.length(), newRight.length());
+                        }
+                    }
+                    // Then apply shortcut for eq/ne...
+                    if (op.isEqOrNe()) {
+                        return op.isNe();
+                    }
+                    // Then re-read the items, because the __eq__ call could have changed them
+                    if (isListComparison) {
+                        leftItem = getLeftItemNode.execute(inliningTarget, newLeft, i);
+                        rightItem = getRightItemNode.execute(inliningTarget, newRight, i);
+                    }
+                    // Then do the final comparison of now possibly different items
+                    return cmpNode.execute(frame, inliningTarget, leftItem, rightItem, op);
+                }
+                // Note: the semantics of CPython (which is tested in its unit tests) is that the
+                // loop should re-read the list size in every iteration. For us this means also
+                // re-reading the storage. See {@code test_list.py:
+                // ListTest.test_equal_operator_modifying_operand}.
+                //
+                // This node is either used to compare two tuples or to compare two lists, which can
+                // be either PList or a foreign list. We assume that tuples are immutable, which is
+                // not entirely correct (C API), but taking care of that eventuality is stretching
+                // this too far.
+                CompilerAsserts.partialEvaluationConstant(isListComparison);
+                if (isListComparison) {
+                    SequenceStorage newLeft = getListStorageNode.execute(inliningTarget, leftSeq);
+                    SequenceStorage newRight = getListStorageNode.execute(inliningTarget, rightSeq);
+                    if (left != newLeft || right != newRight) {
+                        storageHasChanged.enter(inliningTarget);
+                        left = newLeft;
+                        right = newRight;
+                    }
                 }
             }
-            return cmpOp.cmp(llen, rlen);
-        }
-
-        private boolean cmpGeneric(VirtualFrame frame, Object left, Object right) {
-            return castToBoolean(frame, cmpOp.execute(frame, left, right));
-        }
-
-        private boolean castToBoolean(VirtualFrame frame, Object value) {
-            if (castToBooleanNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToBooleanNode = insert(PyObjectIsTrueNode.create());
-            }
-            return castToBooleanNode.execute(frame, value);
-        }
-
-        @NeverDefault
-        public static CmpNode createLe() {
-            return CmpNodeGen.create(BinaryComparisonNode.LeNode.create());
-        }
-
-        @NeverDefault
-        public static CmpNode createLt() {
-            return CmpNodeGen.create(BinaryComparisonNode.LtNode.create());
-        }
-
-        @NeverDefault
-        public static CmpNode createGe() {
-            return CmpNodeGen.create(BinaryComparisonNode.GeNode.create());
-        }
-
-        @NeverDefault
-        public static CmpNode createGt() {
-            return CmpNodeGen.create(BinaryComparisonNode.GtNode.create());
-        }
-
-        @NeverDefault
-        public static CmpNode createEq() {
-            return CmpNodeGen.create(BinaryComparisonNode.EqNode.create());
-        }
-
-        @NeverDefault
-        public static CmpNode createNe() {
-            return CmpNodeGen.create(BinaryComparisonNode.NeNode.create());
+            LoopNode.reportLoopCount(inliningTarget, Math.min(left.length(), right.length()));
+            return op.compare(left.length(), right.length());
         }
     }
 
@@ -2405,6 +2424,7 @@ public abstract class SequenceStorageNodes {
                         @Cached GetObjectSlotsNode getSlots,
                         @Cached CallSlotTpIterNextNode callIterNext,
                         @Cached IsBuiltinObjectProfile stopIterationProfile,
+                        @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached AppendNode appendNode) {
             SequenceStorage currentStore = left;
             int lenLeft = currentStore.length();
@@ -2413,17 +2433,17 @@ public abstract class SequenceStorageNodes {
             if (len > 0) {
                 ensureCapacityNode.execute(inliningTarget, left, lengthResult(lenLeft, len));
             }
-            try {
-                while (true) {
-                    Object value;
-                    value = callIterNext.execute(frame, inliningTarget, iterNext, it);
-                    if (PyIterNextNode.isExhausted(value)) {
-                        break;
-                    }
+            boolean exhausted = false;
+            while (loopProfile.profile(inliningTarget, !exhausted)) {
+                try {
+                    Object value = callIterNext.execute(frame, inliningTarget, iterNext, it);
                     currentStore = appendNode.execute(inliningTarget, currentStore, value, genNodeProvider);
+                } catch (IteratorExhausted e) {
+                    exhausted = true;
+                } catch (PException e) {
+                    e.expectStopIteration(inliningTarget, stopIterationProfile);
+                    exhausted = true;
                 }
-            } catch (PException e) {
-                e.expectStopIteration(inliningTarget, stopIterationProfile);
             }
             return currentStore;
         }
@@ -2698,10 +2718,10 @@ public abstract class SequenceStorageNodes {
         @Specialization
         static int doGeneric(VirtualFrame frame, Node inliningTarget, SequenceStorage self, Object item,
                         @Cached(inline = false) GetItemScalarNode getItemNode,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+                        @Cached PyObjectRichCompareBool eqNode) {
             for (int i = 0; i < self.length(); i++) {
                 Object seqItem = getItemNode.execute(inliningTarget, self, i);
-                if (eqNode.compare(frame, inliningTarget, seqItem, item)) {
+                if (eqNode.execute(frame, inliningTarget, seqItem, item, RichCmpOp.Py_EQ)) {
                     return i;
                 }
             }
@@ -3664,7 +3684,7 @@ public abstract class SequenceStorageNodes {
             multipleSteps(store, sinfo, inliningTarget, setLenNode, ensureCapacityNode, memove);
         }
 
-        static void multipleSteps(SequenceStorage self, PSlice.SliceInfo sinfo,
+        static void multipleSteps(SequenceStorage self, SliceInfo sinfo,
                         Node inliningTarget,
                         SetLenNode setLenNode,
                         EnsureCapacityNode ensureCapacityNode,
@@ -3724,42 +3744,42 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static StorageType type(EmptySequenceStorage s) {
-            return StorageType.Empty;
+            return Empty;
         }
 
         @Specialization
         static StorageType type(BoolSequenceStorage s) {
-            return StorageType.Boolean;
+            return Boolean;
         }
 
         @Specialization
         static StorageType type(ByteSequenceStorage s) {
-            return StorageType.Byte;
+            return Byte;
         }
 
         @Specialization
         static StorageType type(NativeByteSequenceStorage s) {
-            return StorageType.Byte;
+            return Byte;
         }
 
         @Specialization
         static StorageType type(IntSequenceStorage s) {
-            return StorageType.Int;
+            return Int;
         }
 
         @Specialization
         static StorageType type(NativeIntSequenceStorage s) {
-            return StorageType.Int;
+            return Int;
         }
 
         @Specialization
         static StorageType type(LongSequenceStorage s) {
-            return StorageType.Long;
+            return Long;
         }
 
         @Specialization
         static StorageType type(DoubleSequenceStorage s) {
-            return StorageType.Double;
+            return Double;
         }
 
         @Fallback
@@ -3829,10 +3849,10 @@ public abstract class SequenceStorageNodes {
         @Specialization
         static int doGeneric(VirtualFrame frame, Node inliningTarget, SequenceStorage s, Object item, int start, int end,
                         @Cached GetItemScalarNode getItemNode,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+                        @Cached PyObjectRichCompareBool eqNode) {
             for (int i = start; i < getLength(s, end); i++) {
                 Object seqItem = getItemNode.execute(inliningTarget, s, i);
-                if (eqNode.compare(frame, inliningTarget, seqItem, item)) {
+                if (eqNode.execute(frame, inliningTarget, seqItem, item, RichCmpOp.Py_EQ)) {
                     return i;
                 }
             }
@@ -4130,8 +4150,10 @@ public abstract class SequenceStorageNodes {
                             boolean[] elements = new boolean[size];
                             array = elements;
                             while (true) {
-                                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                                if (PyIterNextNode.isExhausted(next)) {
+                                Object next;
+                                try {
+                                    next = nextNode.execute(frame, inliningTarget, iterator);
+                                } catch (IteratorExhausted e) {
                                     LoopNode.reportLoopCount(this, i);
                                     break;
                                 }
@@ -4147,8 +4169,10 @@ public abstract class SequenceStorageNodes {
                             byte[] elements = new byte[size];
                             array = elements;
                             while (true) {
-                                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                                if (PyIterNextNode.isExhausted(next)) {
+                                Object next;
+                                try {
+                                    next = nextNode.execute(frame, inliningTarget, iterator);
+                                } catch (IteratorExhausted e) {
                                     LoopNode.reportLoopCount(this, i);
                                     break;
                                 }
@@ -4170,8 +4194,10 @@ public abstract class SequenceStorageNodes {
                             int[] elements = new int[size];
                             array = elements;
                             while (true) {
-                                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                                if (PyIterNextNode.isExhausted(next)) {
+                                Object next;
+                                try {
+                                    next = nextNode.execute(frame, inliningTarget, iterator);
+                                } catch (IteratorExhausted e) {
                                     LoopNode.reportLoopCount(this, i);
                                     break;
                                 }
@@ -4187,8 +4213,10 @@ public abstract class SequenceStorageNodes {
                             long[] elements = new long[size];
                             array = elements;
                             while (true) {
-                                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                                if (PyIterNextNode.isExhausted(next)) {
+                                Object next;
+                                try {
+                                    next = nextNode.execute(frame, inliningTarget, iterator);
+                                } catch (IteratorExhausted e) {
                                     LoopNode.reportLoopCount(this, i);
                                     break;
                                 }
@@ -4204,8 +4232,10 @@ public abstract class SequenceStorageNodes {
                             double[] elements = new double[size];
                             array = elements;
                             while (true) {
-                                Object next = nextNode.execute(frame, inliningTarget, iterator);
-                                if (PyIterNextNode.isExhausted(next)) {
+                                Object next;
+                                try {
+                                    next = nextNode.execute(frame, inliningTarget, iterator);
+                                } catch (IteratorExhausted e) {
                                     LoopNode.reportLoopCount(this, i);
                                     break;
                                 }
@@ -4220,8 +4250,10 @@ public abstract class SequenceStorageNodes {
                         case Generic: {
                             Object[] elements = new Object[size];
                             while (true) {
-                                Object value = nextNode.execute(frame, inliningTarget, iterator);
-                                if (PyIterNextNode.isExhausted(value)) {
+                                Object value;
+                                try {
+                                    value = nextNode.execute(frame, inliningTarget, iterator);
+                                } catch (IteratorExhausted e) {
                                     LoopNode.reportLoopCount(this, i);
                                     break;
                                 }
@@ -4246,8 +4278,10 @@ public abstract class SequenceStorageNodes {
             Object[] elements = new Object[size];
             int i = 0;
             while (true) {
-                Object value = nextNode.execute(frame, inliningTarget, iterator);
-                if (PyIterNextNode.isExhausted(value)) {
+                Object value;
+                try {
+                    value = nextNode.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
                     LoopNode.reportLoopCount(this, i);
                     return SequenceStorageFactory.createStorage(PythonUtils.arrayCopyOf(elements, i));
                 }
@@ -4269,8 +4303,10 @@ public abstract class SequenceStorageNodes {
             }
             elements[i++] = result;
             while (true) {
-                Object value = nextNode.execute(frame, inliningTarget, iterator);
-                if (PyIterNextNode.isExhausted(value)) {
+                Object value;
+                try {
+                    value = nextNode.execute(frame, inliningTarget, iterator);
+                } catch (IteratorExhausted e) {
                     LoopNode.reportLoopCount(this, i);
                     return new ObjectSequenceStorage(elements, i);
                 }
@@ -4288,120 +4324,146 @@ public abstract class SequenceStorageNodes {
         protected static SequenceStorage createStorageFromBuiltin(VirtualFrame frame, PBuiltinIterator iterator, int len, StorageType type, NextHelperNode nextNode,
                         IsBuiltinObjectProfile errorProfile, Node inliningTarget, InlinedCountingConditionProfile growArrayProfile, InlinedLoopConditionProfile loopProfile) {
             final int size = len > 0 ? len : START_SIZE;
+            int i = 0;
+            boolean exhausted = false;
             if (type == Uninitialized || type == Empty) {
                 Object[] elements = new Object[size];
-                int i = 0;
-                try {
-                    Object value;
-                    for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
+                while (loopProfile.profile(inliningTarget, !exhausted)) {
+                    try {
+                        Object value = nextNode.execute(frame, inliningTarget, iterator);
                         if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                             elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                         }
-                        elements[i] = value;
+                        elements[i++] = value;
+                    } catch (IteratorExhausted e) {
+                        exhausted = true;
+                    } catch (PException e) {
+                        e.expectStopIteration(inliningTarget, errorProfile);
+                        exhausted = true;
                     }
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
                 }
                 return SequenceStorageFactory.createStorage(PythonUtils.arrayCopyOf(elements, i));
             } else {
-                int i = 0;
                 Object array = null;
                 try {
-                    Object value;
                     switch (type) {
                         case Boolean: {
                             boolean[] elements = new boolean[size];
                             array = elements;
-                            try {
-                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
+                            while (loopProfile.profile(inliningTarget, !exhausted)) {
+                                try {
+                                    Object value = nextNode.execute(frame, inliningTarget, iterator);
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                         array = elements;
                                     }
                                     elements[i] = PGuards.expectBoolean(value);
+                                } catch (IteratorExhausted e) {
+                                    exhausted = true;
+                                } catch (PException e) {
+                                    e.expectStopIteration(inliningTarget, errorProfile);
+                                    exhausted = true;
                                 }
-                            } catch (PException e) {
-                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new BoolSequenceStorage(elements, i);
                         }
                         case Byte: {
                             byte[] elements = new byte[size];
                             array = elements;
-                            try {
-                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
+                            while (loopProfile.profile(inliningTarget, !exhausted)) {
+                                try {
+                                    Object value = nextNode.execute(frame, inliningTarget, iterator);
                                     byte bvalue;
                                     try {
                                         bvalue = PInt.byteValueExact(PGuards.expectInteger(value));
-                                        if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
-                                            array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
-                                        }
-                                        elements[i] = bvalue;
                                     } catch (OverflowException e) {
                                         throw new UnexpectedResultException(value);
                                     }
+                                    if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
+                                        array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
+                                    }
+                                    elements[i++] = bvalue;
+                                } catch (IteratorExhausted e) {
+                                    exhausted = true;
+                                } catch (PException e) {
+                                    e.expectStopIteration(inliningTarget, errorProfile);
+                                    exhausted = true;
                                 }
-                            } catch (PException e) {
-                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new ByteSequenceStorage(elements, i);
                         }
                         case Int: {
                             int[] elements = new int[size];
                             array = elements;
-                            try {
-                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
+                            while (loopProfile.profile(inliningTarget, !exhausted)) {
+                                try {
+                                    Object value = nextNode.execute(frame, inliningTarget, iterator);
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
-                                    elements[i] = PGuards.expectInteger(value);
+                                    elements[i++] = PGuards.expectInteger(value);
+                                } catch (IteratorExhausted e) {
+                                    exhausted = true;
+                                } catch (PException e) {
+                                    e.expectStopIteration(inliningTarget, errorProfile);
+                                    exhausted = true;
                                 }
-                            } catch (PException e) {
-                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new IntSequenceStorage(elements, i);
                         }
                         case Long: {
                             long[] elements = new long[size];
                             array = elements;
-                            try {
-                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
+                            while (loopProfile.profile(inliningTarget, !exhausted)) {
+                                try {
+                                    Object value = nextNode.execute(frame, inliningTarget, iterator);
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
-                                    elements[i] = PGuards.expectLong(value);
+                                    elements[i++] = PGuards.expectLong(value);
+                                } catch (IteratorExhausted e) {
+                                    exhausted = true;
+                                } catch (PException e) {
+                                    e.expectStopIteration(inliningTarget, errorProfile);
+                                    exhausted = true;
                                 }
-                            } catch (PException e) {
-                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new LongSequenceStorage(elements, i);
                         }
                         case Double: {
                             double[] elements = new double[size];
                             array = elements;
-                            try {
-                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
+                            while (loopProfile.profile(inliningTarget, !exhausted)) {
+                                try {
+                                    Object value = nextNode.execute(frame, inliningTarget, iterator);
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
-                                    elements[i] = PGuards.expectDouble(value);
+                                    elements[i++] = PGuards.expectDouble(value);
+                                } catch (IteratorExhausted e) {
+                                    exhausted = true;
+                                } catch (PException e) {
+                                    e.expectStopIteration(inliningTarget, errorProfile);
+                                    exhausted = true;
                                 }
-                            } catch (PException e) {
-                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new DoubleSequenceStorage(elements, i);
                         }
                         case Generic: {
                             Object[] elements = new Object[size];
-                            try {
-                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
+                            while (loopProfile.profile(inliningTarget, !exhausted)) {
+                                try {
+                                    Object value = nextNode.execute(frame, inliningTarget, iterator);
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
-                                    elements[i] = value;
+                                    elements[i++] = value;
+                                } catch (IteratorExhausted e) {
+                                    exhausted = true;
+                                } catch (PException e) {
+                                    e.expectStopIteration(inliningTarget, errorProfile);
+                                    exhausted = true;
                                 }
-                            } catch (PException e) {
-                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new ObjectSequenceStorage(elements, i);
                         }
@@ -4410,7 +4472,7 @@ public abstract class SequenceStorageNodes {
                             throw new RuntimeException("unexpected state");
                     }
                 } catch (UnexpectedResultException e) {
-                    return genericFallback(frame, iterator, array, i, e.getResult(), nextNode, inliningTarget, errorProfile);
+                    return genericFallback(frame, iterator, array, i - 1, e.getResult(), nextNode, inliningTarget, errorProfile);
                 }
             }
         }
@@ -4423,16 +4485,18 @@ public abstract class SequenceStorageNodes {
                 elements[i] = Array.get(array, i);
             }
             elements[i++] = result;
-            Object value;
-            try {
-                while (!PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))) {
+            while (true) {
+                try {
+                    Object value = nextNode.execute(frame, inliningTarget, iterator);
                     if (i >= elements.length) {
                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                     }
                     elements[i++] = value;
+                } catch (IteratorExhausted e) {
+                    break;
+                } catch (PException e) {
+                    e.expectStopIteration(inliningTarget, errorProfile);
                 }
-            } catch (PException e) {
-                e.expectStopIteration(inliningTarget, errorProfile);
             }
             return new ObjectSequenceStorage(elements, i);
         }
@@ -4547,7 +4611,7 @@ public abstract class SequenceStorageNodes {
                     if (GetPythonObjectClassNode.executeUncached(pbi) == PythonBuiltinClassType.PIterator && pbi.index == 0 && !pbi.isExhausted()) {
                         SequenceStorage s = GetInternalIteratorSequenceStorage.executeUncached(pbi);
                         if (s != null) {
-                            return SequenceStorageNodes.CopyNode.executeUncached(s);
+                            return CopyNode.executeUncached(s);
                         }
                     }
                 }

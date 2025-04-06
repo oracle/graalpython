@@ -91,10 +91,12 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltinsFactory.DebugNodeFactory;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper.ToNativeStorageNode;
@@ -102,6 +104,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -137,9 +140,6 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.arrow.ArrowArray;
 import com.oracle.graal.python.nodes.arrow.ArrowSchema;
-import com.oracle.graal.python.nodes.arrow.capsule.CreateArrowPyCapsuleNode;
-import com.oracle.graal.python.nodes.arrow.vector.VectorToArrowArrayNode;
-import com.oracle.graal.python.nodes.arrow.vector.VectorToArrowSchemaNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -1333,18 +1333,24 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "export_arrow_vector", minNumOfPositionalArgs = 1)
+    @Builtin(name = "create_arrow_py_capsule", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class ExportArrowVector extends PythonUnaryBuiltinNode {
+    public abstract static class CreateArrowPyCapsule extends PythonBinaryBuiltinNode {
+
         @Specialization
-        static PTuple doExport(Object vector,
+        static PTuple doCreate(long arrowArrayAddr, long arrowSchemaAddr,
                         @Bind("this") Node inliningTarget,
-                        @Cached VectorToArrowArrayNode exportArray,
-                        @Cached VectorToArrowSchemaNode exportSchema,
-                        @Cached CreateArrowPyCapsuleNode createArrowCapsuleNode) {
-            ArrowArray arrowArray = exportArray.execute(inliningTarget, vector);
-            ArrowSchema arrowSchema = exportSchema.execute(inliningTarget, vector);
-            return createArrowCapsuleNode.execute(inliningTarget, arrowArray, arrowSchema);
+                        @Cached PythonCextCapsuleBuiltins.PyCapsuleNewNode pyCapsuleNewNode) {
+            var ctx = getContext(inliningTarget);
+
+            long arrayDestructor = ctx.arrowSupport.getArrowArrayDestructor();
+            var arrayCapsuleName = new CArrayWrappers.CByteArrayWrapper(ArrowArray.CAPSULE_NAME);
+            PyCapsule arrowArrayCapsule = pyCapsuleNewNode.execute(inliningTarget, arrowArrayAddr, arrayCapsuleName, arrayDestructor);
+
+            long schemaDestructor = ctx.arrowSupport.getArrowSchemaDestructor();
+            var schemaCapsuleName = new CArrayWrappers.CByteArrayWrapper(ArrowSchema.CAPSULE_NAME);
+            PyCapsule arrowSchemaCapsule = pyCapsuleNewNode.execute(inliningTarget, arrowSchemaAddr, schemaCapsuleName, schemaDestructor);
+            return PFactory.createTuple(ctx.getLanguage(inliningTarget), new Object[]{arrowSchemaCapsule, arrowArrayCapsule});
         }
     }
 }

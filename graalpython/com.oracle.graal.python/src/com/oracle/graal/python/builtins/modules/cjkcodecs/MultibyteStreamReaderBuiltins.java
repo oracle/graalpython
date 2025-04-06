@@ -47,7 +47,6 @@ import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteIncrem
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.MBERR_TOOFEW;
 import static com.oracle.graal.python.nodes.ErrorMessages.CODEC_IS_UNEXPECTED_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.STREAM_FUNCTION_RETURNED_A_NON_BYTES_OBJECT_S;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -56,6 +55,9 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -63,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -91,6 +94,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = MultibyteStreamReader)
 public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = MultibyteStreamReaderBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -131,7 +136,8 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self"})
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(name = "MultibyteStreamReader", minNumOfPositionalArgs = 1, parameterNames = {"$self"})
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonUnaryBuiltinNode {
 

@@ -95,11 +95,6 @@ public class StructBuiltins extends PythonBuiltins {
             return execute(frame, self, args, PKeyword.EMPTY_KEYWORDS);
         }
 
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            return this.execute(frame, self, arguments, PKeyword.EMPTY_KEYWORDS);
-        }
-
         @Specialization
         static Object pack(VirtualFrame frame, PStruct self, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,

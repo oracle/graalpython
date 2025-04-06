@@ -94,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.CallSlotMpAssSubscriptNode;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
@@ -265,9 +266,8 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
-                        @Bind Node inliningTarget,
                         @Cached PyNumberAddNode addNode) {
-            return addNode.execute(null, inliningTarget, o1, o2);
+            return addNode.execute(null, o1, o2);
         }
     }
 
@@ -286,9 +286,8 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
-                        @Bind Node inliningTarget,
                         @Cached PyNumberMultiplyNode multiplyNode) {
-            return multiplyNode.execute(null, inliningTarget, o1, o2);
+            return multiplyNode.execute(null, o1, o2);
         }
     }
 
@@ -527,9 +526,8 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         Object doGeneric(Object o1, Object o2, Object o3,
-                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberPowerNode powerNode) {
-            return powerNode.execute(null, inliningTarget, o1, o2, o3);
+            return powerNode.execute(null, o1, o2, o3);
         }
     }
 
@@ -887,11 +885,11 @@ public final class PythonCextAbstractBuiltins {
         Object check(Object object,
                         @Bind Node inliningTarget,
                         @Cached PyIterNextNode nextNode) {
-            Object result = nextNode.execute(null, inliningTarget, object);
-            if (PyIterNextNode.isExhausted(result)) {
+            try {
+                return nextNode.execute(null, inliningTarget, object);
+            } catch (IteratorExhausted e) {
                 return getNativeNull();
             }
-            return result;
         }
     }
 
@@ -905,11 +903,11 @@ public final class PythonCextAbstractBuiltins {
                         @Cached PyIterNextNode nextNode,
                         @Cached IsBuiltinObjectProfile isClassProfile) {
             if (arg instanceof PNone && pyiterCheck.execute(inliningTarget, iter)) {
-                Object result = nextNode.execute(null, inliningTarget, iter);
-                if (PyIterNextNode.isExhausted(result)) {
+                try {
+                    return nextNode.execute(null, inliningTarget, iter);
+                } catch (IteratorExhausted e) {
                     return getNativeNull();
                 }
-                return result;
             } else {
                 try {
                     return callMethodNode.execute(null, inliningTarget, iter, T_SEND, arg);

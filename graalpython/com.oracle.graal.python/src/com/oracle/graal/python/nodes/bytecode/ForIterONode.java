@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.bytecode;
 
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -82,12 +83,13 @@ public abstract class ForIterONode extends PNodeWithContext {
     static boolean doGeneric(VirtualFrame frame, Object iterator, int stackTop,
                     @Bind Node inliningTarget,
                     @Cached PyIterNextNode nextNode) {
-        Object res = nextNode.execute(frame, inliningTarget, iterator);
-        if (PyIterNextNode.isExhausted(res)) {
+        try {
+            Object res = nextNode.execute(frame, inliningTarget, iterator);
+            frame.setObject(stackTop, res);
+            return true;
+        } catch (IteratorExhausted e) {
             return false;
         }
-        frame.setObject(stackTop, res);
-        return true;
     }
 
     public static ForIterONode create() {

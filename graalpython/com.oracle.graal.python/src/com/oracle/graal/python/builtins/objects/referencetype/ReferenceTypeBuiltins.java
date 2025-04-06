@@ -45,16 +45,13 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALLBACK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -64,11 +61,14 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectRichCompare;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -92,7 +92,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PReferenceType)
 public final class ReferenceTypeBuiltins extends PythonBuiltins {
-
     public static final TpSlots SLOTS = ReferenceTypeBuiltinsSlotsGen.SLOTS;
 
     @Override
@@ -100,7 +99,8 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
         return ReferenceTypeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(name = "ref", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -131,9 +131,9 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__hash__
-    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class RefTypeHashNode extends PythonUnaryBuiltinNode {
+    public abstract static class RefTypeHashNode extends HashBuiltinNode {
         static long HASH_UNSET = -1;
 
         @Specialization(guards = "self.getHash() != HASH_UNSET")
@@ -158,7 +158,7 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        static int hashWrong(@SuppressWarnings("unused") Object self,
+        static long hashWrong(@SuppressWarnings("unused") Object self,
                         @Bind("this") Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, "__hash__", "weakref", self);
         }
@@ -199,46 +199,25 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    // ref.__eq__
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    // ref.__eq__ and __ne__
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class RefTypeEqNode extends PythonBuiltinNode {
-        @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})
-        Object eq(VirtualFrame frame, PReferenceType self, PReferenceType other,
-                        @Cached BinaryComparisonNode.EqNode eqNode) {
-            return eqNode.execute(frame, self.getObject(), other.getObject());
+    public abstract static class RefTypeEqNode extends RichCmpBuiltinNode {
+        @Specialization(guards = {"self.getObject() != null", "other.getObject() != null", "op.isEqOrNe()"})
+        static Object withObjs(VirtualFrame frame, PReferenceType self, PReferenceType other, RichCmpOp op,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached PyObjectRichCompare richCompareNode) {
+            return richCompareNode.execute(frame, inliningTarget, self.getObject(), other.getObject(), op);
         }
 
-        @Specialization(guards = "self.getObject() == null || other.getObject() == null")
-        boolean eq(PReferenceType self, PReferenceType other) {
-            return self == other;
+        @Specialization(guards = {"self.getObject() == null || other.getObject() == null", "op.isEqOrNe()"})
+        static boolean withoutObjs(PReferenceType self, PReferenceType other, RichCmpOp op) {
+            return (self == other) == op.isEq();
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        Object eq(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    // ref.__ne__
-    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class RefTypeNeNode extends PythonBuiltinNode {
-        @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})
-        Object ne(VirtualFrame frame, PReferenceType self, PReferenceType other,
-                        @Cached BinaryComparisonNode.NeNode neNode) {
-            return neNode.execute(frame, self.getObject(), other.getObject());
-        }
-
-        @Specialization(guards = "self.getObject() == null || other.getObject() == null")
-        boolean ne(PReferenceType self, PReferenceType other) {
-            return self != other;
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        Object eq(Object self, Object other) {
+        static Object others(Object self, Object other, RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

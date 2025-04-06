@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,40 +38,60 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.arrow.capsule;
+package com.oracle.graal.python.lib.fastpath;
 
-import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins.PyCapsuleNewNode;
-import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.arrow.ArrowArray;
-import com.oracle.graal.python.nodes.arrow.ArrowSchema;
-import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 
+/**
+ * Helper class with shared fast-paths. Must be public so that it is accessible by the Bytecode DSL
+ * generated code.
+ */
 @GenerateCached(false)
-@GenerateInline
-public abstract class CreateArrowPyCapsuleNode extends PNodeWithContext {
+@TypeSystemReference(PythonIntegerTypes.class)
+public abstract class PyNumberFloorDivideFastPathsBase extends BinaryOpNode {
 
-    public abstract PTuple execute(Node inliningTarget, ArrowArray arrowArray, ArrowSchema arrowSchema);
+    /*
+     * All the following fast paths need to be kept in sync with the corresponding builtin functions
+     * in IntBuiltins, FloatBuiltins, ...
+     */
+    @Specialization(guards = "!specialCase(left, right)")
+    public static int doII(int left, int right) {
+        return Math.floorDiv(left, right);
+    }
 
-    @Specialization
-    static PTuple doArrowCArray(Node inliningTarget, ArrowArray arrowArray, ArrowSchema arrowSchema,
-                    @Cached PyCapsuleNewNode pyCapsuleNewNode) {
-        var ctx = getContext(inliningTarget);
-        long arrayDestructor = ctx.arrowSupport.getArrowArrayDestructor();
-        var arrayCapsuleName = new CArrayWrappers.CByteArrayWrapper(ArrowArray.CAPSULE_NAME);
-        PyCapsule arrowArrayCapsule = pyCapsuleNewNode.execute(inliningTarget, arrowArray.memoryAddr, arrayCapsuleName, arrayDestructor);
+    @Specialization(guards = "!specialCase(left, right)")
+    public static long doLL(long left, long right) {
+        return Math.floorDiv(left, right);
+    }
 
-        long schemaDestructor = ctx.arrowSupport.getArrowSchemaDestructor();
-        var schemaCapsuleName = new CArrayWrappers.CByteArrayWrapper(ArrowSchema.CAPSULE_NAME);
-        PyCapsule arrowSchemaCapsule = pyCapsuleNewNode.execute(inliningTarget, arrowSchema.memoryAddr, schemaCapsuleName, schemaDestructor);
+    @Specialization(guards = "!isZero(right)")
+    public static double doLD(long left, double right) {
+        return doDD(left, right);
+    }
 
-        return PFactory.createTuple(ctx.getLanguage(inliningTarget), new Object[]{arrowSchemaCapsule, arrowArrayCapsule});
+    @Specialization(guards = "right != 0")
+    public static double doDL(double left, long right) {
+        return doDD(left, right);
+    }
+
+    @Specialization(guards = "!isZero(right)")
+    public static double doDD(double left, double right) {
+        return Math.floor(left / right);
+    }
+
+    public static boolean specialCase(int left, int right) {
+        return right == 0 || left == Integer.MIN_VALUE && right == -1;
+    }
+
+    public static boolean specialCase(long left, long right) {
+        return right == 0 || left == Long.MIN_VALUE && right == -1;
+    }
+
+    public static boolean isZero(double right) {
+        return right == 0.0;
     }
 }

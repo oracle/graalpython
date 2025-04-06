@@ -63,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
-import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -122,8 +121,6 @@ public final class DropwhileBuiltins extends PythonBuiltins {
                 Object item = callIterNext.execute(frame, inliningTarget, iterNext, iterable);
                 if (self.isDoneDropping()) {
                     result = item;
-                } else if (PyIterNextNode.isExhausted(item)) {
-                    result = iteratorExhausted();
                 } else if (!isTrue.execute(frame, callNode.execute(frame, self.getPredicate(), item))) {
                     doneDroppingProfile.enter(inliningTarget);
                     self.setDoneDropping(true);

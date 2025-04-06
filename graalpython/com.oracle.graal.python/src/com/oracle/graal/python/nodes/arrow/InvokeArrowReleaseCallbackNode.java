@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,59 +38,63 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.arrow.vector;
+package com.oracle.graal.python.nodes.arrow;
 
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.POINTER_SIZE;
-
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.arrow.ArrowArray;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.arrow.ArrowUtil;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
-@GenerateCached(false)
-@GenerateInline
-public abstract class VectorToArrowArrayNode extends PNodeWithContext {
+@GenerateCached
+@GenerateInline(inlineByDefault = true)
+@GenerateUncached
+public abstract class InvokeArrowReleaseCallbackNode extends PNodeWithContext {
 
-    public abstract ArrowArray execute(Node inliningTarget, Object vector);
+    public abstract void execute(Node inliningTarget, long releaseCallback, long baseStructure);
 
-    @Specialization(guards = "ctx.arrowVectorSupport.isFixedWidthVector(vector)")
-    static ArrowArray doIntVector(Node inliningTarget, Object vector,
+    public final void executeCached(long releaseCallback, long baseStructure) {
+        execute(this, releaseCallback, baseStructure);
+    }
+
+    @Specialization
+    static void doIt(Node inliningTarget, long releaseCallback, long baseStructure,
                     @Bind("getContext(inliningTarget)") PythonContext ctx,
-                    @CachedLibrary(limit = "3") InteropLibrary interopLib) {
-        var snapshot = new ArrowArray.Snapshot();
-        var unsafe = ctx.getUnsafe();
+                    @Cached(value = "createReleaseCallbackSignature(ctx)", allowUncached = true) Object callbackSignature,
+                    @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
         try {
-            snapshot.length = (Integer) interopLib.invokeMember(vector, "getValueCount");
-            snapshot.null_count = (Integer) interopLib.invokeMember(vector, "getNullCount");
-            snapshot.n_buffers = (Integer) interopLib.invokeMember(vector, "getExportedCDataBufferCount");
-            if (snapshot.n_buffers != 2) {
-                throw CompilerDirectives.shouldNotReachHere(
-                                "We expect that Vector implementation to has just 2 buffers, those are validity buffer and value buffer. This should never happen unless arrow changes internally");
-            }
-            snapshot.buffers = unsafe.allocateMemory(2 * POINTER_SIZE);
-            long validityPointer = (long) interopLib.invokeMember(vector, "getValidityBufferAddress");
-            unsafe.putLong(snapshot.buffers, validityPointer);
-            long dataPointer = (long) interopLib.invokeMember(vector, "getDataBufferAddress");
-            unsafe.putLong(snapshot.buffers + POINTER_SIZE, dataPointer);
-            snapshot.release = ctx.arrowVectorSupport.getVectorArrowArrayReleaseCallback();
-
-            return ArrowArray.allocateFromSnapshot(snapshot);
+            signatureLibrary.call(callbackSignature, new NativePointer(releaseCallback), baseStructure);
         } catch (Exception e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw CompilerDirectives.shouldNotReachHere("Unable to convert vector to arrow array. Error: " + e.getMessage());
+            throw CompilerDirectives.shouldNotReachHere("Unable to call release callback. Error:", e);
         }
     }
 
-    @Fallback
-    static ArrowArray doError(Object object) {
-        throw CompilerDirectives.shouldNotReachHere();
+    static Object createReleaseCallbackSignature(PythonContext context) {
+        return ArrowUtil.createNfiSignature("(UINT64):VOID", context);
+    }
+
+    @GenerateCached(false)
+    @GenerateInline
+    @GenerateUncached
+    public abstract static class Lazy extends Node {
+        public final InvokeArrowReleaseCallbackNode get(Node inliningTarget) {
+            return execute(inliningTarget);
+        }
+
+        abstract InvokeArrowReleaseCallbackNode execute(Node inliningTarget);
+
+        @Specialization
+        static InvokeArrowReleaseCallbackNode doIt(@Cached(inline = false) InvokeArrowReleaseCallbackNode node) {
+            return node;
+        }
     }
 }

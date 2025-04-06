@@ -47,12 +47,14 @@ import static com.oracle.graal.python.builtins.modules.bz2.Bz2Nodes.errorHandlin
 import static com.oracle.graal.python.nodes.ErrorMessages.COMPRESSLEVEL_MUST_BE_BETWEEN_1_AND_9;
 import static com.oracle.graal.python.nodes.ErrorMessages.COMPRESSOR_HAS_BEEN_FLUSHED;
 import static com.oracle.graal.python.nodes.ErrorMessages.REPEATED_CALL_TO_FLUSH;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -61,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -84,12 +87,16 @@ import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = BZ2Compressor)
 public final class BZ2CompressorBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = BZ2CompressorBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BZ2CompressorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "compresslevel"})
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(name = "BZ2Compressor", minNumOfPositionalArgs = 1, parameterNames = {"$self", "compresslevel"})
     @ArgumentClinic(name = "compresslevel", conversion = ClinicConversion.Int, defaultValue = "9", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryClinicBuiltinNode {

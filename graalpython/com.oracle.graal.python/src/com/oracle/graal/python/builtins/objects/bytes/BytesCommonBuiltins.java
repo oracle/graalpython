@@ -44,7 +44,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.METHOD_REQUIRES_A_BYTE
 import static com.oracle.graal.python.nodes.ErrorMessages.SEP_MUST_BE_ASCII;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEP_MUST_BE_LENGTH_1;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_IGNORE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
@@ -343,25 +342,6 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                         @Cached BytesNodes.CreateBytesNode create) {
             SequenceStorage res = repeatNode.execute(frame, getBytesStorage.execute(inliningTarget, self), times);
             return create.execute(inliningTarget, self, res);
-        }
-    }
-
-    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class HashNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
-        static long hash(VirtualFrame frame, Object self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @CachedLibrary("self") PythonBufferAcquireLibrary acquireLib,
-                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached BytesNodes.HashBufferNode hashBufferNode) {
-            Object buffer = acquireLib.acquireReadonly(self, frame, indirectCallData);
-            try {
-                return hashBufferNode.execute(inliningTarget, buffer);
-            } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
-            }
         }
     }
 

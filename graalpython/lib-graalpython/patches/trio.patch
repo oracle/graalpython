@@ -1,0 +1,103 @@
+diff --git a/trio/_socket.py b/trio/_socket.py
+index 003f6c4..da7411c 100644
+--- a/trio/_socket.py
++++ b/trio/_socket.py
+@@ -317,9 +317,7 @@ def fromfd(
+     return from_stdlib_socket(_stdlib_socket.fromfd(fd, family, type_, proto))
+ 
+ 
+-if sys.platform == "win32" or (
+-    not TYPE_CHECKING and hasattr(_stdlib_socket, "fromshare")
+-):
++if hasattr(_stdlib_socket, "fromshare"):
+ 
+     @_wraps(_stdlib_socket.fromshare, assigned=(), updated=())
+     def fromshare(info: bytes) -> SocketType:
+@@ -606,9 +604,7 @@ class SocketType:
+     def set_inheritable(self, inheritable: bool) -> None:
+         raise NotImplementedError
+ 
+-    if sys.platform == "win32" or (
+-        not TYPE_CHECKING and hasattr(_stdlib_socket.socket, "share")
+-    ):
++    if hasattr(_stdlib_socket.socket, "share"):
+ 
+         def share(self, process_id: int) -> bytes:
+             raise NotImplementedError
+@@ -699,9 +695,7 @@ class SocketType:
+     ) -> Awaitable[tuple[int, AddressFormat]]:
+         raise NotImplementedError
+ 
+-    if sys.platform != "win32" or (
+-        not TYPE_CHECKING and hasattr(_stdlib_socket.socket, "recvmsg")
+-    ):
++    if hasattr(_stdlib_socket.socket, "recvmsg"):
+ 
+         def recvmsg(
+             self,
+@@ -712,9 +706,7 @@ class SocketType:
+         ) -> Awaitable[tuple[bytes, list[tuple[int, int, bytes]], int, object]]:
+             raise NotImplementedError
+ 
+-    if sys.platform != "win32" or (
+-        not TYPE_CHECKING and hasattr(_stdlib_socket.socket, "recvmsg_into")
+-    ):
++    if hasattr(_stdlib_socket.socket, "recvmsg_into"):
+ 
+         def recvmsg_into(
+             self,
+@@ -748,9 +740,7 @@ class SocketType:
+     async def sendto(self, *args: object) -> int:
+         raise NotImplementedError
+ 
+-    if sys.platform != "win32" or (
+-        not TYPE_CHECKING and hasattr(_stdlib_socket.socket, "sendmsg")
+-    ):
++    if hasattr(_stdlib_socket.socket, "sendmsg"):
+ 
+         @_wraps(_stdlib_socket.socket.sendmsg, assigned=(), updated=())
+         async def sendmsg(
+@@ -867,9 +857,7 @@ class _SocketType(SocketType):
+     def set_inheritable(self, inheritable: bool) -> None:
+         return self._sock.set_inheritable(inheritable)
+ 
+-    if sys.platform == "win32" or (
+-        not TYPE_CHECKING and hasattr(_stdlib_socket.socket, "share")
+-    ):
++    if hasattr(_stdlib_socket.socket, "share"):
+ 
+         def share(self, process_id: int) -> bytes:
+             return self._sock.share(process_id)
+@@ -1181,9 +1169,7 @@ class _SocketType(SocketType):
+     # recvmsg
+     ################################################################
+ 
+-    if sys.platform != "win32" or (
+-        not TYPE_CHECKING and hasattr(_stdlib_socket.socket, "recvmsg")
+-    ):
++    if hasattr(_stdlib_socket.socket, "recvmsg"):
+         if TYPE_CHECKING:
+ 
+             def recvmsg(
+@@ -1204,9 +1190,7 @@ class _SocketType(SocketType):
+     # recvmsg_into
+     ################################################################
+ 
+-    if sys.platform != "win32" or (
+-        not TYPE_CHECKING and hasattr(_stdlib_socket.socket, "recvmsg_into")
+-    ):
++    if hasattr(_stdlib_socket.socket, "recvmsg_into"):
+         if TYPE_CHECKING:
+ 
+             def recvmsg_into(
+@@ -1276,9 +1260,7 @@ class _SocketType(SocketType):
+     # sendmsg
+     ################################################################
+ 
+-    if sys.platform != "win32" or (
+-        not TYPE_CHECKING and hasattr(_stdlib_socket.socket, "sendmsg")
+-    ):
++    if hasattr(_stdlib_socket.socket, "sendmsg"):
+ 
+         @_wraps(_stdlib_socket.socket.sendmsg, assigned=(), updated=())
+         async def sendmsg(

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,48 +38,56 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.arrow.vector;
+package com.oracle.graal.python.lib.fastpath;
 
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.arrow.ArrowSchema;
-import com.oracle.graal.python.runtime.arrow.ArrowVectorSupport;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 
-import static com.oracle.graal.python.nodes.arrow.ArrowArray.NULL;
-
+/**
+ * Helper class with shared fast-paths. Must be public so that it is accessible by the Bytecode DSL
+ * generated code.
+ */
 @GenerateCached(false)
-@GenerateInline
-public abstract class VectorToArrowSchemaNode extends PNodeWithContext {
+@TypeSystemReference(PythonIntegerTypes.class)
+@ImportStatic(IntBuiltins.TrueDivNode.class)
+public abstract class PyNumberTrueDivideFastPathsBase extends BinaryOpNode {
 
-    public abstract ArrowSchema execute(Node inliningTarget, Object vector);
+    /*
+     * All the following fast paths need to be kept in sync with the corresponding builtin functions
+     * in IntBuiltins, FloatBuiltins, ...
+     */
 
-    @Specialization(guards = "arrowVectorSupport.isFixedWidthVector(vector)")
-    static ArrowSchema doIntVector(Node inliningTarget, Object vector,
-                    @Bind("getContext(inliningTarget)") PythonContext ctx,
-                    @Bind("ctx.arrowVectorSupport") ArrowVectorSupport arrowVectorSupport,
-                    @Cached GetFormatFromVectorNode formatNode) {
-        Object hostVector = ctx.getEnv().asHostObject(vector);
-        var unsafe = ctx.getUnsafe();
-        var snapshot = new ArrowSchema.Snapshot();
-        // + 1 NULL terminator
-        snapshot.format = unsafe.allocateMemory(2);
-        unsafe.putByte(snapshot.format, formatNode.execute(inliningTarget, hostVector));
-        unsafe.putByte(snapshot.format + 1, NULL);
-        snapshot.release = ctx.arrowSupport.getArrowSchemaReleaseCallback();
-
-        return ArrowSchema.allocateFromSnapshot(snapshot);
+    @Specialization(guards = "!isZero(right)")
+    public static double doDD(double left, double right) {
+        return left / right;
     }
 
-    @Fallback
-    static ArrowSchema doError(Object object) {
-        throw CompilerDirectives.shouldNotReachHere();
+    @Specialization(guards = "right != 0")
+    public static double doDL(double left, long right) {
+        return doDD(left, right);
+    }
+
+    @Specialization(guards = "!isZero(right)")
+    public static double doLD(long left, double right) {
+        return doDD(left, right);
+    }
+
+    @Specialization(guards = "right != 0")
+    public static double doII(int left, int right) {
+        return doDD(left, right);
+    }
+
+    @Specialization(guards = {"right != 0", "fitsIntoDouble(left)", "fitsIntoDouble(right)"})
+    public static double doLL(long left, long right) {
+        return doDD(left, right);
+    }
+
+    public static boolean isZero(double right) {
+        return right == 0.0;
     }
 }
