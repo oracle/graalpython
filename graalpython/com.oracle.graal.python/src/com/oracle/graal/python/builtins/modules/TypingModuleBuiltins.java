@@ -90,13 +90,13 @@ import com.oracle.graal.python.builtins.objects.typing.PParamSpecKwargs;
 import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVar;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVarTuple;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -113,7 +113,6 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -590,18 +589,15 @@ public class TypingModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object caller(VirtualFrame frame,
                         @Cached(inline = false) GetGlobalsNode getGlobalsNode,
-                        @Cached(value = "createCallNode()", inline = false) LookupAndCallTernaryNode callNode,
+                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethod,
                         @Cached(inline = false) ReadCallerFrameNode readCallerNode) {
             Reference currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
             PFrame pFrame = readCallerNode.executeWith(currentFrameInfo, 0);
             Object globals = getGlobalsNode.execute(frame, pFrame);
-            return callNode.execute(frame, globals, T___NAME__, PNone.NONE);
+
+            return callMethod.executeCached(frame, globals, T_GET, T___NAME__, PNone.NONE);
         }
 
-        @NeverDefault
-        static LookupAndCallTernaryNode createCallNode() {
-            return LookupAndCallTernaryNode.create(T_GET);
-        }
     }
 
     /**

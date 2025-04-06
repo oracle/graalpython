@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -103,8 +104,9 @@ public final class BatchedBuiltins extends PythonBuiltins {
             Object[] items = new Object[n];
             for (i = 0; i < n; i++) {
                 try {
-                    items[i] = nextNode.execute(frame, inliningTarget, it);
-                    if (PyIterNextNode.isExhausted(items[i])) {
+                    try {
+                        items[i] = nextNode.execute(frame, inliningTarget, it);
+                    } catch (IteratorExhausted e) {
                         if (i == 0) {
                             bo.it = null;
                             return TpIterNextBuiltin.iteratorExhausted();

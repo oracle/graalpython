@@ -2062,13 +2062,15 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             Object total = 0L;
             while (true) {
                 Object p_i = null, q_i = null;
-                p_i = nextNode.execute(frame, inliningTarget, p_it);
-                if (PyIterNextNode.isExhausted(p_i)) {
+                try {
+                    p_i = nextNode.execute(frame, inliningTarget, p_it);
+                } catch (IteratorExhausted e) {
                     p_stopped = true;
                 }
 
-                q_i = nextNode.execute(frame, inliningTarget, q_it);
-                if (PyIterNextNode.isExhausted(q_i)) {
+                try {
+                    q_i = nextNode.execute(frame, inliningTarget, q_it);
+                } catch (IteratorExhausted e) {
                     q_stopped = true;
                 }
 
@@ -2086,7 +2088,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                     // We're finished, overflowed, or have a non-int
                     int_path_enabled = false;
                     if (int_total_in_use) {
-                        total = pyNumberAddNode.execute(frame, inliningTarget, total, int_total[0]);
+                        total = pyNumberAddNode.execute(frame, total, int_total[0]);
                         int_total[0] = 0;   // An ounce of prevention, ...
                         int_total_in_use = false;
                     }
@@ -2102,7 +2104,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                     // We're finished, overflowed, have a non-float, or got a non-finite value
                     flt_path_enabled = false;
                     if (flt_total_in_use) {
-                        total = pyNumberAddNode.execute(frame, inliningTarget, total, tl_to_d(flt_total[0]));
+                        total = pyNumberAddNode.execute(frame, total, tl_to_d(flt_total[0]));
                         flt_total[0] = TL_ZERO;
                         flt_total_in_use = false;
                     }
@@ -2114,7 +2116,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                 if (finished) {
                     break; // goto normal_exit
                 }
-                total = pyNumberAddNode.execute(frame, inliningTarget, total, pyNumberMultiplyNode.execute(frame, inliningTarget, p_i, q_i));
+                total = pyNumberAddNode.execute(frame, total, pyNumberMultiplyNode.execute(frame, p_i, q_i));
             }
 
             // normal_exit

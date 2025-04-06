@@ -75,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.ordereddict.POrderedDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -390,8 +391,10 @@ public final class DictReprBuiltin extends PythonBuiltins {
             try {
                 Object iter = getIter.execute(frame, inliningTarget, oditems);
                 while (true) {
-                    Object next = nextNode.execute(frame, inliningTarget, iter);
-                    if (PyIterNextNode.isExhausted(next)) {
+                    Object next;
+                    try {
+                        next = nextNode.execute(frame, inliningTarget, iter);
+                    } catch (IteratorExhausted e) {
                         break;
                     }
                     if (CompilerDirectives.hasNextTier()) {

@@ -42,9 +42,7 @@ package com.oracle.graal.python.builtins.objects.typing;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_SUBCLASS_AN_INSTANCE_OF_PARAMSPEC_KWARGS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ORIGIN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MRO_ENTRIES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -58,7 +56,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -116,39 +116,22 @@ public final class ParamSpecKwargsBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBinaryBuiltinNode {
+    public abstract static class EqNode extends TpSlotRichCompare.RichCmpBuiltinNode {
 
         @Specialization
-        static Object doIt(VirtualFrame frame, PParamSpecKwargs self, PParamSpecKwargs other,
+        static Object doIt(VirtualFrame frame, PParamSpecKwargs self, PParamSpecKwargs other, RichCmpOp op,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
-            return eqNode.compare(frame, inliningTarget, self.origin, other.origin);
+                        @Cached PyObjectRichCompareBool eqNode) {
+            return eqNode.execute(frame, inliningTarget, self.origin, other.origin, op);
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        static PNotImplemented wrongTypes(Object self, Object other) {
+        static PNotImplemented wrongTypes(Object self, Object other, RichCmpOp op) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class NeNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object doIt(VirtualFrame frame, PParamSpecKwargs self, PParamSpecKwargs other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyObjectRichCompareBool.NeNode neNode) {
-            return neNode.compare(frame, inliningTarget, self.origin, other.origin);
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static PNotImplemented wrongTypes(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
 }
