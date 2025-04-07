@@ -94,19 +94,22 @@ public abstract class ErrorMessageFormatter {
         while (m.find(idx)) {
             String group = m.group();
             if ("%p".equals(group)) {
-                String name = getClassName(args[matchIdx]);
+                // %p is equivalent of CPython's Py_TYPE(o)->tp_name
+                String name = getClassTpName(args[matchIdx]);
                 sb.replace(m.start() + offset, m.end() + offset, name);
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
                 removedCnt++;
             } else if ("%P".equals(group)) {
-                String name = "<class \'" + getClassName(args[matchIdx]) + "\'>";
+                // %p is equivalent of CPython's _PyType_Name(Py_TYPE(o))
+                String name = getClassTypeName(args[matchIdx]);
                 sb.replace(m.start() + offset, m.end() + offset, name);
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
                 removedCnt++;
             } else if ("%N".equals(group)) {
-                String name = getClassNameOfClass(args[matchIdx]);
+                // %N is equivalent of CPython's t->tp_name
+                String name = getTpName(args[matchIdx]);
                 sb.replace(m.start() + offset, m.end() + offset, name);
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
@@ -143,11 +146,15 @@ public abstract class ErrorMessageFormatter {
         return message;
     }
 
-    private static String getClassName(Object obj) {
-        return getClassNameOfClass(GetClassNode.executeUncached(obj));
+    private static String getClassTpName(Object obj) {
+        return getTpName(GetClassNode.executeUncached(obj));
     }
 
-    private static String getClassNameOfClass(Object type) {
+    private static String getClassTypeName(Object obj) {
+        return TypeNodes.GetNameNode.executeUncached(GetClassNode.executeUncached(obj)).toJavaStringUncached();
+    }
+
+    private static String getTpName(Object type) {
         return TypeNodes.GetTpNameNode.executeUncached(type).toJavaStringUncached();
     }
 

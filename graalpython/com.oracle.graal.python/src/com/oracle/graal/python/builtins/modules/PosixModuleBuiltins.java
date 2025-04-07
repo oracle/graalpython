@@ -3355,7 +3355,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 Object o = indexNode.execute(frame, inliningTarget, value);
                 return doFdLong(castToLongNode.execute(inliningTarget, o), inliningTarget, raiseNode);
             } else {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, value);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE_T, value);
             }
         }
 

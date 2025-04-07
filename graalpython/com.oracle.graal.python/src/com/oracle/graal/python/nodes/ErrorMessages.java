@@ -83,6 +83,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ARG_MUST_NOT_BE_EMPTY = tsLiteral("%s arg %d must not be empty");
     public static final TruffleString ARG_NOT_IN_RANGE = tsLiteral("%s arg not in range(%s)");
     public static final TruffleString ARG_SHOULD_BE_INT_OR_NONE = tsLiteral("argument should be integer or None, not %p");
+    public static final TruffleString ARG_SHOULD_BE_INT_OR_NONE_T = tsLiteral("argument should be integer or None, not %P");
     public static final TruffleString ARGS_CHANGED_DURING_ITERATION = tsLiteral("args changed during iteration");
     public static final TruffleString ARGS_MUST_HAVE_SAME_LENGTH = tsLiteral("%s arguments must have same length");
     public static final TruffleString ARG_SHOULD_BE_BYTES_BUFFER_OR_ASCII_NOT_P = tsLiteral("argument should be bytes, buffer or ASCII string, not '%p'");
@@ -301,7 +302,7 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTED_BYTES_P_FOUND = tsLiteral("expected bytes, %p found");
     public static final TruffleString EXPECTED_CHARACTER_BUT_STRING_FOUND = tsLiteral("%s expected a character, but string of length %d found");
     public static final TruffleString EXPECTED_CONVERSION = tsLiteral("expected conversion");
-    public static final TruffleString EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES = tsLiteral("expected %p.__fspath__() to return str or bytes, not %p");
+    public static final TruffleString EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES = tsLiteral("expected %p.__fspath__() to return str or bytes, not %P");
     public static final TruffleString EXPECTED_OBJ_TYPE_S_GOT_P = tsLiteral("expected object of type %s, got %p");
     public static final TruffleString EXPECTED_OBJ_TYPE_P_GOT_P = tsLiteral("expected object of type %p, got %p");
     public static final TruffleString EXPECTED_S_GOT_P = tsLiteral("expected %s, got %p");
@@ -310,7 +311,7 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTED_S_AFTER_FORMAT_CONVERSION = tsLiteral("expected '%s' after conversion specifier");
     public static final TruffleString EXPECTED_S_NODE_GOT_P = tsLiteral("expected %s node, got %p");
     public static final TruffleString EXPECTED_SOME_SORT_OF_S_BUT_GOT_S = tsLiteral("expected some sort of %s, but got %s");
-    public static final TruffleString EXPECTED_STR_BYTE_OSPATHLIKE_OBJ = tsLiteral("expected str, bytes or os.PathLike object, not %p");
+    public static final TruffleString EXPECTED_STR_BYTE_OSPATHLIKE_OBJ = tsLiteral("expected str, bytes or os.PathLike object, not %P");
     public static final TruffleString EXPECTED_STR_OR_BYTESLIKE_OBJ = tsLiteral("expected string or bytes-like object");
     public static final TruffleString S_EXPECTED_STRING_OF_LEN_BUT_P = tsLiteral("%s expected string of length %s, but %p found");
     public static final TruffleString EXPECTED_UNICODE_CHAR_NOT_P = tsLiteral("expected a unicode character, not %p");
@@ -533,7 +534,7 @@ public abstract class ErrorMessages {
     public static final TruffleString MUST_BE_STRING_QUOTED = tsLiteral("\"%s\" must be a string");
     public static final TruffleString MUST_BE_STRINGS_NOT_P = tsLiteral("%s must be strings, not %p");
     public static final TruffleString MUST_BE_TUPLE_OF_CLASSES_NOT_P = tsLiteral("%N.%s must be tuple of classes, not '%p'");
-    public static final TruffleString MUST_RETURN_2TUPLE = tsLiteral("%p.__divmod__() must return a 2-tuple, not %p");
+    public static final TruffleString MUST_RETURN_2TUPLE = tsLiteral("%p.__divmod__() must return a 2-tuple, not %P");
     public static final TruffleString S_MUST_RETURN_TUPLE = tsLiteral("%s must return a tuple (object, integer)");
     public static final TruffleString MUST_S_ITER_RETURN_2TUPLE = tsLiteral("%s iterator must return 2-tuples");
     public static final TruffleString S_MUST_RETURN_S_NOT_P = tsLiteral("%s must return a %s, not %p");
@@ -632,7 +633,7 @@ public abstract class ErrorMessages {
     public static final TruffleString S_FORMAT_INTEGER_IS_REQUIRED_NOT_S = tsLiteral("%%%s format: an integer is required, not %p");
     public static final TruffleString C_ARG_NOT_IN_RANGE256_DECIMAL = tsLiteral("%%c arg not in range(256)");
     public static final TruffleString C_REQUIRES_INT_IN_BYTE_RANGE_OR_SINGLE_BYTE = tsLiteral("%%c requires an integer in range(256) or a single byte");
-    public static final TruffleString REQUIRES_STRING_AS_LEFT_OPERAND = tsLiteral("'in <string>' requires string as left operand, not %P");
+    public static final TruffleString REQUIRES_STRING_AS_LEFT_OPERAND = tsLiteral("'in <string>' requires string as left operand, not %p");
     public static final TruffleString REQUIRES_STR_OBJECT_BUT_RECEIVED_P = tsLiteral("'%s' requires a 'str' object but received a '%p'");
     public static final TruffleString REQUIRED_FIELD_S_MISSING_FROM_S = tsLiteral("required field \"%s\" missing from %s");
     public static final TruffleString S_RETURNED_BASE_WITH_UNSUITABLE_LAYOUT = tsLiteral("%s returned base with unsuitable layout ('%p')");
@@ -660,7 +661,7 @@ public abstract class ErrorMessages {
     public static final TruffleString SHOULD_BE_USED_ONLY_NEW_SETS = tsLiteral("Should be used only on newly allocated empty sets");
     public static final TruffleString S_MUST_BE_S = tsLiteral("%s must be %s");
     public static final TruffleString S_NOT_SUPPORTED = tsLiteral("%s not supported");
-    public static final TruffleString S_S_SHOULD_BE_S_NOT_P = tsLiteral("%s%s should be %s, not %p");
+    public static final TruffleString S_S_SHOULD_BE_S_NOT_P = tsLiteral("%s%s should be %s, not %P");
     public static final TruffleString S_S_CONFLICTS_WITH_CLASS_VARIABLE = tsLiteral("'%s' in %s conflicts with class variable");
     public static final TruffleString S_SHOULD_BE_ASCII_OR_BYTELIKE = tsLiteral("%s should be an ASCII string or a bytes-like object");
     public static final TruffleString S_FLOWINFO_RANGE = tsLiteral("%s(): flowinfo must be 0-1048575.");
@@ -960,7 +961,7 @@ public abstract class ErrorMessages {
     public static final TruffleString WARN_MUST_BE_SET_CALLABLE = tsLiteral("warnings._showwarnmsg() must be set to a callable");
     public static final TruffleString UNABLE_GET_WARN_MSG = tsLiteral("unable to get warnings.WarningMessage");
     public static final TruffleString REGISTRY_MUST_BE_DICT = tsLiteral("'registry' must be a dict or None");
-    public static final TruffleString CATEGORY_MUST_BE_WARN_SUBCLS = tsLiteral("category must be a Warning subclass, not '%P'");
+    public static final TruffleString CATEGORY_MUST_BE_WARN_SUBCLS = tsLiteral("category must be a Warning subclass, not '%p'");
     public static final TruffleString INVALID_FILTER_SPECIFIED_FOR_FILTER = tsLiteral("Invalid filter specifier for %s filter");
     public static final TruffleString UNSUPPORTED_INTEGRITY_CHECK = tsLiteral("Unsupported integrity check");
     public static final TruffleString MEM_USAGE_LIMIT_EXCEEDED = tsLiteral("Memory usage limit exceeded");
