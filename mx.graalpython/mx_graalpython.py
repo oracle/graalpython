@@ -62,6 +62,7 @@ import mx_unittest
 import mx_sdk
 import mx_sdk_vm_ng
 import mx_subst
+import mx_truffle
 import mx_graalpython_bisect
 import mx_graalpython_import
 import mx_graalpython_python_benchmarks
@@ -248,7 +249,7 @@ def is_ee():
 
 # Called from suite.py
 def graalpy_standalone_deps():
-    deps = mx_sdk_vm_ng.resolve_truffle_dist_names()
+    deps = mx_truffle.resolve_truffle_dist_names()
     return deps
 
 
