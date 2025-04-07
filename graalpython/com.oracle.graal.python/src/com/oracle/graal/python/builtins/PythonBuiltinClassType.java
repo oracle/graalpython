@@ -1317,7 +1317,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         this.base = base;
         this.publishInModule = toTruffleStringUncached(builder.publishInModule);
         this.moduleName = builder.moduleName != null ? toTruffleStringUncached(builder.moduleName) : null;
-        if (builder.moduleName != null && builder.moduleName != J_BUILTINS) {
+        if (builder.moduleName != null && !J_BUILTINS.equals(builder.moduleName)) {
             printName = toTruffleStringUncached(builder.moduleName + "." + name);
         } else {
             printName = this.name;
