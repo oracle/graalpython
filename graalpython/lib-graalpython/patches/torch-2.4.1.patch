@@ -537,6 +537,20 @@ index c301da982..a2668be20 100644
 +const int THP_PyOpcode_Caches_size = 0;
 +
 +#endif // GraalPy change
+diff --git a/torch/csrc/dynamo/extra_state.c b/torch/csrc/dynamo/extra_state.c
+index cbe9ab37a..18740a0d8 100644
+--- a/torch/csrc/dynamo/extra_state.c
++++ b/torch/csrc/dynamo/extra_state.c
+@@ -100,9 +100,6 @@ void destroy_extra_state(void* obj) {
+ }
+ 
+ void set_extra_state(PyCodeObject* code, ExtraState* extra_state) {
+-  ExtraState* old_extra_state = get_extra_state(code);
+-  CHECK(extra_state == nullptr || old_extra_state != extra_state);
+-  _PyCode_SetExtra((PyObject*)code, extra_index, extra_state);
+ }
+ 
+ ExtraState* init_and_set_extra_state(PyCodeObject* code) {
 diff --git a/torch/csrc/dynamo/eval_frame.c b/torch/csrc/dynamo/eval_frame.c
 index cbe9ab37a..18740a0d8 100644
 --- a/torch/csrc/dynamo/eval_frame.c
