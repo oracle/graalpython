@@ -95,7 +95,6 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -121,19 +120,27 @@ public final class TpSlotVarargs {
         final int callTargetIndex = TpSlotBuiltinCallTargetRegistry.getNextCallTargetIndex();
         private final String name;
         private final TruffleString tsName;
-        /*
-         * TODO these should be just final, but we currently can't initialize them in the
-         * constructor because of circular dependency between @Builtin and PBCT.nil
-         */
-        @CompilationFinal boolean directInvocation;
-        @CompilationFinal Signature signature;
-        @CompilationFinal Object[] defaults;
-        @CompilationFinal PKeyword[] kwDefaults;
+        protected final boolean directInvocation;
+        protected final Signature signature;
+        protected final Object[] defaults;
+        protected final PKeyword[] kwDefaults;
 
         protected TpSlotVarargsBuiltin(NodeFactory<T> nodeFactory, String name) {
+            this(nodeFactory, name, false);
+        }
+
+        protected TpSlotVarargsBuiltin(NodeFactory<T> nodeFactory, String name, boolean takesClass) {
             super(nodeFactory);
             this.name = name;
             this.tsName = PythonUtils.tsLiteral(name);
+            Class<T> nodeClass = getNodeFactory().getNodeClass();
+            SlotSignature slotSignature = nodeClass.getAnnotation(SlotSignature.class);
+            Slot2Builtin builtin = new Slot2Builtin(slotSignature, name, null);
+            signature = BuiltinFunctionRootNode.createSignature(getNodeFactory(), builtin, true, takesClass);
+            defaults = PBuiltinFunction.generateDefaults(PythonBuiltins.numDefaults(builtin));
+            kwDefaults = PBuiltinFunction.generateKwDefaults(signature);
+            directInvocation = PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass) || //
+                            PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonVarargsBuiltinNode.class.isAssignableFrom(nodeClass);
         }
 
         final PythonBuiltinBaseNode createSlotNodeIfDirect() {
@@ -156,20 +163,8 @@ public final class TpSlotVarargs {
             return tsName;
         }
 
-        protected boolean takesClass() {
-            return false;
-        }
-
         @Override
         public final void initialize(PythonLanguage language) {
-            Class<T> nodeClass = getNodeFactory().getNodeClass();
-            SlotSignature slotSignature = nodeClass.getAnnotation(SlotSignature.class);
-            Slot2Builtin builtin = new Slot2Builtin(slotSignature, name, null);
-            signature = BuiltinFunctionRootNode.createSignature(getNodeFactory(), builtin, true, takesClass());
-            defaults = PBuiltinFunction.generateDefaults(PythonBuiltins.numDefaults(builtin));
-            kwDefaults = PBuiltinFunction.generateKwDefaults(signature);
-            directInvocation = PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass) || //
-                            PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonVarargsBuiltinNode.class.isAssignableFrom(nodeClass);
             RootCallTarget callTarget = createSlotCallTarget(language, null, getNodeFactory(), name);
             language.setBuiltinSlotCallTarget(callTargetIndex, callTarget);
         }
@@ -183,12 +178,7 @@ public final class TpSlotVarargs {
     public abstract static class TpSlotNewBuiltin<T extends PythonBuiltinBaseNode> extends TpSlotVarargsBuiltin<T> {
 
         protected TpSlotNewBuiltin(NodeFactory<T> nodeFactory) {
-            super(nodeFactory, J___NEW__);
-        }
-
-        @Override
-        protected boolean takesClass() {
-            return true;
+            super(nodeFactory, J___NEW__, true);
         }
 
         @Override
