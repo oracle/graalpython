@@ -249,8 +249,6 @@ def is_ee():
 # Called from suite.py
 def graalpy_standalone_deps():
     deps = mx_sdk_vm_ng.resolve_truffle_dist_names()
-    if is_ee():
-        deps += ['sulong-managed:SULONG_ENTERPRISE_NATIVE']
     return deps
 
 

@@ -1,5 +1,5 @@
 DYNAMIC_IMPORTS=/tools,/compiler,/substratevm
 BUILD_TARGETS=GRAALPY_JVM_STANDALONE
 COMPONENTS=LibGraal
-NATIVE_IMAGES=lib:jvmcicompiler,lib:nativetoolchainwrappers
+NATIVE_IMAGES=lib:jvmcicompiler
 GRAALVM_SKIP_ARCHIVE=true

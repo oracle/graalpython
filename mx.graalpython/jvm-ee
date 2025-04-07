@@ -1,5 +1,2 @@
-DYNAMIC_IMPORTS=/tools,/graal-enterprise,/truffle-enterprise,/vm-enterprise,/sulong-managed,/substratevm-enterprise
+DYNAMIC_IMPORTS=/tools,/graal-enterprise,/truffle-enterprise,/vm-enterprise
 BUILD_TARGETS=GRAALPY_JVM_STANDALONE
-COMPONENTS=SubstrateVM Enterprise
-NATIVE_IMAGES=lib:nativetoolchainwrappers
-GRAALVM_SKIP_ARCHIVE=true

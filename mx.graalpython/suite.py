@@ -823,9 +823,6 @@ suite = {
             "class": "LanguageLibraryProject",
             "dependencies": [
                 "GRAALPY_STANDALONE_DEPENDENCIES",
-                # LLVM_NATIVE_COMMUNITY is intentionally not used as that would include SULONG_NATIVE_RESOURCES,
-                # which would copy the resources in the image, regardless of IncludeLanguageResources,
-                # see com.oracle.truffle.llvm.nativemode.resources.NativeResourceFeature.
             ],
             "buildDependencies": [
                 "GRAALPY_STANDALONE_COMMON",
@@ -1432,9 +1429,6 @@ suite = {
                 "graalpython:BOUNCYCASTLE-PROVIDER",
                 "graalpython:BOUNCYCASTLE-PKIX",
                 "graalpython:BOUNCYCASTLE-UTIL",
-                "sulong:SULONG_NATIVE",
-                "sulong:SULONG_NFI",
-                "sulong:SULONG_TOOLCHAIN_LAUNCHERS",
                 "sdk:TOOLS_FOR_STANDALONE",
             ],
             "dynamicDistDependencies": "graalpy_standalone_deps",

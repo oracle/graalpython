@@ -1,6 +1,6 @@
 DYNAMIC_IMPORTS=/tools,/compiler,/substratevm
 BUILD_TARGETS=GRAALPY_NATIVE_STANDALONE
 COMPONENTS=SubstrateVM,Truffle SVM Macro
-NATIVE_IMAGES=lib:pythonvm,lib:nativetoolchainwrappers
+NATIVE_IMAGES=lib:pythonvm
 GENERATE_DEBUGINFO=false
 GRAALVM_SKIP_ARCHIVE=true
