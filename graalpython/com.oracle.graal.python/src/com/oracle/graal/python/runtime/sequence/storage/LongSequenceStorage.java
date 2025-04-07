@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,9 +25,10 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.truffle.api.CompilerDirectives;
-
 import java.util.Arrays;
+
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 
 public final class LongSequenceStorage extends ArrayBasedSequenceStorage {
 
@@ -56,7 +57,7 @@ public final class LongSequenceStorage extends ArrayBasedSequenceStorage {
     }
 
     private void increaseCapacityExactWithCopy(int newCapacity) {
-        values = Arrays.copyOf(values, newCapacity);
+        values = PythonUtils.arrayCopyOf(values, newCapacity);
         capacity = values.length;
     }
 
