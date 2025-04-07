@@ -643,11 +643,13 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     if standalone_type == 'jvm':
         env_file = 'jvm-ee-libgraal' if enterprise else 'jvm-ce-libgraal'
         standalone_dist = 'GRAALPY_JVM_STANDALONE'
+        if "GraalVM" in subprocess.check_output([get_jdk().java, '-version'], stderr=subprocess.STDOUT, text=True):
+            env_file = ""
     else:
         env_file = 'native-ee' if enterprise else 'native-ce'
         standalone_dist = 'GRAALPY_NATIVE_STANDALONE'
 
-    mx_args = ['-p', SUITE.dir, '--env', env_file]
+    mx_args = ['-p', SUITE.dir, *(['--env', env_file] if env_file else [])]
     mx_args.append("--extra-image-builder-argument=-g")
     if BUILD_NATIVE_IMAGE_WITH_ASSERTIONS:
         mx_args.append("--extra-image-builder-argument=-ea")
