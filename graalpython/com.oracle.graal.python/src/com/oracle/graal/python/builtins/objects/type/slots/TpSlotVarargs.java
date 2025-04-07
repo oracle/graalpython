@@ -84,6 +84,7 @@ import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -140,7 +141,8 @@ public final class TpSlotVarargs {
             defaults = PBuiltinFunction.generateDefaults(PythonBuiltins.numDefaults(builtin));
             kwDefaults = PBuiltinFunction.generateKwDefaults(signature);
             directInvocation = PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass) || //
-                            PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonVarargsBuiltinNode.class.isAssignableFrom(nodeClass);
+                            PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonVarargsBuiltinNode.class.isAssignableFrom(nodeClass) || //
+                            PythonQuaternaryBuiltinNode.class.isAssignableFrom(nodeClass);
         }
 
         final PythonBuiltinBaseNode createSlotNodeIfDirect() {
@@ -218,12 +220,19 @@ public final class TpSlotVarargs {
                         return unaryBuiltinNode.execute(frame, self);
                     }
                 } else if (slotNode instanceof PythonBinaryBuiltinNode binaryBuiltinNode) {
-                    if (keywords.length == 0 && (args.length == 1 || args.length == 0 && cachedSlot.getDefaults().length >= 1)) {
+                    if (keywords.length == 0 && (args.length == 1 || args.length + cachedSlot.getDefaults().length >= 1 && args.length <= 1)) {
                         return binaryBuiltinNode.execute(frame, self, args.length == 1 ? args[0] : PNone.NO_VALUE);
                     }
                 } else if (slotNode instanceof PythonTernaryBuiltinNode ternaryBuiltinNode) {
-                    if (keywords.length == 0 && (args.length == 2 || args.length == 1 && cachedSlot.getDefaults().length >= 1 || args.length == 0 && cachedSlot.getDefaults().length >= 2)) {
-                        return ternaryBuiltinNode.execute(frame, self, args.length >= 1 ? args[0] : PNone.NO_VALUE, (args.length == 2) ? args[1] : PNone.NO_VALUE);
+                    if (keywords.length == 0 && (args.length == 2 || args.length + cachedSlot.getDefaults().length >= 2 && args.length <= 2)) {
+                        return ternaryBuiltinNode.execute(frame, self, args.length >= 1 ? args[0] : PNone.NO_VALUE, args.length == 2 ? args[1] : PNone.NO_VALUE);
+                    }
+                } else if (slotNode instanceof PythonQuaternaryBuiltinNode quaternaryBuiltinNode) {
+                    if (keywords.length == 0 && (args.length == 3 || args.length + cachedSlot.getDefaults().length >= 3 && args.length <= 3)) {
+                        return quaternaryBuiltinNode.execute(frame, self,
+                                        args.length >= 1 ? args[0] : PNone.NO_VALUE,
+                                        args.length >= 2 ? args[1] : PNone.NO_VALUE,
+                                        args.length == 3 ? args[2] : PNone.NO_VALUE);
                     }
                 } else if (slotNode instanceof PythonVarargsBuiltinNode varargsBuiltinNode) {
                     return varargsBuiltinNode.execute(frame, self, args, keywords);
