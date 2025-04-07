@@ -168,6 +168,7 @@ import com.oracle.graal.python.nodes.bytecode.GetYieldFromIterNode;
 import com.oracle.graal.python.nodes.bytecode.ImportFromNode;
 import com.oracle.graal.python.nodes.bytecode.ImportNode;
 import com.oracle.graal.python.nodes.bytecode.ImportStarNode;
+import com.oracle.graal.python.nodes.bytecode.MatchKeysNode;
 import com.oracle.graal.python.nodes.bytecode.PrintExprNode;
 import com.oracle.graal.python.nodes.bytecode.RaiseNode;
 import com.oracle.graal.python.nodes.bytecode.SetupAnnotationsNode;
@@ -1121,6 +1122,25 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             printExprNode.execute(frame, object);
         }
     }
+
+    @Operation
+    public static final class MatchKeys {
+        @Specialization
+        public static Object perform(VirtualFrame frame, Object map, Object[] keys, @Cached MatchKeysNode node) {
+            Object[] rv = new Object[2];
+            rv[0] = node.execute(frame, map, keys) != PNone.NONE;
+            rv[1] = node.execute(frame, map, keys);
+            return rv;
+        }
+    }
+
+//    @Operation
+//    public static final class CheckNone {
+//        @Specialization
+//        public static boolean perform(VirtualFrame frame, Object o) {
+//            return o != PNone.NONE;
+//        }
+//    }
 
     @Operation
     @ConstantOperand(type = TruffleString.class, name = "name")

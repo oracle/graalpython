@@ -70,6 +70,7 @@ import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.compiler.Unparser;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerContext;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerResult;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
@@ -3641,7 +3642,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             } else if (pattern instanceof PatternTy.MatchClass matchClass) {
                 doVisitPattern(matchClass);
             } else if (pattern instanceof PatternTy.MatchMapping matchMapping) {
-                doVisitPattern(matchMapping);
+                doVisitPattern(matchMapping, pc);
             } else if (pattern instanceof PatternTy.MatchOr matchOr) {
                 doVisitPattern(matchOr, pc);
             } else if (pattern instanceof PatternTy.MatchSequence matchSequence) {
@@ -3701,8 +3702,155 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             emitPatternNotImplemented("class");
         }
 
-        private void doVisitPattern(PatternTy.MatchMapping node) {
-            emitPatternNotImplemented("mapping");
+        private static int lengthOrZero(Object[] p) {
+            return p == null ? 0 : p.length;
+        }
+
+        private void doVisitPattern(PatternTy.MatchMapping node, PatternContext pc) {
+            ExprTy[] keys = node.keys;
+            PatternTy[] patterns = node.patterns;
+
+            int key_len = lengthOrZero(keys);
+            int pat_len = lengthOrZero(patterns);
+
+            if (key_len != pat_len) {
+                ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "keys (%d) / patterns (%d) length mismatch in mapping pattern", key_len, pat_len);
+            }
+
+            String starTarget = node.rest;
+            if (key_len == 0 && starTarget == null) {
+                b.emitLoadConstant(false);
+                return;
+            }
+            if (Integer.MAX_VALUE < key_len - 1) {
+                ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "too many sub-patterns in mapping pattern");
+            }
+
+            b.beginPrimitiveBoolAnd(); // AND for sanity checks (length matching, etc.)
+
+            if (key_len > 0) {
+                // If the pattern has any keys in it, perform a length check:
+                b.beginGe();
+                b.beginGetLen();
+                b.emitLoadLocal(pc.subject);
+                b.endGetLen();
+                b.emitLoadConstant(key_len);
+                b.endGe();
+            }
+
+            b.beginBlock();
+
+            // save pc.subject
+            BytecodeLocal pc_save = b.createLocal();
+            b.beginStoreLocal(pc_save);
+            b.emitLoadLocal(pc.subject);
+            b.endStoreLocal();
+
+            // check that type matches
+            b.beginCheckTypeFlags(TypeFlags.MAPPING);
+            b.emitLoadLocal(pc.subject);
+            b.endCheckTypeFlags();
+
+            // match keys and get array of values
+            BytecodeLocal keys_local = b.createLocal();
+            b.beginStoreLocal(keys_local);
+            b.beginCollectToObjectArray();
+            List<Object> seen = new ArrayList<>();
+            for (int i = 0; i < key_len; i++) {
+                ExprTy key = keys[i];
+                if (key instanceof ExprTy.Attribute) {
+                    key.accept(this);
+                } else {
+                    ConstantValue constantValue = null;
+                    if (key instanceof ExprTy.UnaryOp || key instanceof ExprTy.BinOp) {
+                        constantValue = foldConstantOp(key);
+                    } else if (key instanceof ExprTy.Constant) {
+                        constantValue = ((ExprTy.Constant) key).value;
+                    } else {
+                        ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "mapping pattern keys may only match literals and attribute lookups");
+                    }
+                    assert constantValue != null;
+                    Object pythonValue = PythonUtils.pythonObjectFromConstantValue(constantValue);
+                    for (Object o : seen) {
+                        // need python like equal - e.g. 1 equals True
+                        if (PyObjectRichCompareBool.executeEqUncached(o, pythonValue)) {
+                            ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "mapping pattern checks duplicate key (%s)", pythonValue);
+                        }
+                    }
+                    seen.add(pythonValue);
+                    createConstant(constantValue);
+                }
+            }
+            b.endCollectToObjectArray();
+            b.endStoreLocal();
+
+            // save match result AND values
+            BytecodeLocal key_match_and_values = b.createLocal();
+            b.beginStoreLocal(key_match_and_values);
+            b.beginMatchKeys();
+            b.emitLoadLocal(pc.subject);
+            b.emitLoadLocal(keys_local);
+            b.endMatchKeys();
+            b.endStoreLocal();
+
+            BytecodeLocal temp = b.createLocal();
+            b.beginStoreLocal(temp);
+
+            b.beginPrimitiveBoolAnd(); // AND keys and values
+
+            // emit if everything matched
+            b.beginArrayIndex(0);
+            b.emitLoadLocal(key_match_and_values);
+            b.endArrayIndex();
+
+            b.beginBlock();
+
+            // unpack values from pc.subject
+            BytecodeLocal values_unpacked = b.createLocal();
+            b.beginStoreLocal(values_unpacked);
+            b.beginUnpackSequence(pat_len);
+            b.beginArrayIndex(1);
+            b.emitLoadLocal(key_match_and_values);
+            b.endArrayIndex();
+            b.endUnpackSequence();
+            b.endStoreLocal();
+
+            b.beginPrimitiveBoolAnd(); // AND for sub-pats
+
+            for (int i = 0; i < pat_len; i++) {
+                b.beginBlock();
+
+                b.beginStoreLocal(pc.subject);
+                b.beginArrayIndex(i);
+                b.emitLoadLocal(values_unpacked);
+                b.endArrayIndex();
+                b.endStoreLocal();
+
+                visitSubpattern(patterns[i], pc);
+
+                b.endBlock();
+            }
+
+            b.emitLoadConstant(true);
+
+            b.endPrimitiveBoolAnd(); // AND for sub-pats
+
+            b.endBlock();
+
+            b.endPrimitiveBoolAnd(); // AND keys and values
+
+            b.endStoreLocal(); // temp
+
+            // restore saved pc.subject
+            b.beginStoreLocal(pc.subject);
+            b.emitLoadLocal(pc_save);
+            b.endStoreLocal();
+
+            b.emitLoadLocal(temp);
+
+            b.endBlock();
+
+            b.endPrimitiveBoolAnd(); // AND for sanity checks (length matching, etc.)
         }
 
         private void checkAlternativePatternDifferentNames(Set<String> control, Map<String, BytecodeLocal> bindVariables) {
