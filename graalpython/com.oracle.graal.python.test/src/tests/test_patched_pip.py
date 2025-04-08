@@ -88,7 +88,7 @@ if sys.implementation.name == "graalpy":
             cls.venv_dir = Path(tempfile.mkdtemp()).resolve()
             subprocess.check_output([sys.executable, "-m", "venv", str(cls.venv_dir)])
             cls.venv_python = str(cls.venv_dir / 'bin' / 'python')
-            subprocess.check_output([cls.venv_python, '-m', 'pip', 'install', 'wheel'])
+            subprocess.check_output([cls.venv_python, '-m', 'pip', 'install', 'wheel', 'setuptools'])
             cls.venv_template_dir = f'{cls.venv_dir}.template'
             cls.venv_dir.rename(cls.venv_template_dir)
             cls.build_dir = Path(tempfile.mkdtemp()).resolve()
