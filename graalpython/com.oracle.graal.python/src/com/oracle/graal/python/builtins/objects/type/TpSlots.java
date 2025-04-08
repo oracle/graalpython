@@ -1560,7 +1560,7 @@ public record TpSlots(TpSlot nb_bool, //
                         useGeneric = true;
                     }
                 } else if (slot == TpSlotMeta.TP_NEW && descr instanceof PBuiltinMethod method && method.getBuiltinFunction().getSlot() != null &&
-                                !(slots.get(TpSlotMeta.TP_NEW) instanceof TpSlotPythonSingle)) {
+                                !(slots.get(TpSlotMeta.TP_NEW) instanceof TpSlotPython)) {
                     /*
                      * From CPython: The __new__ wrapper is not a wrapper descriptor, so must be
                      * special-cased differently. If we don't do this, creating an instance will
@@ -1752,14 +1752,6 @@ public record TpSlots(TpSlot nb_bool, //
         return new Builder();
     }
 
-    public static TpSlots merge(TpSlots a, TpSlots b) {
-        return a.copy().merge(b).build();
-    }
-
-    public static TpSlots merge(TpSlots a, TpSlots b, TpSlots c) {
-        return a.copy().merge(b).merge(c).build();
-    }
-
     public static final class Builder {
         private final TpSlot[] values = new TpSlot[TpSlotMeta.VALUES.length];
         private final boolean[] explicitGroups = new boolean[TpSlotGroup.VALID_VALUES.length];
@@ -1836,22 +1828,6 @@ public record TpSlots(TpSlot nb_bool, //
                 return hash != null;
             }
             return true;
-        }
-
-        /**
-         * Should be used when merging together generated slots from two or more
-         * {@link com.oracle.graal.python.builtins.PythonBuiltins}. Checks that slots are not
-         * overriding each other.
-         */
-        public Builder merge(TpSlots other) {
-            for (TpSlotMeta def : TpSlotMeta.VALUES) {
-                TpSlot current = values[def.ordinal()];
-                TpSlot otherValue = def.getter.get(other);
-                if (otherValue != null) {
-                    set(def, otherValue);
-                }
-            }
-            return this;
         }
 
         private TpSlot fistNonNull(TpSlotMeta a, TpSlotMeta b) {
