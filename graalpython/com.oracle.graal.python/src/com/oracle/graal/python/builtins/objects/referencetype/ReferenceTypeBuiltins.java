@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.HiddenAttr.WEAKLIST;
 import static com.oracle.graal.python.nodes.HiddenAttr.WEAK_REF_QUEUE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALLBACK__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -268,7 +267,8 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__call__()
-    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_call, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RefTypeCallNode extends PythonBuiltinNode {
         @Specialization

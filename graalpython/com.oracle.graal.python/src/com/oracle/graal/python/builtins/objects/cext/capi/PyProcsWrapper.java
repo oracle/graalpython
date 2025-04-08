@@ -894,55 +894,50 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class CallFunctionWrapper extends PyProcsWrapper {
+    public static final class CallWrapper extends TpSlotWrapper {
 
-        public CallFunctionWrapper(Object delegate) {
+        public CallWrapper(TpSlotManaged delegate) {
             super(delegate);
         }
 
-        @ExportMessage(name = "execute")
-        static class Execute {
+        @Override
+        public TpSlotWrapper cloneWith(TpSlotManaged slot) {
+            return new CallWrapper(slot);
+        }
 
-            @Specialization(guards = "arguments.length == 3")
-            static Object call(CallFunctionWrapper self, Object[] arguments,
-                            @Bind("this") Node inliningTarget,
-                            @Cached ExecutePositionalStarargsNode posStarargsNode,
-                            @Cached ExpandKeywordStarargsNode expandKwargsNode,
-                            @Cached CallVarargsMethodNode callNode,
-                            @Cached NativeToPythonNode toJavaNode,
-                            @Cached PythonToNativeNewRefNode toNativeNode,
-                            @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                            @Exclusive @Cached GilNode gil) {
-                boolean mustRelease = gil.acquire();
-                CApiTiming.enter();
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Bind Node inliningTarget,
+                        @Cached ExecutePositionalStarargsNode posStarargsNode,
+                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
+                        @Cached CallVarargsMethodNode callNode,
+                        @Cached NativeToPythonNode toJavaNode,
+                        @Cached PythonToNativeNewRefNode toNativeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
+            try {
                 try {
-                    try {
-                        // convert args
-                        Object receiver = toJavaNode.execute(arguments[0]);
-                        Object starArgs = toJavaNode.execute(arguments[1]);
-                        Object kwArgs = toJavaNode.execute(arguments[2]);
+                    // convert args
+                    Object receiver = toJavaNode.execute(arguments[0]);
+                    Object starArgs = toJavaNode.execute(arguments[1]);
+                    Object kwArgs = toJavaNode.execute(arguments[2]);
 
-                        Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                        Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
-                        PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
-                        Object result = callNode.execute(null, self.getDelegate(), pArgs, kwArgsArray);
-                        return toNativeNode.execute(result);
-                    } catch (Throwable t) {
-                        throw checkThrowableBeforeNative(t, "CallFunctionWrapper", self.getDelegate());
-                    }
-                } catch (PException e) {
-                    transformExceptionToNativeNode.execute(inliningTarget, e);
-                    return PythonContext.get(gil).getNativeNull();
-                } finally {
-                    CApiTiming.exit(self.timing);
-                    gil.release(mustRelease);
+                    Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
+                    Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
+                    PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
+                    Object result = callNode.execute(null, getDelegate(), pArgs, kwArgsArray);
+                    return toNativeNode.execute(result);
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "CallWrapper", getDelegate());
                 }
-            }
-
-            @Specialization(guards = "arguments.length != 3")
-            static Object error(@SuppressWarnings("unused") CallFunctionWrapper self, Object[] arguments) throws ArityException {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(3, 3, arguments.length);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(inliningTarget, e);
+                return PythonContext.get(gil).getNativeNull();
+            } finally {
+                CApiTiming.exit(timing);
+                gil.release(mustRelease);
             }
         }
 
@@ -1300,8 +1295,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached CallSlotLenNode callSlotNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
             try {

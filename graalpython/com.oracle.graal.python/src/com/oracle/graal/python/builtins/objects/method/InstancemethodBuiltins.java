@@ -47,7 +47,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___FUNC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 
 import java.util.List;
 
@@ -173,7 +172,8 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_call, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonVarargsBuiltinNode {
         @Specialization

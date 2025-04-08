@@ -217,7 +217,8 @@ public @interface Slot {
         /** repr(obj) */
         tp_repr("__repr__"),
         tp_init("__init__"),
-        tp_new("__new__");
+        tp_new("__new__"),
+        tp_call("__call__");
 
         SlotKind(@SuppressWarnings("unused") String specialMethods) {
         }

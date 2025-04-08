@@ -164,10 +164,6 @@ public abstract class ToNativeTypeNode {
         return lookupNativeI64MemberInMRO(clazz, member, hiddenName);
     }
 
-    private static Object lookup(PythonManagedClass obj, SlotMethodDef slot) {
-        return LookupNativeSlotNode.executeUncached(obj, slot);
-    }
-
     static void initializeType(PythonClassNativeWrapper obj, Object mem, boolean heaptype) {
         CompilerAsserts.neverPartOfCompilation();
 
@@ -241,7 +237,6 @@ public abstract class ToNativeTypeNode {
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_number, asNumber);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_sequence, asSequence);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_mapping, asMapping);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_call, lookup(clazz, SlotMethodDef.TP_CALL));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_buffer, asBuffer);
         writeI64Node.write(mem, CFields.PyTypeObject__tp_flags, flags);
 

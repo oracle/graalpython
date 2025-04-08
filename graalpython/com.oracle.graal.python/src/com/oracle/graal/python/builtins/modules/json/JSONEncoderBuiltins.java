@@ -12,7 +12,6 @@ import static com.oracle.graal.python.nodes.PGuards.isInteger;
 import static com.oracle.graal.python.nodes.PGuards.isPFloat;
 import static com.oracle.graal.python.nodes.PGuards.isPInt;
 import static com.oracle.graal.python.nodes.PGuards.isString;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -26,7 +25,6 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -147,7 +145,8 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "obj", "_current_indent_level"})
+    @Slot(value = SlotKind.tp_call, isComplex = true)
+    @SlotSignature(name = "_iterencode", minNumOfPositionalArgs = 1, parameterNames = {"$self", "obj", "_current_indent_level"})
     @ArgumentClinic(name = "_current_indent_level", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class CallEncoderNode extends PythonTernaryClinicBuiltinNode {

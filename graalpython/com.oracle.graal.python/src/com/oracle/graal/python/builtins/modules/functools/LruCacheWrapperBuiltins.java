@@ -47,7 +47,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.MAXSIZE_SHOULD_BE_INTE
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_FIRST_ARGUMENT_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLEAR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DEEPCOPY__;
@@ -261,7 +260,8 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_call, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PartialCallNode extends PythonVarargsBuiltinNode {
 

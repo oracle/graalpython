@@ -54,7 +54,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIGIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIG_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PARAMETERS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___UNPACKED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MRO_ENTRIES__;
@@ -275,7 +274,8 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_call, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class CallMethodNode extends PythonVarargsBuiltinNode {
         @Specialization
