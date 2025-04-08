@@ -3616,7 +3616,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.endBlock();
             }
             if (guard != null) {
-                guard.accept(this);
+                visitCondition(guard);
             }
             b.endPrimitiveBoolAnd();
         }
