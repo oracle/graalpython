@@ -1,0 +1,136 @@
+---
+name: Publish to PyPI
+
+# manually trigger this workflow
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'The Git tag to create or test a release for. Official releases should always be made from an existing tag.'
+        required: true
+        type: string
+      official:
+        description: 'If true, publish to official PyPI and create GitHub release. Otherwise publish only to test PyPI.'
+        default: false
+        type: boolean
+
+jobs:
+  build_sdist:
+    name: Build source package
+    runs-on: 'ubuntu-latest'
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: ${{ inputs.tag }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        # HPy requires at least Python 3.8; we mostly work with >=3.10
+        python-version: '>=3.10'
+
+    - name: Install/Upgrade Python dependencies
+      run: python -m pip install --upgrade pip wheel 'setuptools>=60.2'
+
+    - name: Build and install Python source package
+      run: |
+        python setup.py sdist
+        python -m pip install dist/*.tar.gz
+
+    - name: Run tests
+      run: |
+        make
+        pip install pytest pytest-xdist filelock
+        pytest -n auto test/
+
+    - uses: actions/upload-artifact@v3
+      with:
+        path: dist/*.tar.gz
+        retention-days: 5
+
+
+  build_bdist:
+    name: Build binary wheels
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # Windows tests fail when built as a binary wheel for some reason
+        # 'macos-12' doesn't pass the tests
+        os: [ubuntu-latest, macos-11] # windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: ${{ inputs.tag }}
+
+    # setup Python for cibuildwheel
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    # for other architectures, see: https://cibuildwheel.readthedocs.io/en/stable/faq/#emulation
+    - name: Build wheels for CPython
+      uses: pypa/cibuildwheel@v2.12.3
+      env:
+        # cibuildwheel automatically reads 'python_requires' from 'setup.py'
+        CIBW_BUILD: 'cp*'  # no PyPy builds
+        CIBW_ARCHS_LINUX: "x86_64" # only Intel 64-bit
+        CIBW_ARCHS_MACOS: "x86_64" # only Intel 64-bit
+        CIBW_TEST_REQUIRES: pytest pytest-xdist filelock setuptools>=60.2
+        # only copy test dir to current working dir
+        CIBW_TEST_COMMAND: cp -R {project}/test ./ && pytest --basetemp=.tmpdir --ignore=test/hpy_devel -n auto ./test/
+
+    - uses: actions/upload-artifact@v3
+      with:
+        path: ./wheelhouse/*.whl
+        retention-days: 5
+
+  upload_pypi:
+    name: Publish packages to (Test) PyPI
+    needs: [build_sdist, build_bdist]
+    runs-on: ubuntu-latest
+    # don't do this action on forks by default
+    if: github.repository == 'hpyproject/hpy'
+    steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: artifact
+        path: dist
+
+    - name: Upload to Test PyPI
+      uses: pypa/gh-action-pypi-publish@v1.8.5
+      if: ${{ !inputs.official }}
+      with:
+        verbose: true
+        user: __token__
+        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        repository-url: https://test.pypi.org/legacy/
+
+    - name: Upload to PyPI
+      uses: pypa/gh-action-pypi-publish@v1.8.5
+      if: ${{ inputs.official }}
+      with:
+        verbose: true
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
+
+  create_gh_release:
+    needs: [upload_pypi]
+    runs-on: ubuntu-latest
+    # don't do this action on forks by default
+    if: github.repository == 'hpyproject/hpy'
+    steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: artifact
+        path: dist
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: dist/*
+        # consider tags in form '*.*.*rc*' to indicate a pre-release
+        prerelease: ${{ contains(inputs.tag, 'rc') }}
+        draft: ${{ !inputs.official }}
+        tag_name: ${{ inputs.tag }}
