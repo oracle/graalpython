@@ -107,7 +107,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     }
 
     public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf) {
-        this(language, createSignature(factory, builtin, declaresExplicitSelf, false), builtin, factory, declaresExplicitSelf, PythonBuiltinClassType.nil);
+        this(language, createSignature(factory, builtin, declaresExplicitSelf, false), builtin, factory, declaresExplicitSelf, null);
     }
 
     public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf,
@@ -321,7 +321,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 }
             }
 
-            if (wrapsSlotForClass != PythonBuiltinClassType.nil) {
+            if (wrapsSlotForClass != null) {
                 if (declaresExplicitSelf) {
                     body = insert(new WrapperDescrCall(newBody, name, wrapsSlotForClass));
                 } else {

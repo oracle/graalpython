@@ -1208,10 +1208,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     Capsule("PyCapsule", PythonObject, newBuilder().basetype()),
 
-    PTokenizerIter("TokenizerIter", PythonObject, newBuilder().publishInModule("_tokenize").basetype().slots(TokenizerIterBuiltins.SLOTS)),
-
-    // A marker for @Builtin that is not a class. Must always come last.
-    nil("nil", PythonObject, newBuilder());
+    PTokenizerIter("TokenizerIter", PythonObject, newBuilder().publishInModule("_tokenize").basetype().slots(TokenizerIterBuiltins.SLOTS));
 
     private static TypeBuilder newBuilder() {
         return new TypeBuilder();
@@ -1431,7 +1428,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return lang.getBuiltinTypeInstanceShape(this);
     }
 
-    @CompilationFinal(dimensions = 1) public static final PythonBuiltinClassType[] VALUES = Arrays.copyOf(values(), values().length - 1);
+    @CompilationFinal(dimensions = 1) public static final PythonBuiltinClassType[] VALUES = Arrays.copyOf(values(), values().length);
 
     static {
         PythonObject.type = PythonClass;

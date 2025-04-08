@@ -192,7 +192,7 @@ public final class TpSlotVarargs {
             Class<T> nodeClass = factory.getNodeClass();
             SlotSignature slotSignature = nodeClass.getAnnotation(SlotSignature.class);
             Slot2Builtin builtin = new Slot2Builtin(slotSignature, J___NEW__, null);
-            PythonBuiltinClassType builtinType = type instanceof PythonBuiltinClassType bt ? bt : PythonBuiltinClassType.nil;
+            PythonBuiltinClassType builtinType = type instanceof PythonBuiltinClassType bt ? bt : null;
             /*
              * Note: '__new__' is not a 'wrapper_descriptor', but a 'builtin_function_or_method'.
              * The method holds the declaring type as self and the actual 'cls' argument comes after
