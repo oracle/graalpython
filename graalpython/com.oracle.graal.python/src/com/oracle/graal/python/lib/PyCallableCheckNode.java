@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,27 +41,20 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
-import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -70,7 +63,6 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateUncached
 @GenerateInline(inlineByDefault = true)
 @GenerateCached
-@ImportStatic(SpecialMethodSlot.class)
 public abstract class PyCallableCheckNode extends PNodeWithContext {
     public static boolean executeUncached(Object object) {
         return PyCallableCheckNodeGen.getUncached().execute(null, object);
@@ -122,16 +114,8 @@ public abstract class PyCallableCheckNode extends PNodeWithContext {
 
     @Fallback
     static boolean doObject(Node inliningTarget, Object o,
-                    @Cached GetClassNode getClassNode,
-                    @Cached IsForeignObjectNode isForeignObjectNode,
-                    @Cached LazyInteropLibrary lazyInteropLib,
-                    @Cached(parameters = "Call", inline = false) LookupCallableSlotInMRONode lookupCall) {
-        Object type = getClassNode.execute(inliningTarget, o);
-        if (isForeignObjectNode.execute(inliningTarget, o)) {
-            InteropLibrary lib = lazyInteropLib.get(inliningTarget);
-            return lib.isExecutable(o) || lib.isInstantiable(o);
-        }
-        return lookupCall.execute(type) != PNone.NO_VALUE;
+                    @Cached GetObjectSlotsNode getSlots) {
+        return getSlots.execute(inliningTarget, o).tp_call() != null;
     }
 
     public static PyCallableCheckNode create() {

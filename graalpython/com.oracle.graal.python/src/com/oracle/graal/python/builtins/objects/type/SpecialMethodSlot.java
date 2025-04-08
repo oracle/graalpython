@@ -43,8 +43,6 @@ package com.oracle.graal.python.builtins.objects.type;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AITER;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_ANEXT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AWAIT;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_ADD;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_MULTIPLY;
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHODS_FLAGS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
@@ -54,12 +52,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ANEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MISSING__;
@@ -144,7 +139,6 @@ public enum SpecialMethodSlot {
     SetName(T___SET_NAME__, NO_BUILTIN_DESCRIPTORS),
     InstanceCheck(T___INSTANCECHECK__),
     Subclasscheck(T___SUBCLASSCHECK__),
-    Call(T___CALL__, NO_BUILTIN_DESCRIPTORS),
 
     Exit(T___EXIT__),
     Enter(T___ENTER__),
@@ -155,9 +149,6 @@ public enum SpecialMethodSlot {
     Missing(T___MISSING__),
 
     Round(T___ROUND__),
-
-    IAdd(T___IADD__, NB_INPLACE_ADD),
-    IMul(T___IMUL__, NB_INPLACE_MULTIPLY),
 
     Reversed(T___REVERSED__),
     Bytes(T___BYTES__);
@@ -660,11 +651,6 @@ public enum SpecialMethodSlot {
                     return Subclasscheck;
                 }
                 break;
-            case 'c' * 26 + 'a':    // ca
-                if (eqNode.execute(name, T___CALL__, TS_ENCODING)) {
-                    return Call;
-                }
-                break;
             case 'e' * 26 + 'x':    // ex
                 if (eqNode.execute(name, T___EXIT__, TS_ENCODING)) {
                     return Exit;
@@ -705,16 +691,6 @@ public enum SpecialMethodSlot {
             case 'r' * 26 + 'o':    // ro
                 if (eqNode.execute(name, T___ROUND__, TS_ENCODING)) {
                     return Round;
-                }
-                break;
-            case 'i' * 26 + 'a':    // ia
-                if (eqNode.execute(name, T___IADD__, TS_ENCODING)) {
-                    return IAdd;
-                }
-                break;
-            case 'i' * 26 + 'm':    // im
-                if (eqNode.execute(name, T___IMUL__, TS_ENCODING)) {
-                    return IMul;
                 }
                 break;
             case 'b' * 26 + 'y':    // by

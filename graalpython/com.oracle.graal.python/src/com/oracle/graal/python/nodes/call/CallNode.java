@@ -42,21 +42,20 @@ package com.oracle.graal.python.nodes.call;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpCallNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -67,12 +66,12 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -155,39 +154,6 @@ public abstract class CallNode extends PNodeWithContext {
     }
 
     @Specialization
-    protected static Object doType(VirtualFrame frame, PythonBuiltinClassType callableObject, Object[] arguments, PKeyword[] keywords,
-                    @Bind("this") Node inliningTarget,
-                    @Shared("raise") @Cached PRaiseNode raise,
-                    @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                    @Shared("lookupCall") @Cached(parameters = "Call") LookupSpecialMethodSlotNode lookupCall,
-                    @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
-        Object call = lookupCall.execute(frame, getClassNode.execute(inliningTarget, callableObject), callableObject);
-        return callCall(frame, inliningTarget, callableObject, arguments, keywords, raise, callCallNode, call);
-    }
-
-    @Specialization(guards = "isPythonClass(callableObject)", replaces = "doType")
-    protected static Object doPythonClass(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
-                    @Bind("this") Node inliningTarget,
-                    @Shared("raise") @Cached PRaiseNode raise,
-                    @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                    @Shared("lookupCall") @Cached(parameters = "Call") LookupSpecialMethodSlotNode lookupCall,
-                    @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
-        Object call = lookupCall.execute(frame, getClassNode.execute(inliningTarget, callableObject), callableObject);
-        return callCall(frame, inliningTarget, callableObject, arguments, keywords, raise, callCallNode, call);
-    }
-
-    @Specialization(guards = {"!isCallable(callableObject)", "!isForeignMethod(callableObject)"}, replaces = {"doType", "doPythonClass"})
-    protected static Object doObjectAndType(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
-                    @Bind("this") Node inliningTarget,
-                    @Shared("raise") @Cached PRaiseNode raise,
-                    @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                    @Shared("lookupCall") @Cached(parameters = "Call") LookupSpecialMethodSlotNode lookupCall,
-                    @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
-        Object call = lookupCall.execute(frame, getClassNode.execute(inliningTarget, callableObject), callableObject);
-        return callCall(frame, inliningTarget, callableObject, arguments, keywords, raise, callCallNode, call);
-    }
-
-    @Specialization
     @InliningCutoff
     protected static Object doForeignMethod(ForeignMethod callable, Object[] arguments, PKeyword[] keywords,
                     @Bind("this") Node inliningTarget,
@@ -212,14 +178,6 @@ public abstract class CallNode extends PNodeWithContext {
         } finally {
             gil.acquire();
         }
-    }
-
-    private static Object callCall(VirtualFrame frame, Node inliningTarget, Object callableObject, Object[] arguments, PKeyword[] keywords, PRaiseNode raise, CallVarargsMethodNode callCallNode,
-                    Object call) {
-        if (call == PNone.NO_VALUE) {
-            throw raise.raise(inliningTarget, TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callableObject);
-        }
-        return callCallNode.execute(frame, call, PythonUtils.prependArgument(callableObject, arguments), keywords);
     }
 
     @Specialization(guards = "isPBuiltinFunction(callable.getFunction())")
@@ -255,60 +213,19 @@ public abstract class CallNode extends PNodeWithContext {
         return dispatch.executeCall(frame, callable.getBuiltinFunction(), createArgs.execute(callable, arguments, keywords));
     }
 
-    @Specialization(guards = "!isFunction(callable.getFunction())")
-    protected static Object methodCall(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords,
-                    @Bind("this") Node inliningTarget,
-                    @Shared("raise") @Cached PRaiseNode raise,
-                    @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                    @Shared("lookupCall") @Cached(parameters = "Call") LookupSpecialMethodSlotNode lookupCall,
-                    @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
-        return doObjectAndType(frame, callable, arguments, keywords, inliningTarget, raise, getClassNode, lookupCall, callCallNode);
-    }
-
-    @Specialization(guards = "!isFunction(callable.getFunction())")
-    protected static Object builtinMethodCall(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
-                    @Bind("this") Node inliningTarget,
-                    @Shared("raise") @Cached PRaiseNode raise,
-                    @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                    @Shared("lookupCall") @Cached(parameters = "Call") LookupSpecialMethodSlotNode lookupCall,
-                    @Shared("callVarargs") @Cached CallVarargsMethodNode callCallNode) {
-        return doObjectAndType(frame, callable, arguments, keywords, inliningTarget, raise, getClassNode, lookupCall, callCallNode);
-    }
-
-    @Specialization(replaces = {"doObjectAndType", "methodCallBuiltinDirect", "methodCallDirect", "builtinMethodCallBuiltinDirectCached",
-                    "builtinMethodCallBuiltinDirect", "methodCall", "builtinMethodCall", "functionCall", "builtinFunctionCall"}, guards = "!isForeignMethod(callableObject)")
-    @Megamorphic
-    @InliningCutoff
+    @Fallback
     protected static Object doGeneric(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
                     @Bind("this") Node inliningTarget,
-                    @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
-                    @Shared("argsNode") @Cached CreateArgumentsNode createArgs,
-                    @Shared("raise") @Cached PRaiseNode raise,
-                    @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                    @Shared("lookupCall") @Cached(parameters = "Call") LookupSpecialMethodSlotNode lookupCall,
-                    @Shared("callVarargs") @Cached CallVarargsMethodNode callCallNode) {
-        if (callableObject instanceof PFunction) {
-            return functionCall(frame, (PFunction) callableObject, arguments, keywords, dispatch, createArgs);
-        } else if (callableObject instanceof PBuiltinFunction) {
-            return builtinFunctionCall(frame, (PBuiltinFunction) callableObject, arguments, keywords, dispatch, createArgs);
-        } else if (callableObject instanceof PMethod) {
-            PMethod method = (PMethod) callableObject;
-            Object func = method.getFunction();
-            if (func instanceof PFunction) {
-                return methodCallDirect(frame, method, arguments, keywords, dispatch, createArgs);
-            } else if (func instanceof PBuiltinFunction) {
-                return methodCallBuiltinDirect(frame, method, arguments, keywords, dispatch, createArgs);
-            }
-        } else if (callableObject instanceof PBuiltinMethod) {
-            PBuiltinMethod method = (PBuiltinMethod) callableObject;
-            return builtinMethodCallBuiltinDirect(frame, method, arguments, keywords, dispatch, createArgs);
-        } else if (callableObject instanceof BoundDescriptor) {
-            return doGeneric(frame, ((BoundDescriptor) callableObject).descriptor,
-                            PythonUtils.arrayCopyOfRange(arguments, 1, arguments.length), keywords,
-                            inliningTarget, dispatch, createArgs, raise, getClassNode, lookupCall, callCallNode);
+                    @Cached PRaiseNode raise,
+                    @Cached GetClassNode getClassNode,
+                    @Cached GetCachedTpSlotsNode getSlots,
+                    @Cached CallSlotTpCallNode callSlot) {
+        Object type = getClassNode.execute(inliningTarget, callableObject);
+        TpSlots slots = getSlots.execute(inliningTarget, type);
+        if (slots.tp_call() != null) {
+            return callSlot.execute(frame, inliningTarget, slots.tp_call(), callableObject, arguments, keywords);
         }
-        Object callableType = getClassNode.execute(inliningTarget, callableObject);
-        return callCall(frame, inliningTarget, callableObject, arguments, keywords, raise, callCallNode, lookupCall.execute(frame, callableType, callableObject));
+        throw raise.raise(inliningTarget, TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callableObject);
     }
 
     protected static boolean isForeignMethod(Object object) {

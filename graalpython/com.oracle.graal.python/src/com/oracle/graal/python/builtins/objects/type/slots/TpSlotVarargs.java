@@ -41,8 +41,10 @@
 package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -407,6 +409,54 @@ public final class TpSlotVarargs {
                             toNativeNode.execute(self), toNativeNode.execute(argsTuple), toNativeNode.execute(kwargsDict));
             eagerTupleState.report(inliningTarget, argsTuple);
             checkResult.execute(state, T___NEW__, nativeResult);
+            return toPythonNode.execute(nativeResult);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    @ReportPolymorphism
+    public abstract static class CallSlotTpCallNode extends CallVarargsTpSlotBaseNode {
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, J___CALL__);
+
+        @Specialization
+        static Object callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object[] args, PKeyword[] keywords,
+                        @Cached MaybeBindDescriptorNode bindDescriptorNode,
+                        @Cached(inline = false) CallNode callNode) {
+            Object bound = bindDescriptorNode.execute(frame, inliningTarget, slot.getCallable(), self, slot.getType());
+            Object callable;
+            Object[] callArgs;
+            if (bound instanceof BoundDescriptor boundDescriptor) {
+                callable = boundDescriptor.descriptor;
+                callArgs = args;
+            } else {
+                callable = slot.getCallable();
+                callArgs = new Object[args.length + 1];
+                callArgs[0] = self;
+                PythonUtils.arraycopy(args, 0, callArgs, 1, args.length);
+            }
+            return callNode.execute(frame, callable, callArgs, keywords);
+        }
+
+        @Specialization
+        static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
+                        @Bind PythonContext context,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached(inline = false) PythonToNativeNode toNativeNode,
+                        @Cached CreateArgsTupleNode createArgsTupleNode,
+                        @Cached EagerTupleState eagerTupleState,
+                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Cached DefaultCheckFunctionResultNode checkResult,
+                        @Cached(inline = false) NativeToPythonTransferNode toPythonNode) {
+            PythonLanguage language = context.getLanguage(inliningTarget);
+            PythonThreadState state = getThreadStateNode.execute(inliningTarget, context);
+            PTuple argsTuple = createArgsTupleNode.execute(inliningTarget, language, args, eagerTupleState);
+            Object kwargsDict = PFactory.createDict(language, keywords);
+            Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___CALL__, slot.callable,
+                            toNativeNode.execute(self), toNativeNode.execute(argsTuple), toNativeNode.execute(kwargsDict));
+            eagerTupleState.report(inliningTarget, argsTuple);
+            checkResult.execute(state, T___CALL__, nativeResult);
             return toPythonNode.execute(nativeResult);
         }
     }

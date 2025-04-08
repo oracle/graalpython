@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.Call
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.CallSlotSqAssItemNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.CallSlotSqContainsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpCallNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpInitNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpNewNode;
 import com.oracle.graal.python.lib.IteratorExhausted;
@@ -86,12 +87,10 @@ import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -910,7 +909,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Bind Node inliningTarget,
                         @Cached ExecutePositionalStarargsNode posStarargsNode,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode,
-                        @Cached CallVarargsMethodNode callNode,
+                        @Cached CallSlotTpCallNode callNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -925,9 +924,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     Object kwArgs = toJavaNode.execute(arguments[2]);
 
                     Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                    Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
                     PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
-                    Object result = callNode.execute(null, getDelegate(), pArgs, kwArgsArray);
+                    Object result = callNode.execute(null, inliningTarget, getSlot(), receiver, starArgsArray, kwArgsArray);
                     return toNativeNode.execute(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "CallWrapper", getDelegate());
