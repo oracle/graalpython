@@ -35,3 +35,18 @@ release tag commit and then it should change the CI overlay version to point to
 the head of branch `graalpy-patch-branch` in order to disable unnecessary gates
 on it. The GitHub sync needs to be manually enabled in the mirroring service
 configuration.
+
+### Updating hpy
+
+We have an HPy subtree, it was added with:
+
+    git subtree -P graalpython/hpy add https://github.com/hpyproject/hpy master
+
+To update it, simply run:
+
+    git subtree -P graalpython/hpy pull https://github.com/hpyproject/hpy master
+
+This will merge upstream history with anything we changed locally (which
+ideally should not be too much.)
+
+The go to `graalpython/hpy/build.py` and update the `VERSION` constant.

@@ -365,11 +365,29 @@ suite = {
                 # a bit ugly, we need the same dist dependencies as the full GRAALPYTHON dist + python-lib
                 "com.oracle.graal.python",
                 "GRAALPYTHON-LAUNCHER",
-                "GRAALPYTHON_RESOURCES",
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
                 "sdk:POLYGLOT",
+            ],
+        },
+
+        # HPy
+        "hpy": {
+            "subDir": "graalpython",
+            "vpath": True,
+            "type": "GraalpythonProject",
+            "args": [
+                "<path:hpy>/build.py",
+                "--out",
+                "<output_root:hpy>",
+                "--cflags",
+                "-I<output_root:com.oracle.graal.python>/jni_gen -I<output_root:graalpy-pyconfig>/<arch> -I<path:com.oracle.graal.python.cext>/include",
+            ],
+            "platformDependent": True,
+            "buildDependencies": [
+                "GRAALPYTHON",
+                "GRAALPYTHON-LAUNCHER",
             ],
         },
 
@@ -922,9 +940,7 @@ suite = {
                     "<others>": {
                         "layout": {
                             "<os>/<arch>/": [
-                                # "dependency:com.oracle.graal.python.jni/*",
                                 "dependency:com.oracle.graal.python.cext/bin/*",
-                                # "dependency:com.oracle.graal.python.hpy/bin/*",
                                 "dependency:python-libbz2/bin/*",
                             ]
                         },
@@ -934,11 +950,9 @@ suite = {
                     "<others>": {
                         "layout": {
                             "<os>/<arch>/": [
-                                # "dependency:com.oracle.graal.python.jni/*",
                                 "dependency:com.oracle.graal.python.cext/bin/*",
                                 "dependency:python-libzsupport/*",
                                 "dependency:python-libposix/*",
-                                # "dependency:com.oracle.graal.python.hpy/bin/*",
                                 "dependency:python-libbz2/bin/*",
                                 "dependency:python-liblzma/bin/*",
                             ]
@@ -1201,7 +1215,7 @@ suite = {
             "maven": False,
         },
 
-        # The Python and HPy headers. These go to "/include" on windows and
+        # The Python headers. These go to "/include" on windows and
         # "/include/python<py_ver:major_minor>" on unix
         "GRAALPYTHON_INCLUDE_RESOURCES": {
             "native": False,
@@ -1214,7 +1228,6 @@ suite = {
                 "./META-INF/resources/include/": [
                     "dependency:graalpy-pyconfig/pyconfig.h",
                     "file:graalpython/com.oracle.graal.python.cext/include/*",
-                    # "file:graalpython/com.oracle.graal.python.hpy/include/*",
                 ],
             },
             "maven": False,
@@ -1245,6 +1258,13 @@ suite = {
                             ],
                             "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/graalpy.exe": "dependency:python-venvlauncher",
                             "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/python.exe": "dependency:python-venvlauncher",
+                            "./META-INF/resources/<os>/<arch>/Lib/site-packages/": [
+                                {
+                                    "source_type": "dependency",
+                                    "dependency": "hpy",
+                                    "path": "venv/lib/site-packages/hpy*",
+                                }
+                            ],
                         },
                     },
                 },
@@ -1253,6 +1273,13 @@ suite = {
                         "layout": {
                             "./META-INF/resources/<os>/<arch>/lib/graalpy<graal_ver:major_minor>/": [
                                 "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/*",
+                            ],
+                            "./META-INF/resources/<os>/<arch>/lib/python<py_ver:major_minor>/site-packages/": [
+                                {
+                                    "source_type": "dependency",
+                                    "dependency": "hpy",
+                                    "path": "venv/lib/python<py_ver:major_minor>/site-packages/hpy*",
+                                }
                             ],
                         },
                     },
