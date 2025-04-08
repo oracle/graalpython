@@ -1,0 +1,17 @@
+test.test_string_literals.TestLiterals.test_eval_bytes_incomplete @ linux-x86_64
+test.test_string_literals.TestLiterals.test_eval_bytes_invalid_escape @ linux-x86_64
+test.test_string_literals.TestLiterals.test_eval_bytes_normal @ linux-x86_64
+test.test_string_literals.TestLiterals.test_eval_bytes_raw @ linux-x86_64
+test.test_string_literals.TestLiterals.test_eval_str_incomplete @ linux-x86_64
+test.test_string_literals.TestLiterals.test_eval_str_invalid_escape @ linux-x86_64
+test.test_string_literals.TestLiterals.test_eval_str_normal @ linux-x86_64
+test.test_string_literals.TestLiterals.test_eval_str_raw @ linux-x86_64
+test.test_string_literals.TestLiterals.test_eval_str_u @ linux-x86_64
+test.test_string_literals.TestLiterals.test_file_iso_8859_1 @ linux-x86_64
+test.test_string_literals.TestLiterals.test_file_latin9 @ linux-x86_64
+test.test_string_literals.TestLiterals.test_file_latin_1 @ linux-x86_64
+test.test_string_literals.TestLiterals.test_file_utf8 @ linux-x86_64
+test.test_string_literals.TestLiterals.test_file_utf_8 @ linux-x86_64
+test.test_string_literals.TestLiterals.test_file_utf_8_error @ linux-x86_64
+test.test_string_literals.TestLiterals.test_template @ linux-x86_64
+test.test_string_literals.TestLiterals.test_uppercase_prefixes @ linux-x86_64

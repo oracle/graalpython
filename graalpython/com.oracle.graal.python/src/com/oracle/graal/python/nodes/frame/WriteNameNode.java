@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,7 +59,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class WriteNameNode extends PNodeWithContext implements AccessNameNode {
 
     public final void execute(VirtualFrame frame, TruffleString attributeId, Object value) {
-        CompilerAsserts.partialEvaluationConstant(attributeId);
+        CompilerAsserts.compilationConstant(attributeId);
         executeImpl(frame, attributeId, value);
     }
 

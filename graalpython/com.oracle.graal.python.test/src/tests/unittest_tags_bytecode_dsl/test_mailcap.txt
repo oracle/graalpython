@@ -1,0 +1,9 @@
+test.test_mailcap.FindmatchTest.test_findmatch @ linux-x86_64
+test.test_mailcap.FindmatchTest.test_test @ linux-x86_64
+test.test_mailcap.FindmatchTest.test_unsafe_mailcap_input @ linux-x86_64
+test.test_mailcap.GetcapsTest.test_mock_getcaps @ linux-x86_64
+test.test_mailcap.GetcapsTest.test_system_mailcap @ linux-x86_64
+test.test_mailcap.HelperFunctionTest.test_listmailcapfiles @ linux-x86_64
+test.test_mailcap.HelperFunctionTest.test_lookup @ linux-x86_64
+test.test_mailcap.HelperFunctionTest.test_readmailcapfile @ linux-x86_64
+test.test_mailcap.HelperFunctionTest.test_subst @ linux-x86_64

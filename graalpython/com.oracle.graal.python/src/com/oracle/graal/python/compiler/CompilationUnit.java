@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -183,7 +183,7 @@ public final class CompilationUnit {
         }
     }
 
-    public CodeUnit assemble() {
+    public BytecodeCodeUnit assemble() {
         addImplicitReturn();
         calculateJumpInstructionArguments();
 
@@ -321,19 +321,20 @@ public final class CompilationUnit {
                 }
             }
         }
-        return new CodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(qualName),
-                        argCount, kwOnlyArgCount, positionalOnlyArgCount, maxStackSize,
-                        buf.toByteArray(), sourceMapBuilder.build(), flags,
-                        orderedKeys(names, new TruffleString[0], PythonUtils::toTruffleStringUncached),
-                        orderedKeys(varnames, new TruffleString[0], PythonUtils::toTruffleStringUncached),
+        return new BytecodeCodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(qualName),
+                        argCount, kwOnlyArgCount, positionalOnlyArgCount, flags,
+                        orderedKeys(names, new TruffleString[0], PythonUtils::toTruffleStringUncached), orderedKeys(varnames, new TruffleString[0], PythonUtils::toTruffleStringUncached),
                         orderedKeys(cellvars, new TruffleString[0], PythonUtils::toTruffleStringUncached),
                         orderedKeys(freevars, new TruffleString[0], cellvars.size(), PythonUtils::toTruffleStringUncached),
                         cell2arg,
                         orderedKeys(constants, new Object[0]),
-                        orderedLong(primitiveConstants),
-                        exceptionHandlerRanges,
-                        conditionProfileCount,
-                        startLocation.startLine, startLocation.startColumn, startLocation.endLine, startLocation.endColumn,
+                        startLocation.startLine,
+                        startLocation.startColumn,
+                        startLocation.endLine,
+                        startLocation.endColumn,
+                        buf.toByteArray(),
+                        sourceMapBuilder.build(),
+                        orderedLong(primitiveConstants), exceptionHandlerRanges, maxStackSize, conditionProfileCount,
                         finishedCanQuickenOutput, shouldUnboxVariable, finishedGeneralizeInputsMap, finishedGeneralizeVarsMap);
     }
 

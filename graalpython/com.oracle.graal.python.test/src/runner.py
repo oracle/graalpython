@@ -890,7 +890,7 @@ class Config:
 
     @classmethod
     @lru_cache
-    def parse_config(cls, config_path):
+    def parse_config(cls, config_path: Path):
         with open(config_path, 'rb') as f:
             config_dict = tomllib.load(f)
             settings = config_dict.get('settings', {})
@@ -898,6 +898,11 @@ class Config:
             tags_dir = None
             if config_tags_dir := settings.get('tags_dir'):
                 tags_dir = (config_path.parent / config_tags_dir).resolve()
+            # Temporary hack for Bytecode DSL development in master branch:
+            if IS_GRAALPY and __graalpython__.is_bytecode_dsl_interpreter and tags_dir:
+                new_tags_dir = (config_path.parent / (config_tags_dir + '_bytecode_dsl')).resolve()
+                if new_tags_dir.exists():
+                    tags_dir = new_tags_dir
             return cls(
                 configdir=config_path.parent.resolve(),
                 rootdir=config_path.parent.parent.resolve(),
