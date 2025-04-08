@@ -65,7 +65,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -100,7 +100,7 @@ public abstract class GraalHPyObjectBuiltins {
         @Child private ReadVarKeywordsNode readKwargsNode;
         @Child private ReadIndexedArgumentNode readCallableNode;
         @Child private GraalHPyCAccess.AllocateNode allocateNode;
-        @Child private CallVarargsMethodNode callNewNode;
+        @Child private CallNode callNewNode;
 
         private final int builtinShape;
 
@@ -255,10 +255,10 @@ public abstract class GraalHPyObjectBuiltins {
             return allocateNode;
         }
 
-        private CallVarargsMethodNode ensureCallNewNode() {
+        private CallNode ensureCallNewNode() {
             if (callNewNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNewNode = insert(CallVarargsMethodNode.create());
+                callNewNode = insert(CallNode.create());
             }
             return callNewNode;
         }

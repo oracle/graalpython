@@ -38,12 +38,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IterNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -95,7 +94,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                         @Cached IterNode iterNode,
                         @Cached PyObjectLookupAttr getAttrNode,
                         @Cached PyCallableCheckNode callableCheckNode,
-                        @Cached CallVarargsMethodNode callNode,
+                        @Cached CallNode callNode,
                         @Cached InlinedBranchProfile notCallableProfile,
                         @Bind PythonLanguage language) {
             Object it = iterNode.execute(frame, iterable, PNone.NO_VALUE);
@@ -113,7 +112,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
             copyCallable = getAttrNode.execute(frame, inliningTarget, it, T___COPY__);
             for (int i = 1; i < n; i++) {
-                tupleObjs[i] = callNode.execute(frame, copyCallable, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
+                tupleObjs[i] = callNode.execute(frame, copyCallable);
             }
             return PFactory.createTuple(language, tupleObjs);
         }

@@ -114,7 +114,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
@@ -963,7 +963,7 @@ public abstract class ExternalFunctionNodes {
         private final PExternalFunctionWrapper provider;
         private final CApiTiming timing;
         @Child private CalleeContext calleeContext = CalleeContext.create();
-        @Child private CallVarargsMethodNode invokeNode;
+        @Child private CallNode invokeNode;
         @Child private ExternalFunctionWrapperInvokeNode externalInvokeNode;
         @Child private ReadIndexedArgumentNode readSelfNode;
         @Child private ReadIndexedArgumentNode readCallableNode;
@@ -986,7 +986,7 @@ public abstract class ExternalFunctionNodes {
                 this.externalInvokeNode = ExternalFunctionWrapperInvokeNode.create();
                 this.convertArgs = provider.createConvertArgNodes();
             } else {
-                this.invokeNode = CallVarargsMethodNode.create();
+                this.invokeNode = CallNode.create();
                 this.convertArgs = null;
             }
             if (!isStatic) {
