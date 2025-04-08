@@ -21,7 +21,7 @@ import time
 import types
 import unittest
 from unittest import mock
-import _testinternalcapi
+# import _testinternalcapi # GraalPy change: not supported yet
 import _imp
 
 from test.support import os_helper
@@ -50,6 +50,7 @@ try:
 except ModuleNotFoundError:
     _interpreters = None
 
+from test.support import impl_detail # GraalPy change
 
 skip_if_dont_write_bytecode = unittest.skipIf(
         sys.dont_write_bytecode,
