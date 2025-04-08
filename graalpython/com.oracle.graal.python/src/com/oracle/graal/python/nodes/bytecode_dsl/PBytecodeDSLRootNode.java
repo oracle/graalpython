@@ -162,6 +162,7 @@ import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.bytecode.CopyDictWithoutKeysNode;
 import com.oracle.graal.python.nodes.bytecode.GetSendValueNode;
 import com.oracle.graal.python.nodes.bytecode.GetTPFlagsNode;
 import com.oracle.graal.python.nodes.bytecode.GetYieldFromIterNode;
@@ -1124,23 +1125,22 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = LocalAccessor.class)
     public static final class MatchKeys {
         @Specialization
-        public static Object perform(VirtualFrame frame, Object map, Object[] keys, @Cached MatchKeysNode node) {
-            Object[] rv = new Object[2];
-            rv[0] = node.execute(frame, map, keys) != PNone.NONE;
-            rv[1] = node.execute(frame, map, keys);
-            return rv;
+        public static boolean perform(VirtualFrame frame, LocalAccessor values, Object map, Object[] keys, @Bind BytecodeNode bytecodeNode, @Cached MatchKeysNode node) {
+            values.setObject(bytecodeNode, frame, node.execute(frame, map, keys));
+            return node.execute(frame, map, keys) != PNone.NONE;
         }
     }
 
-//    @Operation
-//    public static final class CheckNone {
-//        @Specialization
-//        public static boolean perform(VirtualFrame frame, Object o) {
-//            return o != PNone.NONE;
-//        }
-//    }
+    @Operation
+    public static final class CopyDictWithoutKeys {
+        @Specialization
+        public static PDict perform(VirtualFrame frame, Object map, Object[] keys, @Cached CopyDictWithoutKeysNode node) {
+            return node.execute(frame, map, keys);
+        }
+    }
 
     @Operation
     @ConstantOperand(type = TruffleString.class, name = "name")
