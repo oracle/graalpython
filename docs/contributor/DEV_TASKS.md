@@ -38,15 +38,10 @@ configuration.
 
 ### Updating hpy
 
-We have an HPy subtree, it was added with:
-
-    git subtree -P graalpython/hpy add https://github.com/hpyproject/hpy master
-
-To update it, simply run:
-
-    git subtree -P graalpython/hpy pull https://github.com/hpyproject/hpy master
-
-This will merge upstream history with anything we changed locally (which
-ideally should not be too much.)
-
-The go to `graalpython/hpy/build.py` and update the `VERSION` constant.
+1. Switch to the `hpy-import` branch
+2. Delete `graalpython/hpy`
+3. Copy the sources from the hpy repo into `graalpython/hpy` (e.g git clone
+   them there, then delete the `graalpython/hpy/.git` folder)
+4. Go back to your previous branch and merge hpy-import.
+5. Go to `graalpython/hpy/build.py` and update the `VERSION` constant to
+   whatever you updated to.
