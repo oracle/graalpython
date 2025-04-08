@@ -362,13 +362,9 @@ suite = {
             ],
             "platformDependent": False,
             "buildDependencies": [
-                # a bit ugly, we need the same dist dependencies as the full GRAALPYTHON dist + python-lib
                 "com.oracle.graal.python",
                 "GRAALPYTHON-LAUNCHER",
-                "truffle:TRUFFLE_API",
-                "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
-                "sdk:POLYGLOT",
             ],
         },
 
@@ -386,8 +382,9 @@ suite = {
             ],
             "platformDependent": True,
             "buildDependencies": [
-                "GRAALPYTHON",
+                "com.oracle.graal.python",
                 "GRAALPYTHON-LAUNCHER",
+                "regex:TREGEX",
             ],
         },
 
