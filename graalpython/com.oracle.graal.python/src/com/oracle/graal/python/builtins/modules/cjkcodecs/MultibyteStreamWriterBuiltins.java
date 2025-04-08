@@ -47,7 +47,6 @@ import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodecU
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.MBENC_FLUSH;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_A_SEQUENCE_OBJECT;
 import static com.oracle.graal.python.nodes.ErrorMessages.CODEC_IS_UNEXPECTED_TYPE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -101,7 +100,8 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
 
     private static final TruffleString WRITE = tsLiteral("write");
 
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class NewNode extends PythonBuiltinNode {
 

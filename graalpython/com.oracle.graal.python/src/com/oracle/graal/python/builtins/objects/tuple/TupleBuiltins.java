@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_TUPLE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA;
@@ -43,12 +44,14 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageMpSubscriptNode;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
@@ -58,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PObjectSequenceIterator
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsClinicProviders.IndexNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
@@ -77,8 +81,10 @@ import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
@@ -115,6 +121,60 @@ public final class TupleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TupleBuiltinsFactory.getFactories();
+    }
+
+    // tuple([iterable])
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_TUPLE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class TupleNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = "isBuiltinTupleType(cls)")
+        static Object doBuiltin(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object iterable,
+                        @Shared @Cached TupleNodes.ConstructTupleNode constructTupleNode) {
+            return constructTupleNode.execute(frame, iterable);
+        }
+
+        @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)", replaces = "doBuiltin")
+        static PTuple constructTuple(VirtualFrame frame, Object cls, Object iterable,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Shared @Cached TupleNodes.ConstructTupleNode constructTupleNode,
+                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            PTuple tuple = constructTupleNode.execute(frame, iterable);
+            if (isSameTypeNode.execute(inliningTarget, cls, PythonBuiltinClassType.PTuple)) {
+                return tuple;
+            } else {
+                return PFactory.createTuple(language, cls, getInstanceShape.execute(cls), tuple.getSequenceStorage());
+            }
+        }
+
+        // delegate to tuple_subtype_new(PyTypeObject *type, PyObject *x)
+        @Specialization(guards = {"needsNativeAllocationNode.execute(inliningTarget, cls)", "isSubtypeOfTuple(frame, isSubtype, cls)"}, limit = "1")
+        @InliningCutoff
+        static Object doNative(@SuppressWarnings("unused") VirtualFrame frame, Object cls, Object iterable,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
+                        @Cached CExtNodes.TupleSubtypeNew subtypeNew) {
+            return subtypeNew.call(cls, iterable);
+        }
+
+        protected static boolean isBuiltinTupleType(Object cls) {
+            return cls == PythonBuiltinClassType.PTuple;
+        }
+
+        protected static boolean isSubtypeOfTuple(VirtualFrame frame, IsSubtypeNode isSubtypeNode, Object cls) {
+            return isSubtypeNode.execute(frame, cls, PythonBuiltinClassType.PTuple);
+        }
+
+        @Fallback
+        static PTuple tupleObject(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+        }
     }
 
     // index(element)

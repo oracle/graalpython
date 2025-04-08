@@ -48,10 +48,10 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
 
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatFromString;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -74,7 +74,7 @@ public final class PythonCextFloatBuiltins {
         @Specialization(guards = "!isDouble(obj)")
         static Object fromDouble(Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached StrNode strNode) {
+                        @Cached StringBuiltins.StrNewNode strNode) {
             // cpython PyFloat_FromDouble takes only 'double'
             throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(null, obj), obj);
         }

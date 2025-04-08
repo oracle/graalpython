@@ -47,13 +47,14 @@ import java.util.List;
 
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -62,10 +63,9 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PEllipsis)
-@SuppressWarnings("unused")
 public final class EllipsisBuiltins extends PythonBuiltins {
 
-    private static final TruffleString T_ELLIPSIS = tsLiteral("Ellipsis");
+    public static final TruffleString T_ELLIPSIS = tsLiteral("Ellipsis");
 
     public static final TpSlots SLOTS = EllipsisBuiltinsSlotsGen.SLOTS;
 
@@ -74,10 +74,15 @@ public final class EllipsisBuiltins extends PythonBuiltins {
         return EllipsisBuiltinsFactory.getFactories();
     }
 
-    @Override
-    public void postInitialize(Python3Core core) {
-        super.postInitialize(core);
-        core.getBuiltins().setAttribute(T_ELLIPSIS, PEllipsis.INSTANCE);
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "ellipsis", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class EllipsisTypeNode extends PythonBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        public static PEllipsis call(Object cls) {
+            return PEllipsis.INSTANCE;
+        }
     }
 
     @Slot(value = SlotKind.tp_repr, isComplex = true)

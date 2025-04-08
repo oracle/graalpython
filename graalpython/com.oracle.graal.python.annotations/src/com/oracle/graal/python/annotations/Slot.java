@@ -85,6 +85,8 @@ public @interface Slot {
 
         int maxNumOfPositionalArgs() default -1;
 
+        int numOfPositionalOnlyArgs() default -1;
+
         boolean takesVarArgs() default false;
 
         boolean takesVarKeywordArgs() default false;
@@ -214,7 +216,8 @@ public @interface Slot {
         tp_str("__str__"),
         /** repr(obj) */
         tp_repr("__repr__"),
-        tp_init("__init__");
+        tp_init("__init__"),
+        tp_new("__new__");
 
         SlotKind(@SuppressWarnings("unused") String specialMethods) {
         }

@@ -67,7 +67,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
@@ -85,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
@@ -227,7 +227,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object CDataType_from_buffer(VirtualFrame frame, Object type, Object obj, int offset,
                         @Bind("this") Node inliningTarget,
-                        @Cached BuiltinConstructors.MemoryViewNode memoryViewNode,
+                        @Cached MemoryViewBuiltins.MemoryViewNode memoryViewNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyCDataAtAddress atAddress,
                         @Cached KeepRefNode keepRefNode,

@@ -62,8 +62,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TupleNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.BinNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.HexNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
@@ -89,6 +87,8 @@ import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
+import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.TupleNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
@@ -213,7 +213,7 @@ public final class PythonCextAbstractBuiltins {
         static Object toBase(Object n, @SuppressWarnings("unused") int base,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyNumberIndexNode indexNode,
-                        @Cached StrNode strNode) {
+                        @Cached StringBuiltins.StrNewNode strNode) {
             Object i = indexNode.execute(null, inliningTarget, n);
             if (i instanceof Boolean) {
                 i = ((boolean) i) ? 1 : 0;

@@ -48,12 +48,18 @@ import java.util.concurrent.Semaphore;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.multiprocessing.GraalPySemLockBuiltinsClinicProviders.SemLockNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -81,6 +87,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PGraalPySemLock})
 public final class GraalPySemLockBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = GraalPySemLockBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return GraalPySemLockBuiltinsFactory.getFactories();
@@ -90,6 +98,52 @@ public final class GraalPySemLockBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         addBuiltinConstant("SEM_VALUE_MAX", Integer.MAX_VALUE);
         super.initialize(core);
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "SemLock", parameterNames = {"cls", "kind", "value", "maxvalue", "name", "unlink"})
+    @ArgumentClinic(name = "kind", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "maxvalue", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
+    @ArgumentClinic(name = "unlink", conversion = ArgumentClinic.ClinicConversion.IntToBoolean)
+    @GenerateNodeFactory
+    abstract static class SemLockNode extends PythonClinicBuiltinNode {
+        @Specialization
+        static PGraalPySemLock construct(Object cls, int kind, int value, @SuppressWarnings("unused") int maxValue, TruffleString name, boolean unlink,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached PRaiseNode raiseNode) {
+            if (kind != PGraalPySemLock.RECURSIVE_MUTEX && kind != PGraalPySemLock.SEMAPHORE) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.UNRECOGNIZED_KIND);
+            }
+            Semaphore semaphore = newSemaphore(value);
+            if (!unlink) {
+                // CPython creates a named semaphore, and if unlink != 0 unlinks
+                // it directly, so it cannot be accessed by other processes. We
+                // have to explicitly link it, so we do that here if we
+                // must. CPython always uses O_CREAT | O_EXCL for creating named
+                // semaphores, so a conflict raises.
+                SharedMultiprocessingData multiprocessing = PythonContext.get(inliningTarget).getSharedMultiprocessingData();
+                if (multiprocessing.getNamedSemaphore(name) != null) {
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.FileExistsError, ErrorMessages.SEMAPHORE_NAME_TAKEN, name);
+                } else {
+                    multiprocessing.putNamedSemaphore(name, semaphore);
+                }
+            }
+            return PFactory.createGraalPySemLock(language, cls, getInstanceShape.execute(cls), name, kind, semaphore);
+        }
+
+        @TruffleBoundary
+        private static Semaphore newSemaphore(int value) {
+            return new Semaphore(value);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SemLockNodeClinicProviderGen.INSTANCE;
+        }
     }
 
     @Builtin(name = "_count", minNumOfPositionalArgs = 1)
@@ -289,5 +343,4 @@ public final class GraalPySemLockBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
     }
-
 }

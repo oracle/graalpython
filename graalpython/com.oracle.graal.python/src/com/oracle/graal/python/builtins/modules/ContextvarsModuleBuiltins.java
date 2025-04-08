@@ -41,35 +41,22 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CONTEXTVARS;
-import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.lib.PyContextCopyCurrent;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__CONTEXTVARS)
 public final class ContextvarsModuleBuiltins extends PythonBuiltins {
@@ -87,48 +74,6 @@ public final class ContextvarsModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyContextCopyCurrent copyCurrent) {
             return copyCurrent.execute(inliningTarget);
-        }
-    }
-
-    @Builtin(name = "ContextVar", minNumOfPositionalArgs = 2, parameterNames = {"cls", "name", "default"}, constructsClass = PythonBuiltinClassType.ContextVar)
-    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
-    @GenerateNodeFactory
-    public abstract static class ContextVarNode extends PythonTernaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return ContextvarsModuleBuiltinsClinicProviders.ContextVarNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        protected static Object constructDef(@SuppressWarnings("unused") Object cls, TruffleString name, Object def,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile noValueProfile,
-                        @Bind PythonLanguage language) {
-            if (noValueProfile.profile(inliningTarget, isNoValue(def))) {
-                def = PContextVar.NO_DEFAULT;
-            }
-            return PFactory.createContextVar(language, name, def);
-        }
-    }
-
-    @Builtin(name = "Context", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.ContextVarsContext)
-    @GenerateNodeFactory
-    public abstract static class ContextNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object construct(@SuppressWarnings("unused") Object cls,
-                        @Bind PythonLanguage language) {
-            return PFactory.createContextVarsContext(language);
-        }
-    }
-
-    @Builtin(name = "Token", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.ContextVarsToken)
-    @GenerateNodeFactory
-    public abstract static class TokenNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object construct(@SuppressWarnings("unused") Object cls,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.TOKEN_ONLY_BY_CONTEXTVAR);
         }
     }
 }

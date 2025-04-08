@@ -145,6 +145,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNod
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
@@ -263,6 +264,19 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         protected boolean isOpen(VirtualFrame frame, PTextIO self) {
             checkClosedNode.execute(frame, self);
             return true;
+        }
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "TextIOWrapper", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class TextIOWrapperNode extends PythonBuiltinNode {
+        @Specialization
+        static PTextIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            // data filled in subsequent __init__ call - see TextIOWrapperBuiltins.InitNode
+            return PFactory.createTextIO(language, cls, getInstanceShape.execute(cls));
         }
     }
 

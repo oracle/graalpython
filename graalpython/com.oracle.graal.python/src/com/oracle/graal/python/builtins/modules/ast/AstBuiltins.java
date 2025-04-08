@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttrO;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -98,6 +99,19 @@ public final class AstBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return AstBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "AST", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class AstNode extends PythonVarargsBuiltinNode {
+
+        @Specialization
+        static PythonObject generic(Object cls, @SuppressWarnings("unused") Object[] varargs, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createPythonObject(language, cls, getInstanceShape.execute(cls));
+        }
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)

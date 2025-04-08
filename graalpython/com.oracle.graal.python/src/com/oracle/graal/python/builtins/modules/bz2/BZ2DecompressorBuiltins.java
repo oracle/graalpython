@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -88,6 +89,18 @@ public final class BZ2DecompressorBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BZ2DecompressorBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "BZ2Decompressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class BZ2DecompressorNode extends PythonBuiltinNode {
+        @Specialization
+        static BZ2Object.BZ2Decompressor doNew(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object arg,
+                        @Bind PythonLanguage language) {
+            // data filled in subsequent __init__ call - see BZ2DecompressorBuiltins.InitNode
+            return PFactory.createBZ2Decompressor(language);
+        }
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)

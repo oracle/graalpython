@@ -451,37 +451,4 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
             return 0;
         }
     }
-
-    @Builtin(name = "HASH", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.HashlibHash, isPublic = false)
-    @GenerateNodeFactory
-    abstract static class HashNode extends PythonBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object hash(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HASH");
-        }
-    }
-
-    @Builtin(name = "HASHXOF", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.HashlibHashXof, isPublic = false)
-    @GenerateNodeFactory
-    abstract static class HashXofNode extends PythonBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object hash(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HASHXOF");
-        }
-    }
-
-    @Builtin(name = "HMAC", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.HashlibHmac, isPublic = false)
-    @GenerateNodeFactory
-    abstract static class HmacNode extends PythonBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object hash(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HMAC");
-        }
-    }
 }

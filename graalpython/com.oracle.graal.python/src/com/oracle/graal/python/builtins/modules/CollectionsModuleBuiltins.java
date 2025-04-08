@@ -40,154 +40,18 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.J_DEFAULTDICT;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_DEQUE;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_DEQUE_ITER;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_DEQUE_REV_ITER;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_TUPLE_GETTER;
-
+import java.util.Collections;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.annotations.ArgumentClinic;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.deque.DequeIterBuiltins.DequeIterNextNode;
-import com.oracle.graal.python.builtins.objects.deque.PDeque;
-import com.oracle.graal.python.builtins.objects.deque.PDequeIter;
-import com.oracle.graal.python.builtins.objects.dict.PDefaultDict;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.PyNumberIndexNode;
-import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(defineModule = "_collections")
 public final class CollectionsModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return CollectionsModuleBuiltinsFactory.getFactories();
-    }
-
-    // _collections.deque
-    @Builtin(name = J_DEQUE, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PDeque, takesVarArgs = true, takesVarKeywordArgs = true)
-    @GenerateNodeFactory
-    abstract static class DequeNode extends PythonVarargsBuiltinNode {
-
-        @Specialization
-        @SuppressWarnings("unused")
-        PDeque doGeneric(Object cls, Object[] args, PKeyword[] kwargs,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createDeque(language, cls, getInstanceShape.execute(cls));
-        }
-    }
-
-    // _collections._deque_iterator
-    @Builtin(name = J_DEQUE_ITER, constructsClass = PythonBuiltinClassType.PDequeIter, //
-                    minNumOfPositionalArgs = 2, parameterNames = {"$self", "iterable", "index"})
-    @GenerateNodeFactory
-    abstract static class DequeIterNode extends PythonTernaryBuiltinNode {
-
-        @Specialization
-        static PDequeIter doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object deque, Object indexObj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile dequeProfile,
-                        @Cached InlinedConditionProfile indexNoneProfile,
-                        @Cached PyNumberIndexNode toIndexNode,
-                        @Cached CastToJavaIntExactNode castToJavaIntExactNode,
-                        @Cached DequeIterNextNode getNextNode,
-                        @Bind PythonLanguage language,
-                        @Cached PRaiseNode raiseNode) {
-            if (!dequeProfile.profile(inliningTarget, deque instanceof PDeque)) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.T_DEQUE, deque);
-            }
-            PDequeIter dequeIter = PFactory.createDequeIter(language, (PDeque) deque);
-            if (indexNoneProfile.profile(inliningTarget, indexObj != PNone.NO_VALUE)) {
-                int index = castToJavaIntExactNode.execute(inliningTarget, toIndexNode.execute(frame, inliningTarget, indexObj));
-                for (int i = 0; i < index; i++) {
-                    getNextNode.execute(dequeIter);
-                }
-            }
-            return dequeIter;
-        }
-    }
-
-    // _collections._deque_reverse_iterator
-    @Builtin(name = J_DEQUE_REV_ITER, constructsClass = PythonBuiltinClassType.PDequeRevIter, //
-                    minNumOfPositionalArgs = 2, parameterNames = {"$self", "iterable", "index"})
-    @GenerateNodeFactory
-    abstract static class DequeRevIterNode extends PythonTernaryBuiltinNode {
-        @Specialization
-        static PDequeIter doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object deque, Object indexObj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile dequeProfile,
-                        @Cached InlinedConditionProfile indexNoneProfile,
-                        @Cached PyNumberIndexNode toIndexNode,
-                        @Cached CastToJavaIntExactNode castToJavaIntExactNode,
-                        @Cached DequeIterNextNode getNextNode,
-                        @Bind PythonLanguage language,
-                        @Cached PRaiseNode raiseNode) {
-            if (!dequeProfile.profile(inliningTarget, deque instanceof PDeque)) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.T_DEQUE, deque);
-            }
-            PDequeIter dequeIter = PFactory.createDequeRevIter(language, (PDeque) deque);
-            if (indexNoneProfile.profile(inliningTarget, indexObj != PNone.NO_VALUE)) {
-                int index = castToJavaIntExactNode.execute(inliningTarget, toIndexNode.execute(frame, inliningTarget, indexObj));
-                for (int i = 0; i < index; i++) {
-                    getNextNode.execute(dequeIter);
-                }
-            }
-            return dequeIter;
-        }
-    }
-
-    // _collections.defaultdict
-    @Builtin(name = J_DEFAULTDICT, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PDefaultDict, takesVarArgs = true, takesVarKeywordArgs = true)
-    @GenerateNodeFactory
-    abstract static class DefaultDictNode extends PythonVarargsBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        PDefaultDict doGeneric(Object cls, Object[] args, PKeyword[] kwargs,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createDefaultDict(language, cls, getInstanceShape.execute(cls));
-        }
-    }
-
-    // _collections._tuplegetter
-    @Builtin(name = J_TUPLE_GETTER, parameterNames = {"cls", "index", "doc"}, constructsClass = PythonBuiltinClassType.PTupleGetter)
-    @ArgumentClinic(name = "index", conversion = ArgumentClinic.ClinicConversion.Index)
-    @GenerateNodeFactory
-    abstract static class TupleGetterNode extends PythonTernaryClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return CollectionsModuleBuiltinsClinicProviders.TupleGetterNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        Object construct(@SuppressWarnings("unused") Object cls, int index, Object doc,
-                        @Bind PythonLanguage language) {
-            return PFactory.createTupleGetter(language, index, doc);
-        }
+        return Collections.emptyList();
     }
 }

@@ -72,9 +72,11 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -105,6 +107,20 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return LZMACompressorBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "LZMACompressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    abstract static class LZMACompressorNode extends PythonBuiltinNode {
+
+        @Specialization
+        LZMAObject doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            // data filled in subsequent __init__ call - see LZMACompressorBuiltins.InitNode
+            PythonContext context = getContext();
+            return PFactory.createLZMACompressor(context.getLanguage(this), cls, getInstanceShape.execute(cls), context.getNFILZMASupport().isAvailable());
+        }
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
@@ -273,5 +289,4 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
             return LZMACompressorBuiltinsFactory.ExpectUINT32NodeGen.create(defaultValue);
         }
     }
-
 }

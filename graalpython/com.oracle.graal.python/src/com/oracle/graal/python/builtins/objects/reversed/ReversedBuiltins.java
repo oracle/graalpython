@@ -25,48 +25,74 @@
  */
 package com.oracle.graal.python.builtins.objects.reversed;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_REVERSED;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_HAS_NO_LEN;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.addExact;
+import static com.oracle.graal.python.util.PythonUtils.multiplyExact;
+import static com.oracle.graal.python.util.PythonUtils.negateExact;
+import static com.oracle.graal.python.util.PythonUtils.subtractExact;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.iterator.PBigRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.range.PBigRange;
+import com.oracle.graal.python.builtins.objects.range.PIntRange;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.lib.PySequenceGetItemNode;
+import com.oracle.graal.python.lib.PySequenceSizeNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PReverseIterator)
@@ -82,6 +108,98 @@ public final class ReversedBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ReversedBuiltinsFactory.getFactories();
+    }
+
+    // reversed(seq)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_REVERSED, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    @ImportStatic(SpecialMethodSlot.class)
+    public abstract static class ReversedNode extends PythonBuiltinNode {
+
+        @Specialization
+        static PythonObject reversed(@SuppressWarnings("unused") Object cls, PIntRange range,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached InlinedBranchProfile overflowProfile) {
+            int lstart = range.getIntStart();
+            int lstep = range.getIntStep();
+            int ulen = range.getIntLength();
+            try {
+                int new_stop = subtractExact(lstart, lstep);
+                int new_start = addExact(new_stop, multiplyExact(ulen, lstep));
+                return PFactory.createIntRangeIterator(language, new_start, new_stop, negateExact(lstep), ulen);
+            } catch (OverflowException e) {
+                overflowProfile.enter(inliningTarget);
+                return handleOverflow(language, lstart, lstep, ulen);
+            }
+        }
+
+        @CompilerDirectives.TruffleBoundary
+        private static PBigRangeIterator handleOverflow(PythonLanguage language, int lstart, int lstep, int ulen) {
+            BigInteger bstart = BigInteger.valueOf(lstart);
+            BigInteger bstep = BigInteger.valueOf(lstep);
+            BigInteger blen = BigInteger.valueOf(ulen);
+            BigInteger new_stop = bstart.subtract(bstep);
+            BigInteger new_start = new_stop.add(blen.multiply(bstep));
+
+            return PFactory.createBigRangeIterator(language, new_start, new_stop, bstep.negate(), blen);
+        }
+
+        @Specialization
+        @CompilerDirectives.TruffleBoundary
+        static PythonObject reversed(@SuppressWarnings("unused") Object cls, PBigRange range) {
+            BigInteger lstart = range.getBigIntegerStart();
+            BigInteger lstep = range.getBigIntegerStep();
+            BigInteger ulen = range.getBigIntegerLength();
+
+            BigInteger new_stop = lstart.subtract(lstep);
+            BigInteger new_start = new_stop.add(ulen.multiply(lstep));
+
+            return PFactory.createBigRangeIterator(PythonLanguage.get(null), new_start, new_stop, lstep.negate(), ulen);
+        }
+
+        @Specialization
+        static PythonObject reversed(Object cls, PString value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createStringReverseIterator(language, cls, getInstanceShape.execute(cls), castToStringNode.execute(inliningTarget, value));
+        }
+
+        @Specialization
+        static PythonObject reversed(Object cls, TruffleString value,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createStringReverseIterator(language, cls, getInstanceShape.execute(cls), value);
+        }
+
+        @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"})
+        static Object reversed(VirtualFrame frame, Object cls, Object sequence,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetClassNode getClassNode,
+                        @Cached("create(Reversed)") LookupSpecialMethodSlotNode lookupReversed,
+                        @Cached CallUnaryMethodNode callReversed,
+                        @Cached PySequenceSizeNode pySequenceSizeNode,
+                        @Cached InlinedConditionProfile noReversedProfile,
+                        @Cached PySequenceCheckNode pySequenceCheck,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached PRaiseNode raiseNode) {
+            Object sequenceKlass = getClassNode.execute(inliningTarget, sequence);
+            Object reversed = lookupReversed.execute(frame, sequenceKlass, sequence);
+            if (noReversedProfile.profile(inliningTarget, reversed == PNone.NO_VALUE)) {
+                if (!pySequenceCheck.execute(inliningTarget, sequence)) {
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.OBJ_ISNT_REVERSIBLE, sequence);
+                } else {
+                    int lengthHint = pySequenceSizeNode.execute(frame, inliningTarget, sequence);
+                    return PFactory.createSequenceReverseIterator(language, cls, getInstanceShape.execute(cls), sequence, lengthHint);
+                }
+            } else {
+                return callReversed.executeObject(frame, reversed, sequence);
+            }
+        }
     }
 
     @Slot(value = SlotKind.tp_iternext, isComplex = true)

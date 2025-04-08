@@ -47,7 +47,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_S_TAKES_AT_LEAST_
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
@@ -62,6 +61,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -152,10 +152,8 @@ public final class PartialBuiltins extends PythonBuiltins {
     }
 
     // functools.partial(func, /, *args, **keywords)
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, //
-                    takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PPartial, //
-                    doc = "partial(func, *args, **keywords) - new function with partial application\n" + //
-                                    "of the given arguments and keywords.\n")
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "partial", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class PartialNewNode extends PythonBuiltinNode {
         protected boolean isPartialWithoutDict(Node inliningTarget, GetDictIfExistsNode getDict, Object[] args, HashingStorageLen lenNode, boolean withKwDict) {

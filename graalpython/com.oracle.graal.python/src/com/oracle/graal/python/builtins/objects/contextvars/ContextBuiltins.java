@@ -48,6 +48,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -84,6 +85,17 @@ public final class ContextBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ContextBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "Context", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ContextNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object construct(@SuppressWarnings("unused") Object cls,
+                        @Bind PythonLanguage language) {
+            return PFactory.createContextVarsContext(language);
+        }
     }
 
     @Slot(SlotKind.mp_length)

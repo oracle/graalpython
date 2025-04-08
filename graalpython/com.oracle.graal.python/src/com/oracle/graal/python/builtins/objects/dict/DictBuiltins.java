@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.dict;
 
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_VALUES;
@@ -49,6 +50,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.ForeignHashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -66,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.dict.DictBuiltinsFactory.Dispatc
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
@@ -86,6 +89,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -109,6 +113,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 /**
@@ -129,6 +134,40 @@ public final class DictBuiltins extends PythonBuiltins {
     @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return DictBuiltinsFactory.getFactories();
+    }
+
+    // dict(**kwarg)
+    // dict(mapping, **kwarg)
+    // dict(iterable, **kwarg)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_DICT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class DictionaryNode extends PythonBuiltinNode {
+        @Specialization(guards = "isBuiltinDict(cls)")
+        @SuppressWarnings("unused")
+        static PDict builtinDict(Object cls, Object[] args, PKeyword[] keywordArgs,
+                        @Bind PythonLanguage language) {
+            return PFactory.createDict(language);
+        }
+
+        @Specialization(replaces = "builtinDict")
+        @SuppressWarnings("unused")
+        static PDict dict(Object cls, Object[] args, PKeyword[] keywordArgs,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached InlinedConditionProfile orderedProfile,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            Shape shape = getInstanceShape.execute(cls);
+            if (orderedProfile.profile(inliningTarget, isSubtypeNode.execute(cls, PythonBuiltinClassType.POrderedDict))) {
+                return PFactory.createOrderedDict(language, cls, shape);
+            }
+            return PFactory.createDict(language, cls, shape, EmptyStorage.INSTANCE);
+        }
+
+        protected static boolean isBuiltinDict(Object cls) {
+            return cls == PythonBuiltinClassType.PDict;
+        }
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)

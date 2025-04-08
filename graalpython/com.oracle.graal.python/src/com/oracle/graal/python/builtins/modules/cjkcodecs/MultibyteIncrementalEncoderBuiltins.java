@@ -50,7 +50,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.CODEC_IS_UNEXPECTED_TY
 import static com.oracle.graal.python.nodes.ErrorMessages.COULDN_T_CONVERT_THE_OBJECT_TO_STR;
 import static com.oracle.graal.python.nodes.ErrorMessages.PENDING_BUFFER_OVERFLOW;
 import static com.oracle.graal.python.nodes.ErrorMessages.PENDING_BUFFER_TOO_LARGE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -119,7 +118,8 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
         return MultibyteIncrementalEncoderBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "errors"})
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, parameterNames = {"$cls", "errors"})
     @GenerateNodeFactory
     protected abstract static class NewNode extends PythonBinaryBuiltinNode {
 

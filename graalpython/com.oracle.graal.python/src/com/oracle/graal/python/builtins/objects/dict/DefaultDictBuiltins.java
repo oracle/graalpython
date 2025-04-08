@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.dict;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DEFAULTDICT;
 import static com.oracle.graal.python.nodes.ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE_S;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
@@ -95,6 +96,19 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return DefaultDictBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_DEFAULTDICT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class DefaultDictNode extends PythonVarargsBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        PDefaultDict doGeneric(Object cls, Object[] args, PKeyword[] kwargs,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createDefaultDict(language, cls, getInstanceShape.execute(cls));
+        }
     }
 
     @Slot(value = SlotKind.tp_repr, isComplex = true)

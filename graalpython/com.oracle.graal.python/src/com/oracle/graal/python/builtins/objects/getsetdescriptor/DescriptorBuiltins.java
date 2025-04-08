@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetIndexedSlotsCountNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
@@ -159,12 +158,11 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raiseNode,
-                        @Cached GetNameNode getNameNode,
                         @Cached CallUnaryMethodNode callNode) {
             if (descr.getGet() != null) {
                 return callNode.executeObject(frame, descr.getGet(), obj);
             } else {
-                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_READABLE, descr.getName(), getNameNode.execute(inliningTarget, descr.getType()));
+                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTR_S_OF_N_IS_NOT_READABLE, descr.getName(), descr.getType());
             }
         }
 
@@ -189,13 +187,12 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         @Specialization
         Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetNameNode getNameNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached CallBinaryMethodNode callNode) {
             if (descr.getSet() != null) {
                 return callNode.executeObject(frame, descr.getSet(), obj, value);
             } else {
-                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE, descr.getName(), getNameNode.execute(inliningTarget, descr.getType()));
+                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTR_S_OF_N_OBJ_IS_NOT_WRITABLE, descr.getName(), descr.getType());
             }
         }
 
@@ -216,7 +213,6 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raiseNode,
-                        @Cached GetNameNode getNameNode,
                         @Cached CallBinaryMethodNode callNode,
                         @Cached InlinedBranchProfile branchProfile) {
             if (descr.allowsDelete()) {
@@ -224,7 +220,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
             } else {
                 branchProfile.enter(inliningTarget);
                 if (descr.getSet() != null) {
-                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_DELETE_ATTRIBUTE, getNameNode.execute(inliningTarget, descr.getType()), descr.getName());
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_DELETE_ATTRIBUTE, descr.getType(), descr.getName());
                 } else {
                     throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, descr.getName(), obj);
                 }

@@ -46,18 +46,18 @@ import static com.oracle.graal.python.nodes.ErrorMessages.ARGTYPES_MUST_BE_A_SEQ
 import static com.oracle.graal.python.nodes.ErrorMessages.CLASS_MUST_DEFINE_FLAGS_WHICH_MUST_BE_AN_INTEGER;
 import static com.oracle.graal.python.nodes.ErrorMessages.ITEM_D_IN_ARGTYPES_HAS_NO_FROM_PARAM_METHOD;
 import static com.oracle.graal.python.nodes.ErrorMessages.RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE1;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TypeNode;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
@@ -69,6 +69,8 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TypeNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
@@ -93,6 +95,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCFuncPtrType)
 public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = PyCFuncPtrTypeBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PyCFuncPtrTypeBuiltinsFactory.getFactories();
@@ -111,7 +115,8 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
     private static final TruffleString T_X_BRACES = tsLiteral("X{}");
 
     @ImportStatic(PyCPointerTypeBuiltins.class)
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PyCFuncPtrTypeNewNode extends PythonBuiltinNode {
 

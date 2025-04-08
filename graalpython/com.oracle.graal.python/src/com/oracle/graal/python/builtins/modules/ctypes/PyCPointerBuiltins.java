@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.POINTER_INDICES_MUST_B
 import static com.oracle.graal.python.nodes.ErrorMessages.SLICE_START_IS_REQUIRED_FOR_STEP_0;
 import static com.oracle.graal.python.nodes.ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO;
 import static com.oracle.graal.python.nodes.ErrorMessages.SLICE_STOP_IS_REQUIRED;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -168,7 +167,8 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization

@@ -49,15 +49,23 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.contextvars.ContextVarBuiltinsClinicProviders.ContextVarNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -68,13 +76,39 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ContextVar)
 public final class ContextVarBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = ContextVarBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ContextVarBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "ContextVar", minNumOfPositionalArgs = 2, parameterNames = {"cls", "name", "default"})
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
+    @GenerateNodeFactory
+    public abstract static class ContextVarNode extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ContextVarNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        protected static Object constructDef(@SuppressWarnings("unused") Object cls, TruffleString name, Object def,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile noValueProfile,
+                        @Bind PythonLanguage language) {
+            if (noValueProfile.profile(inliningTarget, isNoValue(def))) {
+                def = PContextVar.NO_DEFAULT;
+            }
+            return PFactory.createContextVar(language, name, def);
+        }
     }
 
     @Builtin(name = "get", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)

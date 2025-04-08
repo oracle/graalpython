@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.runtime.object;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import java.lang.ref.ReferenceQueue;
@@ -38,7 +39,6 @@ import javax.net.ssl.SSLEngine;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
-import com.oracle.graal.python.builtins.modules.lsprof.Profiler;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodec;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodecObject;
@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.modules.io.PTextIO;
 import com.oracle.graal.python.builtins.modules.json.PJSONEncoder;
 import com.oracle.graal.python.builtins.modules.json.PJSONEncoder.FastEncode;
 import com.oracle.graal.python.builtins.modules.json.PJSONScanner;
+import com.oracle.graal.python.builtins.modules.lsprof.Profiler;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAObject;
 import com.oracle.graal.python.builtins.modules.multiprocessing.PGraalPySemLock;
 import com.oracle.graal.python.builtins.modules.multiprocessing.PSemLock;
@@ -96,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -209,7 +211,6 @@ import com.oracle.graal.python.builtins.objects.struct.PStruct;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
-import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.builtins.objects.tokenize.PTokenizerIter;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
@@ -566,6 +567,12 @@ public final class PFactory {
                     TpSlot slot, PExternalFunctionWrapper slotWrapper) {
         return trace(language, new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type, defaults, kw, flags,
                         callTarget, slot, slotWrapper));
+    }
+
+    public static PBuiltinMethod createNewWrapper(PythonLanguage language, Object type, Object[] defaults, PKeyword[] kwdefaults, RootCallTarget callTarget, TpSlot slot) {
+        PBuiltinFunction func = createWrapperDescriptor(language, T___NEW__, type, defaults, kwdefaults, CExtContext.METH_VARARGS | CExtContext.METH_KEYWORDS, callTarget, slot,
+                        PExternalFunctionWrapper.NEW);
+        return createBuiltinMethod(language, type, func);
     }
 
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, PBuiltinFunction function, Object klass) {
@@ -1136,14 +1143,6 @@ public final class PFactory {
 
     public static PRLock createRLock(PythonLanguage language, Object cls, Shape shape) {
         return trace(language, new PRLock(cls, shape));
-    }
-
-    public static PThread createPythonThread(PythonLanguage language, Thread thread) {
-        return createPythonThread(language, PythonBuiltinClassType.PThread, PythonBuiltinClassType.PThread.getInstanceShape(language), thread);
-    }
-
-    public static PThread createPythonThread(PythonLanguage language, Object cls, Shape shape, Thread thread) {
-        return trace(language, new PThread(cls, shape, thread));
     }
 
     public static PSemLock createSemLock(PythonLanguage language, Object cls, Shape shape, long handle, int kind, int maxValue, TruffleString name) {

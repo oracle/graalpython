@@ -46,6 +46,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -54,20 +57,39 @@ import com.oracle.graal.python.builtins.modules.pickle.MemoTable.MemoIterator;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PicklerMemoProxy)
 public class PicklerMemoProxyBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = PicklerMemoProxyBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PicklerMemoProxyBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "PicklerMemoProxy", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "pickler"})
+    @GenerateNodeFactory
+    abstract static class ConstructPicklerMemoProxyNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PPicklerMemoProxy construct(Object cls, PPickler pickler,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createPicklerMemoProxy(language, pickler, cls, getInstanceShape.execute(cls));
+        }
     }
 
     @Builtin(name = "clear", minNumOfPositionalArgs = 1, parameterNames = {"$self"})

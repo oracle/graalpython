@@ -47,7 +47,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ANEXT__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -84,7 +83,6 @@ public abstract class GetAIterNode extends PNodeWithContext {
                     @Cached(parameters = "AIter") LookupSpecialMethodSlotNode getAIter,
                     @Cached GetClassNode getAsyncIterType,
                     @Cached PRaiseNode raiseNoAIter,
-                    @Cached TypeNodes.GetNameNode getName,
                     @Cached InlinedBranchProfile errorProfile,
                     @Cached CallUnaryMethodNode callAIter,
                     @Cached LookupInheritedAttributeNode.Dynamic lookupANext) {
@@ -93,13 +91,13 @@ public abstract class GetAIterNode extends PNodeWithContext {
         Object getter = getAIter.execute(frame, type, receiver);
         if (getter == PNone.NO_VALUE) {
             errorProfile.enter(this);
-            throw raiseNoAIter.raise(inliningTarget, PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_AITER, getName.execute(inliningTarget, type));
+            throw raiseNoAIter.raise(inliningTarget, PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_AITER, type);
         }
         Object asyncIterator = callAIter.executeObject(frame, getter, receiver);
         Object anext = lookupANext.execute(inliningTarget, asyncIterator, T___ANEXT__);
         if (anext == PNone.NO_VALUE) {
             errorProfile.enter(this);
-            throw raiseNoAIter.raise(inliningTarget, PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_ANEXT_INITIAL, getName.execute(inliningTarget, type));
+            throw raiseNoAIter.raise(inliningTarget, PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_ANEXT_INITIAL, type);
         }
         return asyncIterator;
     }

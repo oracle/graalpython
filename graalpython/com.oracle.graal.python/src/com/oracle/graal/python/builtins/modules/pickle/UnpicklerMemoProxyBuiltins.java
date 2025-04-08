@@ -45,6 +45,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -53,7 +56,10 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -65,9 +71,24 @@ import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.UnpicklerMemoProxy)
 public class UnpicklerMemoProxyBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = UnpicklerMemoProxyBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return UnpicklerMemoProxyBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "UnpicklerMemoProxy", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "unpickler"})
+    @GenerateNodeFactory
+    abstract static class ConstructUnpicklerMemoProxyNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PUnpicklerMemoProxy construct(Object cls, PUnpickler unpickler,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createUnpicklerMemoProxy(language, unpickler, cls, getInstanceShape.execute(cls));
+        }
     }
 
     @Builtin(name = "clear", minNumOfPositionalArgs = 1, parameterNames = {"$self"})

@@ -45,8 +45,10 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Attribut
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -54,10 +56,13 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GenericSetAttrWithDictNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
@@ -68,10 +73,12 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -93,6 +100,27 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ThreadLocalBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "_local", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class ThreadLocalNode extends PythonBuiltinNode {
+        @Specialization
+        static PThreadLocal construct(Object cls, Object[] args, PKeyword[] keywordArgs,
+                        @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached TpSlots.GetCachedTpSlotsNode getSlots,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            if (args.length != 0 || keywordArgs.length != 0) {
+                TpSlots slots = getSlots.execute(inliningTarget, cls);
+                if (slots.tp_init() == ObjectBuiltins.SLOTS.tp_init()) {
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.INITIALIZATION_ARGUMENTS_ARE_NOT_SUPPORTED);
+                }
+            }
+            return PFactory.createThreadLocal(language, cls, getInstanceShape.execute(cls), args, keywordArgs);
+        }
     }
 
     @Builtin(name = J___DICT__, minNumOfPositionalArgs = 1, isGetter = true)

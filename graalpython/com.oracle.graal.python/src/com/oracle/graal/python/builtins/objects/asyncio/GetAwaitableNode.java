@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -88,7 +87,6 @@ public abstract class GetAwaitableNode extends Node {
                     @Exclusive @Cached PRaiseNode raiseNoAwait,
                     @Exclusive @Cached PRaiseNode raiseNotIter,
                     @Cached(parameters = "Await") LookupSpecialMethodSlotNode findAwait,
-                    @Cached TypeNodes.GetNameNode getName,
                     @Cached GetClassNode getAwaitableType,
                     @Cached GetClassNode getIteratorType,
                     @Cached CallUnaryMethodNode callAwait,
@@ -96,7 +94,7 @@ public abstract class GetAwaitableNode extends Node {
         Object type = getAwaitableType.execute(inliningTarget, awaitable);
         Object getter = findAwait.execute(frame, type, awaitable);
         if (getter == PNone.NO_VALUE) {
-            throw raiseNoAwait.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, getName.execute(inliningTarget, type));
+            throw raiseNoAwait.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, type);
         }
         Object iterator = callAwait.executeObject(getter, awaitable);
         if (iterCheck.execute(inliningTarget, iterator)) {
@@ -106,7 +104,7 @@ public abstract class GetAwaitableNode extends Node {
         if (itType == PythonBuiltinClassType.PCoroutine) {
             throw raiseNotIter.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_COROUTINE);
         } else {
-            throw raiseNotIter.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_NON_ITER, getName.execute(inliningTarget, itType));
+            throw raiseNotIter.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_NON_ITER, itType);
         }
     }
 

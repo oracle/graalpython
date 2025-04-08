@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -115,6 +116,20 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
     public static final int SEEN_LF = 2;
     public static final int SEEN_CRLF = 4;
     public static final int SEEN_ALL = (SEEN_CR | SEEN_LF | SEEN_CRLF);
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "IncrementalNewlineDecoder", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class IncrementalNewlineDecoderNode extends PythonBuiltinNode {
+        @Specialization
+        static PNLDecoder doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            // data filled in subsequent __init__ call - see
+            // IncrementalNewlineDecoderBuiltins.InitNode
+            return PFactory.createNLDecoder(language, cls, getInstanceShape.execute(cls));
+        }
+    }
 
     // BufferedReader(raw[, buffer_size=DEFAULT_BUFFER_SIZE])
     @Slot(value = SlotKind.tp_init, isComplex = true)

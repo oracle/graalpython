@@ -44,13 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BlockingIO
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EncodingWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsupportedOperation;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedRWPair;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedRandom;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedReader;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedWriter;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIOBase;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIncrementalNewlineDecoder;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PTextIOWrapper;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.T_WARN;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
@@ -80,22 +73,18 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IONodes.IOMode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
@@ -106,7 +95,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -147,128 +135,6 @@ public final class IOModuleBuiltins extends PythonBuiltins {
             addBuiltinConstant("_os", core.lookupBuiltinModule(T_NT));
         } else {
             addBuiltinConstant("_os", core.lookupBuiltinModule(T_POSIX));
-        }
-    }
-
-    @Builtin(name = "_IOBase", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PIOBase)
-    @GenerateNodeFactory
-    public abstract static class IOBaseNode extends PythonBuiltinNode {
-        @Specialization
-        static PythonObject doGeneric(Object cls,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createPythonObject(language, cls, getInstanceShape.execute(cls));
-        }
-    }
-
-    @Builtin(name = "FileIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PFileIO)
-    @GenerateNodeFactory
-    public abstract static class FileIONode extends PythonBuiltinNode {
-        @Specialization
-        static PFileIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            // data filled in subsequent __init__ call - see FileIOBuiltins.InitNode
-            return PFactory.createFileIO(language, cls, getInstanceShape.execute(cls));
-        }
-    }
-
-    @Builtin(name = "BufferedReader", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PBufferedReader)
-    @GenerateNodeFactory
-    public abstract static class BufferedReaderNode extends PythonBuiltinNode {
-        @Specialization
-        static PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            // data filled in subsequent __init__ call - see BufferedReaderBuiltins.InitNode
-            return PFactory.createBufferedReader(language, cls, getInstanceShape.execute(cls));
-        }
-    }
-
-    @Builtin(name = "BufferedWriter", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PBufferedWriter)
-    @GenerateNodeFactory
-    public abstract static class BufferedWriterNode extends PythonBuiltinNode {
-        @Specialization
-        static PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            // data filled in subsequent __init__ call - see BufferedWriterBuiltins.InitNode
-            return PFactory.createBufferedWriter(language, cls, getInstanceShape.execute(cls));
-        }
-    }
-
-    @Builtin(name = "BufferedRWPair", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PBufferedRWPair)
-    @GenerateNodeFactory
-    public abstract static class BufferedRWPairNode extends PythonBuiltinNode {
-        @Specialization
-        static PRWPair doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            // data filled in subsequent __init__ call - see BufferedRWPairBuiltins.InitNode
-            return PFactory.createRWPair(language, cls, getInstanceShape.execute(cls));
-        }
-    }
-
-    @Builtin(name = "BufferedRandom", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PBufferedRandom)
-    @GenerateNodeFactory
-    public abstract static class BufferedRandomNode extends PythonBuiltinNode {
-        @Specialization
-        static PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            // data filled in subsequent __init__ call - see BufferedRandomBuiltins.InitNode
-            return PFactory.createBufferedRandom(language, cls, getInstanceShape.execute(cls));
-        }
-    }
-
-    @Builtin(name = "TextIOWrapper", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PTextIOWrapper)
-    @GenerateNodeFactory
-    public abstract static class TextIOWrapperNode extends PythonBuiltinNode {
-        @Specialization
-        static PTextIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            // data filled in subsequent __init__ call - see TextIOWrapperBuiltins.InitNode
-            return PFactory.createTextIO(language, cls, getInstanceShape.execute(cls));
-        }
-    }
-
-    @Builtin(name = "BytesIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PBytesIO)
-    @GenerateNodeFactory
-    public abstract static class BytesIONode extends PythonBuiltinNode {
-        @Specialization
-        static PBytesIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            // data filled in subsequent __init__ call - see BytesIONodeBuiltins.InitNode
-            PBytesIO bytesIO = PFactory.createBytesIO(language, cls, getInstanceShape.execute(cls));
-            bytesIO.setBuf(PFactory.createByteArray(language, PythonUtils.EMPTY_BYTE_ARRAY));
-            return bytesIO;
-        }
-    }
-
-    @Builtin(name = "StringIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PStringIO)
-    @GenerateNodeFactory
-    public abstract static class StringIONode extends PythonBuiltinNode {
-        @Specialization
-        static PStringIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            // data filled in subsequent __init__ call - see StringIONodeBuiltins.InitNode
-            return PFactory.createStringIO(language, cls, getInstanceShape.execute(cls));
-        }
-    }
-
-    @Builtin(name = "IncrementalNewlineDecoder", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PIncrementalNewlineDecoder)
-    @GenerateNodeFactory
-    public abstract static class IncrementalNewlineDecoderNode extends PythonBuiltinNode {
-        @Specialization
-        static PNLDecoder doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            // data filled in subsequent __init__ call - see
-            // IncrementalNewlineDecoderBuiltins.InitNode
-            return PFactory.createNLDecoder(language, cls, getInstanceShape.execute(cls));
         }
     }
 

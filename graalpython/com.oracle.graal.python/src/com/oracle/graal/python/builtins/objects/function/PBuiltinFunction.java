@@ -89,7 +89,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         super(cls, shape);
         this.name = PythonUtils.toPString(name);
         if (enclosingType != null) {
-            this.qualname = StringUtils.cat(GetNameNode.doSlowPath(enclosingType), T_DOT, name);
+            this.qualname = StringUtils.cat(GetNameNode.executeUncached(enclosingType), T_DOT, name);
         } else {
             this.qualname = name;
         }

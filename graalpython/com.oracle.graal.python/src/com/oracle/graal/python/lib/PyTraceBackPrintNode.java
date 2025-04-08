@@ -188,7 +188,7 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
     }
 
     public static TruffleString getTypeName(Object type) {
-        return TypeNodes.GetNameNode.executeUncached(type);
+        return TypeNodes.GetTpNameNode.executeUncached(type);
     }
 
     public static Object getObjectClass(Object object) {

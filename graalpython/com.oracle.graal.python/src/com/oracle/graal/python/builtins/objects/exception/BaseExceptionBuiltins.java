@@ -55,6 +55,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
@@ -69,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -93,6 +98,7 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -111,6 +117,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBaseException)
@@ -121,6 +128,42 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BaseExceptionBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "BaseException", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class BaseExceptionNode extends PythonVarargsBuiltinNode {
+
+        @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
+        static Object doManaged(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached.Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached InlinedConditionProfile argsProfile) {
+            PTuple argsTuple;
+            if (argsProfile.profile(inliningTarget, args.length == 0)) {
+                argsTuple = null;
+            } else {
+                argsTuple = PFactory.createTuple(language, args);
+            }
+            return PFactory.createBaseException(language, cls, getInstanceShape.execute(cls), null, argsTuple);
+        }
+
+        @Specialization(guards = "needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
+        static Object doNativeSubtype(Object cls, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached.Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Bind PythonLanguage language,
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
+                        @Cached CApiTransitions.PythonToNativeNode toNativeNode,
+                        @Cached CApiTransitions.NativeToPythonTransferNode toPythonNode,
+                        @Cached ExternalFunctionNodes.DefaultCheckFunctionResultNode checkFunctionResultNode) {
+            Object argsTuple = args.length > 0 ? PFactory.createTuple(language, args) : PFactory.createEmptyTuple(language);
+            Object nativeResult = callCapiFunction.call(NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW, toNativeNode.execute(cls), toNativeNode.execute(argsTuple));
+            return toPythonNode.execute(checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW.getTsName(), nativeResult));
+        }
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)

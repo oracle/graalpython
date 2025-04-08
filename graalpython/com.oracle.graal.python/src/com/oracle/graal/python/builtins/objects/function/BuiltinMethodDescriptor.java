@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
-
 import java.lang.annotation.Annotation;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -136,16 +134,6 @@ public abstract class BuiltinMethodDescriptor {
                 }
 
                 @Override
-                public PythonBuiltinClassType constructsClass() {
-                    return null;
-                }
-
-                @Override
-                public PythonBuiltinClassType[] base() {
-                    return new PythonBuiltinClassType[0];
-                }
-
-                @Override
                 public int minNumOfPositionalArgs() {
                     return 0;
                 }
@@ -193,11 +181,6 @@ public abstract class BuiltinMethodDescriptor {
                 @Override
                 public String[] keywordOnlyNames() {
                     return new String[0];
-                }
-
-                @Override
-                public boolean isPublic() {
-                    return false;
                 }
 
                 @Override
@@ -281,9 +264,6 @@ public abstract class BuiltinMethodDescriptor {
         }
         for (Builtin builtin : factory.getNodeClass().getAnnotationsByType(Builtin.class)) {
             if (builtin.name().equals(name)) {
-                return builtin;
-            }
-            if (builtin.constructsClass() != PythonBuiltinClassType.nil && J___NEW__.equals(name)) {
                 return builtin;
             }
         }

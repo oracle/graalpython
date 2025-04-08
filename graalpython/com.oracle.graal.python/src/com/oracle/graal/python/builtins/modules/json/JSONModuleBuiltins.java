@@ -5,10 +5,7 @@
  */
 package com.oracle.graal.python.builtins.modules.json;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -20,32 +17,20 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.json.JSONScannerBuiltins.IntRef;
-import com.oracle.graal.python.builtins.modules.json.PJSONEncoder.FastEncode;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -173,79 +158,6 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
             } catch (OutOfMemoryError | NegativeArraySizeException e) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.STR_TOO_LONG_TO_ESCAPE);
             }
-        }
-    }
-
-    @Builtin(name = "make_scanner", parameterNames = {"$cls", "context"}, constructsClass = PythonBuiltinClassType.JSONScanner, //
-                    doc = "_iterencode(obj, _current_indent_level) -> iterable")
-    @GenerateNodeFactory
-    public abstract static class MakeScanner extends PythonBinaryBuiltinNode {
-
-        @Child private GetFixedAttributeNode getStrict = GetFixedAttributeNode.create(T_STRICT);
-        @Child private GetFixedAttributeNode getObjectHook = GetFixedAttributeNode.create(tsLiteral("object_hook"));
-        @Child private GetFixedAttributeNode getObjectPairsHook = GetFixedAttributeNode.create(tsLiteral("object_pairs_hook"));
-        @Child private GetFixedAttributeNode getParseFloat = GetFixedAttributeNode.create(tsLiteral("parse_float"));
-        @Child private GetFixedAttributeNode getParseInt = GetFixedAttributeNode.create(tsLiteral("parse_int"));
-        @Child private GetFixedAttributeNode getParseConstant = GetFixedAttributeNode.create(tsLiteral("parse_constant"));
-
-        @Specialization
-        public PJSONScanner doNew(VirtualFrame frame, Object cls, Object context,
-                        @Cached PyObjectIsTrueNode castStrict,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-
-            boolean strict = castStrict.execute(frame, getStrict.execute(frame, context));
-            Object objectHook = getObjectHook.execute(frame, context);
-            Object objectPairsHook = getObjectPairsHook.execute(frame, context);
-            Object parseFloat = getParseFloat.execute(frame, context);
-            Object parseInt = getParseInt.execute(frame, context);
-            Object parseConstant = getParseConstant.execute(frame, context);
-            return PFactory.createJSONScanner(language, cls, getInstanceShape.execute(cls), strict, objectHook, objectPairsHook, parseFloat, parseInt, parseConstant);
-        }
-    }
-
-    @Builtin(name = "make_encoder", minNumOfPositionalArgs = 10, //
-                    parameterNames = {"$cls", "markers", "default", "encoder", "indent", "key_separator", "item_separator", "sort_keys", "skipkeys", "allow_nan"}, //
-                    constructsClass = PythonBuiltinClassType.JSONEncoder, //
-                    doc = "JSON scanner object")
-    @ArgumentClinic(name = "key_separator", conversion = ArgumentClinic.ClinicConversion.TString)
-    @ArgumentClinic(name = "item_separator", conversion = ArgumentClinic.ClinicConversion.TString)
-    @ArgumentClinic(name = "sort_keys", conversion = ArgumentClinic.ClinicConversion.Boolean)
-    @ArgumentClinic(name = "skipkeys", conversion = ArgumentClinic.ClinicConversion.Boolean)
-    @ArgumentClinic(name = "allow_nan", conversion = ArgumentClinic.ClinicConversion.Boolean)
-    @GenerateNodeFactory
-    public abstract static class MakeEncoder extends PythonClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return JSONModuleBuiltinsClinicProviders.MakeEncoderClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        @TruffleBoundary
-        PJSONEncoder doNew(Object cls, Object markers, Object defaultFn, Object encoder, Object indent, TruffleString keySeparator, TruffleString itemSeparator, boolean sortKeys,
-                        boolean skipKeys, boolean allowNan) {
-            if (markers != PNone.NONE && !(markers instanceof PDict)) {
-                throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.MAKE_ENCODER_ARG_1_MUST_BE_DICT, markers);
-            }
-
-            FastEncode fastEncode = FastEncode.None;
-            Object encoderAsFun = encoder;
-            if (encoder instanceof PBuiltinMethod encoderMethod) {
-                encoderAsFun = encoderMethod.getFunction();
-            }
-            if (encoderAsFun instanceof PBuiltinFunction function) {
-                Class<? extends PythonBuiltinBaseNode> nodeClass = function.getNodeClass();
-                if (nodeClass != null) {
-                    if (JSONModuleBuiltins.EncodeBaseString.class.isAssignableFrom(nodeClass)) {
-                        fastEncode = FastEncode.FastEncode;
-                    } else if (JSONModuleBuiltins.EncodeBaseStringAscii.class.isAssignableFrom(nodeClass)) {
-                        fastEncode = FastEncode.FastEncodeAscii;
-                    }
-                }
-            }
-            return PFactory.createJSONEncoder(PythonLanguage.get(null), cls, TypeNodes.GetInstanceShape.executeUncached(cls),
-                            markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode);
         }
     }
 }

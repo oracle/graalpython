@@ -50,7 +50,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.THE_LENGTH_ATTRIBUTE_I
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_LENGTH_ATTRIBUTE_MUST_BE_AN_INTEGER;
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_LENGTH_ATTRIBUTE_MUST_NOT_BE_NEGATIVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_MUST_HAVE_STORAGE_INFO;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -60,11 +59,12 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TypeNode;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -72,6 +72,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TypeNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -96,6 +98,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCArrayType)
 public final class PyCArrayTypeBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = PyCArrayTypeBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PyCArrayTypeBuiltinsFactory.getFactories();
@@ -104,7 +108,8 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
     protected static final TruffleString T__LENGTH_ = tsLiteral("_length_");
 
     @ImportStatic({PyCPointerTypeBuiltins.class, PyCArrayTypeBuiltins.class, SpecialMethodNames.class})
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PyCArrayTypeNewNode extends PythonBuiltinNode {
 

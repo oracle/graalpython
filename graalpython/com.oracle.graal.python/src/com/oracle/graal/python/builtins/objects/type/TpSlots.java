@@ -85,6 +85,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEG__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
@@ -127,7 +128,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -142,11 +142,13 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrGe
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrSetFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.GetAttrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.HashfuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InitWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InquiryWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.IterNextWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.LenfuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NbInPlacePowerWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NbPowerWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NewWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.ObjobjargWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.RichcmpFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SetattrWrapper;
@@ -165,6 +167,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.Write
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.TpSlotsFactory.GetObjectSlotsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TpSlotsFactory.GetTpSlotsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
@@ -188,7 +191,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.TpSlotG
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.TpSlotGetAttrPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.TpSlotHashBuiltin;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInit.TpSlotInitBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.TpSlotInquiryBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpSlotIterNextBuiltin;
@@ -205,6 +207,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.TpSlo
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.TpSlotSqAssItemPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.TpSlotSqContainsBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.TpSlotUnaryFuncBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotNewBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotVarargsBuiltin;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -242,7 +246,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * <pre>
  *     Builtins:
  *      - initialization of the slots: static ctor of {@link PythonBuiltinClassType}
- *      - initialization of the wrappers: context initialization calls {@link TpSlots#addOperatorsToBuiltin(Map, Python3Core, PythonBuiltinClassType, PythonBuiltinClass)}
+ *      - initialization of the wrappers: context initialization calls {@link #addOperatorsToBuiltin(Python3Core, PythonBuiltinClassType, PythonBuiltinClass)}
  *      - all the slots are static and shared per JVM, builtins do not allow to update attributes after ctx initialization
  *
  *     Native classes:
@@ -349,6 +353,7 @@ public record TpSlots(TpSlot nb_bool, //
                 TpSlot tp_repr, //
                 TpSlot tp_str, //
                 TpSlot tp_init, //
+                TpSlot tp_new, //
                 boolean has_as_number,
                 boolean has_as_sequence,
                 boolean has_as_mapping) {
@@ -916,11 +921,19 @@ public record TpSlots(TpSlot nb_bool, //
         TP_INIT(
                         TpSlots::tp_init,
                         TpSlotPythonSingle.class,
-                        TpSlotInitBuiltin.class,
+                        TpSlotVarargsBuiltin.class,
                         TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_init,
                         PExternalFunctionWrapper.INITPROC,
-                        PyProcsWrapper.InitWrapper::new);
+                        InitWrapper::new),
+        TP_NEW(
+                        TpSlots::tp_new,
+                        TpSlotPythonSingle.class,
+                        TpSlotNewBuiltin.class,
+                        TpSlotGroup.NO_GROUP,
+                        CFields.PyTypeObject__tp_new,
+                        PExternalFunctionWrapper.NEW,
+                        NewWrapper::new);
 
         public static final TpSlotMeta[] VALUES = values();
 
@@ -1113,6 +1126,7 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.TP_STR, TpSlotDef.withSimpleFunction(T___STR__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.TP_REPR, TpSlotDef.withSimpleFunction(T___REPR__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.TP_INIT, TpSlotDef.withSimpleFunction(T___INIT__, PExternalFunctionWrapper.INITPROC));
+        addSlotDef(s, TpSlotMeta.TP_NEW, TpSlotDef.withSimpleFunction(T___NEW__, PExternalFunctionWrapper.NEW));
         addSlotDef(s, TpSlotMeta.NB_ADD,
                         TpSlotDef.withoutHPy(T___ADD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
                         TpSlotDef.withoutHPy(T___RADD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
@@ -1307,7 +1321,7 @@ public record TpSlots(TpSlot nb_bool, //
         return builder.build();
     }
 
-    private static void toNative(Object ptrToWrite, TpSlotMeta def, TpSlot value, Object nullValue) {
+    public static void toNative(Object ptrToWrite, TpSlotMeta def, TpSlot value, Object nullValue) {
         assert !(ptrToWrite instanceof PythonAbstractNativeObject); // this should be the pointer
         Object slotNativeValue = def.getNativeValue(value, nullValue);
         toNative(ptrToWrite, def, slotNativeValue, nullValue);
@@ -1352,6 +1366,10 @@ public record TpSlots(TpSlot nb_bool, //
         Builder klassSlots = newBuilder();
         if (allocateAllGroups) {
             klassSlots.allocateAllGroups();
+        }
+        if (klass.getBase() != null) {
+            // tp_new is first inherited from tp_base in type_ready_set_new
+            klassSlots.set(TpSlotMeta.TP_NEW, GetTpSlotsNode.executeUncached(klass.getBase()).tp_new());
         }
         for (int i = 0; i < mro.length(); i++) {
             PythonAbstractClass type = mro.getPythonClassItemNormalized(i);
@@ -1541,9 +1559,34 @@ public record TpSlots(TpSlot nb_bool, //
                          */
                         useGeneric = true;
                     }
-
-                    // TODO: special cases:
-                    // PyCFunction_Type && tp_new (looks like just optimization)
+                } else if (slot == TpSlotMeta.TP_NEW && descr instanceof PBuiltinMethod method && method.getBuiltinFunction().getSlot() != null &&
+                                !(slots.get(TpSlotMeta.TP_NEW) instanceof TpSlotPython)) {
+                    /*
+                     * From CPython: The __new__ wrapper is not a wrapper descriptor, so must be
+                     * special-cased differently. If we don't do this, creating an instance will
+                     * always use slot_tp_new which will look up __new__ in the MRO which will call
+                     * tp_new_wrapper which will look through the base classes looking for a static
+                     * base and call its tp_new (usually PyType_GenericNew), after performing
+                     * various sanity checks and constructing a new argument list. Cut all that
+                     * nonsense short -- this speeds up instance creation tremendously.
+                     */
+                    /*
+                     * msimacek note: This optimization is not implemented correctly in CPython -
+                     * it's missing a check that the method is for the same type. This can manifest
+                     * with multiple-inheritance when the __new__ method inherited from the MRO is
+                     * different from the current value in tp_new, which was populated from
+                     * tp_base->tp_new earlier. If the one from tp_base is a wrapper, it will pass
+                     * this check and stay in the slot, diverging from the __new__ wrapper inherited
+                     * in MRO. This behavior is already relied upon in the wild (pandas) so we don't
+                     * check the type either.
+                     *
+                     * The last part of the condition is GraalPy-specific because we cache the
+                     * Python method in the slot. So we make it go to the generic path to make sure
+                     * it creates a new wrapper for the right method.
+                     *
+                     * See test_tp_new_bug_to_bug_compatibility in cpyext/test_object.py
+                     */
+                    specific = slots.get(TpSlotMeta.TP_NEW);
                 } else if (descr == PNone.NONE && slot == TpSlotMeta.TP_HASH) {
                     specific = TpSlotHashFun.HASH_NOT_IMPLEMENTED;
                 } else {
@@ -1619,7 +1662,7 @@ public record TpSlots(TpSlot nb_bool, //
         return true;
     }
 
-    public static void addOperatorsToBuiltin(Map<TruffleString, BoundBuiltinCallable<?>> builtins, Python3Core core, PythonBuiltinClassType type, PythonBuiltinClass pythonBuiltinClass) {
+    public static void addOperatorsToBuiltin(Python3Core core, PythonBuiltinClassType type, PythonBuiltinClass pythonBuiltinClass) {
         TpSlots slots = type.getDeclaredSlots();
         assert checkNoMagicOverrides(core, type);
 
@@ -1635,9 +1678,9 @@ public record TpSlots(TpSlot nb_bool, //
                 continue;
             }
             for (TpSlotDef slotDef : slotDefGroup.getValue()) {
-                if (slotDef.wrapper() != null && !builtins.containsKey(slotDef.name())) {
+                if (slotDef.wrapper() != null && pythonBuiltinClass.getAttribute(slotDef.name()) == PNone.NO_VALUE) {
                     var value = builtinSlot.createBuiltin(core, type, slotDef.name(), slotDef.wrapper());
-                    builtins.put(slotDef.name(), value);
+                    pythonBuiltinClass.setAttribute(slotDef.name(), value);
                 }
             }
         }
@@ -1707,14 +1750,6 @@ public record TpSlots(TpSlot nb_bool, //
 
     public static Builder newBuilder() {
         return new Builder();
-    }
-
-    public static TpSlots merge(TpSlots a, TpSlots b) {
-        return a.copy().merge(b).build();
-    }
-
-    public static TpSlots merge(TpSlots a, TpSlots b, TpSlots c) {
-        return a.copy().merge(b).merge(c).build();
     }
 
     public static final class Builder {
@@ -1793,23 +1828,6 @@ public record TpSlots(TpSlot nb_bool, //
                 return hash != null;
             }
             return true;
-        }
-
-        /**
-         * Should be used when merging together generated slots from two or more
-         * {@link com.oracle.graal.python.builtins.PythonBuiltins}. Checks that slots are not
-         * overriding each other.
-         */
-        public Builder merge(TpSlots other) {
-            for (TpSlotMeta def : TpSlotMeta.VALUES) {
-                TpSlot current = values[def.ordinal()];
-                TpSlot otherValue = def.getter.get(other);
-                if (otherValue != null) {
-                    assert current == null : def.name();
-                    set(def, otherValue);
-                }
-            }
-            return this;
         }
 
         private TpSlot fistNonNull(TpSlotMeta a, TpSlotMeta b) {
@@ -1902,6 +1920,7 @@ public record TpSlots(TpSlot nb_bool, //
                             get(TpSlotMeta.TP_REPR), //
                             get(TpSlotMeta.TP_STR), //
                             get(TpSlotMeta.TP_INIT), //
+                            get(TpSlotMeta.TP_NEW), //
                             hasGroup(TpSlotGroup.AS_NUMBER),
                             hasGroup(TpSlotGroup.AS_SEQUENCE),
                             hasGroup(TpSlotGroup.AS_MAPPING));

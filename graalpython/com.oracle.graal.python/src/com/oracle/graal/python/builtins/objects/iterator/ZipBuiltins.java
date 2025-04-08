@@ -25,30 +25,41 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ZIP;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_ZIP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -59,17 +70,68 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PZip)
-public final class PZipBuiltins extends PythonBuiltins {
+public final class ZipBuiltins extends PythonBuiltins {
 
-    public static final TpSlots SLOTS = PZipBuiltinsSlotsGen.SLOTS;
+    public static final TpSlots SLOTS = ZipBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PZipBuiltinsFactory.getFactories();
+        return ZipBuiltinsFactory.getFactories();
+    }
+
+    // zip(*iterables)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_ZIP, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class ZipNode extends PythonBuiltinNode {
+        static boolean isNoneOrEmptyPKeyword(Object value) {
+            return PGuards.isPNone(value) || (value instanceof PKeyword[] kw && kw.length == 0);
+        }
+
+        @Specialization(guards = "isNoneOrEmptyPKeyword(kw)")
+        static PZip zip(VirtualFrame frame, Object cls, Object[] args, @SuppressWarnings("unused") Object kw,
+                        @Bind("this") Node inliningTarget,
+                        @Cached.Exclusive @Cached PyObjectGetIter getIter,
+                        @Cached.Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return zip(frame, inliningTarget, cls, args, false, getIter, getInstanceShape);
+        }
+
+        @Specialization(guards = "kw.length == 1")
+        static PZip zip(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kw,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TruffleString.EqualNode eqNode,
+                        @Cached.Exclusive @Cached PyObjectGetIter getIter,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached InlinedConditionProfile profile,
+                        @Cached.Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached.Exclusive @Cached PRaiseNode raiseNode) {
+            if (profile.profile(inliningTarget, eqNode.execute(kw[0].getName(), T_STRICT, TS_ENCODING))) {
+                return zip(frame, inliningTarget, cls, args, isTrueNode.execute(frame, kw[0].getValue()), getIter, getInstanceShape);
+            }
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_IS_AN_INVALID_ARG_FOR_S, kw[0].getName(), T_ZIP);
+        }
+
+        @Specialization(guards = "kw.length != 1")
+        static Object zip(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object[] args, PKeyword[] kw,
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_TAKES_AT_MOST_ONE_KEYWORD_ARGUMENT_D_GIVEN, T_ZIP, kw.length);
+        }
+
+        private static PZip zip(VirtualFrame frame, Node inliningTarget, Object cls, Object[] args, boolean strict, PyObjectGetIter getIter, TypeNodes.GetInstanceShape getInstanceShape) {
+            Object[] iterables = new Object[args.length];
+            LoopNode.reportLoopCount(inliningTarget, args.length);
+            for (int i = 0; i < args.length; i++) {
+                Object item = args[i];
+                iterables[i] = getIter.execute(frame, inliningTarget, item);
+            }
+            return PFactory.createZip(PythonLanguage.get(inliningTarget), cls, getInstanceShape.execute(cls), iterables, strict);
+        }
     }
 
     @Slot(value = SlotKind.tp_iternext, isComplex = true)

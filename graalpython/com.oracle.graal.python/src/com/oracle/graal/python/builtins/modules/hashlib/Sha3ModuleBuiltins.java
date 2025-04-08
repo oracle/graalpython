@@ -42,99 +42,18 @@ package com.oracle.graal.python.builtins.modules.hashlib;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA3;
 
+import java.util.Collections;
 import java.util.List;
 
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = J_SHA3)
 public final class Sha3ModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return Sha3ModuleBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = "sha3_224", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
-                    "usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3SHA224Type)
-    @Builtin(name = "sha3_256", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
-                    "usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3SHA256Type)
-    @Builtin(name = "sha3_384", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
-                    "usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3SHA384Type)
-    @Builtin(name = "sha3_512", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
-                    "usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3SHA512Type)
-    @Builtin(name = "shake_128", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
-                    "usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3Shake128Type)
-    @Builtin(name = "shake_256", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
-                    "usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3Shake256Type)
-    @GenerateNodeFactory
-    abstract static class ShaNode extends PythonBuiltinNode {
-        @Specialization
-        static Object newDigest(VirtualFrame frame, Object type, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HashlibModuleBuiltins.CreateDigestNode createNode,
-                        @Cached PRaiseNode raiseNode) {
-            PythonBuiltinClassType resultType;
-            if (type instanceof PythonBuiltinClass builtinType) {
-                resultType = builtinType.getType();
-            } else if (type instanceof PythonBuiltinClassType enumType) {
-                resultType = enumType;
-            } else {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.WRONG_TYPE);
-            }
-            return createNode.execute(frame, inliningTarget, resultType, pythonNameFromType(resultType), javaNameFromType(resultType), buffer);
-        }
-
-        private static String javaNameFromType(PythonBuiltinClassType type) {
-            switch (type) {
-                case Sha3SHA224Type:
-                    return "sha3-224";
-                case Sha3SHA256Type:
-                    return "sha3-256";
-                case Sha3SHA384Type:
-                    return "sha3-384";
-                case Sha3SHA512Type:
-                    return "sha3-512";
-                case Sha3Shake128Type:
-                    return "SHAKE128";
-                case Sha3Shake256Type:
-                    return "SHAKE256";
-                default:
-                    throw CompilerDirectives.shouldNotReachHere();
-            }
-        }
-
-        private static String pythonNameFromType(PythonBuiltinClassType type) {
-            switch (type) {
-                case Sha3SHA224Type:
-                    return "sha3_224";
-                case Sha3SHA256Type:
-                    return "sha3_256";
-                case Sha3SHA384Type:
-                    return "sha3_384";
-                case Sha3SHA512Type:
-                    return "sha3_512";
-                case Sha3Shake128Type:
-                    return "shake_128";
-                case Sha3Shake256Type:
-                    return "shake_256";
-                default:
-                    throw CompilerDirectives.shouldNotReachHere();
-            }
-        }
+        return Collections.emptyList();
     }
 }

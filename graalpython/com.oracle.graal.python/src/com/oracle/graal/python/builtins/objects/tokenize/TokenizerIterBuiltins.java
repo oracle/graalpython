@@ -46,17 +46,22 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltinsClinicProviders.TokenizerIterNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Token.Kind;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -76,6 +81,25 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TokenizerIterBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "TokenizerIter", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "source"})
+    @ArgumentClinic(name = "source", conversion = ArgumentClinic.ClinicConversion.TString)
+    @GenerateNodeFactory
+    public abstract static class TokenizerIterNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return TokenizerIterNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static PTokenizerIter tokenizerIter(@SuppressWarnings("unused") Object cls, TruffleString source,
+                        @Bind PythonLanguage language,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+            return PFactory.createTokenizerIter(language, toJavaStringNode.execute(source));
+        }
     }
 
     @Slot(value = SlotKind.tp_iter, isComplex = true)

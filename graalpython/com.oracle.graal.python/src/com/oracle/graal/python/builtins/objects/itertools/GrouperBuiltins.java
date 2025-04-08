@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ITER;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
@@ -48,6 +49,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -55,13 +57,17 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -83,6 +89,28 @@ public final class GrouperBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return GrouperBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "_grouper", minNumOfPositionalArgs = 2, parameterNames = {"$self", "parent", "tgtkey"})
+    @GenerateNodeFactory
+    public abstract static class GrouperNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        static PGrouper construct(Object cls, Object parent, Object tgtKey,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile wrongTypeProfile,
+                        @Cached InlinedConditionProfile isPGroupByProfile,
+                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
+            if (!wrongTypeProfile.profile(inliningTarget, isTypeNode.execute(inliningTarget, cls))) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+            }
+            if (!isPGroupByProfile.profile(inliningTarget, parent instanceof PGroupBy)) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INCORRECT_USAGE_OF_INTERNAL_GROUPER);
+            }
+            return PFactory.createGrouper(language, (PGroupBy) parent, tgtKey);
+        }
     }
 
     @Slot(value = SlotKind.tp_iter, isComplex = true)

@@ -41,19 +41,16 @@
 package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.PyCStructUnionTypeUpdateStgDict;
-import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.StructUnionTypeNewNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
@@ -77,11 +74,6 @@ public final class PyCStructTypeBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PyCStructTypeBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
-    @GenerateNodeFactory
-    protected abstract static class NewNode extends StructUnionTypeNewNode {
     }
 
     @Slot(value = SlotKind.tp_setattro, isComplex = true)

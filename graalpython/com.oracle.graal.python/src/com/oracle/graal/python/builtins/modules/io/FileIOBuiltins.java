@@ -126,6 +126,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -217,6 +218,19 @@ public final class FileIOBuiltins extends PythonBuiltins {
         if (fd >= 0) {
             self.setClosed();
             posixClose.execute(frame, fd);
+        }
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "FileIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class FileIONode extends PythonBuiltinNode {
+        @Specialization
+        static PFileIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            // data filled in subsequent __init__ call - see FileIOBuiltins.InitNode
+            return PFactory.createFileIO(language, cls, getInstanceShape.execute(cls));
         }
     }
 

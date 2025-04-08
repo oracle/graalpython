@@ -40,8 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
+import static com.oracle.graal.python.nodes.ErrorMessages.ISLICE_WRONG_ARGS;
+import static com.oracle.graal.python.nodes.ErrorMessages.STEP_FOR_ISLICE_MUST_BE;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_FOR_ISLICE_MUST_BE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
@@ -51,23 +56,30 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.IteratorExhausted;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
@@ -82,6 +94,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PIslice})
@@ -92,6 +105,112 @@ public final class IsliceBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return IsliceBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "islice", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class IsliceNode extends PythonVarargsBuiltinNode {
+        @Specialization
+        static Object constructOne(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
+                        @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached PyNumberAsSizeNode asIntNode,
+                        @Cached InlinedBranchProfile hasStart,
+                        @Cached InlinedBranchProfile hasStop,
+                        @Cached InlinedBranchProfile hasStep,
+                        @Cached InlinedBranchProfile stopNotInt,
+                        @Cached InlinedBranchProfile startNotInt,
+                        @Cached InlinedBranchProfile stopWrongValue,
+                        @Cached InlinedBranchProfile stepWrongValue,
+                        @Cached InlinedBranchProfile wrongValue,
+                        @Cached InlinedBranchProfile overflowBranch,
+                        @Cached InlinedConditionProfile argsLen1,
+                        @Cached InlinedConditionProfile argsLen2,
+                        @Cached InlinedConditionProfile argsLen3,
+                        @Cached InlinedBranchProfile wrongTypeBranch,
+                        @Cached InlinedBranchProfile wrongArgsBranch,
+                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached PRaiseNode raiseNode) {
+            if (!isTypeNode.execute(inliningTarget, cls)) {
+                wrongTypeBranch.enter(inliningTarget);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+            }
+            if (keywords.length > 0 && hasObjectInitNode.executeCached(cls)) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "islice()");
+            }
+            if (args.length < 2 || args.length > 4) {
+                wrongArgsBranch.enter(inliningTarget);
+                throw raiseNode.raise(inliningTarget, TypeError, ISLICE_WRONG_ARGS);
+            }
+            int start = 0;
+            int step = 1;
+            int stop = -1;
+            if (argsLen1.profile(inliningTarget, args.length == 2)) {
+                if (args[1] != PNone.NONE) {
+                    hasStop.enter(inliningTarget);
+                    try {
+                        stop = asIntNode.executeExact(frame, inliningTarget, args[1], OverflowError);
+                    } catch (PException e) {
+                        stopNotInt.enter(inliningTarget);
+                        throw raiseNode.raise(inliningTarget, ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
+                    }
+                }
+                if (stop < -1 || stop > SysModuleBuiltins.MAXSIZE) {
+                    stopWrongValue.enter(inliningTarget);
+                    throw raiseNode.raise(inliningTarget, ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
+                }
+            } else if (argsLen2.profile(inliningTarget, args.length == 3) || argsLen3.profile(inliningTarget, args.length == 4)) {
+                if (args[1] != PNone.NONE) {
+                    hasStart.enter(inliningTarget);
+                    try {
+                        start = asIntNode.executeExact(frame, inliningTarget, args[1], OverflowError);
+                    } catch (PException e) {
+                        startNotInt.enter(inliningTarget);
+                        throw raiseNode.raise(inliningTarget, ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
+                    }
+                }
+                if (args[2] != PNone.NONE) {
+                    hasStop.enter(inliningTarget);
+                    try {
+                        stop = asIntNode.executeExact(frame, inliningTarget, args[2], OverflowError);
+                    } catch (PException e) {
+                        stopNotInt.enter(inliningTarget);
+                        throw raiseNode.raise(inliningTarget, ValueError, S_FOR_ISLICE_MUST_BE, "Stop argument");
+                    }
+                }
+                if (start < 0 || stop < -1 || start > SysModuleBuiltins.MAXSIZE || stop > SysModuleBuiltins.MAXSIZE) {
+                    wrongValue.enter(inliningTarget);
+                    throw raiseNode.raise(inliningTarget, ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
+                }
+            }
+            if (argsLen3.profile(inliningTarget, args.length == 4)) {
+                if (args[3] != PNone.NONE) {
+                    hasStep.enter(inliningTarget);
+                    try {
+                        step = asIntNode.executeExact(frame, inliningTarget, args[3], OverflowError);
+                    } catch (PException e) {
+                        overflowBranch.enter(inliningTarget);
+                        step = -1;
+                    }
+                }
+                if (step < 1) {
+                    stepWrongValue.enter(inliningTarget);
+                    throw raiseNode.raise(inliningTarget, ValueError, STEP_FOR_ISLICE_MUST_BE);
+                }
+            }
+            Object iterable = args[0];
+            PIslice self = PFactory.createIslice(language, cls, getInstanceShape.execute(cls));
+            self.setIterable(getIter.execute(frame, inliningTarget, iterable));
+            self.setNext(start);
+            self.setStop(stop);
+            self.setStep(step);
+            self.setCnt(0);
+            return self;
+        }
     }
 
     @Slot(value = SlotKind.tp_iter, isComplex = true)
@@ -190,5 +309,4 @@ public final class IsliceBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
     }
-
 }

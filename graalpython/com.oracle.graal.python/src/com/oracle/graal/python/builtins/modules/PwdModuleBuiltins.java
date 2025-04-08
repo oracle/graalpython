@@ -94,12 +94,6 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
     private static final TruffleString T_NOT_AVAILABLE = tsLiteral("NOT_AVAILABLE");
     static final StructSequence.BuiltinTypeDescriptor STRUCT_PASSWD_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStructPasswd,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "pwd.struct_passwd: Results from getpw*() routines.\n\n" +
-                    "This object may be accessed either as a tuple of\n" +
-                    "  (pw_name,pw_passwd,pw_uid,pw_gid,pw_gecos,pw_dir,pw_shell)\n" +
-                    "or via the object attributes as named in the above tuple.",
-                    // @formatter:on
                     7,
                     new String[]{
                                     "pw_name", "pw_passwd", "pw_uid", "pw_gid", "pw_gecos", "pw_dir", "pw_shell",

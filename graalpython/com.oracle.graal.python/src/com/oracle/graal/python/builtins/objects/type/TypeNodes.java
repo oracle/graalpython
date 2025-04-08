@@ -141,7 +141,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -150,7 +149,6 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescripto
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.IndexedSlotDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
@@ -171,6 +169,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNod
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSolidBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesAsArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTpNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.InstancesOfTypeHaveDictNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.InstancesOfTypeHaveWeakrefsNodeGen;
@@ -191,7 +190,6 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -200,7 +198,6 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
@@ -233,7 +230,6 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -406,7 +402,7 @@ public abstract class TypeNodes {
                     result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR;
                     break;
                 case PLruListElem:
-                    result = DEFAULT | HAVE_GC | DISALLOW_INSTANTIATION;
+                    result = DEFAULT | HAVE_GC;
                     break;
                 case PBytesIOBuf:
                 case PMethod:
@@ -467,6 +463,7 @@ public abstract class TypeNodes {
                     break;
             }
             result |= clazz.isAcceptableBase() ? BASETYPE : 0;
+            result |= clazz.disallowInstantiation() ? DISALLOW_INSTANTIATION : 0;
             PythonBuiltinClassType iter = clazz;
             while (iter != null) {
                 if (iter == PythonBuiltinClassType.PBaseException) {
@@ -645,7 +642,7 @@ public abstract class TypeNodes {
             // call 'PyType_Ready' on the type
             int res = (int) PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TYPE_READY, PythonToNativeNodeGen.getUncached().execute(obj));
             if (res < 0) {
-                throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, GetNameNode.executeUncached(obj));
+                throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, obj);
             }
 
             Object tupleObj = getTpMroNode.readFromObj(obj, PyTypeObject__tp_mro);
@@ -687,16 +684,16 @@ public abstract class TypeNodes {
         }
     }
 
+    /**
+     * Equivalent of {@code _PyType_Name}. Returns unqualified name. Different from
+     * {@code GetTpNameNode}.
+     */
     @GenerateUncached
-    @GenerateInline(inlineByDefault = true)
-    @GenerateCached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GetNameNode extends Node {
 
         public abstract TruffleString execute(Node inliningTarget, Object obj);
-
-        public final TruffleString executeCached(Object obj) {
-            return execute(this, obj);
-        }
 
         public static TruffleString executeUncached(Object obj) {
             return GetNameNodeGen.getUncached().execute(null, obj);
@@ -714,26 +711,55 @@ public abstract class TypeNodes {
 
         @Specialization
         TruffleString doNativeClass(PythonNativeClass obj,
+                        @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.LastIndexOfCodePointNode indexOfCodePointNode,
+                        @Cached TruffleString.SubstringNode substringNode) {
+            // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
+            TruffleString tpName = getTpNameNode.readFromObj(obj, PyTypeObject__tp_name);
+            int nameLen = codePointLengthNode.execute(tpName, TS_ENCODING);
+            int lastDot = indexOfCodePointNode.execute(tpName, '.', nameLen, 0, TS_ENCODING);
+            if (lastDot < 0) {
+                return tpName;
+            }
+            return substringNode.execute(tpName, lastDot + 1, nameLen - lastDot - 1, TS_ENCODING, true);
+        }
+    }
+
+    /*
+     * Equivalent of getting {@code tp_name} field. Returns unqualified name for heaptypes, but
+     * qualified name for builtins. Typically used in exception messages.
+     */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GetTpNameNode extends Node {
+
+        public abstract TruffleString execute(Node inliningTarget, Object obj);
+
+        public static TruffleString executeUncached(Object obj) {
+            return GetTpNameNodeGen.getUncached().execute(null, obj);
+        }
+
+        @Specialization
+        static TruffleString doPythonClass(PythonClass obj) {
+            return obj.getName();
+        }
+
+        @Specialization
+        static TruffleString doBuiltinClass(PythonBuiltinClass obj) {
+            return doBuiltinClassType(obj.getType());
+        }
+
+        @Specialization
+        static TruffleString doBuiltinClassType(PythonBuiltinClassType obj) {
+            return obj.getPrintName();
+        }
+
+        @Specialization
+        TruffleString doNativeClass(PythonNativeClass obj,
                         @Cached(inline = false) CStructAccess.ReadCharPtrNode getTpNameNode) {
             return getTpNameNode.readFromObj(obj, PyTypeObject__tp_name);
-        }
-
-        @Specialization(replaces = {"doManagedClass", "doBuiltinClassType", "doNativeClass"})
-        @TruffleBoundary
-        public static TruffleString doSlowPath(Object obj) {
-            if (obj instanceof PythonManagedClass) {
-                return ((PythonManagedClass) obj).getName();
-            } else if (obj instanceof PythonBuiltinClassType) {
-                return ((PythonBuiltinClassType) obj).getName();
-            } else if (PGuards.isNativeClass(obj)) {
-                return CStructAccess.ReadCharPtrNode.getUncached().readFromObj((PythonNativeClass) obj, PyTypeObject__tp_name);
-            }
-            throw new IllegalStateException("unknown type " + obj.getClass().getName());
-        }
-
-        @NeverDefault
-        public static GetNameNode create() {
-            return GetNameNodeGen.create();
         }
     }
 
@@ -985,7 +1011,7 @@ public abstract class TypeNodes {
                 return result;
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.INVALID_BASE_TYPE_OBJ_FOR_CLASS, GetNameNode.doSlowPath(obj), result);
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.INVALID_BASE_TYPE_OBJ_FOR_CLASS, obj, result);
         }
 
         public static GetBaseClassNode getUncached() {
@@ -1086,7 +1112,6 @@ public abstract class TypeNodes {
         @Child private LookupAttributeInMRONode lookupSlotsNode;
         @Child private LookupAttributeInMRONode lookupNewNode;
         @Child private PyObjectSizeNode sizeNode;
-        @Child private GetNameNode getTypeNameNode;
         @Child private ReadAttributeFromObjectNode readAttr;
         @Child private InstancesOfTypeHaveDictNode instancesHaveDictNode;
 
@@ -1100,7 +1125,7 @@ public abstract class TypeNodes {
                         @Cached GetBaseClassNode getBaseClassNode) {
             if (!compatibleForAssignment(frame, inliningTarget, oldBase, newBase, isSameTypeNode, getBaseClassNode)) {
                 errorSlotsBranch.enter(inliningTarget);
-                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CLASS_ASSIGNMENT_S_LAYOUT_DIFFERS_FROM_S, getTypeName(newBase), getTypeName(oldBase));
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CLASS_ASSIGNMENT_N_LAYOUT_DIFFERS_FROM_N, newBase, oldBase);
             }
             return true;
         }
@@ -1193,14 +1218,6 @@ public abstract class TypeNodes {
             int aSize = aSlots != PNone.NO_VALUE ? getSizeNode().executeCached(frame, aSlots) : 0;
             int bSize = bSlots != PNone.NO_VALUE ? getSizeNode().executeCached(frame, bSlots) : 0;
             return aSize == bSize;
-        }
-
-        private TruffleString getTypeName(Object clazz) {
-            if (getTypeNameNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getTypeNameNode = insert(TypeNodes.GetNameNode.create());
-            }
-            return getTypeNameNode.executeCached(clazz);
         }
 
         private Object getSlotsFromType(Object type) {
@@ -1708,9 +1725,9 @@ public abstract class TypeNodes {
             }
             if (!notMerged.isEmpty()) {
                 Iterator<PythonAbstractClass> it = notMerged.iterator();
-                StringBuilder bases = new StringBuilder(GetNameNode.doSlowPath(it.next()).toJavaStringUncached());
+                StringBuilder bases = new StringBuilder(GetNameNode.executeUncached(it.next()).toJavaStringUncached());
                 while (it.hasNext()) {
-                    bases.append(", ").append(GetNameNode.doSlowPath(it.next()));
+                    bases.append(", ").append(GetNameNode.executeUncached(it.next()));
                 }
                 throw PRaiseNode.raiseStatic(node, TypeError, ErrorMessages.CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION, bases.toString());
             }
@@ -2762,22 +2779,20 @@ public abstract class TypeNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    @ImportStatic(SpecialMethodSlot.class)
     public abstract static class HasSameConstructorNode extends Node {
 
         public abstract boolean execute(Node inliningTarget, Object leftClass, Object rightClass);
 
         @Specialization
         static boolean doGeneric(Node inliningTarget, Object left, Object right,
-                        @Cached(parameters = "New", inline = false) LookupCallableSlotInMRONode lookupLeftNode,
-                        @Cached(parameters = "New", inline = false) LookupCallableSlotInMRONode lookupRightNode,
+                        @Cached(inline = false) LookupAttributeInMRONode.Dynamic lookupNew,
                         @Cached InlinedExactClassProfile leftNewProfile,
                         @Cached InlinedExactClassProfile rightNewProfile) {
             assert IsTypeNode.executeUncached(left);
             assert IsTypeNode.executeUncached(right);
 
-            Object leftNew = leftNewProfile.profile(inliningTarget, lookupLeftNode.execute(left));
-            Object rightNew = rightNewProfile.profile(inliningTarget, lookupRightNode.execute(right));
+            Object leftNew = leftNewProfile.profile(inliningTarget, lookupNew.execute(left, T___NEW__));
+            Object rightNew = rightNewProfile.profile(inliningTarget, lookupNew.execute(right, T___NEW__));
             return isSameFunction(leftNew, rightNew);
         }
 
@@ -2797,44 +2812,6 @@ public abstract class TypeNodes {
                 }
             }
             return leftResolved == rightResolved;
-        }
-    }
-
-    /**
-     * Check whether a given function, method or slot descriptor is a specific builtin function.
-     * Used in cases where CPython compares slot for referential equality with a C function to check
-     * for overriding, for example {@code type->tp_init == object_init}. For object {@code __init__}
-     * in particular, there is a shortcut node {@link HasObjectInitNode}.
-     */
-    @GenerateInline
-    @GenerateCached(false)
-    @GenerateUncached
-    public abstract static class CheckCallableIsSpecificBuiltinNode extends Node {
-        public abstract boolean execute(Node inliningTarget, Object methodOrDescriptor, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory);
-
-        public static boolean executeUncached(Object methodOrDescriptor, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
-            return TypeNodesFactory.CheckCallableIsSpecificBuiltinNodeGen.getUncached().execute(null, methodOrDescriptor, nodeFactory);
-        }
-
-        @Specialization
-        static boolean check(PBuiltinFunction function, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
-            return function.getBuiltinNodeFactory() == nodeFactory;
-        }
-
-        @Specialization
-        static boolean check(PBuiltinMethod method, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
-            return method.getBuiltinFunction().getBuiltinNodeFactory() == nodeFactory;
-        }
-
-        @Specialization
-        static boolean check(BuiltinMethodDescriptor descriptor, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
-            return descriptor.getFactory() == nodeFactory;
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static boolean check(Object descriptor, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory) {
-            return false;
         }
     }
 

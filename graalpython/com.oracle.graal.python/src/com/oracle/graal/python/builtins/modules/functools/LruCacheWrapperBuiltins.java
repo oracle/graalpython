@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLEAR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DEEPCOPY__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
@@ -61,6 +60,7 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -117,22 +117,9 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
         return LruCacheWrapperBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 5, takesVarArgs = true, takesVarKeywordArgs = true, //
-                    constructsClass = PythonBuiltinClassType.PLruCacheWrapper, //
-                    parameterNames = {"$cls", "user_function", "maxsize", "typed", "cache_info_type"}, //
-                    doc = "Create a cached callable that wraps another function.\n" + //
-                                    "\n" + //
-                                    "user_function:      the function being cached\n" + //
-                                    "\n" + //
-                                    "maxsize:  0         for no caching\n" + //
-                                    "          None      for unlimited cache size\n" + //
-                                    "          n         for a bounded cache\n" + //
-                                    "\n" + //
-                                    "typed:    False     cache f(3) and f(3.0) as identical calls\n" + //
-                                    "          True      cache f(3) and f(3.0) as distinct calls\n" + //
-                                    "\n" + //
-                                    "cache_info_type:    namedtuple class with the fields:\n" + //
-                                    "                       hits misses currsize maxsize\n")
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "lru_cache", minNumOfPositionalArgs = 5, takesVarArgs = true, takesVarKeywordArgs = true, //
+                    parameterNames = {"$cls", "user_function", "maxsize", "typed", "cache_info_type"})
     @ArgumentClinic(name = "typed", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     protected abstract static class LruCacheNewNode extends PythonClinicBuiltinNode {

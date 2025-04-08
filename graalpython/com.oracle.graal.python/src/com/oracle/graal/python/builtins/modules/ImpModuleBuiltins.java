@@ -69,7 +69,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.MemoryViewNode;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins.Marshal.MarshalError;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -85,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Im
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins.MemoryViewNode;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.FrozenModules;
 import com.oracle.graal.python.builtins.objects.module.PythonFrozenModule;
@@ -578,7 +578,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "find_frozen", parameterNames = {"name", "withData"}, minNumOfPositionalArgs = 1, isPublic = false, doc = "find_frozen($module, name, /, *, withdata=False)\n" +
+    @Builtin(name = "find_frozen", parameterNames = {"name", "withData"}, minNumOfPositionalArgs = 1, doc = "find_frozen($module, name, /, *, withdata=False)\n" +
                     "--\n" +
                     "\n" +
                     "Return info about the corresponding frozen module (if there is one) or None.\n" +

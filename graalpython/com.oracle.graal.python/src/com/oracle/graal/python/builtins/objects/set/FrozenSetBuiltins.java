@@ -25,16 +25,20 @@
  */
 package com.oracle.graal.python.builtins.objects.set;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_FROZENSET;
+
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetSetStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -49,12 +53,15 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXor;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -75,6 +82,46 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return FrozenSetBuiltinsFactory.getFactories();
+    }
+
+    // frozenset([iterable])
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_FROZENSET, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class FrozenSetNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = "isNoValue(arg)")
+        static PFrozenSet frozensetEmpty(Object cls, @SuppressWarnings("unused") PNone arg,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createFrozenSet(language, cls, getInstanceShape.execute(cls), EmptyStorage.INSTANCE);
+        }
+
+        @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinClass(inliningTarget, cls)")
+        static PFrozenSet frozensetIdentity(@SuppressWarnings("unused") Object cls, PFrozenSet arg,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Shared("isBuiltinProfile") @SuppressWarnings("unused") @Cached BuiltinClassProfiles.IsAnyBuiltinClassProfile isBuiltinClass) {
+            return arg;
+        }
+
+        @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinClass(inliningTarget, cls)")
+        static PFrozenSet subFrozensetIdentity(Object cls, PFrozenSet arg,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Shared("isBuiltinProfile") @SuppressWarnings("unused") @Cached BuiltinClassProfiles.IsAnyBuiltinClassProfile isBuiltinClass,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createFrozenSet(language, cls, getInstanceShape.execute(cls), arg.getDictStorage());
+        }
+
+        @Specialization(guards = {"!isNoValue(iterable)", "!isPFrozenSet(iterable)"})
+        static PFrozenSet frozensetIterable(VirtualFrame frame, Object cls, Object iterable,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            HashingStorage storage = getHashingStorageNode.doNoValue(frame, inliningTarget, iterable);
+            return PFactory.createFrozenSet(language, cls, getInstanceShape.execute(cls), storage);
+        }
     }
 
     @Builtin(name = "copy", minNumOfPositionalArgs = 1)

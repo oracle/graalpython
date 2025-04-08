@@ -1606,6 +1606,34 @@ def test_tp_init_calls():
     assert obj.delegate.delegate == []
 
 
+def test_tp_new_calls():
+    TpNewTester = CPyExtType(
+        name='TpNewTester',
+        code=r'''
+            PyObject* call_tp_new(PyObject* ignored, PyObject* args, PyObject* kwargs) {
+                PyTypeObject* cls = (PyTypeObject*)PyTuple_GET_ITEM(args, 0);
+                args = PyTuple_GetSlice(args, 1, PyTuple_GET_SIZE(args));
+                if (!args)
+                    return NULL;
+                PyObject* res = cls->tp_new(cls, args, kwargs);
+                Py_DECREF(args);
+                return res;
+            }
+        ''',
+        tp_methods='{"call_tp_new", (PyCFunction)call_tp_new, METH_VARARGS | METH_KEYWORDS | METH_STATIC, NULL}',
+    )
+    assert TpNewTester.call_tp_new(str, 1) == "1"
+    assert TpNewTester.call_tp_new(str, 'skål'.encode('utf-8'), 'ascii', errors='replace') == "sk��l"
+
+
+def test_disallow_instantiation():
+    UninstantiableType = CPyExtType(
+        name='UninstantiableType',
+        tp_flags='Py_TPFLAGS_DEFAULT | Py_TPFLAGS_DISALLOW_INSTANTIATION',
+    )
+    assert_raises(TypeError, UninstantiableType)
+
+
 def test_richcmp():
     MyNativeIntSubType = CPyExtType("MyNativeIntSubTypeForRichCmpTest",
                              ready_code = "MyNativeIntSubTypeForRichCmpTestType.tp_new = PyLong_Type.tp_new;",

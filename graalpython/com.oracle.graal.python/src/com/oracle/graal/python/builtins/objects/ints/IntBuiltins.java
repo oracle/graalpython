@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_INT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
@@ -64,6 +65,7 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -72,6 +74,7 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.BytesFromObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -98,16 +101,22 @@ import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory.TrueDivN
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory.XorNodeFactory;
 import com.oracle.graal.python.builtins.objects.ints.IntNodes.PyLongFromByteArray;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
-import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyLongCopy;
+import com.oracle.graal.python.lib.PyLongFromUnicodeObject;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
+import com.oracle.graal.python.lib.PyNumberLongNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -184,6 +193,111 @@ public final class IntBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return IntBuiltinsFactory.getFactories();
+    }
+
+    // int(x=0)
+    // int(x, base=10)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_INT, minNumOfPositionalArgs = 1, parameterNames = {"cls", "x", "base"}, numOfPositionalOnlyArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class IntNewNode extends PythonTernaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object cls, Object x, Object baseObj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached IntNodeInnerNode innerNode,
+                        @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
+                        @Cached CreateIntSubclassNode createIntSubclassNode) {
+            Object result = innerNode.execute(frame, inliningTarget, x, baseObj);
+            if (isPrimitiveIntProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PInt)) {
+                return result;
+            } else {
+                return createIntSubclassNode.execute(inliningTarget, cls, result);
+            }
+        }
+
+        @GenerateInline
+        @GenerateCached(false)
+        abstract static class CreateIntSubclassNode extends Node {
+            public abstract Object execute(Node inliningTarget, Object cls, Object intObj);
+
+            @Specialization
+            static Object doSubclass(Object cls, int value,
+                            @Bind PythonLanguage language,
+                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                return PFactory.createInt(language, cls, getInstanceShape.execute(cls), value);
+            }
+
+            @Specialization
+            static Object doSubclass(Object cls, long value,
+                            @Bind PythonLanguage language,
+                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                return PFactory.createInt(language, cls, getInstanceShape.execute(cls), value);
+            }
+
+            @Specialization
+            static Object doSubclass(Object cls, boolean value,
+                            @Bind PythonLanguage language,
+                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                return PFactory.createInt(language, cls, getInstanceShape.execute(cls), PInt.intValue(value));
+            }
+
+            @Specialization
+            static Object doSubclass(Object cls, PInt value,
+                            @Bind PythonLanguage language,
+                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                return PFactory.createInt(language, cls, getInstanceShape.execute(cls), value.getValue());
+            }
+        }
+
+        @GenerateInline
+        @GenerateCached(false)
+        @ImportStatic(PGuards.class)
+        abstract static class IntNodeInnerNode extends Node {
+            public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object x, Object base);
+
+            @Specialization(guards = "isNoValue(baseObj)")
+            static Object doNoBase(VirtualFrame frame, Node inliningTarget, Object x, @SuppressWarnings("unused") Object baseObj,
+                            @Cached InlinedBranchProfile noX,
+                            @Cached PyNumberLongNode pyNumberLongNode) {
+                if (x == PNone.NO_VALUE) {
+                    noX.enter(inliningTarget);
+                    return 0;
+                } else {
+                    return pyNumberLongNode.execute(frame, inliningTarget, x);
+                }
+            }
+
+            @Fallback
+            @InliningCutoff
+            static Object doWithBase(VirtualFrame frame, Node inliningTarget, Object x, Object baseObj,
+                            @Cached InlinedBranchProfile missingArgument,
+                            @Cached InlinedBranchProfile wrongBase,
+                            @Cached InlinedBranchProfile cannotConvert,
+                            @Cached PyNumberAsSizeNode asSizeNode,
+                            @Cached PyUnicodeCheckNode unicodeCheckNode,
+                            @Cached PyLongFromUnicodeObject longFromUnicode,
+                            @Cached BytesNodes.BytesLikeCheck bytesLikeCheck,
+                            @Cached PyNumberLongNode.LongFromBufferNode fromBufferNode,
+                            @Cached PRaiseNode raiseNode) {
+                if (x == PNone.NO_VALUE) {
+                    missingArgument.enter(inliningTarget);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INT_MISSING_STRING_ARGUMENT);
+                }
+                int base = asSizeNode.executeLossy(frame, inliningTarget, baseObj);
+                if ((base != 0 && base < 2) || base > 36) {
+                    wrongBase.enter(inliningTarget);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.INT_BASE_MUST_BE_2_AND_36_OR_0);
+                }
+                if (unicodeCheckNode.execute(inliningTarget, x)) {
+                    return longFromUnicode.execute(inliningTarget, x, base);
+                } else if (bytesLikeCheck.execute(inliningTarget, x)) {
+                    return fromBufferNode.execute(frame, x, base);
+                }
+                cannotConvert.enter(inliningTarget);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INT_CANT_CONVERT_STRING_WITH_EXPL_BASE);
+            }
+        }
     }
 
     @Builtin(name = J___ROUND__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)

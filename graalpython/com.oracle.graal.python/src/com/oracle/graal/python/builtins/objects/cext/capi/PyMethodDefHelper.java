@@ -102,7 +102,7 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
         PKeyword[] kwDefaults = object.getKwDefaults();
         for (int i = 0; i < kwDefaults.length; i++) {
             if (ExternalFunctionNodes.KW_CALLABLE.equals(kwDefaults[i].getName())) {
-                LOGGER.warning("re-creating PyMethodDef for native function " + object);
+                // This can happen for slot wrapper methods of native slots
                 return kwDefaults[i].getValue();
             }
         }

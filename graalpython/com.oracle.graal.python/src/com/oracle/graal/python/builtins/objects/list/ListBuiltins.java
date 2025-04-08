@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.list;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_LIST;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_SORT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.List
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageMpSubscriptNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageSqItemNode;
 import com.oracle.graal.python.builtins.objects.common.SortNodes.SortSequenceStorageNode;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
@@ -100,6 +102,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -149,6 +152,28 @@ public final class ListBuiltins extends PythonBuiltins {
     @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ListBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_LIST, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class ListNode extends PythonVarargsBuiltinNode {
+        @Specialization(guards = "isBuiltinList(cls)")
+        PList doBuiltin(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Bind PythonLanguage language) {
+            return PFactory.createList(language);
+        }
+
+        @Fallback
+        protected PList constructList(Object cls, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createList(language, cls, getInstanceShape.execute(cls));
+        }
+
+        protected static boolean isBuiltinList(Object cls) {
+            return cls == PythonBuiltinClassType.PList;
+        }
     }
 
     @Slot(value = SlotKind.tp_repr, isComplex = true)

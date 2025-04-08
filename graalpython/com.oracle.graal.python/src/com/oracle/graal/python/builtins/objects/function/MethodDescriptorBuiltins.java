@@ -121,7 +121,7 @@ public final class MethodDescriptorBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getEnclosingType() != null")
         static TruffleString reprClassFunction(PBuiltinFunction self,
                         @Cached.Shared("formatter") @Cached StringUtils.SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("<method '%s' of '%s' objects>", self.getName(), TypeNodes.GetNameNode.doSlowPath(self.getEnclosingType()));
+            return simpleTruffleStringFormatNode.format("<method '%s' of '%s' objects>", self.getName(), TypeNodes.GetNameNode.executeUncached(self.getEnclosingType()));
         }
     }
 }
