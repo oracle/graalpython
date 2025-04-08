@@ -1043,8 +1043,32 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     return result
 
 
-def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, nonZeroIsFatal=True, timeout=None, report=False):
-    raise NotImplementedError
+def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, timeout=None, report=False):
+    hpy_root = os.path.join(mx.dependency("hpy").dir)
+    hpy_test_root = os.path.join(mx.dependency("hpy").dir, "test")
+    args = [] if args is None else args
+    with tempfile.TemporaryDirectory(prefix='hpy-test-site-') as d:
+        shutil.copytree(hpy_test_root, os.path.join(d, "test"))
+        hpy_test_root = os.path.join(d, "test")
+        env = env or os.environ.copy()
+        delete_bad_env_keys(env)
+        mx.run([python_binary] + args + ["-m", "venv", os.path.join(d, "venv")],
+               nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
+        python_binary = os.path.join(d, "venv", "Scripts" if mx.is_windows() else "bin", "graalpy")
+        mx.run([python_binary] + args + ["-m", "pip", "install", "pytest", "pytest-xdist", "filelock"],
+               nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
+        mx.run([python_binary] + args + ["-m", "pip", "install", hpy_root],
+               nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
+        run_python_unittests(
+            python_binary,
+            args=args,
+            paths=[hpy_test_root],
+            env=env,
+            use_pytest=True,
+            nonZeroIsFatal=(nonZeroIsFatal and not is_collecting_coverage()),
+            timeout=timeout,
+            report=report
+        )
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True, checkIfWithGraalPythonEE=False,
@@ -1233,7 +1257,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
         if task:
-            run_hpy_unittests(graalpy_standalone_native_enterprise(), args=SANDBOXED_OPTIONS, include_native=False, report=report())
+            run_hpy_unittests(graalpy_standalone_native_enterprise(), args=SANDBOXED_OPTIONS, report=report())
 
     with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
         if task:
