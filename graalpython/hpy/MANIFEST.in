@@ -1,0 +1,1 @@
+recursive-include hpy/devel/include *.h
