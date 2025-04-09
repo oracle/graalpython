@@ -1045,20 +1045,18 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
 
 def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, timeout=None, report=False):
     hpy_root = os.path.join(mx.dependency("hpy").dir)
-    hpy_test_root = os.path.join(mx.dependency("hpy").dir, "test")
     args = [] if args is None else args
-    with tempfile.TemporaryDirectory(prefix='hpy-test-site-') as d:
-        shutil.copytree(hpy_test_root, os.path.join(d, "test"))
-        hpy_test_root = os.path.join(d, "test")
+    d = tempfile.mkdtemp()
+    try:
+        shutil.copytree(hpy_root, os.path.join(d, "hpy"))
+        hpy_test_root = os.path.join(d, "hpy", "test")
         env = env or os.environ.copy()
         delete_bad_env_keys(env)
-        mx.run([python_binary] + args + ["-m", "venv", os.path.join(d, "venv")],
-               nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
+        mx.run([python_binary] + args + ["-m", "venv", os.path.join(d, "venv")], nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
         python_binary = os.path.join(d, "venv", "Scripts" if mx.is_windows() else "bin", "graalpy")
-        mx.run([python_binary] + args + ["-m", "pip", "install", "pytest", "pytest-xdist", "filelock"],
-               nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
-        mx.run([python_binary] + args + ["-m", "pip", "install", hpy_root],
-               nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
+        mx.run([python_binary] + args + ["-m", "pip", "install", "pytest", "pytest-xdist", "filelock"], nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
+        env["SETUPTOOLS_SCM_PRETEND_VERSION"] = "0.9.0"
+        mx.run([python_binary] + args + ["-m", "pip", "install", "."], cwd=hpy_root, nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
         run_python_unittests(
             python_binary,
             args=args,
@@ -1069,6 +1067,11 @@ def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, t
             timeout=timeout,
             report=report
         )
+    finally:
+        if not mx._opts.verbose:
+            shutil.rmtree(d, ignore_errors=True)
+        else:
+            mx.warn(f"MX running verbosely, not deleting temporary directory {d}")
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True, checkIfWithGraalPythonEE=False,

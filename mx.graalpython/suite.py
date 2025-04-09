@@ -373,6 +373,7 @@ suite = {
             "subDir": "graalpython",
             "vpath": True,
             "type": "GraalpythonProject",
+            "defaultBuild": False,
             "args": [
                 "<path:hpy>/build.py",
                 "--out",
@@ -1255,13 +1256,6 @@ suite = {
                             ],
                             "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/graalpy.exe": "dependency:python-venvlauncher",
                             "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/python.exe": "dependency:python-venvlauncher",
-                            "./META-INF/resources/<os>/<arch>/lib-graalpython/modules/": [
-                                {
-                                    "source_type": "dependency",
-                                    "dependency": "hpy",
-                                    "path": "venv/lib/site-packages/hpy*",
-                                }
-                            ],
                         },
                     },
                 },
@@ -1270,13 +1264,6 @@ suite = {
                         "layout": {
                             "./META-INF/resources/<os>/<arch>/lib/graalpy<graal_ver:major_minor>/": [
                                 "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/*",
-                            ],
-                            "./META-INF/resources/<os>/<arch>/lib/graalpy<graal_ver:major_minor>/modules/": [
-                                {
-                                    "source_type": "dependency",
-                                    "dependency": "hpy",
-                                    "path": "venv/lib/python<py_ver:major_minor>/site-packages/hpy*",
-                                }
                             ],
                         },
                     },
