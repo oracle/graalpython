@@ -336,6 +336,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PStringIO("StringIO", "_io", Flags.PUBLIC_BASE_WDICT),
     PBytesIO("BytesIO", "_io", Flags.PUBLIC_BASE_WDICT),
     PBytesIOBuf("_BytesIOBuffer", "_io", Flags.PRIVATE_BASE_WODICT),
+    PWindowsConsoleIO("_WindowsConsoleIO", "_io", Flags.PRIVATE_BASE_WODICT),
 
     PStatResult("stat_result", "os", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
     PStatvfsResult("statvfs_result", "os", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
