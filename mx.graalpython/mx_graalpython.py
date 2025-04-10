@@ -186,6 +186,8 @@ if WIN32:
             if os.path.isfile(os.path.join(os.path.abspath(p), "cl.exe")):
                 mx.log("LIB and INCLUDE set, cl.exe on PATH, assuming this is a VS shell")
                 os.environ["DISTUTILS_USE_SDK"] = "1"
+                if not os.environ.get("MSSdk"):
+                    os.environ["MSSdk"] = os.environ.get("WindowsSdkDir", "unset")
                 break
         else:
             mx.log("cl.exe not on PATH, not a VS shell")
