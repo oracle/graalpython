@@ -100,7 +100,6 @@ import com.oracle.graal.python.builtins.objects.set.SetNodesFactory;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CreateSliceNode;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodesFactory.CreateSliceNodeGen;
-import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.compiler.BinaryOpsConstants;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.FormatOptions;
@@ -164,6 +163,7 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectSizeNodeGen;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNodeGen;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -1965,7 +1965,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             generalizePopAndJumpIfFalseB(bci);
                             continue;
                         }
-                        if (profileCondition(!virtualFrame.getBoolean(stackTop--), localBC, bci, useCachedNodes)) {
+                        boolean cond = virtualFrame.getBoolean(stackTop);
+                        clearInCompiledCode(virtualFrame, stackTop--);
+                        if (profileCondition(!cond, localBC, bci, useCachedNodes)) {
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
@@ -1981,7 +1983,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             generalizePopAndJumpIfTrueB(bci);
                             continue;
                         }
-                        if (profileCondition(virtualFrame.getBoolean(stackTop--), localBC, bci, useCachedNodes)) {
+                        boolean cond = virtualFrame.getBoolean(stackTop);
+                        clearInCompiledCode(virtualFrame, stackTop--);
+                        if (profileCondition(cond, localBC, bci, useCachedNodes)) {
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
@@ -3031,7 +3035,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } catch (QuickeningGeneralizeException e) {
             return generalizeBinarySubscrSeq(virtualFrame, stackTop, bci, localNodes, e);
         }
-        virtualFrame.setObject(stackTop--, null);
+        clearInCompiledCode(virtualFrame, stackTop--);
         virtualFrame.setObject(stackTop, value);
         return stackTop;
     }
@@ -3050,7 +3054,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } catch (QuickeningGeneralizeException e) {
             return generalizeBinarySubscrSeq(virtualFrame, stackTop, bci, localNodes, e);
         }
-        virtualFrame.setObject(stackTop--, null);
+        clearInCompiledCode(virtualFrame, stackTop--);
         virtualFrame.setInt(stackTop, value);
         return stackTop;
     }
@@ -3069,7 +3073,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } catch (QuickeningGeneralizeException e) {
             return generalizeBinarySubscrSeq(virtualFrame, stackTop, bci, localNodes, e);
         }
-        virtualFrame.setObject(stackTop--, null);
+        clearInCompiledCode(virtualFrame, stackTop--);
         virtualFrame.setDouble(stackTop, value);
         return stackTop;
     }
@@ -3276,6 +3280,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         throw PRaiseNode.raiseStatic(this, SystemError, format, OpCodes.fromOpCode(bc));
     }
 
+    private static void clearInCompiledCode(VirtualFrame virtualFrame, int stackTop) {
+        if (CompilerDirectives.inCompiledCode()) {
+            virtualFrame.clear(stackTop);
+        }
+    }
+
     private void generalizeForIterI(int bci, QuickeningGeneralizeException e) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         if (e.type == QuickeningTypes.OBJECT) {
@@ -3468,6 +3478,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             default:
                 throw CompilerDirectives.shouldNotReachHere("Invalid operation for BINARY_OP_II_B");
         }
+        clearInCompiledCode(virtualFrame, stackTop);
         virtualFrame.setBoolean(stackTop - 1, result);
     }
 
@@ -3562,7 +3573,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             default:
                 throw CompilerDirectives.shouldNotReachHere("Invalid operation for BINARY_OP_II_O");
         }
-        virtualFrame.setObject(stackTop, null);
+        clearInCompiledCode(virtualFrame, stackTop);
         virtualFrame.setObject(stackTop - 1, result);
     }
 
@@ -3655,6 +3666,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             generalizeBinaryOpIIIOverflow(virtualFrame, stackTop, bci, localNodes, op);
             return;
         }
+        clearInCompiledCode(virtualFrame, stackTop);
         virtualFrame.setInt(stackTop - 1, result);
     }
 
@@ -3707,6 +3719,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             generalizeBinaryOpDDDOverflow(virtualFrame, stackTop, bci, localNodes, op, useCachedNodes);
             return;
         }
+        clearInCompiledCode(virtualFrame, stackTop);
         virtualFrame.setDouble(stackTop - 1, result);
     }
 
@@ -3743,6 +3756,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             default:
                 throw CompilerDirectives.shouldNotReachHere("Invalid operation for BINARY_OP_DD_B");
         }
+        clearInCompiledCode(virtualFrame, stackTop);
         virtualFrame.setBoolean(stackTop - 1, result);
     }
 
@@ -3804,7 +3818,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             default:
                 throw CompilerDirectives.shouldNotReachHere("Invalid operation for BINARY_OP_DD_O");
         }
-        virtualFrame.setObject(stackTop, null);
+        clearInCompiledCode(virtualFrame, stackTop);
         virtualFrame.setObject(stackTop - 1, result);
     }
 
@@ -4191,6 +4205,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void bytecodeStoreFastI(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index) {
         if (virtualFrame.isInt(stackTop)) {
             localFrame.setInt(index, virtualFrame.getInt(stackTop));
+            clearInCompiledCode(virtualFrame, stackTop);
         } else {
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
         }
@@ -4240,6 +4255,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void bytecodeStoreFastL(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index) {
         if (virtualFrame.isLong(stackTop)) {
             localFrame.setLong(index, virtualFrame.getLong(stackTop));
+            clearInCompiledCode(virtualFrame, stackTop);
         } else {
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
         }
@@ -4289,6 +4305,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void bytecodeStoreFastD(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index) {
         if (virtualFrame.isDouble(stackTop)) {
             localFrame.setDouble(index, virtualFrame.getDouble(stackTop));
+            clearInCompiledCode(virtualFrame, stackTop);
         } else {
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
         }
@@ -4338,6 +4355,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void bytecodeStoreFastB(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index) {
         if (virtualFrame.isBoolean(stackTop)) {
             localFrame.setBoolean(index, virtualFrame.getBoolean(stackTop));
+            clearInCompiledCode(virtualFrame, stackTop);
         } else {
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
         }
@@ -4927,7 +4945,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } catch (QuickeningGeneralizeException e) {
             return generalizeStoreSubscr(virtualFrame, stackTop, bci, localNodes, useCachedNodes);
         }
-        virtualFrame.setObject(stackTop--, null);
+        clearInCompiledCode(virtualFrame, stackTop--);
         virtualFrame.setObject(stackTop--, null);
         virtualFrame.setObject(stackTop--, null);
         return stackTop;
@@ -4950,9 +4968,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } catch (QuickeningGeneralizeException e) {
             return generalizeStoreSubscr(virtualFrame, stackTop, bci, localNodes, useCachedNodes);
         }
+        clearInCompiledCode(virtualFrame, stackTop--);
         virtualFrame.setObject(stackTop--, null);
-        virtualFrame.setObject(stackTop--, null);
-        virtualFrame.setObject(stackTop--, null);
+        clearInCompiledCode(virtualFrame, stackTop--);
         return stackTop;
     }
 
@@ -4973,9 +4991,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } catch (QuickeningGeneralizeException e) {
             return generalizeStoreSubscr(virtualFrame, stackTop, bci, localNodes, useCachedNodes);
         }
+        clearInCompiledCode(virtualFrame, stackTop--);
         virtualFrame.setObject(stackTop--, null);
-        virtualFrame.setObject(stackTop--, null);
-        virtualFrame.setObject(stackTop--, null);
+        clearInCompiledCode(virtualFrame, stackTop--);
         return stackTop;
     }
 
