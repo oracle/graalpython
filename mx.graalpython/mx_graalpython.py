@@ -975,6 +975,8 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         # Windows machines don't seem to have much memory
         parallel = min(parallel, 2)
 
+    parallelism = str(min(os.cpu_count(), parallel))
+
     args = args or []
     args = [
         "--vm.ea",
@@ -993,9 +995,9 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     if BYTECODE_DSL_INTERPRETER:
         args += ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
     if use_pytest:
-        args += ["-m", "pytest", "-v", "--assert=plain", "--tb=native"]
+        args += ["-m", "pytest", "-v", "--assert=plain", "--tb=native", "-n", parallelism]
     else:
-        args += [_python_test_runner(), "run", "--durations", "10", "-n", str(min(os.cpu_count(), parallel)), f"--subprocess-args={shlex.join(args)}"]
+        args += [_python_test_runner(), "run", "--durations", "10", "-n", parallelism, f"--subprocess-args={shlex.join(args)}"]
 
     if runner_args:
         args += runner_args
@@ -1056,7 +1058,7 @@ def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, t
         python_binary = os.path.join(d, "venv", "Scripts" if mx.is_windows() else "bin", "graalpy")
         mx.run([python_binary] + args + ["-m", "pip", "install", "pytest", "pytest-xdist", "filelock"], nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
         env["SETUPTOOLS_SCM_PRETEND_VERSION"] = "0.9.0"
-        mx.run([python_binary] + args + ["-m", "pip", "install", "."], cwd=hpy_root, nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
+        mx.run([python_binary] + args + ["-m", "pip", "install", "-e", "."], cwd=hpy_root, nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
         run_python_unittests(
             python_binary,
             args=args,
@@ -1065,6 +1067,7 @@ def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, t
             use_pytest=True,
             nonZeroIsFatal=(nonZeroIsFatal and not is_collecting_coverage()),
             timeout=timeout,
+            parallel=int(os.cpu_count() / 4),
             report=report
         )
     finally:
