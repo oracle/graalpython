@@ -41,8 +41,8 @@
 package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -96,6 +97,7 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -190,7 +192,7 @@ public final class TpSlotVarargs {
             Class<T> nodeClass = factory.getNodeClass();
             SlotSignature slotSignature = nodeClass.getAnnotation(SlotSignature.class);
             Slot2Builtin builtin = new Slot2Builtin(slotSignature, J___NEW__, null);
-            PythonBuiltinClassType builtinType = type instanceof PythonBuiltinClassType bt ? bt : PythonBuiltinClassType.nil;
+            PythonBuiltinClassType builtinType = type instanceof PythonBuiltinClassType bt ? bt : null;
             /*
              * Note: '__new__' is not a 'wrapper_descriptor', but a 'builtin_function_or_method'.
              * The method holds the declaring type as self and the actual 'cls' argument comes after
@@ -242,6 +244,7 @@ public final class TpSlotVarargs {
         }
 
         @Specialization(replaces = "callCachedBuiltin")
+        @InliningCutoff
         static Object callGenericBuiltin(VirtualFrame frame, Node inliningTarget, TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached CreateAndCheckArgumentsNode createArgumentsNode,
                         @Cached(inline = false) CallContext callContext,
@@ -288,15 +291,13 @@ public final class TpSlotVarargs {
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
-    @ReportPolymorphism
-    public abstract static class CallSlotTpInitNode extends CallVarargsTpSlotBaseNode {
-        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, J___INIT__);
+    abstract static class CallSlotVarargsPythonNode extends Node {
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object[] args, PKeyword[] keywords);
 
         @Specialization
         static Object callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached MaybeBindDescriptorNode bindDescriptorNode,
-                        @Cached(inline = false) CallNode callNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached(inline = false) CallNode callNode) {
             Object bound = bindDescriptorNode.execute(frame, inliningTarget, slot.getCallable(), self, slot.getType());
             Object callable;
             Object[] callArgs;
@@ -309,7 +310,55 @@ public final class TpSlotVarargs {
                 callArgs[0] = self;
                 PythonUtils.arraycopy(args, 0, callArgs, 1, args.length);
             }
-            Object result = callNode.execute(frame, callable, callArgs, keywords);
+            return callNode.execute(frame, callable, callArgs, keywords);
+        }
+    }
+
+    private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "<varargs slot>");
+
+    @GenerateInline(false)
+    @GenerateUncached
+    abstract static class CallSlotVarargsNativeNode extends Node {
+
+        abstract Object execute(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords, TruffleString name, CheckFunctionResultNode checkResultNode,
+                        NativeToPythonTransferNode toPythonNode);
+
+        @Specialization
+        static Object callNative(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords, TruffleString name, CheckFunctionResultNode checkResultNode,
+                        NativeToPythonTransferNode toPythonNode,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached(inline = false) PythonToNativeNode toNativeNode,
+                        @Cached CreateArgsTupleNode createArgsTupleNode,
+                        @Cached EagerTupleState eagerTupleState,
+                        @Cached ExternalFunctionInvokeNode externalInvokeNode) {
+            PythonLanguage language = context.getLanguage(inliningTarget);
+            PythonThreadState state = getThreadStateNode.execute(inliningTarget, context);
+            PTuple argsTuple = createArgsTupleNode.execute(inliningTarget, language, args, eagerTupleState);
+            Object kwargsDict = PFactory.createDict(language, keywords);
+            Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, name, slot.callable,
+                            toNativeNode.execute(self), toNativeNode.execute(argsTuple), toNativeNode.execute(kwargsDict));
+            eagerTupleState.report(inliningTarget, argsTuple);
+            checkResultNode.execute(state, name, nativeResult);
+            if (toPythonNode != null) {
+                return toPythonNode.execute(nativeResult);
+            }
+            return NO_VALUE;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    @ReportPolymorphism
+    public abstract static class CallSlotTpInitNode extends CallVarargsTpSlotBaseNode {
+
+        @Specialization
+        static Object callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object[] args, PKeyword[] keywords,
+                        @Cached CallSlotVarargsPythonNode callNode,
+                        @Cached PRaiseNode raiseNode) {
+            Object result = callNode.execute(frame, inliningTarget, slot, self, args, keywords);
             if (result != PNone.NONE) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SHOULD_RETURN_NONE, "__init__()");
             }
@@ -317,23 +366,11 @@ public final class TpSlotVarargs {
         }
 
         @Specialization
-        static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
-                        @Bind PythonContext context,
-                        @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached(inline = false) PythonToNativeNode toNativeNode,
-                        @Cached CreateArgsTupleNode createArgsTupleNode,
-                        @Cached EagerTupleState eagerTupleState,
-                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Cached InitCheckFunctionResultNode checkResult) {
-            PythonLanguage language = context.getLanguage(inliningTarget);
-            PythonThreadState state = getThreadStateNode.execute(inliningTarget, context);
-            PTuple argsTuple = createArgsTupleNode.execute(inliningTarget, language, args, eagerTupleState);
-            Object kwargsDict = PFactory.createDict(language, keywords);
-            Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___INIT__, slot.callable,
-                            toNativeNode.execute(self), toNativeNode.execute(argsTuple), toNativeNode.execute(kwargsDict));
-            eagerTupleState.report(inliningTarget, argsTuple);
-            checkResult.execute(state, T___INIT__, nativeResult);
-            return PNone.NO_VALUE;
+        @InliningCutoff
+        static Object callNative(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
+                        @Cached InitCheckFunctionResultNode checkResult,
+                        @Cached CallSlotVarargsNativeNode callNode) {
+            return callNode.execute(frame, slot, self, args, keywords, T___INIT__, checkResult, null);
         }
     }
 
@@ -379,7 +416,6 @@ public final class TpSlotVarargs {
     @GenerateUncached
     @ReportPolymorphism
     public abstract static class CallSlotTpNewNode extends CallVarargsTpSlotBaseNode {
-        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, J___NEW__);
 
         @Specialization
         static Object callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object[] args, PKeyword[] keywords,
@@ -390,24 +426,34 @@ public final class TpSlotVarargs {
         }
 
         @Specialization
-        static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
-                        @Bind PythonContext context,
-                        @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached(inline = false) PythonToNativeNode toNativeNode,
-                        @Cached CreateArgsTupleNode createArgsTupleNode,
-                        @Cached EagerTupleState eagerTupleState,
-                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
+        @InliningCutoff
+        static Object callNative(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached DefaultCheckFunctionResultNode checkResult,
-                        @Cached(inline = false) NativeToPythonTransferNode toPythonNode) {
-            PythonLanguage language = context.getLanguage(inliningTarget);
-            PythonThreadState state = getThreadStateNode.execute(inliningTarget, context);
-            PTuple argsTuple = createArgsTupleNode.execute(inliningTarget, language, args, eagerTupleState);
-            Object kwargsDict = PFactory.createDict(language, keywords);
-            Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___NEW__, slot.callable,
-                            toNativeNode.execute(self), toNativeNode.execute(argsTuple), toNativeNode.execute(kwargsDict));
-            eagerTupleState.report(inliningTarget, argsTuple);
-            checkResult.execute(state, T___NEW__, nativeResult);
-            return toPythonNode.execute(nativeResult);
+                        @Cached NativeToPythonTransferNode toPythonNode,
+                        @Cached CallSlotVarargsNativeNode callNode) {
+            return callNode.execute(frame, slot, self, args, keywords, T___NEW__, checkResult, toPythonNode);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    @ReportPolymorphism
+    public abstract static class CallSlotTpCallNode extends CallVarargsTpSlotBaseNode {
+
+        @Specialization
+        static Object callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object[] args, PKeyword[] keywords,
+                        @Cached CallSlotVarargsPythonNode callNode) {
+            return callNode.execute(frame, inliningTarget, slot, self, args, keywords);
+        }
+
+        @Specialization
+        @InliningCutoff
+        static Object callNative(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
+                        @Cached DefaultCheckFunctionResultNode checkResult,
+                        @Cached NativeToPythonTransferNode toPythonNode,
+                        @Cached CallSlotVarargsNativeNode callNode) {
+            return callNode.execute(frame, slot, self, args, keywords, T___CALL__, checkResult, toPythonNode);
         }
     }
 }

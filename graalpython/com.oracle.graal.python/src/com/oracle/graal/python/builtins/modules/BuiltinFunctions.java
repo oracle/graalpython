@@ -222,7 +222,6 @@ import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
@@ -2499,8 +2498,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CalculateMetaclassNode calculateMetaClass,
                         @Cached("create(T___PREPARE__)") GetAttributeNode getPrepare,
                         @Cached PyMappingCheckNode pyMappingCheckNode,
-                        @Cached CallVarargsMethodNode callPrep,
-                        @Cached CallVarargsMethodNode callType,
+                        @Cached CallNode callPrep,
+                        @Cached CallNode callType,
                         @Cached CallDispatchNode callBody,
                         @Cached UpdateBasesNode update,
                         @Cached PyObjectSetItem setOrigBases,

@@ -92,7 +92,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -215,7 +215,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
 
         // codecs.CodecInfo
         PythonAbstractClass codecInfoClass = (PythonAbstractClass) codecsModule.getAttribute(T_CODEC_INFO_NAME);
-        return (PTuple) CallVarargsMethodNode.getUncached().execute(null, codecInfoClass, new Object[]{}, createCodecInfoArgs(encoding, encodeMethod, decodeMethod, tie, tid, sr, sw));
+        return (PTuple) CallNode.getUncached().execute(null, codecInfoClass, new Object[]{}, createCodecInfoArgs(encoding, encodeMethod, decodeMethod, tie, tid, sr, sw));
     }
 
     private static PythonObject createPythonObject(PythonLanguage language, PythonClass cls) {
@@ -341,7 +341,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         Object call(VirtualFrame frame, PythonObject self, Object[] args, PKeyword[] kw,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
-                        @Cached CallVarargsMethodNode callNode) {
+                        @Cached CallNode callNode) {
             Object[] callArgs = new Object[args.length + 1];
             callArgs[0] = getAttrNode.execute(frame, inliningTarget, self, T_ATTR_ENCODING);
             PythonUtils.arraycopy(args, 0, callArgs, 1, args.length);

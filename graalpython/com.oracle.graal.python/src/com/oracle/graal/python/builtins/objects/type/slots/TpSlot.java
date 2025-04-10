@@ -340,7 +340,7 @@ public abstract class TpSlot {
             Builtin builtin = new Slot2Builtin(slotSignature, name, signature);
             Class<?> nodeClass = NodeFactoryBase.getWrappedNodeClass(factory);
             validateSlotNode(factory, nodeClass, slotSignature);
-            PythonBuiltinClassType builtinType = type instanceof PythonBuiltinClassType bt ? bt : PythonBuiltinClassType.nil;
+            PythonBuiltinClassType builtinType = type instanceof PythonBuiltinClassType bt ? bt : null;
             RootCallTarget callTarget = core.getLanguage().createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, true, builtinType), factory.getNodeClass(), nodeClass,
                             builtinType, name);
 

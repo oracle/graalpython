@@ -26,15 +26,12 @@
 
 package com.oracle.graal.python.builtins.objects.foreign;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
-
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -73,7 +70,7 @@ public final class ForeignInstantiableBuiltins extends PythonBuiltins {
         return ForeignInstantiableBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Slot(value = SlotKind.tp_call, isComplex = true)
     @Slot(value = SlotKind.tp_new, isComplex = true)
     @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory

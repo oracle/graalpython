@@ -125,12 +125,10 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.keywords.MappingToKeywordsNode;
 import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
-import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
 import com.oracle.graal.python.nodes.interop.GetInteropBehaviorNode;
 import com.oracle.graal.python.nodes.interop.GetInteropBehaviorValueNode;
@@ -1287,26 +1285,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         public abstract Object execute(Object receiver, Object[] arguments) throws UnsupportedMessageException;
 
-        @Specialization(guards = {"isBuiltinFunctionOrMethod(receiver)"})
-        Object doVarargsBuiltinMethod(Object receiver, Object[] arguments,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CallVarargsMethodNode callVarargsMethodNode,
-                        @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode) {
-            Object[] convertedArgs = convertArgsNode.execute(inliningTarget, arguments);
-            return callVarargsMethodNode.execute(null, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS);
-        }
-
         private static String POSARGS_MEMBER = "org.graalvm.python.embedding.PositionalArguments.is_positional_arguments";
         private static String KWARGS_MEMBER = "org.graalvm.python.embedding.KeywordArguments.is_keyword_arguments";
 
-        @Specialization(replaces = "doVarargsBuiltinMethod")
+        @Specialization
         static Object doExecute(Object receiver, Object[] arguments,
                         @Bind("this") Node inliningTarget,
                         @Cached PyCallableCheckNode callableCheck,
                         @Exclusive @Cached CallNode callNode,
                         @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode,
                         @Cached MappingToKeywordsNode toKeywordsNode,
-                        @Cached ExecutePositionalStarargsNode positionalStarargsNode,
                         @CachedLibrary(limit = "1") InteropLibrary iLibKwArgs,
                         @CachedLibrary(limit = "1") InteropLibrary iLibPosArgs,
                         @CachedLibrary(limit = "1") InteropLibrary iLibIterator,

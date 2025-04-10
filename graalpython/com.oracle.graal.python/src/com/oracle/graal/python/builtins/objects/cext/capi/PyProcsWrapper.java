@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.Call
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.CallSlotSqAssItemNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.CallSlotSqContainsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpCallNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpInitNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpNewNode;
 import com.oracle.graal.python.lib.IteratorExhausted;
@@ -86,12 +87,10 @@ import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -894,55 +893,49 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class CallFunctionWrapper extends PyProcsWrapper {
+    public static final class CallWrapper extends TpSlotWrapper {
 
-        public CallFunctionWrapper(Object delegate) {
+        public CallWrapper(TpSlotManaged delegate) {
             super(delegate);
         }
 
-        @ExportMessage(name = "execute")
-        static class Execute {
+        @Override
+        public TpSlotWrapper cloneWith(TpSlotManaged slot) {
+            return new CallWrapper(slot);
+        }
 
-            @Specialization(guards = "arguments.length == 3")
-            static Object call(CallFunctionWrapper self, Object[] arguments,
-                            @Bind("this") Node inliningTarget,
-                            @Cached ExecutePositionalStarargsNode posStarargsNode,
-                            @Cached ExpandKeywordStarargsNode expandKwargsNode,
-                            @Cached CallVarargsMethodNode callNode,
-                            @Cached NativeToPythonNode toJavaNode,
-                            @Cached PythonToNativeNewRefNode toNativeNode,
-                            @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                            @Exclusive @Cached GilNode gil) {
-                boolean mustRelease = gil.acquire();
-                CApiTiming.enter();
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Bind Node inliningTarget,
+                        @Cached ExecutePositionalStarargsNode posStarargsNode,
+                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
+                        @Cached CallSlotTpCallNode callNode,
+                        @Cached NativeToPythonNode toJavaNode,
+                        @Cached PythonToNativeNewRefNode toNativeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
+            try {
                 try {
-                    try {
-                        // convert args
-                        Object receiver = toJavaNode.execute(arguments[0]);
-                        Object starArgs = toJavaNode.execute(arguments[1]);
-                        Object kwArgs = toJavaNode.execute(arguments[2]);
+                    // convert args
+                    Object receiver = toJavaNode.execute(arguments[0]);
+                    Object starArgs = toJavaNode.execute(arguments[1]);
+                    Object kwArgs = toJavaNode.execute(arguments[2]);
 
-                        Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                        Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
-                        PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
-                        Object result = callNode.execute(null, self.getDelegate(), pArgs, kwArgsArray);
-                        return toNativeNode.execute(result);
-                    } catch (Throwable t) {
-                        throw checkThrowableBeforeNative(t, "CallFunctionWrapper", self.getDelegate());
-                    }
-                } catch (PException e) {
-                    transformExceptionToNativeNode.execute(inliningTarget, e);
-                    return PythonContext.get(gil).getNativeNull();
-                } finally {
-                    CApiTiming.exit(self.timing);
-                    gil.release(mustRelease);
+                    Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
+                    PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
+                    Object result = callNode.execute(null, inliningTarget, getSlot(), receiver, starArgsArray, kwArgsArray);
+                    return toNativeNode.execute(result);
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "CallWrapper", getDelegate());
                 }
-            }
-
-            @Specialization(guards = "arguments.length != 3")
-            static Object error(@SuppressWarnings("unused") CallFunctionWrapper self, Object[] arguments) throws ArityException {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(3, 3, arguments.length);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(inliningTarget, e);
+                return PythonContext.get(gil).getNativeNull();
+            } finally {
+                CApiTiming.exit(timing);
+                gil.release(mustRelease);
             }
         }
 
@@ -1300,8 +1293,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached CallSlotLenNode callSlotNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
             try {

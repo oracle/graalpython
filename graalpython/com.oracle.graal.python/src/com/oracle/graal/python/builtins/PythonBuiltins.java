@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ANEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AWAIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.ensureNoJavaString;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -124,7 +123,7 @@ public abstract class PythonBuiltins {
     }
 
     // All methods that are really slots in CPython
-    private static final Set<String> SLOTS = Set.of(J___ANEXT__, J___AWAIT__, J___CALL__);
+    private static final Set<String> SLOTS = Set.of(J___ANEXT__, J___AWAIT__);
 
     private static boolean isSlotMethod(Builtin builtin) {
         return builtin.name().startsWith("__") && SLOTS.contains(builtin.name());

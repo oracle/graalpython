@@ -63,7 +63,7 @@ import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -126,23 +126,23 @@ public final class MapBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getIterators().length == 1")
         Object doOne(VirtualFrame frame, PMap self,
                         @Bind Node inliningTarget,
-                        @Shared @Cached CallVarargsMethodNode callNode,
+                        @Shared @Cached CallNode callNode,
                         @Shared @Cached PyIterNextNode nextNode) {
             Object item = nextNode.execute(frame, inliningTarget, self.getIterators()[0]);
-            return callNode.execute(frame, self.getFunction(), new Object[]{item}, PKeyword.EMPTY_KEYWORDS);
+            return callNode.execute(frame, self.getFunction(), item);
         }
 
         @Specialization(replaces = "doOne")
         Object doNext(VirtualFrame frame, PMap self,
                         @Bind Node inliningTarget,
-                        @Shared @Cached CallVarargsMethodNode callNode,
+                        @Shared @Cached CallNode callNode,
                         @Shared @Cached PyIterNextNode nextNode) {
             Object[] iterators = self.getIterators();
             Object[] arguments = new Object[iterators.length];
             for (int i = 0; i < iterators.length; i++) {
                 arguments[i] = nextNode.execute(frame, inliningTarget, iterators[i]);
             }
-            return callNode.execute(frame, self.getFunction(), arguments, PKeyword.EMPTY_KEYWORDS);
+            return callNode.execute(frame, self.getFunction(), arguments);
         }
     }
 

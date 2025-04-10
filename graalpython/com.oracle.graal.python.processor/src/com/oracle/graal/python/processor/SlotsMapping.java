@@ -79,7 +79,7 @@ public class SlotsMapping {
             case tp_setattro -> "TpSlotSetAttr.TpSlotSetAttrBuiltin";
             case tp_iternext -> "TpSlotIterNext.TpSlotIterNextBuiltin";
             case tp_hash -> "TpSlotHashFun.TpSlotHashBuiltin";
-            case tp_init -> "TpSlotVarargs.TpSlotVarargsBuiltin";
+            case tp_init, tp_call -> "TpSlotVarargs.TpSlotVarargsBuiltin";
             case tp_new -> "TpSlotVarargs.TpSlotNewBuiltin";
         };
     }
@@ -113,7 +113,7 @@ public class SlotsMapping {
             case tp_descr_set -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.DescrSetBuiltinNode";
             case tp_setattro -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode";
             case tp_hash -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode";
-            case tp_init, tp_new -> "com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode";
+            case tp_init, tp_new, tp_call -> "com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode";
         };
     }
 
@@ -193,6 +193,7 @@ public class SlotsMapping {
             case tp_str -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__";
             case tp_repr -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__";
             case tp_init -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__";
+            case tp_call -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__";
             default -> "";
         };
     }

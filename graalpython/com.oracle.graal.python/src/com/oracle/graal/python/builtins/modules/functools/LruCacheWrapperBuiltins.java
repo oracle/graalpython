@@ -47,7 +47,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.MAXSIZE_SHOULD_BE_INTE
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_FIRST_ARGUMENT_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLEAR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DEEPCOPY__;
@@ -84,7 +83,7 @@ import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -191,15 +190,9 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
     public abstract static class CacheInfoNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object info(VirtualFrame frame, LruCacheObject self,
-                        @Cached CallVarargsMethodNode callNode) {
-            if (self.maxsize == -1) {
-                return callNode.execute(frame, self.cacheInfoType,
-                                new Object[]{self.hits, self.misses, PNone.NONE, self.cache.size()},
-                                PKeyword.EMPTY_KEYWORDS);
-            }
-            return callNode.execute(frame, self.cacheInfoType,
-                            new Object[]{self.hits, self.misses, self.maxsize, self.cache.size()},
-                            PKeyword.EMPTY_KEYWORDS);
+                        @Cached CallNode callNode) {
+            Object maxsize = self.maxsize == -1 ? PNone.NONE : self.maxsize;
+            return callNode.execute(frame, self.cacheInfoType, self.hits, self.misses, maxsize, self.cache.size());
         }
     }
 
@@ -261,14 +254,15 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_call, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PartialCallNode extends PythonVarargsBuiltinNode {
 
         // uncached_lru_cache_wrapper
         @Specialization(guards = "self.isUncached()")
         static Object uncachedLruCacheWrapper(VirtualFrame frame, LruCacheObject self, Object[] args, PKeyword[] kwds,
-                        @Shared @Cached CallVarargsMethodNode callNode) {
+                        @Shared @Cached CallNode callNode) {
             self.misses++;
             return callNode.execute(frame, self.func, args, kwds);
         }
@@ -337,7 +331,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                         long hash,
                         Object cachedItem,
                         ObjectHashMap.PutNode setItem,
-                        CallVarargsMethodNode callNode) {
+                        CallNode callNode) {
             Object result = cachedItem;
             if (result != null) {
                 self.hits++;
@@ -411,7 +405,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                         ObjectHashMap.GetNode getItem,
                         ObjectHashMap.PutNode setItem,
                         ObjectHashMap.RemoveNode popItem,
-                        CallVarargsMethodNode callNode) {
+                        CallNode callNode) {
             if (cachedItem != null) {
                 assert cachedItem instanceof LruListElemObject : "cachedItem should be an LruListElemObject";
                 LruListElemObject link = (LruListElemObject) cachedItem;
@@ -512,7 +506,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isUncached()")
         static Object cachedLruCacheWrapper(VirtualFrame frame, LruCacheObject self, Object[] args, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached CallVarargsMethodNode callNode,
+                        @Shared @Cached CallNode callNode,
                         @Cached PyObjectHashNode hashNode,
                         @Cached ObjectHashMap.GetNode getItem,
                         @Cached ObjectHashMap.PutNode setItem,

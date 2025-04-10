@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELETE__;
@@ -138,6 +139,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.BinaryOpSlotFuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.BinarySlotFuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.CallWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrGetFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrSetFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.GetAttrWrapper;
@@ -354,6 +356,7 @@ public record TpSlots(TpSlot nb_bool, //
                 TpSlot tp_str, //
                 TpSlot tp_init, //
                 TpSlot tp_new, //
+                TpSlot tp_call, //
                 boolean has_as_number,
                 boolean has_as_sequence,
                 boolean has_as_mapping) {
@@ -933,7 +936,15 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_new,
                         PExternalFunctionWrapper.NEW,
-                        NewWrapper::new);
+                        NewWrapper::new),
+        TP_CALL(
+                        TpSlots::tp_call,
+                        TpSlotPythonSingle.class,
+                        TpSlotVarargsBuiltin.class,
+                        TpSlotGroup.NO_GROUP,
+                        CFields.PyTypeObject__tp_call,
+                        PExternalFunctionWrapper.CALL,
+                        CallWrapper::new);
 
         public static final TpSlotMeta[] VALUES = values();
 
@@ -1127,6 +1138,7 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.TP_REPR, TpSlotDef.withSimpleFunction(T___REPR__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.TP_INIT, TpSlotDef.withSimpleFunction(T___INIT__, PExternalFunctionWrapper.INITPROC));
         addSlotDef(s, TpSlotMeta.TP_NEW, TpSlotDef.withSimpleFunction(T___NEW__, PExternalFunctionWrapper.NEW));
+        addSlotDef(s, TpSlotMeta.TP_CALL, TpSlotDef.withSimpleFunction(T___CALL__, PExternalFunctionWrapper.CALL));
         addSlotDef(s, TpSlotMeta.NB_ADD,
                         TpSlotDef.withoutHPy(T___ADD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
                         TpSlotDef.withoutHPy(T___RADD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
@@ -1921,6 +1933,7 @@ public record TpSlots(TpSlot nb_bool, //
                             get(TpSlotMeta.TP_STR), //
                             get(TpSlotMeta.TP_INIT), //
                             get(TpSlotMeta.TP_NEW), //
+                            get(TpSlotMeta.TP_CALL), //
                             hasGroup(TpSlotGroup.AS_NUMBER),
                             hasGroup(TpSlotGroup.AS_SEQUENCE),
                             hasGroup(TpSlotGroup.AS_MAPPING));

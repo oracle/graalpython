@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,7 +54,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNodeGen.LazyNodeGen;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -95,7 +95,7 @@ public abstract class PConstructAndRaiseNode extends Node {
     }
 
     private PException raiseInternal(VirtualFrame frame, PythonBuiltinClassType type, Object cause, Object[] arguments, PKeyword[] keywords,
-                    CallVarargsMethodNode callNode, Python3Core core, TruffleString.FromJavaStringNode fromJavaStringNode) {
+                    CallNode callNode, Python3Core core, TruffleString.FromJavaStringNode fromJavaStringNode) {
         if (arguments != null) {
             for (int i = 0; i < arguments.length; ++i) {
                 if (arguments[i] instanceof String) {
@@ -115,7 +115,7 @@ public abstract class PConstructAndRaiseNode extends Node {
     PException constructAndRaiseNoFormatString(VirtualFrame frame, PythonBuiltinClassType type, Object cause, @SuppressWarnings("unused") TruffleString format,
                     @SuppressWarnings("unused") Object[] formatArgs,
                     Object[] arguments, PKeyword[] keywords,
-                    @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
+                    @Cached.Shared("callNode") @Cached CallNode callNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         Python3Core core = PythonContext.get(this);
         return raiseInternal(frame, type, cause, arguments, keywords, callNode, core, fromJavaStringNode);
@@ -124,7 +124,7 @@ public abstract class PConstructAndRaiseNode extends Node {
     @Specialization(guards = {"format != null", "arguments == null"})
     PException constructAndRaiseNoArgs(VirtualFrame frame, PythonBuiltinClassType type, Object cause, TruffleString format, Object[] formatArgs,
                     @SuppressWarnings("unused") Object[] arguments, PKeyword[] keywords,
-                    @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
+                    @Cached.Shared("callNode") @Cached CallNode callNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         Python3Core core = PythonContext.get(this);
         Object[] args = new Object[]{formatArgs != null ? getFormattedMessage(format, formatArgs) : format};
@@ -134,7 +134,7 @@ public abstract class PConstructAndRaiseNode extends Node {
     @Specialization(guards = {"format != null", "arguments != null"})
     PException constructAndRaise(VirtualFrame frame, PythonBuiltinClassType type, Object cause, TruffleString format, Object[] formatArgs,
                     Object[] arguments, PKeyword[] keywords,
-                    @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
+                    @Cached.Shared("callNode") @Cached CallNode callNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         Python3Core core = PythonContext.get(this);
         Object[] args = new Object[arguments.length + 1];

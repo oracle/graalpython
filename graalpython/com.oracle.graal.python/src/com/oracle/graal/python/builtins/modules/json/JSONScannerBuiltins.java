@@ -5,7 +5,6 @@
  */
 package com.oracle.graal.python.builtins.modules.json;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -18,7 +17,6 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -104,7 +102,8 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "string", "idx"})
+    @Slot(value = SlotKind.tp_call, isComplex = true)
+    @SlotSignature(name = "scan_once", minNumOfPositionalArgs = 1, parameterNames = {"$self", "string", "idx"})
     @ArgumentClinic(name = "string", conversion = ArgumentClinic.ClinicConversion.TString)
     @ArgumentClinic(name = "idx", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0", useDefaultForNone = true)
     @GenerateNodeFactory

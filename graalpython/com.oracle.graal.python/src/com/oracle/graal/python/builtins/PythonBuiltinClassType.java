@@ -211,11 +211,13 @@ import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuil
 import com.oracle.graal.python.builtins.objects.exception.UnicodeTranslateErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignBooleanBuiltins;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignExecutableBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignInstantiableBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignIterableBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
+import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.MethodDescriptorBuiltins;
@@ -337,14 +339,14 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PArrayIterator("arrayiterator", PythonObject, newBuilder().disallowInstantiation().slots(IteratorBuiltins.SLOTS)),
     PIterator("iterator", PythonObject, newBuilder().disallowInstantiation().slots(IteratorBuiltins.SLOTS)),
     /** See {@link com.oracle.graal.python.builtins.objects.function.PBuiltinFunction} */
-    PBuiltinFunction("method_descriptor", PythonObject, newBuilder().disallowInstantiation().slots(MethodDescriptorBuiltins.SLOTS)),
+    PBuiltinFunction("method_descriptor", PythonObject, newBuilder().disallowInstantiation().slots(AbstractFunctionBuiltins.SLOTS, MethodDescriptorBuiltins.SLOTS)),
     /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
     PBuiltinFunctionOrMethod(
                     "builtin_function_or_method",
                     PythonObject,
                     newBuilder().disallowInstantiation().slots(AbstractMethodBuiltins.SLOTS, BuiltinFunctionOrMethodBuiltins.SLOTS)),
     /** See {@link com.oracle.graal.python.builtins.objects.function.PBuiltinFunction} */
-    WrapperDescriptor(J_WRAPPER_DESCRIPTOR, PythonObject, newBuilder().disallowInstantiation().slots(WrapperDescriptorBuiltins.SLOTS)),
+    WrapperDescriptor(J_WRAPPER_DESCRIPTOR, PythonObject, newBuilder().disallowInstantiation().slots(AbstractFunctionBuiltins.SLOTS, WrapperDescriptorBuiltins.SLOTS)),
     /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
     MethodWrapper("method-wrapper", PythonObject, newBuilder().slots(AbstractMethodBuiltins.SLOTS, MethodWrapperBuiltins.SLOTS)),
     /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
@@ -470,7 +472,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                                     frozenset(iterable) -> frozenset object
 
                                     Build an immutable unordered collection of unique elements.""")),
-    PFunction("function", PythonObject, newBuilder().addDict().slots(FunctionBuiltins.SLOTS)),
+    PFunction("function", PythonObject, newBuilder().addDict().slots(AbstractFunctionBuiltins.SLOTS, FunctionBuiltins.SLOTS)),
     PGenerator("generator", PythonObject, newBuilder().disallowInstantiation().slots(GeneratorBuiltins.SLOTS).methodsFlags(GENERATOR_M_FLAGS)),
     PCoroutine("coroutine", PythonObject, newBuilder().slots(CoroutineBuiltins.SLOTS).methodsFlags(COROUTINE_M_FLAGS)),
     PCoroutineWrapper("coroutine_wrapper", PythonObject, newBuilder().slots(CoroutineWrapperBuiltins.SLOTS)),
@@ -813,7 +815,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     ForeignNumber,
                     newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignBooleanBuiltins.SLOTS).methodsFlags(FOREIGNNUMBER_M_FLAGS)),
     ForeignAbstractClass("ForeignAbstractClass", ForeignObject, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation()),
-    ForeignExecutable("ForeignExecutable", ForeignObject, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation()),
+    ForeignExecutable("ForeignExecutable", ForeignObject, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignExecutableBuiltins.SLOTS)),
     ForeignInstantiable("ForeignInstantiable", ForeignObject, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().slots(ForeignInstantiableBuiltins.SLOTS)),
     ForeignIterable("ForeignIterable", ForeignObject, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignIterableBuiltins.SLOTS)),
 
@@ -1206,10 +1208,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     Capsule("PyCapsule", PythonObject, newBuilder().basetype()),
 
-    PTokenizerIter("TokenizerIter", PythonObject, newBuilder().publishInModule("_tokenize").basetype().slots(TokenizerIterBuiltins.SLOTS)),
-
-    // A marker for @Builtin that is not a class. Must always come last.
-    nil("nil", PythonObject, newBuilder());
+    PTokenizerIter("TokenizerIter", PythonObject, newBuilder().publishInModule("_tokenize").basetype().slots(TokenizerIterBuiltins.SLOTS));
 
     private static TypeBuilder newBuilder() {
         return new TypeBuilder();
@@ -1429,7 +1428,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return lang.getBuiltinTypeInstanceShape(this);
     }
 
-    @CompilationFinal(dimensions = 1) public static final PythonBuiltinClassType[] VALUES = Arrays.copyOf(values(), values().length - 1);
+    @CompilationFinal(dimensions = 1) public static final PythonBuiltinClassType[] VALUES = Arrays.copyOf(values(), values().length);
 
     static {
         PythonObject.type = PythonClass;
