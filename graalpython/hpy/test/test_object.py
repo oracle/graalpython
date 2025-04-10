@@ -532,6 +532,8 @@ class TestObject(HPyTest):
 
     def test_getslice(self):
         import pytest
+        if self.is_graalpy:
+            pytest.skip("Not yet implemented on GraalPy")
         mod = self.make_module("""
             HPyDef_METH(f, "f", HPyFunc_VARARGS)
             static HPy f_impl(HPyContext *ctx, HPy self, const HPy *args, size_t nargs)
@@ -653,6 +655,8 @@ class TestObject(HPyTest):
 
     def test_setslice(self):
         import pytest
+        if self.is_graalpy:
+            pytest.skip("Not yet implemented on GraalPy")
         mod = self.make_module("""
             HPyDef_METH(f, "f", HPyFunc_VARARGS)
             static HPy f_impl(HPyContext *ctx, HPy self, const HPy *args, size_t nargs)
@@ -786,6 +790,8 @@ class TestObject(HPyTest):
 
     def test_delslice(self):
         import pytest
+        if self.is_graalpy:
+            pytest.skip("Not yet implemented on GraalPy")
         mod = self.make_module("""
             HPyDef_METH(f, "f", HPyFunc_VARARGS)
             static HPy f_impl(HPyContext *ctx, HPy self, const HPy *args, size_t nargs)

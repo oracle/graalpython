@@ -19,6 +19,8 @@ SUPPORTS_SYS_EXECUTABLE = bool(getattr(sys, "executable", None))
 # True if we are running on the CPython debug build
 IS_PYTHON_DEBUG_BUILD = hasattr(sys, 'gettotalrefcount')
 
+IS_GRAALPY = getattr(getattr(sys, "implementation", None), "name", None) == 'graalpy'
+
 # pytest marker to run tests only on linux
 ONLY_LINUX = pytest.mark.skipif(sys.platform!='linux', reason='linux only')
 
@@ -441,6 +443,7 @@ class PythonSubprocessRunner:
 
 @pytest.mark.usefixtures('initargs')
 class HPyTest:
+    is_graalpy = IS_GRAALPY  # Exposed here for tests running as PyPy apptests
     ExtensionTemplate = DefaultExtensionTemplate
 
     @pytest.fixture()
