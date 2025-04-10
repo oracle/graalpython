@@ -1203,7 +1203,7 @@ suite = {
                 "GRAALPYTHON_RESOURCES",
                 "truffle:TRUFFLE_RUNTIME",
             ],
-            "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This POM dependency pulls in GraalPy dependencies and Truffle Community Edition.",
+            "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This POM dependency includes GraalPy dependencies and Truffle Community Edition.",
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python-community",
