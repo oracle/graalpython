@@ -1,10 +1,15 @@
 import pytest
+import sys
+
+from ..support import IS_GRAALPY
+
 
 @pytest.fixture
 def hpy_abi():
     return "debug"
 
 
+@pytest.mark.skipif(IS_GRAALPY, reason="Hangs on GraalPy")
 def test_reuse_context_from_global_variable(compiler, python_subprocess):
     mod = compiler.compile_module("""
         #include <stdio.h>

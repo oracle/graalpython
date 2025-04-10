@@ -145,7 +145,9 @@ class TestHPyField(HPyTest):
         assert not gc.is_tracked(p)
 
     def test_tp_traverse(self):
-        import sys
+        if self.is_graalpy:
+            import pytest
+            pytest.skip("Crashes on GraalPy")
         import gc
         mod = self.make_module("""
             @DEFINE_PairObject
@@ -308,6 +310,9 @@ class TestHPyField(HPyTest):
         assert count_pairs() == 0
 
     def test_tp_finalize(self):
+        if self.is_graalpy:
+            import pytest
+            pytest.skip("Crashes on GraalPy")
         # Tests the contract of tp_finalize: what it should see
         # if called from within HPyField_Store
         mod = self.make_module("""

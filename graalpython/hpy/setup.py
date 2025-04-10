@@ -4,9 +4,9 @@ from setuptools import setup, Extension
 from setuptools.command.build_clib import build_clib
 import platform
 
-# this package is supposed to be installed ONLY on CPython. Try to bail out
-# with a meaningful error message in other cases.
-if sys.implementation.name != 'cpython':
+# this package is supposed to be installed ONLY on CPython and GraalPy. Try to
+# bail out with a meaningful error message in other cases.
+if sys.implementation.name not in ('cpython', 'graalpy'):
     msg = 'ERROR: Cannot install and/or update hpy on this python implementation:\n'
     msg += f'    sys.implementation.name == {sys.implementation.name!r}\n\n'
     if '_hpy_universal' in sys.builtin_module_names:

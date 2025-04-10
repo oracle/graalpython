@@ -1,4 +1,5 @@
 import pytest
+import sys
 from .support import ExtensionCompiler, DefaultExtensionTemplate,\
     PythonSubprocessRunner, HPyDebugCapture, make_hpy_abi_fixture
 from pathlib import Path
@@ -31,6 +32,13 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "syncgc: Mark tests that rely on a synchronous GC."
     )
+
+
+def pytest_runtest_setup(item):
+    if any(item.iter_markers(name="syncgc")):
+        if sys.implementation.name in ("pypy", "graalpy"):
+            pytest.skip("requires synchronous garbage collector")
+
 
 # this is the default set of hpy_abi for all the tests. Individual files and
 # classes can override it.

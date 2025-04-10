@@ -16,7 +16,7 @@ import venv
 import py
 import pytest
 
-from ..support import atomic_run, HPY_ROOT
+from ..support import atomic_run, HPY_ROOT, IS_GRAALPY
 
 # ====== IMPORTANT DEVELOPMENT TIP =====
 # You can use py.test --reuse-venv to speed up local testing.
@@ -43,7 +43,7 @@ def print_CalledProcessError(p):
 
 @pytest.fixture(scope='session')
 def venv_template(request, tmpdir_factory):
-    if request.config.option.reuse_venv:
+    if getattr(request.config.option, "reuse_venv", False):
         d = py.path.local('/tmp/venv-for-hpytest')
         if d.check(dir=True):
             # if it exists, we assume it's correct. If you want to recreate,
@@ -59,7 +59,7 @@ def venv_template(request, tmpdir_factory):
     # it's just easier to use e.g. python -m pip
     attach_python_to_venv(d)
     for script in d.bin.listdir():
-        if script.basename.startswith('python'):
+        if script.basename.startswith(('python', 'graalpy')):
             continue
         script.remove()
     #
@@ -95,7 +95,7 @@ class TestDistutils:
         self.tmpdir = tmpdir
         # create a fresh venv by copying the template
         self.venv = tmpdir.join('venv')
-        shutil.copytree(venv_template, self.venv)
+        shutil.copytree(venv_template, self.venv, symlinks=True)
         attach_python_to_venv(self.venv)
         # create the files for our test project
         self.hpy_test_project = tmpdir.join('hpy_test_project').ensure(dir=True)
@@ -290,6 +290,7 @@ class TestDistutils:
         doc = self.get_docstring('hpymod')
         assert doc == f'hpymod with HPy ABI: {hpy_abi}'
 
+    @pytest.mark.skipif(IS_GRAALPY, reason='not supported on GraalPy')
     def test_dont_mix_cpython_and_universal_abis(self):
         """
         See issue #322
@@ -328,6 +329,8 @@ class TestDistutils:
     def test_hpymod_legacy(self, hpy_abi):
         if hpy_abi == 'universal':
             pytest.skip('only for cpython and hybrid ABIs')
+        if IS_GRAALPY:
+            pytest.skip('not supported on GraalPy')
         self.gen_setup_py("""
             setup(name = "hpy_test_project",
                   hpy_ext_modules = [hpymod_legacy],

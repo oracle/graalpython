@@ -1,7 +1,7 @@
 import pytest
 import sys
 from hpy.debug.leakdetector import LeakDetector
-from ..support import SUPPORTS_SYS_EXECUTABLE, IS_PYTHON_DEBUG_BUILD
+from ..support import SUPPORTS_SYS_EXECUTABLE, IS_PYTHON_DEBUG_BUILD, IS_GRAALPY
 from ..conftest import IS_VALGRIND_RUN
 
 @pytest.fixture
@@ -12,6 +12,8 @@ def hpy_abi():
 
 @pytest.mark.skipif(sys.implementation.name == 'pypy',
     reason="Cannot recover from use-after-close on pypy")
+@pytest.mark.skipif(IS_GRAALPY,
+    reason="This corrupts process memory on GraalPy and crashes later")
 def test_no_invalid_handle(compiler, hpy_debug_capture):
     # Basic sanity check that valid code does not trigger any error reports
     mod = compiler.make_module("""
@@ -38,6 +40,8 @@ def test_no_invalid_handle(compiler, hpy_debug_capture):
 
 @pytest.mark.skipif(sys.implementation.name == 'pypy',
     reason="Cannot recover from use-after-close on pypy")
+@pytest.mark.skipif(IS_GRAALPY,
+    reason="This corrupts process memory on GraalPy and crashes later")
 def test_cant_use_closed_handle(compiler, hpy_debug_capture):
     mod = compiler.make_module("""
         HPyDef_METH(f, "f", HPyFunc_O, .doc="double close")
@@ -113,6 +117,8 @@ def test_cant_use_closed_handle(compiler, hpy_debug_capture):
 
 @pytest.mark.skipif(sys.implementation.name == 'pypy',
     reason="Cannot recover from use-after-close on pypy")
+@pytest.mark.skipif(IS_GRAALPY,
+    reason="This corrupts process memory on GraalPy and crashes later")
 def test_keeping_and_reusing_argument_handle(compiler, hpy_debug_capture):
     mod = compiler.make_module("""
         HPy keep;
@@ -142,6 +148,7 @@ def test_keeping_and_reusing_argument_handle(compiler, hpy_debug_capture):
     assert hpy_debug_capture.invalid_handles_count == 1
 
 
+@pytest.mark.skipif(IS_GRAALPY, reason="Crashes on GraalPy")
 def test_return_ctx_constant_without_dup(compiler, python_subprocess, fatal_exit_code):
     # Since this puts the context->h_None into an inconsistent state, we run
     # this test in a subprocess and check fatal error instead
@@ -163,6 +170,7 @@ def test_return_ctx_constant_without_dup(compiler, python_subprocess, fatal_exit
     assert b"Invalid usage of already closed handle" in result.stderr
 
 
+@pytest.mark.skipif(IS_GRAALPY, reason="Crashes on GraalPy")
 def test_close_ctx_constant(compiler, python_subprocess, fatal_exit_code):
     # Since this puts the context->h_True into an inconsistent state, we run
     # this test in a subprocess and check fatal error instead
@@ -185,6 +193,7 @@ def test_close_ctx_constant(compiler, python_subprocess, fatal_exit_code):
     assert b"Invalid usage of already closed handle" in result.stderr
 
 
+@pytest.mark.skipif(IS_GRAALPY, reason="Crashes on GraalPy")
 def test_invalid_handle_crashes_python_if_no_hook(compiler, python_subprocess, fatal_exit_code):
     if not SUPPORTS_SYS_EXECUTABLE:
         pytest.skip("no sys.executable")

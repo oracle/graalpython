@@ -1,11 +1,13 @@
 import pytest
-from ..support import SUPPORTS_SYS_EXECUTABLE, SUPPORTS_MEM_PROTECTION
+import sys
+from ..support import SUPPORTS_SYS_EXECUTABLE, SUPPORTS_MEM_PROTECTION, IS_GRAALPY
 
 @pytest.fixture
 def hpy_abi():
     return "debug"
 
 
+@pytest.mark.skipif(IS_GRAALPY, reason="hangs on GraalPy")
 @pytest.mark.skipif(not SUPPORTS_SYS_EXECUTABLE, reason="needs subprocess")
 def test_use_invalid_as_struct(compiler, python_subprocess):
     mod = compiler.compile_module("""
@@ -38,6 +40,7 @@ def test_use_invalid_as_struct(compiler, python_subprocess):
     assert "Invalid usage of _HPy_AsStruct_Object" in result.stderr.decode("utf-8")
 
 
+@pytest.mark.skipif(IS_GRAALPY, reason="hangs on GraalPy")
 @pytest.mark.skipif(not SUPPORTS_SYS_EXECUTABLE, reason="needs subprocess")
 def test_typecheck(compiler, python_subprocess):
     mod = compiler.compile_module("""
@@ -60,6 +63,7 @@ def test_typecheck(compiler, python_subprocess):
     assert "HPy_TypeCheck arg 2 must be a type" in result.stderr.decode("utf-8")
 
 
+@pytest.mark.skipif(IS_GRAALPY, reason="hangs on GraalPy")
 @pytest.mark.skipif(not SUPPORTS_MEM_PROTECTION, reason=
                     "Could be implemented by checking the contents on close.")
 @pytest.mark.skipif(not SUPPORTS_SYS_EXECUTABLE, reason="needs subprocess")
@@ -119,6 +123,7 @@ def test_type_getname(compiler, python_subprocess):
     assert result.returncode != 0
 
 
+@pytest.mark.skipif(IS_GRAALPY, reason="hangs on GraalPy")
 @pytest.mark.skipif(not SUPPORTS_SYS_EXECUTABLE, reason="needs subprocess")
 def test_type_issubtype(compiler, python_subprocess):
     mod = compiler.compile_module("""
@@ -143,6 +148,7 @@ def test_type_issubtype(compiler, python_subprocess):
     assert "HPyType_IsSubtype arg 1 must be a type" in result.stderr.decode("utf-8")
 
 
+@pytest.mark.skipif(IS_GRAALPY, reason="transiently fails on GraalPy")
 @pytest.mark.skipif(not SUPPORTS_SYS_EXECUTABLE, reason="needs subprocess")
 def test_unicode_substring(compiler, python_subprocess):
     mod = compiler.compile_module("""

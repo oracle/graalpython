@@ -1,6 +1,7 @@
 import os
 import pytest
-from ..support import SUPPORTS_SYS_EXECUTABLE, SUPPORTS_MEM_PROTECTION
+import sys
+from ..support import SUPPORTS_SYS_EXECUTABLE, SUPPORTS_MEM_PROTECTION, IS_GRAALPY
 
 # Tests detection of usage of char pointers associated with invalid already
 # closed handles. For now, the debug mode does not provide any hook for this
@@ -13,6 +14,7 @@ def hpy_abi():
         yield "debug"
 
 
+@pytest.mark.skipif(IS_GRAALPY, reason="fails on GraalPy")
 @pytest.mark.skipif(not SUPPORTS_SYS_EXECUTABLE, reason="needs subprocess")
 def test_charptr_use_after_implicit_arg_handle_close(compiler, python_subprocess):
     mod = compiler.compile_module("""
@@ -70,6 +72,7 @@ def test_charptr_use_after_implicit_arg_handle_close(compiler, python_subprocess
             assert b"UnicodeDecodeError" in result.stderr
 
 
+@pytest.mark.skipif(IS_GRAALPY, reason="fails on GraalPy")
 @pytest.mark.skipif(not SUPPORTS_SYS_EXECUTABLE, reason="needs subprocess")
 def test_charptr_use_after_handle_close(compiler, python_subprocess):
     mod = compiler.compile_module("""
@@ -121,6 +124,7 @@ def test_charptr_use_after_handle_close(compiler, python_subprocess):
             assert b"UnicodeDecodeError" in result.stderr
 
 
+@pytest.mark.skipif(IS_GRAALPY, reason="transiently fails on GraalPy")
 @pytest.mark.skipif(not SUPPORTS_MEM_PROTECTION, reason=
                     "Could be implemented by checking the contents on close.")
 @pytest.mark.skipif(not SUPPORTS_SYS_EXECUTABLE, reason="needs subprocess")

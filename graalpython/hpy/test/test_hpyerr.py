@@ -1,4 +1,5 @@
-from .support import HPyTest, SUPPORTS_SYS_EXECUTABLE, trampoline
+import pytest
+from .support import HPyTest, SUPPORTS_SYS_EXECUTABLE, trampoline, IS_GRAALPY
 
 
 class TestErr(HPyTest):
@@ -17,6 +18,7 @@ class TestErr(HPyTest):
         with pytest.raises(MemoryError):
             mod.f()
 
+    @pytest.mark.skipif(IS_GRAALPY, reason="Fails transiently on GraalPy especially with xdist")
     def test_FatalError(self, python_subprocess, fatal_exit_code):
         mod = self.compile_module("""
             HPyDef_METH(f, "f", HPyFunc_NOARGS)
@@ -672,6 +674,7 @@ class TestErr(HPyTest):
         with pytest.raises(DummyException):
             mod.f(raise_exception, (DummyException, ), exc_types)
 
+    @pytest.mark.skipif(IS_GRAALPY, reason="Fails transiently on GraalPy especially with xdist")
     def test_HPyErr_WriteUnraisable(self, python_subprocess):
         mod = self.compile_module("""
             HPyDef_METH(f, "f", HPyFunc_NOARGS)

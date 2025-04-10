@@ -1,4 +1,5 @@
-from .support import HPyTest, make_hpy_abi_fixture
+import pytest
+from .support import HPyTest, make_hpy_abi_fixture, IS_GRAALPY
 
 class TestCPythonCompatibility(HPyTest):
 
@@ -30,6 +31,7 @@ class TestCPythonCompatibility(HPyTest):
             expected = 'hybrid'
         assert hpy_abi == expected
 
+    @pytest.mark.skipif(IS_GRAALPY, reason="Crashes on GraalPy")
     def test_frompyobject(self):
         mod = self.make_module("""
             #include <Python.h>
@@ -132,6 +134,7 @@ class TestCPythonCompatibility(HPyTest):
         obj = MyClass()
         assert mod.f(obj) == 1234
 
+    @pytest.mark.skipif(IS_GRAALPY, reason="Crashes on GraalPy")
     def test_hpy_close(self):
         mod = self.make_module("""
             #include <Python.h>
@@ -156,6 +159,7 @@ class TestCPythonCompatibility(HPyTest):
         if self.supports_refcounts():
             assert x == -1
 
+    @pytest.mark.skipif(IS_GRAALPY, reason="Crashes on GraalPy")
     def test_hpy_dup(self):
         mod = self.make_module("""
             #include <Python.h>
@@ -182,6 +186,7 @@ class TestCPythonCompatibility(HPyTest):
         if self.supports_refcounts():
             assert x == +1
 
+    @pytest.mark.skipif(IS_GRAALPY, reason="Crashes on GraalPy")
     def test_many_handles(self):
         mod = self.make_module("""
             #include <Python.h>

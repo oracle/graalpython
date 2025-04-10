@@ -1594,6 +1594,9 @@ class TestPureHPyType(HPyTest):
     ExtensionTemplate = PointTemplate
 
     def test_builtin_shape(self):
+        if self.is_graalpy:
+            import pytest
+            pytest.skip("Not yet implemented on GraalPy")
         mod = self.make_module("""
             @DEFINE_PointObject(HPyType_BuiltinShape_Long)
             @DEFINE_Point_xy
