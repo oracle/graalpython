@@ -435,14 +435,14 @@ public abstract class Python3Core {
 
     private final PythonBuiltins[] builtins;
 
-    private static final boolean hasProfilerTool;
+    public static final boolean HAS_PROFILER_TOOL;
     static {
         Class<?> c = null;
         try {
             c = Class.forName("com.oracle.truffle.tools.profiler.CPUSampler");
         } catch (LinkageError | ClassNotFoundException e) {
         }
-        hasProfilerTool = c != null;
+        HAS_PROFILER_TOOL = c != null;
         c = null;
     }
 
@@ -797,7 +797,7 @@ public abstract class Python3Core {
                         // _tokenizer
                         new TokenizeModuleBuiltins(),
                         new TokenizerIterBuiltins()));
-        if (hasProfilerTool) {
+        if (HAS_PROFILER_TOOL) {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(new ProfilerBuiltins());
         }

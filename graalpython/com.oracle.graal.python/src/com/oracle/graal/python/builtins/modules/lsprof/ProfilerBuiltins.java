@@ -54,6 +54,7 @@ import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -97,14 +98,17 @@ public class ProfilerBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Profiler doit(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            PythonContext context = getContext();
-            TruffleLanguage.Env env = context.getEnv();
-            Map<String, InstrumentInfo> instruments = env.getInstruments();
-            InstrumentInfo instrumentInfo = instruments.get(CPUSamplerInstrument.ID);
-            if (instrumentInfo != null) {
-                CPUSampler sampler = env.lookup(instrumentInfo, CPUSampler.class);
-                if (sampler != null) {
-                    return PFactory.createProfiler(context.getLanguage(), cls, TypeNodes.GetInstanceShape.executeUncached(cls), sampler);
+            if (Python3Core.HAS_PROFILER_TOOL) {
+                // Avoid ClassNotFoundException
+                PythonContext context = getContext();
+                TruffleLanguage.Env env = context.getEnv();
+                Map<String, InstrumentInfo> instruments = env.getInstruments();
+                InstrumentInfo instrumentInfo = instruments.get(CPUSamplerInstrument.ID);
+                if (instrumentInfo != null) {
+                    CPUSampler sampler = env.lookup(instrumentInfo, CPUSampler.class);
+                    if (sampler != null) {
+                        return PFactory.createProfiler(context.getLanguage(), cls, TypeNodes.GetInstanceShape.executeUncached(cls), sampler);
+                    }
                 }
             }
             throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.NotImplementedError, ErrorMessages.COVERAGE_TRACKER_NOT_AVAILABLE);
