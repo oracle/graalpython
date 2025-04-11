@@ -37,7 +37,7 @@ suite = {
         "suites": [
             {
                 "name": "truffle",
-                "version": "80fe02a9176546f6f2ec412a4a8f5990898e9982",
+                "versionFrom": "regex",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "f696872837cbc96dff74e9916888e42f1be3a5df",
+                "versionFrom": "truffle",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
