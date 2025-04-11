@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -147,6 +147,7 @@ public class TpSlotsTests {
             case AS_NUMBER -> slots.has_as_number();
             case AS_SEQUENCE -> slots.has_as_sequence();
             case AS_MAPPING -> slots.has_as_mapping();
+            case AS_ASYNC -> slots.has_as_async();
         };
     }
 }

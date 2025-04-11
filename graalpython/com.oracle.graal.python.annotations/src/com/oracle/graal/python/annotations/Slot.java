@@ -218,7 +218,10 @@ public @interface Slot {
         tp_repr("__repr__"),
         tp_init("__init__"),
         tp_new("__new__"),
-        tp_call("__call__");
+        tp_call("__call__"),
+        am_await("__await__"),
+        am_aiter("__aiter__"),
+        am_anext("__anext__");
 
         SlotKind(@SuppressWarnings("unused") String specialMethods) {
         }

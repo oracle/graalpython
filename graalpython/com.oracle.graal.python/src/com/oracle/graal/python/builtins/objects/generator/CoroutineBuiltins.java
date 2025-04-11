@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.generator;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AWAIT__;
-
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -127,7 +125,7 @@ public final class CoroutineBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___AWAIT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.am_await, isComplex = true)
     @GenerateNodeFactory
     abstract static class AwaitNode extends PythonUnaryBuiltinNode {
         @Specialization

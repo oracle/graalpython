@@ -81,7 +81,7 @@ public final class AsyncGenSendBuiltins extends PythonBuiltins {
         return AsyncGenSendBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___AWAIT__, minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Slot(value = SlotKind.am_await, isComplex = true)
     @GenerateNodeFactory
     public abstract static class Await extends PythonUnaryBuiltinNode {
         @Specialization

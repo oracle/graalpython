@@ -113,13 +113,10 @@ public abstract class ToNativeTypeNode {
         return (obj.getMethodsFlags() & MethodsFlags.ASYNC_METHODS) != 0;
     }
 
-    private static Object allocatePyAsyncMethods(PythonManagedClass obj, Object nullValue) {
+    private static Object allocatePyAsyncMethods(TpSlots slots, Object nullValue) {
         Object mem = CStructAccess.AllocateNode.allocUncached(CStructs.PyAsyncMethods);
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
-        writePointerNode.write(mem, CFields.PyAsyncMethods__am_await, getSlot(obj, SlotMethodDef.AM_AWAIT));
-        writePointerNode.write(mem, CFields.PyAsyncMethods__am_aiter, getSlot(obj, SlotMethodDef.AM_AITER));
-        writePointerNode.write(mem, CFields.PyAsyncMethods__am_anext, getSlot(obj, SlotMethodDef.AM_ANEXT));
-        writePointerNode.write(mem, CFields.PyAsyncMethods__am_send, nullValue /*- getValue(obj, SlotMethodDef.AM_SEND) */);
+        writeGroupSlots(CFields.PyTypeObject__tp_as_async, slots, writePointerNode, mem, nullValue);
         return mem;
     }
 
@@ -224,7 +221,7 @@ public abstract class ToNativeTypeNode {
         } else {
             weaklistoffset = lookupNativeI64MemberInMRO(clazz, PyTypeObject__tp_weaklistoffset, SpecialAttributeNames.T___WEAKLISTOFFSET__);
         }
-        Object asAsync = hasAsyncMethods(clazz) ? allocatePyAsyncMethods(clazz, nullValue) : nullValue;
+        Object asAsync = slots.has_as_async() ? allocatePyAsyncMethods(slots, nullValue) : nullValue;
         Object asNumber = slots.has_as_number() ? allocatePyNumberMethods(slots, nullValue) : nullValue;
         Object asSequence = slots.has_as_sequence() ? allocatePySequenceMethods(slots, nullValue) : nullValue;
         Object asMapping = slots.has_as_mapping() ? allocatePyMappingMethods(slots, nullValue) : nullValue;
