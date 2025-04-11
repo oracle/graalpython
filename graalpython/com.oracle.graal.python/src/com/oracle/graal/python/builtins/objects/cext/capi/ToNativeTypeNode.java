@@ -74,7 +74,6 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -92,7 +91,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
@@ -104,14 +102,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ToNativeTypeNode {
-
-    private static Object getSlot(PythonManagedClass obj, SlotMethodDef slot) {
-        return LookupNativeSlotNode.executeUncached(obj, slot);
-    }
-
-    private static boolean hasAsyncMethods(PythonManagedClass obj) {
-        return (obj.getMethodsFlags() & MethodsFlags.ASYNC_METHODS) != 0;
-    }
 
     private static Object allocatePyAsyncMethods(TpSlots slots, Object nullValue) {
         Object mem = CStructAccess.AllocateNode.allocUncached(CStructs.PyAsyncMethods);

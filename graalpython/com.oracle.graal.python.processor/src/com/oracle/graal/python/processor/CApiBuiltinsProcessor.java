@@ -69,7 +69,6 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.AbstractAnnotationValueVisitor14;
-import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.StandardLocation;
 
@@ -561,10 +560,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     /**
      * Generates the builtin specification in capi.h, which includes only the builtins implemented
      * in Java code. Additionally, it generates helpers for all "Py_get_" and "Py_set_" builtins.
-     *
-     * @param methodFlags
      */
-    private void generateCApiHeader(List<CApiBuiltinDesc> javaBuiltins, Map<String, Long> methodFlags) throws IOException {
+    private void generateCApiHeader(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
         List<String> lines = new ArrayList<>();
         lines.add("#define CAPI_BUILTINS \\");
         int id = 0;
@@ -603,12 +600,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             }
         }
 
-        /*
-         * Adding constants for methods flags checks in {@link
-         * NativeCAPISymbol.FUN_GET_METHODS_FLAGS}
-         */
-        lines.add("");
-        methodFlags.entrySet().stream().sorted((a, b) -> a.getValue().compareTo(b.getValue())).forEach(e -> lines.add("#define " + e.getKey() + " " + e.getValue()));
         updateResource("capi.gen.h", javaBuiltins, lines);
     }
 
@@ -862,19 +853,11 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         List<String> constants = new ArrayList<>();
         List<String> fields = new ArrayList<>();
         List<String> structs = new ArrayList<>();
-        Map<String, Long> methodFlags = new HashMap<>();
         for (var el : re.getElementsAnnotatedWith(CApiConstants.class)) {
             if (el.getKind() == ElementKind.ENUM) {
                 for (var enumBit : el.getEnclosedElements()) {
                     if (enumBit.getKind() == ElementKind.ENUM_CONSTANT) {
                         constants.add(enumBit.getSimpleName().toString());
-                    }
-                }
-            } else if (el.getKind() == ElementKind.CLASS) {
-                for (VariableElement field : ElementFilter.fieldsIn(el.getEnclosedElements())) {
-                    Object constantValue = field.getConstantValue();
-                    if (constantValue instanceof Long longValue) {
-                        methodFlags.put(field.getSimpleName().toString(), longValue);
                     }
                 }
             } else {
@@ -911,7 +894,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             if (trees != null) {
                 // needs jdk.compiler
                 generateCApiSource(allBuiltins, constants, fields, structs);
-                generateCApiHeader(javaBuiltins, methodFlags);
+                generateCApiHeader(javaBuiltins);
             }
             generateBuiltinRegistry(javaBuiltins);
             generateCApiAsserts(allBuiltins);
