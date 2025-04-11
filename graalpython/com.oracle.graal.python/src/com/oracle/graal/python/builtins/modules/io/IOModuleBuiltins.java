@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BlockingIO
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EncodingWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsupportedOperation;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PWindowsConsoleIO;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.T_WARN;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
@@ -133,6 +134,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("_warn", core.lookupBuiltinModule(T__WARNINGS).getAttribute(T_WARN));
         if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             addBuiltinConstant("_os", core.lookupBuiltinModule(T_NT));
+            addBuiltinConstant("_WindowsConsoleIO", PWindowsConsoleIO);
         } else {
             addBuiltinConstant("_os", core.lookupBuiltinModule(T_POSIX));
         }

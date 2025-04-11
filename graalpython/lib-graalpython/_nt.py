@@ -1,4 +1,4 @@
-# Copyright (c) 2025, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,54 +37,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import unittest
-import sys
-import re
-import subprocess
-import platform
+import nt
 
-# Both lists should remain as small as possible to avoid adding overhead to startup
-expected_nosite_startup_modules = [
-    '_frozen_importlib',
-    '_frozen_importlib_external',
-    'builtins',
-    '__graalpython__',
-    '_weakref',
-    'unicodedata',
-    '_sre',
-    '_sysconfig',
-    'java',
-    'pip_hook',
-] + (['_nt'] if platform.system() == 'Windows' else [])
 
-expected_full_startup_modules = expected_nosite_startup_modules + [
-    '_abc',
-    'types',
-    '_weakrefset',
-    '_py_abc',
-    'abc',
-    'stat',
-    '_collections_abc',
-    'genericpath',
-    *(['_winapi', 'ntpath'] if platform.system() == 'Windows' else ['posixpath']),
-    'os',
-    '_sitebuiltins',
-    '_io',
-    'io',
-    'site',
-]
+def _add_dll_directory(path):
+    import ctypes
+    return ctypes.windll.kernel32.AddDllDirectory(path)
 
-class StartupTests(unittest.TestCase):
-    @unittest.skipUnless(sys.implementation.name == 'graalpy', "GraalPy-specific test")
-    def test_startup_nosite(self):
-        result = subprocess.check_output([sys.executable, '--log.level=FINE', '-S', '-v', '-c', 'print("Hello")'], stderr=subprocess.STDOUT, text=True)
-        assert 'Hello' in result
-        imports = re.findall("import '(\S+)'", result)
-        self.assertEqual(expected_nosite_startup_modules, imports)
 
-    @unittest.skipUnless(sys.implementation.name == 'graalpy', "GraalPy-specific test")
-    def test_startup_full(self):
-        result = subprocess.check_output([sys.executable, '--log.level=FINE', '-s', '-v', '-c', 'print("Hello")'], stderr=subprocess.STDOUT, text=True)
-        assert 'Hello' in result
-        imports = re.findall("import '(\S+)'", result)
-        self.assertEqual(expected_full_startup_modules, imports)
+def _remove_dll_directory(cookie):
+    import ctypes
+    return ctypes.windll.kernel32.RemoveDllDirectory(cookie)
+
+
+nt._add_dll_directory = _add_dll_directory
+nt._remove_dll_directory = _remove_dll_directory

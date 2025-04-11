@@ -928,54 +928,70 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                     continue;
                 }
                 String name = parts[0].trim();
-                if (name.equals("home")) {
-                    try {
-                        Path homeProperty = Paths.get(parts[1].trim());
-                        Path graalpyHome = homeProperty;
-                        /*
-                         * (tfel): According to PEP 405, the home key is the directory of the Python
-                         * executable from which this virtual environment was created, that is, it
-                         * usually ends with "/bin" on a Unix system. On Windows, the base Python
-                         * should be in the top-level directory or under "\Scripts". To support
-                         * running from Maven artifacts where we don't have a working executable, we
-                         * patched our shipped venv module to set the home path without a "/bin" or
-                         * "\\Scripts" suffix, so we explicitly check for those two subfolder cases
-                         * and otherwise assume the home key is directly pointing to the Python
-                         * home.
-                         */
-                        if (graalpyHome.endsWith("bin") || graalpyHome.endsWith("Scripts")) {
-                            graalpyHome = graalpyHome.getParent();
-                        }
-                        contextBuilder.option("python.PythonHome", graalpyHome.toString());
-                        /*
-                         * First try to resolve symlinked executables, since that may be more
-                         * accurate than assuming the executable in 'home'.
-                         */
-                        Path baseExecutable = null;
+                switch (name) {
+                    case "home":
                         try {
-                            Path realPath = executablePath.toRealPath();
-                            if (!realPath.equals(executablePath.toAbsolutePath())) {
-                                baseExecutable = realPath;
-                            }
-                        } catch (IOException ex) {
-                            // Ignore
-                        }
-                        if (baseExecutable == null) {
-                            baseExecutable = homeProperty.resolve(executablePath.getFileName());
-                        }
-                        if (Files.exists(baseExecutable)) {
-                            contextBuilder.option("python.BaseExecutable", baseExecutable.toString());
+                            Path homeProperty = Paths.get(parts[1].trim());
+                            Path graalpyHome = homeProperty;
                             /*
-                             * This is needed to support the legacy GraalVM layout where the
-                             * executable is a symlink into the 'languages' directory.
+                             * (tfel): According to PEP 405, the home key is the directory of the
+                             * Python executable from which this virtual environment was created,
+                             * that is, it usually ends with "/bin" on a Unix system. On Windows,
+                             * the base Python should be in the top-level directory or under
+                             * "\Scripts". To support running from Maven artifacts where we don't
+                             * have a working executable, we patched our shipped venv module to set
+                             * the home path without a "/bin" or "\\Scripts" suffix, so we
+                             * explicitly check for those two subfolder cases and otherwise assume
+                             * the home key is directly pointing to the Python home.
                              */
-                            contextBuilder.option("python.PythonHome", baseExecutable.getParent().getParent().toString());
+                            if (graalpyHome.endsWith("bin") || graalpyHome.endsWith("Scripts")) {
+                                graalpyHome = graalpyHome.getParent();
+                            }
+                            contextBuilder.option("python.PythonHome", graalpyHome.toString());
+                            /*
+                             * First try to resolve symlinked executables, since that may be more
+                             * accurate than assuming the executable in 'home'.
+                             */
+                            Path baseExecutable = null;
+                            try {
+                                Path realPath = executablePath.toRealPath();
+                                if (!realPath.equals(executablePath.toAbsolutePath())) {
+                                    baseExecutable = realPath;
+                                }
+                            } catch (IOException ex) {
+                                // Ignore
+                            }
+                            if (baseExecutable == null) {
+                                baseExecutable = homeProperty.resolve(executablePath.getFileName());
+                            }
+                            if (Files.exists(baseExecutable)) {
+                                contextBuilder.option("python.BaseExecutable", baseExecutable.toString());
+                                /*
+                                 * This is needed to support the legacy GraalVM layout where the
+                                 * executable is a symlink into the 'languages' directory.
+                                 */
+                                contextBuilder.option("python.PythonHome", baseExecutable.getParent().getParent().toString());
+                            }
+                        } catch (NullPointerException | InvalidPathException ex) {
+                            // NullPointerException covers the possible null result of getParent()
+                            warn("Could not set PYTHONHOME according to the pyvenv.cfg file.");
                         }
-                    } catch (NullPointerException | InvalidPathException ex) {
-                        // NullPointerException covers the possible null result of getParent()
-                        warn("Could not set PYTHONHOME according to the pyvenv.cfg file.");
-                    }
-                    break;
+                        break;
+                    case "venvlauncher_command":
+                        if (!hasContextOptionSetViaCommandLine("VenvlauncherCommand")) {
+                            contextBuilder.option("python.VenvlauncherCommand", parts[1].trim());
+                        }
+                        break;
+                    case "base-prefix":
+                        if (!hasContextOptionSetViaCommandLine("SysBasePrefix")) {
+                            contextBuilder.option("python.SysBasePrefix", parts[1].trim());
+                        }
+                        break;
+                    case "base-executable":
+                        if (!hasContextOptionSetViaCommandLine("BaseExecutable")) {
+                            contextBuilder.option("python.BaseExecutable", parts[1].trim());
+                        }
+                        break;
                 }
             }
         } catch (IOException ex) {

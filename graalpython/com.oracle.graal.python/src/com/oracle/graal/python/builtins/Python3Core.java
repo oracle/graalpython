@@ -422,15 +422,20 @@ public abstract class Python3Core {
 
     private static TruffleString[] initializeCoreFiles() {
         // Order matters!
-        return new TruffleString[]{
+        List<TruffleString> coreFiles = List.of(
                         toTruffleStringUncached("__graalpython__"),
                         toTruffleStringUncached("_weakref"),
                         toTruffleStringUncached("unicodedata"),
                         toTruffleStringUncached("_sre"),
                         toTruffleStringUncached("_sysconfig"),
                         toTruffleStringUncached("java"),
-                        toTruffleStringUncached("pip_hook")
-        };
+                        toTruffleStringUncached("pip_hook"));
+        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            coreFiles = new ArrayList<>(coreFiles);
+            coreFiles.add(toTruffleStringUncached("_nt"));
+        }
+
+        return coreFiles.toArray(new TruffleString[0]);
     }
 
     private final PythonBuiltins[] builtins;
