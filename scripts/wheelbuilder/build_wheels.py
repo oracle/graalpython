@@ -100,6 +100,13 @@ def create_venv():
     subprocess.check_call([binary, "-m", "venv", "graalpy"])
     print("Installing wheel with", pip, flush=True)
     subprocess.check_call([pip, "install", "wheel"])
+<<<<<<< HEAD
+=======
+    print("Installing paatch to provide patch.exe", flush=True)
+    p = subprocess.run([pip, "install", "paatch"])
+    if p.returncode != 0:
+        print("Installing paatch failed, assuming a GNU patch compatible binary is on PATH", flush=True)
+>>>>>>> 8ac74ecd42 (Use paatch to apply patches the same way across all platforms)
     return pip
 
 
