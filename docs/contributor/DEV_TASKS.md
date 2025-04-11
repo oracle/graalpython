@@ -55,3 +55,12 @@ Follow these steps to update HPy.
         implementations to the context members
       - Updating hpy.c to assign new context members to their native locations
 
+### Updating patch branch
+GraalPy's `pip` has an ability to download newer versions of patches from our
+GitHub so that we can update patches outside of the release cycle. There should
+be a patch branch for every minor release, with the name
+`github/patches/$version`. When creating the branch, it should be based on the
+release tag commit and then it should change the CI overlay version to point to
+the head of branch `graalpy-patch-branch` in order to disable unnecessary gates
+on it. The GitHub sync needs to be manually enabled in the mirroring service
+configuration.
