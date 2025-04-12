@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -124,7 +124,9 @@ typedef struct {
 
 // Test if the 'x' object is the 'y' object, the same as "x is y" in Python.
 PyAPI_FUNC(int) Py_Is(PyObject *x, PyObject *y);
+#if 0 // GraalPy change
 #define Py_Is(x, y) ((x) == (y))
+#endif // GraalPy change
 
 
 PyAPI_FUNC(Py_ssize_t) PyTruffle_REFCNT(PyObject *ob);
