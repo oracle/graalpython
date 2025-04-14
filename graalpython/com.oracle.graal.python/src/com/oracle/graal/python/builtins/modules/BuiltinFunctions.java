@@ -168,6 +168,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.lib.IteratorExhausted;
@@ -224,7 +225,6 @@ import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
@@ -2622,23 +2622,25 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "anext", minNumOfPositionalArgs = 1)
+    @Builtin(name = "anext", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 2, parameterNames = {"aiterator", "default"})
     @GenerateNodeFactory
-    public abstract static class ANext extends PythonUnaryBuiltinNode {
+    public abstract static class ANext extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object doGeneric(VirtualFrame frame, Object asyncIter,
+        static Object doGeneric(VirtualFrame frame, Object asyncIter, Object defaultValue,
                         @Bind("this") Node inliningTarget,
-                        @Cached(parameters = "ANext") LookupSpecialMethodSlotNode getANext,
-                        @Cached GetClassNode getAsyncIterType,
-                        @Cached PRaiseNode raiseNoANext,
-                        @Cached CallUnaryMethodNode callANext) {
-            // TODO: two argument anext
-            Object type = getAsyncIterType.execute(inliningTarget, asyncIter);
-            Object getter = getANext.execute(frame, type, asyncIter);
-            if (getter == NO_VALUE) {
-                throw raiseNoANext.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OBJECT_NOT_ASYNCGEN, type);
+                        @Cached GetObjectSlotsNode getSlots,
+                        @Cached CallSlotUnaryNode callSlot,
+                        @Cached InlinedConditionProfile hasDefault,
+                        @Cached PRaiseNode raiseNoANext) {
+            TpSlots slots = getSlots.execute(inliningTarget, asyncIter);
+            if (slots.am_anext() == null) {
+                throw raiseNoANext.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OBJECT_NOT_ASYNCGEN, asyncIter);
             }
-            return callANext.executeObject(frame, getter, asyncIter);
+            if (hasDefault.profile(inliningTarget, defaultValue == NO_VALUE)) {
+                return callSlot.execute(frame, inliningTarget, slots.am_anext(), asyncIter);
+            }
+            // TODO
+            throw raiseNoANext.raise(inliningTarget, PythonBuiltinClassType.NotImplementedError);
         }
     }
 
@@ -2646,8 +2648,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AIter extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object doGeneric(VirtualFrame frame, Object arg,
-                        @Cached(neverDefault = true) GetAIterNode aiter) {
+        static Object doGeneric(VirtualFrame frame, Object arg,
+                        @Cached GetAIterNode aiter) {
             return aiter.execute(frame, arg);
         }
     }

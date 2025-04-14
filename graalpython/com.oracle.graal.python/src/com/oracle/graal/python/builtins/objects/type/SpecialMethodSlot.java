@@ -41,12 +41,8 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AEXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ANEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
@@ -118,15 +114,8 @@ import com.oracle.truffle.api.strings.TruffleString;
  * initialized.
  */
 public enum SpecialMethodSlot {
-    Dict(T___DICT__),
-
-    Await(T___AWAIT__),
-
     AEnter(T___AENTER__),
     AExit(T___AEXIT__),
-
-    AIter(T___AITER__),
-    ANext(T___ANEXT__),
 
     SetName(T___SET_NAME__, NO_BUILTIN_DESCRIPTORS),
     InstanceCheck(T___INSTANCECHECK__),
@@ -561,11 +550,6 @@ public enum SpecialMethodSlot {
                     return SetName;
                 }
                 break;
-            case 'd' * 26 + 'i':    // di
-                if (eqNode.execute(name, T___DICT__, TS_ENCODING)) {
-                    return Dict;
-                }
-                break;
             case 'i' * 26 + 'n':    // in
                 if (eqNode.execute(name, T___INSTANCECHECK__, TS_ENCODING)) {
                     return InstanceCheck;
@@ -606,13 +590,6 @@ public enum SpecialMethodSlot {
                     return Missing;
                 }
                 break;
-            case 'e' * 26 + 'q':    // eq
-                break;
-            case 'a' * 26 + 'n':    // an
-                if (eqNode.execute(name, T___ANEXT__, TS_ENCODING)) {
-                    return ANext;
-                }
-                break;
             case 'r' * 26 + 'o':    // ro
                 if (eqNode.execute(name, T___ROUND__, TS_ENCODING)) {
                     return Round;
@@ -623,22 +600,12 @@ public enum SpecialMethodSlot {
                     return Bytes;
                 }
                 break;
-            case 'a' * 26 + 'w': // aw
-                if (eqNode.execute(name, T___AWAIT__, TS_ENCODING)) {
-                    return Await;
-                }
-                break;
             case 'a' * 26 + 'e': // ae
                 if (eqNode.execute(name, T___AENTER__, TS_ENCODING)) {
                     return AEnter;
                 }
                 if (eqNode.execute(name, T___AEXIT__, TS_ENCODING)) {
                     return AExit;
-                }
-                break;
-            case 'a' * 26 + 'i': // ai
-                if (eqNode.execute(name, T___AITER__, TS_ENCODING)) {
-                    return AIter;
                 }
                 break;
         }

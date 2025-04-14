@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.asyncio;
 
 import static com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenASend.AwaitableState;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AWAIT__;
 
 import java.util.List;
 
