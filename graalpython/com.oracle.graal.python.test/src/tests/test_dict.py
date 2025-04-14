@@ -1267,3 +1267,13 @@ def test_dict_values_eq():
     d1 = {1: 1, 2: 2, 4: 4}
     assert d1.values() != d1.values()
 
+def test_removing_attr_from_economic_map():
+    class Test:
+        pass
+
+    o = Test()
+    o.foo = 1
+    o.__dict__[42] = 10
+    del o.foo
+
+    assert "foo" not in o.__dict__
