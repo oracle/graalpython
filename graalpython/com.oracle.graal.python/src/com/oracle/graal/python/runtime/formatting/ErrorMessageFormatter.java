@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils;
@@ -94,19 +94,22 @@ public abstract class ErrorMessageFormatter {
         while (m.find(idx)) {
             String group = m.group();
             if ("%p".equals(group)) {
-                String name = getClassName(args[matchIdx]);
+                // %p is equivalent of CPython's Py_TYPE(o)->tp_name
+                String name = getClassTpName(args[matchIdx]);
                 sb.replace(m.start() + offset, m.end() + offset, name);
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
                 removedCnt++;
             } else if ("%P".equals(group)) {
-                String name = "<class \'" + getClassName(args[matchIdx]) + "\'>";
+                // %p is equivalent of CPython's _PyType_Name(Py_TYPE(o))
+                String name = getClassTypeName(args[matchIdx]);
                 sb.replace(m.start() + offset, m.end() + offset, name);
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
                 removedCnt++;
             } else if ("%N".equals(group)) {
-                String name = getClassNameOfClass(args[matchIdx]);
+                // %N is equivalent of CPython's t->tp_name
+                String name = getTpName(args[matchIdx]);
                 sb.replace(m.start() + offset, m.end() + offset, name);
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
@@ -143,12 +146,16 @@ public abstract class ErrorMessageFormatter {
         return message;
     }
 
-    private static String getClassName(Object obj) {
-        return getClassNameOfClass(GetClassNode.executeUncached(obj));
+    private static String getClassTpName(Object obj) {
+        return getTpName(GetClassNode.executeUncached(obj));
     }
 
-    private static String getClassNameOfClass(Object type) {
-        return GetNameNode.doSlowPath(type).toJavaStringUncached();
+    private static String getClassTypeName(Object obj) {
+        return TypeNodes.GetNameNode.executeUncached(GetClassNode.executeUncached(obj)).toJavaStringUncached();
+    }
+
+    private static String getTpName(Object type) {
+        return TypeNodes.GetTpNameNode.executeUncached(type).toJavaStringUncached();
     }
 
     /**

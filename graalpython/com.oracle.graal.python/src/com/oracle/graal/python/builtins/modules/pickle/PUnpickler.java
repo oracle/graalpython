@@ -148,6 +148,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.IntNodes;
 import com.oracle.graal.python.builtins.objects.ints.IntNodesFactory;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -157,8 +158,12 @@ import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltinsFac
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpNewNode;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttrO;
@@ -166,6 +171,8 @@ import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -174,6 +181,8 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.NumericSupport;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -1181,21 +1190,20 @@ public class PUnpickler extends PythonBuiltinObject {
             pDataPush(self, frozenset);
         }
 
-        private Object instantiate(VirtualFrame frame, Object cls, Object args) {
+        private Object instantiate(VirtualFrame frame, Node inliningTarget, Object cls, Object args, PyObjectCallMethodObjArgs callMethod) {
             // Caller must assure args are a tuple. Normally, args come from Pdata_poptuple which
             // packs objects from the top of the stack into a newly created tuple.
             assert args instanceof PTuple;
             if (length(frame, args) == 0 && PGuards.isPythonClass(cls)) {
                 Object func = getLookupAttrNode().executeCached(frame, cls, T___GETINITARGS__);
                 if (func == PNone.NO_VALUE) {
-                    final Object newMethod = lookupAttributeStrict(frame, cls, T___NEW__);
-                    return callNew(frame, newMethod, cls);
+                    return callMethod.execute(frame, inliningTarget, cls, T___NEW__, cls);
                 }
             }
             return callStarArgs(frame, cls, args);
         }
 
-        private void loadObj(VirtualFrame frame, PUnpickler self) {
+        private void loadObj(VirtualFrame frame, Node inliningTarget, PUnpickler self, PyObjectCallMethodObjArgs callMethod) {
             Object cls, args, obj = null;
             int i = marker(self);
 
@@ -1206,14 +1214,14 @@ public class PUnpickler extends PythonBuiltinObject {
             args = pDataPopTuple(self, i + 1);
             cls = pDataPop(self);
             if (cls != null) {
-                obj = instantiate(frame, cls, args);
+                obj = instantiate(frame, inliningTarget, cls, args, callMethod);
             }
 
             assert obj != null;
             pDataPush(self, obj);
         }
 
-        private void loadInst(VirtualFrame frame, PythonContext ctx, PUnpickler self) {
+        private void loadInst(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PUnpickler self, PyObjectCallMethodObjArgs callMethod) {
             Object cls = null;
             Object obj = null;
             int i = marker(self);
@@ -1239,14 +1247,14 @@ public class PUnpickler extends PythonBuiltinObject {
             assert cls != null;
             Object args = pDataPopTuple(self, i);
             if (args != null) {
-                obj = instantiate(frame, cls, args);
+                obj = instantiate(frame, inliningTarget, cls, args, callMethod);
             }
 
             assert obj != null;
             pDataPush(self, obj);
         }
 
-        private void loadNewObj(VirtualFrame frame, PUnpickler self) {
+        private void loadNewObj(VirtualFrame frame, Node inliningTarget, PUnpickler self, GetCachedTpSlotsNode getSlots, CallSlotTpNewNode callNew, ExecutePositionalStarargsNode expandArgs) {
             // Stack is ... cls argtuple, and we want to call cls.__new__(cls, *argtuple).
             Object args = pDataPop(self);
             if (!(args instanceof PTuple)) {
@@ -1258,24 +1266,25 @@ public class PUnpickler extends PythonBuiltinObject {
                 throw raise(PythonBuiltinClassType.UnpicklingError, ErrorMessages.S_CLASS_ARG_S, "NEWOBJ", "isn't a type object");
             }
             // Call __new__
-            final Object tpNew = getLookupAttrNode().executeCached(frame, cls, T___NEW__);
-            if (tpNew == PNone.NO_VALUE) {
+            TpSlot newSlot = getSlots.execute(inliningTarget, cls).tp_new();
+            if (newSlot == null) {
                 throw raise(PythonBuiltinClassType.UnpicklingError, ErrorMessages.S_CLASS_ARG_S, "NEWOBJ", "has NULL tp_new");
             }
 
-            Object obj = callNew(frame, tpNew, cls, args);
+            Object obj = callNew.execute(frame, inliningTarget, newSlot, cls, expandArgs.executeWith(frame, args), PKeyword.EMPTY_KEYWORDS);
             pDataPush(self, obj);
         }
 
-        private void loadNewObjEx(VirtualFrame frame, PUnpickler self) {
+        private void loadNewObjEx(VirtualFrame frame, Node inliningTarget, PUnpickler self, GetCachedTpSlotsNode getSlots, CallSlotTpNewNode callNew, ExecutePositionalStarargsNode expandArgs,
+                        ExpandKeywordStarargsNode expandKwargs) {
             Object kwargs = pDataPop(self);
             Object args = pDataPop(self);
             Object cls = pDataPop(self);
             if (!PGuards.isPythonClass(cls)) {
                 throw raise(PythonBuiltinClassType.UnpicklingError, ErrorMessages.S_CLASS_ARG_MUST_BE_TYPE_NOT_P, "NEWOBJ_EX", cls);
             }
-            final Object tpNew = getLookupAttrNode().executeCached(frame, cls, T___NEW__);
-            if (tpNew == PNone.NO_VALUE) {
+            TpSlot newSlot = getSlots.execute(inliningTarget, cls).tp_new();
+            if (newSlot == null) {
                 throw raise(PythonBuiltinClassType.UnpicklingError, ErrorMessages.S_CLASS_ARG_DOES_NOT_HAVE_S, "NEWOBJ_EX", T___NEW__);
             }
             if (!(args instanceof PTuple)) {
@@ -1285,7 +1294,7 @@ public class PUnpickler extends PythonBuiltinObject {
                 throw raise(PythonBuiltinClassType.UnpicklingError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "NEWOBJ_EX kwargs", "dict", kwargs);
             }
 
-            Object obj = callNew(frame, tpNew, cls, args, kwargs);
+            Object obj = callNew.execute(frame, inliningTarget, newSlot, cls, expandArgs.executeWith(frame, args), expandKwargs.execute(frame, inliningTarget, kwargs));
             pDataPush(self, obj);
         }
 
@@ -1777,7 +1786,13 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         @Specialization
-        public Object load(VirtualFrame frame, PUnpickler self) {
+        public Object load(VirtualFrame frame, PUnpickler self,
+                        @Bind Node inliningTarget,
+                        @Cached GetCachedTpSlotsNode getSlots,
+                        @Cached CallSlotTpNewNode callNew,
+                        @Cached ExecutePositionalStarargsNode expandArgs,
+                        @Cached ExpandKeywordStarargsNode expandKwargs,
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             byte s;
 
             self.numMarks = 0;
@@ -1903,16 +1918,16 @@ public class PUnpickler extends PythonBuiltinObject {
                         loadFrozenSet(frame, self);
                         continue;
                     case OPCODE_OBJ:
-                        loadObj(frame, self);
+                        loadObj(frame, inliningTarget, self, callMethod);
                         continue;
                     case OPCODE_INST:
-                        loadInst(frame, ctx, self);
+                        loadInst(frame, inliningTarget, ctx, self, callMethod);
                         continue;
                     case OPCODE_NEWOBJ:
-                        loadNewObj(frame, self);
+                        loadNewObj(frame, inliningTarget, self, getSlots, callNew, expandArgs);
                         continue;
                     case OPCODE_NEWOBJ_EX:
-                        loadNewObjEx(frame, self);
+                        loadNewObjEx(frame, inliningTarget, self, getSlots, callNew, expandArgs, expandKwargs);
                         continue;
                     case OPCODE_GLOBAL:
                         loadGlobal(frame, ctx, self);

@@ -1597,6 +1597,7 @@ def test_tp_init_calls():
             self.delegate.__init__(*args, **kwargs)
 
     obj = NativeSlotProxy([1])
+    # Empty because list.__init__ will first clear the storage, which will also clear the argument
     assert obj.delegate == []
     assert obj.__init__({2}) is None
     assert obj.delegate == [2]
@@ -1604,6 +1605,72 @@ def test_tp_init_calls():
 
     obj = NativeSlotProxy(PureSlotProxy([1]))
     assert obj.delegate.delegate == []
+
+
+def test_tp_new_calls():
+    TpNewTester = CPyExtType(
+        name='TpNewTester',
+        code=r'''
+            PyObject* call_tp_new(PyObject* ignored, PyObject* args, PyObject* kwargs) {
+                PyTypeObject* cls = (PyTypeObject*)PyTuple_GET_ITEM(args, 0);
+                args = PyTuple_GetSlice(args, 1, PyTuple_GET_SIZE(args));
+                if (!args)
+                    return NULL;
+                PyObject* res = cls->tp_new(cls, args, kwargs);
+                Py_DECREF(args);
+                return res;
+            }
+        ''',
+        tp_methods='{"call_tp_new", (PyCFunction)call_tp_new, METH_VARARGS | METH_KEYWORDS | METH_STATIC, NULL}',
+    )
+    assert TpNewTester.call_tp_new(str, 1) == "1"
+    assert TpNewTester.call_tp_new(str, 'skål'.encode('utf-8'), 'ascii', errors='replace') == "sk��l"
+
+
+def test_disallow_instantiation():
+    UninstantiableType = CPyExtType(
+        name='UninstantiableType',
+        tp_flags='Py_TPFLAGS_DEFAULT | Py_TPFLAGS_DISALLOW_INSTANTIATION',
+    )
+    assert_raises(TypeError, UninstantiableType)
+
+
+def test_tp_call_calls():
+    NativeSlotProxy = CPyExtType(
+        name='TpCallSlotProxy',
+        cmembers='PyObject* delegate;',
+        code=r'''
+            typedef TpCallSlotProxyObject ProxyObject;
+            ''' + native_slot_proxy_template + r'''
+            PyObject* proxy_tp_call(PyObject* self, PyObject* args, PyObject* kwargs) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_call(delegate, args, kwargs);
+            }
+        ''',
+        tp_new='proxy_tp_new',
+        tp_members='{"delegate", T_OBJECT, offsetof(ProxyObject, delegate), 0, NULL}',
+        tp_call='proxy_tp_call',
+    )
+
+    class PureSlotProxy:
+        def __new__(cls, delegate):
+            self = object.__new__(cls)
+            self.delegate = delegate
+            return self
+
+        def __call__(self, *args, **kwargs):
+            return self.delegate(*args, **kwargs)
+
+    for obj in [NativeSlotProxy(len), PureSlotProxy(NativeSlotProxy(len))]:
+        assert obj([1, 2, 3]) == 3
+        assert obj.__call__([1, 2, 3]) == 3
+        assert_raises(TypeError, obj)
+        assert_raises(TypeError, obj, 1, 2)
+        assert_raises(TypeError, obj, obj=[])
+
+    for obj in [NativeSlotProxy(dict), PureSlotProxy(NativeSlotProxy(dict))]:
+        assert obj(a=1) == {'a': 1}
+        assert obj.__call__({'b': 2}, a=1) == {'a': 1, 'b': 2}
 
 
 def test_richcmp():

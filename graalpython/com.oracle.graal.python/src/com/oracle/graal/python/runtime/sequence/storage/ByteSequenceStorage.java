@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -57,7 +57,7 @@ public final class ByteSequenceStorage extends ArrayBasedSequenceStorage {
     }
 
     private void increaseCapacityExactWithCopy(int newCapacity) {
-        values = Arrays.copyOf(values, newCapacity);
+        values = PythonUtils.arrayCopyOf(values, newCapacity);
         capacity = values.length;
     }
 

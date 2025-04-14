@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.itertools;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
+import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
@@ -50,22 +51,29 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
+import com.oracle.graal.python.builtins.objects.itertools.CombinationsBuiltinsClinicProviders.CombinationsNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -80,9 +88,11 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PCombinations, PythonBuiltinClassType.PCombinationsWithReplacement})
 public final class CombinationsBuiltins extends PythonBuiltins {
@@ -92,6 +102,52 @@ public final class CombinationsBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CombinationsBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "combinations", minNumOfPositionalArgs = 3, parameterNames = {"cls", "iterable", "r"})
+    @ArgumentClinic(name = "r", conversion = ArgumentClinic.ClinicConversion.Int)
+    @GenerateNodeFactory
+    public abstract static class CombinationsNode extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return CombinationsNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static Object construct(VirtualFrame frame, Object cls, Object iterable, int r,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Cached IteratorNodes.ToArrayNode toArrayNode,
+                        @Cached LoopConditionProfile indicesLoopProfile,
+                        @Cached InlinedConditionProfile wrongTypeProfile,
+                        @Cached InlinedConditionProfile negativeProfile,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached PRaiseNode raiseNode) {
+            if (!wrongTypeProfile.profile(inliningTarget, isTypeNode.execute(inliningTarget, cls))) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+            }
+            if (negativeProfile.profile(inliningTarget, r < 0)) {
+                throw raiseNode.raise(inliningTarget, ValueError, MUST_BE_NON_NEGATIVE, "r");
+            }
+
+            PCombinations self = PFactory.createCombinations(language, cls, getInstanceShape.execute(cls));
+            self.setPool(toArrayNode.execute(frame, iterable));
+
+            int[] indices = new int[r];
+            indicesLoopProfile.profileCounted(r);
+            for (int i = 0; indicesLoopProfile.inject(i < r); i++) {
+                indices[i] = i;
+            }
+            self.setIndices(indices);
+            self.setR(r);
+            self.setLastResult(null);
+            self.setStopped(r > self.getPool().length);
+
+            return self;
+        }
     }
 
     @Slot(value = SlotKind.tp_iter, isComplex = true)
@@ -257,5 +313,4 @@ public final class CombinationsBuiltins extends PythonBuiltins {
             }
         }
     }
-
 }

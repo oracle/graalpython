@@ -112,7 +112,7 @@ public final class WrapperDescriptorBuiltins extends PythonBuiltins {
                 // XXX: this is wrong
                 return simpleTruffleStringFormatNode.format("<builtin_function_or_method '%s'>", self.getName());
             } else {
-                return simpleTruffleStringFormatNode.format("<slot wrapper '%s' of '%s' objects>", self.getName(), TypeNodes.GetNameNode.doSlowPath(self.getEnclosingType()));
+                return simpleTruffleStringFormatNode.format("<slot wrapper '%s' of '%s' objects>", self.getName(), TypeNodes.GetNameNode.executeUncached(self.getEnclosingType()));
             }
         }
     }

@@ -76,6 +76,39 @@ public final class BatchedBuiltins extends PythonBuiltins {
         return BatchedBuiltinsFactory.getFactories();
     }
 
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "batched", minNumOfPositionalArgs = 2, parameterNames = {"cls", "iterable", "n"})
+    @ArgumentClinic(name = "n", conversion = ArgumentClinic.ClinicConversion.Int)
+    @GenerateNodeFactory
+    public abstract static class BatchedNode extends PythonTernaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ItertoolsModuleBuiltinsClinicProviders.BatchedNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static PBatched batched(VirtualFrame frame, Object cls, Object iterable, int n,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectGetIter getIter,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached PRaiseNode raiseNode) {
+            if (n < 1) {
+                /*
+                 * We could define the n==0 case to return an empty iterator but that is at odds
+                 * with the idea that batching should never throw-away input data.
+                 */
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.N_MUST_BE_AT_LEAST_ONE);
+            }
+            Object it = getIter.execute(frame, inliningTarget, iterable);
+            /* create batchedobject structure */
+            PBatched bo = PFactory.createBatched(language, cls, getInstanceShape.execute(cls));
+            bo.setBatchSize(n);
+            bo.setIter(it);
+            return bo;
+        }
+    }
+
     @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {

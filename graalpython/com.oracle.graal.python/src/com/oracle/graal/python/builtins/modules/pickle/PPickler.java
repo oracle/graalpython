@@ -1656,7 +1656,7 @@ public class PPickler extends PythonBuiltinObject {
 
         private void storeTupleElements(VirtualFrame frame, PPickler pickler, Object obj, int len) {
             // A helper for save_tuple. Push the len elements in tuple t on the stack
-            assert PyObjectSizeNode.executeUncached(frame, obj) == len;
+            assert PyObjectSizeNode.executeUncached(obj) == len;
             for (int i = 0; i < len; i++) {
                 Object element = getItem(frame, obj, i);
                 save(frame, pickler, element, 0);

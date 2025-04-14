@@ -49,7 +49,7 @@ import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES.
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T_UPPER_B;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T_UPPER_T_LEFTBRACE;
 import static com.oracle.graal.python.builtins.modules.ctypes.StgDictObject.DICTFLAG_FINAL;
-import static com.oracle.graal.python.nodes.ErrorMessages.BIT_FIELDS_NOT_ALLOWED_FOR_TYPE_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.BIT_FIELDS_NOT_ALLOWED_FOR_TYPE_N;
 import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_IS_FINAL;
 import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_MUST_BE_A_SEQUENCE_OF_NAME_C_TYPE_PAIRS;
 import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_MUST_BE_A_SEQUENCE_OF_PAIRS;
@@ -57,7 +57,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.NUMBER_OF_BITS_INVALID
 import static com.oracle.graal.python.nodes.ErrorMessages.PACK_MUST_BE_A_NON_NEGATIVE_INTEGER;
 import static com.oracle.graal.python.nodes.ErrorMessages.SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.STRUCTURE_OR_UNION_CANNOT_CONTAIN_ITSELF;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RBRACE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -67,11 +66,12 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TypeNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.PyCFieldFromDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
@@ -88,8 +88,9 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -124,6 +125,8 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 })
 public final class StructUnionTypeBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = StructUnionTypeBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return StructUnionTypeBuiltinsFactory.getFactories();
@@ -138,7 +141,8 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
     protected static final TruffleString T__PACK_ = tsLiteral("_pack_");
 
     @ImportStatic(StructUnionTypeBuiltins.class)
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class StructUnionTypeNewNode extends PythonBuiltinNode {
 
@@ -219,7 +223,6 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached PyCFieldFromDesc cFieldFromDesc,
-                        @Cached GetNameNode getNameNode,
                         @Cached CheckIsSequenceNode isSequenceNode,
                         @Cached PyObjectGetItem getItemNode,
                         @Cached PyObjectSizeNode sizeNode,
@@ -389,7 +392,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                             }
                             /* else fall through */
                         default:
-                            throw raiseNode.raise(inliningTarget, TypeError, BIT_FIELDS_NOT_ALLOWED_FOR_TYPE_S, getNameNode.execute(inliningTarget, desc));
+                            throw raiseNode.raise(inliningTarget, TypeError, BIT_FIELDS_NOT_ALLOWED_FOR_TYPE_N, desc);
                     }
                     if (bitsize <= 0 || bitsize > dict.size * 8) {
                         throw raiseNode.raise(inliningTarget, ValueError, NUMBER_OF_BITS_INVALID_FOR_BIT_FIELD);

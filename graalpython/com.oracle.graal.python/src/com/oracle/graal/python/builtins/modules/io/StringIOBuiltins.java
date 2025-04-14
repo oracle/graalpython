@@ -102,6 +102,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -111,6 +112,7 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
@@ -259,6 +261,19 @@ public final class StringIOBuiltins extends PythonBuiltins {
         self.incPos(decodedLen);
         if (self.getStringSize() < self.getPos()) {
             self.setStringsize(self.getPos());
+        }
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "StringIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class StringIONode extends PythonBuiltinNode {
+        @Specialization
+        static PStringIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            // data filled in subsequent __init__ call - see StringIONodeBuiltins.InitNode
+            return PFactory.createStringIO(language, cls, getInstanceShape.execute(cls));
         }
     }
 

@@ -45,9 +45,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_PARTIAL_STATE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
@@ -62,6 +60,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -95,7 +94,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -152,10 +151,8 @@ public final class PartialBuiltins extends PythonBuiltins {
     }
 
     // functools.partial(func, /, *args, **keywords)
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, //
-                    takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PPartial, //
-                    doc = "partial(func, *args, **keywords) - new function with partial application\n" + //
-                                    "of the given arguments and keywords.\n")
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "partial", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class PartialNewNode extends PythonBuiltinNode {
         protected boolean isPartialWithoutDict(Node inliningTarget, GetDictIfExistsNode getDict, Object[] args, HashingStorageLen lenNode, boolean withKwDict) {
@@ -416,7 +413,8 @@ public final class PartialBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_call, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PartialCallNode extends PythonVarargsBuiltinNode {
         private static int indexOf(PKeyword[] keywords, PKeyword kw) {
@@ -436,7 +434,7 @@ public final class PartialBuiltins extends PythonBuiltins {
         static Object callWoDict(VirtualFrame frame, PPartial self, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile hasArgsProfile,
-                        @Shared @Cached CallVarargsMethodNode callNode,
+                        @Shared @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Shared @Cached HashingStorageLen lenNode) {
             Object[] callArgs = getNewPartialArgs(self, args, inliningTarget, hasArgsProfile);
             return callNode.execute(frame, self.getFn(), callArgs, keywords);
@@ -447,7 +445,7 @@ public final class PartialBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached ExpandKeywordStarargsNode starargsNode,
                         @Shared @Cached InlinedConditionProfile hasArgsProfile,
-                        @Shared @Cached CallVarargsMethodNode callNode,
+                        @Shared @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Shared @Cached HashingStorageLen lenNode) {
             Object[] callArgs = getNewPartialArgs(self, args, inliningTarget, hasArgsProfile);
             return callNode.execute(frame, self.getFn(), callArgs, starargsNode.execute(inliningTarget, self.getKw()));
@@ -458,7 +456,7 @@ public final class PartialBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached ExpandKeywordStarargsNode starargsNode,
                         @Shared @Cached InlinedConditionProfile hasArgsProfile,
-                        @Shared @Cached CallVarargsMethodNode callNode,
+                        @Shared @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Shared @Cached HashingStorageLen lenNode) {
             Object[] callArgs = getNewPartialArgs(self, args, inliningTarget, hasArgsProfile);
 

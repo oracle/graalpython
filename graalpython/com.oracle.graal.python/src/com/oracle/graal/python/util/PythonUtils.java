@@ -42,8 +42,6 @@ package com.oracle.graal.python.util;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PString;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
@@ -69,17 +67,14 @@ import org.graalvm.polyglot.io.ByteSequence;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -726,17 +721,6 @@ public final class PythonUtils {
             WriteAttributeToObjectNode.getUncached(true).execute(klass, name, function);
         }
         return function;
-    }
-
-    @TruffleBoundary
-    public static void createConstructor(Object klass, Builtin builtin, RootCallTarget callTarget) {
-        assert J___NEW__.equals(builtin.name());
-        assert IsSubtypeNode.getUncached().execute(klass, PythonBuiltinClassType.PTuple);
-        int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-        PythonLanguage language = PythonLanguage.get(null);
-        PBuiltinFunction function = PFactory.createBuiltinFunction(language, toTruffleStringUncached(builtin.name()), PythonBuiltinClassType.PTuple, 1, flags, callTarget);
-        PBuiltinMethod method = PFactory.createBuiltinMethod(language, PythonBuiltinClassType.PTuple, function);
-        WriteAttributeToObjectNode.getUncached(true).execute(klass, T___NEW__, method);
     }
 
     public static Unsafe initUnsafe() {

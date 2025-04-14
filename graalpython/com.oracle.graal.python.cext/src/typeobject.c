@@ -7403,9 +7403,6 @@ type_ready_inherit(PyTypeObject *type)
     if (!(type->tp_alloc)) {
         type->tp_alloc = PyType_GenericAlloc;
     }
-    if (!(type->tp_new)) {
-        type->tp_new = PyType_GenericNew;
-    }
 
     return 0;
 }

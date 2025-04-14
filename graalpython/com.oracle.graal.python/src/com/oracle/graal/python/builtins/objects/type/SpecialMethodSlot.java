@@ -43,8 +43,6 @@ package com.oracle.graal.python.builtins.objects.type;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AITER;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_ANEXT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AWAIT;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_ADD;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_MULTIPLY;
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHODS_FLAGS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
@@ -54,16 +52,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ANEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MISSING__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET_NAME__;
@@ -87,14 +81,11 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
 import com.oracle.graal.python.lib.GetMethodsFlagsNodeGen;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -145,11 +136,9 @@ public enum SpecialMethodSlot {
     AIter(T___AITER__, AM_AITER),
     ANext(T___ANEXT__, AM_ANEXT),
 
-    New(T___NEW__, NO_BUILTIN_DESCRIPTORS),
     SetName(T___SET_NAME__, NO_BUILTIN_DESCRIPTORS),
     InstanceCheck(T___INSTANCECHECK__),
     Subclasscheck(T___SUBCLASSCHECK__),
-    Call(T___CALL__, NO_BUILTIN_DESCRIPTORS),
 
     Exit(T___EXIT__),
     Enter(T___ENTER__),
@@ -160,9 +149,6 @@ public enum SpecialMethodSlot {
     Missing(T___MISSING__),
 
     Round(T___ROUND__),
-
-    IAdd(T___IADD__, NB_INPLACE_ADD),
-    IMul(T___IMUL__, NB_INPLACE_MULTIPLY),
 
     Reversed(T___REVERSED__),
     Bytes(T___BYTES__);
@@ -179,11 +165,7 @@ public enum SpecialMethodSlot {
      * {@link BuiltinMethodDescriptor} objects.
      *
      * Values of some slots are always or mostly passed to call node variants that can handle
-     * {@link BuiltinMethodDescriptor}. This does not hold most notably for slots that are passed to
-     * {@link com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode}, like
-     * {@code __new__}. For those we do not allow storing the {@link BuiltinMethodDescriptor} in the
-     * slot, so that lookup using that slot always resolves to context dependent runtime object,
-     * such as {@link PBuiltinFunction}.
+     * {@link BuiltinMethodDescriptor}.
      *
      * An alternative would be to update the whole calling machinery ({@code InvokeNode},
      * {@code GetSignature}, ...) to handle {@link BuiltinMethodDescriptor} and extend
@@ -388,7 +370,6 @@ public enum SpecialMethodSlot {
                     if (isMroSubtype(mro, managedBase)) {
                         Object[] result = PythonUtils.arrayCopyOf(managedBase.specialMethodSlots, managedBase.specialMethodSlots.length);
                         setSlotsFromManaged(result, klass, language);
-                        fixupNewSlot(result, klass);
                         setMethodsFlags(result, klass);
                         return result;
                     }
@@ -430,7 +411,6 @@ public enum SpecialMethodSlot {
                 setSlotsFromGeneric(slots, base, language);
             }
         }
-        fixupNewSlot(slots, klass);
         setMethodsFlags(slots, klass);
         return slots;
     }
@@ -493,58 +473,6 @@ public enum SpecialMethodSlot {
         }
 
         setMethodsFlag(klass, methodsFlags, PythonContext.get(null));
-    }
-
-    /**
-     * CPython has a bug in their {@code tp_new} slot inheritance. Packages, notably pandas, rely on
-     * the bug being present, so we have to try to replicate the same behavior.
-     * <p>
-     * CPython first inherits {@code tp_new} from the dominant base ({@code tp_base}) and creates a
-     * {@code __new__} special method for it. Later, they update all slots to match what's in the
-     * object's special methods, which are looked up in MRO. In case of multiple inheritance, the
-     * MRO-inherited {@code __new__} may be different from the {@code tp_base}-inherited one.
-     * Normally, one would expect that the MRO-inherited one wins, as is the case for all other
-     * slots. See the code in {@code update_one_slot}, it does this:
-     * 
-     * <pre>
-        ...
-        void **ptr = slotptr(type, offset);
-        ...
-        descr = find_name_in_mro(type, p->name_strobj, &error);
-        ...
-        else if (Py_IS_TYPE(descr, &PyCFunction_Type) &&
-                 PyCFunction_GET_FUNCTION(descr) ==
-                 (PyCFunction)(void(*)(void))tp_new_wrapper &&
-                 ptr == (void**)&type->tp_new)
-        {
-            specific = (void *)type->tp_new;
-        }
-     * </pre>
-     * 
-     * Apparently, they wanted to make an optimization that avoids using the wrapper if the wrapper
-     * was for the same {@code tp_new} as was inherited from {@code tp_base}. But they only check
-     * that it's a wrapper, but they forgot to check that it's for the same type. The wrapper
-     * function carries the type in its self, so they should have also checked that
-     * {@code PyCFunction_GET_SELF(descr) == type}. So in summary, {@code tp_new} is inherited
-     * through {@code tp_base} when the one in MRO is builtin/native, and it's inherited through MRO
-     * otherwise.
-     * <p>
-     * We approximate the check for the wrapper by checking that it's a builtin method, and it's
-     * named {@code __new__}.
-     */
-    private static void fixupNewSlot(Object[] slots, Object type) {
-        Object mroInheritedNew = slots[New.ordinal()];
-        if (mroInheritedNew instanceof PBuiltinMethod builtinMethod) {
-            mroInheritedNew = builtinMethod.getBuiltinFunction();
-        }
-        if (mroInheritedNew instanceof PBuiltinFunction builtinFunction && builtinFunction.getName().equalsUncached(New.name, TS_ENCODING)) {
-            Object tpBaseInheritedNew = ReadAttributeFromObjectNode.getUncachedForceType().execute(type, New.name);
-            if (tpBaseInheritedNew == PNone.NO_VALUE) {
-                Object base = GetBaseClassNode.executeUncached(type);
-                tpBaseInheritedNew = LookupCallableSlotInMRONode.getUncached(New).execute(base);
-            }
-            slots[New.ordinal()] = tpBaseInheritedNew;
-        }
     }
 
     private static void setSlotsFromManaged(Object[] slots, PythonManagedClass source, PythonLanguage language) {
@@ -709,11 +637,6 @@ public enum SpecialMethodSlot {
                     return Dict;
                 }
                 break;
-            case 'n' * 26 + 'e':    // ne
-                if (eqNode.execute(name, T___NEW__, TS_ENCODING)) {
-                    return New;
-                }
-                break;
             case 'i' * 26 + 'n':    // in
                 if (eqNode.execute(name, T___INSTANCECHECK__, TS_ENCODING)) {
                     return InstanceCheck;
@@ -722,11 +645,6 @@ public enum SpecialMethodSlot {
             case 's' * 26 + 'u':    // su
                 if (eqNode.execute(name, T___SUBCLASSCHECK__, TS_ENCODING)) {
                     return Subclasscheck;
-                }
-                break;
-            case 'c' * 26 + 'a':    // ca
-                if (eqNode.execute(name, T___CALL__, TS_ENCODING)) {
-                    return Call;
                 }
                 break;
             case 'e' * 26 + 'x':    // ex
@@ -769,16 +687,6 @@ public enum SpecialMethodSlot {
             case 'r' * 26 + 'o':    // ro
                 if (eqNode.execute(name, T___ROUND__, TS_ENCODING)) {
                     return Round;
-                }
-                break;
-            case 'i' * 26 + 'a':    // ia
-                if (eqNode.execute(name, T___IADD__, TS_ENCODING)) {
-                    return IAdd;
-                }
-                break;
-            case 'i' * 26 + 'm':    // im
-                if (eqNode.execute(name, T___IMUL__, TS_ENCODING)) {
-                    return IMul;
                 }
                 break;
             case 'b' * 26 + 'y':    // by

@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyS
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_TRAVERSE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle.NULL_HANDLE_DELEGATE;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_basicsize;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXEC;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -120,7 +121,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.Builder;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
@@ -139,8 +139,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
@@ -1306,7 +1305,7 @@ public abstract class GraalHPyNodes {
                     if (attributeKey != null) {
                         if (!HPyProperty.keyExists(readAttributeToObjectNode, enclosingType, attributeKey)) {
                             Object interopPFuncPtr = context.nativeToInteropPointer(pfuncPtr);
-                            PBuiltinFunction method;
+                            PythonObject method;
                             Object resolved = CreateFunctionNode.resolveClosurePointerToBuiltinFun(context.getContext(), interopPFuncPtr, lib, enclosingType, attributeKey,
                                             slot.getSignature());
                             if (resolved instanceof PBuiltinFunction builtinFunction) {
@@ -2270,7 +2269,6 @@ public abstract class GraalHPyNodes {
      *     } HPyType_Spec;
      * </pre>
      */
-    @ImportStatic(SpecialMethodSlot.class)
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 196 -> 180
     abstract static class HPyCreateTypeFromSpecNode extends Node {
@@ -2304,7 +2302,7 @@ public abstract class GraalHPyNodes {
                         @Cached HPyCreateLegacySlotNode createLegacySlotNode,
                         @Cached HPyCreateGetSetDescriptorNode createGetSetDescriptorNode,
                         @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNewNode,
+                        @Cached LookupAttributeInMRONode.Dynamic lookupNewNode,
                         @Cached PRaiseNode raiseNode) {
 
             try {
@@ -2418,7 +2416,7 @@ public abstract class GraalHPyNodes {
                                 } else if (addSlotResult instanceof HPyProperty) {
                                     property = (HPyProperty) addSlotResult;
                                 }
-                                if (property != null && SpecialMethodNames.T___NEW__.equals(property.key)) {
+                                if (property != null && T___NEW__.equals(property.key)) {
                                     seenNew = true;
                                 }
                                 break;
@@ -2494,9 +2492,9 @@ public abstract class GraalHPyNodes {
                      * new as well
                      */
                     // Lookup the inherited constructor and pass it to the HPy decorator.
-                    Object inheritedConstructor = lookupNewNode.execute(baseClass);
+                    Object inheritedConstructor = lookupNewNode.execute(baseClass, T___NEW__);
                     PBuiltinFunction constructorDecorator = HPyObjectNewNode.createBuiltinFunction(language, inheritedConstructor, builtinShape);
-                    writeAttributeToObjectNode.execute(newType, SpecialMethodNames.T___NEW__, constructorDecorator);
+                    writeAttributeToObjectNode.execute(newType, T___NEW__, constructorDecorator);
                 }
 
                 long baseFlags;

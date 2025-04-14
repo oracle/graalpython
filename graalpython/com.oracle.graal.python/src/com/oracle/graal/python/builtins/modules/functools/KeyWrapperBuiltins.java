@@ -41,13 +41,14 @@
 package com.oracle.graal.python.builtins.modules.functools;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.OTHER_ARG_MUST_BE_KEY;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -88,7 +89,7 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Slot(value = Slot.SlotKind.tp_richcompare, isComplex = true)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
     abstract static class KeyWrapperRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
@@ -109,7 +110,8 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"$self", "obj"})
+    @Slot(value = SlotKind.tp_call, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 2, parameterNames = {"$self", "obj"})
     @GenerateNodeFactory
     public abstract static class KWCallNode extends PythonBinaryBuiltinNode {
         @Specialization

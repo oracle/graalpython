@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.builtins.objects.thread.CommonLockBuiltinsClinicProviders.AcquireLockNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -82,28 +83,28 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PLock, PythonBuiltinClassType.PRLock})
-public final class LockBuiltins extends PythonBuiltins {
+public final class CommonLockBuiltins extends PythonBuiltins {
 
-    public static final TpSlots SLOTS = LockBuiltinsSlotsGen.SLOTS;
+    public static final TpSlots SLOTS = CommonLockBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return LockBuiltinsFactory.getFactories();
+        return CommonLockBuiltinsFactory.getFactories();
     }
 
     public static final boolean DEFAULT_BLOCKING = AbstractPythonLock.DEFAULT_BLOCKING;
     public static final double UNSET_TIMEOUT = AbstractPythonLock.UNSET_TIMEOUT;
 
     @Builtin(name = "acquire", minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
-    @ArgumentClinic(name = "blocking", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "LockBuiltins.DEFAULT_BLOCKING", useDefaultForNone = true)
-    @ArgumentClinic(name = "timeout", conversion = ArgumentClinic.ClinicConversion.Double, defaultValue = "LockBuiltins.UNSET_TIMEOUT", useDefaultForNone = true)
-    @ImportStatic({LockBuiltins.class, AbstractPythonLock.class})
+    @ArgumentClinic(name = "blocking", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "CommonLockBuiltins.DEFAULT_BLOCKING", useDefaultForNone = true)
+    @ArgumentClinic(name = "timeout", conversion = ArgumentClinic.ClinicConversion.Double, defaultValue = "CommonLockBuiltins.UNSET_TIMEOUT", useDefaultForNone = true)
+    @ImportStatic({CommonLockBuiltins.class, AbstractPythonLock.class})
     @GenerateNodeFactory
     public abstract static class AcquireLockNode extends PythonTernaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return LockBuiltinsClinicProviders.AcquireLockNodeClinicProviderGen.INSTANCE;
+            return AcquireLockNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization(guards = {"!invalidArgs(blocking, timeout)", "!blocking"})

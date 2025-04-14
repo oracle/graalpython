@@ -48,7 +48,6 @@ import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -85,7 +84,6 @@ import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -138,28 +136,24 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         return ByteArrayBuiltinsFactory.getFactories();
     }
 
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-        addBuiltinConstant(SpecialAttributeNames.T___DOC__, //
-                        "bytearray(iterable_of_ints) -> bytearray\n" + //
-                                        "bytearray(string, encoding[, errors]) -> bytearray\n" + //
-                                        "bytearray(bytes_or_buffer) -> mutable copy of bytes_or_buffer\n" + //
-                                        "bytearray(int) -> bytes array of size given by the parameter " + //
-                                        "initialized with null bytes\n" + //
-                                        "bytearray() -> empty bytes array\n" + //
-                                        "\n" + //
-                                        "Construct a mutable bytearray object from:\n" + //
-                                        "  - an iterable yielding integers in range(256)\n" + //
-                                        "  - a text string encoded using the specified encoding\n" + //
-                                        "  - a bytes or a buffer object\n" + //
-                                        "  - any object implementing the buffer API.\n" + //
-                                        "  - an integer");
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_BYTEARRAY, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class ByteArrayNode extends PythonBuiltinNode {
+        @Specialization
+        public PByteArray setEmpty(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            // data filled in subsequent __init__ call - see BytesCommonBuiltins.InitNode
+            return PFactory.createByteArray(language, cls, getInstanceShape.execute(cls), PythonUtils.EMPTY_BYTE_ARRAY);
+        }
+
+        // TODO: native allocation?
     }
 
     // bytearray([source[, encoding[, errors]]])
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(name = "bytearray", minNumOfPositionalArgs = 1, parameterNames = {"$self", "source", "encoding", "errors"})
+    @SlotSignature(name = J_BYTEARRAY, minNumOfPositionalArgs = 1, parameterNames = {"$self", "source", "encoding", "errors"})
     @ArgumentClinic(name = "encoding", conversionClass = BytesNodes.ExpectStringNode.class, args = "\"bytearray()\"")
     @ArgumentClinic(name = "errors", conversionClass = BytesNodes.ExpectStringNode.class, args = "\"bytearray()\"")
     @GenerateNodeFactory

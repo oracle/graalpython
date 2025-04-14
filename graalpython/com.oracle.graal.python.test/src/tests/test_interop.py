@@ -482,7 +482,7 @@ class InteropTests(unittest.TestCase):
         assert isinstance(l, ArrayList)
         self.assertEqual(getattr(ArrayList, 'class'), l.getClass())
 
-        with self.assertRaisesRegex(TypeError, "ForeignInstantiable.__call__\(\) got an unexpected keyword argument 'kwarg'"):
+        with self.assertRaisesRegex(TypeError, "__call__\(\) got an unexpected keyword argument 'kwarg'"):
             ArrayList(kwarg=42)
 
     def test_java_exceptions(self):

@@ -96,7 +96,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNodeGen;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -106,7 +106,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -138,7 +137,7 @@ public final class PicklerNodes {
         @Child private PyNumberAsSizeNode asSizeNode;
         @Child private CastToTruffleStringNode castToTruffleStringNode;
         @Child private SequenceNodes.GetSequenceStorageNode getSequenceStorageNode;
-        @Child private CallVarargsMethodNode callVarargsMethodNode;
+        @Child private CallNode callNode;
         @Child private ExecutePositionalStarargsNode getArgsNode;
         @Child private ExpandKeywordStarargsNode getKwArgsNode;
         @Child private PyLongFromUnicodeObject pyLongFromUnicodeObject;
@@ -386,12 +385,12 @@ public final class PicklerNodes {
             return pyLongFromUnicodeObject.executeCached(number, 0);
         }
 
-        protected CallVarargsMethodNode ensureCallVarargsNode() {
-            if (callVarargsMethodNode == null) {
+        protected CallNode ensureCallNode() {
+            if (callNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callVarargsMethodNode = insert(CallVarargsMethodNode.create());
+                callNode = insert(CallNode.create());
             }
-            return callVarargsMethodNode;
+            return callNode;
         }
 
         protected ExecutePositionalStarargsNode ensureGetArgsNode() {
@@ -446,25 +445,8 @@ public final class PicklerNodes {
             return cls;
         }
 
-        protected Object callNew(VirtualFrame frame, Object tpNew, Object cls) {
-            return ensureCallVarargsNode().execute(frame, tpNew, new Object[]{cls}, PKeyword.EMPTY_KEYWORDS);
-        }
-
-        protected Object callNew(VirtualFrame frame, Object tpNew, Object cls, Object args) {
-            return callNew(frame, tpNew, cls, args, null);
-        }
-
-        protected Object callNew(VirtualFrame frame, Object tpNew, Object cls, Object args, Object kwargs) {
-            final Object[] stargs = ensureGetArgsNode().executeWith(frame, args);
-            final Object[] newArgs = new Object[stargs.length + 1];
-            newArgs[0] = cls;
-            PythonUtils.arraycopy(stargs, 0, newArgs, 1, stargs.length);
-            PKeyword[] keywords = kwargs == null ? PKeyword.EMPTY_KEYWORDS : ensureExpandKwArgsNode().executeCached(kwargs);
-            return ensureCallVarargsNode().execute(frame, tpNew, newArgs, keywords);
-        }
-
         protected Object call(VirtualFrame frame, Object method, Object... args) {
-            return ensureCallVarargsNode().execute(frame, method, args, PKeyword.EMPTY_KEYWORDS);
+            return ensureCallNode().execute(frame, method, args, PKeyword.EMPTY_KEYWORDS);
         }
 
         protected Object callStarArgs(VirtualFrame frame, Object method, Object args) {
@@ -473,7 +455,7 @@ public final class PicklerNodes {
 
         protected Object callStarArgsAndKwArgs(VirtualFrame frame, Object method, Object args, Object kwargs) {
             PKeyword[] keywords = kwargs == null ? PKeyword.EMPTY_KEYWORDS : ensureExpandKwArgsNode().executeCached(kwargs);
-            return ensureCallVarargsNode().execute(frame, method, ensureGetArgsNode().executeWith(frame, args), keywords);
+            return ensureCallNode().execute(frame, method, ensureGetArgsNode().executeWith(frame, args), keywords);
         }
 
         protected SequenceStorage getSequenceStorage(Object iterator) {

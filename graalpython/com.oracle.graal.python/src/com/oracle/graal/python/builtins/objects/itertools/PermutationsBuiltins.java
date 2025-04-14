@@ -43,7 +43,9 @@ package com.oracle.graal.python.builtins.objects.itertools;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_INT_AS_R;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
+import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
@@ -51,24 +53,32 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
+import com.oracle.graal.python.builtins.objects.itertools.PermutationsBuiltinsClinicProviders.PermutationsNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
@@ -81,6 +91,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -94,6 +105,85 @@ public final class PermutationsBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PermutationsBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "permutations", minNumOfPositionalArgs = 2, parameterNames = {"cls", "iterable", "r"})
+    @ArgumentClinic(name = "r", defaultValue = "PNone.NONE")
+    @GenerateNodeFactory
+    public abstract static class PermutationsNode extends PythonTernaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PermutationsNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static Object construct(VirtualFrame frame, Object cls, Object iterable, Object rArg,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile rIsNoneProfile,
+                        @Cached IteratorNodes.ToArrayNode toArrayNode,
+                        @Cached CastToJavaIntExactNode castToInt,
+                        @Cached InlinedConditionProfile wrongTypeProfile,
+                        @Cached InlinedBranchProfile wrongRprofile,
+                        @Cached InlinedBranchProfile negRprofile,
+                        @Cached InlinedConditionProfile nrProfile,
+                        @Cached InlinedLoopConditionProfile indicesLoopProfile,
+                        @Cached InlinedLoopConditionProfile cyclesLoopProfile,
+                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached PRaiseNode raiseNode) {
+            if (!wrongTypeProfile.profile(inliningTarget, isTypeNode.execute(inliningTarget, cls))) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+            }
+            int r;
+            Object[] pool = toArrayNode.execute(frame, iterable);
+            if (rIsNoneProfile.profile(inliningTarget, PGuards.isNone(rArg))) {
+                r = pool.length;
+            } else {
+                try {
+                    r = castToInt.execute(inliningTarget, rArg);
+                } catch (CannotCastException e) {
+                    wrongRprofile.enter(inliningTarget);
+                    throw raiseNode.raise(inliningTarget, TypeError, EXPECTED_INT_AS_R);
+                }
+                if (r < 0) {
+                    negRprofile.enter(inliningTarget);
+                    throw raiseNode.raise(inliningTarget, ValueError, MUST_BE_NON_NEGATIVE, "r");
+                }
+            }
+            PPermutations self = PFactory.createPermutations(language, cls, getInstanceShape.execute(cls));
+            self.setPool(pool);
+            self.setR(r);
+            int n = pool.length;
+            self.setN(n);
+            int nMinusR = n - r;
+            if (nrProfile.profile(inliningTarget, nMinusR < 0)) {
+                self.setStopped(true);
+                self.setRaisedStopIteration(true);
+            } else {
+                self.setStopped(false);
+                int[] indices = new int[n];
+                indicesLoopProfile.profileCounted(inliningTarget, indices.length);
+                LoopNode.reportLoopCount(inliningTarget, indices.length);
+                for (int i = 0; indicesLoopProfile.inject(inliningTarget, i < indices.length); i++) {
+                    indices[i] = i;
+                }
+                self.setIndices(indices);
+                int[] cycles = new int[r];
+                int idx = 0;
+                cyclesLoopProfile.profileCounted(inliningTarget, r);
+                LoopNode.reportLoopCount(inliningTarget, r);
+                for (int i = n; cyclesLoopProfile.inject(inliningTarget, i > nMinusR); i--) {
+                    cycles[idx++] = i;
+                }
+                self.setCycles(cycles);
+                self.setRaisedStopIteration(false);
+                self.setStarted(false);
+                return self;
+            }
+            return self;
+        }
     }
 
     @Slot(value = SlotKind.tp_iter, isComplex = true)
@@ -256,5 +346,4 @@ public final class PermutationsBuiltins extends PythonBuiltins {
             }
         }
     }
-
 }

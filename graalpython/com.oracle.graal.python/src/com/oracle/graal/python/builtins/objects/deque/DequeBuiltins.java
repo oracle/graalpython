@@ -47,6 +47,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeErr
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DEQUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.ErrorMessages.DEQUE_MUTATED_DURING_REMOVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.DEQUE_REMOVE_X_NOT_IN_DEQUE;
@@ -72,7 +73,6 @@ import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexCustomMessageNode;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeInsertNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeRotateNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -110,6 +111,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -144,9 +146,18 @@ public final class DequeBuiltins extends PythonBuiltins {
         return DequeBuiltinsFactory.getFactories();
     }
 
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_DEQUE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class DequeNode extends PythonVarargsBuiltinNode {
+
+        @Specialization
+        @SuppressWarnings("unused")
+        PDeque doGeneric(Object cls, Object[] args, PKeyword[] kwargs,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createDeque(language, cls, getInstanceShape.execute(cls));
+        }
     }
 
     // deque.__init__(self, [iterable, [maxlen]])

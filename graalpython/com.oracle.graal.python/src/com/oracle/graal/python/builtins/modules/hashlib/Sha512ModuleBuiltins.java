@@ -46,8 +46,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.dsl.Bind;
@@ -84,28 +82,6 @@ public final class Sha512ModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
             return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.SHA512Type, "sha512", "sha512", buffer);
-        }
-    }
-
-    @Builtin(name = "sha384", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.SHA384Type, isPublic = false)
-    @GenerateNodeFactory
-    abstract static class Sha384Node extends PythonBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object sha384(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_sha512.sha384");
-        }
-    }
-
-    @Builtin(name = "sha512", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.SHA512Type, isPublic = false)
-    @GenerateNodeFactory
-    abstract static class Sha512Node extends PythonBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object sha512(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_sha512.sha512");
         }
     }
 }

@@ -47,11 +47,9 @@ import java.util.Objects;
 import java.util.concurrent.Semaphore;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -64,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -74,9 +71,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -121,51 +116,6 @@ public final class MultiprocessingGraalPyModuleBuiltins extends PythonBuiltins {
         // TODO: add necessary entries to the dict
         addBuiltinConstant("flags", PFactory.createDict(core.getLanguage()));
         super.initialize(core);
-    }
-
-    @Builtin(name = "SemLock", parameterNames = {"cls", "kind", "value", "maxvalue", "name", "unlink"}, constructsClass = PythonBuiltinClassType.PGraalPySemLock)
-    @ArgumentClinic(name = "kind", conversion = ArgumentClinic.ClinicConversion.Int)
-    @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Int)
-    @ArgumentClinic(name = "maxvalue", conversion = ArgumentClinic.ClinicConversion.Int)
-    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
-    @ArgumentClinic(name = "unlink", conversion = ArgumentClinic.ClinicConversion.IntToBoolean)
-    @GenerateNodeFactory
-    abstract static class SemLockNode extends PythonClinicBuiltinNode {
-        @Specialization
-        static PGraalPySemLock construct(Object cls, int kind, int value, @SuppressWarnings("unused") int maxValue, TruffleString name, boolean unlink,
-                        @Bind("this") Node inliningTarget,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Cached PRaiseNode raiseNode) {
-            if (kind != PGraalPySemLock.RECURSIVE_MUTEX && kind != PGraalPySemLock.SEMAPHORE) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.UNRECOGNIZED_KIND);
-            }
-            Semaphore semaphore = newSemaphore(value);
-            if (!unlink) {
-                // CPython creates a named semaphore, and if unlink != 0 unlinks
-                // it directly, so it cannot be accessed by other processes. We
-                // have to explicitly link it, so we do that here if we
-                // must. CPython always uses O_CREAT | O_EXCL for creating named
-                // semaphores, so a conflict raises.
-                SharedMultiprocessingData multiprocessing = PythonContext.get(inliningTarget).getSharedMultiprocessingData();
-                if (multiprocessing.getNamedSemaphore(name) != null) {
-                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.FileExistsError, ErrorMessages.SEMAPHORE_NAME_TAKEN, name);
-                } else {
-                    multiprocessing.putNamedSemaphore(name, semaphore);
-                }
-            }
-            return PFactory.createGraalPySemLock(language, cls, getInstanceShape.execute(cls), name, kind, semaphore);
-        }
-
-        @TruffleBoundary
-        private static Semaphore newSemaphore(int value) {
-            return new Semaphore(value);
-        }
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return MultiprocessingGraalPyModuleBuiltinsClinicProviders.SemLockNodeClinicProviderGen.INSTANCE;
-        }
     }
 
     @GenerateNodeFactory

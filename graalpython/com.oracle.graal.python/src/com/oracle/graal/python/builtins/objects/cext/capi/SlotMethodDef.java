@@ -43,13 +43,10 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAsyncMethods__am_aiter;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAsyncMethods__am_anext;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAsyncMethods__am_await;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_call;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ANEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.CallFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncLegacyWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
@@ -58,13 +55,9 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public enum SlotMethodDef {
-    TP_CALL(PyTypeObject__tp_call, T___CALL__, CallFunctionWrapper::new),
-
     AM_AWAIT(PyAsyncMethods__am_await, T___AWAIT__, UnaryFuncLegacyWrapper::new, MethodsFlags.AM_AWAIT),
     AM_AITER(PyAsyncMethods__am_aiter, T___AITER__, UnaryFuncLegacyWrapper::new, MethodsFlags.AM_AITER),
     AM_ANEXT(PyAsyncMethods__am_anext, T___ANEXT__, PyProcsWrapper.UnaryFuncLegacyWrapper::new, MethodsFlags.AM_ANEXT);
-    // (mq) AM_SEND is an internal function and mostly called from within AWAIT, AITER, ANEXT.
-    /*-  AM_SEND(PyAsyncMethods__am_send, ASYNC_AM_SEND, CallFunctionWrapper::new, MethodsFlags.AM_SEND), */
 
     public final TruffleString methodName;
     public final Function<Object, PyProcsWrapper> wrapperFactory;
@@ -77,10 +70,6 @@ public enum SlotMethodDef {
      * Different slot that is C-compatible and maps to the same Python method.
      */
     @CompilationFinal public SlotMethodDef overlappingSlot;
-
-    SlotMethodDef(CFields typeField, TruffleString methodName, Function<Object, PyProcsWrapper> wrapperFactory) {
-        this(typeField, null, methodName, wrapperFactory, 0);
-    }
 
     SlotMethodDef(CFields typeField, TruffleString methodName, Function<Object, PyProcsWrapper> wrapperFactory, long methodFlag) {
         this(typeField, null, methodName, wrapperFactory, methodFlag);

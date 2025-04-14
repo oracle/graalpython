@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -886,7 +886,33 @@ class TestObject(unittest.TestCase):
                 assert foo.get_value(i) == vvv, "Failed"
                 vvv += 1
 
-    def test_new_inherited_from_dominant_base(self):
+    def test_tp_new_bug_to_bug_compatibility(self):
+        # msimacek: `update_one_slot` in CPython has a bug regarding unwrappping `tp_new` slots from wrapper methods.
+        # See the comments in `TpSlots.updateSlots` method for the mechanism.
+        # This test checks various corner cases arising from that. They don't all use C ext, but I'd like to keep
+        # all the cases in one place
+        class X:
+            pass
+
+        class Y(int):
+            def __new__(cls, value):
+                raise AssertionError
+
+        class Z(Y):
+            pass
+
+        X.__new__ = int.__new__
+        Z.__new__ = int.__new__
+
+        # X() runs object.__new__, ignoring the reassignment
+        x = X()
+        assert isinstance(x, X)
+        # Z() runs int.__new__. It also ignored the reassignment, but since tp_new was and still is set to slot_tp_new,
+        # it will do the call through dict, which ends up doing the right thing in this case
+        z = Z(1)
+        assert isinstance(z, int)
+
+        # The bug can also manifest in multiple-inheritance. A variant of this case appears in pandas
         DominantBase = CPyExtType(
             'DominantBase',
             '''
@@ -904,8 +930,8 @@ class TestObject(unittest.TestCase):
         class Subclass(WeakBase, DominantBase):
             pass
 
-        # In CPython 3.10, Subclass.__new__ is WeakBase.__new__, but Subclass.tp_new is DominantBase.tp_new
-
+        # In CPython, Subclass.__new__ is WeakBase.__new__, but Subclass.tp_new is DominantBase.tp_new
+        assert Subclass.__new__.__self__ is WeakBase
         assert Subclass() is Ellipsis
 
     def test_descrget(self):

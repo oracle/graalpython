@@ -74,11 +74,9 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
@@ -94,7 +92,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -165,10 +162,6 @@ public abstract class ToNativeTypeNode {
 
     private static long lookupSize(PythonManagedClass clazz, CFields member, HiddenAttr hiddenName) {
         return lookupNativeI64MemberInMRO(clazz, member, hiddenName);
-    }
-
-    private static Object lookup(PythonManagedClass obj, SlotMethodDef slot) {
-        return LookupNativeSlotNode.executeUncached(obj, slot);
     }
 
     static void initializeType(PythonClassNativeWrapper obj, Object mem, boolean heaptype) {
@@ -244,7 +237,6 @@ public abstract class ToNativeTypeNode {
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_number, asNumber);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_sequence, asSequence);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_mapping, asMapping);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_call, lookup(clazz, SlotMethodDef.TP_CALL));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_buffer, asBuffer);
         writeI64Node.write(mem, CFields.PyTypeObject__tp_flags, flags);
 
@@ -296,13 +288,6 @@ public abstract class ToNativeTypeNode {
         // TODO properly implement 'tp_dictoffset' for builtin classes
         writeI64Node.write(mem, CFields.PyTypeObject__tp_dictoffset, GetDictOffsetNode.executeUncached(clazz));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_alloc, lookup(clazz, PyTypeObject__tp_alloc, HiddenAttr.ALLOC));
-        // T___new__ is magically a staticmethod for Python types. The tp_new slot lookup
-        // expects to get the function
-        Object newFunction = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.New).execute(clazz);
-        if (newFunction instanceof PDecoratedMethod) {
-            newFunction = ((PDecoratedMethod) newFunction).getCallable();
-        }
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_new, ManagedMethodWrappers.createKeywords(newFunction));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_free, lookup(clazz, PyTypeObject__tp_free, HiddenAttr.FREE));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_clear, lookup(clazz, PyTypeObject__tp_clear, HiddenAttr.CLEAR));
         if (clazz.basesTuple == null) {

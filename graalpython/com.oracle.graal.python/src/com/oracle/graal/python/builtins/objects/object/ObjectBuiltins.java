@@ -26,6 +26,8 @@
 
 package com.oracle.graal.python.builtins.objects.object;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_NEW;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_OBJECT;
 import static com.oracle.graal.python.nodes.PGuards.isDeleteMarker;
 import static com.oracle.graal.python.nodes.PGuards.isDict;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
@@ -33,6 +35,7 @@ import static com.oracle.graal.python.nodes.PGuards.isPythonModule;
 import static com.oracle.graal.python.nodes.PGuards.isPythonObject;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
@@ -43,9 +46,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SIZEOF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSHOOK__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_JOIN;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_SORT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_UPDATE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REDUCE__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -63,10 +69,11 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -75,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuilt
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins.DescrGetNode;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins.DescrSetNode;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.ReduceExNodeClinicProviderGen;
@@ -82,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.Dic
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
@@ -98,6 +107,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBui
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRepr.CallSlotReprNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -106,12 +116,13 @@ import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -132,6 +143,7 @@ import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -223,6 +235,144 @@ public final class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
+    // object()
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_OBJECT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class ObjectNode extends PythonVarargsBuiltinNode {
+
+        @Child private ReportAbstractClassNode reportAbstractClassNode;
+
+        @GenerateInline(false) // Used lazily
+        abstract static class ReportAbstractClassNode extends PNodeWithContext {
+            public abstract PException execute(VirtualFrame frame, Object type);
+
+            @Specialization
+            static PException report(VirtualFrame frame, Object type,
+                            @Bind("this") Node inliningTarget,
+                            @Cached PyObjectCallMethodObjArgs callSort,
+                            @Cached PyObjectCallMethodObjArgs callJoin,
+                            @Cached PyObjectSizeNode sizeNode,
+                            @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
+                            @Cached CastToTruffleStringNode cast,
+                            @Cached ListNodes.ConstructListNode constructListNode,
+                            @Cached PRaiseNode raiseNode) {
+                PList list = constructListNode.execute(frame, readAttributeFromObjectNode.execute(type, T___ABSTRACTMETHODS__));
+                int methodCount = sizeNode.execute(frame, inliningTarget, list);
+                callSort.execute(frame, inliningTarget, list, T_SORT);
+                TruffleString joined = cast.execute(inliningTarget, callJoin.execute(frame, inliningTarget, T_COMMA_SPACE, T_JOIN, list));
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_INSTANTIATE_ABSTRACT_CLASS_WITH_ABSTRACT_METHODS, type, methodCount > 1 ? "s" : "", joined);
+            }
+        }
+
+        @GenerateInline
+        @GenerateCached(false)
+        @ImportStatic(SpecialMethodSlot.class)
+        abstract static class CheckExcessArgsNode extends Node {
+            abstract void execute(Node inliningTarget, Object type, Object[] args, PKeyword[] kwargs);
+
+            @Specialization(guards = {"args.length == 0", "kwargs.length == 0"})
+            @SuppressWarnings("unused")
+            static void doNothing(Object type, Object[] args, PKeyword[] kwargs) {
+            }
+
+            @Fallback
+            @SuppressWarnings("unused")
+            static void check(Node inliningTarget, Object type, Object[] args, PKeyword[] kwargs,
+                            @Cached GetCachedTpSlotsNode getSlots,
+                            @Cached PRaiseNode raiseNode) {
+                TpSlots slots = getSlots.execute(inliningTarget, type);
+                if (slots.tp_new() != SLOTS.tp_new()) {
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NEW_TAKES_ONE_ARG);
+                }
+                if (slots.tp_init() == SLOTS.tp_init()) {
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NEW_TAKES_NO_ARGS, type);
+                }
+            }
+        }
+
+        @Specialization(guards = {"!self.needsNativeAllocation()"})
+        Object doManagedObject(VirtualFrame frame, PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Shared @Cached CheckExcessArgsNode checkExcessArgsNode,
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            checkExcessArgsNode.execute(inliningTarget, self, varargs, kwargs);
+            if (self.isAbstractClass()) {
+                throw reportAbstractClass(frame, self);
+            }
+            return PFactory.createPythonObject(language, self, getInstanceShape.execute(self));
+        }
+
+        @Specialization
+        static Object doBuiltinTypeType(PythonBuiltinClassType self, Object[] varargs, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Shared @Cached CheckExcessArgsNode checkExcessArgsNode,
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            checkExcessArgsNode.execute(inliningTarget, self, varargs, kwargs);
+            return PFactory.createPythonObject(language, self, getInstanceShape.execute(self));
+        }
+
+        @Specialization(guards = "self.needsNativeAllocation()")
+        @SuppressWarnings("truffle-static-method")
+        @InliningCutoff
+        Object doNativeObjectIndirect(VirtualFrame frame, PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached CheckExcessArgsNode checkExcessArgsNode,
+                        @Shared @Cached CallNativeGenericNewNode callNativeGenericNewNode) {
+            checkExcessArgsNode.execute(inliningTarget, self, varargs, kwargs);
+            if (self.isAbstractClass()) {
+                throw reportAbstractClass(frame, self);
+            }
+            return callNativeGenericNewNode.execute(inliningTarget, self);
+        }
+
+        @Specialization(guards = "isNativeClass(self)")
+        @SuppressWarnings("truffle-static-method")
+        @InliningCutoff
+        Object doNativeObjectDirect(VirtualFrame frame, Object self, Object[] varargs, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached CheckExcessArgsNode checkExcessArgsNode,
+                        @Exclusive @Cached TypeNodes.GetTypeFlagsNode getTypeFlagsNode,
+                        @Shared @Cached CallNativeGenericNewNode callNativeGenericNewNode) {
+            checkExcessArgsNode.execute(inliningTarget, self, varargs, kwargs);
+            if ((getTypeFlagsNode.execute(self) & TypeFlags.IS_ABSTRACT) != 0) {
+                throw reportAbstractClass(frame, self);
+            }
+            return callNativeGenericNewNode.execute(inliningTarget, self);
+        }
+
+        @GenerateInline
+        @GenerateCached(false)
+        protected abstract static class CallNativeGenericNewNode extends Node {
+            abstract Object execute(Node inliningTarget, Object cls);
+
+            @Specialization
+            static Object call(Object cls,
+                            @Cached(inline = false) CApiTransitions.PythonToNativeNode toNativeNode,
+                            @Cached(inline = false) CApiTransitions.NativeToPythonTransferNode toPythonNode,
+                            @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
+                return toPythonNode.execute(callCapiFunction.call(FUN_PY_OBJECT_NEW, toNativeNode.execute(cls)));
+            }
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object fallback(Object o, Object[] varargs, PKeyword[] kwargs) {
+            throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "object.__new__(X): X", o);
+        }
+
+        @InliningCutoff
+        private PException reportAbstractClass(VirtualFrame frame, Object type) {
+            if (reportAbstractClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                reportAbstractClassNode = insert(ObjectBuiltinsFactory.ObjectNodeFactory.ReportAbstractClassNodeGen.create());
+            }
+            return reportAbstractClassNode.execute(frame, type);
+        }
+    }
+
     @Slot(value = SlotKind.tp_init, isComplex = true)
     @SlotSignature(takesVarArgs = true, minNumOfPositionalArgs = 1, takesVarKeywordArgs = true)
     @GenerateNodeFactory
@@ -241,8 +391,6 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetCachedTpSlotsNode getSlots,
-                        @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNew,
-                        @Cached TypeNodes.CheckCallableIsSpecificBuiltinNode checkSlotIs,
                         @Cached PRaiseNode raiseNode) {
             if (arguments.length != 0 || keywords.length != 0) {
                 Object type = getClassNode.execute(inliningTarget, self);
@@ -251,7 +399,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INIT_TAKES_ONE_ARG_OBJECT);
                 }
 
-                if (checkSlotIs.execute(inliningTarget, lookupNew.execute(type), BuiltinConstructorsFactory.ObjectNodeFactory.getInstance())) {
+                if (slots.tp_new() == SLOTS.tp_new()) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INIT_TAKES_ONE_ARG, type);
                 }
             }

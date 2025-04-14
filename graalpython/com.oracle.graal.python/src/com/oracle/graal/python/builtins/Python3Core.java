@@ -36,6 +36,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_ZIPIMPORT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___IMPORT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PACKAGE__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
@@ -63,7 +64,6 @@ import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AsyncioModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AtexitModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BinasciiModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.CmathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
@@ -84,7 +84,6 @@ import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.lsprof.LsprofModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
@@ -95,7 +94,6 @@ import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixShMemModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.lsprof.ProfilerBuiltins;
 import com.oracle.graal.python.builtins.modules.PwdModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
@@ -106,6 +104,7 @@ import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.StatResultBuiltins;
 import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.StructModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
@@ -166,7 +165,6 @@ import com.oracle.graal.python.builtins.modules.functools.LruCacheWrapperBuiltin
 import com.oracle.graal.python.builtins.modules.functools.PartialBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Blake2ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Blake2bObjectBuiltins;
-import com.oracle.graal.python.builtins.modules.hashlib.Blake2sObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.DigestObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.HashObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltins;
@@ -197,6 +195,8 @@ import com.oracle.graal.python.builtins.modules.io.TextIOWrapperBuiltins;
 import com.oracle.graal.python.builtins.modules.json.JSONEncoderBuiltins;
 import com.oracle.graal.python.builtins.modules.json.JSONModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.json.JSONScannerBuiltins;
+import com.oracle.graal.python.builtins.modules.lsprof.LsprofModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.lsprof.ProfilerBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMACompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMADecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins;
@@ -236,6 +236,8 @@ import com.oracle.graal.python.builtins.objects.contextvars.ContextVarBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.TokenBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeIterBuiltins;
+import com.oracle.graal.python.builtins.objects.deque.DequeIterCommonBuiltins;
+import com.oracle.graal.python.builtins.objects.deque.DequeRevIterBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DefaultDictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictReprBuiltin;
@@ -282,11 +284,12 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.MemberDescripto
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
-import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.iterator.ZipBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.AccumulateBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ChainBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CombinationsBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CombinationsWithReplacementBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CompressBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CountBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CycleBuiltins;
@@ -352,12 +355,13 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.struct.StructBuiltins;
 import com.oracle.graal.python.builtins.objects.struct.StructUnpackIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
-import com.oracle.graal.python.builtins.objects.thread.LockBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.CommonLockBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.LockTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
-import com.oracle.graal.python.builtins.objects.thread.ThreadBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
+import com.oracle.graal.python.builtins.objects.tuple.InstantiableStructSequenceBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltins;
@@ -427,27 +431,32 @@ public abstract class Python3Core {
 
     private static TruffleString[] initializeCoreFiles() {
         // Order matters!
-        return new TruffleString[]{
+        List<TruffleString> coreFiles = List.of(
                         toTruffleStringUncached("__graalpython__"),
                         toTruffleStringUncached("_weakref"),
                         toTruffleStringUncached("unicodedata"),
                         toTruffleStringUncached("_sre"),
                         toTruffleStringUncached("_sysconfig"),
                         toTruffleStringUncached("java"),
-                        toTruffleStringUncached("pip_hook")
-        };
+                        toTruffleStringUncached("pip_hook"));
+        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            coreFiles = new ArrayList<>(coreFiles);
+            coreFiles.add(toTruffleStringUncached("_nt"));
+        }
+
+        return coreFiles.toArray(new TruffleString[0]);
     }
 
     private final PythonBuiltins[] builtins;
 
-    private static final boolean hasProfilerTool;
+    public static final boolean HAS_PROFILER_TOOL;
     static {
         Class<?> c = null;
         try {
             c = Class.forName("com.oracle.truffle.tools.profiler.CPUSampler");
         } catch (LinkageError | ClassNotFoundException e) {
         }
-        hasProfilerTool = c != null;
+        HAS_PROFILER_TOOL = c != null;
         c = null;
     }
 
@@ -468,7 +477,7 @@ public abstract class Python3Core {
     }
 
     private static PythonBuiltins[] initializeBuiltins(TruffleLanguage.Env env) {
-        List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(new BuiltinConstructors(),
+        List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
                         new AbcModuleBuiltins(),
                         new BuiltinFunctions(),
                         new DecoratedMethodBuiltins(),
@@ -504,13 +513,14 @@ public abstract class Python3Core {
                         new SliceBuiltins(),
                         new TupleBuiltins(),
                         new StructSequenceBuiltins(),
+                        new InstantiableStructSequenceBuiltins(),
                         new StringBuiltins(),
                         new BaseSetBuiltins(),
                         new SetBuiltins(),
                         new FrozenSetBuiltins(),
                         new IteratorBuiltins(),
                         new ReversedBuiltins(),
-                        new PZipBuiltins(),
+                        new ZipBuiltins(),
                         new EnumerateBuiltins(),
                         new MapBuiltins(),
                         new NotImplementedBuiltins(),
@@ -549,6 +559,7 @@ public abstract class Python3Core {
                         new CryptModuleBuiltins(),
                         new ScandirIteratorBuiltins(),
                         new DirEntryBuiltins(),
+                        new StatResultBuiltins(),
                         new ImpModuleBuiltins(),
                         new ArrayModuleBuiltins(),
                         new ArrayBuiltins(),
@@ -631,7 +642,9 @@ public abstract class Python3Core {
                         new CodecsModuleBuiltins(),
                         new CodecsTruffleModuleBuiltins(),
                         new DequeBuiltins(),
+                        new DequeIterCommonBuiltins(),
                         new DequeIterBuiltins(),
+                        new DequeRevIterBuiltins(),
                         new OrderedDictBuiltins(),
                         new OrderedDictKeysBuiltins(),
                         new OrderedDictValuesBuiltins(),
@@ -681,12 +694,12 @@ public abstract class Python3Core {
                         PythonImageBuildOptions.WITHOUT_DIGEST ? null : new HashObjectBuiltins(),
                         PythonImageBuildOptions.WITHOUT_DIGEST ? null : new ShakeDigestObjectBuiltins(),
                         PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Blake2bObjectBuiltins(),
-                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Blake2sObjectBuiltins(),
                         PythonImageBuildOptions.WITHOUT_DIGEST ? null : new HashlibModuleBuiltins(),
 
                         // itertools
                         new AccumulateBuiltins(),
                         new CombinationsBuiltins(),
+                        new CombinationsWithReplacementBuiltins(),
                         new CompressBuiltins(),
                         new DropwhileBuiltins(),
                         new ChainBuiltins(),
@@ -718,9 +731,9 @@ public abstract class Python3Core {
                         new SimpleQueueBuiltins(),
                         new QueueModuleBuiltins(),
                         new ThreadModuleBuiltins(),
-                        new ThreadBuiltins(),
                         new ThreadLocalBuiltins(),
-                        new LockBuiltins(),
+                        new CommonLockBuiltins(),
+                        new LockTypeBuiltins(),
                         new RLockBuiltins(),
                         new PwdModuleBuiltins(),
                         new ResourceModuleBuiltins(),
@@ -809,7 +822,7 @@ public abstract class Python3Core {
                         new ParamSpecKwargsBuiltins(),
                         new TypeAliasTypeBuiltins(),
                         new GenericBuiltins()));
-        if (hasProfilerTool) {
+        if (HAS_PROFILER_TOOL) {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(new ProfilerBuiltins());
         }
@@ -1246,12 +1259,12 @@ public abstract class Python3Core {
             }
         }
 
-        Map<TruffleString, BoundBuiltinCallable<?>> wrapped = new HashMap<>();
         for (PythonBuiltinClassType klass : PythonBuiltinClassType.VALUES) {
-            wrapped.clear();
             PythonBuiltinClass pbc = lookupType(klass);
-            TpSlots.addOperatorsToBuiltin(wrapped, this, klass, pbc);
-            PythonBuiltins.addFunctionsToModuleObject(wrapped, pbc, getLanguage());
+            TpSlots.addOperatorsToBuiltin(this, klass, pbc);
+            if (klass.getDoc() != null && pbc.getAttribute(T___DOC__) instanceof PNone) {
+                pbc.setAttribute(T___DOC__, klass.getDoc());
+            }
         }
 
         // core machinery

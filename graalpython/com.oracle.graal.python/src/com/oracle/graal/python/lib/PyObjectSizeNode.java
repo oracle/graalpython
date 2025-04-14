@@ -79,9 +79,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateInline(inlineByDefault = true)
 @GenerateCached()
 public abstract class PyObjectSizeNode extends PNodeWithContext {
-    public static int executeUncached(Frame frame, Object object) {
-        return PyObjectSizeNodeGen.getUncached().execute(frame, null, object);
-    }
 
     public static int executeUncached(Object object) {
         return PyObjectSizeNodeGen.getUncached().execute(null, null, object);

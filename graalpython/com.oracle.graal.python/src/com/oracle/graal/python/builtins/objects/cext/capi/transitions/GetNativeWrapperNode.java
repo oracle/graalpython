@@ -175,9 +175,9 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
     @Specialization
     static PythonNativeWrapper doPythonClassUncached(PythonManagedClass object,
                     @Bind("this") Node inliningTarget,
-                    @Cached TypeNodes.GetNameNode getNameNode,
+                    @Cached TypeNodes.GetTpNameNode getTpNameNode,
                     @Shared @Cached TruffleString.SwitchEncodingNode switchEncoding) {
-        return PythonClassNativeWrapper.wrap(object, getNameNode.execute(inliningTarget, object), switchEncoding);
+        return PythonClassNativeWrapper.wrap(object, getTpNameNode.execute(inliningTarget, object), switchEncoding);
     }
 
     @Specialization

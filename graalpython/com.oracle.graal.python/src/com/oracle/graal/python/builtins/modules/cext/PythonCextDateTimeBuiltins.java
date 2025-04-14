@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,7 +66,7 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -81,8 +81,8 @@ public final class PythonCextDateTimeBuiltins {
     abstract static class PyTruffleDateTimeCAPI_Date_FromDate extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object values(int year, int month, int day, Object type,
-                        @Cached CallVarargsMethodNode call) {
-            return call.execute(null, type, new Object[]{year, month, day}, PKeyword.EMPTY_KEYWORDS);
+                        @Cached CallNode call) {
+            return call.execute(null, type, year, month, day);
         }
     }
 
@@ -90,8 +90,8 @@ public final class PythonCextDateTimeBuiltins {
     abstract static class PyTruffleDateTimeCAPI_DateTime_FromDateAndTime extends CApi9BuiltinNode {
         @Specialization
         static Object values(int year, int month, int day, int hour, int minute, int second, int usecond, Object tzinfo, Object type,
-                        @Cached CallVarargsMethodNode call) {
-            return call.execute(null, type, new Object[]{year, month, day, hour, minute, second, usecond, tzinfo}, PKeyword.EMPTY_KEYWORDS);
+                        @Cached CallNode call) {
+            return call.execute(null, type, year, month, day, hour, minute, second, usecond, tzinfo);
         }
     }
 
@@ -99,8 +99,8 @@ public final class PythonCextDateTimeBuiltins {
     abstract static class PyTruffleDateTimeCAPI_Time_FromTime extends CApi6BuiltinNode {
         @Specialization
         static Object values(int hour, int minute, int second, int usecond, Object tzinfo, Object type,
-                        @Cached CallVarargsMethodNode call) {
-            return call.execute(null, type, new Object[]{hour, minute, second, usecond, tzinfo}, PKeyword.EMPTY_KEYWORDS);
+                        @Cached CallNode call) {
+            return call.execute(null, type, hour, minute, second, usecond, tzinfo);
         }
     }
 
@@ -108,9 +108,9 @@ public final class PythonCextDateTimeBuiltins {
     abstract static class PyTruffleDateTimeCAPI_Delta_FromDelta extends CApi5BuiltinNode {
         @Specialization
         static Object values(int days, int seconds, int useconds, @SuppressWarnings("unused") int normalize, Object type,
-                        @Cached CallVarargsMethodNode call) {
+                        @Cached CallNode call) {
             // TODO: "normalize" is ignored for the time being
-            return call.execute(null, type, new Object[]{days, seconds, useconds}, PKeyword.EMPTY_KEYWORDS);
+            return call.execute(null, type, days, seconds, useconds);
         }
     }
 
@@ -118,8 +118,8 @@ public final class PythonCextDateTimeBuiltins {
     abstract static class PyTruffleDateTimeCAPI_TimeZone_FromTimeZone extends CApiBinaryBuiltinNode {
         @Specialization
         Object values(Object offset, Object name,
-                        @Cached CallVarargsMethodNode call) {
-            return call.execute(null, getCApiContext().timezoneType, new Object[]{offset, name}, PKeyword.EMPTY_KEYWORDS);
+                        @Cached CallNode call) {
+            return call.execute(null, getCApiContext().timezoneType, offset, name);
         }
     }
 
@@ -131,7 +131,7 @@ public final class PythonCextDateTimeBuiltins {
                         @Cached ExecutePositionalStarargsNode starArgsNode,
                         @Cached ExpandKeywordStarargsNode kwArgsNode,
                         @Cached PyObjectLookupAttr lookupNode,
-                        @Cached CallVarargsMethodNode call) {
+                        @Cached CallNode call) {
             Object[] callArgs = starArgsNode.executeWith(null, args);
             PKeyword[] kwds = kwArgsNode.execute(inliningTarget, kwargs);
             Object fromTSCallable = lookupNode.execute(null, inliningTarget, type, T_FROMTIMESTAMP);
@@ -146,10 +146,10 @@ public final class PythonCextDateTimeBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ExecutePositionalStarargsNode starArgsNode,
                         @Cached PyObjectLookupAttr lookupNode,
-                        @Cached CallVarargsMethodNode call) {
+                        @Cached CallNode call) {
             Object[] callArgs = starArgsNode.executeWith(null, args);
             Object fromTSCallable = lookupNode.execute(null, inliningTarget, type, T_FROMTIMESTAMP);
-            return call.execute(null, fromTSCallable, callArgs, PKeyword.EMPTY_KEYWORDS);
+            return call.execute(null, fromTSCallable, callArgs);
         }
     }
 
@@ -157,7 +157,7 @@ public final class PythonCextDateTimeBuiltins {
     abstract static class PyTruffleDateTimeCAPI_DateTime_FromDateAndTimeAndFold extends CApi10BuiltinNode {
         @Specialization
         static Object values(int year, int month, int day, int hour, int minute, int second, int usecond, Object tzinfo, int fold, Object type,
-                        @Cached CallVarargsMethodNode call) {
+                        @Cached CallNode call) {
             return call.execute(null, type, new Object[]{year, month, day, hour, minute, second, usecond, tzinfo}, new PKeyword[]{new PKeyword(T_FOLD, fold)});
         }
     }
@@ -166,7 +166,7 @@ public final class PythonCextDateTimeBuiltins {
     abstract static class PyTruffleDateTimeCAPI_Time_FromTimeAndFold extends CApi7BuiltinNode {
         @Specialization
         static Object values(int hour, int minute, int second, int usecond, Object tzinfo, int fold, Object type,
-                        @Cached CallVarargsMethodNode call) {
+                        @Cached CallNode call) {
             return call.execute(null, type, new Object[]{hour, minute, second, usecond, tzinfo}, new PKeyword[]{new PKeyword(T_FOLD, fold)});
         }
     }

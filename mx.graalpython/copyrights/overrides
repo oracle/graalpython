@@ -620,7 +620,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/Python3
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/PythonBuiltinClassType.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/PythonBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/ArrayModuleBuiltins.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/BuiltinConstructors.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/BuiltinFunctions.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/CmathModuleBuiltins.java,python.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/GcModuleBuiltins.java,zippy.copyright
@@ -692,8 +691,8 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/PSequenceIterator.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/PStringIterator.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/PZip.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/PZipBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/SentinelIteratorBuiltins.java,zippy.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/ZipBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/list/ListBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/list/PList.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/mappingproxy/MappingproxyBuiltins.java,zippy.copyright

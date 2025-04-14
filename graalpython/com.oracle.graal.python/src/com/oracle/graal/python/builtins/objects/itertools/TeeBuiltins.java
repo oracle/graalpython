@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.INTEGER_REQUIRED_GOT;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COPY__;
@@ -58,6 +57,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -101,7 +101,8 @@ public final class TeeBuiltins extends PythonBuiltins {
         return TeeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NewNode extends PythonBinaryBuiltinNode {
         @Specialization

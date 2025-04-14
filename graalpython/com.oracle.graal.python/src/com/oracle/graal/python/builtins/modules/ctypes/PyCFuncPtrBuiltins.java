@@ -60,7 +60,8 @@ import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CONSTRUCT_INSTA
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_RESULT_TYPE_FOR_CALLBACK_FUNCTION;
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_ENOUGH_ARGUMENTS;
 import static com.oracle.graal.python.nodes.ErrorMessages.NULL_STGDICT_UNEXPECTED;
-import static com.oracle.graal.python.nodes.ErrorMessages.OUT_PARAMETER_D_MUST_BE_A_POINTER_TYPE_NOT_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.N_OUT_PARAMETER_MUST_BE_PASSED_AS_DEFAULT_VALUE;
+import static com.oracle.graal.python.nodes.ErrorMessages.OUT_PARAMETER_D_MUST_BE_A_POINTER_TYPE_NOT_N;
 import static com.oracle.graal.python.nodes.ErrorMessages.PARAMFLAGS_MUST_BE_A_SEQUENCE_OF_INT_STRING_VALUE_TUPLES;
 import static com.oracle.graal.python.nodes.ErrorMessages.PARAMFLAGS_MUST_BE_A_TUPLE_OR_NONE;
 import static com.oracle.graal.python.nodes.ErrorMessages.PARAMFLAGS_MUST_HAVE_THE_SAME_LENGTH_AS_ARGTYPES;
@@ -68,13 +69,10 @@ import static com.oracle.graal.python.nodes.ErrorMessages.PARAMFLAG_D_NOT_YET_IM
 import static com.oracle.graal.python.nodes.ErrorMessages.PARAMFLAG_VALUE_D_NOT_SUPPORTED;
 import static com.oracle.graal.python.nodes.ErrorMessages.REQUIRED_ARGUMENT_S_MISSING;
 import static com.oracle.graal.python.nodes.ErrorMessages.RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE;
-import static com.oracle.graal.python.nodes.ErrorMessages.S_OUT_PARAMETER_MUST_BE_PASSED_AS_DEFAULT_VALUE;
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_ERRCHECK_ATTRIBUTE_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIS_FUNCTION_TAKES_AT_LEAST_D_ARGUMENT_S_D_GIVEN;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIS_FUNCTION_TAKES_D_ARGUMENT_S_D_GIVEN;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -86,6 +84,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -181,7 +180,8 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
      * object (with an integer handle)), paramflags "is|..." - vtable index, method name, creates
      * callable calling COM vtbl
      */
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PyCFuncPtrNewNode extends PythonBuiltinNode {
 
@@ -489,7 +489,8 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_call, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PyCFuncPtrCallNode extends PythonVarargsBuiltinNode {
 
@@ -503,7 +504,6 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached GetNameNode getNameNode,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached CallProcNode callProcNode,
                         @Cached TruffleString.EqualNode equalNode,
@@ -530,7 +530,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                 throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, ErrorMessages.CTYPES_FUNCTION_CALL_COULD_NOT_OBTAIN_FUNCTION_POINTER);
             }
             Object[] callargs = _build_callargs(frame, inliningTarget, self, argtypes, inargs, kwds, props,
-                            pyTypeCheck, getArray, castToJavaIntExactNode, castToTruffleStringNode, pyTypeStgDictNode, callNode, getNameNode, equalNode, raiseNode);
+                            pyTypeCheck, getArray, castToJavaIntExactNode, castToTruffleStringNode, pyTypeStgDictNode, callNode, equalNode, raiseNode);
             int inoutmask = props[pinoutmask_idx];
             int outmask = props[poutmask_idx];
             int numretvals = props[pnumretvals_idx];
@@ -625,7 +625,6 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                         CastToTruffleStringNode castToTruffleStringNode,
                         PyTypeStgDictNode pyTypeStgDictNode,
                         CallNode callNode,
-                        GetNameNode getNameNode,
                         TruffleString.EqualNode equalNode, PRaiseNode raiseNode) {
             /*
              * It's a little bit difficult to determine how many arguments the function call
@@ -704,7 +703,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                             throw raiseNode.raise(inliningTarget, RuntimeError, NULL_STGDICT_UNEXPECTED);
                         }
                         if (PGuards.isString(dict.proto)) { // TODO Py_TPFLAGS_UNICODE_SUBCLASS
-                            throw raiseNode.raise(inliningTarget, TypeError, S_OUT_PARAMETER_MUST_BE_PASSED_AS_DEFAULT_VALUE, getNameNode.execute(inliningTarget, ob));
+                            throw raiseNode.raise(inliningTarget, TypeError, N_OUT_PARAMETER_MUST_BE_PASSED_AS_DEFAULT_VALUE, ob);
                         }
                         if (pyTypeCheck.isPyCArrayTypeObject(inliningTarget, ob)) {
                             ob = callNode.execute(frame, ob);
@@ -934,7 +933,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                 return;
             }
 
-            throw raiseNode.raise(inliningTarget, TypeError, OUT_PARAMETER_D_MUST_BE_A_POINTER_TYPE_NOT_S, index, GetNameNode.executeUncached(arg));
+            throw raiseNode.raise(inliningTarget, TypeError, OUT_PARAMETER_D_MUST_BE_A_POINTER_TYPE_NOT_N, index, arg);
         }
 
         protected static boolean strchr(char[] chars, int code) {

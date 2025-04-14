@@ -52,7 +52,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.ComplexNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
@@ -60,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -91,7 +91,7 @@ public final class PythonCextComplexBuiltins {
 
         @Specialization(guards = "!isPComplex(obj)")
         static int doGeneric(Object obj, Object out,
-                        @Cached ComplexNode complexNode,
+                        @Cached ComplexBuiltins.ComplexNewNode complexNode,
                         @Shared @Cached CStructAccess.WriteDoubleNode writeDoubleNode) {
             PComplex c = (PComplex) complexNode.execute(null, PythonBuiltinClassType.PComplex, obj, PNone.NO_VALUE);
             writeDoubleNode.write(out, CFields.Py_complex__real, c.getReal());

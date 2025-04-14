@@ -46,8 +46,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.dsl.Bind;
@@ -84,28 +82,6 @@ public final class Sha256ModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
             return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.SHA256Type, "sha256", "sha256", buffer);
-        }
-    }
-
-    @Builtin(name = "sha224", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.SHA224Type, isPublic = false)
-    @GenerateNodeFactory
-    abstract static class Sha224Node extends PythonBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object sha224(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_sha256.sha224");
-        }
-    }
-
-    @Builtin(name = "sha256", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.SHA256Type, isPublic = false)
-    @GenerateNodeFactory
-    abstract static class Sha256Node extends PythonBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object sha256(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_sha256.sha256");
         }
     }
 }

@@ -12,7 +12,6 @@ import static com.oracle.graal.python.nodes.PGuards.isInteger;
 import static com.oracle.graal.python.nodes.PGuards.isPFloat;
 import static com.oracle.graal.python.nodes.PGuards.isPInt;
 import static com.oracle.graal.python.nodes.PGuards.isString;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -23,10 +22,13 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.json.JSONEncoderBuiltinsClinicProviders.MakeEncoderClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -39,12 +41,16 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListSortNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyListCheckExactNode;
@@ -58,6 +64,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -87,12 +94,59 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
     private static final TruffleString T_BRACES = tsLiteral("{}");
     private static final TruffleString T_BRACKETS = tsLiteral("[]");
 
+    public static final TpSlots SLOTS = JSONEncoderBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return JSONEncoderBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "obj", "_current_indent_level"})
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "make_encoder", minNumOfPositionalArgs = 10, //
+                    parameterNames = {"$cls", "markers", "default", "encoder", "indent", "key_separator", "item_separator", "sort_keys", "skipkeys", "allow_nan"})
+    @ArgumentClinic(name = "key_separator", conversion = ArgumentClinic.ClinicConversion.TString)
+    @ArgumentClinic(name = "item_separator", conversion = ArgumentClinic.ClinicConversion.TString)
+    @ArgumentClinic(name = "sort_keys", conversion = ArgumentClinic.ClinicConversion.Boolean)
+    @ArgumentClinic(name = "skipkeys", conversion = ArgumentClinic.ClinicConversion.Boolean)
+    @ArgumentClinic(name = "allow_nan", conversion = ArgumentClinic.ClinicConversion.Boolean)
+    @GenerateNodeFactory
+    public abstract static class MakeEncoder extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return MakeEncoderClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        PJSONEncoder doNew(Object cls, Object markers, Object defaultFn, Object encoder, Object indent, TruffleString keySeparator, TruffleString itemSeparator, boolean sortKeys,
+                        boolean skipKeys, boolean allowNan) {
+            if (markers != PNone.NONE && !(markers instanceof PDict)) {
+                throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.MAKE_ENCODER_ARG_1_MUST_BE_DICT, markers);
+            }
+
+            PJSONEncoder.FastEncode fastEncode = PJSONEncoder.FastEncode.None;
+            Object encoderAsFun = encoder;
+            if (encoder instanceof PBuiltinMethod encoderMethod) {
+                encoderAsFun = encoderMethod.getFunction();
+            }
+            if (encoderAsFun instanceof PBuiltinFunction function) {
+                Class<? extends PythonBuiltinBaseNode> nodeClass = function.getNodeClass();
+                if (nodeClass != null) {
+                    if (JSONModuleBuiltins.EncodeBaseString.class.isAssignableFrom(nodeClass)) {
+                        fastEncode = PJSONEncoder.FastEncode.FastEncode;
+                    } else if (JSONModuleBuiltins.EncodeBaseStringAscii.class.isAssignableFrom(nodeClass)) {
+                        fastEncode = PJSONEncoder.FastEncode.FastEncodeAscii;
+                    }
+                }
+            }
+            return PFactory.createJSONEncoder(PythonLanguage.get(null), cls, TypeNodes.GetInstanceShape.executeUncached(cls),
+                            markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode);
+        }
+    }
+
+    @Slot(value = SlotKind.tp_call, isComplex = true)
+    @SlotSignature(name = "_iterencode", minNumOfPositionalArgs = 1, parameterNames = {"$self", "obj", "_current_indent_level"})
     @ArgumentClinic(name = "_current_indent_level", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class CallEncoderNode extends PythonTernaryClinicBuiltinNode {

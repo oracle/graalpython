@@ -39,6 +39,9 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_ARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ARRAY;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_NO_KEYWORD_ARGS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
@@ -56,6 +59,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -67,15 +71,20 @@ import com.oracle.graal.python.builtins.objects.array.ArrayNodes.DeleteArraySlic
 import com.oracle.graal.python.builtins.objects.array.ArrayNodes.GetValueNode;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
@@ -109,7 +118,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
@@ -130,6 +141,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -145,6 +158,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedByteValueProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
@@ -158,6 +172,220 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ArrayBuiltinsFactory.getFactories();
+    }
+
+    // array.array(typecode[, initializer])
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_ARRAY, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    abstract static class ArrayNode extends PythonVarargsBuiltinNode {
+
+        @Specialization(guards = "args.length == 1 || args.length == 2")
+        static Object array2(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile hasInitializerProfile,
+                        @Cached IsBuiltinClassExactProfile isNotSubtypeProfile,
+                        @Cached CastToTruffleStringCheckedNode cast,
+                        @Cached ArrayNodeInternal arrayNodeInternal,
+                        @Cached PRaiseNode raise) {
+            if (isNotSubtypeProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PArray)) {
+                if (kwargs.length != 0) {
+                    throw raise.raise(inliningTarget, TypeError, S_TAKES_NO_KEYWORD_ARGS, "array.array()");
+                }
+            }
+            Object initializer = hasInitializerProfile.profile(inliningTarget, args.length == 2) ? args[1] : PNone.NO_VALUE;
+            return arrayNodeInternal.execute(frame, inliningTarget, cls, cast.cast(inliningTarget, args[0], ErrorMessages.ARG_1_MUST_BE_UNICODE_NOT_P, args[0]), initializer);
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object error(Object cls, Object[] args, PKeyword[] kwargs) {
+            if (args.length < 2) {
+                throw PRaiseNode.raiseStatic(this, TypeError, S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN, T_ARRAY, 2, args.length);
+            } else {
+                throw PRaiseNode.raiseStatic(this, TypeError, S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN, T_ARRAY, 3, args.length);
+            }
+        }
+
+        // multiple non-inlined specializations share nodes
+        @SuppressWarnings("truffle-interpreted-performance")
+        @ImportStatic(PGuards.class)
+        @GenerateInline
+        @GenerateCached(false)
+        abstract static class ArrayNodeInternal extends Node {
+
+            public abstract PArray execute(VirtualFrame frame, Node inliningTarget, Object cls, TruffleString typeCode, Object initializer);
+
+            @Specialization(guards = "isNoValue(initializer)")
+            static PArray array(Node inliningTarget, Object cls, TruffleString typeCode, @SuppressWarnings("unused") PNone initializer,
+                            @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
+                            @Bind PythonLanguage language,
+                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
+                return PFactory.createArray(language, cls, getInstanceShape.execute(cls), typeCode, format);
+            }
+
+            @Specialization
+            @InliningCutoff
+            static PArray arrayWithRangeInitializer(Node inliningTarget, Object cls, TruffleString typeCode, PIntRange range,
+                            @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
+                            @Bind PythonLanguage language,
+                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                            @Exclusive @Cached ArrayNodes.PutValueNode putValueNode) {
+                BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
+                PArray array;
+                try {
+                    array = PFactory.createArray(language, cls, getInstanceShape.execute(cls), typeCode, format, range.getIntLength());
+                } catch (OverflowException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw PRaiseNode.raiseStatic(inliningTarget, MemoryError);
+                }
+
+                int start = range.getIntStart();
+                int step = range.getIntStep();
+                int len = range.getIntLength();
+
+                for (int index = 0, value = start; index < len; index++, value += step) {
+                    putValueNode.execute(null, inliningTarget, array, index, value);
+                }
+
+                return array;
+            }
+
+            @Specialization
+            static PArray arrayWithBytesInitializer(VirtualFrame frame, Node inliningTarget, Object cls, TruffleString typeCode, PBytesLike bytes,
+                            @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
+                            @Bind PythonLanguage language,
+                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                            @Cached(inline = false) ArrayBuiltins.FromBytesNode fromBytesNode) {
+                BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
+                PArray array = PFactory.createArray(language, cls, getInstanceShape.execute(cls), typeCode, format);
+                fromBytesNode.executeWithoutClinic(frame, array, bytes);
+                return array;
+            }
+
+            @Specialization(guards = "isString(initializer)")
+            @InliningCutoff
+            static PArray arrayWithStringInitializer(VirtualFrame frame, Node inliningTarget, Object cls, TruffleString typeCode, Object initializer,
+                            @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
+                            @Bind PythonLanguage language,
+                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                            @Cached(inline = false) ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
+                            @Cached PRaiseNode raise) {
+                BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
+                if (format != BufferFormat.UNICODE) {
+                    throw raise.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_USE_STR_TO_INITIALIZE_ARRAY, typeCode);
+                }
+                PArray array = PFactory.createArray(language, cls, getInstanceShape.execute(cls), typeCode, format);
+                fromUnicodeNode.execute(frame, array, initializer);
+                return array;
+            }
+
+            @Specialization
+            @InliningCutoff
+            static PArray arrayArrayInitializer(VirtualFrame frame, Node inliningTarget, Object cls, TruffleString typeCode, PArray initializer,
+                            @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
+                            @Bind PythonLanguage language,
+                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                            @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Cached ArrayNodes.GetValueNode getValueNode) {
+                BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
+                try {
+                    int length = initializer.getLength();
+                    PArray array = PFactory.createArray(language, cls, getInstanceShape.execute(cls), typeCode, format, length);
+                    for (int i = 0; i < length; i++) {
+                        putValueNode.execute(frame, inliningTarget, array, i, getValueNode.execute(inliningTarget, initializer, i));
+                    }
+                    return array;
+                } catch (OverflowException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw PRaiseNode.raiseStatic(inliningTarget, MemoryError);
+                }
+            }
+
+            @Specialization(guards = "!isBytes(initializer)")
+            @InliningCutoff
+            static PArray arraySequenceInitializer(VirtualFrame frame, Node inliningTarget, Object cls, TruffleString typeCode, PSequence initializer,
+                            @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
+                            @Bind PythonLanguage language,
+                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                            @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                            @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+                BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
+                SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, initializer);
+                int length = storage.length();
+                try {
+                    PArray array = PFactory.createArray(language, cls, getInstanceShape.execute(cls), typeCode, format, length);
+                    for (int i = 0; i < length; i++) {
+                        putValueNode.execute(frame, inliningTarget, array, i, getItemNode.execute(inliningTarget, storage, i));
+                    }
+                    return array;
+                } catch (OverflowException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw PRaiseNode.raiseStatic(inliningTarget, MemoryError);
+                }
+            }
+
+            @Specialization(guards = {"!isBytes(initializer)", "!isString(initializer)", "!isPSequence(initializer)"})
+            @InliningCutoff
+            static PArray arrayIteratorInitializer(VirtualFrame frame, Node inliningTarget, Object cls, TruffleString typeCode, Object initializer,
+                            @Cached PyObjectGetIter getIter,
+                            @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
+                            @Bind PythonLanguage language,
+                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                            @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Cached PyIterNextNode nextNode,
+                            @Cached ArrayNodes.SetLengthNode setLengthNode,
+                            @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode) {
+                Object iter = getIter.execute(frame, inliningTarget, initializer);
+
+                BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
+                PArray array = PFactory.createArray(language, cls, getInstanceShape.execute(cls), typeCode, format);
+
+                int length = 0;
+                while (true) {
+                    try {
+                        Object nextValue = nextNode.execute(frame, inliningTarget, iter);
+                        try {
+                            length = PythonUtils.addExact(length, 1);
+                            ensureCapacityNode.execute(inliningTarget, array, length);
+                        } catch (OverflowException e) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            throw PRaiseNode.raiseStatic(inliningTarget, MemoryError);
+                        }
+                        putValueNode.execute(frame, inliningTarget, array, length - 1, nextValue);
+                    } catch (IteratorExhausted e) {
+                        break;
+                    }
+                }
+
+                setLengthNode.execute(inliningTarget, array, length);
+                return array;
+            }
+
+            @GenerateInline
+            @GenerateCached(false)
+            abstract static class GetFormatCheckedNode extends Node {
+                abstract BufferFormat execute(Node inliningTarget, TruffleString typeCode);
+
+                @Specialization
+                static BufferFormat get(Node inliningTarget, TruffleString typeCode,
+                                @Cached(inline = false) TruffleString.CodePointLengthNode lengthNode,
+                                @Cached(inline = false) TruffleString.CodePointAtIndexNode atIndexNode,
+                                @Cached PRaiseNode raise,
+                                @Cached(value = "createIdentityProfile()", inline = false) ValueProfile valueProfile) {
+                    if (lengthNode.execute(typeCode, TS_ENCODING) != 1) {
+                        throw raise.raise(inliningTarget, TypeError, ErrorMessages.ARRAY_ARG_1_MUST_BE_UNICODE);
+                    }
+                    BufferFormat format = BufferFormat.forArray(typeCode, lengthNode, atIndexNode);
+                    if (format == null) {
+                        throw raise.raise(inliningTarget, ValueError, ErrorMessages.BAD_TYPECODE);
+                    }
+                    return valueProfile.profile(format);
+                }
+            }
+        }
     }
 
     @Slot(value = SlotKind.sq_concat, isComplex = true)

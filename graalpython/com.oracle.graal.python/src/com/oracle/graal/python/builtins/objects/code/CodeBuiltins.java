@@ -29,6 +29,7 @@ package com.oracle.graal.python.builtins.objects.code;
 import static com.oracle.graal.python.annotations.ArgumentClinic.VALUE_EMPTY_TSTRING;
 import static com.oracle.graal.python.annotations.ArgumentClinic.VALUE_NONE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.objectArrayToTruffleStringArray;
 
@@ -40,6 +41,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -47,19 +49,24 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.code.CodeBuiltinsClinicProviders.CodeConstructorNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
-import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.SourceMap;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.RichCmpOp;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -88,6 +95,71 @@ public final class CodeBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CodeBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "code", minNumOfPositionalArgs = 16, numOfPositionalOnlyArgs = 18, parameterNames = {
+                    "$cls", "argcount", "posonlyargcount", "kwonlyargcount", "nlocals", "stacksize", "flags", "codestring",
+                    "constants", "names", "varnames", "filename", "name", "qualname", "firstlineno",
+                    "linetable", "exceptiontable", "freevars", "cellvars"})
+    @ArgumentClinic(name = "argcount", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "posonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "kwonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "nlocals", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "stacksize", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "filename", conversion = ArgumentClinic.ClinicConversion.TString)
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
+    @ArgumentClinic(name = "qualname", conversion = ArgumentClinic.ClinicConversion.TString)
+    @ArgumentClinic(name = "firstlineno", conversion = ArgumentClinic.ClinicConversion.Int)
+    @GenerateNodeFactory
+    public abstract static class CodeConstructorNode extends PythonClinicBuiltinNode {
+        @Specialization
+        static PCode call(VirtualFrame frame, @SuppressWarnings("unused") Object cls, int argcount,
+                        int posonlyargcount, int kwonlyargcount,
+                        int nlocals, int stacksize, int flags,
+                        PBytes codestring, PTuple constants, PTuple names, PTuple varnames,
+                        TruffleString filename, TruffleString name, TruffleString qualname,
+                        int firstlineno, PBytes linetable, @SuppressWarnings("unused") PBytes exceptiontable,
+                        PTuple freevars, PTuple cellvars,
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached CodeNodes.CreateCodeNode createCodeNode,
+                        @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode) {
+            byte[] codeBytes = bufferLib.getCopiedByteArray(codestring);
+            byte[] linetableBytes = bufferLib.getCopiedByteArray(linetable);
+
+            Object[] constantsArr = getObjectArrayNode.execute(inliningTarget, constants);
+            TruffleString[] namesArr = objectArrayToTruffleStringArray(inliningTarget, getObjectArrayNode.execute(inliningTarget, names), castToTruffleStringNode);
+            TruffleString[] varnamesArr = objectArrayToTruffleStringArray(inliningTarget, getObjectArrayNode.execute(inliningTarget, varnames), castToTruffleStringNode);
+            TruffleString[] freevarsArr = objectArrayToTruffleStringArray(inliningTarget, getObjectArrayNode.execute(inliningTarget, freevars), castToTruffleStringNode);
+            TruffleString[] cellcarsArr = objectArrayToTruffleStringArray(inliningTarget, getObjectArrayNode.execute(inliningTarget, cellvars), castToTruffleStringNode);
+
+            return createCodeNode.execute(frame, argcount, posonlyargcount, kwonlyargcount,
+                            nlocals, stacksize, flags,
+                            codeBytes, constantsArr, namesArr,
+                            varnamesArr, freevarsArr, cellcarsArr,
+                            filename, name, qualname,
+                            firstlineno, linetableBytes);
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static PCode call(Object cls, Object argcount, Object kwonlyargcount, Object posonlyargcount,
+                        Object nlocals, Object stacksize, Object flags,
+                        Object codestring, Object constants, Object names, Object varnames,
+                        Object filename, Object name, Object qualname,
+                        Object firstlineno, Object linetable, Object exceptiontable,
+                        Object freevars, Object cellvars,
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INVALID_ARGS, "code");
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return CodeConstructorNodeClinicProviderGen.INSTANCE;
+        }
     }
 
     @Builtin(name = "co_freevars", minNumOfPositionalArgs = 1, isGetter = true)

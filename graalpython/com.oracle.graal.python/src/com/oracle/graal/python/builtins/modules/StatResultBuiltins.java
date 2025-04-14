@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,35 +38,56 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.thread;
+package com.oracle.graal.python.builtins.modules;
 
 import java.util.List;
 
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.tuple.InstantiableStructSequenceBuiltins;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.PThread)
-public final class ThreadBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PStatResult)
+public class StatResultBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = StatResultBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return ThreadBuiltinsFactory.getFactories();
+        return StatResultBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "native_id", minNumOfPositionalArgs = 1, isGetter = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "stat_result", minNumOfPositionalArgs = 1, parameterNames = {"$cls", "sequence", "dict"})
     @GenerateNodeFactory
-    public abstract static class GetNativeIdNode extends PythonUnaryBuiltinNode {
+    public abstract static class StatResultNode extends PythonTernaryBuiltinNode {
+
         @Specialization
-        @TruffleBoundary
-        protected static long get(PThread self) {
-            return self.getId();
+        public static PTuple generic(VirtualFrame frame, Object cls, Object sequence, Object dict,
+                        @Cached InstantiableStructSequenceBuiltins.NewNode newNode) {
+            PTuple p = (PTuple) newNode.execute(frame, cls, sequence, dict);
+            Object[] data = CompilerDirectives.castExact(p.getSequenceStorage(), ObjectSequenceStorage.class).getInternalObjectArray();
+            for (int i = 7; i <= 9; i++) {
+                if (data[i + 3] == PNone.NONE) {
+                    data[i + 3] = data[i];
+                }
+            }
+            return p;
         }
     }
 }

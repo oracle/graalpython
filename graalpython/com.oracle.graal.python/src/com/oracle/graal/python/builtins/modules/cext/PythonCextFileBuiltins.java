@@ -45,11 +45,11 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.ReprNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
@@ -67,7 +67,7 @@ public final class PythonCextFileBuiltins {
         @Specialization
         static int writeStr(Object obj, Object f, int flags,
                         @Bind("this") Node inliningTarget,
-                        @Cached StrNode strNode,
+                        @Cached StringBuiltins.StrNewNode strNode,
                         @Cached ReprNode reprNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached CallNode callNode,

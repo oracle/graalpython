@@ -292,27 +292,16 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor VERSION_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PVersionInfo,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "sys.version_info\n" +
-                    "\n" +
-                    "Version information as a named tuple.",
-                    // @formatter:on
                     5,
                     new String[]{
                                     "major", "minor", "micro",
                                     "releaselevel", "serial"},
                     new String[]{
                                     "Major release number", "Minor release number", "Patch release number",
-                                    "'alpha', 'beta', 'candidate', or 'final'", "Serial release number"},
-                    false);
+                                    "'alpha', 'beta', 'candidate', or 'final'", "Serial release number"});
 
     static final StructSequence.BuiltinTypeDescriptor WINDOWS_VER_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PWindowsVersion,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "sys.getwindowsversion\n" +
-                    "\n" +
-                    "Return info about the running version of Windows as a named tuple.",
-                    // @formatter:on
                     5,
                     new String[]{
                                     "major", "minor", "build",
@@ -324,16 +313,10 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                                     "Operating system platform", "Latest Service Pack installed on the system",
                                     "Service Pack major version number", "Service Pack minor version number",
                                     "Bit mask identifying available product suites",
-                                    "System product type", "Diagnostic version number"},
-                    false);
+                                    "System product type", "Diagnostic version number"});
 
     static final StructSequence.BuiltinTypeDescriptor FLAGS_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PFlags,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "sys.flags\n" +
-                    "\n" +
-                    "Flags provided through command line arguments or environment vars.",
-                    // @formatter:on
                     18,
                     new String[]{
                                     "debug",
@@ -374,18 +357,10 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                                     "-X warn_default_encoding",
                                     "-P",
                                     "-X int_max_str_digits",
-                    },
-                    false);
+                    });
 
     static final StructSequence.BuiltinTypeDescriptor FLOAT_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PFloatInfo,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "sys.float_info\n" +
-                    "\n" +
-                    "A named tuple holding information about the float type. It contains low level\n" +
-                    "information about the precision and internal representation. Please study\n" +
-                    "your system's :file:`float.h` for more information.",
-                    // @formatter:on
                     11,
                     new String[]{
                                     "max",
@@ -414,12 +389,6 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor INT_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PIntInfo,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "sys.int_info\n" +
-                    "\n" +
-                    "A named tuple that holds information about Python's\n" +
-                    "internal representation of integers.  The attributes are read only.",
-                    // @formatter:on
                     4,
                     new String[]{
                                     "bits_per_digit", "sizeof_digit", "default_max_str_digits", "str_digits_check_threshold"},
@@ -431,12 +400,6 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor HASH_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PHashInfo,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "hash_info\n" +
-                    "\n" +
-                    "A named tuple providing parameters used for computing\n" +
-                    "hashes. The attributes are read only.",
-                    // @formatter:on
                     9,
                     new String[]{
                                     "width", "modulus", "inf", "nan", "imag", "algorithm", "hash_bits",
@@ -454,11 +417,6 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor THREAD_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PThreadInfo,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "sys.thread_info\n" +
-                    "\n" +
-                    "A named tuple holding information about the thread implementation.",
-                    // @formatter:on
                     3,
                     new String[]{
                                     "name", "lock", "version"},
@@ -468,11 +426,6 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
     public static final StructSequence.BuiltinTypeDescriptor UNRAISABLEHOOK_ARGS_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PUnraisableHookArgs,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "UnraisableHookArgs\n" +
-                    "\n" +
-                    "Type used to pass arguments to sys.unraisablehook.",
-                    // @formatter:on
                     5,
                     new String[]{
                                     "exc_type", "exc_value", "exc_traceback",

@@ -83,7 +83,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
-import com.oracle.graal.python.builtins.objects.tuple.StructSequenceBuiltins;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
@@ -104,7 +103,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
@@ -130,7 +128,6 @@ import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -160,17 +157,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor STAT_RESULT_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStatResult,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "stat_result: Result from stat, fstat, or lstat.\n\n" +
-                    "This object may be accessed either as a tuple of\n" +
-                    "  (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime)\n" +
-                    "or via the attributes st_mode, st_ino, st_dev, st_nlink, st_uid, and so on.\n" +
-                    "\n" +
-                    "Posix/windows: If your platform supports st_blksize, st_blocks, st_rdev,\n" +
-                    "or st_flags, they are available as attributes only.\n" +
-                    "\n" +
-                    "See os.stat for more information.",
-                    // @formatter:on
                     10,
                     new String[]{
                                     "st_mode", "st_ino", "st_dev", "st_nlink", "st_uid", "st_gid", "st_size",
@@ -188,14 +174,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor STATVFS_RESULT_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStatvfsResult,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "statvfs_result: Result from statvfs or fstatvfs.\n\n" +
-                    "This object may be accessed either as a tuple of\n" +
-                    "  (bsize, frsize, blocks, bfree, bavail, files, ffree, favail, flag, namemax),\n" +
-                    "or via the attributes f_bsize, f_frsize, f_blocks, f_bfree, and so on.\n" +
-                    "\n" +
-                    "See os.statvfs for more information.",
-                    // @formatter:on
                     10,
                     new String[]{
                                     "f_bsize", "f_frsize", "f_blocks", "f_bfree", "f_bavail", "f_files",
@@ -205,21 +183,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
     private static final StructSequence.BuiltinTypeDescriptor TERMINAL_SIZE_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PTerminalSize,
-                    "A tuple of (columns, lines) for holding terminal window size",
                     2,
                     new String[]{"columns", "lines"},
                     new String[]{"width of the terminal window in characters", "height of the terminal window in characters"});
 
     private static final StructSequence.BuiltinTypeDescriptor UNAME_RESULT_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PUnameResult,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "uname_result: Result from os.uname().\n\n" +
-                    "This object may be accessed either as a tuple of\n" +
-                    "  (sysname, nodename, release, version, machine),\n" +
-                    "or via the attributes sysname, nodename, release, version, and machine.\n" +
-                    "\n" +
-                    "See os.uname for more information.",
-                    // @formatter:on
                     5,
                     new String[]{"sysname", "nodename", "release", "version", "machine"},
                     new String[]{
@@ -367,15 +336,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             // XXX: Until we fix pip
             environ.setItem(toTruffleStringUncached("PIP_NO_CACHE_DIR"), toTruffleStringUncached("0"));
-            // XXX: Until we have working winapi and winreg modules for MSVC discovery
-            environ.setItem(toTruffleStringUncached("DISTUTILS_USE_SDK"), toTruffleStringUncached("1"));
-            if (getenv.get("MSSdk") == null) {
-                String sdkdir = getenv.get("WindowsSdkDir");
-                if (sdkdir == null) {
-                    sdkdir = "unset";
-                }
-                environ.setItem(toTruffleStringUncached("MSSdk"), toTruffleStringUncached(sdkdir));
-            }
         }
         PythonModule posix;
         if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
@@ -395,24 +355,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             posix.setAttribute(toTruffleStringUncached("getegid"), PNone.NO_VALUE);
 
             posix.setAttribute(toTruffleStringUncached("WNOHANG"), EMULATED_WNOHANG);
-        }
-    }
-
-    @Builtin(name = "stat_result", minNumOfPositionalArgs = 1, parameterNames = {"$cls", "sequence", "dict"}, constructsClass = PythonBuiltinClassType.PStatResult)
-    @GenerateNodeFactory
-    public abstract static class StatResultNode extends PythonTernaryBuiltinNode {
-
-        @Specialization
-        public static PTuple generic(VirtualFrame frame, Object cls, Object sequence, Object dict,
-                        @Cached StructSequenceBuiltins.NewNode newNode) {
-            PTuple p = (PTuple) newNode.execute(frame, cls, sequence, dict);
-            Object[] data = CompilerDirectives.castExact(p.getSequenceStorage(), ObjectSequenceStorage.class).getInternalObjectArray();
-            for (int i = 7; i <= 9; i++) {
-                if (data[i + 3] == PNone.NONE) {
-                    data[i + 3] = data[i];
-                }
-            }
-            return p;
         }
     }
 
@@ -1896,28 +1838,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
-        }
-    }
-
-    @Builtin(name = "ScandirIterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PScandirIterator, isPublic = false)
-    @GenerateNodeFactory
-    abstract static class ScandirIteratorNode extends PythonBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object scandirIterator(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "posix.ScandirIterator");
-        }
-    }
-
-    @Builtin(name = "DirEntry", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDirEntry, isPublic = true)
-    @GenerateNodeFactory
-    abstract static class DirEntryNode extends PythonBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object dirEntry(Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "posix.DirEntry");
         }
     }
 
@@ -3426,7 +3346,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 Object o = indexNode.execute(frame, inliningTarget, value);
                 return doFdLong(castToLongNode.execute(inliningTarget, o), inliningTarget, raiseNode);
             } else {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, value);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE_T, value);
             }
         }
 

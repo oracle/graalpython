@@ -26,8 +26,10 @@
 package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.builtins.objects.bytes.BytesNodes.compareByteArrays;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_BYTES_SUBTYPE_NEW;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BYTES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BYTES__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
@@ -45,11 +47,17 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsClinicProviders.BytesNewNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageMpSubscriptNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageSqItemNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
@@ -59,25 +67,34 @@ import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -94,6 +111,103 @@ public class BytesBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BytesBuiltinsFactory.getFactories();
+    }
+
+    // bytes([source[, encoding[, errors]]])
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_BYTES, minNumOfPositionalArgs = 1, parameterNames = {"$self", "source", "encoding", "errors"})
+    @ArgumentClinic(name = "encoding", conversionClass = BytesNodes.ExpectStringNode.class, args = "\"bytes()\"")
+    @ArgumentClinic(name = "errors", conversionClass = BytesNodes.ExpectStringNode.class, args = "\"bytes()\"")
+    @GenerateNodeFactory
+    @ImportStatic(SpecialMethodSlot.class)
+    public abstract static class BytesNewNode extends PythonQuaternaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BytesNewNodeClinicProviderGen.INSTANCE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isNoValue(source)")
+        static Object doEmpty(Object cls, PNone source, PNone encoding, PNone errors,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached CreateBytes createBytes) {
+            return createBytes.execute(inliningTarget, cls, PythonUtils.EMPTY_BYTE_ARRAY);
+        }
+
+        @Specialization(guards = "!isNoValue(source)")
+        static Object doCallBytes(VirtualFrame frame, Object cls, Object source, PNone encoding, PNone errors,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetClassNode getClassNode,
+                        @Cached InlinedConditionProfile hasBytes,
+                        @Cached("create(Bytes)") LookupSpecialMethodSlotNode lookupBytes,
+                        @Cached CallUnaryMethodNode callBytes,
+                        @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Cached PyBytesCheckNode check,
+                        @Exclusive @Cached BytesNodes.BytesInitNode bytesInitNode,
+                        @Exclusive @Cached CreateBytes createBytes,
+                        @Cached PRaiseNode raiseNode) {
+            Object bytesMethod = lookupBytes.execute(frame, getClassNode.execute(inliningTarget, source), source);
+            if (hasBytes.profile(inliningTarget, bytesMethod != PNone.NO_VALUE)) {
+                Object bytes = callBytes.executeObject(frame, bytesMethod, source);
+                if (check.execute(inliningTarget, bytes)) {
+                    if (cls == PythonBuiltinClassType.PBytes) {
+                        return bytes;
+                    } else {
+                        return createBytes.execute(inliningTarget, cls, toBytesNode.execute(frame, bytes));
+                    }
+                } else {
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.RETURNED_NONBYTES, T___BYTES__, bytes);
+                }
+            }
+            return createBytes.execute(inliningTarget, cls, bytesInitNode.execute(frame, inliningTarget, source, encoding, errors));
+        }
+
+        @Specialization(guards = {"isNoValue(source) || (!isNoValue(encoding) || !isNoValue(errors))"})
+        static Object dontCallBytes(VirtualFrame frame, Object cls, Object source, Object encoding, Object errors,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached BytesNodes.BytesInitNode bytesInitNode,
+                        @Exclusive @Cached CreateBytes createBytes) {
+            return createBytes.execute(inliningTarget, cls, bytesInitNode.execute(frame, inliningTarget, source, encoding, errors));
+        }
+
+        @GenerateInline
+        @GenerateCached(false)
+        abstract static class CreateBytes extends PNodeWithContext {
+            abstract Object execute(Node inliningTarget, Object cls, byte[] bytes);
+
+            @Specialization(guards = "isBuiltinBytes(cls)")
+            static PBytes doBuiltin(@SuppressWarnings("unused") Object cls, byte[] bytes,
+                            @Bind PythonLanguage language) {
+                return PFactory.createBytes(language, bytes);
+            }
+
+            @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)")
+            static PBytes doManaged(@SuppressWarnings("unused") Node inliningTarget, Object cls, byte[] bytes,
+                            @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                            @Bind PythonLanguage language,
+                            @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                return PFactory.createBytes(language, cls, getInstanceShape.execute(cls), bytes);
+            }
+
+            @Specialization(guards = "needsNativeAllocationNode.execute(inliningTarget, cls)")
+            static Object doNative(@SuppressWarnings("unused") Node inliningTarget, Object cls, byte[] bytes,
+                            @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                            @Cached(inline = false) CApiTransitions.PythonToNativeNode toNative,
+                            @Cached(inline = false) CApiTransitions.NativeToPythonTransferNode toPython,
+                            @Cached(inline = false) CExtNodes.PCallCapiFunction call) {
+                CArrayWrappers.CByteArrayWrapper wrapper = new CArrayWrappers.CByteArrayWrapper(bytes);
+                try {
+                    return toPython.execute(call.call(FUN_BYTES_SUBTYPE_NEW, toNative.execute(cls), wrapper, bytes.length));
+                } finally {
+                    wrapper.free();
+                }
+            }
+
+            protected static boolean isBuiltinBytes(Object cls) {
+                return cls == PythonBuiltinClassType.PBytes;
+            }
+        }
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)

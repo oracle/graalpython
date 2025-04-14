@@ -55,7 +55,7 @@ expected_nosite_startup_modules = [
     '_sysconfig',
     'java',
     'pip_hook',
-]
+] + (['_nt'] if platform.system() == 'Windows' else [])
 
 expected_full_startup_modules = expected_nosite_startup_modules + [
     '_abc',

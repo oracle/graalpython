@@ -40,11 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.builtins.objects.function.PKeyword.EMPTY_KEYWORDS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageFactory.InitNodeGen;
@@ -64,7 +62,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -211,9 +209,9 @@ public abstract class HashingStorage {
                         @Shared @Cached PyObjectGetIter getIter,
                         @Shared @Cached PyIterNextNode nextNode,
                         @Shared @Cached PyObjectGetItem getItemNode,
-                        @Cached CallVarargsMethodNode callKeysMethod) {
+                        @Cached CallNode callKeysMethod) {
             // We don't need to pass self as the attribute object has it already.
-            Object keysIterable = callKeysMethod.execute(frame, keyAttr, EMPTY_OBJECT_ARRAY, EMPTY_KEYWORDS);
+            Object keysIterable = callKeysMethod.execute(frame, keyAttr);
             Object keysIt = getIter.execute(frame, inliningTarget, keysIterable);
             ArrayBuilder<KeyValue> elements = new ArrayBuilder<>();
             while (true) {

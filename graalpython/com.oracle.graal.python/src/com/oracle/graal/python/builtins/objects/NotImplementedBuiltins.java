@@ -47,12 +47,14 @@ import java.util.List;
 
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -69,6 +71,17 @@ public final class NotImplementedBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return NotImplementedBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "NotImplementedType", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class NotImplementedTypeNode extends PythonBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        public static PNotImplemented module(Object cls) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
     }
 
     @Slot(value = SlotKind.tp_repr, isComplex = true)

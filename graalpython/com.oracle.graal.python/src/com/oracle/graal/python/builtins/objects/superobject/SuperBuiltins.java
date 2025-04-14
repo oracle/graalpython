@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.superobject;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SUPER;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___SELF_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___SELF__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___THISCLASS__;
@@ -94,6 +95,7 @@ import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -192,6 +194,28 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Specialization(replaces = "cached")
         static Object uncached(SuperObject self) {
             return self.getObject();
+        }
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_SUPER, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class SuperNode extends PythonTernaryBuiltinNode {
+        @Specialization(guards = "isBuiltinSuper(cls)")
+        static Object doBuiltin(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object object,
+                        @Bind PythonLanguage language) {
+            return PFactory.createSuperObject(language);
+        }
+
+        @Fallback
+        static Object doOther(Object cls, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object object,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createSuperObject(language, cls, getInstanceShape.execute(cls));
+        }
+
+        protected static boolean isBuiltinSuper(Object cls) {
+            return cls == PythonBuiltinClassType.Super;
         }
     }
 

@@ -121,6 +121,18 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
         return SimpleNamespaceBuiltinsFactory.getFactories();
     }
 
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "SimpleNamespace", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class SimpleNamespaceNode extends PythonVarargsBuiltinNode {
+        @Specialization
+        static PSimpleNamespace doit(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createSimpleNamespace(language, cls, getInstanceShape.execute(cls));
+        }
+    }
+
     @Slot(value = SlotKind.tp_init, isComplex = true)
     @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory

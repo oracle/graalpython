@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "6086ff083909852c9b785594493ad2fb10e9c917",
+                "version": "46e36ff52c61d4d3d973dcf3055b9891ae2f0b6e",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "6086ff083909852c9b785594493ad2fb10e9c917",
+                "version": "46e36ff52c61d4d3d973dcf3055b9891ae2f0b6e",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "6086ff083909852c9b785594493ad2fb10e9c917",
+                "version": "46e36ff52c61d4d3d973dcf3055b9891ae2f0b6e",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "6086ff083909852c9b785594493ad2fb10e9c917",
+                "version": "46e36ff52c61d4d3d973dcf3055b9891ae2f0b6e",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -1205,7 +1205,7 @@ suite = {
                 "GRAALPYTHON_RESOURCES",
                 "truffle:TRUFFLE_RUNTIME",
             ],
-            "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This POM dependency pulls in GraalPy dependencies and Truffle Community Edition.",
+            "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This POM dependency includes GraalPy dependencies and Truffle Community Edition.",
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python-community",

@@ -89,11 +89,10 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     private final boolean declaresExplicitSelf;
     @Child private BuiltinCallNode body;
     @Child private CalleeContext calleeContext = CalleeContext.create();
-    private final PythonBuiltinClassType constructsClass;
     private final PythonBuiltinClassType wrapsSlotForClass;
 
     public BuiltinFunctionRootNode(PythonLanguage language, Signature signature, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf,
-                    PythonBuiltinClassType constructsClass, PythonBuiltinClassType wrapsSlotForClass) {
+                    PythonBuiltinClassType wrapsSlotForClass) {
         super(language);
         CompilerAsserts.neverPartOfCompilation();
         this.signature = signature;
@@ -101,26 +100,19 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         this.name = builtin.name();
         this.factory = factory;
         this.declaresExplicitSelf = declaresExplicitSelf;
-        this.constructsClass = constructsClass;
         this.wrapsSlotForClass = wrapsSlotForClass;
         if (builtin.alwaysNeedsCallerFrame()) {
             setNeedsCallerFrame();
         }
     }
 
-    public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf,
-                    PythonBuiltinClassType constructsClass, PythonBuiltinClassType wrapsSlotForClass) {
-        this(language, createSignature(factory, builtin, declaresExplicitSelf, constructsClass != PythonBuiltinClassType.nil), builtin, factory, declaresExplicitSelf, constructsClass,
-                        wrapsSlotForClass);
-    }
-
     public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf) {
-        this(language, builtin, factory, declaresExplicitSelf, builtin.constructsClass(), PythonBuiltinClassType.nil);
+        this(language, createSignature(factory, builtin, declaresExplicitSelf, false), builtin, factory, declaresExplicitSelf, null);
     }
 
     public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf,
                     PythonBuiltinClassType wrapsSlotForClass) {
-        this(language, builtin, factory, declaresExplicitSelf, builtin.constructsClass(), wrapsSlotForClass);
+        this(language, createSignature(factory, builtin, declaresExplicitSelf, false), builtin, factory, declaresExplicitSelf, wrapsSlotForClass);
     }
 
     /**
@@ -161,9 +153,6 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 parameterNames = new TruffleString[maxNumPosArgs];
                 int i = 0;
                 if (constructsClass) {
-                    if (!declaresExplicitSelf) {
-                        parameterNames[i++] = T_DOLLAR_DECL_TYPE;
-                    }
                     parameterNames[i++] = T_DOLLAR_CLS;
                 } else {
                     parameterNames[i++] = T_DOLLAR_SELF;
@@ -332,10 +321,12 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 }
             }
 
-            if (constructsClass != PythonBuiltinClassType.nil) {
-                body = insert(new WrapTpNew(newBody, constructsClass));
-            } else if (wrapsSlotForClass != PythonBuiltinClassType.nil) {
-                body = insert(new WrapperDescrCall(newBody, name, wrapsSlotForClass));
+            if (wrapsSlotForClass != null) {
+                if (declaresExplicitSelf) {
+                    body = insert(new WrapperDescrCall(newBody, name, wrapsSlotForClass));
+                } else {
+                    body = insert(new WrapTpNew(newBody, wrapsSlotForClass));
+                }
             } else {
                 body = insert(newBody);
             }
@@ -394,6 +385,6 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     @Override
     protected RootNode cloneUninitialized() {
-        return new BuiltinFunctionRootNode(getLanguage(PythonLanguage.class), signature, builtin, factory, declaresExplicitSelf, constructsClass, wrapsSlotForClass);
+        return new BuiltinFunctionRootNode(getLanguage(PythonLanguage.class), signature, builtin, factory, declaresExplicitSelf, wrapsSlotForClass);
     }
 }

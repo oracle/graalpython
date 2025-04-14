@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,28 +38,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function.builtins;
+package com.oracle.graal.python.builtins.objects.thread;
 
-import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
+import java.util.List;
 
-// also implements wrap_ternaryfunc_r, because it's the same thing
-public final class WrapBinaryfuncR extends SlotWrapper {
-    public WrapBinaryfuncR(BuiltinCallNode func) {
-        super(func);
-        if (func instanceof BuiltinBinaryCallNode) {
-            ReadArgumentNode arg1 = ((BuiltinBinaryCallNode) func).arg1;
-            ReadArgumentNode arg2 = ((BuiltinBinaryCallNode) func).arg2;
-            // they are already adopted as children, so no harm in swapping them
-            ((BuiltinBinaryCallNode) func).arg1 = arg2;
-            ((BuiltinBinaryCallNode) func).arg2 = arg1;
-        } else if (func instanceof BuiltinTernaryCallNode) {
-            ReadArgumentNode arg1 = ((BuiltinTernaryCallNode) func).arg1;
-            ReadArgumentNode arg2 = ((BuiltinTernaryCallNode) func).arg2;
-            // they are already adopted as children, so no harm in swapping them
-            ((BuiltinTernaryCallNode) func).arg1 = arg2;
-            ((BuiltinTernaryCallNode) func).arg2 = arg1;
-        } else {
-            throw new IllegalStateException("reverse wrappers can only apply to binary and ternary nodes");
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
+import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PLock)
+public class LockTypeBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = LockTypeBuiltinsSlotsGen.SLOTS;
+
+    @Override
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
+        return LockTypeBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "LockType", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ConstructLockNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PLock construct(Object cls,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createLock(language, cls, getInstanceShape.execute(cls));
         }
     }
 }

@@ -107,6 +107,8 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.CallSlotDescrSet;
@@ -662,7 +664,7 @@ public abstract class ObjectNodes {
         @Specialization(guards = "proto >= 2")
         static Object reduceNewObj(VirtualFrame frame, Node inliningTarget, Object obj, @SuppressWarnings("unused") int proto,
                         @Cached GetClassNode getClassNode,
-                        @Cached(value = "create(T___NEW__)", inline = false) LookupAttributeInMRONode lookupNew,
+                        @Cached GetCachedTpSlotsNode getSlots,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Exclusive @Cached PyImportImport importNode,
                         @Cached InlinedConditionProfile newObjProfile,
@@ -678,7 +680,8 @@ public abstract class ObjectNodes {
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
             Object cls = getClassNode.execute(inliningTarget, obj);
-            if (lookupNew.execute(cls) == PNone.NO_VALUE) {
+            TpSlots slots = getSlots.execute(inliningTarget, cls);
+            if (slots.tp_new() == null) {
                 throw raiseNode.raise(inliningTarget, TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
             }
 
@@ -987,18 +990,14 @@ public abstract class ObjectNodes {
             static void doIt(Object object, Object key, Object type,
                             @Bind("this") Node inliningTarget,
                             @Cached PRaiseNode raiseNode,
-                            @Cached IsSubtypeNode isSubtypeNode,
-                            @Cached TypeNodes.GetNameNode getTypeName) {
+                            @Cached IsSubtypeNode isSubtypeNode) {
                 TruffleString message;
-                Object firstArg;
                 if (isSubtypeNode.execute(type, PythonBuiltinClassType.PythonClass)) {
-                    message = ErrorMessages.TYPE_S_HAS_NO_ATTR;
-                    firstArg = getTypeName.execute(inliningTarget, object);
+                    message = ErrorMessages.TYPE_N_HAS_NO_ATTR;
                 } else {
                     message = ErrorMessages.HAS_NO_ATTR;
-                    firstArg = object;
                 }
-                raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError, message, firstArg, key);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError, message, object, key);
             }
         }
 

@@ -47,12 +47,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringArrayUncached;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -68,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescripto
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -107,44 +106,15 @@ public class StructSequence {
      * type's name in the descriptor and this will improve code sharing.
      */
     public static sealed class Descriptor permits BuiltinTypeDescriptor {
-        public final TruffleString docString;
         public final int inSequence;
         public final TruffleString[] fieldNames;
         public final TruffleString[] fieldDocStrings;
-        public final boolean allowInstances;
 
-        public Descriptor(TruffleString docString, int inSequence, TruffleString[] fieldNames, TruffleString[] fieldDocStrings, boolean allowInstances) {
+        public Descriptor(int inSequence, TruffleString[] fieldNames, TruffleString[] fieldDocStrings) {
             assert fieldDocStrings == null || fieldNames.length == fieldDocStrings.length;
-            this.docString = docString;
             this.inSequence = inSequence;
             this.fieldNames = fieldNames;
             this.fieldDocStrings = fieldDocStrings;
-            this.allowInstances = allowInstances;
-        }
-
-        public Descriptor(TruffleString docString, int inSequence, TruffleString[] fieldNames, TruffleString[] fieldDocStrings) {
-            this(docString, inSequence, fieldNames, fieldDocStrings, true);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof Descriptor)) {
-                return false;
-            }
-            Descriptor that = (Descriptor) o;
-            return inSequence == that.inSequence && allowInstances == that.allowInstances && Objects.equals(docString, that.docString) && Arrays.equals(fieldNames, that.fieldNames) &&
-                            Arrays.equals(fieldDocStrings, that.fieldDocStrings);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = Objects.hash(docString, inSequence, allowInstances);
-            result = 31 * result + Arrays.hashCode(fieldNames);
-            result = 31 * result + Arrays.hashCode(fieldDocStrings);
-            return result;
         }
     }
 
@@ -156,15 +126,11 @@ public class StructSequence {
     public static final class BuiltinTypeDescriptor extends Descriptor {
         public final PythonBuiltinClassType type;
 
-        public BuiltinTypeDescriptor(PythonBuiltinClassType type, String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings, boolean allowInstances) {
-            super(docString == null ? null : toTruffleStringUncached(docString), inSequence, toTruffleStringArrayUncached(fieldNames), toTruffleStringArrayUncached(fieldDocStrings), allowInstances);
+        public BuiltinTypeDescriptor(PythonBuiltinClassType type, int inSequence, String[] fieldNames, String[] fieldDocStrings) {
+            super(inSequence, toTruffleStringArrayUncached(fieldNames), toTruffleStringArrayUncached(fieldDocStrings));
             assert type.getBase() == PythonBuiltinClassType.PTuple;
             assert !type.isAcceptableBase();
             this.type = type;
-        }
-
-        public BuiltinTypeDescriptor(PythonBuiltinClassType type, String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings) {
-            this(type, docString, inSequence, fieldNames, fieldDocStrings, true);
         }
 
         @Override
@@ -203,10 +169,6 @@ public class StructSequence {
             TypeNodes.SetTypeFlagsNode.executeUncached(klass, flags & ~TypeFlags.IMMUTABLETYPE);
         }
 
-        if (!desc.allowInstances) {
-            flags |= TypeFlags.DISALLOW_INSTANTIATION;
-        }
-
         // create descriptors for accessing named fields by their names
         int unnamedFields = 0;
         List<TruffleString> namedFields = new ArrayList<>(desc.fieldNames.length);
@@ -227,28 +189,26 @@ public class StructSequence {
              * names.
              */
             HiddenAttr.WriteNode.executeUncached(managedClass, HiddenAttr.STRUCTSEQ_FIELD_NAMES, namedFields.toArray(new TruffleString[0]));
-        } else if (klass instanceof PythonAbstractNativeObject) {
+        } else if (klass instanceof PythonAbstractNativeObject nativeClass) {
             /*
              * We need to add the methods. Note that PyType_Ready already ran, so we just write the
-             * method wrappers. We take them from any builtin that doesn't override them and rebind
-             * them to the type. Field names are already populated in tp_members on the native side.
+             * method wrappers. Field names are already populated in tp_members on the native side.
              */
-            PythonBuiltinClass template = context.lookupType(PythonBuiltinClassType.PFlags);
-            copyMethod(language, klass, T___NEW__, template);
+            TpSlotBuiltin<?> newSlot = null;
+            if ((flags & TypeFlags.DISALLOW_INSTANTIATION) == 0) {
+                newSlot = (TpSlotBuiltin<?>) InstantiableStructSequenceBuiltins.SLOTS.tp_new();
+                writeAttrNode.execute(klass, T___NEW__, newSlot.createBuiltin(context, klass, T___NEW__, TpSlots.TpSlotMeta.TP_NEW.getNativeSignature()));
+            }
+            /*
+             * The tp_new slot doesn't get updated by writing the python wrapper. See the comments
+             * about tp_new in TpSlots.updateSlots. We have to write it manually
+             */
+            nativeClass.setTpSlots(nativeClass.getTpSlots().copy().set(TpSlots.TpSlotMeta.TP_NEW, newSlot).build());
+            TpSlots.toNative(nativeClass.getPtr(), TpSlots.TpSlotMeta.TP_NEW, newSlot, context.getNativeNull());
+            TpSlotBuiltin<?> reprSlot = (TpSlotBuiltin<?>) StructSequenceBuiltins.SLOTS.tp_repr();
+            writeAttrNode.execute(klass, T___REPR__, reprSlot.createBuiltin(context, klass, T___REPR__, TpSlots.TpSlotMeta.TP_REPR.getNativeSignature()));
+            PythonBuiltinClass template = context.lookupType(PythonBuiltinClassType.PFloatInfo);
             copyMethod(language, klass, T___REDUCE__, template);
-
-            // Wrappers of "new" slots perform self type validation according to CPython semantics,
-            // so we cannot reuse them, but we create and cache one call-target shared among all
-            // native structseq subclasses
-            PBuiltinFunction reprWrapperDescr = TpSlotBuiltin.createNativeReprWrapperDescriptor(context, StructSequenceBuiltins.SLOTS, klass);
-            WriteAttributeToObjectNode.getUncached(true).execute(klass, T___REPR__, reprWrapperDescr);
-        }
-        /*
-         * Only set __doc__ if given. It may be 'null' e.g. in case of initializing a native class
-         * where 'tp_doc' is set in native code already.
-         */
-        if (desc.docString != null) {
-            writeAttrNode.execute(klass, T___DOC__, desc.docString);
         }
         writeAttrNode.execute(klass, T_N_SEQUENCE_FIELDS, desc.inSequence);
         writeAttrNode.execute(klass, T_N_FIELDS, desc.fieldNames.length);

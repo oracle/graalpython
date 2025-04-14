@@ -43,19 +43,16 @@ package com.oracle.graal.python.nodes.expression;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNodeGen.CastToListNodeGen;
@@ -199,9 +196,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
         @Override
         public PList executeWithGlobalState(Object list) {
-            Object builtins = PythonContext.get(this).getBuiltins();
-            Object listType = ReadAttributeFromObjectNode.getUncached().execute(builtins, BuiltinNames.T_LIST);
-            return (PList) CallNode.executeUncached(LookupInheritedAttributeNode.Dynamic.executeUncached(listType, SpecialMethodNames.T___CALL__), listType, list);
+            return (PList) CallNode.executeUncached(PythonBuiltinClassType.PList, list);
         }
 
         @Override

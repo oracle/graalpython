@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.queue;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.Empty;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SIMPLE_QUEUE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 
 import java.util.List;
@@ -50,12 +51,17 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.queue.SimpleQueueBuiltinsClinicProviders.SimpleQueueGetNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -85,9 +91,24 @@ import com.oracle.truffle.api.nodes.Node;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSimpleQueue)
 public final class SimpleQueueBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = SimpleQueueBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SimpleQueueBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_SIMPLE_QUEUE, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class SimpleQueueNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        static PSimpleQueue doGeneric(Object cls,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createSimpleQueue(language, cls, getInstanceShape.execute(cls));
+        }
     }
 
     @Builtin(name = "empty", minNumOfPositionalArgs = 1, //

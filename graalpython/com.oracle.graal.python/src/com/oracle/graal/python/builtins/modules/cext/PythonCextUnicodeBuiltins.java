@@ -90,7 +90,6 @@ import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.ChrNode;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.CodecsEncodeNode;
@@ -134,13 +133,13 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins.RFindNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ReplaceNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StartsWithNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
-import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -222,7 +221,7 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization(guards = {"!isPStringType(inliningTarget, obj, getClassNode)", "isStringSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
         static Object fromObject(Object obj,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @Cached StrNode strNode,
+                        @Cached StringBuiltins.StrNewNode strNode,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
             return strNode.executeWith(obj);

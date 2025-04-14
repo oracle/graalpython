@@ -31,6 +31,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -117,7 +118,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         // only with PythonBuiltinClassType#slots
         // TODO: change to the commented out line below once all @Builtin are converted to @Slot
         // assert ... || (newValue instanceof PBuiltinFunction pbf && pbf.getSlot() != null);
-        assert !TpSlots.isSpecialMethod(key) || (newValue instanceof PBuiltinFunction pbf);
+        assert !TpSlots.isSpecialMethod(key) || newValue instanceof PBuiltinFunction || newValue instanceof PBuiltinMethod;
         return true;
     }
 

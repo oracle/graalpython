@@ -5,7 +5,7 @@
  */
 package com.oracle.graal.python.builtins.modules.json;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -14,7 +14,9 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -25,15 +27,20 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyLongFromUnicodeObject;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
@@ -42,10 +49,12 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -58,12 +67,43 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
         int value;
     }
 
+    public static final TpSlots SLOTS = JSONScannerBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return JSONScannerBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "string", "idx"})
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "make_scanner", parameterNames = {"$cls", "context"})
+    @GenerateNodeFactory
+    public abstract static class MakeScanner extends PythonBinaryBuiltinNode {
+
+        @Child private GetAttributeNode.GetFixedAttributeNode getStrict = GetAttributeNode.GetFixedAttributeNode.create(T_STRICT);
+        @Child private GetAttributeNode.GetFixedAttributeNode getObjectHook = GetAttributeNode.GetFixedAttributeNode.create(tsLiteral("object_hook"));
+        @Child private GetAttributeNode.GetFixedAttributeNode getObjectPairsHook = GetAttributeNode.GetFixedAttributeNode.create(tsLiteral("object_pairs_hook"));
+        @Child private GetAttributeNode.GetFixedAttributeNode getParseFloat = GetAttributeNode.GetFixedAttributeNode.create(tsLiteral("parse_float"));
+        @Child private GetAttributeNode.GetFixedAttributeNode getParseInt = GetAttributeNode.GetFixedAttributeNode.create(tsLiteral("parse_int"));
+        @Child private GetAttributeNode.GetFixedAttributeNode getParseConstant = GetAttributeNode.GetFixedAttributeNode.create(tsLiteral("parse_constant"));
+
+        @Specialization
+        public PJSONScanner doNew(VirtualFrame frame, Object cls, Object context,
+                        @Cached PyObjectIsTrueNode castStrict,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+
+            boolean strict = castStrict.execute(frame, getStrict.execute(frame, context));
+            Object objectHook = getObjectHook.execute(frame, context);
+            Object objectPairsHook = getObjectPairsHook.execute(frame, context);
+            Object parseFloat = getParseFloat.execute(frame, context);
+            Object parseInt = getParseInt.execute(frame, context);
+            Object parseConstant = getParseConstant.execute(frame, context);
+            return PFactory.createJSONScanner(language, cls, getInstanceShape.execute(cls), strict, objectHook, objectPairsHook, parseFloat, parseInt, parseConstant);
+        }
+    }
+
+    @Slot(value = SlotKind.tp_call, isComplex = true)
+    @SlotSignature(name = "scan_once", minNumOfPositionalArgs = 1, parameterNames = {"$self", "string", "idx"})
     @ArgumentClinic(name = "string", conversion = ArgumentClinic.ClinicConversion.TString)
     @ArgumentClinic(name = "idx", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0", useDefaultForNone = true)
     @GenerateNodeFactory

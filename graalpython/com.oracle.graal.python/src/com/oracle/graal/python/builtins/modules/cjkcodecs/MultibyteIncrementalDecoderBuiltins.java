@@ -48,7 +48,6 @@ import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecM
 import static com.oracle.graal.python.nodes.ErrorMessages.CODEC_IS_UNEXPECTED_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.PENDING_BUFFER_OVERFLOW;
 import static com.oracle.graal.python.nodes.ErrorMessages.PENDING_BUFFER_TOO_LARGE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeError;
@@ -106,7 +105,8 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
         return MultibyteIncrementalDecoderBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "errors"})
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, parameterNames = {"$cls", "errors"})
     @GenerateNodeFactory
     protected abstract static class NewNode extends PythonBinaryBuiltinNode {
 

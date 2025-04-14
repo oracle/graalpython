@@ -52,9 +52,7 @@ import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ENO
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ESRCH;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ETIMEDOUT;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_TAKES_NO_KEYWORD_ARGS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
@@ -76,14 +74,12 @@ import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins.
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyArgCheckPositionalNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
-import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -95,7 +91,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -142,7 +137,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         core.registerTypeInBuiltins(tsLiteral("IOError"), PythonBuiltinClassType.OSError);
     }
 
-    static boolean osErrorUseInit(VirtualFrame frame, Node inliningTarget, Python3Core core, Object type, PyObjectGetAttr getAttr, GetCachedTpSlotsNode getSlots) {
+    static boolean osErrorUseInit(Node inliningTarget, Object type, GetCachedTpSlotsNode getSlots) {
         // When __init__ is defined in an OSError subclass, we want any extraneous argument
         // to __new__ to be ignored. The only reasonable solution, given __new__ takes a
         // variable number of arguments, is to defer arg parsing and initialization to __init__.
@@ -151,13 +146,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         //
         // (see http://bugs.python.org/issue12555#msg148829 )
         TpSlots slots = getSlots.execute(inliningTarget, type);
-        if (slots.tp_init() != OsErrorBuiltins.SLOTS.tp_init()) {
-            final PythonBuiltinClass osErrorType = core.lookupType(PythonBuiltinClassType.OSError);
-            final Object tpNew = getAttr.execute(frame, inliningTarget, type, T___NEW__);
-            final Object osErrNew = getAttr.execute(frame, inliningTarget, osErrorType, T___NEW__);
-            return tpNew == osErrNew;
-        }
-        return false;
+        return slots.tp_init() != SLOTS.tp_init() && slots.tp_new() == SLOTS.tp_new();
     }
 
     static PythonBuiltinClassType errno2errorType(int errno) {
@@ -271,13 +260,13 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         return parsed;
     }
 
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class OSErrorNewNode extends PythonBuiltinNode {
         @Specialization
         static Object newCData(VirtualFrame frame, Object subType, Object[] args, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetAttr getAttr,
                         @Cached GetCachedTpSlotsNode getSlots,
                         @Cached PyNumberCheckNode pyNumberCheckNode,
                         @Cached PyNumberAsSizeNode pyNumberAsSizeNode,
@@ -289,8 +278,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             Object type = subType;
             Object[] parsedArgs = new Object[IDX_WRITTEN + 1];
-            final Python3Core core = PythonContext.get(inliningTarget);
-            if (!osErrorUseInit(frame, inliningTarget, core, type, getAttr, getSlots)) {
+            if (!osErrorUseInit(inliningTarget, type, getSlots)) {
                 if (kwds.length != 0) {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, P_TAKES_NO_KEYWORD_ARGS, type);
                 }
@@ -308,7 +296,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
             }
 
             PBaseException self = PFactory.createBaseException(language, type, getInstanceShape.execute(type));
-            if (!osErrorUseInit(frame, inliningTarget, core, type, getAttr, getSlots)) {
+            if (!osErrorUseInit(inliningTarget, type, getSlots)) {
                 osErrorInit(frame, inliningTarget, self, type, args, parsedArgs, pyNumberCheckNode, pyNumberAsSizeNode, baseInitNode);
             } else {
                 self.setArgs(PFactory.createEmptyTuple(language));
@@ -327,7 +315,6 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         static Object initNoArgs(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached PyObjectGetAttr getAttr,
                         @Cached GetCachedTpSlotsNode getSlots,
                         @Cached PyNumberCheckNode pyNumberCheckNode,
                         @Cached PyNumberAsSizeNode pyNumberAsSizeNode,
@@ -335,7 +322,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode,
                         @Cached PRaiseNode raiseNode) {
             final Object type = getClassNode.execute(inliningTarget, self);
-            if (!osErrorUseInit(frame, inliningTarget, PythonContext.get(inliningTarget), type, getAttr, getSlots)) {
+            if (!osErrorUseInit(inliningTarget, type, getSlots)) {
                 // Everything already done in OSError_new
                 return PNone.NONE;
             }

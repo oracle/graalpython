@@ -48,34 +48,25 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MATCH_ARGS
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
+import java.util.Collections;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -90,7 +81,7 @@ public final class AstModuleBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return AstModuleBuiltinsFactory.getFactories();
+        return Collections.emptyList();
     }
 
     @Override
@@ -114,18 +105,6 @@ public final class AstModuleBuiltins extends PythonBuiltins {
         AstTypeFactory astTypeFactory = new AstTypeFactory(core.getLanguage(), astModule);
         AstState state = new AstState(astTypeFactory, core.lookupType(PythonBuiltinClassType.AST));
         astModule.setModuleState(state);
-    }
-
-    @Builtin(name = "AST", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.AST)
-    @GenerateNodeFactory
-    public abstract static class AstNode extends PythonVarargsBuiltinNode {
-
-        @Specialization
-        static PythonObject generic(Object cls, @SuppressWarnings("unused") Object[] varargs, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createPythonObject(language, cls, getInstanceShape.execute(cls));
-        }
     }
 
     private static AstState getAstState(PythonContext context) {

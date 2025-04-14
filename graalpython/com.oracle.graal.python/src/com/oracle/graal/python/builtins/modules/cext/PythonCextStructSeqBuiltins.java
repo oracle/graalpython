@@ -124,7 +124,7 @@ public final class PythonCextStructSeqBuiltins {
             TruffleString[] fieldNames = names.toArray(TruffleString[]::new);
             TruffleString[] fieldDocs = docs.toArray(TruffleString[]::new);
 
-            StructSequence.Descriptor d = new StructSequence.Descriptor(null, nInSequence, fieldNames, fieldDocs);
+            StructSequence.Descriptor d = new StructSequence.Descriptor(nInSequence, fieldNames, fieldDocs);
             StructSequence.initType(PythonContext.get(readNode), klass, d);
             return 0;
         }

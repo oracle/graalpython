@@ -52,13 +52,13 @@ import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.i
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi7BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins.CreateGetSetNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins.NewClassMethodNode;
+import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -72,7 +72,7 @@ public final class PythonCextDescrBuiltins {
     abstract static class PyDictProxy_New extends CApiUnaryBuiltinNode {
         @Specialization
         static Object values(Object obj,
-                        @Cached BuiltinConstructors.MappingproxyNode mappingNode) {
+                        @Cached MappingproxyBuiltins.MappingproxyNode mappingNode) {
             return mappingNode.execute(null, PythonBuiltinClassType.PMappingproxy, obj);
         }
     }

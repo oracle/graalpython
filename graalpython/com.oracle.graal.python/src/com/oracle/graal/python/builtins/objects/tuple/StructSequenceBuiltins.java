@@ -40,14 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EQ;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
@@ -61,7 +59,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -71,9 +68,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TypeFlags;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -82,17 +76,12 @@ import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -107,8 +96,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -194,76 +181,6 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
                 }
             }
             return members.toArray(new TruffleString[0]);
-        }
-    }
-
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "sequence", "dict"})
-    @GenerateNodeFactory
-    public abstract static class NewNode extends PythonTernaryBuiltinNode {
-
-        @Specialization
-        static PTuple withDict(VirtualFrame frame, Object cls, Object sequence, Object dict,
-                        @Bind("this") Node inliningTarget,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetTypeFlagsNode getFlags,
-                        @Cached GetSizeNode getSizeNode,
-                        @Cached GetFieldNamesNode getFieldNamesNode,
-                        @Cached ListNodes.FastConstructListNode fastConstructListNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItem,
-                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile notASequenceProfile,
-                        @Cached InlinedBranchProfile wrongLenProfile,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Cached PyDictGetItem dictGetItem,
-                        @Cached InlinedConditionProfile hasDictProfile,
-                        @Cached PRaiseNode raiseNode) {
-            // FIXME this should be checked by type.__call__
-            if ((getFlags.execute(cls) & TypeFlags.DISALLOW_INSTANTIATION) != 0) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, StructSequence.getTpName(cls));
-            }
-            SequenceStorage seq;
-            try {
-                seq = fastConstructListNode.execute(frame, inliningTarget, sequence).getSequenceStorage();
-            } catch (PException e) {
-                e.expect(inliningTarget, TypeError, notASequenceProfile);
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CONSTRUCTOR_REQUIRES_A_SEQUENCE);
-            }
-
-            boolean hasDict = hasDictProfile.profile(inliningTarget, dict instanceof PDict);
-            if (!hasDict && dict != PNone.NO_VALUE) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TAKES_A_DICT_AS_SECOND_ARG_IF_ANY, StructSequence.getTpName(cls));
-            }
-
-            int len = seq.length();
-            int minLen = getSizeNode.execute(frame, inliningTarget, cls, StructSequence.T_N_SEQUENCE_FIELDS);
-            int maxLen = getSizeNode.execute(frame, inliningTarget, cls, StructSequence.T_N_FIELDS);
-            int unnamedFields = getSizeNode.execute(frame, inliningTarget, cls, StructSequence.T_N_UNNAMED_FIELDS);
-
-            if (len < minLen || len > maxLen) {
-                wrongLenProfile.enter(inliningTarget);
-                if (minLen == maxLen) {
-                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TAKES_A_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
-                }
-                if (len < minLen) {
-                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TAKES_AN_AT_LEAST_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
-                } else {    // len > maxLen
-                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TAKES_AN_AT_MOST_D_SEQUENCE, StructSequence.getTpName(cls), maxLen, len);
-                }
-            }
-
-            Object[] dst = new Object[maxLen];
-            for (int i = 0; i < seq.length(); i++) {
-                dst[i] = getItem.execute(inliningTarget, seq, i);
-            }
-            TruffleString[] fieldNames = hasDict ? getFieldNamesNode.execute(inliningTarget, cls) : null;
-            for (int i = seq.length(); i < dst.length; ++i) {
-                if (hasDict) {
-                    Object o = dictGetItem.execute(frame, inliningTarget, (PDict) dict, fieldNames[i - unnamedFields]);
-                    dst[i] = o == null ? PNone.NONE : o;
-                } else {
-                    dst[i] = PNone.NONE;
-                }
-            }
-            return PFactory.createTuple(language, cls, getInstanceShape.execute(cls), new ObjectSequenceStorage(dst, minLen));
         }
     }
 

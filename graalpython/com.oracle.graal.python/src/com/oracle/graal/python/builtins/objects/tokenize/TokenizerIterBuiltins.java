@@ -42,22 +42,36 @@ package com.oracle.graal.python.builtins.objects.tokenize;
 
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NONBYTES;
+import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NON_STRING;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_ENCODING;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltinsClinicProviders.TokenizerIterNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.pegparser.tokenizer.CodePoints;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Token.Kind;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer.StatusCode;
@@ -70,6 +84,34 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.graal.python.builtins.modules.TokenizeModuleBuiltinsClinicProviders.TokenizerIterNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.tokenize.PTokenizerIter;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyBytesCheckNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTokenizerIter)
 public final class TokenizerIterBuiltins extends PythonBuiltins {
@@ -79,6 +121,108 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TokenizerIterBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "TokenizerIter", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$cls", "readline"}, keywordOnlyNames = {"extra_tokens",
+                    "encoding"})
+    @ArgumentClinic(name = "extra_tokens", conversion = ClinicConversion.Boolean, defaultValue = "true")
+    @ArgumentClinic(name = "encoding", conversion = ClinicConversion.TString, useDefaultForNone = true, defaultValue = "PNone.NONE")
+    @GenerateNodeFactory
+    abstract static class TokenizerIterNode extends PythonQuaternaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return TokenizerIterNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static PTokenizerIter tokenizerIterStr(Object cls, Object readline, boolean extraTokens, @SuppressWarnings("unused") PNone encoding,
+                        @Bind PythonLanguage language,
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            Supplier<int[]> inputSupplier = () -> {
+                Object o;
+                try {
+                    o = CallNode.executeUncached(readline);
+                } catch (PException e) {
+                    e.expectUncached(PythonBuiltinClassType.StopIteration);
+                    return null;
+                }
+                TruffleString line;
+                try {
+                    line = CastToTruffleStringNode.executeUncached(o);
+                } catch (CannotCastException e) {
+                    throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.TypeError, RETURNED_NON_STRING, "readline()", o);
+                }
+                return getCodePoints(line);
+            };
+            return PFactory.createTokenizerIter(language, cls, getInstanceShape.execute(cls), inputSupplier, extraTokens);
+        }
+
+        @Specialization
+        static PTokenizerIter tokenizerIterBytes(Object cls, Object readline, boolean extraTokens, TruffleString encoding,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached PRaiseNode raiseNode) {
+            Charset charset;
+            try {
+                charset = getCharset(Tokenizer.getNormalName(encoding.toJavaStringUncached()));
+            } catch (Exception e) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.LookupError, UNKNOWN_ENCODING, encoding);
+            }
+
+            Supplier<int[]> inputSupplier = () -> {
+                Object o;
+                try {
+                    o = CallNode.executeUncached(readline);
+                } catch (PException e) {
+                    e.expectUncached(PythonBuiltinClassType.StopIteration);
+                    return null;
+                }
+                if (!PyBytesCheckNode.executeUncached(o)) {
+                    throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.TypeError, RETURNED_NONBYTES, "readline()", o);
+                }
+
+                Object buffer;
+                try {
+                    buffer = PythonBufferAcquireLibrary.getUncached().acquireReadonly(o);
+                } catch (PException e) {
+                    throw PRaiseNode.raiseStatic(null, TypeError, EXPECTED_BYTESLIKE_GOT_P, o);
+                }
+                PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getUncached();
+                byte[] bytes;
+                int len;
+                try {
+                    bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                    len = bufferLib.getBufferLength(buffer);
+                } finally {
+                    bufferLib.release(buffer);
+                }
+                String line = charset.decode(ByteBuffer.wrap(bytes, 0, len)).toString();
+                return getCodePoints(TruffleString.fromJavaStringUncached(line, TS_ENCODING));
+            };
+            return PFactory.createTokenizerIter(language, cls, getInstanceShape.execute(cls), inputSupplier, extraTokens);
+        }
+
+        @TruffleBoundary
+        private static Charset getCharset(String s) {
+            return Charset.forName(s);
+        }
+
+        private static int[] getCodePoints(TruffleString ts) {
+            int len = ts.codePointLengthUncached(TS_ENCODING);
+            if (len == 0) {
+                return null;
+            }
+            int[] res = new int[len];
+            int i = 0;
+            TruffleStringIterator it = ts.createCodePointIteratorUncached(TS_ENCODING);
+            while (it.hasNext()) {
+                res[i++] = it.nextUncached();
+            }
+            return res;
+        }
     }
 
     @Slot(value = SlotKind.tp_iter, isComplex = true)

@@ -40,53 +40,27 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.J_SIMPLE_QUEUE;
-
+import java.util.Collections;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.queue.PSimpleQueue;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(defineModule = "_queue")
 public final class QueueModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return QueueModuleBuiltinsFactory.getFactories();
+        return Collections.emptyList();
     }
 
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
         addBuiltinConstant(BuiltinNames.T_EMPTY_CLASS_NAME, core.lookupType(PythonBuiltinClassType.Empty));
-    }
-
-    // _queue.SimpleQueue
-    @Builtin(name = J_SIMPLE_QUEUE, constructsClass = PythonBuiltinClassType.PSimpleQueue, //
-                    minNumOfPositionalArgs = 1, //
-                    doc = "SimpleQueue()\n--\n\nSimple, unbounded, reentrant FIFO queue.")
-    @GenerateNodeFactory
-    abstract static class SimpleQueueNode extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        static PSimpleQueue doGeneric(Object cls,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createSimpleQueue(language, cls, getInstanceShape.execute(cls));
-        }
     }
 }
