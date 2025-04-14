@@ -230,8 +230,8 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
         return writeToDictManagedClass(klass, dict, key, value, inliningTarget, callAttrUpdate, updateStorage, setHashingStorageItem, codePointLengthNode, codePointAtIndexNode);
     }
 
-    @Specialization(guards = {"dict != null", "isNoValue(value)"})
-    static boolean deleteFromDict(PythonObject obj, TruffleString key, Object value,
+    @Specialization(guards = {"dict != null", "isNoValue(value)", "!isPythonBuiltinClass(obj)"})
+    static boolean deleteFromPythonObject(PythonObject obj, TruffleString key, Object value,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(obj)") PDict dict,
@@ -250,6 +250,14 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
                 }
             }
         }
+    }
+
+    @Specialization(guards = {"dict != null", "isNoValue(value)"})
+    static boolean deleteFromPythonBuiltinClass(PythonBuiltinClass klass, TruffleString key, Object value,
+                    @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
+                    @Bind("getDict.execute(klass)") PDict dict) {
+        throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, key, klass);
     }
 
     private static boolean writeToDictManagedClass(PythonManagedClass klass, PDict dict, TruffleString key, Object value, Node inliningTarget,
