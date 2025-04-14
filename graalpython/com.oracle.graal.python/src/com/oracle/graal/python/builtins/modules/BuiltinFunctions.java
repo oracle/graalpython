@@ -2638,9 +2638,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             if (hasDefault.profile(inliningTarget, defaultValue == NO_VALUE)) {
                 return callSlot.execute(frame, inliningTarget, slots.am_anext(), asyncIter);
+            } else {
+                return PFactory.createANextAwaitable(PythonLanguage.get(inliningTarget), asyncIter, defaultValue);
             }
-            // TODO
-            throw raiseNoANext.raise(inliningTarget, PythonBuiltinClassType.NotImplementedError);
         }
     }
 

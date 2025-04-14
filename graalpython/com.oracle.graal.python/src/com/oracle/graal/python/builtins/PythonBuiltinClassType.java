@@ -129,6 +129,7 @@ import com.oracle.graal.python.builtins.modules.pickle.UnpicklerMemoProxyBuiltin
 import com.oracle.graal.python.builtins.objects.NoneBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
+import com.oracle.graal.python.builtins.objects.asyncio.ANextAwaitableBuiltins;
 import com.oracle.graal.python.builtins.objects.asyncio.AsyncGenSendBuiltins;
 import com.oracle.graal.python.builtins.objects.asyncio.AsyncGenThrowBuiltins;
 import com.oracle.graal.python.builtins.objects.asyncio.AsyncGeneratorBuiltins;
@@ -434,6 +435,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PCoroutine("coroutine", PythonObject, newBuilder().slots(CoroutineBuiltins.SLOTS)),
     PCoroutineWrapper("coroutine_wrapper", PythonObject, newBuilder().slots(CoroutineWrapperBuiltins.SLOTS)),
     PAsyncGenerator("async_generator", PythonObject, newBuilder().slots(AsyncGeneratorBuiltins.SLOTS)),
+    PAnextAwaitable("anext_awaitable", PythonObject, newBuilder().slots(ANextAwaitableBuiltins.SLOTS)),
     PInt("int", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().slots(IntBuiltins.SLOTS).doc("""
                     int([x]) -> integer
                     int(x, base=10) -> integer

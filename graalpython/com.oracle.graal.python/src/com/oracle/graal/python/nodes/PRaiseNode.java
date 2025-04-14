@@ -198,6 +198,12 @@ public abstract class PRaiseNode extends Node {
         throw raiseWithData(inliningTarget, PythonBuiltinClassType.StopIteration, args, retVal);
     }
 
+    public final PException raiseStopAsyncIteration(Node inliningTarget, Object value) {
+        final Object retVal = value != null ? value : PNone.NONE;
+        final Object[] args = {retVal};
+        throw raiseWithData(inliningTarget, PythonBuiltinClassType.StopAsyncIteration, args, retVal);
+    }
+
     public final PException raiseBadInternalCall(Node inliningTarget) {
         throw raise(inliningTarget, PythonBuiltinClassType.SystemError, BAD_ARG_TO_INTERNAL_FUNC);
     }

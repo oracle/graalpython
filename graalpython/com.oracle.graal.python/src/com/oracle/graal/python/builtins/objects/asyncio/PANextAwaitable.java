@@ -38,39 +38,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.lib;
+package com.oracle.graal.python.builtins.objects.asyncio;
 
-import com.oracle.graal.python.builtins.objects.asyncio.PANextAwaitable;
-import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGen;
-import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.object.Shape;
 
-@GenerateInline
-@GenerateUncached
-@GenerateCached(false)
-public abstract class PyAIterCheckNode extends Node {
-    public abstract boolean execute(Node inliningTarget, Object object);
+public class PANextAwaitable extends PythonBuiltinObject {
+    private final Object wrapped;
+    private final Object defaultValue;
 
-    @Specialization
-    static boolean doIterator(@SuppressWarnings("unused") PAsyncGen object) {
-        return true;
+    public PANextAwaitable(Object cls, Shape instanceShape, Object wrapped, Object defaultValue) {
+        super(cls, instanceShape);
+        this.wrapped = wrapped;
+        this.defaultValue = defaultValue;
     }
 
-    @Specialization
-    static boolean doAnextAwaitable(@SuppressWarnings("unused") PANextAwaitable object) {
-        return true;
+    public Object getWrapped() {
+        return wrapped;
     }
 
-    @Fallback
-    static boolean doGeneric(Node inliningTarget, Object object,
-                    @Cached TpSlots.GetObjectSlotsNode getSlots) {
-        TpSlots slots = getSlots.execute(inliningTarget, object);
-        return slots.am_anext() != null;
+    public Object getDefaultValue() {
+        return defaultValue;
     }
 }

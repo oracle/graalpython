@@ -451,6 +451,8 @@ public abstract class BuiltinNames {
     public static final TruffleString T_SHA3 = tsLiteral(J_SHA3);
 
     public static final TruffleString T_SEND = tsLiteral("send");
+    public static final TruffleString T_THROW = tsLiteral("throw");
+    public static final TruffleString T_CLOSE = tsLiteral("close");
 
     public static final String J__ASYNCIO = "_asyncio";
     public static final TruffleString T__ASYNCIO = tsLiteral(J__ASYNCIO);
