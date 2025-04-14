@@ -40,8 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.typing;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_PARAM_SPEC;
+import static com.oracle.graal.python.nodes.ErrorMessages.BIVARIANT_TYPES_ARE_NOT_SUPPORTED;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_SUBCLASS_AN_INSTANCE_OF_PARAMSPEC;
+import static com.oracle.graal.python.nodes.ErrorMessages.VARIANCE_CANNOT_BE_SPECIFIED_WITH_INFER_VARIANCE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MRO_ENTRIES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TYPING_PREPARE_SUBST__;
@@ -51,21 +55,31 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.CallTypingFuncObjectNode;
+import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.CallerNode;
+import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.CheckBoundNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
+import com.oracle.graal.python.builtins.objects.typing.ParamSpecBuiltinsClinicProviders.ParamSpecNodeClinicProviderGen;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -83,6 +97,48 @@ public final class ParamSpecBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ParamSpecBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_PARAM_SPEC, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "name"}, keywordOnlyNames = {"bound", "covariant",
+                    "contravariant", "infer_variance"}, needsFrame = true, alwaysNeedsCallerFrame = true)
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
+    @ArgumentClinic(name = "covariant", conversion = ClinicConversion.Boolean, defaultValue = "false")
+    @ArgumentClinic(name = "contravariant", conversion = ClinicConversion.Boolean, defaultValue = "false")
+    @ArgumentClinic(name = "infer_variance", conversion = ClinicConversion.Boolean, defaultValue = "false")
+    @GenerateNodeFactory
+    abstract static class ParamSpecNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ParamSpecNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static PParamSpec newParamSpec(VirtualFrame frame, Object cls, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached CheckBoundNode checkBoundNode,
+                        @Cached CallerNode callerNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached PyObjectSetAttr setAttrNode) {
+            if (covariant && contravariant) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, BIVARIANT_TYPES_ARE_NOT_SUPPORTED);
+            }
+
+            if (inferVariance && (covariant || contravariant)) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, VARIANCE_CANNOT_BE_SPECIFIED_WITH_INFER_VARIANCE);
+            }
+
+            Object boundChecked = checkBoundNode.execute(frame, inliningTarget, bound);
+
+            Object module = callerNode.execute(frame, inliningTarget);
+
+            PParamSpec result = PFactory.createParamSpec(language, cls, getInstanceShape.execute(cls), name, boundChecked, covariant, contravariant, inferVariance);
+            setAttrNode.execute(frame, inliningTarget, result, T___MODULE__, module);
+            return result;
+        }
     }
 
     @Builtin(name = J___NAME__, minNumOfPositionalArgs = 1, isGetter = true)

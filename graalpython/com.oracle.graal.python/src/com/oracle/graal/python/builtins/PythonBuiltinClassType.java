@@ -103,14 +103,15 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPES;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPE_ALIAS_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPE_VAR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPE_VAR_TUPLE;
-import static com.oracle.graal.python.nodes.BuiltinNames.import static com.oracle.graal.python.nodes.BuiltinNames.J_WRAPPER_DESCRIPTOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPING;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_WRAPPER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CONTEXTVARS;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CTYPES;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__SOCKET;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__SSL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__STRUCT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
-import static com.oracle.graal.python.nodes.BuiltinNames.newBuilder().publishInModule(J__TYPING);
+import static com.oracle.graal.python.nodes.BuiltinNames.J__TYPING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.lang.reflect.Field;
@@ -181,6 +182,7 @@ import com.oracle.graal.python.builtins.modules.pickle.PicklerBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.PicklerMemoProxyBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.UnpicklerBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.UnpicklerMemoProxyBuiltins;
+import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressorBuiltins;
 import com.oracle.graal.python.builtins.objects.NoneBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
@@ -848,7 +850,22 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // zlib
     ZlibCompress("Compress", PythonObject, newBuilder().publishInModule("zlib").disallowInstantiation()),
     ZlibDecompress("Decompress", PythonObject, newBuilder().publishInModule("zlib").disallowInstantiation()),
-    ZlibDecompressor("_ZlibDecompressor", PythonObject, newBuilder().publishInModule("zlib").basetype().addDict().slots(ZlibDecompressorBuiltins.SLOTS)),
+    ZlibDecompressor("_ZlibDecompressor", PythonObject, newBuilder().publishInModule("zlib").basetype().addDict().slots(ZlibDecompressorBuiltins.SLOTS).doc("""
+                    _ZlibDecompressor(wbits=15, zdict=b'')
+                    --
+
+                    Create a decompressor object for decompressing data incrementally.
+
+                      wbits = 15
+                      zdict
+                         The predefined compression dictionary. This is a sequence of bytes
+                         (such as a bytes object) containing subsequences that are expected
+                         to occur frequently in the data that is to be compressed. Those
+                         subsequences that are expected to be most common should come at the
+                         end of the dictionary. This must be the same dictionary as used by the
+                         compressor that produced the input data.
+
+                    """)),
 
     // io
     PIOBase("_IOBase", PythonObject, newBuilder().publishInModule("_io").basetype().addDict().slots(IOBaseBuiltins.SLOTS)),
@@ -1126,14 +1143,14 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PBatched("batched", PythonObject, newBuilder().publishInModule("itertools").basetype().slots(BatchedBuiltins.SLOTS).doc("""
                     batched(iterable, n)
                     --
-                    
+
                     Batch data into tuples of length n. The last batch may be shorter than n.
-                    
+
                     Loops over the input iterable and accumulates data into tuples
                     up to size n.  The input is consumed lazily, just enough to
                     fill a batch.  The result is yielded as soon as a batch is full
                     or when the input iterable is exhausted.
-                    
+
                     \t>>> for batch in batched('ABCDEFG', 3):
                     \t...     print(batch)
                     \t...
@@ -1247,13 +1264,180 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     PTokenizerIter("TokenizerIter", PythonObject, newBuilder().publishInModule("_tokenize").basetype().slots(TokenizerIterBuiltins.SLOTS)),
 
-    PTypeVar(J_TYPE_VAR, PythonObject, newBuilder().publishInModule(J__TYPING).slots(TypeVarBuiltins.SLOTS).methodsFlags(TYPEVAR_TYPE_M_FLAGS)),
-    PTypeVarTuple(J_TYPE_VAR_TUPLE, PythonObject, newBuilder().publishInModule(J__TYPING).slots(TypeVarTupleBuiltins.SLOTS)),
-    PParamSpec(J_PARAM_SPEC, PythonObject, newBuilder().publishInModule(J__TYPING).slots(ParamSpecBuiltins.SLOTS).methodsFlags(PARAMSPEC_TYPE_M_FLAGS)),
-    PParamSpecArgs(J_PARAM_SPEC_ARGS, PythonObject, newBuilder().publishInModule(J__TYPING).slots(ParamSpecArgsBuiltins.SLOTS)),
-    PParamSpecKwargs(J_PARAM_SPEC_KWARGS, PythonObject, newBuilder().publishInModule(J__TYPING).slots(ParamSpecKwargsBuiltins.SLOTS)),
-    PTypeAliasType(J_TYPE_ALIAS_TYPE, PythonObject, newBuilder().publishInModule(J__TYPING).slots(TypeAliasTypeBuiltins.SLOTS).methodsFlags(TYPEALIAS_TYPE_M_FLAGS)),
-    PGeneric(J_GENERIC, PythonObject, newBuilder().publishInModule(J__TYPING).basetype().addDict());
+    PTypeVar(J_TYPE_VAR, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(TypeVarBuiltins.SLOTS).methodsFlags(TYPEVAR_TYPE_M_FLAGS).doc("""
+                    Type variable.
+
+                    The preferred way to construct a type variable is via the dedicated
+                    syntax for generic functions, classes, and type aliases::
+
+                        class Sequence[T]:  # T is a TypeVar
+                            ...
+
+                    This syntax can also be used to create bound and constrained type
+                    variables::
+
+                        # S is a TypeVar bound to str
+                        class StrSequence[S: str]:
+                            ...
+
+                        # A is a TypeVar constrained to str or bytes
+                        class StrOrBytesSequence[A: (str, bytes)]:
+                            ...
+
+                    However, if desired, reusable type variables can also be constructed
+                    manually, like so::
+
+                       T = TypeVar('T')  # Can be anything
+                       S = TypeVar('S', bound=str)  # Can be any subtype of str
+                       A = TypeVar('A', str, bytes)  # Must be exactly str or bytes
+
+                    Type variables exist primarily for the benefit of static type
+                    checkers.  They serve as the parameters for generic types as well
+                    as for generic function and type alias definitions.
+
+                    The variance of type variables is inferred by type checkers when they
+                    are created through the type parameter syntax and when
+                    ``infer_variance=True`` is passed. Manually created type variables may
+                    be explicitly marked covariant or contravariant by passing
+                    ``covariant=True`` or ``contravariant=True``. By default, manually
+                    created type variables are invariant. See PEP 484 and PEP 695 for more
+                    details.
+                    """)),
+    PTypeVarTuple(J_TYPE_VAR_TUPLE, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(TypeVarTupleBuiltins.SLOTS).doc("""
+                    Type variable tuple. A specialized form of type variable that enables
+                    variadic generics.
+
+                    The preferred way to construct a type variable tuple is via the
+                    dedicated syntax for generic functions, classes, and type aliases,
+                    where a single '*' indicates a type variable tuple::
+
+                        def move_first_element_to_last[T, *Ts](tup: tuple[T, *Ts]) -> tuple[*Ts, T]:
+                            return (*tup[1:], tup[0])
+
+                    For compatibility with Python 3.11 and earlier, TypeVarTuple objects
+                    can also be created as follows::
+
+                        Ts = TypeVarTuple('Ts')  # Can be given any name
+
+                    Just as a TypeVar (type variable) is a placeholder for a single type,
+                    a TypeVarTuple is a placeholder for an *arbitrary* number of types. For
+                    example, if we define a generic class using a TypeVarTuple::
+
+                        class C[*Ts]: ...
+
+                    Then we can parameterize that class with an arbitrary number of type
+                    arguments::
+
+                        C[int]       # Fine
+                        C[int, str]  # Also fine
+                        C[()]        # Even this is fine
+
+                    For more details, see PEP 646.
+
+                    Note that only TypeVarTuples defined in the global scope can be
+                    pickled.
+                    """)),
+    PParamSpec(J_PARAM_SPEC, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(ParamSpecBuiltins.SLOTS).methodsFlags(PARAMSPEC_TYPE_M_FLAGS).doc("""
+                    Parameter specification variable.
+
+                    The preferred way to construct a parameter specification is via the
+                    dedicated syntax for generic functions, classes, and type aliases,
+                    where the use of '**' creates a parameter specification::
+
+                        type IntFunc[**P] = Callable[P, int]
+
+                    For compatibility with Python 3.11 and earlier, ParamSpec objects
+                    can also be created as follows::
+
+                        P = ParamSpec('P')
+
+                    Parameter specification variables exist primarily for the benefit of
+                    static type checkers.  They are used to forward the parameter types of
+                    one callable to another callable, a pattern commonly found in
+                    higher-order functions and decorators.  They are only valid when used
+                    in ``Concatenate``, or as the first argument to ``Callable``, or as
+                    parameters for user-defined Generics. See class Generic for more
+                    information on generic types.
+
+                    An example for annotating a decorator::
+
+                        def add_logging[**P, T](f: Callable[P, T]) -> Callable[P, T]:
+                            '''A type-safe decorator to add logging to a function.'''
+                            def inner(*args: P.args, **kwargs: P.kwargs) -> T:
+                                logging.info(f'{f.__name__} was called')
+                                return f(*args, **kwargs)
+                            return inner
+
+                        @add_logging
+                        def add_two(x: float, y: float) -> float:
+                            '''Add two numbers together.'''
+                            return x + y
+
+                    Parameter specification variables can be introspected. e.g.::
+
+                        >>> P = ParamSpec("P")
+                        >>> P.__name__
+                        'P'
+
+                    Note that only parameter specification variables defined in the global
+                    scope can be pickled.
+                    """)),
+    PParamSpecArgs(J_PARAM_SPEC_ARGS, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(ParamSpecArgsBuiltins.SLOTS).doc("""
+                    The args for a ParamSpec object.
+
+                    Given a ParamSpec object P, P.args is an instance of ParamSpecArgs.
+
+                    ParamSpecArgs objects have a reference back to their ParamSpec::
+
+                        >>> P = ParamSpec("P")
+                        >>> P.args.__origin__ is P
+                        True
+
+                    This type is meant for runtime introspection and has no special meaning
+                    to static type checkers.
+                    """)),
+    PParamSpecKwargs(J_PARAM_SPEC_KWARGS, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(ParamSpecKwargsBuiltins.SLOTS).doc("""
+                    The kwargs for a ParamSpec object.
+
+                    Given a ParamSpec object P, P.kwargs is an instance of ParamSpecKwargs.
+
+                    ParamSpecKwargs objects have a reference back to their ParamSpec::
+
+                        >>> P = ParamSpec("P")
+                        >>> P.kwargs.__origin__ is P
+                        True
+
+                    This type is meant for runtime introspection and has no special meaning
+                    to static type checkers.
+                    """)),
+    PTypeAliasType(
+                    J_TYPE_ALIAS_TYPE,
+                    PythonObject,
+                    newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(TypeAliasTypeBuiltins.SLOTS).methodsFlags(TYPEALIAS_TYPE_M_FLAGS).doc("""
+                                    Type alias.
+
+                                    Type aliases are created through the type statement::
+
+                                        type Alias = int
+
+                                    In this example, Alias and int will be treated equivalently by static
+                                    type checkers.
+
+                                    At runtime, Alias is an instance of TypeAliasType. The __name__
+                                    attribute holds the name of the type alias. The value of the type alias
+                                    is stored in the __value__ attribute. It is evaluated lazily, so the
+                                    value is computed only if the attribute is accessed.
+
+                                    Type aliases can also be generic::
+
+                                        type ListOrSet[T] = list[T] | set[T]
+
+                                    In this case, the type parameters of the alias are stored in the
+                                    __type_params__ attribute.
+
+                                    See PEP 695 for more information.
+                                    """)),
+    PGeneric(J_GENERIC, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).basetype().addDict());
 
     private static TypeBuilder newBuilder() {
         return new TypeBuilder();

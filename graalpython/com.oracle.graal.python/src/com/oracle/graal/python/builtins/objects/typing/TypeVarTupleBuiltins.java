@@ -40,9 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.typing;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPE_VAR_TUPLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_SUBCLASS_AN_INSTANCE_OF_TYPEVARTUPLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.SUBSTITUTION_OF_BARE_TYPEVARTUPLE_IS_NOT_SUPPORTED;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MRO_ENTRIES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TYPING_PREPARE_SUBST__;
@@ -52,22 +54,31 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.CallTypingFuncObjectNode;
+import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.CallerNode;
 import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.UnpackNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.typing.TypeVarTupleBuiltinsClinicProviders.TypeVarTupleNodeClinicProviderGen;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -86,6 +97,31 @@ public final class TypeVarTupleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TypeVarTupleBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_TYPE_VAR_TUPLE, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "name"}, needsFrame = true, alwaysNeedsCallerFrame = true)
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
+    @GenerateNodeFactory
+    abstract static class TypeVarTupleNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return TypeVarTupleNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static PTypeVarTuple newTypeVarTuple(VirtualFrame frame, Object cls, TruffleString name,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached CallerNode callerNode,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached PyObjectSetAttr setAttrNode) {
+            Object module = callerNode.execute(frame, inliningTarget);
+            PTypeVarTuple result = PFactory.createTypeVarTuple(language, cls, getInstanceShape.execute(cls), name);
+            setAttrNode.execute(frame, inliningTarget, result, T___MODULE__, module);
+            return result;
+        }
     }
 
     @Builtin(name = J___NAME__, minNumOfPositionalArgs = 1, isGetter = true)

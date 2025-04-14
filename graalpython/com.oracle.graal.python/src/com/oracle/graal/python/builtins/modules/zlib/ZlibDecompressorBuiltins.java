@@ -46,7 +46,6 @@ import static com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins.M
 import static com.oracle.graal.python.builtins.modules.zlib.ZlibNodes.Z_OK;
 import static com.oracle.graal.python.builtins.modules.zlib.ZlibNodes.Z_STREAM_ERROR;
 import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_D_S_S;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
 
 import java.util.List;
@@ -54,14 +53,17 @@ import java.util.zip.Inflater;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins.ExpectByteLikeNode;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -89,29 +91,18 @@ import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = ZlibDecompressor)
 public final class ZlibDecompressorBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = ZlibDecompressorBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ZlibDecompressorBuiltinsFactory.getFactories();
     }
 
     @ImportStatic(ZLibModuleBuiltins.class)
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, //
-                    constructsClass = PythonBuiltinClassType.ZlibDecompressor, //
-                    parameterNames = {"$cls", "wbits", "zdict"}, //
-                    doc = "_ZlibDecompressor(wbits=15, zdict=b\'\')\n" + //
-                                    "--\n" + //
-                                    "\n" + //
-                                    "Create a decompressor object for decompressing data incrementally.\n" + //
-                                    "\n" + //
-                                    "  wbits = 15\n" + //
-                                    "  zdict\n" + //
-                                    "     The predefined compression dictionary. This is a sequence of bytes\n" + //
-                                    "     (such as a bytes object) containing subsequences that are expected\n" + //
-                                    "     to occur frequently in the data that is to be compressed. Those\n" + //
-                                    "     subsequences that are expected to be most common should come at the\n" + //
-                                    "     end of the dictionary. This must be the same dictionary as used by the\n" + //
-                                    "     compressor that produced the input data.\n" + //
-                                    "\n")
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "_ZlibDecompressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, //
+                    parameterNames = {"$cls", "wbits", "zdict"})
     @ArgumentClinic(name = "wbits", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "ZLibModuleBuiltins.MAX_WBITS", useDefaultForNone = true)
     @ArgumentClinic(name = "zdict", conversionClass = ExpectByteLikeNode.class, defaultValue = "ZLibModuleBuiltins.EMPTY_BYTE_ARRAY", useDefaultForNone = true)
     @GenerateNodeFactory

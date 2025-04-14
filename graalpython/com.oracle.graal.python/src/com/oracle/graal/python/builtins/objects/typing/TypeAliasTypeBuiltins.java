@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.typing;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPE_ALIAS_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ONLY_GENERIC_TYPE_ALIASES_ARE_SUBSCRIPTABLE;
+import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_PARAMS_MUST_BE_A_TUPLE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___PARAMETERS__;
@@ -51,29 +53,42 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.CallerNode;
 import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.UnpackTypeVarTuplesNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes.UnionTypeOrNode;
+import com.oracle.graal.python.builtins.objects.typing.TypeAliasTypeBuiltinsClinicProviders.TypeAliasTypeNodeClinicProviderGen;
 import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -88,6 +103,54 @@ public final class TypeAliasTypeBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TypeAliasTypeBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = J_TYPE_ALIAS_TYPE, minNumOfPositionalArgs = 3, parameterNames = {"$cls", "name", "value"}, keywordOnlyNames = {
+                    "type_params"}, needsFrame = true, alwaysNeedsCallerFrame = true)
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
+    @GenerateNodeFactory
+    abstract static class TypeAliasTypeNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return TypeAliasTypeNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static PTypeAliasType newTypeAliasType(VirtualFrame frame, Object cls, TruffleString name, Object value, Object typeParams,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached CheckTypeParamsNode checkNode,
+                        @Cached CallerNode callerNode,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            PTuple typeParamsTuple = checkNode.execute(inliningTarget, typeParams);
+            Object module = callerNode.execute(frame, inliningTarget);
+            return PFactory.createTypeAliasType(language, cls, getInstanceShape.execute(cls), name, typeParamsTuple, null, value, module);
+        }
+
+        @GenerateInline
+        @GenerateCached(false)
+        @ImportStatic(PGuards.class)
+        abstract static class CheckTypeParamsNode extends Node {
+            abstract PTuple execute(Node inliningTarget, Object o);
+
+            @Specialization(guards = "isNoValue(o)")
+            static PTuple doDefault(@SuppressWarnings("unused") Object o) {
+                return null;
+            }
+
+            @Specialization
+            static PTuple doTuple(PTuple o) {
+                return o.getSequenceStorage().length() == 0 ? null : o;
+            }
+
+            @Fallback
+            static PTuple doError(@SuppressWarnings("unused") Object o,
+                            @Bind("this") Node inliningTarget) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, TYPE_PARAMS_MUST_BE_A_TUPLE);
+            }
+        }
     }
 
     @Builtin(name = J___NAME__, minNumOfPositionalArgs = 1, isGetter = true)
