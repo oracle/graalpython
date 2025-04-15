@@ -497,16 +497,6 @@ def nativeclean(args):
     mx.clean(["--dependencies", ",".join(PYTHON_NATIVE_PROJECTS + PYTHON_ARCHIVES)])
 
 
-def python3_unittests(args):
-    """run the cPython stdlib unittests"""
-    mx.run([sys.executable, "graalpython/com.oracle.graal.python.test/src/python_unittests.py", "-v"] + args)
-
-
-def compare_unittests(args):
-    """compare the output of two runs of the cPython stdlib unittests"""
-    mx.run([sys.executable, "graalpython/com.oracle.graal.python.test/src/compare_unittests.py", "-v"] + args)
-
-
 class GraalPythonTags(object):
     junit = 'python-junit'
     junit_maven = 'python-junit-maven'
@@ -3147,8 +3137,6 @@ mx.update_commands(SUITE, {
     'python-jvm': [no_return(python_jvm), ''],
     'graalpy-standalone': [graalpy_standalone_wrapper, '[jvm|native] [ce|ee] [--no-build]'],
     'python-gvm': [no_return(python_gvm), ''],
-    'python-unittests': [python3_unittests, ''],
-    'python-compare-unittests': [compare_unittests, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
     'python-src-import': [mx_graalpython_import.import_python_sources, ''],
