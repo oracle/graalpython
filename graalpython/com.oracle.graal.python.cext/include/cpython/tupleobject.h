@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -39,14 +39,10 @@ PyAPI_FUNC(PyObject *) _PyTuple_GET_ITEM(PyObject *, Py_ssize_t);
 // GraalPy-specific
 PyAPI_FUNC(PyObject **) PyTruffleTuple_GetItems(PyObject *op);
 
-/* Function *only* to be used to fill in brand new tuples */
-static inline void
-PyTuple_SET_ITEM(PyObject *op, Py_ssize_t index, PyObject *value) {
-    PyTruffleTuple_GetItems(op)[index] = value;
-}
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
+PyAPI_FUNC(void) PyTuple_SET_ITEM(PyObject*, Py_ssize_t, PyObject*);
 #define PyTuple_SET_ITEM(op, index, value) \
-    PyTuple_SET_ITEM(_PyObject_CAST(op), index, _PyObject_CAST(value))
+    do { PyTruffleTuple_GetItems(op)[index] = value; } while (0)
 #endif
 
 PyAPI_FUNC(void) _PyTuple_DebugMallocStats(FILE *out);

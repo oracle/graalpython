@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -1423,4 +1423,10 @@ _PyTuple_GET_ITEM(PyObject* a, Py_ssize_t b) {
         return ob_item[b];
     }
     return NULL; // an exception has happend during transtion
+}
+
+#undef PyTuple_SET_ITEM
+// Export PyTuple_SET_ITEM as regular API function to use in PyO3 and others
+void PyTuple_SET_ITEM(PyObject* op, Py_ssize_t index, PyObject* value) {
+    PyTruffleTuple_GetItems(op)[index] = value;
 }
