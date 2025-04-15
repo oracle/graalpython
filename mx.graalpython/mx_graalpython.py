@@ -90,6 +90,7 @@ def get_boolean_env(name, default=False):
 SUITE = cast(mx.SourceSuite, mx.suite('graalpython'))
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 
+GRAALPY_ABI_VERSION = 'graalpy250'
 GRAAL_VERSION = SUITE.suiteDict['version']
 IS_RELEASE = SUITE.suiteDict['release']
 GRAAL_VERSION_MAJ_MIN = ".".join(GRAAL_VERSION.split(".")[:2])
@@ -1923,7 +1924,7 @@ def graalpy_ext(*_):
     # on Windows we use '.pyd' else '.so' but never '.dylib' (similar to CPython):
     # https://github.com/python/cpython/issues/37510
     ext = 'pyd' if os == 'windows' else 'so'
-    return f'.graalpy{GRAAL_VERSION_MAJ_MIN.replace(".", "") + dev_tag()}-{PYTHON_VERSION_MAJ_MIN.replace(".", "")}-native-{arch}-{pyos}.{ext}'
+    return f'.{abi_version()}-native-{arch}-{pyos}.{ext}'
 
 
 def dev_tag(_=None):
@@ -1949,6 +1950,11 @@ def dev_tag(_=None):
     return res
 
 
+def abi_version():
+    # The ABI version for wheel cache tag
+    return f'{GRAALPY_ABI_VERSION}{dev_tag()}-{PYTHON_VERSION_MAJ_MIN.replace(".", "")}'
+
+
 mx_subst.path_substitutions.register_with_arg('suite', _get_suite_dir)
 mx_subst.path_substitutions.register_with_arg('suite_parent', _get_suite_parent_dir)
 mx_subst.path_substitutions.register_with_arg('src_dir', _get_src_dir)
@@ -1956,7 +1962,7 @@ mx_subst.path_substitutions.register_with_arg('output_root', _get_output_root)
 mx_subst.path_substitutions.register_with_arg('py_ver', py_version_short)
 mx_subst.path_substitutions.register_with_arg('graal_ver', graal_version_short)
 mx_subst.path_substitutions.register_with_arg('release_level', release_level)
-mx_subst.results_substitutions.register_with_arg('dev_tag', dev_tag)
+mx_subst.results_substitutions.register_no_arg('abi_version', abi_version)
 
 mx_subst.path_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
 mx_subst.results_substitutions.register_no_arg('graalpy_ext', graalpy_ext)

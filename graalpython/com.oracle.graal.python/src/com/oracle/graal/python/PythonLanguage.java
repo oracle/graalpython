@@ -205,7 +205,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int GRAALVM_MAJOR;
     public static final int GRAALVM_MINOR;
     public static final int GRAALVM_MICRO;
-    public static final String DEV_TAG;
+
+    /** See {@code mx_graalpython.py:abi_version} */
+    public static final String GRAALPY_ABI_VERSION;
 
     /* Magic number used to mark pyc files */
     public static final int MAGIC_NUMBER = 21000 + Compiler.BYTECODE_VERSION * 10;
@@ -226,8 +228,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     static {
         // The resource file is built by mx from "graalpy-versions" project using mx substitutions.
-        // The actual values of the versions are computed by mx helper functions py_version_short,
-        // graal_version_short, and dev_tag defined in mx_graalpython.py
         try (InputStream is = PythonLanguage.class.getResourceAsStream("/graalpy_versions")) {
             int ch;
             if (MAJOR != (ch = is.read() - VERSION_BASE)) {
@@ -257,13 +257,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 default:
                     RELEASE_LEVEL_STRING = tsLiteral("final");
             }
-            // see mx.graalpython/mx_graalpython.py:dev_tag
-            byte[] rev = new byte[3 /* 'dev' */ + 10 /* revision */];
-            if (is.read(rev) == rev.length) {
-                DEV_TAG = new String(rev, StandardCharsets.US_ASCII).strip();
-            } else {
-                DEV_TAG = "";
-            }
+            GRAALPY_ABI_VERSION = new String(is.readAllBytes(), StandardCharsets.US_ASCII).strip();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
