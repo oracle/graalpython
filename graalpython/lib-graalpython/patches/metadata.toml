@@ -296,7 +296,7 @@ patch = 'numba-0.59.1.patch'
 license = 'BSD-2-Clause'
 
 [[numpy.rules]]
-version = '>= 2.0.0rc1, < 2.1'
+version = '>= 2.0.0rc1, < 2.3'
 patch = 'numpy-2.0.0.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
