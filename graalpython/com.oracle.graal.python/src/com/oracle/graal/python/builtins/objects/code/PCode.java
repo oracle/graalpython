@@ -78,8 +78,6 @@ import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.graal.python.util.Supplier;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -115,10 +113,7 @@ public final class PCode extends PythonBuiltinObject {
     /* GraalPy-specific */
     public static final int CO_GRAALPYHON_MODULE = 0x1000;
 
-    // callTargetSupplier may be null, in which case callTarget and signature will be
-    // set. Otherwise, these are lazily created from the supplier.
-    private Supplier<CallTarget> callTargetSupplier;
-    RootCallTarget callTarget;
+    private final RootCallTarget callTarget;
     @CompilationFinal private Signature signature;
 
     // number of local variables
@@ -161,15 +156,6 @@ public final class PCode extends PythonBuiltinObject {
 
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
         this(cls, instanceShape, callTarget);
-        this.flags = flags;
-        this.firstlineno = firstlineno;
-        this.linetable = linetable;
-        this.filename = filename;
-    }
-
-    public PCode(Object cls, Shape instanceShape, Supplier<CallTarget> callTargetSupplier, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
-        super(cls, instanceShape);
-        this.callTargetSupplier = callTargetSupplier;
         this.flags = flags;
         this.firstlineno = firstlineno;
         this.linetable = linetable;
@@ -653,9 +639,6 @@ public final class PCode extends PythonBuiltinObject {
             if (CompilerDirectives.isPartialEvaluationConstant(this)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
             }
-            if (callTarget == null) {
-                callTarget = initializeCallTarget();
-            }
             signature = initializeSignature(callTarget);
         }
         return signature;
@@ -675,23 +658,6 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public RootCallTarget getRootCallTarget() {
-        if (callTarget == null) {
-            initializeCallTarget();
-        }
-        return callTarget;
-    }
-
-    public RootCallTarget getRootCallTargetOrNull() {
-        return callTarget;
-    }
-
-    @TruffleBoundary
-    synchronized RootCallTarget initializeCallTarget() {
-        assert PythonContext.get(null).ownsGil(); // otherwise this is racy
-        if (callTarget == null) {
-            callTarget = (RootCallTarget) callTargetSupplier.get();
-            callTargetSupplier = null;
-        }
         return callTarget;
     }
 

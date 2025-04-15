@@ -42,7 +42,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
@@ -99,22 +98,13 @@ public abstract class CallDispatchNode extends PNodeWithContext {
     }
 
     // We have multiple contexts, don't cache the objects so that contexts can be cleaned up
-    @Specialization(guards = {"getCallTarget(inliningTarget, code, initializeCodeProfile) == ct"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCached")
+    @Specialization(guards = {"code.getRootCallTarget() == cachedCallTarget"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCached")
     protected static Object callFunctionCachedCt(VirtualFrame frame, PFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Bind("callee.getCode()") PCode code,
-                    @SuppressWarnings("unused") @Cached InlinedBranchProfile initializeCodeProfile,
-                    @SuppressWarnings("unused") @Cached("code.getRootCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("code.getRootCallTarget()") RootCallTarget cachedCallTarget,
                     @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
         return invoke.execute(frame, callee, callee.getGlobals(), callee.getClosure(), arguments);
-    }
-
-    protected static RootCallTarget getCallTarget(Node inliningTarget, PCode code, InlinedBranchProfile initializeCodeProfile) {
-        if (code.getRootCallTargetOrNull() == null) {
-            initializeCodeProfile.enter(inliningTarget);
-            return code.getRootCallTarget();
-        }
-        return code.getRootCallTargetOrNull();
     }
 
     @Specialization(guards = {"isSingleContext()", "callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()")
