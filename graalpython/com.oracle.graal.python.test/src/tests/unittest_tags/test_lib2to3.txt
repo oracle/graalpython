@@ -1,4 +1,4 @@
-lib2to3.tests.test_all_fixers.Test_all.test_all_project_files @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+lib2to3.tests.test_all_fixers.Test_all.test_all_project_files @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_fixers.Test_apply.test_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_fixers.Test_apply.test_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_fixers.Test_apply.test_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -609,7 +609,7 @@ lib2to3.tests.test_pytree.TestPatterns.test_basic_patterns @ darwin-arm64,darwin
 lib2to3.tests.test_pytree.TestPatterns.test_generate_matches @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_pytree.TestPatterns.test_has_key_example @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_pytree.TestPatterns.test_wildcard @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-lib2to3.tests.test_refactor.TestRefactoringTool.test_bom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+lib2to3.tests.test_refactor.TestRefactoringTool.test_bom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_refactor.TestRefactoringTool.test_crlf_newlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_refactor.TestRefactoringTool.test_crlf_unchanged @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_refactor.TestRefactoringTool.test_detect_future_features @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
