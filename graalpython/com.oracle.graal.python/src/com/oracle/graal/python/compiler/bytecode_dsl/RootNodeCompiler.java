@@ -3640,7 +3640,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             if (pattern instanceof PatternTy.MatchAs matchAs) {
                 doVisitPattern(matchAs, pc);
             } else if (pattern instanceof PatternTy.MatchClass matchClass) {
-                doVisitPattern(matchClass);
+                doVisitPattern(matchClass, pc);
             } else if (pattern instanceof PatternTy.MatchMapping matchMapping) {
                 doVisitPattern(matchMapping, pc);
             } else if (pattern instanceof PatternTy.MatchOr matchOr) {
@@ -3698,8 +3698,192 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.endBlock();
         }
 
-        private void doVisitPattern(PatternTy.MatchClass node) {
-            emitPatternNotImplemented("class");
+        /**
+         * Saves subject of the pattern context into BytecodeLocal variable, to be restored eventually.
+         * @param pc Pattern context, which subject needs to be saved.
+         * @return Subject saved in local variable.
+         */
+        private BytecodeLocal patternContextSubjectSave(PatternContext pc) {
+            BytecodeLocal pcSave = b.createLocal();
+            b.beginStoreLocal(pcSave);
+            b.emitLoadLocal(pc.subject);
+            b.endStoreLocal();
+            return pcSave;
+        }
+
+        /**
+         * Loads pattern context subject back into pattern context.
+         * @param pcSave Variable to restore pattern context subject from.
+         * @param pc Pattern context into which the subject should be restored.
+         */
+        private void patternContextSubjectLoad(BytecodeLocal pcSave, PatternContext pc) {
+            b.beginStoreLocal(pc.subject);
+            b.emitLoadLocal(pcSave);
+            b.endStoreLocal();
+        }
+
+        /**
+         * Check if attribute and keyword attribute lengths match, or if there isn't too much patterns or attributes.
+         * Throws error on fail.
+         * @param patLen Patterns count
+         * @param attrsLen Attributes count
+         * @param kwdPatLen Keyword attributes count
+         * @param node MatchClass node for errors
+         */
+        private void classMatchLengthChecks(int patLen, int attrsLen, int kwdPatLen, PatternTy.MatchClass node) {
+            if (attrsLen != kwdPatLen) {
+                ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "kwd_attrs (%d) / kwd_patterns (%d) length mismatch in class pattern", attrsLen, kwdPatLen);
+            }
+            if (Integer.MAX_VALUE < patLen + attrsLen - 1) {
+                String id = node.cls instanceof ExprTy.Name ? ((ExprTy.Name) node.cls).id : node.cls.toString();
+                ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "too many sub-patterns in class pattern %s", id);
+            }
+
+        }
+
+        /**
+         * Visits sub-patterns for class pattern matching. Regular, positional patterns are handled first, then the
+         * keyword patterns (e.g. the "class.attribute = [keyword] pattern"). Generates boolean value based on
+         * results of the subpatterns; values are evaluated using the AND operator.
+         * @param patterns Patterns to check as subpatterns.
+         * @param kwdPatterns Keyword patterns to check as subpatterns.
+         * @param attrsValueUnpacked Values to use as `pc.subject` in sub-pattern check.
+         * @param pc Pattern context (subject is saved then restored).
+         * @param patLen Number of patterns.
+         * @param attrsLen Number of attributes (also keyword patterns).
+         */
+        private void classMatchVisitSubpatterns(PatternTy[] patterns, PatternTy[] kwdPatterns, BytecodeLocal attrsValueUnpacked, PatternContext pc, int patLen, int attrsLen) {
+            BytecodeLocal pcSave = patternContextSubjectSave(pc);
+
+            if (patLen + attrsLen == 0) {
+                b.emitLoadConstant(true);
+            } else {
+                BytecodeLocal temp = b.createLocal();
+                b.beginStoreLocal(temp);
+                    b.beginPrimitiveBoolAnd();
+                    for (int i = 0; i < patLen; i++) {
+                        b.beginBlock();
+                        b.beginStoreLocal(pc.subject);
+                        b.beginArrayIndex(i);
+                        b.emitLoadLocal(attrsValueUnpacked);
+                        b.endArrayIndex();
+                        b.endStoreLocal();
+
+                        visitSubpattern(patterns[i], pc);
+                        b.endBlock();
+                    }
+
+                    for (int i = 0, j = patLen; i < attrsLen; i++, j++) {
+                        b.beginBlock();
+                        b.beginStoreLocal(pc.subject);
+                        b.beginArrayIndex(j);
+                        b.emitLoadLocal(attrsValueUnpacked);
+                        b.endArrayIndex();
+                        b.endStoreLocal();
+
+                        visitSubpattern(kwdPatterns[i], pc);
+                        b.endBlock();
+                    }
+                    b.endPrimitiveBoolAnd();
+                b.endStoreLocal();
+
+                patternContextSubjectLoad(pcSave, pc);
+
+                b.emitLoadLocal(temp);
+            }
+        }
+
+        private void doVisitPattern(PatternTy.MatchClass node, PatternContext pc) {
+            /**
+             * Class pattern matching consists of subject and pattern. Pattern is split into:
+             * <ul>
+             * <li> patterns: These are positional and match the {@code __match_args__} arguments of the class, and are
+             * evaluated as sub-patterns with respective positional class attributes as subjects.
+             * <li> keyword attributes (kwdAttrs): These are non-positional, named class attributes that need to match
+             * the accompanying keyword patterns.
+             * <li> keyword patterns (kwdPatterns): Patterns that accompany keyword attributes, these are evaluated as
+             * sub-patterns with provided class attributes as subjects. Note that the number of keyword attributes
+             * and keyword patterns do need to match.
+             * </ul>
+             *
+             * Example:
+             * @formatter:off
+             *     x = <some class>
+             *     match x:
+             *         case <class>(x, 42 as y, a = ("test1" | "test2") as z):
+             *             ...
+             * @formatter:on
+             * Here, {@code x} and {@code 42 as y} are "patterns" (positional), {@code a} is "keyword attribute" and
+             * {@code ... as z} is its accompanying "keyword pattern".
+             */
+
+            b.beginBlock();
+
+            PatternTy[] patterns = node.patterns;
+            String[] kwdAttrs = node.kwdAttrs;
+            PatternTy[] kwdPatterns = node.kwdPatterns;
+            int patLen = lengthOrZero(patterns);
+            int attrsLen = lengthOrZero(kwdAttrs);
+            int kwdPatLen = lengthOrZero(kwdPatterns);
+
+            classMatchLengthChecks(patLen, attrsLen, kwdPatLen, node);
+            if (attrsLen > 0) {
+                validateKwdAttrs(kwdAttrs, kwdPatterns);
+            }
+
+            //@formatter:off
+            // attributes needs to be converted into truffle strings
+            TruffleString[] tsAttrs = new TruffleString[attrsLen];
+            for (int i = 0; i < attrsLen; i++) {
+                tsAttrs[i] = toTruffleStringUncached(kwdAttrs[i]);
+            }
+
+            b.beginPrimitiveBoolAnd();
+                BytecodeLocal attrsValue = b.createLocal();
+                // match class that's in the subject
+                b.beginMatchClass(attrsValue);
+                    b.emitLoadLocal(pc.subject);
+                    node.cls.accept(this); // get class type
+                    b.emitLoadConstant(patLen);
+                    b.emitLoadConstant(tsAttrs);
+                b.endMatchClass();
+
+                b.beginBlock();
+                    // attributes from match class needs to be unpacked first
+                    BytecodeLocal attrsValueUnpacked = b.createLocal();
+                    b.beginStoreLocal(attrsValueUnpacked);
+                        b.beginUnpackSequence(patLen + attrsLen);
+                            b.emitLoadLocal(attrsValue);
+                        b.endUnpackSequence();
+                    b.endStoreLocal();
+
+                    classMatchVisitSubpatterns(patterns, kwdPatterns, attrsValueUnpacked, pc, patLen, attrsLen);
+                b.endBlock();
+            b.endPrimitiveBoolAnd();
+
+            b.endBlock();
+            //@formatter:on
+        }
+
+        /**
+         * Checks if keyword argument names aren't the same or if their name isn't forbidden. Raises error at fail.
+         * @param attrs Attributes to check.
+         * @param patterns Patterns for error source range.
+         */
+        private void validateKwdAttrs(String[] attrs, PatternTy[] patterns) {
+            // Any errors will point to the pattern rather than the arg name as the
+            // parser is only supplying identifiers rather than Name or keyword nodes
+            int attrsLen = lengthOrZero(attrs);
+            for (int i = 0; i < attrsLen; i++) {
+                String attr = attrs[i];
+                checkForbiddenName(attr, NameOperation.BeginWrite, patterns[i].getSourceRange());
+                for (int j = i + 1; j < attrsLen; j++) {
+                    String other = attrs[j];
+                    if (attr.equals(other)) {
+                        ctx.errorCallback.onError(ErrorType.Syntax, patterns[j].getSourceRange(), "attribute name repeated in class pattern: `%s`", attr);
+                    }
+                }
+            }
         }
 
         private static int lengthOrZero(Object[] p) {
@@ -3787,10 +3971,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.endStoreLocal();
 
                 // backup pc.subject, it will get replaced for sub-patterns
-                BytecodeLocal pcSave = b.createLocal();
-                b.beginStoreLocal(pcSave);
-                    b.emitLoadLocal(pc.subject);
-                b.endStoreLocal();
+                BytecodeLocal pcSave = patternContextSubjectSave(pc);
 
                 BytecodeLocal temp = b.createLocal();
                 b.beginStoreLocal(temp);
@@ -3817,9 +3998,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     b.endPrimitiveBoolAnd();
                 b.endStoreLocal();
 
-                b.beginStoreLocal(pc.subject);
-                    b.emitLoadLocal(pcSave);
-                b.endStoreLocal();
+                patternContextSubjectLoad(pcSave, pc);
 
                 b.emitLoadLocal(temp);
             b.endBlock();

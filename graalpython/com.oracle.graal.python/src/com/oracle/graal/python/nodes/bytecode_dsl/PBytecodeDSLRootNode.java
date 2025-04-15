@@ -169,6 +169,7 @@ import com.oracle.graal.python.nodes.bytecode.GetYieldFromIterNode;
 import com.oracle.graal.python.nodes.bytecode.ImportFromNode;
 import com.oracle.graal.python.nodes.bytecode.ImportNode;
 import com.oracle.graal.python.nodes.bytecode.ImportStarNode;
+import com.oracle.graal.python.nodes.bytecode.MatchClassNode;
 import com.oracle.graal.python.nodes.bytecode.MatchKeysNode;
 import com.oracle.graal.python.nodes.bytecode.PrintExprNode;
 import com.oracle.graal.python.nodes.bytecode.RaiseNode;
@@ -1139,6 +1140,17 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static PDict perform(VirtualFrame frame, Object map, Object[] keys, @Cached CopyDictWithoutKeysNode node) {
             return node.execute(frame, map, keys);
+        }
+    }
+
+    @Operation
+    @ConstantOperand(type = LocalAccessor.class)
+    public static final class MatchClass {
+        @Specialization
+        public static Object perform(VirtualFrame frame, LocalAccessor attributes, Object subject, Object type, int nargs, TruffleString[] kwArgs, @Bind BytecodeNode bytecodeNode, @Cached MatchClassNode node) {
+            Object attrs = node.execute(frame, subject, type, nargs, kwArgs);
+            attributes.setObject(bytecodeNode, frame, attrs);
+            return attrs != null;
         }
     }
 
