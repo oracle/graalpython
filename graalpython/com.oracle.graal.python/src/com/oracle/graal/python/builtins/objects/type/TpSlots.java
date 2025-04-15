@@ -42,7 +42,10 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ANEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CONTAINS__;
@@ -357,9 +360,13 @@ public record TpSlots(TpSlot nb_bool, //
                 TpSlot tp_init, //
                 TpSlot tp_new, //
                 TpSlot tp_call, //
+                TpSlot am_await, //
+                TpSlot am_aiter, //
+                TpSlot am_anext, //
                 boolean has_as_number,
                 boolean has_as_sequence,
-                boolean has_as_mapping) {
+                boolean has_as_mapping,
+                boolean has_as_async) {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(TpSlot.class);
 
@@ -425,6 +432,7 @@ public record TpSlots(TpSlot nb_bool, //
         AS_NUMBER(TpSlots::has_as_number, CFields.PyTypeObject__tp_as_number),
         AS_SEQUENCE(TpSlots::has_as_sequence, CFields.PyTypeObject__tp_as_sequence),
         AS_MAPPING(TpSlots::has_as_mapping, CFields.PyTypeObject__tp_as_mapping),
+        AS_ASYNC(TpSlots::has_as_async, CFields.PyTypeObject__tp_as_async),
         NO_GROUP(null, null); // Must be last
 
         public static final TpSlotGroup[] VALID_VALUES = Arrays.copyOf(values(), values().length - 1);
@@ -944,7 +952,31 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_call,
                         PExternalFunctionWrapper.CALL,
-                        CallWrapper::new);
+                        CallWrapper::new),
+        AM_AWAIT(
+                        TpSlots::am_await,
+                        TpSlotPythonSingle.class,
+                        TpSlotUnaryFuncBuiltin.class,
+                        TpSlotGroup.AS_ASYNC,
+                        CFields.PyAsyncMethods__am_await,
+                        PExternalFunctionWrapper.UNARYFUNC,
+                        UnaryFuncWrapper::new),
+        AM_AITER(
+                        TpSlots::am_aiter,
+                        TpSlotPythonSingle.class,
+                        TpSlotUnaryFuncBuiltin.class,
+                        TpSlotGroup.AS_ASYNC,
+                        CFields.PyAsyncMethods__am_aiter,
+                        PExternalFunctionWrapper.UNARYFUNC,
+                        UnaryFuncWrapper::new),
+        AM_ANEXT(
+                        TpSlots::am_anext,
+                        TpSlotPythonSingle.class,
+                        TpSlotUnaryFuncBuiltin.class,
+                        TpSlotGroup.AS_ASYNC,
+                        CFields.PyAsyncMethods__am_anext,
+                        PExternalFunctionWrapper.UNARYFUNC,
+                        UnaryFuncWrapper::new);
 
         public static final TpSlotMeta[] VALUES = values();
 
@@ -1223,6 +1255,9 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.SQ_INPLACE_CONCAT, TpSlotDef.withNoFunction(T___IADD__, PExternalFunctionWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.SQ_INPLACE_REPEAT, TpSlotDef.withNoFunction(T___IMUL__, PExternalFunctionWrapper.SSIZE_ARG, HPySlotWrapper.INDEXARGFUNC));
         addSlotDef(s, TpSlotMeta.SQ_CONTAINS, TpSlotDef.withSimpleFunction(T___CONTAINS__, PExternalFunctionWrapper.OBJOBJPROC));
+        addSlotDef(s, TpSlotMeta.AM_AWAIT, TpSlotDef.withSimpleFunction(T___AWAIT__, PExternalFunctionWrapper.UNARYFUNC));
+        addSlotDef(s, TpSlotMeta.AM_ANEXT, TpSlotDef.withSimpleFunction(T___ANEXT__, PExternalFunctionWrapper.UNARYFUNC));
+        addSlotDef(s, TpSlotMeta.AM_AITER, TpSlotDef.withSimpleFunction(T___AITER__, PExternalFunctionWrapper.UNARYFUNC));
 
         SLOTDEFS = s;
         SPECIAL2SLOT = new HashMap<>(SLOTDEFS.size() * 2);
@@ -1934,9 +1969,13 @@ public record TpSlots(TpSlot nb_bool, //
                             get(TpSlotMeta.TP_INIT), //
                             get(TpSlotMeta.TP_NEW), //
                             get(TpSlotMeta.TP_CALL), //
+                            get(TpSlotMeta.AM_AWAIT), //
+                            get(TpSlotMeta.AM_AITER), //
+                            get(TpSlotMeta.AM_ANEXT), //
                             hasGroup(TpSlotGroup.AS_NUMBER),
                             hasGroup(TpSlotGroup.AS_SEQUENCE),
-                            hasGroup(TpSlotGroup.AS_MAPPING));
+                            hasGroup(TpSlotGroup.AS_MAPPING),
+                            hasGroup(TpSlotGroup.AS_ASYNC));
         }
     }
 

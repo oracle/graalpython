@@ -1559,11 +1559,11 @@ public abstract class ErrorMessages {
     public static final TruffleString INDEX_EXCEEDS_INT = tsLiteral("index exceeds integer size");
     public static final TruffleString X_NOT_IN_SEQUENCE = tsLiteral("sequence.index(x): x not in sequence");
     public static final TruffleString ASYNC_FOR_NO_AITER = tsLiteral("'async for' requires object with __aiter__ method, got %N");
-    public static final TruffleString ASYNC_FOR_NO_ANEXT_INITIAL = tsLiteral("'async for' received an object from __aiter__ that does not implement __anext__: %N");
+    public static final TruffleString ASYNC_FOR_NO_ANEXT_INITIAL = tsLiteral("'async for' received an object from __aiter__ that does not implement __anext__: %p");
     public static final TruffleString ASYNC_FOR_NO_ANEXT_ITERATION = tsLiteral("'async for' requires an iterator with __anext__ method, got %p");
 
     public static final TruffleString CANNOT_REUSE_ASEND = tsLiteral("cannot reuse already awaited __anext__()/asend()");
-    public static final TruffleString OBJECT_NOT_ASYNCGEN = tsLiteral("'%N' object is not an async generator");
+    public static final TruffleString OBJECT_NOT_ASYNCGEN = tsLiteral("'%p' object is not an async generator");
     public static final TruffleString CANNOT_REUSE_ATHROW = tsLiteral("cannot reuse already awaited aclose()/athrow()");
     public static final TruffleString CANNOT_REUSE_CORO = tsLiteral("cannot reuse already awaited coroutine");
     public static final TruffleString AGEN_ALREADY_RUNNING = tsLiteral("anext(): asynchronous generator is already running");

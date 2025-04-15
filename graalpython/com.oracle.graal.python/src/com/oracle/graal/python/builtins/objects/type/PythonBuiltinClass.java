@@ -70,7 +70,6 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         super(lang, builtinClass.getType(), builtinClass.getType().getInstanceShape(lang), builtinClass.getInstanceShape(lang), builtinClass.getName(), base, new PythonAbstractClass[]{base},
                         builtinClass.getSlots());
         this.type = builtinClass;
-        this.methodsFlags = type.getMethodsFlags();
     }
 
     @Override

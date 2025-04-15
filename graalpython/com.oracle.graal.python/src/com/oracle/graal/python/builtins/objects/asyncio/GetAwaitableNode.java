@@ -41,26 +41,25 @@
 package com.oracle.graal.python.builtins.objects.asyncio;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
-@ImportStatic(SpecialMethodSlot.class)
 @SuppressWarnings("truffle-inlining")
 public abstract class GetAwaitableNode extends Node {
     public abstract Object execute(VirtualFrame frame, Object arg);
@@ -81,22 +80,22 @@ public abstract class GetAwaitableNode extends Node {
         }
     }
 
-    @Specialization
+    @Fallback
     public static Object doGeneric(VirtualFrame frame, Object awaitable,
                     @Bind("this") Node inliningTarget,
                     @Exclusive @Cached PRaiseNode raiseNoAwait,
                     @Exclusive @Cached PRaiseNode raiseNotIter,
-                    @Cached(parameters = "Await") LookupSpecialMethodSlotNode findAwait,
+                    @Cached GetCachedTpSlotsNode getSlots,
+                    @Cached CallSlotUnaryNode callSlot,
                     @Cached GetClassNode getAwaitableType,
                     @Cached GetClassNode getIteratorType,
-                    @Cached CallUnaryMethodNode callAwait,
                     @Cached PyIterCheckNode iterCheck) {
         Object type = getAwaitableType.execute(inliningTarget, awaitable);
-        Object getter = findAwait.execute(frame, type, awaitable);
-        if (getter == PNone.NO_VALUE) {
+        TpSlots slots = getSlots.execute(inliningTarget, type);
+        if (slots.am_await() == null) {
             throw raiseNoAwait.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, type);
         }
-        Object iterator = callAwait.executeObject(getter, awaitable);
+        Object iterator = callSlot.execute(frame, inliningTarget, slots.am_await(), awaitable);
         if (iterCheck.execute(inliningTarget, iterator)) {
             return iterator;
         }
@@ -108,6 +107,7 @@ public abstract class GetAwaitableNode extends Node {
         }
     }
 
+    @NeverDefault
     public static GetAwaitableNode create() {
         return GetAwaitableNodeGen.create();
     }

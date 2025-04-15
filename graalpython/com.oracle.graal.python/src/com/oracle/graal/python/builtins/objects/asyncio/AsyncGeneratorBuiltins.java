@@ -40,19 +40,20 @@
  */
 package com.oracle.graal.python.builtins.objects.asyncio;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ANEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -71,6 +72,9 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PAsyncGenerator)
 public final class AsyncGeneratorBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = AsyncGeneratorBuiltinsSlotsGen.SLOTS;
+
     private static void callHooks(VirtualFrame frame, PAsyncGen self, PythonContext.PythonThreadState state, CallUnaryMethodNode invokeFirstIter) {
         Object firstIter = state.getAsyncgenFirstIter();
         if (firstIter == null) {
@@ -158,7 +162,7 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___AITER__, declaresExplicitSelf = true, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.am_aiter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class AIter extends PythonUnaryBuiltinNode {
         @Specialization
@@ -167,7 +171,7 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ANEXT__, declaresExplicitSelf = true, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.am_anext, isComplex = true)
     @GenerateNodeFactory
     public abstract static class ANext extends PythonUnaryBuiltinNode {
         @Specialization

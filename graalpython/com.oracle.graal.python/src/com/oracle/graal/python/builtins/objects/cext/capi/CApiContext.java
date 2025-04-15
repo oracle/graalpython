@@ -112,7 +112,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -125,9 +124,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonSystemThreadTask;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.graal.python.util.Supplier;
 import com.oracle.graal.python.util.SuppressFBWarnings;
-import com.oracle.graal.python.util.WeakIdentityHashMap;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -1524,28 +1521,6 @@ public final class CApiContext extends CExtContext {
         long pointer = PythonUtils.coerceToLong(closure, InteropLibrary.getUncached());
         setClosurePointer(closure, delegate, executable, pointer);
         return pointer;
-    }
-
-    /**
-     * A cache for the wrappers of type slot methods. The key is a weak reference to the owner class
-     * and the value is a table of wrappers. In order to ensure pointer identity, it is important
-     * that we use the same wrapper instance as long as the class exists (and the slot wasn't
-     * updated). Also, the key's type is {@link PythonManagedClass} such that any
-     * {@link PythonBuiltinClassType} must be resolved, and we do not accidentally have two
-     * different entries for the same built-in class.
-     */
-    private final WeakIdentityHashMap<PythonManagedClass, PyProcsWrapper[]> procWrappers = new WeakIdentityHashMap<>();
-
-    @TruffleBoundary
-    public Object getOrCreateProcWrapper(PythonManagedClass owner, SlotMethodDef slot, Supplier<PyProcsWrapper> supplier) {
-        PyProcsWrapper[] slotWrappers = procWrappers.computeIfAbsent(owner, key -> new PyProcsWrapper[SlotMethodDef.values().length]);
-        int idx = slot.ordinal();
-        PyProcsWrapper wrapper = slotWrappers[idx];
-        if (wrapper == null) {
-            wrapper = supplier.get();
-            slotWrappers[idx] = wrapper;
-        }
-        return wrapper;
     }
 
     @TruffleBoundary

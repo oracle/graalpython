@@ -44,27 +44,23 @@ import static com.oracle.graal.python.nodes.ErrorMessages.ANEXT_INVALID_OBJECT;
 import static com.oracle.graal.python.nodes.ErrorMessages.ASYNC_FOR_NO_ANEXT_ITERATION;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
-@ImportStatic(SpecialMethodSlot.class)
 @GenerateInline(false) // used in bytecode root node
 public abstract class GetANextNode extends PNodeWithContext {
     public abstract Object execute(VirtualFrame frame, Object receiver);
@@ -80,24 +76,21 @@ public abstract class GetANextNode extends PNodeWithContext {
     @Specialization
     Object doGeneric(VirtualFrame frame, Object receiver,
                     @Bind("this") Node inliningTarget,
-                    @Cached(parameters = "ANext") LookupSpecialMethodSlotNode getANext,
                     @Cached GetClassNode getAsyncIterType,
+                    @Cached GetCachedTpSlotsNode getSlots,
+                    @Cached CallSlotUnaryNode callSlot,
                     @Cached PRaiseNode raiseNoANext,
-                    @Cached InlinedBranchProfile errorProfile,
-                    @Cached CallUnaryMethodNode callANext,
                     @Cached PRaiseNode raiseInvalidObject,
-                    @Cached(neverDefault = true) GetAwaitableNode getAwaitable) {
+                    @Cached GetAwaitableNode getAwaitable) {
         Object type = getAsyncIterType.execute(inliningTarget, receiver);
-        Object getter = getANext.execute(frame, type, receiver);
-        if (getter == PNone.NO_VALUE) {
-            errorProfile.enter(inliningTarget);
+        TpSlots slots = getSlots.execute(inliningTarget, type);
+        if (slots.am_anext() == null) {
             throw raiseNoANext.raise(inliningTarget, PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_ANEXT_ITERATION, receiver);
         }
-        Object anext = callANext.executeObject(frame, getter, receiver);
+        Object anext = callSlot.execute(frame, inliningTarget, slots.am_anext(), receiver);
         try {
             return getAwaitable.execute(frame, anext);
         } catch (PException e) {
-            errorProfile.enter(inliningTarget);
             throw raiseInvalidObject.raiseWithCause(inliningTarget, PythonBuiltinClassType.TypeError, e, ANEXT_INVALID_OBJECT, anext);
         }
     }

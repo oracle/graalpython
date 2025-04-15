@@ -26,8 +26,6 @@
 package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ANEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AWAIT__;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.ensureNoJavaString;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -36,7 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -96,15 +93,7 @@ public abstract class PythonBuiltins {
                             builtin.name());
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : toTruffleStringUncached(builtin.doc());
             int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-            PBuiltinFunction function;
-            if (isSlotMethod(builtin)) {
-                // HACK: TODO: we should not see any slots here anymore once all are converted
-                // to slots, then we can make the slot field in PBuiltinFunction final, for now,
-                // we patch it in TpSlots#wrapBuiltinSlots
-                function = PFactory.createWrapperDescriptor(language, tsName, null, numDefaults(builtin), flags, callTarget, null, null);
-            } else {
-                function = PFactory.createBuiltinFunction(language, tsName, null, numDefaults(builtin), flags, callTarget);
-            }
+            PBuiltinFunction function = PFactory.createBuiltinFunction(language, tsName, null, numDefaults(builtin), flags, callTarget);
             function.setAttribute(T___DOC__, builtinDoc);
             BoundBuiltinCallable<?> callable = function;
             if (builtin.isGetter() || builtin.isSetter()) {
@@ -120,13 +109,6 @@ public abstract class PythonBuiltins {
             }
             builtinFunctions.put(toTruffleStringUncached(builtin.name()), callable);
         });
-    }
-
-    // All methods that are really slots in CPython
-    private static final Set<String> SLOTS = Set.of(J___ANEXT__, J___AWAIT__);
-
-    private static boolean isSlotMethod(Builtin builtin) {
-        return builtin.name().startsWith("__") && SLOTS.contains(builtin.name());
     }
 
     /**

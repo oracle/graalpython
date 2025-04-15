@@ -124,7 +124,6 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
 
     /* Python C API functions */
 
-    FUN_GET_METHODS_FLAGS("get_methods_flags", INT64_T, PyTypeObject),
     FUN_PTR_COMPARE("truffle_ptr_compare", Int, Pointer, Pointer, Int),
     FUN_PTR_ADD("truffle_ptr_add", Pointer, Pointer, Py_ssize_t),
     FUN_PY_TRUFFLE_OBJECT_ARRAY_RELEASE("PyTruffle_ObjectArrayRelease", ArgDescriptor.Void, Pointer, Int),

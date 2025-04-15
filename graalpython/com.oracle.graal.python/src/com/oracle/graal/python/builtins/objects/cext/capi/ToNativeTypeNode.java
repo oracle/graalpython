@@ -74,7 +74,6 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -92,7 +91,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
@@ -105,21 +103,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ToNativeTypeNode {
 
-    private static Object getSlot(PythonManagedClass obj, SlotMethodDef slot) {
-        return LookupNativeSlotNode.executeUncached(obj, slot);
-    }
-
-    private static boolean hasAsyncMethods(PythonManagedClass obj) {
-        return (obj.getMethodsFlags() & MethodsFlags.ASYNC_METHODS) != 0;
-    }
-
-    private static Object allocatePyAsyncMethods(PythonManagedClass obj, Object nullValue) {
+    private static Object allocatePyAsyncMethods(TpSlots slots, Object nullValue) {
         Object mem = CStructAccess.AllocateNode.allocUncached(CStructs.PyAsyncMethods);
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
-        writePointerNode.write(mem, CFields.PyAsyncMethods__am_await, getSlot(obj, SlotMethodDef.AM_AWAIT));
-        writePointerNode.write(mem, CFields.PyAsyncMethods__am_aiter, getSlot(obj, SlotMethodDef.AM_AITER));
-        writePointerNode.write(mem, CFields.PyAsyncMethods__am_anext, getSlot(obj, SlotMethodDef.AM_ANEXT));
-        writePointerNode.write(mem, CFields.PyAsyncMethods__am_send, nullValue /*- getValue(obj, SlotMethodDef.AM_SEND) */);
+        writeGroupSlots(CFields.PyTypeObject__tp_as_async, slots, writePointerNode, mem, nullValue);
         return mem;
     }
 
@@ -224,7 +211,7 @@ public abstract class ToNativeTypeNode {
         } else {
             weaklistoffset = lookupNativeI64MemberInMRO(clazz, PyTypeObject__tp_weaklistoffset, SpecialAttributeNames.T___WEAKLISTOFFSET__);
         }
-        Object asAsync = hasAsyncMethods(clazz) ? allocatePyAsyncMethods(clazz, nullValue) : nullValue;
+        Object asAsync = slots.has_as_async() ? allocatePyAsyncMethods(slots, nullValue) : nullValue;
         Object asNumber = slots.has_as_number() ? allocatePyNumberMethods(slots, nullValue) : nullValue;
         Object asSequence = slots.has_as_sequence() ? allocatePySequenceMethods(slots, nullValue) : nullValue;
         Object asMapping = slots.has_as_mapping() ? allocatePyMappingMethods(slots, nullValue) : nullValue;
