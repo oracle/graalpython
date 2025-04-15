@@ -1,0 +1,364 @@
+diff --git a/src/deserialize/deserializer.rs b/src/deserialize/deserializer.rs
+index 41cf7f1..99cd68e 100644
+--- a/src/deserialize/deserializer.rs
++++ b/src/deserialize/deserializer.rs
+@@ -292,7 +292,10 @@ impl<'de> Deserializer<'de> {
+                 marker => Err(Error::InvalidType(marker)),
+             }?;
+             let value = self.deserialize()?;
++            #[cfg(not(GraalPy))]
+             let pyhash = unsafe { (*key.as_ptr().cast::<pyo3::ffi::PyASCIIObject>()).hash };
++            #[cfg(GraalPy)]
++            let pyhash = unsafe { pyo3::ffi::PyObject_Hash(key.as_ptr()) };
+             let _ = ffi!(_PyDict_SetItem_KnownHash(
+                 dict_ptr,
+                 key.as_ptr(),
+@@ -471,7 +474,7 @@ impl<'de> Deserializer<'de> {
+         let ptr = ffi!(PyTuple_New(len as pyo3::ffi::Py_ssize_t));
+         for i in 0..len {
+             let elem = self.deserialize_map_key()?;
+-            ffi!(PyTuple_SET_ITEM(
++            ffi!(PyTuple_SetItem(
+                 ptr,
+                 i as pyo3::ffi::Py_ssize_t,
+                 elem.as_ptr()
+diff --git a/src/ext.rs b/src/ext.rs
+index b2573b4..9668d4f 100644
+--- a/src/ext.rs
++++ b/src/ext.rs
+@@ -22,7 +22,7 @@ unsafe extern "C" fn ext_new(
+         );
+         return null_mut();
+     }
+-    let tag = PyTuple_GET_ITEM(args, 0);
++    let tag = PyTuple_GetItem(args, 0);
+     if PyLong_Check(tag) == 0 {
+         PyErr_SetString(
+             PyExc_TypeError,
+@@ -30,7 +30,7 @@ unsafe extern "C" fn ext_new(
+         );
+         return null_mut();
+     }
+-    let data = PyTuple_GET_ITEM(args, 1);
++    let data = PyTuple_GetItem(args, 1);
+     if PyBytes_Check(data) == 0 {
+         PyErr_SetString(
+             PyExc_TypeError,
+diff --git a/src/ffi.rs b/src/ffi.rs
+index 4e5ddc3..20c9db4 100644
+--- a/src/ffi.rs
++++ b/src/ffi.rs
+@@ -7,13 +7,16 @@ use std::ptr::NonNull;
+ #[allow(non_snake_case)]
+ #[inline(always)]
+ pub unsafe fn PyBytes_AS_STRING(op: *mut PyObject) -> *const c_char {
+-    &(*op.cast::<PyBytesObject>()).ob_sval as *const c_char
++    #[cfg(not(any(PyPy, GraalPy, Py_LIMITED_API)))]
++    return &(*op.cast::<PyBytesObject>()).ob_sval as *const c_char;
++    #[cfg(any(PyPy, GraalPy, Py_LIMITED_API))]
++    return crate::PyBytes_AsString(op);
+ }
+ 
+ #[allow(non_snake_case)]
+ #[inline(always)]
+ pub unsafe fn PyBytes_GET_SIZE(op: *mut PyObject) -> Py_ssize_t {
+-    (*op.cast::<PyVarObject>()).ob_size
++    Py_SIZE(op)
+ }
+ 
+ #[repr(C)]
+@@ -63,11 +66,21 @@ pub fn pylong_is_positive(op: *mut PyObject) -> bool {
+     unsafe { (*(op as *mut PyLongObject)).long_value.lv_tag & SIGN_MASK == 0 }
+ }
+ 
+-#[cfg(not(Py_3_12))]
++#[cfg(not(any(Py_3_12, GraalPy)))]
+ pub fn pylong_is_positive(op: *mut PyObject) -> bool {
+     unsafe { (*(op as *mut PyVarObject)).ob_size > 0 }
+ }
+ 
++extern "C" {
++    #[cfg(not(PyPy))]
++    pub fn _PyLong_Sign(v: *mut PyObject) -> c_int;
++}
++
++#[cfg(GraalPy)]
++pub fn pylong_is_positive(op: *mut PyObject) -> bool {
++    unsafe { _PyLong_Sign(op) > 0 }
++}
++
+ pub struct PyDictIter {
+     op: *mut PyObject,
+     pos: isize,
+diff --git a/src/lib.rs b/src/lib.rs
+index f10b1c4..1a9768b 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -143,7 +143,7 @@ fn raise_unpackb_exception(msg: &str) -> *mut PyObject {
+         let err_msg =
+             PyUnicode_FromStringAndSize(msg.as_ptr() as *const c_char, msg.len() as isize);
+         let args = PyTuple_New(1);
+-        PyTuple_SET_ITEM(args, 0, err_msg);
++        PyTuple_SetItem(args, 0, err_msg);
+         PyErr_SetObject(typeref::MsgpackDecodeError, args);
+         Py_DECREF(args);
+     };
+@@ -199,10 +199,10 @@ pub unsafe extern "C" fn unpackb(
+     if !kwnames.is_null() {
+         let tuple_size = PyTuple_GET_SIZE(kwnames);
+         for i in 0..tuple_size {
+-            let arg = PyTuple_GET_ITEM(kwnames, i as Py_ssize_t);
+-            if arg == typeref::EXT_HOOK {
++            let arg = PyTuple_GetItem(kwnames, i as Py_ssize_t);
++            if PyUnicode_Compare(arg, typeref::EXT_HOOK) == 0 {
+                 ext_hook = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
+-            } else if arg == typeref::OPTION {
++            } else if PyUnicode_Compare(arg, typeref::OPTION) == 0 {
+                 optsptr = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
+             } else {
+                 return raise_unpackb_exception("unpackb() got an unexpected keyword argument");
+@@ -247,15 +247,15 @@ pub unsafe extern "C" fn packb(
+     if !kwnames.is_null() {
+         let tuple_size = PyTuple_GET_SIZE(kwnames);
+         for i in 0..tuple_size {
+-            let arg = PyTuple_GET_ITEM(kwnames, i as Py_ssize_t);
+-            if arg == typeref::DEFAULT {
++            let arg = PyTuple_GetItem(kwnames, i as Py_ssize_t);
++            if PyUnicode_Compare(arg, typeref::DEFAULT) == 0 {
+                 if unlikely!(default.is_some()) {
+                     return raise_packb_exception(
+                         "packb() got multiple values for argument: 'default'",
+                     );
+                 }
+                 default = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
+-            } else if arg == typeref::OPTION {
++            } else if PyUnicode_Compare(arg, typeref::OPTION) == 0 {
+                 if unlikely!(optsptr.is_some()) {
+                     return raise_packb_exception(
+                         "packb() got multiple values for argument: 'option'",
+diff --git a/src/serialize/datetime.rs b/src/serialize/datetime.rs
+index 63212d6..5ac2b2b 100644
+--- a/src/serialize/datetime.rs
++++ b/src/serialize/datetime.rs
+@@ -61,9 +61,14 @@ pub struct Time {
+ 
+ impl Time {
+     pub fn new(ptr: *mut pyo3::ffi::PyObject, opts: Opt) -> Result<Self, TimeError> {
++        #[cfg(not(GraalPy))]
+         if unsafe { (*(ptr as *mut pyo3::ffi::PyDateTime_Time)).hastzinfo != 0 } {
+             return Err(TimeError::HasTimezone);
+         }
++        #[cfg(GraalPy)]
++        if unsafe { pyo3::ffi::PyDateTime_TIME_GET_TZINFO(ptr) != crate::typeref::NONE } {
++            return Err(TimeError::HasTimezone);
++        }
+         Ok(Time {
+             ptr: ptr,
+             opts: opts,
+@@ -114,23 +119,28 @@ impl std::fmt::Display for DateTimeError {
+ }
+ 
+ fn utcoffset(ptr: *mut pyo3::ffi::PyObject) -> Result<Offset, DateTimeError> {
++    #[cfg(not(GraalPy))]
+     if !unsafe { (*(ptr as *mut pyo3::ffi::PyDateTime_DateTime)).hastzinfo == 1 } {
+         return Ok(Offset::default());
+     }
+ 
+     let tzinfo = ffi!(PyDateTime_DATE_GET_TZINFO(ptr));
++    #[cfg(GraalPy)]
++    if unsafe { tzinfo == crate::typeref::NONE } {
++        return Ok(Offset::default());
++    }
+     let py_offset: *mut pyo3::ffi::PyObject;
+     if ffi!(PyObject_HasAttr(tzinfo, CONVERT_METHOD_STR)) == 1 {
+         // pendulum
+-        py_offset = ffi!(PyObject_CallMethodNoArgs(ptr, UTCOFFSET_METHOD_STR));
++        py_offset = unsafe { pyo3::ffi::compat::PyObject_CallMethodNoArgs(ptr, UTCOFFSET_METHOD_STR) };
+     } else if ffi!(PyObject_HasAttr(tzinfo, NORMALIZE_METHOD_STR)) == 1 {
+         // pytz
+-        let normalized = ffi!(PyObject_CallMethodOneArg(tzinfo, NORMALIZE_METHOD_STR, ptr));
+-        py_offset = ffi!(PyObject_CallMethodNoArgs(normalized, UTCOFFSET_METHOD_STR));
++        let normalized = ffi!(PyObject_CallMethodObjArgs(tzinfo, NORMALIZE_METHOD_STR, ptr, std::ptr::null_mut::<crate::PyObject>()));
++        py_offset = unsafe { pyo3::ffi::compat::PyObject_CallMethodNoArgs(normalized, UTCOFFSET_METHOD_STR) };
+         ffi!(Py_DECREF(normalized));
+     } else if ffi!(PyObject_HasAttr(tzinfo, DST_STR)) == 1 {
+         // dateutil/arrow, datetime.timezone.utc
+-        py_offset = ffi!(PyObject_CallMethodOneArg(tzinfo, UTCOFFSET_METHOD_STR, ptr));
++        py_offset = ffi!(PyObject_CallMethodObjArgs(tzinfo, UTCOFFSET_METHOD_STR, ptr, std::ptr::null_mut::<crate::PyObject>()));
+     } else {
+         return Err(DateTimeError::LibraryUnsupported);
+     }
+@@ -193,7 +203,10 @@ impl TimeLike for DateTime {
+ 
+ impl DateTimeLike for DateTime {
+     fn has_tz(&self) -> bool {
+-        unsafe { (*(self.ptr as *mut pyo3::ffi::PyDateTime_DateTime)).hastzinfo == 1 }
++        #[cfg(not(GraalPy))]
++        return unsafe { (*(self.ptr as *mut pyo3::ffi::PyDateTime_DateTime)).hastzinfo == 1 };
++        #[cfg(GraalPy)]
++        return unsafe { pyo3::ffi::PyDateTime_TIME_GET_TZINFO(self.ptr) != crate::typeref::NONE };
+     }
+ 
+     fn offset(&self) -> Offset {
+diff --git a/src/serialize/numpy.rs b/src/serialize/numpy.rs
+index afc5cdf..4d007bd 100644
+--- a/src/serialize/numpy.rs
++++ b/src/serialize/numpy.rs
+@@ -392,8 +392,8 @@ impl NumpyDatetimeUnit {
+     fn from_pyobject(ptr: *mut PyObject) -> Self {
+         let dtype = ffi!(PyObject_GetAttr(ptr, DTYPE_STR));
+         let descr = ffi!(PyObject_GetAttr(dtype, DESCR_STR));
+-        let el0 = ffi!(PyList_GET_ITEM(descr, 0));
+-        let descr_str = ffi!(PyTuple_GET_ITEM(el0, 1));
++        let el0 = ffi!(PyList_GetItem(descr, 0));
++        let descr_str = ffi!(PyTuple_GetItem(el0, 1));
+         let uni = crate::unicode::unicode_to_str(descr_str).unwrap();
+         if uni.len() < 5 {
+             return Self::NaT;
+diff --git a/src/serialize/serializer.rs b/src/serialize/serializer.rs
+index 309e6e1..6f7dec7 100644
+--- a/src/serialize/serializer.rs
++++ b/src/serialize/serializer.rs
+@@ -864,7 +864,7 @@ impl Serialize for DictTupleKey {
+         let len = ffi!(PyTuple_GET_SIZE(self.ptr)) as usize;
+         let mut seq = serializer.serialize_seq(Some(len)).unwrap();
+         for i in 0..len {
+-            let item = ffi!(PyTuple_GET_ITEM(self.ptr, i as isize));
++            let item = ffi!(PyTuple_GetItem(self.ptr, i as isize));
+             let value = DictKey::new(item, self.opts, self.recursion + 1);
+             seq.serialize_element(&value)?;
+         }
+diff --git a/src/serialize/tuple.rs b/src/serialize/tuple.rs
+index fa81cb6..9b66019 100644
+--- a/src/serialize/tuple.rs
++++ b/src/serialize/tuple.rs
+@@ -41,7 +41,7 @@ impl Serialize for Tuple {
+         let len = ffi!(PyTuple_GET_SIZE(self.ptr)) as usize;
+         let mut seq = serializer.serialize_seq(Some(len)).unwrap();
+         for i in 0..len {
+-            let item = ffi!(PyTuple_GET_ITEM(self.ptr, i as isize));
++            let item = ffi!(PyTuple_GetItem(self.ptr, i as isize));
+             let value = PyObject::new(
+                 item,
+                 self.opts,
+diff --git a/src/serialize/writer.rs b/src/serialize/writer.rs
+index a790bdd..35346d9 100644
+--- a/src/serialize/writer.rs
++++ b/src/serialize/writer.rs
+@@ -27,7 +27,6 @@ impl BytesWriter {
+     pub fn finish(&mut self) -> NonNull<PyObject> {
+         unsafe {
+             std::ptr::write(self.buffer_ptr(), 0);
+-            (*self.bytes.cast::<PyVarObject>()).ob_size = self.len as Py_ssize_t;
+             self.resize(self.len);
+             NonNull::new_unchecked(self.bytes as *mut PyObject)
+         }
+@@ -35,10 +34,14 @@ impl BytesWriter {
+ 
+     fn buffer_ptr(&self) -> *mut u8 {
+         unsafe {
+-            std::mem::transmute::<*mut [c_char; 1], *mut u8>(std::ptr::addr_of_mut!(
++            #[cfg(not(GraalPy))]
++            return std::mem::transmute::<*mut [c_char; 1], *mut u8>(std::ptr::addr_of_mut!(
+                 (*self.bytes).ob_sval
+             ))
+-            .add(self.len)
++            .add(self.len);
++            #[cfg(GraalPy)]
++            return std::mem::transmute::<*mut i8, *mut u8>(PyBytes_AsString(self.bytes.cast::<PyObject>()))
++            .add(self.len);
+         }
+     }
+ 
+diff --git a/src/unicode.rs b/src/unicode.rs
+index 53aca09..552fa6c 100644
+--- a/src/unicode.rs
++++ b/src/unicode.rs
+@@ -6,6 +6,7 @@ use pyo3::ffi::*;
+ 
+ // see unicodeobject.h for documentation
+ 
++#[cfg(not(GraalPy))]
+ pub fn unicode_from_str(buf: &str) -> *mut PyObject {
+     if buf.is_empty() {
+         ffi!(Py_INCREF(EMPTY_UNICODE));
+@@ -27,6 +28,13 @@ pub fn unicode_from_str(buf: &str) -> *mut PyObject {
+     }
+ }
+ 
++#[cfg(GraalPy)]
++pub fn unicode_from_str(buf: &str) -> *mut PyObject {
++    unsafe {
++        PyUnicode_FromStringAndSize(buf.as_ptr() as *const i8, buf.len() as isize)
++    }
++}
++
+ fn pyunicode_ascii(buf: &str) -> *mut PyObject {
+     unsafe {
+         let ptr = ffi!(PyUnicode_New(buf.len() as isize, 127));
+@@ -80,6 +88,7 @@ fn pyunicode_fourbyte(buf: &str, num_chars: usize) -> *mut PyObject {
+ 
+ #[inline]
+ pub fn hash_str(op: *mut PyObject) -> Py_hash_t {
++    #[cfg(not(GraalPy))]
+     unsafe {
+         let data_ptr: *mut c_void = if (*op.cast::<PyASCIIObject>()).compact() == 1
+             && (*op.cast::<PyASCIIObject>()).ascii() == 1
+@@ -92,7 +101,11 @@ pub fn hash_str(op: *mut PyObject) -> Py_hash_t {
+             (*(op as *mut PyASCIIObject)).length * ((*(op as *mut PyASCIIObject)).kind()) as isize;
+         let hash = _Py_HashBytes(data_ptr, num_bytes);
+         (*op.cast::<PyASCIIObject>()).hash = hash;
+-        hash
++        return hash;
++    }
++    #[cfg(GraalPy)]
++    unsafe {
++        return PyObject_Hash(op);
+     }
+ }
+ 
+@@ -109,19 +122,24 @@ pub fn unicode_to_str_via_ffi(op: *mut PyObject) -> Option<&'static str> {
+ 
+ #[inline]
+ pub fn unicode_to_str(op: *mut PyObject) -> Option<&'static str> {
++    #[cfg(not(GraalPy))]
+     unsafe {
+         if unlikely!((*op.cast::<PyASCIIObject>()).compact() == 0) {
+-            unicode_to_str_via_ffi(op)
++            return unicode_to_str_via_ffi(op);
+         } else if (*op.cast::<PyASCIIObject>()).ascii() == 1 {
+             let ptr = op.cast::<PyASCIIObject>().offset(1) as *const u8;
+             let len = (*op.cast::<PyASCIIObject>()).length as usize;
+-            Some(str_from_slice!(ptr, len))
++            return Some(str_from_slice!(ptr, len));
+         } else if (*op.cast::<PyCompactUnicodeObject>()).utf8_length != 0 {
+             let ptr = (*op.cast::<PyCompactUnicodeObject>()).utf8 as *const u8;
+             let len = (*op.cast::<PyCompactUnicodeObject>()).utf8_length as usize;
+-            Some(str_from_slice!(ptr, len))
++            return Some(str_from_slice!(ptr, len));
+         } else {
+-            unicode_to_str_via_ffi(op)
++            return unicode_to_str_via_ffi(op);
+         }
+     }
++    #[cfg(GraalPy)]
++    unsafe {
++        return unicode_to_str_via_ffi(op);
++    }
+ }
+diff --git a/src/util.rs b/src/util.rs
+index 2bcc32d..89faf1a 100644
+--- a/src/util.rs
++++ b/src/util.rs
+@@ -8,7 +8,7 @@ macro_rules! py_is {
+ 
+ macro_rules! ob_type {
+     ($obj:expr) => {
+-        unsafe { (*($obj as *mut pyo3::ffi::PyObject)).ob_type }
++        unsafe { pyo3::ffi::Py_TYPE($obj as *mut pyo3::ffi::PyObject) }
+     };
+ }
+ 
+-- 
+2.43.0
+
