@@ -299,12 +299,10 @@ def python(args, **kwargs):
 
 
 def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, main_class=GRAALPYTHON_MAIN_CLASS, minimal=False, **kwargs):
-    experimental_opt_added = False
     if not any(arg.startswith("--python.CAPI") for arg in args):
         capi_home = _get_capi_home()
         args.insert(0, "--python.CAPI=%s" % capi_home)
         args.insert(0, "--experimental-options")
-        experimental_opt_added = True
 
     if not env:
         env = os.environ.copy()
