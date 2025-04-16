@@ -1053,7 +1053,8 @@ def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, t
     d = tempfile.mkdtemp()
     try:
         shutil.copytree(hpy_root, os.path.join(d, "hpy"))
-        hpy_test_root = os.path.join(d, "hpy", "test")
+        hpy_root = os.path.join(d, "hpy")
+        hpy_test_root = os.path.join(hpy_root, "test")
         env = env or os.environ.copy()
         delete_bad_env_keys(env)
         mx.run([python_binary] + args + ["-m", "venv", os.path.join(d, "venv")], nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
