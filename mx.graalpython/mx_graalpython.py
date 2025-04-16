@@ -380,12 +380,7 @@ def _dev_pythonhome():
     return os.path.join(SUITE.dir, "graalpython")
 
 
-def punittest(ars, report=False):
-    """
-    Runs GraalPython junit tests and memory leak tests, which can be skipped using --no-leak-tests.
-    Pass --regex to further filter the junit and TSK tests. GraalPy tests are always run in two configurations:
-    with language home on filesystem and with language home served from the Truffle resources.
-    """
+def get_path_with_patchelf():
     path = os.environ.get("PATH", "")
     if mx.is_linux() and not shutil.which("patchelf"):
         venv = Path(SUITE.get_output_root()).absolute() / "patchelf-venv"
@@ -396,7 +391,16 @@ def punittest(ars, report=False):
             subprocess.check_call([sys.executable, "-m", "venv", str(venv)])
             subprocess.check_call([str(venv / "bin" / "pip"), "install", "patchelf"])
             mx.log(f"{time.strftime('[%H:%M:%S] ')} Building patchelf-venv with {sys.executable}... [duration: {time.time() - t0}]")
+    return path
 
+
+def punittest(ars, report=False):
+    """
+    Runs GraalPython junit tests and memory leak tests, which can be skipped using --no-leak-tests.
+    Pass --regex to further filter the junit and TSK tests. GraalPy tests are always run in two configurations:
+    with language home on filesystem and with language home served from the Truffle resources.
+    """
+    path = get_path_with_patchelf()
     args = [] if ars is None else ars
     @dataclass
     class TestConfig:
@@ -1214,6 +1218,8 @@ def graalpython_gate_runner(args, tasks):
                             f'-Dcom.oracle.graal.python.test.polyglot_repo={mvn_repo_path}',
                             f'-Dcom.oracle.graal.python.test.central_repo={central_override}',
                             '--batch-mode']
+
+            env['PATH'] = get_path_with_patchelf()
 
             mx.log("Running integration JUnit tests on GraalVM SDK")
             env['JAVA_HOME'] = graalvm_jdk()
