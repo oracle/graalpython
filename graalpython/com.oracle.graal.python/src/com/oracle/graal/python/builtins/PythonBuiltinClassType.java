@@ -428,7 +428,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     cache_info_type:    namedtuple class with the fields:
                                            hits misses currsize maxsize
                     """)),
-    PDeque(J_DEQUE, PythonObject, newBuilder().publishInModule("_collections").basetype().slots(DequeBuiltins.SLOTS).methodsFlags(DEQUE_M_FLAGS)),
+    PDeque(J_DEQUE, PythonObject, newBuilder().moduleName("collections").publishInModule("_collections").basetype().slots(DequeBuiltins.SLOTS).methodsFlags(DEQUE_M_FLAGS)),
     PTupleGetter(J_TUPLE_GETTER, PythonObject, newBuilder().publishInModule("_collections").basetype().slots(TupleGetterBuiltins.SLOTS)),
     PDequeIter(J_DEQUE_ITER, PythonObject, newBuilder().publishInModule("_collections").slots(DequeIterCommonBuiltins.SLOTS, DequeIterBuiltins.SLOTS)),
     PDequeRevIter(J_DEQUE_REV_ITER, PythonObject, newBuilder().publishInModule("_collections").slots(DequeIterCommonBuiltins.SLOTS, DequeRevIterBuiltins.SLOTS)),

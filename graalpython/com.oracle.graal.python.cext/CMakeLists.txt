@@ -87,6 +87,7 @@ if(WIN32)
         MS_WINDOWS
         Py_ENABLE_SHARED
         HAVE_DECLSPEC_DLL
+        NTDDI_VERSION=NTDDI_WINBLUE
     )
 endif()
 

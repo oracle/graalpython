@@ -108,7 +108,10 @@ def get_setuptools(setuptools='setuptools==67.6.1'):
         import venv
         temp_env = Path(tempfile.mkdtemp())
         venv.create(temp_env, with_pip=True)
-        py_executable = temp_env / 'bin' / 'python3'
+        if sys.platform.startswith('win32'):
+            py_executable = temp_env / 'Scripts' / 'python.exe'
+        else:
+            py_executable = temp_env / 'bin' / 'python3'
         subprocess.run([py_executable, "-m", "pip", "install", "--target", str(py_site), setuptools], check=True)
         print('setuptools is installed in %s' % py_site)
         shutil.rmtree(temp_env)

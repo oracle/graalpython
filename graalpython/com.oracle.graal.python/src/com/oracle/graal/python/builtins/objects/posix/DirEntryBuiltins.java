@@ -422,6 +422,16 @@ public final class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "is_junction", minNumOfPositionalArgs = 1, parameterNames = {"$self"})
+    @GenerateNodeFactory
+    abstract static class IsJunctionNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        static boolean isJunction(@SuppressWarnings("unused") PDirEntry self) {
+            return false;
+        }
+    }
+
     @Builtin(name = J___CLASS_GETITEM__, minNumOfPositionalArgs = 2, isClassmethod = true)
     @GenerateNodeFactory
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {

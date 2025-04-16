@@ -41,11 +41,13 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.LOGGER;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
+import static com.oracle.graal.python.nodes.ErrorMessages.S;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -417,8 +419,12 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         static Object setOption(VirtualFrame frame, PSSLContext self, Object valueObj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
-                        @Cached CastToJavaLongExactNode cast) {
+                        @Cached CastToJavaLongExactNode cast,
+                        @Cached PRaiseNode raiseNode) {
             long value = cast.execute(inliningTarget, indexNode.execute(frame, inliningTarget, valueObj));
+            if (value < 0) {
+                throw raiseNode.raise(inliningTarget, OverflowError);
+            }
             // TODO validate the options
             // TODO use the options
             self.setOptions(value);
@@ -825,13 +831,13 @@ public final class SSLContextBuiltins extends PythonBuiltins {
             } catch (CertificateException ex) {
                 String msg = ex.getMessage();
                 if (msg != null) {
-                    if (msg.contains("No certificate data found")) {
+                    if (msg.contains("Empty input")) {
                         throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_NOT_ENOUGH_DATA, ErrorMessages.NOT_ENOUGH_DATA);
                     }
                 } else {
                     msg = "error while reading cadata";
                 }
-                throw PConstructAndRaiseNode.raiseUncachedSSLError(null, SSLErrorCode.ERROR_SSL, toTruffleStringUncached(msg));
+                throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, S, toTruffleStringUncached(msg));
             }
         }
     }

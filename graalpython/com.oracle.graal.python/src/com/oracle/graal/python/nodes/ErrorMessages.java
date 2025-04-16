@@ -65,7 +65,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ARG_D_MUST_BE_S_NOT_P = tsLiteral("%s argument %d must be %s, not %p");
     public static final TruffleString ARG_D_MUST_BE_S_OR_S = tsLiteral("%s argument %d must be '%s' or '%s'");
     public static final TruffleString ARG_S_MUST_BE_A_LIST_OR_TUPLE = tsLiteral("%s must be a list or tuple");
-    public static final TruffleString ARG_IS_EMPTY_SEQ = tsLiteral("%s() arg is an empty sequence");
+    public static final TruffleString ITERABLE_ARG_IS_EMPTY = tsLiteral("%s() iterable argument is empty");
     public static final TruffleString ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD = tsLiteral("argument must be an int, or have a fileno() method.");
     public static final TruffleString ARG_MUST_BE_NUMBER = tsLiteral("%s argument must be a number, not '%p'");
     public static final TruffleString S_ARG_MUST_BE_S_NOT_P = tsLiteral("%s argument must be %s, not %p");
@@ -558,6 +558,7 @@ public abstract class ErrorMessages {
     public static final TruffleString NAME_MUST_BE_A_STRING = tsLiteral("__name__ must be a string");
     public static final TruffleString NAME_NOT_DEFINED = tsLiteral("name '%s' is not defined");
     public static final TruffleString NAME_NOT_IN_GLOBALS = tsLiteral("'__name__' not in globals");
+    public static final TruffleString NAMEDEXPR_TARGET_MUST_BE_A_NAME = tsLiteral("NamedExpr target must be a Name");
     public static final TruffleString NAMELESS_MODULE = tsLiteral("nameless module");
     public static final TruffleString NATIVE_S_SUBTYPES_NOT_IMPLEMENTED = tsLiteral("native %s subtypes not implemented");
     public static final TruffleString NEED_BYTELIKE_OBJ = tsLiteral("decoding to str: need a bytes-like object, %p found");
@@ -728,6 +729,7 @@ public abstract class ErrorMessages {
     public static final TruffleString SUBSECTION_NOT_FOUND = tsLiteral("subsection not found");
     public static final TruffleString SUBSTITUTION_OF_BARE_TYPEVARTUPLE_IS_NOT_SUPPORTED = tsLiteral("Substitution of bare TypeVarTuple is not supported");
     public static final TruffleString SUB_VIEWS_NOT_IMPLEMENTED = tsLiteral("sub-views are not implemented");
+    public static final TruffleString SUPER_ARG0_DELETED = tsLiteral("super(): arg[0] deleted");
     public static final TruffleString SUPER_OBJ_MUST_BE_INST_SUB_OR_TYPE = tsLiteral("super(type, obj): obj must be an instance or subtype of type");
     public static final TruffleString TAKES_A_DICT_AS_SECOND_ARG_IF_ANY = tsLiteral("%s() takes a dict as second arg, if any");
     public static final TruffleString TAKES_A_D_SEQUENCE = tsLiteral("%s() takes a %d-sequence (%d-sequence given)");
@@ -907,7 +909,7 @@ public abstract class ErrorMessages {
     public static final TruffleString N_NOT_SUBTYPE_OF_ARRAY = tsLiteral("%n is not a subtype of array");
     public static final TruffleString CANNOT_BE_CONVERTED_TO_POINTER = tsLiteral("cannot be converted to pointer");
     public static final TruffleString PY_OBJ_IS_NULL = tsLiteral("PyObject is NULL");
-    public static final TruffleString OUT_OF_RANGE_FLOAT_NOT_JSON_COMPLIANT = tsLiteral("Out of range float values are not JSON compliant");
+    public static final TruffleString OUT_OF_RANGE_FLOAT_NOT_JSON_COMPLIANT = tsLiteral("Out of range float values are not JSON compliant: %s");
     public static final TruffleString CIRCULAR_REFERENCE_DETECTED = tsLiteral("Circular reference detected");
     public static final TruffleString ITEMS_MUST_RETURN_2_TUPLES = tsLiteral("items must return 2-tuples");
     public static final TruffleString CAN_ONLY_EXTEND_WITH_ARRAY_OF_SAME_KIND = tsLiteral("can only extend with array of same kind");
@@ -968,7 +970,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INIT_FUNC_RETURNED_UNINT_OBJ = tsLiteral("init function of %s returned uninitialized object");
     public static final TruffleString FUNC_DIDNT_RETURN_INT = tsLiteral("function '%s' did not return an integer");
     public static final TruffleString UNABLE_SET_DICT_OF_OBJ = tsLiteral("Unable to set dict of object of type %p");
-    public static final TruffleString CANT_INSTANTIATE_ABSTRACT_CLASS_WITH_ABSTRACT_METHODS = tsLiteral("Can't instantiate abstract class %N with abstract method%s %s");
+    public static final TruffleString CANT_INSTANTIATE_ABSTRACT_CLASS_WITH_ABSTRACT_METHODS = tsLiteral("Can't instantiate abstract class %N without an implementation for abstract method%s '%s'");
     public static final TruffleString YEAR_OUT_OF_RANGE = tsLiteral("year out of range");
     public static final TruffleString MONTH_OUT_OF_RANGE = tsLiteral("month out of range");
     public static final TruffleString DAY_OF_MONTH_OUT_OF_RANGE = tsLiteral("day of month out of range");

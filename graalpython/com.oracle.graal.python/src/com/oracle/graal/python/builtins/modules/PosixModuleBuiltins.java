@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -3445,34 +3444,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             return new PosixPath(value, checkPath(inliningTarget, path, raiseNode), true);
         }
 
-        @Specialization(guards = {"!isHandled(value)", "bufferAcquireLib.hasBuffer(value)"}, limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        PosixFileHandle doBuffer(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
-                        @Bind PythonContext context,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @CachedLibrary("value") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached WarningsModuleBuiltins.WarnNode warningNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
-            PythonLanguage language = context.getLanguage(inliningTarget);
-            Object buffer = bufferAcquireLib.acquireReadonly(value, frame, context, language, indirectCallData);
-            try {
-                warningNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
-                                ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName, getAllowedTypes(), value);
-                Object path = posixLib.createPathFromBytes(context.getPosixSupport(), bufferLib.getCopiedByteArray(value));
-                return new PosixPath(value, checkPath(inliningTarget, path, raiseNode), true);
-            } finally {
-                bufferLib.release(buffer, frame, context, language, indirectCallData);
-            }
-        }
-
-        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "allowFd", "indexCheckNode.execute(this, value)"}, limit = "1")
+        @Specialization(guards = {"!isHandled(value)", "allowFd", "indexCheckNode.execute(this, value)"}, limit = "1")
         @SuppressWarnings("truffle-static-method")
         PosixFileHandle doIndex(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @SuppressWarnings("unused") @Exclusive @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberIndexNode indexNode,
                         @Exclusive @Cached CastToJavaLongLossyNode castToLongNode,
@@ -3481,11 +3456,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             return new PosixFd(value, DirFdConversionNode.longToFd(inliningTarget, castToLongNode.execute(inliningTarget, o), raiseNode));
         }
 
-        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "!allowFd || !indexCheckNode.execute(this, value)"}, limit = "1")
+        @Specialization(guards = {"!isHandled(value)", "!allowFd || !indexCheckNode.execute(this, value)"}, limit = "1")
         @SuppressWarnings("truffle-static-method")
         PosixFileHandle doGeneric(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @SuppressWarnings("unused") @Exclusive @Cached PyIndexCheckNode indexCheckNode,
                         @Cached("create(T___FSPATH__)") LookupAndCallUnaryNode callFSPath,
                         @Exclusive @Cached BytesNodes.ToBytesNode toByteArrayNode,

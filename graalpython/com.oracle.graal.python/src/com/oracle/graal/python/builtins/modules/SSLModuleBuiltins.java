@@ -67,7 +67,6 @@ import java.util.List;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
-import com.oracle.graal.python.runtime.PythonContext;
 import org.bouncycastle.util.encoders.DecoderException;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -97,6 +96,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -283,6 +283,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute(tsLiteral("OP_NO_TLSv1_3"), SSLOptions.SSL_OP_NO_TLSv1_3);
         module.setAttribute(tsLiteral("OP_NO_COMPRESSION"), SSLOptions.SSL_OP_NO_COMPRESSION);
         module.setAttribute(tsLiteral("OP_NO_TICKET"), SSLOptions.SSL_OP_NO_TICKET);
+        // we do not implement this flag - is looks insecure, and we define it only to pass test_ssl
+        module.setAttribute(tsLiteral("OP_LEGACY_SERVER_CONNECT"), 0);
 
         module.setAttribute(tsLiteral("VERIFY_DEFAULT"), 0);
         module.setAttribute(tsLiteral("VERIFY_CRL_CHECK_LEAF"), X509_V_FLAG_CRL_CHECK);

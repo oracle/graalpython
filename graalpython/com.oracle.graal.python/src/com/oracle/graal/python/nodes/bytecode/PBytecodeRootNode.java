@@ -5990,4 +5990,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_TRUE_O;
         }
     }
+
+    public boolean hasSelf() {
+        return selfIndex >= 0;
+    }
 }

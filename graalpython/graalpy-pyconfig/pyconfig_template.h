@@ -57,7 +57,7 @@
 // relevant for code that is compiled without bitcode and will run only
 // natively. Since the pythonjni library contains all the trampolines to call
 // into the python-native.dll in this case, we must only depend on that.
-#  pragma comment(lib, "python311.lib")
+#  pragma comment(lib, "python312.lib")
 # endif
 #endif
 

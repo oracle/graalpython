@@ -32,7 +32,6 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
@@ -49,7 +48,9 @@ import com.oracle.graal.python.builtins.objects.slice.SliceNodes.SliceCastToToBi
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.SliceExactCastToInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompare;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PySliceNew;
@@ -79,7 +80,6 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSlice)
-@HashNotImplemented
 public final class SliceBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = SliceBuiltinsSlotsGen.SLOTS;
 
@@ -303,6 +303,34 @@ public final class SliceBuiltins extends PythonBuiltins {
         static PTuple lengthNone(@SuppressWarnings("unused") PSlice self, @SuppressWarnings("unused") Object length,
                         @Bind("this") Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError);
+        }
+    }
+
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
+    @GenerateNodeFactory
+    public abstract static class HashNode extends HashBuiltinNode {
+        @Specialization
+        static long computeHash(VirtualFrame frame, PSlice self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectHashNode hashNode) {
+            int len = 3;
+            long multiplier = 0xf4243;
+            long hash = 0x345678;
+            long tmp = hashNode.execute(frame, inliningTarget, self.getStart());
+            hash = (hash ^ tmp) * multiplier;
+            multiplier += 82520 + len + len;
+            tmp = hashNode.execute(frame, inliningTarget, self.getStop());
+            hash = (hash ^ tmp) * multiplier;
+            multiplier += 82520 + len + len;
+            tmp = hashNode.execute(frame, inliningTarget, self.getStep());
+            hash = (hash ^ tmp) * multiplier;
+
+            hash += 97531;
+
+            if (hash == -1) {
+                hash = -2;
+            }
+            return hash;
         }
     }
 

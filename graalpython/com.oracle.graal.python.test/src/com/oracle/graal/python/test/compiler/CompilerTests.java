@@ -1052,7 +1052,7 @@ public class CompilerTests extends PythonTests {
     public void testYieldOutsideFunction() {
         checkSyntaxErrorMessage("yield", "'yield' outside function");
         checkSyntaxErrorMessage("class foo:yield 1", "'yield' outside function");
-        checkSyntaxErrorMessage("class foo:yield from ()", "'yield' outside function");
+        checkSyntaxErrorMessage("class foo:yield from ()", "'yield from' outside function");
         checkSyntaxErrorMessage("def g(a:(yield)): pass", "'yield' outside function");
         checkSyntaxErrorMessage("yield x", "'yield' outside function");
         checkSyntaxErrorMessage("class C: yield 1", "'yield' outside function");

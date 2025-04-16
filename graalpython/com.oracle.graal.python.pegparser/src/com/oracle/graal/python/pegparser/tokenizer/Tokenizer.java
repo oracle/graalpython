@@ -1952,7 +1952,7 @@ public class Tokenizer {
         SourceRange sourceRange = new SourceRange(
                         currentLineNumber, nextCharIndex - lineStartIndex,
                         currentLineNumber, nextCharIndex - lineStartIndex);
-        parserCallbacks.onWarning(WarningType.Deprecation, sourceRange, "invalid escape sequence '\\%c'", nextChar);
+        parserCallbacks.onWarning(WarningType.Syntax, sourceRange, "invalid escape sequence '\\%c'", nextChar);
     }
 
     private boolean insideFstring() {

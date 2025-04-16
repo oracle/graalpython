@@ -14,6 +14,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <assert.h>
+#include <string.h>
 
 // These definitions emulate CPython's equivalents so that the copy&pasted code below works without too many changes
 #define HAVE_DIRFD 1
@@ -266,9 +267,10 @@ child_exec(char *const exec_array[],
            int *fds_to_keep,
            ssize_t fds_to_keep_len)
 {
-    int i, saved_errno, reached_preexec = 0;
+    int i, saved_errno;
     /* Buffer large enough to hold a hex integer.  We can't malloc. */
     char hex_errno[sizeof(saved_errno)*2+1];
+    const char *err_msg = "noexec";
 
     if (make_inheritable(fds_to_keep, fds_to_keep_len, errpipe_write) < 0)
         goto error;
@@ -326,8 +328,12 @@ child_exec(char *const exec_array[],
     /* We no longer manually close p2cread, c2pwrite, and errwrite here as
      * _close_open_fds takes care when it is not already non-inheritable. */
 
-    if (cwd)
-        POSIX_CALL(chdir(cwd));
+    if (cwd) {
+        if (chdir(cwd) == -1) {
+            err_msg = "noexec:chdir";
+            goto error;
+        }
+    }
 
     if (restore_signals)
         _Py_RestoreSignals();
@@ -337,7 +343,7 @@ child_exec(char *const exec_array[],
         POSIX_CALL(setsid());
 #endif
 
-    reached_preexec = 1;
+    err_msg = "";
 
     /* close FDs after executing preexec_fn, which might open FDs */
     if (close_fds) {
@@ -380,15 +386,12 @@ error:
         }
         _Py_write_noraise(errpipe_write, cur, hex_errno + sizeof(hex_errno) - cur);
         _Py_write_noraise(errpipe_write, ":", 1);
-        if (!reached_preexec) {
-            /* Indicate to the parent that the error happened before exec(). */
-            _Py_write_noraise(errpipe_write, "noexec", 6);
-        }
         /* We can't call strerror(saved_errno).  It is not async signal safe.
          * The parent process will look the error message up. */
     } else {
         _Py_write_noraise(errpipe_write, "SubprocessError:0:", 18);
     }
+    _Py_write_noraise(errpipe_write, err_msg, strlen(err_msg));
 }
 
 

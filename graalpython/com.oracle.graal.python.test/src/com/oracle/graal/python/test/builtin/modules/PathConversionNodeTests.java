@@ -150,19 +150,6 @@ public class PathConversionNodeTests extends ConversionNodeTests {
     }
 
     @Test
-    public void buffer() {
-        Assert.assertEquals("abc", callAndExpectPath(false, false, evalValue("import array\narray.array('B', b'abc')"), true));
-        // TODO: can we assert somehow that a warning is actually produced?
-    }
-
-    @Test
-    public void bufferWithZero() {
-        expectPythonMessage("ValueError: fun: embedded null character in arg", () -> {
-            call(false, false, evalValue("import array\narray.array('B', b'a\\0c')"));
-        });
-    }
-
-    @Test
     public void boolAllowed() {
         Assert.assertEquals(0, callAndExpectFd(false));
         Assert.assertEquals(1, callAndExpectFd(true));

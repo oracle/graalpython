@@ -141,6 +141,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -1969,6 +1970,7 @@ public abstract class TypeNodes {
                         @Cached GetMroStorageNode getMroStorageNode,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raise,
+                        @Cached ExceptionNodes.FormatNoteNode formatNoteNode,
                         @Cached AllocateTypeWithMetaclassNode typeMetaclass,
                         @Cached GetOrCreateDictNode getOrCreateDictNode) {
             try {
@@ -2075,7 +2077,8 @@ public abstract class TypeNodes {
                         try {
                             callSetNameNode.execute(frame, setName, value, newType, key);
                         } catch (PException e) {
-                            throw raise.raiseWithCause(inliningTarget, PythonBuiltinClassType.RuntimeError, e, ErrorMessages.ERROR_CALLING_SET_NAME, value, key, newType);
+                            formatNoteNode.execute(frame, inliningTarget, e, ErrorMessages.ERROR_CALLING_SET_NAME, value, key, newType);
+                            throw e;
                         }
                     }
                 }

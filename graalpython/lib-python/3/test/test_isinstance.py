@@ -3,6 +3,7 @@
 # testing of error conditions uncovered when using extension types.
 
 import unittest
+import sys
 import typing
 from test import support
 

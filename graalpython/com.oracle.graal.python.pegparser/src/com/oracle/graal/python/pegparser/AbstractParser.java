@@ -41,6 +41,7 @@
 package com.oracle.graal.python.pegparser;
 
 import static com.oracle.graal.python.pegparser.tokenizer.Token.Kind.DEDENT;
+import static com.oracle.graal.python.pegparser.tokenizer.Token.Kind.ENDMARKER;
 import static com.oracle.graal.python.pegparser.tokenizer.Token.Kind.ERRORTOKEN;
 import static com.oracle.graal.python.pegparser.tokenizer.Token.Kind.INDENT;
 
@@ -127,11 +128,6 @@ public abstract class AbstractParser {
 
     private boolean parsingStarted;
 
-    /**
-     * Indicates, whether there was found an error
-     */
-    protected boolean errorIndicator = false;
-
     private ExprTy.Name cachedDummyName;
 
     protected final RuleResultCache<Object> cache = new RuleResultCache<>(this);
@@ -178,29 +174,27 @@ public abstract class AbstractParser {
     public SSTNode parse() {
         SSTNode res = runParser(startRule);
         if (res == null) {
+            Token lastToken = getFill() > 0 ? peekToken(getFill() - 1) : null;
             resetParserState();
             runParser(startRule);
-            if (errorIndicator) {
-                // shouldn't we return at least wrong AST based on a option?
-                return null;
-            }
             int fill = getFill();
             if (fill == 0) {
                 throw raiseSyntaxError("error at start before reading any input");
-            } else if (peekToken(fill - 1).type == Token.Kind.ERRORTOKEN && tokenizer.getDone() == Tokenizer.StatusCode.EOF) {
+            }
+            assert lastToken != null;
+            if (lastToken.type == Token.Kind.ERRORTOKEN && tokenizer.getDone() == Tokenizer.StatusCode.EOF) {
                 if (tokenizer.getParensNestingLevel() > 0) {
                     throw raiseUnclosedParenthesesError();
                 } else {
                     throw raiseSyntaxError("unexpected EOF while parsing");
                 }
+            } else if (lastToken.type == INDENT) {
+                throw raiseIndentationError("unexpected indent");
+            } else if (lastToken.type == DEDENT) {
+                throw raiseIndentationError("unexpected unindent");
             } else {
-                if (peekToken(fill - 1).type == INDENT) {
-                    throw raiseIndentationError("unexpected indent");
-                } else if (peekToken(fill - 1).type == DEDENT) {
-                    throw raiseIndentationError("unexpected unindent");
-                } else {
-                    throw raiseSyntaxErrorKnownLocation(peekToken(fill - 1), "invalid syntax");
-                }
+                tokenizeFullSourceToCheckForErrors(lastToken);
+                throw raiseSyntaxErrorKnownLocation(lastToken, "invalid syntax");
             }
         }
         if (startRule == InputType.SINGLE && tokenizer.isBadSingleStatement()) {
@@ -210,8 +204,36 @@ public abstract class AbstractParser {
         return res;
     }
 
+    /**
+     * Equivalent of `_PyPegen_tokenize_full_source_to_check_for_errors`, but unlike cpython we
+     * don't create the generic "invalid syntax" exception eagerly, so we pass the location of that
+     * potential exception as an argument. This method either throws more specific exception from
+     * the tokenizer, or returns normally in which case the caller is expected to throw the generic
+     * exception.
+     */
+    void tokenizeFullSourceToCheckForErrors(Token currentToken) {
+        // We don't want to tokenize to the end for interactive input
+        if (flags.contains(Flags.INTERACTIVE_TERMINAL)) {
+            return;
+        }
+        while (true) {
+            Token t = tokenizer.next();
+            if (t.type == ENDMARKER) {
+                break;
+            }
+            if (t.type == ERRORTOKEN) {
+                if (tokenizer.getParensNestingLevel() != 0) {
+                    int errorLineNo = tokenizer.getParensLineNumberStack()[tokenizer.getParensNestingLevel() - 1];
+                    if (currentToken.getSourceRange().startLine > errorLineNo) {
+                        throw raiseUnclosedParenthesesError();
+                    }
+                }
+                throw tokenizerError(t);
+            }
+        }
+    }
+
     private void resetParserState() {
-        errorIndicator = false;
         callInvalidRules = true;
         level = 0;
         cache.clear();
@@ -1342,7 +1364,6 @@ public abstract class AbstractParser {
      * RAISE_ERROR_KNOWN_LOCATION
      */
     RuntimeException raiseErrorKnownLocation(ParserCallbacks.ErrorType typeError, SourceRange where, String msg, Object... argument) {
-        errorIndicator = true;
         throw callbacks.onError(typeError, where, msg, argument);
     }
 
@@ -1515,16 +1536,6 @@ public abstract class AbstractParser {
 
     ModTy makeModule(StmtTy[] statements, SourceRange sourceRange) {
         return factory.createModule(statements, comments.toArray(TypeIgnoreTy[]::new), sourceRange);
-    }
-
-    /**
-     * CHECK Simple check whether the node is not null.
-     */
-    <T> T check(T node) {
-        if (node == null) {
-            errorIndicator = true;
-        }
-        return node;
     }
 
     <T> T checkVersion(int version, String msg, T node) {
