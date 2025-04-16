@@ -1216,10 +1216,10 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "nextafter", minNumOfPositionalArgs = 3, parameterNames = {"start", "direction", "step"})
+    @Builtin(name = "nextafter", minNumOfPositionalArgs = 2, parameterNames = {"start", "direction"}, keywordOnlyNames = {"steps"})
     @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.Double)
     @ArgumentClinic(name = "direction", conversion = ArgumentClinic.ClinicConversion.Double)
-    @ArgumentClinic(name = "step", defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @ArgumentClinic(name = "steps", defaultValue = "PNone.NONE", useDefaultForNone = true)
     @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
@@ -1257,7 +1257,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                 usteps = Long.MAX_VALUE;
             }
             if (usteps < 0) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.STEPS_MUST_BE_A_NON_NEGATIVE_INTEGER);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.STEPS_MUST_BE_A_NON_NEGATIVE_INTEGER);
             }
 
             if (usteps == 0) {
@@ -1285,7 +1285,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             if (((uxi ^ uyi) & sign_bit) != 0) {
                 // NOTE: ax + ay can never overflow, because their most significant bit
                 // ain't set.
-                if (ax + ay <= usteps) {
+                if (add(ax, ay) <= usteps) {
                     return y;
                     // This comparison has to use <, because <= would get +0.0 vs -0.0
                     // wrong.
@@ -1293,24 +1293,42 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                     long result = (uyi & sign_bit) | (usteps - ax);
                     return Double.longBitsToDouble(result);
                 } else {
-                    uxi -= usteps;
+                    uxi = subtract(uxi, usteps);
                     return Double.longBitsToDouble(uxi);
                 }
                 // same sign
             } else if (ax > ay) {
                 if (ax - ay >= usteps) {
-                    uxi -= usteps;
+                    uxi = subtract(uxi, usteps);
                     return Double.longBitsToDouble(uxi);
                 } else {
                     return Double.longBitsToDouble(uyi);
                 }
             } else {
-                if (ay - ax >= usteps) {
-                    uxi += usteps;
+                if (subtract(ay, ax) >= usteps) {
+                    uxi = add(uxi, usteps);
                     return Double.longBitsToDouble(uxi);
                 } else {
                     return Double.longBitsToDouble(uyi);
                 }
+            }
+        }
+
+        @TruffleBoundary
+        private static long add(long a, long b) {
+            try {
+                return Math.addExact(a, b);
+            } catch (ArithmeticException e) {
+                return a > 0 ? Long.MAX_VALUE : Long.MIN_VALUE;
+            }
+        }
+
+        @TruffleBoundary
+        private static long subtract(long a, long b) {
+            try {
+                return Math.subtractExact(a, b);
+            } catch (ArithmeticException e) {
+                return a > 0 ? Long.MAX_VALUE : Long.MIN_VALUE;
             }
         }
     }
