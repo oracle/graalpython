@@ -2696,8 +2696,10 @@ public abstract class TypeNodes {
             }
             // TODO there are more builtins with dict
             return switch (cls) {
-                case PBaseException, PythonModule -> 16;
+                case PBaseException, PythonModule, PSimpleNamespace -> 16;
                 case PythonClass -> 264;
+                case PStaticmethod, PClassmethod -> 24;
+                case POrderedDict -> 96;
                 default -> cls.getBase() != null ? getBuiltinDictoffset(cls.getBase()) : 0;
             };
         }
