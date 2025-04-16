@@ -996,10 +996,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
 
     if BYTECODE_DSL_INTERPRETER:
         args += ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
-    if use_pytest:
-        args += ["-m", "pytest", "-v", "--assert=plain", "--tb=native", "-n", parallelism]
-    else:
-        args += [_python_test_runner(), "run", "--durations", "10", "-n", parallelism, f"--subprocess-args={shlex.join(args)}"]
+    args += [_python_test_runner(), "run", "--durations", "10", "-n", parallelism, f"--subprocess-args={shlex.join(args)}"]
 
     if runner_args:
         args += runner_args
@@ -1009,17 +1006,15 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
             args += ['--ignore', file]
 
     if is_collecting_coverage() and mx_gate.get_jacoco_agent_args():
-        if not use_pytest:
-            # jacoco only dumps the data on exit, and when we run all our unittests
-            # at once it generates so much data we run out of heap space
-            args.append('--separate-workers')
+        # jacoco only dumps the data on exit, and when we run all our unittests
+        # at once it generates so much data we run out of heap space
+        args.append('--separate-workers')
 
     if report:
         reportfile = None
         t0 = time.time()
-        if not use_pytest:
-            reportfile = os.path.abspath(tempfile.mktemp(prefix="test-report-", suffix=".json"))
-            args += ["--mx-report", reportfile]
+        reportfile = os.path.abspath(tempfile.mktemp(prefix="test-report-", suffix=".json"))
+        args += ["--mx-report", reportfile]
 
     if paths is not None:
         args += paths
@@ -1048,36 +1043,14 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
 
 
 def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, timeout=None, report=False):
-    hpy_root = os.path.join(mx.dependency("hpy").dir)
-    args = [] if args is None else args
-    d = tempfile.mkdtemp()
-    try:
-        shutil.copytree(hpy_root, os.path.join(d, "hpy"))
-        hpy_root = os.path.join(d, "hpy")
-        hpy_test_root = os.path.join(hpy_root, "test")
-        env = env or os.environ.copy()
-        delete_bad_env_keys(env)
-        mx.run([python_binary] + args + ["-m", "venv", os.path.join(d, "venv")], nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
-        python_binary = os.path.join(d, "venv", "Scripts" if mx.is_windows() else "bin", "graalpy")
-        mx.run([python_binary] + args + ["-m", "pip", "install", "pytest", "pytest-xdist", "filelock"], nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
-        env["SETUPTOOLS_SCM_PRETEND_VERSION"] = "0.9.0"
-        mx.run([python_binary] + args + ["-m", "pip", "install", "-e", "."], cwd=hpy_root, nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
-        run_python_unittests(
-            python_binary,
-            args=args,
-            paths=[hpy_test_root],
-            env=env,
-            use_pytest=True,
-            nonZeroIsFatal=(nonZeroIsFatal and not is_collecting_coverage()),
-            timeout=timeout,
-            parallel=int(os.cpu_count() / 4),
-            report=report
-        )
-    finally:
-        if not mx._opts.verbose:
-            shutil.rmtree(d, ignore_errors=True)
-        else:
-            mx.warn(f"MX running verbosely, not deleting temporary directory {d}")
+    t0 = time.time()
+    result = downstream_test_hpy(python_binary, args=args, env=env, nonZeroIsFatal=nonZeroIsFatal, timeout=timeout)
+    if report:
+        mx_gate.make_test_report([{
+            "name": report.title,
+            "status": "PASSED" if result == 0 else "FAILED",
+            "duration": int((time.time() - t0) * 1000)
+        }], report.title)
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True, checkIfWithGraalPythonEE=False,
@@ -2820,7 +2793,7 @@ def graalpy_jmh(args):
 
 
 def run_in_venv(venv, cmd, **kwargs):
-    return mx.run(['sh', '-c', f"source {venv}/bin/activate && {shlex.join(cmd)}"], **kwargs)
+    return mx.run(['sh', '-c', f". {venv}/bin/activate && {shlex.join(cmd)}"], **kwargs)
 
 
 DOWNSTREAM_TESTS = {}
@@ -2830,6 +2803,43 @@ def downstream_test(name):
         DOWNSTREAM_TESTS[name] = fn
         return fn
     return decorator
+
+
+@downstream_test('hpy')
+def downstream_test_hpy(graalpy, args=None, env=None, nonZeroIsFatal=True, timeout=None):
+    testdir = Path('upstream-tests').absolute()
+    shutil.rmtree(testdir, ignore_errors=True)
+    testdir.mkdir(exist_ok=True)
+    hpy_root = os.path.join(mx.dependency("hpy").dir)
+    shutil.copytree(hpy_root, testdir / "hpy")
+    hpy_root = testdir / "hpy"
+    hpy_test_root = hpy_root / "test"
+    venv = testdir / 'hpy_venv'
+    mx.run([graalpy, "-m", "venv", str(venv)])
+    run_in_venv(venv, ["pip", "install", "pytest", "pytest-xdist", "pytest-rerunfailures", "filelock"])
+    env = env or os.environ.copy()
+    env["SETUPTOOLS_SCM_PRETEND_VERSION"] = "0.9.0"
+    run_in_venv(venv, ["pip", "install", "-e", "."], cwd=str(hpy_root), env=env)
+    parallelism = str(min(os.cpu_count(), int(os.cpu_count() / 4)))
+    args = args or []
+    args = [
+        "python",
+        "--vm.ea",
+        "--experimental-options=true",
+        "--python.EnableDebuggingBuiltins",
+        *args,
+        "-m", "pytest",
+        "-v",
+        # for those cases where testing invalid handles corrupts the process so
+        # much that we crash - we don't recover gracefully in some cases :(
+        "--reruns", "3",
+        "-n", parallelism,
+        str(hpy_test_root),
+        # test_distutils is just slow and testing the build infrastructure
+        "-k", "not test_distutils"
+    ]
+    mx.logv(shlex.join(args))
+    return run_in_venv(venv, args, env=env, cwd=str(hpy_root), nonZeroIsFatal=nonZeroIsFatal, timeout=timeout)
 
 
 @downstream_test('pybind11')
