@@ -373,7 +373,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.object.GetForeignObjectClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.pegparser.FutureFeature;
@@ -1312,7 +1312,7 @@ public abstract class Python3Core {
             return getLanguage().parse(getContext(), source, InputType.FILE, false, 0, false, null, EnumSet.noneOf(FutureFeature.class));
         };
         RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);
-        GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(mod));
+        CallDispatchers.SimpleIndirectInvokeNode.executeUncached(callTarget, PArguments.withGlobals(mod));
     }
 
     public final PInt getTrue() {

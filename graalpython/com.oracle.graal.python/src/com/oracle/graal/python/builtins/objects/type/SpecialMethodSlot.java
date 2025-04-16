@@ -147,11 +147,6 @@ public enum SpecialMethodSlot {
      *
      * Values of some slots are always or mostly passed to call node variants that can handle
      * {@link BuiltinMethodDescriptor}.
-     *
-     * An alternative would be to update the whole calling machinery ({@code InvokeNode},
-     * {@code GetSignature}, ...) to handle {@link BuiltinMethodDescriptor} and extend
-     * {@link BuiltinMethodDescriptor} to contain all the information that is necessary for this
-     * (GR-32148).
      */
     private final boolean allowsBuiltinDescriptors;
 

@@ -46,7 +46,6 @@ import org.graalvm.polyglot.io.ByteSequence;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.code.CodeNodesFactory.GetCodeCallTargetNodeGen;
 import com.oracle.graal.python.builtins.objects.code.CodeNodesFactory.GetCodeRootNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -216,14 +215,7 @@ public abstract class CodeNodes {
     @GenerateCached(false)
     public abstract static class GetCodeCallTargetNode extends PNodeWithContext {
 
-        GetCodeCallTargetNode() {
-        }
-
         public abstract RootCallTarget execute(Node inliningTarget, PCode code);
-
-        public static RootCallTarget executeUncached(PCode code) {
-            return GetCodeCallTargetNodeGen.getUncached().execute(null, code);
-        }
 
         @Specialization(guards = {"cachedCode == code", "isSingleContext()"}, limit = "2")
         static RootCallTarget doCachedCode(@SuppressWarnings("unused") PCode code,

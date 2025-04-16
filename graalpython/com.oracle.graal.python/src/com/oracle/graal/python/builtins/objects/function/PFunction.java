@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -43,6 +43,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -68,6 +69,7 @@ public final class PFunction extends PythonObject {
     @CompilationFinal(dimensions = 1) private final PCell[] closure;
     @CompilationFinal private PCode finalCode;
     private PCode code;
+    private RootCallTarget callTarget;
     @CompilationFinal(dimensions = 1) private Object[] finalDefaultValues;
     private Object[] defaultValues;
     @CompilationFinal(dimensions = 1) private PKeyword[] finalKwDefaultValues;
@@ -92,6 +94,7 @@ public final class PFunction extends PythonObject {
         this.qualname = qualname;
         assert code != null;
         this.code = this.finalCode = code;
+        this.callTarget = code.getRootCallTarget();
         this.globals = globals;
         this.defaultValues = this.finalDefaultValues = defaultValues == null ? PythonUtils.EMPTY_OBJECT_ARRAY : defaultValues;
         this.kwDefaultValues = this.finalKwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
@@ -185,12 +188,17 @@ public final class PFunction extends PythonObject {
         return code;
     }
 
+    public RootCallTarget getCallTarget() {
+        return callTarget;
+    }
+
     @TruffleBoundary
     public void setCode(PCode code) {
         codeStableAssumption.invalidate("code changed for function " + getName());
         assert code != null : "code cannot be null";
         this.finalCode = null;
         this.code = code;
+        this.callTarget = code.getRootCallTarget();
     }
 
     public Object[] getDefaults() {

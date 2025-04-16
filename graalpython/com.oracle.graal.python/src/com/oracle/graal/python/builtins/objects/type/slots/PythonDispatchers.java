@@ -44,11 +44,10 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.FunctionInvokeNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -60,9 +59,9 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
@@ -80,17 +79,12 @@ abstract class PythonDispatchers {
             CompilerAsserts.partialEvaluationConstant(result); // should hold in single context
             return result;
         }
-
-        @NeverDefault
-        static FunctionInvokeNode createInvokeNode(PFunction callee) {
-            return FunctionInvokeNode.create(callee);
-        }
     }
 
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    @ImportStatic(PGuards.class)
+    @ImportStatic(CallDispatchers.class)
     abstract static class UnaryPythonSlotDispatcherNode extends PythonSlotDispatcherNodeBase {
         final Object execute(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self) {
             assert !(callable instanceof TruffleWeakReference<?>);
@@ -102,12 +96,13 @@ abstract class PythonDispatchers {
 
         @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "isSimpleSignature(cachedCallee, 1)"}, //
                         limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "cachedCallee.getCodeStableAssumption()")
-        protected static Object doCachedPFunction(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self,
+        protected static Object doCachedPFunction(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self,
                         @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
-                        @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
+                        @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
+                        @Cached CallDispatchers.FunctionDirectInvokeNode invoke) {
             Object[] arguments = PArguments.create(1);
             PArguments.setArgument(arguments, 0, self);
-            return invoke.execute(frame, arguments);
+            return invoke.execute(frame, inliningTarget, callNode, cachedCallee, arguments);
         }
 
         @Specialization(replaces = "doCachedPFunction")
@@ -132,6 +127,7 @@ abstract class PythonDispatchers {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
+    @ImportStatic(CallDispatchers.class)
     abstract static class BinaryPythonSlotDispatcherNode extends PythonSlotDispatcherNodeBase {
         final Object execute(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self, Object arg1) {
             assert !(callable instanceof TruffleWeakReference<?>);
@@ -149,14 +145,16 @@ abstract class PythonDispatchers {
 
         @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "isSimpleSignature(cachedCallee, 2)"}, //
                         limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "cachedCallee.getCodeStableAssumption()")
-        protected static Object doCachedPFunction(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self, Object arg1,
+        protected static Object doCachedPFunction(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self,
+                        Object arg1,
                         boolean ignoreDescBindErrors,
                         @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
-                        @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
+                        @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
+                        @Cached CallDispatchers.FunctionDirectInvokeNode invoke) {
             Object[] arguments = PArguments.create(2);
             PArguments.setArgument(arguments, 0, self);
             PArguments.setArgument(arguments, 1, arg1);
-            return invoke.execute(frame, arguments);
+            return invoke.execute(frame, inliningTarget, callNode, cachedCallee, arguments);
         }
 
         @Specialization(replaces = "doCachedPFunction")
@@ -190,6 +188,7 @@ abstract class PythonDispatchers {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
+    @ImportStatic(CallDispatchers.class)
     abstract static class TernaryPythonSlotDispatcherNode extends PythonSlotDispatcherNodeBase {
         final Object execute(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self, Object arg1, Object arg2) {
             assert !(callable instanceof TruffleWeakReference<?>);
@@ -201,15 +200,16 @@ abstract class PythonDispatchers {
 
         @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "isSimpleSignature(cachedCallee, 3)"}, //
                         limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "cachedCallee.getCodeStableAssumption()")
-        protected static Object doCachedPFunction(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self,
+        protected static Object doCachedPFunction(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self,
                         Object arg1, Object arg2,
                         @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
-                        @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
+                        @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
+                        @Cached CallDispatchers.FunctionDirectInvokeNode invoke) {
             Object[] arguments = PArguments.create(3);
             PArguments.setArgument(arguments, 0, self);
             PArguments.setArgument(arguments, 1, arg1);
             PArguments.setArgument(arguments, 2, arg2);
-            return invoke.execute(frame, arguments);
+            return invoke.execute(frame, inliningTarget, callNode, cachedCallee, arguments);
         }
 
         @Specialization(replaces = "doCachedPFunction")

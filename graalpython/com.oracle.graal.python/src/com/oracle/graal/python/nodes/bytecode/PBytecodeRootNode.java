@@ -181,8 +181,6 @@ import com.oracle.graal.python.nodes.bytecode.instrumentation.InstrumentationSup
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.CallNodeGen;
-import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
-import com.oracle.graal.python.nodes.call.CallTargetInvokeNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
@@ -400,6 +398,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<StoreSubscrSeq.ONode> NODE_STORE_SUBSCR_SEQ_O = StoreSubscrSeq.ONode::create;
     private static final NodeSupplier<StoreSubscrSeq.INode> NODE_STORE_SUBSCR_SEQ_I = StoreSubscrSeq.INode::create;
     private static final NodeSupplier<StoreSubscrSeq.DNode> NODE_STORE_SUBSCR_SEQ_D = StoreSubscrSeq.DNode::create;
+    private static final NodeSupplier<CallComprehensionNode> NODE_CALL_COMPREHENSION = CallComprehensionNode::create;
 
     private static final NodeSupplier<IntBuiltins.AddNode> NODE_INT_ADD = IntBuiltins.AddNode::create;
     private static final NodeSupplier<IntBuiltins.SubNode> NODE_INT_SUB = IntBuiltins.SubNode::create;
@@ -5278,14 +5277,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @BytecodeInterpreterSwitch
     private int bytecodeCallComprehension(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, MutableLoopData mutableData, byte tracingOrProfilingEnabled) {
         PFunction func = (PFunction) virtualFrame.getObject(stackTop - 1);
-        CallTargetInvokeNode callNode = insertChildNode(localNodes, bci, CallTargetInvokeNodeGen.class, () -> CallTargetInvokeNode.create(func));
+        CallComprehensionNode callNode = insertChildNode(localNodes, bci, CallComprehensionNodeGen.class, NODE_CALL_COMPREHENSION);
 
         Object result;
         profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_CALL, mutableData, tracingOrProfilingEnabled);
         try {
             Object[] arguments = PArguments.create(1);
             PArguments.setArgument(arguments, 0, virtualFrame.getObject(stackTop));
-            result = callNode.execute(virtualFrame, func, func.getGlobals(), func.getClosure(), arguments);
+            result = callNode.execute(virtualFrame, func, arguments);
             profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_RETURN, mutableData, tracingOrProfilingEnabled);
         } catch (AbstractTruffleException e) {
             profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_EXCEPTION, mutableData, tracingOrProfilingEnabled);

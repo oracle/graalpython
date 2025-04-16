@@ -220,9 +220,8 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.bytecode.GetAIterNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -791,7 +790,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EvalNode extends PythonBuiltinNode {
         @Child protected CompileNode compileNode;
-        @Child private GenericInvokeNode invokeNode = GenericInvokeNode.create();
         @Child private GetOrCreateDictNode getOrCreateDictNode;
 
         final void assertNoFreeVars(Node inliningTarget, PCode code, PRaiseNode raiseNode) {
@@ -855,6 +853,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Exclusive @Cached ReadCallerFrameNode readCallerFrameNode,
                         @Exclusive @Cached CodeNodes.GetCodeCallTargetNode getCt,
                         @Cached GetFrameLocalsNode getFrameLocalsNode,
+                        @Shared @Cached CallDispatchers.SimpleIndirectInvokeNode invoke,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             PCode code = createAndCheckCode(frame, inliningTarget, source, raiseNode);
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
@@ -862,7 +861,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             inheritGlobals(callerFrame, args);
             inheritLocals(inliningTarget, callerFrame, args, getFrameLocalsNode);
 
-            return invokeNode.execute(frame, getCt.execute(inliningTarget, code), args);
+            return invoke.execute(frame, inliningTarget, getCt.execute(inliningTarget, code), args);
         }
 
         @Specialization
@@ -870,6 +869,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached HashingCollectionNodes.SetItemNode setBuiltins,
                         @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt,
+                        @Shared @Cached CallDispatchers.SimpleIndirectInvokeNode invoke,
                         @Shared @Cached PRaiseNode raiseNode) {
             PCode code = createAndCheckCode(frame, inliningTarget, source, raiseNode);
             Object[] args = PArguments.create();
@@ -880,7 +880,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.CANNOT_CREATE_CALL_TARGET, code);
             }
 
-            return invokeNode.execute(frame, rootCallTarget, args);
+            return invoke.execute(frame, inliningTarget, rootCallTarget, args);
         }
 
         @Specialization(guards = {"isMapping(inliningTarget, mappingCheckNode, locals)"})
@@ -890,6 +890,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @SuppressWarnings("unused") @Shared @Cached PyMappingCheckNode mappingCheckNode,
                         @Exclusive @Cached ReadCallerFrameNode readCallerFrameNode,
                         @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt,
+                        @Shared @Cached CallDispatchers.SimpleIndirectInvokeNode invoke,
                         @Shared @Cached PRaiseNode raiseNode) {
             PCode code = createAndCheckCode(frame, inliningTarget, source, raiseNode);
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
@@ -897,7 +898,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             inheritGlobals(callerFrame, args);
             setCustomLocals(args, locals);
 
-            return invokeNode.execute(frame, getCt.execute(inliningTarget, code), args);
+            return invoke.execute(frame, inliningTarget, getCt.execute(inliningTarget, code), args);
         }
 
         @Specialization(guards = {"isMapping(inliningTarget, mappingCheckNode, locals)"})
@@ -907,13 +908,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @SuppressWarnings("unused") @Shared @Cached PyMappingCheckNode mappingCheckNode,
                         @Shared @Cached HashingCollectionNodes.SetItemNode setBuiltins,
                         @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt,
+                        @Shared @Cached CallDispatchers.SimpleIndirectInvokeNode invoke,
                         @Shared @Cached PRaiseNode raiseNode) {
             PCode code = createAndCheckCode(frame, inliningTarget, source, raiseNode);
             Object[] args = PArguments.create();
             setCustomGlobals(frame, inliningTarget, globals, setBuiltins, args);
             setCustomLocals(args, locals);
 
-            return invokeNode.execute(frame, getCt.execute(inliningTarget, code), args);
+            return invoke.execute(frame, inliningTarget, getCt.execute(inliningTarget, code), args);
         }
 
         @Specialization(guards = {"!isAnyNone(globals)", "!isDict(globals)"})
@@ -2488,12 +2490,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @InliningCutoff
-        private static Object buildJavaClass(VirtualFrame frame, PythonLanguage language, PFunction function, Object[] arguments, CallDispatchNode callBody,
+        private static Object buildJavaClass(VirtualFrame frame, Node inliningTarget, PythonLanguage language, PFunction function, Object[] arguments, CallDispatchers.FunctionInvokeNode invokeBody,
                         TruffleString name) {
             PDict ns = PFactory.createDict(language, new DynamicObjectStorage(language));
             Object[] args = PArguments.create(0);
             PArguments.setSpecialArgument(args, ns);
-            callBody.executeCall(frame, function, args);
+            invokeBody.execute(frame, inliningTarget, function, args);
             return buildJavaClass(ns, name, arguments[1]);
         }
 
@@ -2507,7 +2509,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached PyMappingCheckNode pyMappingCheckNode,
                         @Cached CallNode callPrep,
                         @Cached CallNode callType,
-                        @Cached CallDispatchNode callBody,
+                        @Cached CallDispatchers.FunctionInvokeNode invokeBody,
                         @Cached UpdateBasesNode update,
                         @Cached PyObjectSetItem setOrigBases,
                         @Cached GetClassNode getClass,
@@ -2537,7 +2539,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
             if (arguments.length == 2 && env.isHostObject(arguments[1]) && env.asHostObject(arguments[1]) instanceof Class<?>) {
                 // we want to subclass a Java class
-                return buildJavaClass(frame, language, (PFunction) function, arguments, callBody, name);
+                return buildJavaClass(frame, inliningTarget, language, (PFunction) function, arguments, invokeBody, name);
             }
 
             class InitializeBuildClass {
@@ -2606,7 +2608,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             Object[] bodyArguments = PArguments.create(0);
             PArguments.setSpecialArgument(bodyArguments, ns);
-            callBody.executeCall(frame, (PFunction) function, bodyArguments);
+            invokeBody.execute(frame, inliningTarget, (PFunction) function, bodyArguments);
             if (init.bases != origBases) {
                 setOrigBases.execute(frame, inliningTarget, ns, SpecialAttributeNames.T___ORIG_BASES__, origBases);
             }

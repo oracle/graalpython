@@ -68,7 +68,7 @@ import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -108,17 +108,19 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonBuiltinNode {
         @Specialization
-        protected Object doIt(VirtualFrame frame, PFunction self, Object[] arguments, PKeyword[] keywords,
+        Object doIt(VirtualFrame frame, PFunction self, Object[] arguments, PKeyword[] keywords,
+                        @Bind Node inliningTarget,
                         @Shared @Cached CreateArgumentsNode createArgs,
-                        @Shared @Cached CallDispatchNode dispatch) {
-            return dispatch.executeCall(frame, self, createArgs.execute(self, arguments, keywords));
+                        @Cached CallDispatchers.FunctionInvokeNode invoke) {
+            return invoke.execute(frame, inliningTarget, self, createArgs.execute(self, arguments, keywords));
         }
 
         @Specialization
-        protected Object doIt(VirtualFrame frame, PBuiltinFunction self, Object[] arguments, PKeyword[] keywords,
+        Object doIt(VirtualFrame frame, PBuiltinFunction self, Object[] arguments, PKeyword[] keywords,
+                        @Bind Node inliningTarget,
                         @Shared @Cached CreateArgumentsNode createArgs,
-                        @Shared @Cached CallDispatchNode dispatch) {
-            return dispatch.executeCall(frame, self, createArgs.execute(self, arguments, keywords));
+                        @Cached CallDispatchers.BuiltinFunctionInvokeNode invoke) {
+            return invoke.execute(frame, inliningTarget, self, createArgs.execute(self, arguments, keywords));
         }
     }
 

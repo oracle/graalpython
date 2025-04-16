@@ -835,9 +835,6 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    /**
-     * Like {@link com.oracle.graal.python.nodes.call.FunctionInvokeNode} but invokes a C function.
-     */
     @GenerateUncached
     @GenerateCached(false)
     @GenerateInline

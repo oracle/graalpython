@@ -48,8 +48,8 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -89,13 +89,14 @@ public abstract class CallTernaryMethodNode extends AbstractCallMethodNode {
     @Specialization(replaces = "callSpecialMethodSlotInlined")
     @InliningCutoff
     static Object callSpecialMethodSlotCallTarget(VirtualFrame frame, TernaryBuiltinDescriptor info, Object arg1, Object arg2, Object arg3,
-                    @Cached GenericInvokeNode invokeNode) {
-        RootCallTarget callTarget = PythonLanguage.get(invokeNode).getDescriptorCallTarget(info);
+                    @Bind Node inliningTarget,
+                    @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
+        RootCallTarget callTarget = PythonLanguage.get(inliningTarget).getDescriptorCallTarget(info);
         Object[] arguments = PArguments.create(3);
         PArguments.setArgument(arguments, 0, arg1);
         PArguments.setArgument(arguments, 1, arg2);
         PArguments.setArgument(arguments, 2, arg3);
-        return invokeNode.execute(frame, callTarget, arguments);
+        return invoke.execute(frame, inliningTarget, callTarget, arguments);
     }
 
     @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")

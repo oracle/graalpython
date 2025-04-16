@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,12 +41,12 @@
 package com.oracle.graal.python.runtime;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
@@ -104,7 +104,7 @@ public final class IndirectCallData {
     public static boolean setEncapsulatingNeedsToPassCallerFrame(final Node callNode) {
         Node pythonCallNode = callNode;
         while (pythonCallNode != null) {
-            if (pythonCallNode instanceof InvokeNode) {
+            if (pythonCallNode instanceof DirectCallNode) {
                 // see GR-50465
                 return true;
             }
@@ -121,7 +121,7 @@ public final class IndirectCallData {
     public static void setEncapsulatingNeedsToPassExceptionState(Node callNode) {
         Node pythonCallNode = callNode;
         while (pythonCallNode != null) {
-            if (pythonCallNode instanceof InvokeNode) {
+            if (pythonCallNode instanceof DirectCallNode) {
                 // see GR-50465
                 break;
             }

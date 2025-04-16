@@ -141,16 +141,18 @@ public abstract class CallNode extends PNodeWithContext {
 
     @Specialization
     protected static Object functionCall(VirtualFrame frame, PFunction callable, Object[] arguments, PKeyword[] keywords,
-                    @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
-                    @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
-        return dispatch.executeCall(frame, callable, createArgs.execute(callable, arguments, keywords));
+                    @Bind Node inliningTarget,
+                    @Shared @Cached CallDispatchers.FunctionInvokeNode invokeFunction,
+                    @Shared @Cached CreateArgumentsNode createArgs) {
+        return invokeFunction.execute(frame, inliningTarget, callable, createArgs.execute(callable, arguments, keywords));
     }
 
     @Specialization
     protected static Object builtinFunctionCall(VirtualFrame frame, PBuiltinFunction callable, Object[] arguments, PKeyword[] keywords,
-                    @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
-                    @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
-        return dispatch.executeCall(frame, callable, createArgs.execute(callable, arguments, keywords));
+                    @Bind Node inliningTarget,
+                    @Shared @Cached CallDispatchers.BuiltinFunctionInvokeNode invokeBuiltin,
+                    @Shared @Cached CreateArgumentsNode createArgs) {
+        return invokeBuiltin.execute(frame, inliningTarget, callable, createArgs.execute(callable, arguments, keywords));
     }
 
     @Specialization
@@ -182,35 +184,39 @@ public abstract class CallNode extends PNodeWithContext {
 
     @Specialization(guards = "isPBuiltinFunction(callable.getFunction())")
     protected static Object methodCallBuiltinDirect(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords,
-                    @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
-                    @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
+                    @Bind Node inliningTarget,
+                    @Shared @Cached CallDispatchers.BuiltinFunctionInvokeNode invokeBuiltin,
+                    @Shared @Cached CreateArgumentsNode createArgs) {
         // functions must be called directly otherwise the call stack is incorrect
-        return dispatch.executeCall(frame, (PBuiltinFunction) callable.getFunction(), createArgs.execute(callable, arguments, keywords));
+        return invokeBuiltin.execute(frame, inliningTarget, (PBuiltinFunction) callable.getFunction(), createArgs.execute(callable, arguments, keywords));
     }
 
     @Specialization(guards = "isPFunction(callable.getFunction())", replaces = "methodCallBuiltinDirect")
     protected static Object methodCallDirect(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords,
-                    @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
-                    @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
+                    @Bind Node inliningTarget,
+                    @Shared @Cached CallDispatchers.FunctionInvokeNode invokeFunction,
+                    @Shared @Cached CreateArgumentsNode createArgs) {
         // functions must be called directly otherwise the call stack is incorrect
-        return dispatch.executeCall(frame, (PFunction) callable.getFunction(), createArgs.execute(callable, arguments, keywords));
+        return invokeFunction.execute(frame, inliningTarget, (PFunction) callable.getFunction(), createArgs.execute(callable, arguments, keywords));
     }
 
     @Specialization(limit = "1", guards = {"isSingleContext()", "callable == cachedCallable", "isPBuiltinFunction(cachedCallable.getFunction())"})
     protected static Object builtinMethodCallBuiltinDirectCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
+                    @Bind Node inliningTarget,
                     @Cached(value = "callable", weak = true) PBuiltinMethod cachedCallable,
-                    @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
-                    @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
+                    @Shared @Cached CallDispatchers.BuiltinFunctionInvokeNode invokeBuiltin,
+                    @Shared @Cached CreateArgumentsNode createArgs) {
         // functions must be called directly otherwise the call stack is incorrect
-        return dispatch.executeCall(frame, cachedCallable.getBuiltinFunction(), createArgs.execute(cachedCallable, arguments, keywords));
+        return invokeBuiltin.execute(frame, inliningTarget, cachedCallable.getBuiltinFunction(), createArgs.execute(cachedCallable, arguments, keywords));
     }
 
     @Specialization(guards = "isPBuiltinFunction(callable.getFunction())", replaces = "builtinMethodCallBuiltinDirectCached")
     protected static Object builtinMethodCallBuiltinDirect(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
-                    @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
-                    @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
+                    @Bind Node inliningTarget,
+                    @Shared @Cached CallDispatchers.BuiltinFunctionInvokeNode invokeBuiltin,
+                    @Shared @Cached CreateArgumentsNode createArgs) {
         // functions must be called directly otherwise the call stack is incorrect
-        return dispatch.executeCall(frame, callable.getBuiltinFunction(), createArgs.execute(callable, arguments, keywords));
+        return invokeBuiltin.execute(frame, inliningTarget, callable.getBuiltinFunction(), createArgs.execute(callable, arguments, keywords));
     }
 
     @Fallback
@@ -226,10 +232,6 @@ public abstract class CallNode extends PNodeWithContext {
             return callSlot.execute(frame, inliningTarget, slots.tp_call(), callableObject, arguments, keywords);
         }
         throw raise.raise(inliningTarget, TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callableObject);
-    }
-
-    protected static boolean isForeignMethod(Object object) {
-        return object instanceof ForeignMethod;
     }
 
     @GenerateInline

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,15 +59,13 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode.CreateAndCheckArgumentsNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -86,6 +84,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
@@ -248,32 +247,31 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         }
     }
 
-    /**
-     * This is very much like {@link com.oracle.graal.python.nodes.call.CallDispatchNode} but just
-     * for calling {@link CallTarget call tagets} directly instead of function/method objects. This
-     * node essentially serves as an inline cache for the invoked call target. This node will
-     * automatically fall back to a {@link GenericInvokeNode} if the inline cache flows over.
-     */
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
+    // TODO move, use in eval etc?
     abstract static class CallTargetDispatchNode extends Node {
 
-        abstract Object execute(Node inliningTarget, CallTarget ct, Object[] pythonArguments);
+        abstract Object execute(Node inliningTarget, RootCallTarget ct, Object[] pythonArguments);
 
-        @Specialization(guards = "ct == cachedCt", limit = "1")
-        static Object doCallTargetDirect(@SuppressWarnings("unused") CallTarget ct, Object[] args,
-                        @SuppressWarnings("unused") @Cached(value = "ct", weak = true) CallTarget cachedCt,
-                        @Cached("create(ct, true, false)") CallTargetInvokeNode callNode) {
+        @Specialization(guards = "sameCallTarget(callTarget, callNode)", limit = "1")
+        static Object doCallTargetDirect(Node inliningTarget, @SuppressWarnings("unused") RootCallTarget callTarget, Object[] args,
+                        @Cached(parameters = "callTarget") DirectCallNode callNode,
+                        @Cached CallDispatchers.SimpleDirectInvokeNode invoke) {
             assert PArguments.isPythonFrame(args);
-            return callNode.execute(null, null, null, null, args);
+            return invoke.execute(null, inliningTarget, callNode, args);
         }
 
         @Specialization(replaces = "doCallTargetDirect")
-        static Object doCallTargetIndirect(CallTarget ct, Object[] args,
-                        @Cached(inline = false) GenericInvokeNode callNode) {
+        static Object doCallTargetIndirect(Node inliningTarget, RootCallTarget ct, Object[] args,
+                        @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
             assert PArguments.isPythonFrame(args);
-            return callNode.execute(ct, args);
+            return invoke.execute(null, inliningTarget, ct, args);
+        }
+
+        protected static boolean sameCallTarget(RootCallTarget callTarget, DirectCallNode callNode) {
+            return callTarget == callNode.getCallTarget();
         }
     }
 
