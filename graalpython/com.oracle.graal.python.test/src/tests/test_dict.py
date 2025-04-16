@@ -1267,7 +1267,6 @@ def test_dict_values_eq():
     d1 = {1: 1, 2: 2, 4: 4}
     assert d1.values() != d1.values()
 
-
 def test_missing_and_not_implemented():
     class MyDict(dict):
         def __missing__(self, key):
@@ -1275,3 +1274,15 @@ def test_missing_and_not_implemented():
 
     d = MyDict()
     assert d['bogus_key'] == NotImplemented
+
+def test_removing_attr_from_economic_map():
+    class Test:
+        pass
+
+    o = Test()
+    o.foo = 1
+    o.__dict__[42] = 10
+    del o.foo
+
+    assert "foo" not in o.__dict__
+
