@@ -533,10 +533,8 @@ public final class PFactory {
     }
 
     public static PFunction createFunction(PythonLanguage language, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
-                    PCell[] closure,
-                    Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
-        return trace(language, new PFunction(language, name, qualname, code, globals, defaultValues, kwDefaultValues, closure,
-                        codeStableAssumption, defaultsStableAssumption));
+                    PCell[] closure, Assumption codeStableAssumption) {
+        return trace(language, new PFunction(language, name, qualname, code, globals, defaultValues, kwDefaultValues, closure, codeStableAssumption));
     }
 
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget) {

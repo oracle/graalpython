@@ -63,7 +63,6 @@ public final class PFunction extends PythonObject {
     private TruffleString qualname;
     private boolean forceSplitDirectCalls;
     private final Assumption codeStableAssumption;
-    private final Assumption defaultsStableAssumption;
     private final PythonObject globals;
     @CompilationFinal private boolean isBuiltin;
     @CompilationFinal(dimensions = 1) private final PCell[] closure;
@@ -81,14 +80,12 @@ public final class PFunction extends PythonObject {
     }
 
     public PFunction(PythonLanguage lang, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, Object[] defaultValues,
-                    PKeyword[] kwDefaultValues,
-                    PCell[] closure) {
-        this(lang, name, qualname, code, globals, defaultValues, kwDefaultValues, closure, Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
+                    PKeyword[] kwDefaultValues, PCell[] closure) {
+        this(lang, name, qualname, code, globals, defaultValues, kwDefaultValues, closure, Truffle.getRuntime().createAssumption());
     }
 
     public PFunction(PythonLanguage lang, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, Object[] defaultValues,
-                    PKeyword[] kwDefaultValues,
-                    PCell[] closure, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
+                    PKeyword[] kwDefaultValues, PCell[] closure, Assumption codeStableAssumption) {
         super(PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PFunction.getInstanceShape(lang));
         this.name = name;
         this.qualname = qualname;
@@ -100,16 +97,11 @@ public final class PFunction extends PythonObject {
         this.kwDefaultValues = this.finalKwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
         this.closure = closure;
         this.codeStableAssumption = codeStableAssumption;
-        this.defaultsStableAssumption = defaultsStableAssumption;
         this.forceSplitDirectCalls = false;
     }
 
     public Assumption getCodeStableAssumption() {
         return codeStableAssumption;
-    }
-
-    public Assumption getDefaultsStableAssumption() {
-        return defaultsStableAssumption;
     }
 
     public PythonObject getGlobals() {
@@ -203,7 +195,7 @@ public final class PFunction extends PythonObject {
 
     public Object[] getDefaults() {
         if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(this)) {
-            if (defaultsStableAssumption.isValid()) {
+            if (codeStableAssumption.isValid()) {
                 return finalDefaultValues;
             }
         }
@@ -212,14 +204,14 @@ public final class PFunction extends PythonObject {
 
     @TruffleBoundary
     public void setDefaults(Object[] defaults) {
-        this.defaultsStableAssumption.invalidate("defaults changed for function " + getName());
+        this.codeStableAssumption.invalidate("defaults changed for function " + getName());
         this.finalDefaultValues = null; // avoid leak, and make code that wrongly uses it crash
         this.defaultValues = defaults;
     }
 
     public PKeyword[] getKwDefaults() {
         if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(this)) {
-            if (defaultsStableAssumption.isValid()) {
+            if (codeStableAssumption.isValid()) {
                 return finalKwDefaultValues;
             }
         }
@@ -228,7 +220,7 @@ public final class PFunction extends PythonObject {
 
     @TruffleBoundary
     public void setKwDefaults(PKeyword[] defaults) {
-        this.defaultsStableAssumption.invalidate("kw defaults changed for function " + getName());
+        this.codeStableAssumption.invalidate("kw defaults changed for function " + getName());
         this.finalDefaultValues = null; // avoid leak, and make code that wrongly uses it crash
         this.kwDefaultValues = defaults;
     }
