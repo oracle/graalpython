@@ -1218,7 +1218,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     PTokenizerIter("TokenizerIter", PythonObject, newBuilder().publishInModule("_tokenize").basetype().slots(TokenizerIterBuiltins.SLOTS)),
 
-    PTypeVar(J_TYPE_VAR, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(TypeVarBuiltins.SLOTS).methodsFlags(TYPEVAR_TYPE_M_FLAGS).doc("""
+    PTypeVar(J_TYPE_VAR, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(TypeVarBuiltins.SLOTS).doc("""
                     Type variable.
 
                     The preferred way to construct a type variable is via the dedicated
@@ -1291,7 +1291,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     Note that only TypeVarTuples defined in the global scope can be
                     pickled.
                     """)),
-    PParamSpec(J_PARAM_SPEC, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(ParamSpecBuiltins.SLOTS).methodsFlags(PARAMSPEC_TYPE_M_FLAGS).doc("""
+    PParamSpec(J_PARAM_SPEC, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(ParamSpecBuiltins.SLOTS).doc("""
                     Parameter specification variable.
 
                     The preferred way to construct a parameter specification is via the
@@ -1367,7 +1367,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PTypeAliasType(
                     J_TYPE_ALIAS_TYPE,
                     PythonObject,
-                    newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(TypeAliasTypeBuiltins.SLOTS).methodsFlags(TYPEALIAS_TYPE_M_FLAGS).doc("""
+                    newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(TypeAliasTypeBuiltins.SLOTS).doc("""
                                     Type alias.
 
                                     Type aliases are created through the type statement::
