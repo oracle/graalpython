@@ -56,7 +56,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.UnaryPythonSlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;

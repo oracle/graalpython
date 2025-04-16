@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.PythonLanguage;

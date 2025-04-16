@@ -176,7 +176,6 @@ import com.oracle.graal.python.builtins.objects.type.TpSlotsFactory.GetTpSlotsNo
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
@@ -214,10 +213,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotV
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.InlineWeakValueProfile;
