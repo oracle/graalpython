@@ -847,13 +847,38 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                 inspectFlag = false;
                 rc = readEvalPrint(context, consoleHandler);
             }
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("did not complete all polyglot threads")) {
+                // Python may end up with stuck threads and code would legitimately expect those to
+                // simply die with the process. In an embedding (or CPython subinterpreters) this
+                // is a problem, so Truffle throws an IllegalStateException when closing the
+                // context if that occurs. But here we have a launcher and usually we do not care
+                // about this problem during exit. For an example and some discussion, see
+                // https://discuss.python.org/t/getting-rid-of-daemon-threads/68836/14 where NJS
+                // brings up getaddrinfo which may just block in native for an arbitrary amount of
+                // time and prevent us from shutting down the thread.
+                if (!verboseFlag) {
+                    tryToResetConsoleHandler(consoleHandler);
+                    System.exit(rc);
+                }
+            } else {
+                throw e;
+            }
         } catch (IOException e) {
             rc = 1;
             e.printStackTrace();
         } finally {
-            consoleHandler.setContext(null);
+            tryToResetConsoleHandler(consoleHandler);
         }
         System.exit(rc);
+    }
+
+    private static void tryToResetConsoleHandler(ConsoleHandler consoleHandler) {
+        try {
+            consoleHandler.setContext(null);
+        } catch (Throwable e) {
+            // pass
+        }
     }
 
     private static boolean getBoolEnv(String var) {
