@@ -31,7 +31,9 @@ distutils.tests.test_build_clib.BuildCLibTestCase.test_get_source_files @ darwin
 distutils.tests.test_build_clib.BuildCLibTestCase.test_run @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 distutils.tests.test_build_ext.BuildExtTestCase.test_check_extensions_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 distutils.tests.test_build_ext.BuildExtTestCase.test_compiler_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+distutils.tests.test_build_ext.BuildExtTestCase.test_deployment_target_default @ darwin-arm64,darwin-x86_64
 distutils.tests.test_build_ext.BuildExtTestCase.test_deployment_target_higher_ok @ darwin-arm64,darwin-x86_64
+distutils.tests.test_build_ext.BuildExtTestCase.test_deployment_target_too_low @ darwin-arm64,darwin-x86_64
 distutils.tests.test_build_ext.BuildExtTestCase.test_ext_fullpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 distutils.tests.test_build_ext.BuildExtTestCase.test_finalize_options @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 distutils.tests.test_build_ext.BuildExtTestCase.test_get_outputs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -42,7 +44,9 @@ distutils.tests.test_build_ext.BuildExtTestCase.test_unicode_module_names @ darw
 distutils.tests.test_build_ext.BuildExtTestCase.test_user_site @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 distutils.tests.test_build_ext.ParallelBuildExtTestCase.test_check_extensions_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 distutils.tests.test_build_ext.ParallelBuildExtTestCase.test_compiler_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+distutils.tests.test_build_ext.ParallelBuildExtTestCase.test_deployment_target_default @ darwin-arm64,darwin-x86_64
 distutils.tests.test_build_ext.ParallelBuildExtTestCase.test_deployment_target_higher_ok @ darwin-arm64,darwin-x86_64
+distutils.tests.test_build_ext.ParallelBuildExtTestCase.test_deployment_target_too_low @ darwin-arm64,darwin-x86_64
 distutils.tests.test_build_ext.ParallelBuildExtTestCase.test_ext_fullpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 distutils.tests.test_build_ext.ParallelBuildExtTestCase.test_finalize_options @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 distutils.tests.test_build_ext.ParallelBuildExtTestCase.test_get_outputs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -3,6 +3,7 @@ test.test_descr.ClassPropertiesAndMethods.test_abstractmethods @ darwin-arm64,da
 test.test_descr.ClassPropertiesAndMethods.test_altmro @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_assign_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_attr_raise_through_property @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_descr.ClassPropertiesAndMethods.test_bad_new @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_basic_inheritance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_binary_operator_override @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_bound_method_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -72,6 +73,7 @@ test.test_descr.ClassPropertiesAndMethods.test_qualname_dict @ darwin-arm64,darw
 test.test_descr.ClassPropertiesAndMethods.test_recursive_call @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_repr_as_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_repr_with_module_str_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_descr.ClassPropertiesAndMethods.test_restored_object_new @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_rich_comparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_rmul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_set_and_no_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
