@@ -2078,7 +2078,7 @@ def python_checkcopyrights(args):
         content = listfile.read()
     with open(listfilename, "w") as listfile:
         for line in content.split("\n"):
-            if "lib-python/3" in line or "com.oracle.graal.python.test/testData" in line or "com.oracle.graal.python.pegparser.test/testData" in line:
+            if any(x in line for x in ["lib-python/3", ".test/testData", "/hpy/"]):
                 pass
             elif os.path.splitext(line)[1] in [".py", ".java", ".c", ".h", ".sh"]:
                 listfile.write(line)
