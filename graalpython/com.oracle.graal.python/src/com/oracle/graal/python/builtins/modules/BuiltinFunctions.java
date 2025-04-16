@@ -1587,7 +1587,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 currentValue = nextNode.execute(frame, inliningTarget, iterator);
             } catch (IteratorExhausted e) {
                 if (hasDefaultProfile.profile(inliningTarget, isNoValue(defaultVal))) {
-                    throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.ARG_IS_EMPTY_SEQ, name);
+                    throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.ITERABLE_ARG_IS_EMPTY, name);
                 } else {
                     return defaultVal;
                 }
