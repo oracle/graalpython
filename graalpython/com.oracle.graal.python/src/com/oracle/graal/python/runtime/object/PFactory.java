@@ -86,6 +86,7 @@ import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressorObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.asyncio.PANextAwaitable;
 import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGen;
 import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenASend;
 import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenAThrow;
@@ -855,6 +856,10 @@ public final class PFactory {
 
     public static PAsyncGen createAsyncGenerator(PythonLanguage language, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
         return trace(language, PAsyncGen.create(language, name, qualname, rootNode, callTargets, arguments));
+    }
+
+    public static PANextAwaitable createANextAwaitable(PythonLanguage language, Object wrapped, Object defaultValue) {
+        return trace(language, new PANextAwaitable(PythonBuiltinClassType.PAnextAwaitable, PythonBuiltinClassType.PAnextAwaitable.getInstanceShape(language), wrapped, defaultValue));
     }
 
     public static PMappingproxy createMappingproxy(PythonLanguage language, Object object) {

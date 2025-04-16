@@ -53,7 +53,7 @@ public class SlotsMapping {
         return switch (s.value()) {
             case nb_bool -> "TpSlotInquiry.TpSlotInquiryBuiltin";
             case nb_index, nb_int, nb_float, nb_absolute, nb_positive, nb_negative, nb_invert,
-                            tp_iter, tp_str, tp_repr ->
+                            tp_iter, tp_str, tp_repr, am_aiter, am_anext, am_await ->
                 "TpSlotUnaryFunc.TpSlotUnaryFuncBuiltin";
             case nb_add, nb_subtract, nb_multiply, nb_remainder, nb_divmod, nb_lshift, nb_rshift, nb_and, nb_xor, nb_or,
                             nb_floor_divide, nb_true_divide, nb_matrix_multiply ->
@@ -90,7 +90,7 @@ public class SlotsMapping {
             case tp_descr_get -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode";
             case nb_bool -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode";
             case nb_index, nb_int, nb_float, nb_absolute, nb_positive, nb_negative, nb_invert,
-                            tp_iter, tp_iternext, tp_str, tp_repr ->
+                            tp_iter, tp_iternext, tp_str, tp_repr, am_aiter, am_await, am_anext ->
                 "com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode";
             case nb_add, nb_subtract, nb_multiply, nb_remainder, nb_divmod, nb_lshift, nb_rshift, nb_and, nb_xor, nb_or,
                             nb_floor_divide, nb_true_divide, nb_matrix_multiply ->
@@ -194,6 +194,9 @@ public class SlotsMapping {
             case tp_repr -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__";
             case tp_init -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__";
             case tp_call -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__";
+            case am_await -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___AWAIT__";
+            case am_aiter -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___AITER__";
+            case am_anext -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___ANEXT__";
             default -> "";
         };
     }

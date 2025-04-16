@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -151,14 +151,15 @@ class TestPyTuple(CPyExtTestCase):
             ((1, 2, 3), -1, []),
             ((1, 2, 3), 3, str),
         ),
-        code="""PyObject* wrap_PyTuple_SetItem(PyObject* original, Py_ssize_t index, PyObject* value) {
+        code="""
+        PyObject* wrap_PyTuple_SetItem(PyObject* original, Py_ssize_t index, PyObject* value) {
             Py_ssize_t size = PyTuple_Size(original);
             if (size < 0)
                 return NULL;
             PyObject* tuple = PyTuple_New(size);
             if (!tuple)
                 return NULL;
-            for (int i = 0; i < size; i++) {
+            for (int i = 0; i < size / 2; i++) {
                 PyObject* item = PyTuple_GetItem(original, i);
                 if (!item) {
                     Py_DECREF(tuple);
@@ -167,6 +168,22 @@ class TestPyTuple(CPyExtTestCase):
                 Py_INCREF(item);
                 PyTuple_SET_ITEM(tuple, i, item);
             }
+
+            #ifdef GRAALVM_PYTHON
+            // test that we also have it as API function on GraalPy
+            #undef PyTuple_SET_ITEM
+            #endif
+
+            for (int i = size / 2; i < size; i++) {
+                PyObject* item = PyTuple_GetItem(original, i);
+                if (!item) {
+                    Py_DECREF(tuple);
+                    return NULL;
+                }
+                Py_INCREF(item);
+                PyTuple_SET_ITEM(tuple, i, item);
+            }
+
             Py_INCREF(value);
             if (PyTuple_SetItem(tuple, index, value) < 0) {
                 Py_DECREF(tuple);

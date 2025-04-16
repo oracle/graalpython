@@ -296,7 +296,7 @@ patch = 'numba-0.59.1.patch'
 license = 'BSD-2-Clause'
 
 [[numpy.rules]]
-version = '>= 2.0.0rc1, < 2.1'
+version = '>= 2.0.0rc1, < 2.3'
 patch = 'numpy-2.0.0.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
@@ -351,6 +351,11 @@ license = 'Apache-2.0 OR MIT'
 [[orjson.rules]]
 version = '== 3.10.5'
 patch = 'orjson-3.10.5.patch'
+license = 'Apache-2.0 OR MIT'
+
+[[ormsgpack.rules]]
+version = '>= 1.8.0, <= 1.9.1'
+patch = 'ormsgpack-1.8.0-1.9.1.patch'
 license = 'Apache-2.0 OR MIT'
 
 [[overrides.rules]]

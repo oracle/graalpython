@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.asyncio;
 
 import static com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenASend.AwaitableState;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AWAIT__;
 
 import java.util.List;
 
@@ -81,7 +80,7 @@ public final class AsyncGenSendBuiltins extends PythonBuiltins {
         return AsyncGenSendBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___AWAIT__, minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Slot(value = SlotKind.am_await, isComplex = true)
     @GenerateNodeFactory
     public abstract static class Await extends PythonUnaryBuiltinNode {
         @Specialization

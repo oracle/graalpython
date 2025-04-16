@@ -218,6 +218,7 @@ ctypes.test.test_struct_fields.StructFieldsTestCase.test_1_B @ darwin-arm64,darw
 ctypes.test.test_struct_fields.StructFieldsTestCase.test_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_struct_fields.StructFieldsTestCase.test_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_struct_fields.StructFieldsTestCase.test_4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+ctypes.test.test_struct_fields.StructFieldsTestCase.test_6 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_struct_fields.StructFieldsTestCase.test___get__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_struct_fields.StructFieldsTestCase.test___set__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_structures.PointerMemberTestCase.test @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

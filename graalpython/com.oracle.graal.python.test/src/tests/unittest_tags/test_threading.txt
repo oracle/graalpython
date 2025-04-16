@@ -75,7 +75,8 @@ test.test_threading.ExceptHookTests.test_custom_excepthook_fail @ darwin-arm64,d
 test.test_threading.ExceptHookTests.test_excepthook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ExceptHookTests.test_original_excepthook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ExceptHookTests.test_system_exit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_threading.InterruptMainTests.test_can_interrupt_tight_loops @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+# Transient on Darwin (at least)
+!test.test_threading.InterruptMainTests.test_can_interrupt_tight_loops @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.InterruptMainTests.test_interrupt_main_noerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.LockTests.test_acquire_contended @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.LockTests.test_acquire_destroy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

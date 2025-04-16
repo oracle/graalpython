@@ -497,16 +497,6 @@ def nativeclean(args):
     mx.clean(["--dependencies", ",".join(PYTHON_NATIVE_PROJECTS + PYTHON_ARCHIVES)])
 
 
-def python3_unittests(args):
-    """run the cPython stdlib unittests"""
-    mx.run([sys.executable, "graalpython/com.oracle.graal.python.test/src/python_unittests.py", "-v"] + args)
-
-
-def compare_unittests(args):
-    """compare the output of two runs of the cPython stdlib unittests"""
-    mx.run([sys.executable, "graalpython/com.oracle.graal.python.test/src/compare_unittests.py", "-v"] + args)
-
-
 class GraalPythonTags(object):
     junit = 'python-junit'
     junit_maven = 'python-junit-maven'
@@ -3071,6 +3061,65 @@ def graalpy_jmh(args):
     mx.run_java(vm_args + ['org.openjdk.jmh.Main'] + args)
 
 
+def run_in_venv(venv, cmd, **kwargs):
+    return mx.run(['sh', '-c', f"source {venv}/bin/activate && {shlex.join(cmd)}"], **kwargs)
+
+
+DOWNSTREAM_TESTS = {}
+
+def downstream_test(name):
+    def decorator(fn):
+        DOWNSTREAM_TESTS[name] = fn
+        return fn
+    return decorator
+
+
+@downstream_test('pybind11')
+def downstream_test_pybind11(graalpy):
+    testdir = Path('upstream-tests').absolute()
+    shutil.rmtree(testdir, ignore_errors=True)
+    testdir.mkdir(exist_ok=True)
+    mx.run(['git', 'clone', 'https://github.com/pybind/pybind11.git'], cwd=testdir)
+    src = testdir / 'pybind11'
+    venv = src / 'venv'
+    mx.run([graalpy, '-m', 'venv', str(venv)])
+    run_in_venv(venv, ['pip', 'install', 'pytest'])
+    run_in_venv(venv, ['cmake', '-S', '.', '-B', 'build', '-DPYBIND11_WERROR=ON'], cwd=src)
+    run_in_venv(venv, ['cmake', '--build', 'build', '--parallel'], cwd=src)
+    env = os.environ.copy()
+    env['PYTHONPATH'] = 'build/tests'
+    run_in_venv(venv, ['pytest', '-v', '--tb=short', 'tests'], cwd=src, env=env)
+
+
+@downstream_test('virtualenv')
+def downstream_test_virtualenv(graalpy):
+    testdir = Path('upstream-tests').absolute()
+    shutil.rmtree(testdir, ignore_errors=True)
+    testdir.mkdir(exist_ok=True)
+    mx.run(['git', 'clone', 'https://github.com/pypa/virtualenv.git', '-b', 'main'], cwd=testdir)
+    src = testdir / 'virtualenv'
+    venv = src / 'venv'
+    mx.run([graalpy, '-m', 'venv', str(venv)])
+    env = os.environ.copy()
+    # Need to avoid pulling in graalpy seeder
+    env['PIP_GRAALPY_DISABLE_PATCHING'] = '1'
+    run_in_venv(venv, ['pip', 'install', f'{src}[test]'], env=env)
+    # Don't activate the venv, it interferes with the test
+    mx.run( [str(venv / 'bin'/ 'pytest'), '-v', '--tb=short', 'tests'], cwd=src)
+
+
+def run_downstream_test(args):
+    parser = ArgumentParser(description="Runs important upstream packages tests using their main branch")
+    parser.add_argument('project', choices=sorted(DOWNSTREAM_TESTS))
+    parser.add_argument('--dev', action='store_true', help="Use JVM dev standalone")
+    args = parser.parse_args(args)
+    if args.dev:
+        graalpy = graalpy_standalone('jvm', dev=True)
+    else:
+        graalpy = graalpy_standalone_native()
+    DOWNSTREAM_TESTS[args.project](graalpy)
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # register the suite commands (if any)
@@ -3088,8 +3137,6 @@ mx.update_commands(SUITE, {
     'python-jvm': [no_return(python_jvm), ''],
     'graalpy-standalone': [graalpy_standalone_wrapper, '[jvm|native] [ce|ee] [--no-build]'],
     'python-gvm': [no_return(python_gvm), ''],
-    'python-unittests': [python3_unittests, ''],
-    'python-compare-unittests': [compare_unittests, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
     'python-src-import': [mx_graalpython_import.import_python_sources, ''],
@@ -3106,4 +3153,5 @@ mx.update_commands(SUITE, {
     'tox-example': [tox_example, ''],
     'graalpy-jmh': [graalpy_jmh, ''],
     'deploy-local-maven-repo': [deploy_local_maven_repo_wrapper, ''],
+    'downstream-test': [run_downstream_test, ''],
 })

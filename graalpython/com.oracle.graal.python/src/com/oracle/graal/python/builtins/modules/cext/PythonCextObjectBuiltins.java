@@ -133,6 +133,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -739,6 +740,15 @@ public abstract class PythonCextObjectBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
             return getDict.execute(inliningTarget, object);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTruffle_Is extends CApiBinaryBuiltinNode {
+        @Specialization
+        static int isTrue(Object a, Object b,
+                        @Cached IsNode isNode) {
+            return isNode.execute(a, b) ? 1 : 0;
         }
     }
 }
