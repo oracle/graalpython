@@ -2532,7 +2532,12 @@ Py_XNewRef(PyObject *obj)
 // for the stable ABI.
 int Py_Is(PyObject *x, PyObject *y)
 {
+#if 0 // GraalPy change
     return (x == y);
+#else
+    return (x == y) ||
+        (points_to_py_handle_space(x) && points_to_py_handle_space(y) && GraalPyTruffle_Is(x, y));
+#endif
 }
 
 int Py_IsNone(PyObject *x)
