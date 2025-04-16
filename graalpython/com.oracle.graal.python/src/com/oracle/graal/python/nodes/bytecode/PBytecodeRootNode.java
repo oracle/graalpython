@@ -786,15 +786,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (expectedClass.isInstance(node)) {
             return (T) node;
         }
-        return doInsertChildNodeInt(nodes, nodeIndex, nodeSupplier, argument);
+        return doInsertChildNodeInt(nodes, nodeIndex, expectedClass, nodeSupplier, argument);
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Node> T doInsertChildNodeInt(Node[] nodes, int nodeIndex, IntNodeFunction<T> nodeSupplier, int argument) {
+    private <T extends Node, U> T doInsertChildNodeInt(Node[] nodes, int nodeIndex, Class<U> expectedClass, IntNodeFunction<T> nodeSupplier, int argument) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         Lock lock = getLock();
         lock.lock();
         try {
+            Node node = nodes[nodeIndex];
+            if (expectedClass.isInstance(node)) {
+                return (T) node;
+            }
             T newNode = nodeSupplier.apply(argument);
             doInsertChildNode(nodes, nodeIndex, newNode);
             return newNode;
@@ -809,15 +813,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (node != null && node.getClass() == cachedClass) {
             return CompilerDirectives.castExact(node, cachedClass);
         }
-        return CompilerDirectives.castExact(doInsertChildNode(nodes, nodeIndex, nodeSupplier), cachedClass);
+        return CompilerDirectives.castExact(doInsertChildNode(nodes, nodeIndex, cachedClass, nodeSupplier), cachedClass);
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Node> T doInsertChildNode(Node[] nodes, int nodeIndex, NodeSupplier<T> nodeSupplier) {
+    private <T extends Node, U> T doInsertChildNode(Node[] nodes, int nodeIndex, Class<U> cachedClass, NodeSupplier<T> nodeSupplier) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         Lock lock = getLock();
         lock.lock();
         try {
+            Node node = nodes[nodeIndex];
+            if (node != null && node.getClass() == cachedClass) {
+                return (T) node;
+            }
             T newNode = nodeSupplier.get();
             doInsertChildNode(nodes, nodeIndex, newNode);
             return newNode;
@@ -835,7 +843,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (node != null && node.getClass() == cachedClass) {
             return CompilerDirectives.castExact(node, cachedClass);
         }
-        return CompilerDirectives.castExact(doInsertChildNode(nodes, nodeIndex, nodeSupplier), cachedClass);
+        return CompilerDirectives.castExact(doInsertChildNode(nodes, nodeIndex, cachedClass, nodeSupplier), cachedClass);
     }
 
     private void doInsertChildNode(Node[] nodes, int nodeIndex, Node newNode) {
