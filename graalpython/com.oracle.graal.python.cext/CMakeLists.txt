@@ -41,13 +41,9 @@ if(MSVC)
     message(FATAL_ERROR "C API cannot be built with MSVC")
 endif()
 
-if(WIN32)
-    require_var(GRAALVM_LLVM_LIB_DIR)
-endif()
 require_var(GRAALPY_PARENT_DIR)
 require_var(CAPI_INC_DIR)
 require_var(PYCONFIG_INCLUDE_DIR)
-require_var(TRUFFLE_H_INC)
 require_var(TRUFFLE_NFI_H_INC)
 require_var(GRAALPY_EXT)
 
@@ -61,7 +57,7 @@ set(TARGET_LIBPYTHON "python-native")
 # common variables and compile/link options (for all build targets)
 ######################################################################
 
-set(CFLAGS_WARNINGS -Wall -Werror,-Wunknown-warning-option -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable
+set(CFLAGS_WARNINGS -Wall -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable
                     -Wno-tautological-constant-out-of-range-compare   # fileutils.c: wchar_t > MAX_UNICODE is always false on Windows
                     -Wno-unused-but-set-variable                      # sqlite.c: BOOL bRc
                     -Wno-ignored-pragmas                              # sre.c: #pragma optimize("agtw", on)
@@ -75,10 +71,7 @@ add_compile_options(-ffile-prefix-map=${GRAALPY_PARENT_DIR}=.)
 # preprocessor defines for all platforms
 add_compile_definitions(
     NDEBUG
-    GRAALVM_PYTHON_LLVM
 )
-
-add_compile_definitions(GRAALVM_PYTHON_LLVM_NATIVE)
 
 
 if(WIN32)
@@ -155,7 +148,6 @@ include_directories(
     "${SRC_DIR}/include"
     "${CAPI_INC_DIR}"
     "${PYCONFIG_INCLUDE_DIR}"
-    "${TRUFFLE_H_INC}"
     "${TRUFFLE_NFI_H_INC}"
 )
 
@@ -261,9 +253,7 @@ target_compile_definitions(${TARGET_LIBPYTHON} PRIVATE Py_BUILD_CORE Py_BUILD_CO
 target_compile_options(${TARGET_LIBPYTHON} PRIVATE ${CFLAGS_WARNINGS})
 
 if(WIN32)
-    target_link_directories(${TARGET_LIBPYTHON} PRIVATE ${GRAALVM_LLVM_LIB_DIR})
     target_compile_options(${TARGET_LIBPYTHON} PRIVATE "-fmsc-version=1920")
-    target_link_libraries(${TARGET_LIBPYTHON} sulong-native graalvm-llvm)
 else()
     # Link to math library; required for functions like 'hypot' or similar
     target_link_libraries(${TARGET_LIBPYTHON} m)

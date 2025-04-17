@@ -41,7 +41,7 @@ import os
 import sys
 import unittest
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtHeapType, RUNS_ON_LLVM
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtHeapType
 
 DIR = os.path.dirname(__file__)
 

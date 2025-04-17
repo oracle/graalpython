@@ -52,13 +52,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.BinaryPythonSlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotHPyNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
@@ -159,22 +156,6 @@ public class TpSlotBinaryFunc {
             Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T_BINARY_SLOT, slot.callable,
                             selfToNativeNode.execute(self), argToNativeNode.execute(arg));
             return checkResultNode.execute(state, T_BINARY_SLOT, toPythonNode.execute(result));
-        }
-
-        @Specialization
-        @InliningCutoff
-        static Object callHPy(VirtualFrame frame, Node inliningTarget, TpSlotHPyNative slot, Object self, Object index,
-                        @Exclusive @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached(inline = false) HPyAsHandleNode selfToNativeNode,
-                        @Cached(inline = false) HPyAsHandleNode indexToNativeNode,
-                        @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Cached(inline = false) HPyAsPythonObjectNode toPythonNode,
-                        @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
-            PythonContext ctx = PythonContext.get(inliningTarget);
-            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GETITEM__, slot.callable,
-                            ctx.getHPyContext().getBackend(), selfToNativeNode.execute(self), indexToNativeNode.execute(index));
-            return checkResultNode.execute(threadState, T___GETITEM__, toPythonNode.execute(result));
         }
 
         @Specialization(replaces = "callCachedBuiltin")

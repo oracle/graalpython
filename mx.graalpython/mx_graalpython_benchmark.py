@@ -387,12 +387,9 @@ class GraalPythonVmBase(GuestVm):
 
         if mx.suite("tools", fatalIfMissing=False):
             dists.extend(('CHROMEINSPECTOR', 'TRUFFLE_PROFILER'))
-        if mx.suite("sulong", fatalIfMissing=False):
-            dists.append('SULONG_NATIVE')
 
         extra_polyglot_args += [
             "--python.CAPI=%s" % SUITE.extensions._get_capi_home(),
-            "--python.JNIHome=%s" % SUITE.extensions._get_jni_home()
         ]
 
         vm_args = mx.get_runtime_jvm_args(dists, cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix)
@@ -997,8 +994,6 @@ class PythonParserBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=to
         dists = ["GRAALPYTHON", "GRAALPYTHON-LAUNCHER"]
         if mx.suite("tools", fatalIfMissing=False):
             dists.extend(('CHROMEINSPECTOR', 'TRUFFLE_PROFILER'))
-        if mx.suite("sulong", fatalIfMissing=False):
-            dists.append('SULONG_NATIVE')
 
         vmArgs += [
             "-Dorg.graalvm.language.python.home=%s" % mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output(),

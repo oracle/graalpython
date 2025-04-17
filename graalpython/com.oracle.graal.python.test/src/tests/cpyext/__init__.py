@@ -53,7 +53,6 @@ from string import Formatter
 DIR = Path(__file__).parent.absolute()
 
 GRAALPYTHON = sys.implementation.name == "graalpy"
-RUNS_ON_LLVM = GRAALPYTHON and __graalpython__.ext_mode == 'llvm'
 
 def assert_raises(err, fn, *args, **kwargs):
     raised = False

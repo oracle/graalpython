@@ -378,24 +378,6 @@ public class TpSlotBinaryOp {
             return checkResultNode.execute(state, op.name, toPythonNode.execute(result));
         }
 
-        /*- TODO
-        @Specialization
-        @InliningCutoff
-        static Object callHPy(VirtualFrame frame, Node inliningTarget, TpSlotHPyNative slot, Object self, Object index,
-                        @Exclusive @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached(inline = false) HPyAsHandleNode selfToNativeNode,
-                        @Cached(inline = false) HPyAsHandleNode indexToNativeNode,
-                        @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Cached(inline = false) HPyAsPythonObjectNode toPythonNode,
-                        @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
-            PythonContext ctx = PythonContext.get(inliningTarget);
-            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GETITEM__, slot.callable,
-                            ctx.getHPyContext().getBackend(), selfToNativeNode.execute(self), indexToNativeNode.execute(index));
-            return checkResultNode.execute(threadState, T___GETITEM__, toPythonNode.execute(result));
-        }
-        */
-
         @SuppressWarnings("unused")
         @Specialization(replaces = "callCachedBuiltin")
         @InliningCutoff

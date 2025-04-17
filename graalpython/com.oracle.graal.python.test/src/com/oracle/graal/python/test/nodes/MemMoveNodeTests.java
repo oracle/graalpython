@@ -65,7 +65,7 @@ public class MemMoveNodeTests {
 
     @Before
     public void setUp() {
-        PythonTests.enterContext(Map.of("python.NativeModules", "false"), new String[0]);
+        PythonTests.enterContext(Map.of("python.IsolateNativeModules", "true"), new String[0]);
         this.gil = GilNode.uncachedAcquire();
         CApiContext.ensureCapiWasLoaded("internal");
     }

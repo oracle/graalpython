@@ -254,7 +254,7 @@ public class MultiContextCExtTest {
                 c0.eval(code);
                 fail("should not reach here");
             } catch (PolyglotException e) {
-                assertTrue("needs LLVM", e.getMessage().contains("LLVM"));
+                assertTrue("needs IsolateNativeModules", e.getMessage().contains("cannot use native module"));
             }
         } finally {
             for (var c : contexts) {

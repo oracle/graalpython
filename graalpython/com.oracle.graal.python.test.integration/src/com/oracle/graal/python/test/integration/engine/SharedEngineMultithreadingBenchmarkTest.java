@@ -52,7 +52,7 @@ import com.oracle.graal.python.test.integration.PythonTests;
 public class SharedEngineMultithreadingBenchmarkTest extends SharedEngineMultithreadingTestBase {
     @Test
     public void testRichardsInParallelInMultipleContexts() throws Throwable {
-        try (Engine engine = Engine.newBuilder().allowExperimentalOptions(true).option("python.NativeModules", "false").build()) {
+        try (Engine engine = Engine.newBuilder().allowExperimentalOptions(true).option("python.IsolateNativeModules", "true").build()) {
             Source richardsSource = PythonTests.getScriptSource("richards3.py");
             Task[] tasks = new Task[THREADS_COUNT];
             for (int taskIdx = 0; taskIdx < tasks.length; taskIdx++) {

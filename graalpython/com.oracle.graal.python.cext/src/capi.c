@@ -518,7 +518,7 @@ PyAPI_FUNC(size_t) PyTruffle_GetCurrentRSS() {
     // Linux
     FILE* fp = NULL;
     if ((fp = fopen( "/proc/self/statm", "r" )) != NULL) {
-        if (fscanf(fp, "%*s%ld", (long) &rss)) {
+        if (fscanf(fp, "%*s%ld", (long *) &rss)) {
             rss *= (uint64_t) sysconf( _SC_PAGESIZE);
         }
         fclose(fp);
@@ -660,12 +660,7 @@ PyAPI_FUNC(int) WriteStringMember(void* object, Py_ssize_t offset, char* value) 
 
 PyAPI_FUNC(int) WriteStringInPlaceMember(void* object, Py_ssize_t offset, char* value) {
     char *addr = (char*) (((char*) object) + offset);
-    size_t n;
-//    if (polyglot_has_array_elements(value)) {
-//        n = polyglot_get_array_size(value);
-//    } else {
-        n = strlen(value);
-//    }
+    size_t n = strlen(value);
     memcpy(addr, value, n);
     return 0;
 }

@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWra
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.pollReferenceQueue;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
-import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -343,8 +342,8 @@ public final class CApiContext extends CExtContext {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
     }
 
-    public CApiContext(PythonContext context, Object llvmLibrary, NativeLibraryLocator locator) {
-        super(context, llvmLibrary, locator != null);
+    public CApiContext(PythonContext context, Object library, NativeLibraryLocator locator) {
+        super(context, library);
         this.nativeSymbolCache = new Object[NativeCAPISymbol.values().length];
         this.nativeLibraryLocator = locator;
 
@@ -696,7 +695,7 @@ public final class CApiContext extends CExtContext {
         CompilerAsserts.neverPartOfCompilation();
         String name = symbol.getName();
         try {
-            Object nativeSymbol = InteropLibrary.getUncached().readMember(PythonContext.get(null).getCApiContext().getLLVMLibrary(), name);
+            Object nativeSymbol = InteropLibrary.getUncached().readMember(PythonContext.get(null).getCApiContext().getLibrary(), name);
             nativeSymbol = EnsureExecutableNode.executeUncached(nativeSymbol, symbol);
             VarHandle.storeStoreFence();
             return nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
@@ -902,14 +901,6 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public static Object ensureCApiLLVMLibrary(PythonContext context) throws IOException, ImportException, ApiInitException {
-        assert !PythonOptions.NativeModules.getValue(context.getEnv().getOptions());
-        CApiContext cApiContext = ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING,
-                        " load LLVM library (this is an internal bug, LLVM library should not be loaded when running on native backend)");
-        return cApiContext.getLLVMLibrary();
-    }
-
-    @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ImportException, ApiInitException {
         return ensureCapiWasLoaded(node, context, name, path, null);
     }
@@ -923,46 +914,36 @@ public final class CApiContext extends CExtContext {
 
             TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
             // e.g. "libpython-native.so"
-            String libName = context.getLLVMSupportExt("python");
+            String libName = PythonContext.getSupportLibName("python-native");
             final TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile();
             try {
                 SourceBuilder capiSrcBuilder;
-                boolean useNative = PythonOptions.NativeModules.getValue(env.getOptions());
+                boolean useNative = true;
                 boolean isolateNative = PythonOptions.IsolateNativeModules.getValue(env.getOptions());
                 final NativeLibraryLocator loc;
-                if (useNative) {
-                    if (!isolateNative) {
-                        useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, GLOBAL_NATIVE_CONTEXT);
-                    } else {
-                        useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, ISOLATED_NATIVE_CONTEXT) || nativeCAPILoaded.get() == ISOLATED_NATIVE_CONTEXT;
-                    }
-                    if (!useNative) {
-                        String actualReason = "initialize native extensions support";
-                        if (reason != null) {
-                            actualReason = reason;
-                        } else if (name != null && path != null) {
-                            actualReason = String.format("load a native module '%s' from path '%s'", name.toJavaStringUncached(), path.toJavaStringUncached());
-                        }
-                        throw new ApiInitException(toTruffleStringUncached(
-                                        String.format("Option python.NativeModules is set to 'true' and a second GraalPy context attempted to %s. " +
-                                                        "At least one context in this process runs with 'IsolateNativeModules' set to false. " +
-                                                        "Depending on the order of context creation, this means some contexts in the process " +
-                                                        "cannot use native module, all other contexts must fall back and set python.NativeModules " +
-                                                        "to 'false' to run native extensions in LLVM mode. This is recommended only " +
-                                                        "for extensions included in the Python standard library. Running a 3rd party extension in LLVM mode requires " +
-                                                        "a custom build of the extension and is generally discouraged due to compatibility reasons.", actualReason)));
-                    }
-                    loc = new NativeLibraryLocator(context, capiFile, isolateNative);
-                    context.ensureNFILanguage(node, "NativeModules", "true");
-                    String dlopenFlags = isolateNative ? "RTLD_LOCAL" : "RTLD_GLOBAL";
-                    capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, String.format("load(%s) \"%s\"", dlopenFlags, loc.getCapiLibrary()), "<libpython>");
-                    LOGGER.config(() -> "loading CAPI from " + loc.getCapiLibrary() + " as native");
+                if (!isolateNative) {
+                    useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, GLOBAL_NATIVE_CONTEXT);
                 } else {
-                    loc = null;
-                    context.ensureLLVMLanguage(node);
-                    capiSrcBuilder = Source.newBuilder(J_LLVM_LANGUAGE, capiFile);
-                    LOGGER.config(() -> "loading CAPI from " + capiFile + " as bitcode");
+                    useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, ISOLATED_NATIVE_CONTEXT) || nativeCAPILoaded.get() == ISOLATED_NATIVE_CONTEXT;
                 }
+                if (!useNative) {
+                    String actualReason = "initialize native extensions support";
+                    if (reason != null) {
+                        actualReason = reason;
+                    } else if (name != null && path != null) {
+                        actualReason = String.format("load a native module '%s' from path '%s'", name.toJavaStringUncached(), path.toJavaStringUncached());
+                    }
+                    throw new ApiInitException(toTruffleStringUncached(
+                                    String.format("Option python.IsolateNativeModules is set to 'false' and a second GraalPy context attempted to %s. " +
+                                                    "At least one context in this process runs with 'IsolateNativeModules' set to false. " +
+                                                    "Depending on the order of context creation, this means some contexts in the process " +
+                                                    "cannot use native module.", actualReason)));
+                }
+                loc = new NativeLibraryLocator(context, capiFile, isolateNative);
+                context.ensureNFILanguage(node, "allowNativeAccess", "true");
+                String dlopenFlags = isolateNative ? "RTLD_LOCAL" : "RTLD_GLOBAL";
+                capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, String.format("load(%s) \"%s\"", dlopenFlags, loc.getCapiLibrary()), "<libpython>");
+                LOGGER.config(() -> "loading CAPI from " + loc.getCapiLibrary() + " as native");
                 if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
                     capiSrcBuilder.internal(true);
                 }
@@ -980,40 +961,32 @@ public final class CApiContext extends CExtContext {
                      * then already require the GC state.
                      */
                     Object gcState = cApiContext.createGCState();
-                    if (useNative) {
-                        Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER):VOID", "exec").build()).call();
-                        initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
-                        U.execute(initFunction, builtinArrayWrapper, gcState);
-                    } else {
-                        assert U.isExecutable(initFunction);
-                        U.execute(initFunction, NativePointer.createNull(), builtinArrayWrapper, gcState);
-                    }
+                    Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER):VOID", "exec").build()).call();
+                    initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
+                    U.execute(initFunction, builtinArrayWrapper, gcState);
                 }
 
                 assert PythonCApiAssertions.assertBuiltins(capiLibrary);
                 cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
                 context.runCApiHooks();
 
-                if (useNative) {
-                    /*
-                     * C++ libraries sometimes declare global objects that have destructors that
-                     * call Py_DECREF. Those destructors are then called during native shutdown,
-                     * which is after the JVM/SVM shut down and the upcall would segfault. This
-                     * finalizer code rebinds reference operations to native no-ops that don't
-                     * upcall. In normal scenarios we call it during context exit, but when the VM
-                     * is terminated by a signal, the context exit is skipped. For that case we set
-                     * up the shutdown hook.
-                     */
-                    Object finalizeFunction = U.readMember(capiLibrary, "GraalPy_get_finalize_capi_pointer");
-                    Object finalizeSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
-                    Object finalizingPointer = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
-                    try {
-                        cApiContext.addNativeFinalizer(context, finalizingPointer);
-                        cApiContext.runBackgroundGCTask(context);
-                    } catch (RuntimeException e) {
-                        // This can happen when other languages restrict multithreading
-                        LOGGER.warning(() -> "didn't register a native finalizer due to: " + e.getMessage());
-                    }
+                /*
+                 * C++ libraries sometimes declare global objects that have destructors that call
+                 * Py_DECREF. Those destructors are then called during native shutdown, which is
+                 * after the JVM/SVM shut down and the upcall would segfault. This finalizer code
+                 * rebinds reference operations to native no-ops that don't upcall. In normal
+                 * scenarios we call it during context exit, but when the VM is terminated by a
+                 * signal, the context exit is skipped. For that case we set up the shutdown hook.
+                 */
+                Object finalizeFunction = U.readMember(capiLibrary, "GraalPy_get_finalize_capi_pointer");
+                Object finalizeSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
+                Object finalizingPointer = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
+                try {
+                    cApiContext.addNativeFinalizer(context, finalizingPointer);
+                    cApiContext.runBackgroundGCTask(context);
+                } catch (RuntimeException e) {
+                    // This can happen when other languages restrict multithreading
+                    LOGGER.warning(() -> "didn't register a native finalizer due to: " + e.getMessage());
                 }
 
                 return cApiContext;
@@ -1094,51 +1067,39 @@ public final class CApiContext extends CExtContext {
         Object library;
         InteropLibrary interopLib;
 
-        if (cApiContext.useNativeBackend) {
-            TruffleFile realPath = context.getPublicTruffleFileRelaxed(spec.path, context.getSoAbi()).getCanonicalFile();
-            String loadPath = cApiContext.nativeLibraryLocator.resolve(context, realPath);
-            getLogger(CApiContext.class).config(String.format("loading module %s (real path: %s) as native", spec.path, loadPath));
-            int dlopenFlags = context.getDlopenFlags();
-            if (context.getOption(PythonOptions.IsolateNativeModules)) {
-                if ((dlopenFlags & PosixConstants.RTLD_GLOBAL.value) != 0) {
-                    getLogger(CApiContext.class).warning("The IsolateNativeModules option was specified, but the dlopen flags were set to include RTLD_GLOBAL " +
-                                    "(likely via some call to sys.setdlopenflags). This will probably lead to broken isolation and possibly incorrect results and crashing. " +
-                                    "You can patch sys.setdlopenflags to trace callers and/or prevent setting the RTLD_GLOBAL flags. " +
-                                    "See https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for more details.");
-                }
-                dlopenFlags |= PosixConstants.RTLD_LOCAL.value;
+        TruffleFile realPath = context.getPublicTruffleFileRelaxed(spec.path, context.getSoAbi()).getCanonicalFile();
+        String loadPath = cApiContext.nativeLibraryLocator.resolve(context, realPath);
+        getLogger(CApiContext.class).config(String.format("loading module %s (real path: %s) as native", spec.path, loadPath));
+        int dlopenFlags = context.getDlopenFlags();
+        if (context.getOption(PythonOptions.IsolateNativeModules)) {
+            if ((dlopenFlags & PosixConstants.RTLD_GLOBAL.value) != 0) {
+                getLogger(CApiContext.class).warning("The IsolateNativeModules option was specified, but the dlopen flags were set to include RTLD_GLOBAL " +
+                                "(likely via some call to sys.setdlopenflags). This will probably lead to broken isolation and possibly incorrect results and crashing. " +
+                                "You can patch sys.setdlopenflags to trace callers and/or prevent setting the RTLD_GLOBAL flags. " +
+                                "See https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for more details.");
             }
-            String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(dlopenFlags), loadPath);
-            if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
-                loadExpr = "with panama " + loadExpr;
-            }
-            try {
-                Source librarySource = Source.newBuilder(J_NFI_LANGUAGE, loadExpr, "load " + spec.name).build();
-                library = context.getEnv().parseInternal(librarySource).call();
-                interopLib = InteropLibrary.getUncached(library);
-            } catch (PException e) {
-                throw e;
-            } catch (AbstractTruffleException e) {
-                if (!realPath.exists() && realPath.toString().contains("org.graalvm.python.vfsx")) {
-                    // file does not exist and it is from VirtualFileSystem
-                    // => we probably failed to extract it due to unconventional libs location
-                    getLogger(CApiContext.class).severe(String.format("could not load module %s (real path: %s) from virtual file system.\n\n" +
-                                    "!!! Please try to run with java system property org.graalvm.python.vfs.extractOnStartup=true !!!\n", spec.path, realPath));
-
-                }
-
-                throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_LOAD_M, spec.path, e);
-            }
-        } else {
-            library = loadLLVMLibrary(location, context, spec.name, spec.path);
+            dlopenFlags |= PosixConstants.RTLD_LOCAL.value;
+        }
+        String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(dlopenFlags), loadPath);
+        if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
+            loadExpr = "with panama " + loadExpr;
+        }
+        try {
+            Source librarySource = Source.newBuilder(J_NFI_LANGUAGE, loadExpr, "load " + spec.name).build();
+            library = context.getEnv().parseInternal(librarySource).call();
             interopLib = InteropLibrary.getUncached(library);
-            try {
-                if (interopLib.getLanguage(library).toString().startsWith("class com.oracle.truffle.nfi")) {
-                    throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.SystemError, ErrorMessages.NO_BITCODE_FOUND, spec.path);
-                }
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
+        } catch (PException e) {
+            throw e;
+        } catch (AbstractTruffleException e) {
+            if (!realPath.exists() && realPath.toString().contains("org.graalvm.python.vfsx")) {
+                // file does not exist and it is from VirtualFileSystem
+                // => we probably failed to extract it due to unconventional libs location
+                getLogger(CApiContext.class).severe(String.format("could not load module %s (real path: %s) from virtual file system.\n\n" +
+                                "!!! Please try to run with java system property org.graalvm.python.vfs.extractOnStartup=true !!!\n", spec.path, realPath));
+
             }
+
+            throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_LOAD_M, spec.path, e);
         }
 
         try {
@@ -1457,13 +1418,13 @@ public final class CApiContext extends CExtContext {
             if (cApiContext == null) {
                 return false;
             }
-            Object llvmLibrary = cApiContext.getLLVMLibrary();
-            InteropLibrary lib = InteropLibrary.getUncached(llvmLibrary);
-            if (!lib.isMemberReadable(llvmLibrary, builtin.name())) {
+            Object library = cApiContext.getLibrary();
+            InteropLibrary lib = InteropLibrary.getUncached(library);
+            if (!lib.isMemberReadable(library, builtin.name())) {
                 return false;
             }
             try {
-                lib.readMember(llvmLibrary, builtin.name());
+                lib.readMember(library, builtin.name());
                 return true;
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);

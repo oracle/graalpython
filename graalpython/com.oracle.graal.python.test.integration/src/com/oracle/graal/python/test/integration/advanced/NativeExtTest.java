@@ -57,16 +57,17 @@ public class NativeExtTest {
     public void testSharingErrorWithCpythonSre() throws InterruptedException {
         // The first context is the one that will use native extensions
         Engine engine = Engine.newBuilder().build();
-        Context cextContext = newContext(engine);
+        Context cextContext = newContext(engine).option("python.IsolateNativeModules", "true").build();
         try {
             cextContext.eval("python", "import _cpython_sre\nassert _cpython_sre.ascii_tolower(88) == 120\n");
 
-            // Check that second context that tries to load native extension fails
-            try (Context secondCtx = newContext(engine)) {
+            // Check that second context that tries to load native extension fails without
+            // IsolateNativeModules
+            try (Context secondCtx = newContext(engine).build()) {
                 try {
                     secondCtx.eval("python", "import _cpython_sre\nassert _cpython_sre.ascii_tolower(88) == 120\n");
                 } catch (PolyglotException ex) {
-                    Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("Option python.NativeModules is set to 'true' and a second GraalPy context attempted"));
+                    Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("Option python.IsolateNativeModules is set to 'false' and a second GraalPy context attempted"));
                 }
             }
 
@@ -99,7 +100,7 @@ public class NativeExtTest {
         }
     }
 
-    private static Context newContext(Engine engine) {
-        return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).engine(engine).build();
+    private static Context.Builder newContext(Engine engine) {
+        return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).engine(engine);
     }
 }

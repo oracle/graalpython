@@ -40,7 +40,7 @@ import math
 import unittest
 
 from . import CPyExtType, CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, \
-    is_native_object, RUNS_ON_LLVM
+    is_native_object
 
 
 def _float_compare(x, y):
@@ -212,8 +212,6 @@ class TestPyOSDouble(unittest.TestCase):
         assert tester.PyOS_double_to_string_test(190.08) == '190.080000'
 
     def test_PyOS_string_to_double(self):
-        if RUNS_ON_LLVM:
-            return
         TestPyOS_String_To_Double = CPyExtType(
             "TestPyOS_String_To_Double",
             '''

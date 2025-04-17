@@ -72,8 +72,6 @@ public class PythonObject extends PythonAbstractObject {
 
     private final Object initialPythonClass;
 
-    private Object[] hpyData;
-
     @SuppressWarnings("this-escape") // escapes in the assertion
     public PythonObject(Object pythonClass, Shape instanceShape) {
         super(instanceShape);
@@ -157,13 +155,5 @@ public class PythonObject extends PythonAbstractObject {
     /* needed for some guards in exported messages of subclasses */
     public static int getCallSiteInlineCacheMaxDepth() {
         return PythonOptions.getCallSiteInlineCacheMaxDepth();
-    }
-
-    public final Object[] getHPyData() {
-        return hpyData;
-    }
-
-    public final void setHPyData(Object[] hpyFields) {
-        this.hpyData = hpyFields;
     }
 }

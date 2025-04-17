@@ -40,16 +40,16 @@
  */
 package com.oracle.graal.python.test.integration.advanced;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.junit.Assert;
 import org.junit.Test;
 
 import com.oracle.graal.python.test.integration.PythonTests;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 // See also NativeExtTest
 public class ShutdownTest extends PythonTests {
@@ -154,7 +154,7 @@ public class ShutdownTest extends PythonTests {
     }
 
     private static Context createContext() {
-        return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).option("python.NativeModules", "false").build();
+        return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).option("python.IsolateNativeModules", "true").build();
     }
 
     private static void loadNativeExtension(Context context) {

@@ -205,7 +205,7 @@ public abstract class TpSlot {
      * stored determines the signature. On Java level we have to do a call with boxed arguments
      * array and cannot optimize for specific signature.
      */
-    public abstract static sealed class TpSlotNative extends TpSlot permits TpSlotCExtNative, TpSlotHPyNative {
+    public abstract static sealed class TpSlotNative extends TpSlot permits TpSlotCExtNative {
         final Object callable;
 
         public TpSlotNative(Object callable) {
@@ -214,10 +214,6 @@ public abstract class TpSlot {
 
         public static TpSlotNative createCExtSlot(Object callable) {
             return new TpSlotCExtNative(callable);
-        }
-
-        public static TpSlotNative createHPySlot(Object callable) {
-            return new TpSlotHPyNative(callable);
         }
 
         public final boolean isSameCallable(TpSlotNative other, InteropLibrary interop) {
@@ -249,19 +245,6 @@ public abstract class TpSlot {
      */
     public static final class TpSlotCExtNative extends TpSlotNative {
         public TpSlotCExtNative(Object callable) {
-            super(callable);
-        }
-    }
-
-    /**
-     * HPy slots currently "pretend" to be Python magic methods. They are added to a newly
-     * constructed type in HPyCreateTypeFromSpecNode, which triggers {@code TpSlots#updateSlot} for
-     * every added slot. In the future HPy slots should be treated like native slots, except that
-     * they will have another dispatch method in CallXYZSlot nodes, see {@link TpSlotLen} for an
-     * example.
-     */
-    public static final class TpSlotHPyNative extends TpSlotNative {
-        public TpSlotHPyNative(Object callable) {
             super(callable);
         }
     }

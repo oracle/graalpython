@@ -51,14 +51,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.type.slots.HPyDispatchers.UnaryHPySlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.UnaryPythonSlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotHPyNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -186,23 +183,6 @@ public abstract class TpSlotLen {
             return (int) l;
         }
 
-        @Specialization
-        static int callHPy(VirtualFrame frame, Node inliningTarget, TpSlotHPyNative slot, Object self,
-                        @Exclusive @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached(inline = false) HPyAsHandleNode toNativeNode,
-                        @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Exclusive @Cached PRaiseNode raiseNode,
-                        @Exclusive @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResultNode) {
-            PythonContext ctx = PythonContext.get(inliningTarget);
-            PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___LEN__, slot.callable, ctx.getHPyContext().getBackend(), toNativeNode.execute(self));
-            long l = checkResultNode.executeLong(state, T___LEN__, result);
-            if (!PInt.isIntRange(l)) {
-                raiseOverflow(inliningTarget, raiseNode, l);
-            }
-            return (int) l;
-        }
-
         @InliningCutoff
         private static void raiseOverflow(Node inliningTarget, PRaiseNode raiseNode, long l) {
             throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, l);
@@ -222,24 +202,6 @@ public abstract class TpSlotLen {
             Object[] arguments = PArguments.create(1);
             PArguments.setArgument(arguments, 0, self);
             return (int) BuiltinDispatchers.callGenericBuiltin(frame, inliningTarget, slot.callTargetIndex, arguments, callContext, isNullFrameProfile, indirectCallNode);
-        }
-
-        // @Specialization(guards = "slot.isHPySlot()")
-        // @InliningCutoff
-        @SuppressWarnings("unused")
-        static int callHPy(VirtualFrame frame, Node inliningTarget, TpSlotNative slot, Object self,
-                        @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached UnaryHPySlotDispatcherNode hpyDispatcher,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResultNode) {
-            PythonContext ctx = PythonContext.get(inliningTarget);
-            PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = hpyDispatcher.execute(frame, inliningTarget, ctx, state, slot.callable, self);
-            long l = checkResultNode.executeLong(state, T___LEN__, result);
-            if (!PInt.isIntRange(l)) {
-                raiseOverflow(inliningTarget, raiseNode, l);
-            }
-            return (int) l;
         }
     }
 

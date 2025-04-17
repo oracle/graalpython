@@ -134,8 +134,6 @@ public abstract class StringLiterals {
     public static final TruffleString T_VERSION = tsLiteral("version");
     public static final String J_DEFAULT = "default";
     public static final TruffleString T_DEFAULT = tsLiteral(J_DEFAULT);
-    public static final String J_LLVM_LANGUAGE = "llvm";
-    public static final TruffleString T_LLVM_LANGUAGE = tsLiteral(J_LLVM_LANGUAGE);
     public static final String J_NFI_LANGUAGE = "nfi";
     public static final TruffleString T_ID = tsLiteral("id");
     public static final TruffleString T_SITE = tsLiteral("site");

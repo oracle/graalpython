@@ -750,15 +750,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             }
         }
 
-        if (isLLVMToolchainLauncher()) {
-            if (!hasContextOptionSetViaCommandLine("UseSystemToolchain")) {
-                contextBuilder.option("python.UseSystemToolchain", "false");
-            }
-            if (!hasContextOptionSetViaCommandLine("NativeModules")) {
-                contextBuilder.option("python.NativeModules", "false");
-            }
-        }
-
         if (relaunchArgs != null) {
             Iterator<String> it = origArgs.iterator();
             while (it.hasNext()) {
@@ -1068,9 +1059,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected void printHelp(OptionCategory maxCategory) {
-        if (isLLVMToolchainLauncher()) {
-            System.out.println("GraalPy launcher to use LLVM toolchain and Sulong execution of native extensions.\n");
-        }
         System.out.println("usage: python [option] ... (-c cmd | file) [arg] ...\n" +
                         "Options and arguments (and corresponding environment variables):\n" +
                         "-B     : this disables writing .py[co] files on import\n" +
@@ -1136,14 +1124,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                                         "                 All following arguments are passed to the compiler.\n" +
                                         "-LD            : run the linker used for generating GraalPython C extensions.\n" +
                                         "                 All following arguments are passed to the linker.\n" +
-                                        "\nEnvironment variables specific to the Graal Python launcher:\n" +
-                                        "SULONG_LIBRARY_PATH: Specifies the library path for Sulong.\n" +
-                                        "   This is required when starting subprocesses of python.\n" : ""));
-    }
-
-    private boolean isLLVMToolchainLauncher() {
-        String exeName = getResolvedExecutableName();
-        return exeName != null && exeName.endsWith("-lt");
+                                        "\nEnvironment variables specific to the Graal Python launcher:\n" : ""));
     }
 
     @Override

@@ -1,2 +1,2 @@
 org.eclipse.jdt.core.compiler.problem.unusedParameter=ignore
-org.eclipse.jdt.core.compiler.problem.missingOverrideAnnotation=warning
+org.eclipse.jdt.core.compiler.problem.missingOverrideAnnotation=ignore

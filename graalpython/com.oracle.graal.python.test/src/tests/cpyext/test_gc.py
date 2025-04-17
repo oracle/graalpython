@@ -44,7 +44,7 @@ import time
 import unittest
 from unittest import skipIf
 
-from . import CPyExtType, RUNS_ON_LLVM
+from . import CPyExtType
 
 GRAALPY = sys.implementation.name == 'graalpy'
 
@@ -220,8 +220,6 @@ class TestGCRefCycles(unittest.TestCase):
             gc.collect()
 
     def test_cycle_with_native_objects(self):
-        if RUNS_ON_LLVM:
-            return
         TestCycle0 = CPyExtType("TestCycle0",
                                 '''
                                 #define N 16
@@ -896,6 +894,6 @@ class TestGCRefCycles(unittest.TestCase):
         self._trigger_gc()
         ##################################################################################
 
-@skipIf(not (GRAALPY) or RUNS_ON_LLVM, "Internal GraalPy RSS function")
+@skipIf(not GRAALPY, "Internal GraalPy RSS function")
 def test_current_rss_monitor():
     assert __graalpython__.get_current_rss() > 0

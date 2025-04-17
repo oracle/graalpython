@@ -44,7 +44,7 @@ import java.lang.ref.ReferenceQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.runtime.native_memory.NativeBuffer;
 import com.oracle.graal.python.runtime.native_memory.NativePrimitiveReference;
 import com.oracle.graal.python.runtime.sequence.storage.NativeIntSequenceStorage;
@@ -107,7 +107,7 @@ public class NativeBufferContext {
     }
 
     static final class NativeBufferDeallocatorRunnable extends PythonSystemThreadTask {
-        private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(NativeBufferDeallocatorRunnable.class);
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(NativeBufferDeallocatorRunnable.class);
 
         private final ReferenceQueue<NativePrimitiveSequenceStorage> referenceQueue;
         private final ConcurrentHashMap<NativePrimitiveReference, NativePrimitiveReference> references;

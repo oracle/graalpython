@@ -54,7 +54,6 @@ These are:
   This uses an `ExecutorService` with a thread pool.
   If you want to disallow such extra threads or avoid pulling in `ExecutorService` and related classes, then set this property to `false` and retrieve the `PollPythonAsyncActions` object from the context's polyglot bindings.
   This object is executable and can be used to trigger Python asynchronous actions at the locations you desire.
-* `python.WithoutJNI=true` - This option removes any code that uses JNI. As a consequence, you cannot use the HPy JNI backend and maybe other parts that rely on JNI.
 
 
 ### Removing Pre-initialized Python Heap
