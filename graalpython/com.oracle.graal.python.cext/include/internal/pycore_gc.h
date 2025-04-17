@@ -174,7 +174,8 @@ struct _gc_runtime_state {
 
 extern void _PyGC_InitState(struct _gc_runtime_state *);
 
-extern Py_ssize_t _PyGC_CollectNoFail(PyThreadState *tstate);
+// GraalPy change: exporting _PyGC_CollectNoFail
+extern PyAPI_FUNC(Py_ssize_t) _PyGC_CollectNoFail(PyThreadState *tstate);
 
 
 // Functions to clear types free lists

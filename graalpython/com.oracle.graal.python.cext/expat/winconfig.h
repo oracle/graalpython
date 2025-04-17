@@ -42,4 +42,6 @@
 #include <memory.h>
 #include <string.h>
 
+#include "expat_config.h"
+
 #endif /* ndef WINCONFIG_H */

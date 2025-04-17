@@ -670,7 +670,7 @@ suite = {
                             "CAPI_INC_DIR": "<output_root:com.oracle.graal.python>/jni_gen",
                             "PYCONFIG_INCLUDE_DIR": "<output_root:graalpy-pyconfig>/<arch>",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
-                            "CMAKE_C_COMPILER": "<output_root:sdk:LLVM_TOOLCHAIN>/bin/clang",
+                            "CMAKE_C_COMPILER": "<output_root:sdk:LLVM_TOOLCHAIN>/bin/clang.exe",
                             "GRAALPY_PARENT_DIR": "<suite_parent:graalpython>",
                             "GRAALPY_EXT": "<graalpy_ext>",
                         },
