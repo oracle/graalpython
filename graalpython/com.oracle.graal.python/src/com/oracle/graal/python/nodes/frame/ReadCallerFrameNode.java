@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,12 +42,10 @@ package com.oracle.graal.python.nodes.frame;
 
 import java.util.Objects;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -275,26 +273,22 @@ public final class ReadCallerFrameNode extends Node {
 
     @TruffleBoundary
     private static Frame getFrame(Node requestingNode, PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
-        final Frame[] outputFrame = new Frame[1];
-        Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<Frame>() {
+        Frame[] outputFrame = new Frame[1];
+        Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<>() {
             int i = -1;
 
             /**
              * We may find the Python frame at the level we desire, but the {@link PRootNode}
-             * associated with it may have been called from a different language, and thus not have
-             * Python {@link IndirectCallData}. That means that we cannot immediately return when we
+             * associated with it may have been called from a different language, and thus not be
+             * able to pass the caller frame. That means that we cannot immediately return when we
              * find the correct level frame, but instead we need to remember the frame in
              * {@code outputFrame} and then keep going until we find the previous Python caller on
-             * the stack (or not). That last Python caller before the Python frame we need must push
-             * the info.
-             *
-             * This can easily be seen when this is used to
-             * {@link PythonContext#peekTopFrameInfo(PythonLanguage)} , because in that case, that
-             * info must be set by the caller that is somewhere up the stack.
+             * the stack (or not). That last Python caller should have {@link IndirectCallData} that
+             * will be marked to pass the frame through the context.
              *
              * <pre>
              *                      ================
-             *                   ,>| PythonCallNode |
+             *                   ,>| IndirectCallData |
              *                   |  ================
              *                   | |  LLVMRootNode  |
              *                   | |  LLVMCallNode  |
@@ -312,8 +306,11 @@ public final class ReadCallerFrameNode extends Node {
                 RootNode rootNode = getRootNode(frameInstance);
                 Node callNode = frameInstance.getCallNode();
                 boolean didMark = IndirectCallData.setEncapsulatingNeedsToPassCallerFrame(callNode != null ? callNode : requestingNode);
-                if (outputFrame[0] == null && rootNode instanceof PRootNode pRootNode && pRootNode.setsUpCalleeContext()) {
-                    pRootNode.setNeedsCallerFrame();
+                if (rootNode instanceof PRootNode pRootNode && pRootNode.setsUpCalleeContext()) {
+                    if (outputFrame[0] != null) {
+                        return outputFrame[0];
+                    }
+                    boolean needsCallerFrame = true;
                     if (i < 0 && startFrame != null) {
                         Frame roFrame = getFrame(frameInstance, FrameInstance.FrameAccess.READ_ONLY);
                         if (PArguments.getCurrentFrameInfo(roFrame) == startFrame) {
@@ -340,9 +337,13 @@ public final class ReadCallerFrameNode extends Node {
                                 // cannot materialize it.
                                 assert info.getCallNode() != null : "tried to read frame without location (root: " + pRootNode + ")";
                                 outputFrame[0] = frame;
+                                needsCallerFrame = false;
                             }
                             i += 1;
                         }
+                    }
+                    if (needsCallerFrame) {
+                        pRootNode.setNeedsCallerFrame();
                     }
                 }
                 if (didMark) {

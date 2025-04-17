@@ -46,7 +46,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
@@ -104,10 +103,6 @@ public final class IndirectCallData {
     public static boolean setEncapsulatingNeedsToPassCallerFrame(final Node callNode) {
         Node pythonCallNode = callNode;
         while (pythonCallNode != null) {
-            if (pythonCallNode instanceof DirectCallNode) {
-                // see GR-50465
-                return true;
-            }
             IndirectCallData data = PythonLanguage.lookupIndirectCallData(pythonCallNode);
             if (data != null) {
                 data.setCalleeNeedsCallerFrame();
@@ -121,10 +116,6 @@ public final class IndirectCallData {
     public static void setEncapsulatingNeedsToPassExceptionState(Node callNode) {
         Node pythonCallNode = callNode;
         while (pythonCallNode != null) {
-            if (pythonCallNode instanceof DirectCallNode) {
-                // see GR-50465
-                break;
-            }
             IndirectCallData data = PythonLanguage.lookupIndirectCallData(pythonCallNode);
             if (data != null) {
                 data.setCalleeNeedsExceptionState();
