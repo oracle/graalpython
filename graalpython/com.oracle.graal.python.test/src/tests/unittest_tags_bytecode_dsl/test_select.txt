@@ -1,0 +1,4 @@
+test.test_select.SelectTestCase.test_errno @ linux-x86_64
+test.test_select.SelectTestCase.test_error_conditions @ linux-x86_64
+test.test_select.SelectTestCase.test_returned_list_identity @ linux-x86_64
+test.test_select.SelectTestCase.test_select_mutated @ linux-x86_64

@@ -132,6 +132,7 @@ _COLLECTING_COVERAGE = False
 CI = get_boolean_env("CI")
 WIN32 = sys.platform == "win32"
 BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = get_boolean_env('BUILD_WITH_ASSERTIONS', CI)
+BYTECODE_DSL_INTERPRETER = get_boolean_env('BYTECODE_DSL_INTERPRETER', False)
 
 mx_gate.add_jacoco_excludes([
     "com.oracle.graal.python.pegparser.sst",
@@ -429,6 +430,9 @@ def punittest(ars, report=False):
 
     vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false']
 
+    if BYTECODE_DSL_INTERPRETER:
+        vm_args.append("-Dpython.EnableBytecodeDSLInterpreter=true")
+
     # Note: we must use filters instead of --regex so that mx correctly processes the unit test configs,
     # but it is OK to apply --regex on top of the filters
     graalpy_tests = ['com.oracle.graal.python.test', 'com.oracle.graal.python.pegparser.test', 'org.graalvm.python.embedding.test']
@@ -618,6 +622,15 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         import_ee_status = mx.run([launcher, "-c", "import sys; assert 'Oracle GraalVM' in sys.version"], nonZeroIsFatal=False, out=out, err=out)
         if enterprise != (import_ee_status == 0):
             mx.abort(f"GRAALPY_HOME is not compatible with requested distribution kind ({import_ee_status=}, {enterprise=}, {out=}).")
+
+        out = mx.OutputCapture()
+        mx.run([launcher, "-c", "print(__graalpython__.is_bytecode_dsl_interpreter)"], nonZeroIsFatal=False, out=out, err=out)
+        is_bytecode_dsl_interpreter = out.data.strip() == "True"
+        if is_bytecode_dsl_interpreter != BYTECODE_DSL_INTERPRETER:
+            requested = "Bytecode DSL" if BYTECODE_DSL_INTERPRETER else "Manual"
+            actual = "Bytecode DSL" if is_bytecode_dsl_interpreter else "Manual"
+            mx.abort(f"GRAALPY_HOME is not compatible with requested interpreter kind ({requested=}, {actual=})")
+
         return python_home
 
     env_file = 'ce-python'
@@ -646,8 +659,12 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
     if mx_gate.get_jacoco_agent_args() or (build and not DISABLE_REBUILD):
         dep_type = 'JAVA' if standalone_type == 'jvm' else 'NATIVE'
+        mx_build_args = mx_args
+        if BYTECODE_DSL_INTERPRETER:
+            mx_build_args = mx_args + ["--extra-image-builder-argument=-Dpython.EnableBytecodeDSLInterpreter=true"]
+
         # Example of a string we're building here: PYTHON_JAVA_STANDALONE_SVM_SVMEE_JAVA21
-        mx.run_mx(mx_args + ["build", "--dep", f"PYTHON_{dep_type}_STANDALONE{svm_component}_JAVA{jdk_version.parts[0]}"])
+        mx.run_mx(mx_build_args + ["build", "--dep", f"PYTHON_{dep_type}_STANDALONE{svm_component}_JAVA{jdk_version.parts[0]}"])
 
     out = mx.OutputCapture()
     # note: 'quiet=True' is important otherwise if the outer MX runs verbose,
@@ -913,6 +930,9 @@ def graalpytest(args):
         gp_args = ["--vm.ea", "--vm.esa", "--experimental-options=true", "--python.EnableDebuggingBuiltins"]
         mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
         python_args += gp_args
+    if is_graalpy and BYTECODE_DSL_INTERPRETER:
+        python_args.insert(0, "--vm.Dpython.EnableBytecodeDSLInterpreter=true")
+
     runner_args.append(f'--subprocess-args={shlex.join(python_args)}')
     cmd_args = [*python_args, _python_test_runner(), 'run', *runner_args]
     delete_bad_env_keys(env)
@@ -921,7 +941,12 @@ def graalpytest(args):
         pythonpath += [p for p in env.get('PYTHONPATH', '').split(os.pathsep) if p]
         env['PYTHONPATH'] = os.pathsep.join(pythonpath)
     if python_binary:
-        return mx.run([python_binary, *cmd_args], nonZeroIsFatal=True, env=env)
+        try:
+            result = mx.run([python_binary, *cmd_args], nonZeroIsFatal=True, env=env)
+            print(f"back from mx.run, returning {result}")
+            return result
+        except BaseException as e:
+            print(f"Exception raised: {e}")
     else:
         return full_python(cmd_args, env=env)
 
@@ -984,6 +1009,9 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
 
     if mx.primary_suite() != SUITE:
         env.setdefault("GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS", "true")
+
+    if BYTECODE_DSL_INTERPRETER:
+        args += ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
 
     # just to be able to verify, print C ext mode (also works for CPython)
     mx.run(
@@ -2203,6 +2231,9 @@ standalone_dependencies_common = {
     'LLVM.org toolchain': ('lib/llvm-toolchain', []),
 }
 
+def bytecode_dsl_build_args():
+    return ['-Dpython.EnableBytecodeDSLInterpreter=true'] if BYTECODE_DSL_INTERPRETER else []
+
 mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,
     name='GraalVM Python',
@@ -2255,7 +2286,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
                 '-H:-CopyLanguageResources',
                 '-Dpolyglot.python.PosixModuleBackend=native',
                 '-Dpolyglot.python.Sha3ModuleBackend=native',
-            ],
+            ] + bytecode_dsl_build_args(),
             language='python',
             default_vm_args=[
                 '--vm.Xss16777216', # request 16M of stack
@@ -2703,9 +2734,26 @@ class GraalpythonProject(mx.ArchivableProject):
         return ret
 
 
+class GraalpythonFrozenModuleBuildTask(GraalpythonBuildTask):
+    def build(self):
+        # We freeze modules twice: once for the manual Bytecode interpreter and once for the DSL interpreter.
+        args = [mx_subst.path_substitutions.substitute(a, dependency=self) for a in self.subject.args]
+        return self.run(args, "manual bytecode") or self.run(args, "dsl", extra_vm_args=["-Dpython.EnableBytecodeDSLInterpreter=true"])
+
+    def run(self, args, interpreter_kind, extra_vm_args=None):
+        mx.log(f"Building frozen modules for {interpreter_kind} interpreter.")
+        return super().run(args, extra_vm_args=extra_vm_args)
+
+
+class GraalpythonFrozenProject(GraalpythonProject):
+    def getBuildTask(self, args):
+        return GraalpythonFrozenModuleBuildTask(args, self)
+
+
 orig_clean = mx.command_function("clean")
 def python_clean(args):
-    orig_clean(args)
+    if '--just-pyc' not in args:
+        orig_clean(args)
     if not args:
         count = 0
         for path in os.walk(SUITE.dir):
@@ -3143,7 +3191,7 @@ mx.update_commands(SUITE, {
     'python-coverage': [python_coverage, ''],
     'punittest': [punittest, ''],
     'graalpytest': [graalpytest, '[-h] [--python PYTHON] [TESTS]'],
-    'clean': [python_clean, ''],
+    'clean': [python_clean, '[--just-pyc]'],
     'python-update-hpy-import': [update_hpy_import_cmd, '[--no-pull] PATH_TO_HPY'],
     'bisect-benchmark': [mx_graalpython_bisect.bisect_benchmark, ''],
     'python-leak-test': [run_leak_launcher, ''],

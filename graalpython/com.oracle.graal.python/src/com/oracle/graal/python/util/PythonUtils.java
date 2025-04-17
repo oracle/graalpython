@@ -80,6 +80,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -754,7 +755,12 @@ public final class PythonUtils {
 
     @TruffleBoundary
     public static Source createFakeSource(TruffleString name) {
-        return Source.newBuilder(PythonLanguage.ID, EMPTY_BYTE_SEQUENCE, name.toJavaStringUncached()).build();
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            // The DSL interpreter requires character-based sources.
+            return Source.newBuilder(PythonLanguage.ID, "", name.toJavaStringUncached()).content(Source.CONTENT_NONE).build();
+        } else {
+            return Source.newBuilder(PythonLanguage.ID, EMPTY_BYTE_SEQUENCE, name.toJavaStringUncached()).build();
+        }
     }
 
     public static Object[] prependArgument(Object primary, Object[] arguments) {

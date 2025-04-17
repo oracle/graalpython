@@ -1,0 +1,7 @@
+test.test_pow.PowTest.test_big_exp @ linux-x86_64
+test.test_pow.PowTest.test_bug643260 @ linux-x86_64
+test.test_pow.PowTest.test_bug705231 @ linux-x86_64
+test.test_pow.PowTest.test_negative_exponent @ linux-x86_64
+test.test_pow.PowTest.test_other @ linux-x86_64
+test.test_pow.PowTest.test_powfloat @ linux-x86_64
+test.test_pow.PowTest.test_powint @ linux-x86_64

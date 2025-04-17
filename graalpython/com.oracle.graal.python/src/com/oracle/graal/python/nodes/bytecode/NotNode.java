@@ -50,6 +50,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode.PyObjectIsTrueNodeGeneric;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -66,6 +67,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * {@link PyObjectIsTrueNode}.
  */
 @GenerateInline(false)
+@OperationProxy.Proxyable
 public abstract class NotNode extends UnaryOpNode {
 
     @Specialization

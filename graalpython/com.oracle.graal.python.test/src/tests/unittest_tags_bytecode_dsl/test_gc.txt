@@ -1,0 +1,4 @@
+test.test_gc.GCTests.test_bug21435 @ linux-x86_64
+test.test_gc.GCTests.test_trash_weakref_clear @ linux-x86_64
+test.test_gc.GCTests.test_trashcan @ linux-x86_64
+test.test_gc.PythonFinalizationTests.test_ast_fini @ linux-x86_64

@@ -1,0 +1,1 @@
+test.test_except_star.TestInvalidExceptStar.test_mixed_except_and_except_star_is_syntax_error @ linux-x86_64

@@ -1,0 +1,3 @@
+test.test_fcntl.TestFcntl.test_flock @ linux-x86_64
+test.test_fcntl.TestFcntl.test_lockf_exclusive @ linux-x86_64
+test.test_fcntl.TestFcntl.test_lockf_share @ linux-x86_64

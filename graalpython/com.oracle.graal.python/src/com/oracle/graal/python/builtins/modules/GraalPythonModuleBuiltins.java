@@ -143,6 +143,7 @@ import com.oracle.graal.python.nodes.arrow.ArrowArray;
 import com.oracle.graal.python.nodes.arrow.ArrowSchema;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -224,6 +225,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         super.initialize(core);
         addBuiltinConstant("is_native", TruffleOptions.AOT);
+        addBuiltinConstant("is_bytecode_dsl_interpreter", PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER);
         PythonContext ctx = core.getContext();
         TruffleString encodingOpt = ctx.getLanguage().getEngineOption(PythonOptions.StandardStreamEncoding);
         TruffleString standardStreamEncoding = null;
@@ -559,8 +561,12 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         public synchronized PFunction convertToBuiltin(PFunction func) {
             RootNode rootNode = CodeNodes.GetCodeRootNode.executeUncached(func.getCode());
-            if (rootNode instanceof PBytecodeRootNode) {
-                ((PBytecodeRootNode) rootNode).setPythonInternal(true);
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                if (rootNode instanceof PBytecodeDSLRootNode r) {
+                    r.setPythonInternal(true);
+                }
+            } else if (rootNode instanceof PBytecodeRootNode r) {
+                r.setPythonInternal(true);
             }
             func.setBuiltin(true);
             return func;
@@ -575,8 +581,12 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CodeNodes.GetCodeRootNode getRootNode) {
             RootNode rootNode = getRootNode.execute(inliningTarget, func.getCode());
-            if (rootNode instanceof PBytecodeRootNode) {
-                ((PBytecodeRootNode) rootNode).setPythonInternal(true);
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                if (rootNode instanceof PBytecodeDSLRootNode r) {
+                    r.setPythonInternal(true);
+                }
+            } else if (rootNode instanceof PBytecodeRootNode r) {
+                r.setPythonInternal(true);
             }
             return func;
         }

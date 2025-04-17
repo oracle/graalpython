@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -289,5 +289,50 @@ public class TryTests {
                         "    print(repr(sys.exc_info()[1]))\n" +
                         "print(repr(sys.exc_info()[1]))\n";
         assertPrints("None\nNone\n", source);
+    }
+
+    @Test
+    public void testNamedExceptionDeleted() {
+        String source = "ex = 42\n" +
+                        "try:\n" +
+                        "    raise NameError\n" +
+                        "except BaseException as ex:\n" +
+                        "    pass\n" +
+                        "try:\n" +
+                        "    print(ex)\n" +
+                        "    print(\"expected NameError\")\n" +
+                        "except NameError:\n" +
+                        "    print(\"hit NameError\")\n";
+        assertPrints("hit NameError\n", source);
+    }
+
+    @Test
+    public void testNamedExceptionNotDeleted() {
+        String source = "ex = 42\n" +
+                        "try:\n" +
+                        "    print(\"nothing thrown\")\n" +
+                        "except BaseException as ex:\n" +
+                        "    pass\n" +
+                        "try:\n" +
+                        "    print(ex)\n" +
+                        "except NameError:\n" +
+                        "    print(\"hit unexpected NameError\")\n";
+        assertPrints("nothing thrown\n42\n", source);
+    }
+
+    @Test
+    public void testNamedExceptionDeletedByHandler() {
+        String source = "ex = 42\n" +
+                        "try:\n" +
+                        "    raise NameError\n" +
+                        "except BaseException as ex:\n" +
+                        "    print(\"deleting exception\")\n" +
+                        "    del ex\n" +
+                        "try:\n" +
+                        "    print(ex)\n" +
+                        "    print(\"expected NameError\")\n" +
+                        "except NameError:\n" +
+                        "    print(\"hit NameError\")\n";
+        assertPrints("deleting exception\nhit NameError\n", source);
     }
 }
