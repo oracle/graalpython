@@ -43,12 +43,15 @@ package com.oracle.graal.python.builtins.objects.common;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A_SEQUENCE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.CachedGetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.SetSequenceStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -124,6 +127,32 @@ public abstract class SequenceNodes {
 
     @GenerateUncached
     @GenerateInline(inlineByDefault = true)
+    public abstract static class GetPSequenceStorageNode extends PNodeWithContext {
+        public abstract SequenceStorage execute(Node inliningTarget, PSequence seq);
+
+        @Specialization
+        static SequenceStorage doTuple(PTuple seq) {
+            return seq.getSequenceStorage();
+        }
+
+        @Specialization
+        static SequenceStorage doBytesLike(PBytesLike seq) {
+            return seq.getSequenceStorage();
+        }
+
+        @Specialization
+        static SequenceStorage doList(PList seq) {
+            return seq.getSequenceStorage();
+        }
+
+        @Specialization
+        static SequenceStorage doSequence(@SuppressWarnings("unused") PSequence seq) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(inlineByDefault = true)
     public abstract static class GetSequenceStorageNode extends PNodeWithContext {
 
         public abstract SequenceStorage execute(Node inliningTarget, Object seq);
@@ -136,15 +165,10 @@ public abstract class SequenceNodes {
             return execute(this, seq);
         }
 
-        @Specialization(guards = {"seq.getClass() == cachedClass"}, limit = "2")
-        static SequenceStorage doSequenceCached(PSequence seq,
-                        @Cached("seq.getClass()") Class<? extends PSequence> cachedClass) {
-            return CompilerDirectives.castExact(seq, cachedClass).getSequenceStorage();
-        }
-
-        @Specialization(replaces = "doSequenceCached")
-        static SequenceStorage doSequence(PSequence seq) {
-            return seq.getSequenceStorage();
+        @Specialization
+        static SequenceStorage doSequence(Node inliningTarget, PSequence seq,
+                        @Cached GetPSequenceStorageNode getPSequenceStorageNode) {
+            return getPSequenceStorageNode.execute(inliningTarget, seq);
         }
 
         // Note: this does not seem currently used but is good to accept foreign lists in more

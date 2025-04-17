@@ -256,6 +256,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -2479,34 +2480,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     @ConstantOperand(type = int.class, specifyAtEnd = true)
     public static final class Unstar {
-        @Specialization
-        public static Object[] perform(@Variadic Object[] values,
-                        int length) {
-            if (length <= EXPLODE_LOOP_THRESHOLD) {
-                return doExploded(values, length);
-            } else {
-                return doRegular(values, length);
-            }
-        }
-
-        @ExplodeLoop
-        private static Object[] doExploded(Object[] values, int length) {
+        @Specialization(guards = "length != 1")
+        public static Object[] perform(@Variadic Object[] values, int length) {
+            assert length > 1; // we should emit load constant: empty array, or emit just unpack starred
             CompilerAsserts.partialEvaluationConstant(length);
-            int totalLength = 0;
-            for (int i = 0; i < length; i++) {
-                totalLength += ((Object[]) values[i]).length;
-            }
-            Object[] result = new Object[totalLength];
-            int idx = 0;
-            for (int i = 0; i < length; i++) {
-                int nl = ((Object[]) values[i]).length;
-                System.arraycopy(values[i], 0, result, idx, nl);
-                idx += nl;
-            }
-            return result;
-        }
-
-        private static Object[] doRegular(Object[] values, int length) {
             int totalLength = 0;
             for (int i = 0; i < length; i++) {
                 totalLength += ((Object[]) values[i]).length;
@@ -2561,8 +2538,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         static Object[] fromListOrTuple(PSequence seq,
                         @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached InlinedConditionProfile isListProfile,
+                        @Exclusive @Cached SequenceNodes.GetPSequenceStorageNode getStorage,
                         @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
-            return toArrayNode.execute(inliningTarget, seq.getSequenceStorage());
+            return toArrayNode.execute(inliningTarget, getStorage.execute(inliningTarget, seq));
         }
 
         @Specialization(guards = "isNoValue(none)")

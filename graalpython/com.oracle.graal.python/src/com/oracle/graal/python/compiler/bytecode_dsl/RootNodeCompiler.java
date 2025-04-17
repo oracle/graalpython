@@ -2084,8 +2084,14 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
          * @param args the sequence of expressions to unstar
          */
         private void emitUnstar(Runnable initialElementsProducer, ExprTy[] args) {
-            if (len(args) == 0 && initialElementsProducer == null) {
+            if (initialElementsProducer == null && len(args) == 0) {
                 b.emitLoadConstant(PythonUtils.EMPTY_OBJECT_ARRAY);
+            } else if (initialElementsProducer == null && len(args) == 1 && args[0] instanceof ExprTy.Starred) {
+                // Optimization for single starred argument: we can just upack it. For generic
+                // algorithm see the next branch
+                b.beginUnpackStarred();
+                ((ExprTy.Starred) args[0]).value.accept(this);
+                b.endUnpackStarred();
             } else if (anyIsStarred(args)) {
                 /**
                  * We emit one or more arrays and concatenate them using Unstar. Each array
