@@ -67,10 +67,6 @@ def check_managed_subtype_basicsize(subtype):
     # CPython added optimizations for storing __dict__ in the GC header, so let's leave some flexibility in the tests
     base = subtype.__base__
     expected_basicsize = base.__basicsize__
-    if base.__dictoffset__ == 0 and subtype.__dictoffset__ > 0:
-        expected_basicsize += 8
-    if base.__weakrefoffset__ == 0 and subtype.__weakrefoffset__ > 0:
-        expected_basicsize += 8
     assert subtype.__basicsize__ == expected_basicsize, \
         f"Type {subtype} should have basicsize {expected_basicsize}, got {subtype.__basicsize__}"
 

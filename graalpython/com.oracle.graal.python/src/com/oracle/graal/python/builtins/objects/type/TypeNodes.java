@@ -1411,8 +1411,7 @@ public abstract class TypeNodes {
             }
             typeIsNotBase.enter(inliningTarget);
 
-            Object typeSlots = getSlotsFromType(type, readAttr);
-            if (extraivars(type, base, typeSlots)) {
+            if (shapeDiffers(type, base, readAttr)) {
                 return type;
             } else {
                 return base;
@@ -1420,37 +1419,19 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private static boolean extraivars(Object type, Object base, Object typeSlots) {
+        static boolean shapeDiffers(Object type, Object base, ReadAttributeFromObjectNode readAttr) {
             if (NeedsNativeAllocationNode.executeUncached(type) || NeedsNativeAllocationNode.executeUncached(base)) {
-                // https://github.com/python/cpython/blob/v3.10.8/Objects/typeobject.c#L2218
                 long tSize = GetBasicSizeNode.executeUncached(type);
                 long bSize = GetBasicSizeNode.executeUncached(base);
+                if (tSize != bSize) {
+                    return true;
+                }
                 long tItemSize = GetItemSizeNode.executeUncached(type);
                 long bItemSize = GetItemSizeNode.executeUncached(base);
-
-                if (tItemSize != 0 || bItemSize != 0) {
-                    return tSize != bSize || tItemSize != bItemSize;
-                }
-
-                long flags = GetTypeFlagsNode.executeUncached(type);
-                long tDictOffset = GetDictOffsetNode.executeUncached(type);
-                long bDictOffset = GetDictOffsetNode.executeUncached(base);
-                long tWeakListOffset = GetWeakListOffsetNode.executeUncached(type);
-                long bWeakListOffset = GetWeakListOffsetNode.executeUncached(base);
-                if (tWeakListOffset != 0 && bWeakListOffset == 0 && tWeakListOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
-                    tSize -= SIZEOF_PY_OBJECT_PTR;
-                }
-                if ((flags & MANAGED_DICT) == 0 && tDictOffset != 0 && bDictOffset == 0 && tDictOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
-                    tSize -= SIZEOF_PY_OBJECT_PTR;
-                }
-                // Check weaklist again in case it precedes dict
-                if (tWeakListOffset != 0 && bWeakListOffset == 0 && tWeakListOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
-                    tSize -= SIZEOF_PY_OBJECT_PTR;
-                }
-
-                return tSize != bSize; // (mq) TODO: [GR-61996]
+                return tItemSize != bItemSize;
             }
 
+            Object typeSlots = getSlotsFromType(type, readAttr);
             if (typeSlots != null && length(typeSlots) != 0) {
                 return true;
             }
@@ -2139,7 +2120,6 @@ public abstract class TypeNodes {
         static PythonClass typeMetaclass(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespace, Object metaclass,
                         @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @Cached HashingStorageGetItem getHashingStorageItem,
                         @Cached HashingStorageSetItemWithHash setHashingStorageItem,
                         @Cached GetOrCreateDictNode getOrCreateDictNode,
                         @Cached HashingStorageGetIterator getHashingStorageIterator,
@@ -2216,6 +2196,7 @@ public abstract class TypeNodes {
             // 3.) invoke metaclass mro() method
             pythonClass.invokeMro(inliningTarget);
 
+            // see cpython://Objects/typeobject.c#type_new_slots
             // may_add_dict = base->tp_dictoffset == 0
             ctx.mayAddDict = dictOffsetNode.execute(inliningTarget, base) == 0;
             // may_add_weak = base->tp_weaklistoffset == 0 && base->tp_itemsize == 0
@@ -2230,6 +2211,7 @@ public abstract class TypeNodes {
                     ctx.addWeak = true;
                 }
             } else {
+                // see cpython://Objects/typeobject.c#type_new_slots_impl
                 // have slots
                 // Make it into a list
                 SequenceStorage slotsStorage;
@@ -2417,27 +2399,15 @@ public abstract class TypeNodes {
             long dictOffset = GetDictOffsetNode.executeUncached(base);
             long weakListOffset = GetWeakListOffsetNode.executeUncached(base);
             long itemSize = GetItemSizeNode.executeUncached(base);
-            if (ctx.addDict && itemSize != 0) {
-                // (mq) TODO: [GR-61996]
-                dictOffset = -SIZEOF_PY_OBJECT_PTR;
-                slotOffset += SIZEOF_PY_OBJECT_PTR;
+            if (ctx.addDict) {
+                long flags = GetTypeFlagsNode.executeUncached(pythonClass);
+                SetTypeFlagsNode.executeUncached(pythonClass, flags | MANAGED_DICT);
+                dictOffset = -1;
             }
             if (ctx.addWeak) {
-                // (mq) TODO: [GR-61996]
                 weakListOffset = slotOffset;
-                slotOffset += SIZEOF_PY_OBJECT_PTR;
             }
-            if (ctx.addDict && itemSize == 0) {
-                // (mq) TODO: [GR-61996]
-                long flags = GetTypeFlagsNode.executeUncached(pythonClass) | MANAGED_DICT;
-                SetTypeFlagsNode.executeUncached(pythonClass, flags);
-                /*
-                 * Negative offsets are computed from the end of the structure. Our managed dict is
-                 * right before the start of the object. CPython has 3 fields there, so our formula
-                 * differs.
-                 */
-                dictOffset = -slotOffset - SIZEOF_PY_OBJECT_PTR;
-            }
+
             SetDictOffsetNode.executeUncached(pythonClass, dictOffset);
             SetBasicSizeNode.executeUncached(pythonClass, slotOffset);
             SetItemSizeNode.executeUncached(pythonClass, itemSize);
