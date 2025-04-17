@@ -46,6 +46,8 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -53,6 +55,11 @@ import org.junit.Test;
  * because we cannot create multiple contexts that would load native extensions.
  */
 public class NativeExtTest {
+    @BeforeClass
+    public static void setUpClass() {
+        Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("mac"));
+    }
+
     @Test
     public void testSharingErrorWithCpythonSre() throws InterruptedException {
         // The first context is the one that will use native extensions

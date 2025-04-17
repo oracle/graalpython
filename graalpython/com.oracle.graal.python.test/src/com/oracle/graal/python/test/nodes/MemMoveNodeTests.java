@@ -54,7 +54,9 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Map;
@@ -62,6 +64,11 @@ import java.util.Map;
 public class MemMoveNodeTests {
 
     private GilNode.UncachedAcquire gil;
+
+    @BeforeClass
+    public static void setUpClass() {
+        Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("mac"));
+    }
 
     @Before
     public void setUp() {

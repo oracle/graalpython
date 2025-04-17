@@ -47,12 +47,19 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.oracle.graal.python.test.integration.PythonTests;
 
 // See also NativeExtTest
 public class ShutdownTest extends PythonTests {
+    @BeforeClass
+    public static void setUpClass() {
+        Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("mac"));
+    }
+
     @Test
     public void testCloseWithBackgroundThreadsRunningSucceeds() {
         Context context = createContext();

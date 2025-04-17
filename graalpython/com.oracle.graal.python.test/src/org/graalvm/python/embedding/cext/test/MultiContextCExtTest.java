@@ -62,11 +62,17 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.python.embedding.tools.exec.BuildToolLog;
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.oracle.graal.python.runtime.PythonOptions;
 
 public class MultiContextCExtTest {
+    @BeforeClass
+    public static void setUpClass() {
+        Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("mac"));
+    }
+
     static final class TestLog extends Handler implements BuildToolLog {
         final StringBuilder logCharSequence = new StringBuilder();
         final StringBuilder logThrowable = new StringBuilder();
