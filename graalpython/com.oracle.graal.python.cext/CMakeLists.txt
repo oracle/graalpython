@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2023, 2025, Oracle and/or its affiliates.
 #
 # All rights reserved.
 #
@@ -37,10 +37,6 @@ endfunction()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-if(MSVC)
-    message(FATAL_ERROR "C API cannot be built with MSVC")
-endif()
-
 require_var(GRAALPY_PARENT_DIR)
 require_var(CAPI_INC_DIR)
 require_var(PYCONFIG_INCLUDE_DIR)
@@ -57,15 +53,20 @@ set(TARGET_LIBPYTHON "python-native")
 # common variables and compile/link options (for all build targets)
 ######################################################################
 
-set(CFLAGS_WARNINGS -Wall -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable
+if (MSVC)
+  # set(CFLAGS_WARNINGS /Wall /WX)
+else()
+  set(CFLAGS_WARNINGS -Wall -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable
+                    -Wno-discarded-qualifiers                         # _testbuffer.c
                     -Wno-tautological-constant-out-of-range-compare   # fileutils.c: wchar_t > MAX_UNICODE is always false on Windows
                     -Wno-unused-but-set-variable                      # sqlite.c: BOOL bRc
                     -Wno-ignored-pragmas                              # sre.c: #pragma optimize("agtw", on)
                     -Wno-int-to-pointer-cast -Wno-int-conversion -Wno-void-pointer-to-int-cast
                     -Wno-incompatible-pointer-types-discards-qualifiers
                     -Wno-braced-scalar-init -Wno-deprecated-declarations)
+  add_compile_options(-ffile-prefix-map=${GRAALPY_PARENT_DIR}=.)
+endif()
 
-add_compile_options(-ffile-prefix-map=${GRAALPY_PARENT_DIR}=.)
 
 # preprocessor defines for all platforms
 add_compile_definitions(
@@ -78,6 +79,7 @@ if(WIN32)
         MS_WINDOWS
         Py_ENABLE_SHARED
         HAVE_DECLSPEC_DLL
+        
     )
 endif()
 
@@ -252,7 +254,9 @@ target_compile_definitions(${TARGET_LIBPYTHON} PRIVATE Py_BUILD_CORE Py_BUILD_CO
 target_compile_options(${TARGET_LIBPYTHON} PRIVATE ${CFLAGS_WARNINGS})
 
 if(WIN32)
-    target_compile_options(${TARGET_LIBPYTHON} PRIVATE "-fmsc-version=1920")
+    if (NOT MSVC)
+        target_compile_options(${TARGET_LIBPYTHON} PRIVATE "-fmsc-version=1920")
+    endif()
 else()
     # Link to math library; required for functions like 'hypot' or similar
     target_link_libraries(${TARGET_LIBPYTHON} m)

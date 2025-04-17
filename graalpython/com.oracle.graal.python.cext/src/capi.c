@@ -762,11 +762,11 @@ PyAPI_FUNC(void*) truffle_ptr_convert(size_t value) {
 }
 
 PyAPI_FUNC(void*) truffle_ptr_add(void* x, Py_ssize_t y) {
-    return x + y;
+    return (char *)x + y;
 }
 
 PyAPI_FUNC(void) truffle_memcpy_bytes(void *dest, size_t dest_offset, void *src, size_t src_offset, size_t len) {
-    memcpy(dest + dest_offset, src + src_offset, len);
+    memcpy((char *)dest + dest_offset, (char *)src + src_offset, len);
 }
 
 PyAPI_FUNC(void*) truffle_calloc(size_t count, size_t elsize) {

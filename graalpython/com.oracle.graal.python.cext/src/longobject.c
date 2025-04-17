@@ -1991,7 +1991,7 @@ PyLong_FromString(const char *str, char **pend, int base)
         }
     }
     if (!z) {
-        z = GraalPyTruffleLong_FromString(orig_str, base);
+        z = GraalPyTruffleLong_FromString((char *)orig_str, base);
         if (z) {
             // TODO: we should probably set the **pend out argument
         }
