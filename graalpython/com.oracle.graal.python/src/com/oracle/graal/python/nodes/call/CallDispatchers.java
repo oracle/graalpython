@@ -188,7 +188,6 @@ public class CallDispatchers {
 
         @Specialization(guards = "sameCallTarget(callee.getCallTarget(), callNode)", limit = "getCallSiteInlineCacheMaxDepth()")
         static Object callBuiltinFunctionCachedCt(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PBuiltinFunction callee, Object[] arguments,
-                        @SuppressWarnings("unused") @Cached("callee") PBuiltinFunction cachedCallee,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
                         @Cached SimpleDirectInvokeNode invoke) {
             return invoke.execute(frame, inliningTarget, callNode, arguments);
@@ -254,7 +253,7 @@ public class CallDispatchers {
         // We only have a single context and this function never changed its code
         @Specialization(guards = {"isSingleContext()", "callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "cachedCallee.getCodeStableAssumption()")
         static Object callFunctionCached(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PFunction callee, Object[] arguments,
-                        @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
+                        @SuppressWarnings("unused") @Cached(value = "callee", weak = true) PFunction cachedCallee,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
                         @Cached FunctionDirectInvokeNode invoke) {
             return invoke.execute(frame, inliningTarget, callNode, cachedCallee, arguments);
