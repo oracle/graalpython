@@ -96,9 +96,9 @@ import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -115,7 +115,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -383,13 +382,12 @@ public class TpSlotBinaryOp {
         @InliningCutoff
         static Object callGenericComplexBuiltin(VirtualFrame frame, Node inliningTarget, TpSlotBinaryOpBuiltin<?> slot,
                         Object self, Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes, ReversibleSlot op,
-                        @Cached(inline = false) CallContext callContext,
-                        @Cached InlinedConditionProfile isNullFrameProfile,
-                        @Cached(inline = false) IndirectCallNode indirectCallNode) {
+                        @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
             Object[] arguments = PArguments.create(2);
             PArguments.setArgument(arguments, 0, self);
             PArguments.setArgument(arguments, 1, other);
-            return BuiltinDispatchers.callGenericBuiltin(frame, inliningTarget, slot.callTargetIndex, arguments, callContext, isNullFrameProfile, indirectCallNode);
+            RootCallTarget callTarget = PythonLanguage.get(inliningTarget).getBuiltinSlotCallTarget(slot.callTargetIndex);
+            return invoke.execute(frame, inliningTarget, callTarget, arguments);
         }
     }
 

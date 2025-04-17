@@ -104,6 +104,11 @@ public class CallDispatchers {
         return callTarget == callNode.getCallTarget();
     }
 
+    /**
+     * Node for invoking call targets of builtin functions, modules or generators when the call
+     * target is a PE constant. Use {@link #createDirectCallNodeFor(PBuiltinFunction)} to create the
+     * direct call node for builtin functions.
+     */
     @GenerateInline
     @GenerateCached(false)
     public abstract static class SimpleDirectInvokeNode extends Node {
@@ -131,6 +136,10 @@ public class CallDispatchers {
         }
     }
 
+    /**
+     * Node for invoking call targets of builtin functions, modules or generators when the call
+     * target is dynamic.
+     */
     @GenerateInline(inlineByDefault = true)
     @GenerateUncached
     public abstract static class SimpleIndirectInvokeNode extends Node {
@@ -171,11 +180,15 @@ public class CallDispatchers {
         }
     }
 
+    /**
+     * Node for invoking builtin functions with an inline cache on the function object and a
+     * secondary inline cache on the call target.
+     */
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
     @ImportStatic({CallDispatchers.class, PythonOptions.class})
-    public abstract static class BuiltinFunctionInvokeNode extends PNodeWithContext {
+    public abstract static class BuiltinFunctionCachedInvokeNode extends PNodeWithContext {
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, PBuiltinFunction callee, Object[] arguments);
 
         @Specialization(guards = {"isSingleContext()", "callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -202,6 +215,11 @@ public class CallDispatchers {
         }
     }
 
+    /**
+     * Node for invoking python functions when the call target of the function is PE constant (the
+     * function itself doesn't have to be). Use {@link #createDirectCallNodeFor(PFunction)} to
+     * create the call node.
+     */
     @GenerateInline
     @GenerateCached(false)
     public abstract static class FunctionDirectInvokeNode extends Node {
@@ -222,6 +240,9 @@ public class CallDispatchers {
         }
     }
 
+    /**
+     * Node for invoking python functions when the call target is dynamic.
+     */
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
@@ -243,11 +264,15 @@ public class CallDispatchers {
         }
     }
 
+    /**
+     * Node for invoking python functions with an inline cache on the function object and a
+     * secondary inline cache on the call target.
+     */
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
     @ImportStatic({CallDispatchers.class, PythonOptions.class})
-    public abstract static class FunctionInvokeNode extends PNodeWithContext {
+    public abstract static class FunctionCachedInvokeNode extends PNodeWithContext {
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, PFunction callee, Object[] arguments);
 
         // We only have a single context and this function never changed its code
@@ -273,6 +298,31 @@ public class CallDispatchers {
         static Object callFunctionMegamorphic(VirtualFrame frame, Node inliningTarget, PFunction callee, Object[] arguments,
                         @Cached FunctionIndirectInvokeNode invoke) {
             return invoke.execute(frame, inliningTarget, callee, arguments);
+        }
+    }
+
+    /**
+     * Node for invoking a call target with an inline cache.
+     */
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    @ImportStatic({CallDispatchers.class, PythonOptions.class})
+    public abstract static class CallTargetCachedInvokeNode extends Node {
+
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, RootCallTarget callTarget, Object[] pythonArguments);
+
+        @Specialization(guards = "sameCallTarget(callTarget, callNode)", limit = "getCallSiteInlineCacheMaxDepth()")
+        static Object doCallTargetDirect(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") RootCallTarget callTarget, Object[] args,
+                        @Cached(parameters = "callTarget") DirectCallNode callNode,
+                        @Cached SimpleDirectInvokeNode invoke) {
+            return invoke.execute(frame, inliningTarget, callNode, args);
+        }
+
+        @Specialization(replaces = "doCallTargetDirect")
+        static Object doCallTargetIndirect(VirtualFrame frame, Node inliningTarget, RootCallTarget callTarget, Object[] args,
+                        @Cached SimpleIndirectInvokeNode invoke) {
+            return invoke.execute(frame, inliningTarget, callTarget, args);
         }
     }
 }

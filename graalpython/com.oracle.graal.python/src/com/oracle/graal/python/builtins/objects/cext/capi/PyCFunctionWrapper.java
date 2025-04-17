@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.UnaryBuiltinDescriptor;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -72,10 +71,6 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -84,7 +79,6 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
@@ -247,34 +241,6 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         }
     }
 
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    // TODO move, use in eval etc?
-    abstract static class CallTargetDispatchNode extends Node {
-
-        abstract Object execute(Node inliningTarget, RootCallTarget ct, Object[] pythonArguments);
-
-        @Specialization(guards = "sameCallTarget(callTarget, callNode)", limit = "1")
-        static Object doCallTargetDirect(Node inliningTarget, @SuppressWarnings("unused") RootCallTarget callTarget, Object[] args,
-                        @Cached(parameters = "callTarget") DirectCallNode callNode,
-                        @Cached CallDispatchers.SimpleDirectInvokeNode invoke) {
-            assert PArguments.isPythonFrame(args);
-            return invoke.execute(null, inliningTarget, callNode, args);
-        }
-
-        @Specialization(replaces = "doCallTargetDirect")
-        static Object doCallTargetIndirect(Node inliningTarget, RootCallTarget ct, Object[] args,
-                        @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
-            assert PArguments.isPythonFrame(args);
-            return invoke.execute(null, inliningTarget, ct, args);
-        }
-
-        protected static boolean sameCallTarget(RootCallTarget callTarget, DirectCallNode callNode) {
-            return callTarget == callNode.getCallTarget();
-        }
-    }
-
     @ExportLibrary(InteropLibrary.class)
     static final class PyCFunctionUnaryWrapper extends PyCFunctionWrapper {
 
@@ -292,7 +258,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallUnaryMethodNode callUnaryNode,
                         @Cached CreateAndCheckArgumentsNode createArgsNode,
-                        @Cached CallTargetDispatchNode invokeNode,
+                        @Cached CallDispatchers.CallTargetCachedInvokeNode invokeNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
@@ -318,7 +284,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                         assert callTargetName != null;
                         Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, signature, jArg0, null,
                                         PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, false);
-                        result = invokeNode.execute(inliningTarget, callTarget, pArgs);
+                        result = invokeNode.execute(null, inliningTarget, callTarget, pArgs);
                     }
                     return toNativeNode.execute(result);
                 } catch (Throwable t) {
@@ -360,7 +326,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                         @Bind("$node") Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallBinaryMethodNode callBinaryMethodNode,
-                        @Cached CallTargetDispatchNode invokeNode,
+                        @Cached CallDispatchers.CallTargetCachedInvokeNode invokeNode,
                         @Cached CreateAndCheckArgumentsNode createArgsNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -385,7 +351,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                         assert callTargetName != null;
                         Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, new Object[]{jArg1}, PKeyword.EMPTY_KEYWORDS, signature, jArg0, null,
                                         PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, false);
-                        result = invokeNode.execute(inliningTarget, callTarget, pArgs);
+                        result = invokeNode.execute(null, inliningTarget, callTarget, pArgs);
                     }
                     return toNativeNode.execute(result);
                 } catch (Throwable t) {
@@ -438,7 +404,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached ExecutePositionalStarargsNode posStarargsNode,
                         @Cached CreateAndCheckArgumentsNode createArgsNode,
-                        @Cached CallTargetDispatchNode invokeNode,
+                        @Cached CallDispatchers.CallTargetCachedInvokeNode invokeNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
@@ -459,7 +425,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                     Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
                     Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, starArgsArray, PKeyword.EMPTY_KEYWORDS, signature, receiver, null,
                                     PBuiltinFunction.generateDefaults(numDefaults), PKeyword.EMPTY_KEYWORDS, false);
-                    result = invokeNode.execute(inliningTarget, callTarget, pArgs);
+                    result = invokeNode.execute(null, inliningTarget, callTarget, pArgs);
                     return toNativeNode.execute(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, toString(), "");
@@ -504,7 +470,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached ExecutePositionalStarargsNode posStarargsNode,
                         @Cached CreateAndCheckArgumentsNode createArgsNode,
-                        @Cached CallTargetDispatchNode invokeNode,
+                        @Cached CallDispatchers.CallTargetCachedInvokeNode invokeNode,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -529,7 +495,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                     PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
                     Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, starArgsArray, kwArgsArray, signature, receiver, null, PBuiltinFunction.generateDefaults(numDefaults),
                                     PKeyword.EMPTY_KEYWORDS, false);
-                    Object result = invokeNode.execute(inliningTarget, callTarget, pArgs);
+                    Object result = invokeNode.execute(null, inliningTarget, callTarget, pArgs);
                     return toNativeNode.execute(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, toString(), "");

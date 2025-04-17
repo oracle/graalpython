@@ -111,7 +111,7 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
         Object doIt(VirtualFrame frame, PFunction self, Object[] arguments, PKeyword[] keywords,
                         @Bind Node inliningTarget,
                         @Shared @Cached CreateArgumentsNode createArgs,
-                        @Cached CallDispatchers.FunctionInvokeNode invoke) {
+                        @Cached CallDispatchers.FunctionCachedInvokeNode invoke) {
             return invoke.execute(frame, inliningTarget, self, createArgs.execute(self, arguments, keywords));
         }
 
@@ -119,7 +119,7 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
         Object doIt(VirtualFrame frame, PBuiltinFunction self, Object[] arguments, PKeyword[] keywords,
                         @Bind Node inliningTarget,
                         @Shared @Cached CreateArgumentsNode createArgs,
-                        @Cached CallDispatchers.BuiltinFunctionInvokeNode invoke) {
+                        @Cached CallDispatchers.BuiltinFunctionCachedInvokeNode invoke) {
             return invoke.execute(frame, inliningTarget, self, createArgs.execute(self, arguments, keywords));
         }
     }

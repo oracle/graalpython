@@ -2490,7 +2490,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @InliningCutoff
-        private static Object buildJavaClass(VirtualFrame frame, Node inliningTarget, PythonLanguage language, PFunction function, Object[] arguments, CallDispatchers.FunctionInvokeNode invokeBody,
+        private static Object buildJavaClass(VirtualFrame frame, Node inliningTarget, PythonLanguage language, PFunction function, Object[] arguments,
+                        CallDispatchers.FunctionCachedInvokeNode invokeBody,
                         TruffleString name) {
             PDict ns = PFactory.createDict(language, new DynamicObjectStorage(language));
             Object[] args = PArguments.create(0);
@@ -2509,7 +2510,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached PyMappingCheckNode pyMappingCheckNode,
                         @Cached CallNode callPrep,
                         @Cached CallNode callType,
-                        @Cached CallDispatchers.FunctionInvokeNode invokeBody,
+                        @Cached CallDispatchers.FunctionCachedInvokeNode invokeBody,
                         @Cached UpdateBasesNode update,
                         @Cached PyObjectSetItem setOrigBases,
                         @Cached GetClassNode getClass,

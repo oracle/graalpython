@@ -69,7 +69,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -86,7 +85,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
-import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -243,14 +241,13 @@ public abstract class TpSlotDescrGet {
         @Specialization(replaces = "callCachedBuiltin")
         @InliningCutoff
         static Object callGenericBuiltin(VirtualFrame frame, Node inliningTarget, TpSlotDescrGetBuiltinComplex slot, Object self, Object obj, Object type,
-                        @Cached(inline = false) CallContext callContext,
-                        @Cached InlinedConditionProfile isNullFrameProfile,
-                        @Cached(inline = false) IndirectCallNode indirectCallNode) {
+                        @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
             Object[] arguments = PArguments.create(3);
             PArguments.setArgument(arguments, 0, self);
             PArguments.setArgument(arguments, 1, obj);
             PArguments.setArgument(arguments, 2, type);
-            return BuiltinDispatchers.callGenericBuiltin(frame, inliningTarget, slot.callTargetIndex, arguments, callContext, isNullFrameProfile, indirectCallNode);
+            RootCallTarget callTarget = PythonLanguage.get(inliningTarget).getBuiltinSlotCallTarget(slot.callTargetIndex);
+            return invoke.execute(frame, inliningTarget, callTarget, arguments);
         }
     }
 
