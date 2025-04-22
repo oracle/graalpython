@@ -81,6 +81,15 @@ final class PEFile extends SharedObject {
         if (!python.exists()) {
             python = delvewheel.resolveSibling("python.cmd");
         }
+        if (!python.exists()) {
+            python = delvewheel.getParent().resolveSibling("python.exe");
+        }
+        if (!python.exists()) {
+            python = delvewheel.getParent().resolveSibling("python.bat");
+        }
+        if (!python.exists()) {
+            python = delvewheel.getParent().resolveSibling("python.cmd");
+        }
         return python.toString();
     }
 
