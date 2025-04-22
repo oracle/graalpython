@@ -44,6 +44,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -69,6 +70,107 @@ import org.graalvm.python.embedding.tools.exec.BuildToolLog.CollectOutputLog;
 import org.graalvm.python.embedding.tools.exec.GraalPyRunner;
 
 public final class VFSUtils {
+
+    /**
+     * Patterns which should be excluded by default, like .gitignore or SCM files.
+     * <ul>
+     * <li>Misc: &#42;&#42;/&#42;~, &#42;&#42;/#&#42;#, &#42;&#42;/.#&#42;, &#42;&#42;/%&#42;%,
+     * &#42;&#42;/._&#42;</li>
+     * <li>CVS: &#42;&#42;/CVS, &#42;&#42;/CVS/&#42;&#42;, &#42;&#42;/.cvsignore</li>
+     * <li>RCS: &#42;&#42;/RCS, &#42;&#42;/RCS/&#42;&#42;</li>
+     * <li>SCCS: &#42;&#42;/SCCS, &#42;&#42;/SCCS/&#42;&#42;</li>
+     * <li>VSSercer: &#42;&#42;/vssver.scc</li>
+     * <li>MKS: &#42;&#42;/project.pj</li>
+     * <li>SVN: &#42;&#42;/.svn, &#42;&#42;/.svn/&#42;&#42;</li>
+     * <li>GNU: &#42;&#42;/.arch-ids, &#42;&#42;/.arch-ids/&#42;&#42;</li>
+     * <li>Bazaar: &#42;&#42;/.bzr, &#42;&#42;/.bzr/&#42;&#42;</li>
+     * <li>SurroundSCM: &#42;&#42;/.MySCMServerInfo</li>
+     * <li>Mac: &#42;&#42;/.DS_Store</li>
+     * <li>Serena Dimension: &#42;&#42;/.metadata, &#42;&#42;/.metadata/&#42;&#42;</li>
+     * <li>Mercurial: &#42;&#42;/.hg, &#42;&#42;/.hg/&#42;&#42;</li>
+     * <li>Git: &#42;&#42;/.git, &#42;&#42;/.git/&#42;&#42;, &#42;&#42;/.gitignore</li>
+     * <li>Bitkeeper: &#42;&#42;/BitKeeper, &#42;&#42;/BitKeeper/&#42;&#42;, &#42;&#42;/ChangeSet,
+     * &#42;&#42;/ChangeSet/&#42;&#42;</li>
+     * <li>Darcs: &#42;&#42;/_darcs, &#42;&#42;/_darcs/&#42;&#42;, &#42;&#42;/.darcsrepo,
+     * &#42;&#42;/.darcsrepo/&#42;&#42;&#42;&#42;/-darcs-backup&#42;, &#42;&#42;/.darcs-temp-mail
+     * </ul>
+     *
+     *
+     * The list is a copy of the one used in tools like the Maven JAR Plugin. @see <a href=
+     * "https://codehaus-plexus.github.io/plexus-utils/apidocs/org/codehaus/plexus/util/AbstractScanner.html#DEFAULTEXCLUDES">DEFAULTEXCLUDES</a>
+     */
+    private static final String[] DEFAULT_EXCLUDES = {
+                    // Miscellaneous typical temporary files
+                    "**/*~",
+                    "**/#*#",
+                    "**/.#*",
+                    "**/%*%",
+                    "**/._*",
+
+                    // CVS
+                    "**/CVS",
+                    "**/CVS/**",
+                    "**/.cvsignore",
+
+                    // RCS
+                    "**/RCS",
+                    "**/RCS/**",
+
+                    // SCCS
+                    "**/SCCS",
+                    "**/SCCS/**",
+
+                    // Visual SourceSafe
+                    "**/vssver.scc",
+
+                    // MKS
+                    "**/project.pj",
+
+                    // Subversion
+                    "**/.svn",
+                    "**/.svn/**",
+
+                    // Arch
+                    "**/.arch-ids",
+                    "**/.arch-ids/**",
+
+                    // Bazaar
+                    "**/.bzr",
+                    "**/.bzr/**",
+
+                    // SurroundSCM
+                    "**/.MySCMServerInfo",
+
+                    // Mac
+                    "**/.DS_Store",
+
+                    // Serena Dimensions Version 10
+                    "**/.metadata",
+                    "**/.metadata/**",
+
+                    // Mercurial
+                    "**/.hg",
+                    "**/.hg/**",
+
+                    // git
+                    "**/.git",
+                    "**/.git/**",
+                    "**/.gitignore",
+
+                    // BitKeeper
+                    "**/BitKeeper",
+                    "**/BitKeeper/**",
+                    "**/ChangeSet",
+                    "**/ChangeSet/**",
+
+                    // darcs
+                    "**/_darcs",
+                    "**/_darcs/**",
+                    "**/.darcsrepo",
+                    "**/.darcsrepo/**",
+                    "**/-darcs-backup*",
+                    "**/.darcs-temp-mail"
+    };
 
     public static final String VFS_ROOT = "org.graalvm.python.vfs";
     public static final String VFS_VENV = "venv";
@@ -153,21 +255,33 @@ public final class VFSUtils {
         }
         try (var s = Files.walk(vfs)) {
             s.forEach(p -> {
-                String entry = null;
-                if (Files.isDirectory(p)) {
-                    String dirPath = makeDirPath(p.toAbsolutePath());
-                    entry = dirPath.substring(rootEndIdx);
-                } else if (Files.isRegularFile(p)) {
-                    entry = p.toAbsolutePath().toString().substring(rootEndIdx);
-                }
-                if (entry != null) {
-                    entry = normalizeResourcePath(entry);
-                    if (!ret.add(entry) && duplicateHandler != null) {
-                        duplicateHandler.accept(entry);
+                if (!shouldPathBeExcluded(p)) {
+                    String entry = null;
+                    if (Files.isDirectory(p)) {
+                        String dirPath = makeDirPath(p.toAbsolutePath());
+                        entry = dirPath.substring(rootEndIdx);
+                    } else if (Files.isRegularFile(p)) {
+                        entry = p.toAbsolutePath().toString().substring(rootEndIdx);
+                    }
+                    if (entry != null) {
+                        entry = normalizeResourcePath(entry);
+                        if (!ret.add(entry) && duplicateHandler != null) {
+                            duplicateHandler.accept(entry);
+                        }
                     }
                 }
             });
         }
+    }
+
+    private static boolean shouldPathBeExcluded(Path path) {
+        for (String glob : DEFAULT_EXCLUDES) {
+            var matcher = FileSystems.getDefault().getPathMatcher("glob:" + glob);
+            if (matcher.matches(path)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String makeDirPath(Path p) {
