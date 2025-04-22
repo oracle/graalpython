@@ -57,6 +57,7 @@ if (MSVC)
   # set(CFLAGS_WARNINGS /Wall /WX)
 else()
   set(CFLAGS_WARNINGS -Wall -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable
+                    -Wno-unknown-warning-option
                     -Wno-discarded-qualifiers                         # _testbuffer.c
                     -Wno-tautological-constant-out-of-range-compare   # fileutils.c: wchar_t > MAX_UNICODE is always false on Windows
                     -Wno-unused-but-set-variable                      # sqlite.c: BOOL bRc
