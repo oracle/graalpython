@@ -41,7 +41,6 @@ import sys, ast, unittest
 import inspect
 
 
-@unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
 def test_guard():
     def f(x, g):
         match x:
@@ -63,7 +62,6 @@ def test_guard():
     assert f(1) == 42
     assert f(2) == 0
 
-@unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
 def test_complex_as_binary_op():
     src = """
 def f(a):
@@ -88,8 +86,6 @@ def f(a):
     assert f(6+3j) == "match add"
     assert f(-2-3j) == "match sub"
 
-@unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
-@unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: mapping pattern matching")
 def test_long_mapping():
     def f(x):
         match d:
@@ -108,7 +104,6 @@ def test_long_mapping():
 
     assert star_match(d) == {33:33}
 
-@unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: mapping pattern matching")
 def test_mutable_dict_keys():
     class MyObj:
         pass
@@ -127,7 +122,6 @@ def test_mutable_dict_keys():
     assert test('attr1') == {'dyn_match': 1, 'attr2': 2, 'attr3': 3}
     assert test('attr2') == {'dyn_match': 2, 'attr1': 1, 'attr3': 3}
 
-@unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
 def test_multiple_or_pattern_basic():
     match 0:
         case 0 | 1 | 2 | 3 | 4 | 5 as x:
@@ -137,7 +131,6 @@ def test_multiple_or_pattern_basic():
         case ((0 | 1 | 2) as x) | ((3 | 4 | 5) as x):
             assert x == 3
 
-@unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
 def test_sequence_pattern():
     match (1, 2):
         case (3, 2):
@@ -152,7 +145,6 @@ def test_sequence_pattern():
             assert False
 
 
-@unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
 def test_multiple_or_pattern_advanced():
     match 4:
         case (0 as z) | (1 as z) | (2 as z) | (4 as z) | (77 as z):
@@ -187,7 +179,6 @@ def test_multiple_or_pattern_advanced():
             assert w == 1
 
 
-@unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
 def test_multiple_or_pattern_creates_locals():
     match (1, 2):
         case (a, 1) | (a, 2):
@@ -238,7 +229,6 @@ class TestErrors(unittest.TestCase):
         with self.assertRaises(SyntaxError):
             compile(inspect.cleandoc(code), "<test>", "exec")
 
-    @unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
     def test_alternative_patterns_bind_different_names_0(self):
         self.assert_syntax_error("""
             match ...:
@@ -246,7 +236,6 @@ class TestErrors(unittest.TestCase):
                     pass
             """)
 
-    @unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
     def test_alternative_patterns_bind_different_names_1(self):
         self.assert_syntax_error("""
         match ...:
@@ -254,7 +243,6 @@ class TestErrors(unittest.TestCase):
                 pass
         """)
 
-    @unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
     def test_multiple_or_same_name(self):
         self.assert_syntax_error("""
         match 0:
@@ -262,7 +250,6 @@ class TestErrors(unittest.TestCase):
                 pass
         """)
 
-    @unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
     def test_multiple_or_wildcard(self):
         self.assert_syntax_error("""
         match 0:
@@ -270,7 +257,6 @@ class TestErrors(unittest.TestCase):
                 pass
         """)
 
-    @unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
     def test_unbound_local_variable(self):
         with self.assertRaises(UnboundLocalError):
             match (1, 3):
