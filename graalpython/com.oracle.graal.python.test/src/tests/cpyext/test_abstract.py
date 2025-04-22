@@ -1567,29 +1567,28 @@ class TestAbstract(CPyExtTestCase):
             case _:
                 return args[0] * args[1]
 
-    if not os.environ.get('BYTECODE_DSL_INTERPRETER'): # TODO: class pattern matching
-        test_PySequence_Repeat = CPyExtFunction(
-            _reference_seq_repeat,
-            lambda: (
-                ((1,), 0),
-                ((1,), 1),
-                ((1,), 3),
-                ([1], 0),
-                ([1], 1),
-                ([1], 3),
-                ("hello", 0),
-                ("hello", 1),
-                ("hello", 3),
-                ({}, 0),
-                (SeqWithMulAdd(), 42),
-                (NonSeqWithMulAdd(), 24),
-                (DictSubclassWithSequenceMethods(), 5),
-            ),
-            resultspec="O",
-            argspec='On',
-            arguments=["PyObject* obj", "Py_ssize_t n"],
-            cmpfunc=unhandled_error_compare
-        )
+    test_PySequence_Repeat = CPyExtFunction(
+        _reference_seq_repeat,
+        lambda: (
+            ((1,), 0),
+            ((1,), 1),
+            ((1,), 3),
+            ([1], 0),
+            ([1], 1),
+            ([1], 3),
+            ("hello", 0),
+            ("hello", 1),
+            ("hello", 3),
+            ({}, 0),
+            (SeqWithMulAdd(), 42),
+            (NonSeqWithMulAdd(), 24),
+            (DictSubclassWithSequenceMethods(), 5),
+        ),
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* obj", "Py_ssize_t n"],
+        cmpfunc=unhandled_error_compare
+    )
 
     test_PySequence_InPlaceRepeat = CPyExtFunction(
         lambda args: args[0] * args[1],
@@ -1622,35 +1621,34 @@ class TestAbstract(CPyExtTestCase):
             case _:
                 return args[0] + args[1]
 
-    if not os.environ.get('BYTECODE_DSL_INTERPRETER'): # TODO: class pattern matching
-        test_PySequence_Concat = CPyExtFunction(
-            _reference_seq_concat,
-            lambda: (
-                ((1,), tuple()),
-                ((1,), list()),
-                ((1,), (2,)),
-                ((1,), [2,]),
-                ([1], tuple()),
-                ([1], list()),
-                ([1], (2,)),
-                ([1], [2,]),
-                ("hello", "world"),
-                ("hello", ""),
-                ({}, []),
-                ([], {}),
-                (SeqWithMulAdd(), 1),
-                (SeqWithMulAdd(), SeqWithMulAdd()),
-                (SeqWithMulAdd(), [1,2,3]),
-                (NonSeqWithMulAdd(), 2),
-                (NonSeqWithMulAdd(), [1,2,3]),
-                (DictSubclassWithSequenceMethods(), (1,2,3)),
-                ((1,2,3), DictSubclassWithSequenceMethods()),
-            ),
-            resultspec="O",
-            argspec='OO',
-            arguments=["PyObject* s", "PyObject* o"],
-            cmpfunc=unhandled_error_compare
-        )
+    test_PySequence_Concat = CPyExtFunction(
+        _reference_seq_concat,
+        lambda: (
+            ((1,), tuple()),
+            ((1,), list()),
+            ((1,), (2,)),
+            ((1,), [2,]),
+            ([1], tuple()),
+            ([1], list()),
+            ([1], (2,)),
+            ([1], [2,]),
+            ("hello", "world"),
+            ("hello", ""),
+            ({}, []),
+            ([], {}),
+            (SeqWithMulAdd(), 1),
+            (SeqWithMulAdd(), SeqWithMulAdd()),
+            (SeqWithMulAdd(), [1,2,3]),
+            (NonSeqWithMulAdd(), 2),
+            (NonSeqWithMulAdd(), [1,2,3]),
+            (DictSubclassWithSequenceMethods(), (1,2,3)),
+            ((1,2,3), DictSubclassWithSequenceMethods()),
+        ),
+        resultspec="O",
+        argspec='OO',
+        arguments=["PyObject* s", "PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )
 
     test_PySequence_InPlaceConcat = CPyExtFunction(
         lambda args: args[0] + list(args[1]) if isinstance(args[0], list) else args[0] + args[1],
