@@ -1,0 +1,15 @@
+test.test_context.ContextTest.test_context_copy_1 @ linux-x86_64
+test.test_context.ContextTest.test_context_get_context_1 @ linux-x86_64
+test.test_context.ContextTest.test_context_getset_1 @ linux-x86_64
+test.test_context.ContextTest.test_context_getset_2 @ linux-x86_64
+test.test_context.ContextTest.test_context_getset_3 @ linux-x86_64
+test.test_context.ContextTest.test_context_getset_5 @ linux-x86_64
+test.test_context.ContextTest.test_context_run_1 @ linux-x86_64
+test.test_context.ContextTest.test_context_run_2 @ linux-x86_64
+test.test_context.ContextTest.test_context_run_3 @ linux-x86_64
+test.test_context.ContextTest.test_context_run_5 @ linux-x86_64
+test.test_context.ContextTest.test_context_run_6 @ linux-x86_64
+test.test_context.ContextTest.test_context_run_7 @ linux-x86_64
+test.test_context.ContextTest.test_context_subclassing_1 @ linux-x86_64
+test.test_context.ContextTest.test_context_threads_1 @ linux-x86_64
+test.test_context.ContextTest.test_context_typerrors_1 @ linux-x86_64

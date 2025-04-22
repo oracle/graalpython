@@ -1,0 +1,9 @@
+test.test_print.TestPrint.test_print @ linux-x86_64
+test.test_print.TestPrint.test_print_flush @ linux-x86_64
+test.test_print.TestPy2MigrationHint.test_normal_string @ linux-x86_64
+test.test_print.TestPy2MigrationHint.test_stream_redirection_hint_for_py2_migration @ linux-x86_64
+test.test_print.TestPy2MigrationHint.test_string_in_loop_on_same_line @ linux-x86_64
+test.test_print.TestPy2MigrationHint.test_string_with_excessive_whitespace @ linux-x86_64
+test.test_print.TestPy2MigrationHint.test_string_with_leading_whitespace @ linux-x86_64
+test.test_print.TestPy2MigrationHint.test_string_with_semicolon @ linux-x86_64
+test.test_print.TestPy2MigrationHint.test_string_with_soft_space @ linux-x86_64

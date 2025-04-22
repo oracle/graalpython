@@ -1,0 +1,4 @@
+test.test_bufio.CBufferSizeTest.test_nullpat @ linux-x86_64
+test.test_bufio.CBufferSizeTest.test_primepat @ linux-x86_64
+test.test_bufio.PyBufferSizeTest.test_nullpat @ linux-x86_64
+test.test_bufio.PyBufferSizeTest.test_primepat @ linux-x86_64

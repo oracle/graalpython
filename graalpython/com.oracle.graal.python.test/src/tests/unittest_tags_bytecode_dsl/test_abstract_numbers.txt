@@ -1,0 +1,3 @@
+test.test_abstract_numbers.TestNumbers.test_complex @ linux-x86_64
+test.test_abstract_numbers.TestNumbers.test_float @ linux-x86_64
+test.test_abstract_numbers.TestNumbers.test_int @ linux-x86_64

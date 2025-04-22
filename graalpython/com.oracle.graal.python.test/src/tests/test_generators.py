@@ -1,8 +1,9 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 import sys
+import os
 import unittest
 
 
@@ -10,6 +11,7 @@ class ExceptionTest(unittest.TestCase):
     # Tests for the issue #23353: check that the currently handled exception
     # is correctly saved/restored in PyEval_EvalFrameEx().
 
+    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: bug in comment above")
     def test_except_throw(self):
 
         def store_raise_exc_generator():
@@ -47,6 +49,7 @@ class ExceptionTest(unittest.TestCase):
 
         self.assertEqual(sys.exc_info(), (None, None, None))
 
+    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: bug in comment above")
     def test_except_next(self):
         def gen():
             self.assertEqual(sys.exc_info()[0], ValueError)

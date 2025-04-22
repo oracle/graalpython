@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -203,6 +203,23 @@ public class ClassTests {
                         "        pass\n" + //
                         "print(repr(graph()))\n";
         assertPrints("common\n", source);
+    }
+
+    @Test
+    public void classDecorator() {
+        String source = "def wrapper(cls):\n" + //
+                        "  orig_init = cls.__init__\n" + //
+                        "  def new_init(self):\n" + //
+                        "    print('wrapper')\n" + //
+                        "    orig_init(self)\n" + //
+                        "  cls.__init__ = new_init\n" + //
+                        "  return cls\n" + //
+                        "@wrapper\n" + //
+                        "class Foo:\n" + //
+                        "  def __init__(self):\n" + //
+                        "    print('Foo')\n" + //
+                        "Foo()\n";
+        assertPrints("wrapper\nFoo\n", source);
     }
 
 }

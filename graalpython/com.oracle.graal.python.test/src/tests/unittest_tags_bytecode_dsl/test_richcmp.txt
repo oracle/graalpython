@@ -1,0 +1,11 @@
+test.test_richcmp.DictTest.test_dicts @ linux-x86_64
+test.test_richcmp.ListTest.test_badentry @ linux-x86_64
+test.test_richcmp.ListTest.test_coverage @ linux-x86_64
+test.test_richcmp.ListTest.test_goodentry @ linux-x86_64
+test.test_richcmp.MiscTest.test_exception_message @ linux-x86_64
+test.test_richcmp.MiscTest.test_misbehavin @ linux-x86_64
+test.test_richcmp.MiscTest.test_not @ linux-x86_64
+test.test_richcmp.MiscTest.test_recursion @ linux-x86_64
+test.test_richcmp.NumberTest.test_basic @ linux-x86_64
+test.test_richcmp.NumberTest.test_values @ linux-x86_64
+test.test_richcmp.VectorTest.test_mixed @ linux-x86_64

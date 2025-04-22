@@ -47,7 +47,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 
 /**
  * Helper class with shared fast-paths. Must be public so that it is accessible by the Bytecode DSL
- * generated code.
+ * generated code. TODO: unused due to GR-64005
  */
 @GenerateCached(false)
 public abstract class PyNumberLshiftFastPathsBase extends BinaryOpNode {

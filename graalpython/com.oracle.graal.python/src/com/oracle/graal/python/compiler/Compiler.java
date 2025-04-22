@@ -257,9 +257,9 @@ public class Compiler implements SSTreeVisitor<Void> {
     public CompilationUnit compile(ModTy mod, EnumSet<Flags> flags, int optimizationLevel, EnumSet<FutureFeature> futureFeatures) {
         this.flags = flags;
         if (mod instanceof ModTy.Module) {
-            parseFuture(((ModTy.Module) mod).body);
+            futureLineno = parseFuture(((ModTy.Module) mod).body, futureFeatures, errorCallback);
         } else if (mod instanceof ModTy.Interactive) {
-            parseFuture(((ModTy.Interactive) mod).body);
+            futureLineno = parseFuture(((ModTy.Interactive) mod).body, futureFeatures, errorCallback);
         }
         this.futureFeatures.addAll(futureFeatures);
         this.env = ScopeEnvironment.analyze(mod, parserCallbacks, this.futureFeatures);
@@ -271,21 +271,23 @@ public class Compiler implements SSTreeVisitor<Void> {
         return topUnit;
     }
 
-    private void parseFuture(StmtTy[] modBody) {
+    public static int parseFuture(StmtTy[] modBody, EnumSet<FutureFeature> futureFeatures, ErrorCallback errorCallback) {
+        int lastFutureLine = -1;
         if (modBody == null || modBody.length == 0) {
-            return;
+            return lastFutureLine;
         }
         boolean done = false;
         int prevLine = 0;
         int i = 0;
-        if (getDocstring(modBody) != null) {
+        if (findDocstring(modBody) != null) {
             i++;
         }
+
         for (; i < modBody.length; i++) {
             StmtTy s = modBody[i];
             int line = s.getSourceRange().startLine;
             if (done && line > prevLine) {
-                return;
+                return lastFutureLine;
             }
             prevLine = line;
             if (s instanceof StmtTy.ImportFrom) {
@@ -294,8 +296,8 @@ public class Compiler implements SSTreeVisitor<Void> {
                     if (done) {
                         throw parserCallbacks.onError(ErrorType.Syntax, s.getSourceRange(), "from __future__ imports must occur at the beginning of the file");
                     }
-                    parseFutureFeatures(importFrom, futureFeatures);
-                    futureLineno = line;
+                    parseFutureFeatures(importFrom, futureFeatures, errorCallback);
+                    lastFutureLine = line;
                 } else {
                     done = true;
                 }
@@ -303,9 +305,10 @@ public class Compiler implements SSTreeVisitor<Void> {
                 done = true;
             }
         }
+        return lastFutureLine;
     }
 
-    private void parseFutureFeatures(StmtTy.ImportFrom node, EnumSet<FutureFeature> features) {
+    private static void parseFutureFeatures(StmtTy.ImportFrom node, EnumSet<FutureFeature> features, ErrorCallback errorCallback) {
         for (AliasTy alias : node.names) {
             if (alias.name != null) {
                 switch (alias.name) {
@@ -488,7 +491,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
-    private void checkForbiddenName(String id, ExprContextTy context) {
+    protected final void checkForbiddenName(String id, ExprContextTy context) {
         if (context == ExprContextTy.Store) {
             if (id.equals("__debug__")) {
                 throw parserCallbacks.onError(ErrorType.Syntax, unit.currentLocation, "cannot assign to __debug__");
@@ -718,10 +721,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         return v;
     }
 
-    private TruffleString getDocstring(StmtTy[] body) {
-        if (optimizationLevel >= 2) {
-            return null;
-        }
+    private static TruffleString findDocstring(StmtTy[] body) {
         if (body != null && body.length > 0) {
             StmtTy stmt = body[0];
             if (stmt instanceof StmtTy.Expr) {
@@ -735,6 +735,13 @@ public class Compiler implements SSTreeVisitor<Void> {
             }
         }
         return null;
+    }
+
+    private TruffleString getDocstring(StmtTy[] body) {
+        if (optimizationLevel >= 2) {
+            return null;
+        }
+        return findDocstring(body);
     }
 
     private SourceRange setLocation(SourceRange location) {
@@ -903,6 +910,19 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
+    /**
+     * After these bytecodes are executed, there will a Python collection on the stack containing
+     * all the arguments.
+     * <p>
+     * We push individual arguments to the stack and when we reach certain size threshold, we emit
+     * instruction to collect N stack items (N is immediate operand) to the collection, which will
+     * now be on TOS. Next time this happens we emit instruction that adds the stack items to the
+     * collection. This way we accumulate the arguments into the collection and also never overflow
+     * certain stack size.
+     * <p>
+     * When we encounter starred argument: we accumulate what we have on stack to the collection and
+     * then add the values in the starred arg to it.
+     */
     private void collectIntoArray(ExprTy[] nodes, int bits, int alreadyOnStack) {
         Collector collector = new Collector(bits, alreadyOnStack);
         if (nodes != null) {
@@ -947,7 +967,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         collector.finishCollection();
     }
 
-    private void validateKeywords(KeywordTy[] keywords) {
+    protected final void validateKeywords(KeywordTy[] keywords) {
         for (int i = 0; i < keywords.length; i++) {
             if (keywords[i].arg != null) {
                 checkForbiddenName(keywords[i].arg, ExprContextTy.Store);
@@ -1606,7 +1626,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 case Store:
                     return unpackInto(node.elements);
                 case Load:
-                    boolean emittedConstant = tryCollectConstantCollection(node.elements, CollectionBits.KIND_LIST);
+                    boolean emittedConstant = tryLoadConstantCollection(node.elements, CollectionBits.KIND_LIST);
                     if (emittedConstant) {
                         return null;
                     }
@@ -1888,7 +1908,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                             }
                         }
                     }
-                    boolean emittedConstant = tryCollectConstantCollection(node.elements, CollectionBits.KIND_TUPLE);
+                    boolean emittedConstant = tryLoadConstantCollection(node.elements, CollectionBits.KIND_TUPLE);
                     if (emittedConstant) {
                         return null;
                     }
@@ -1908,13 +1928,33 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
-    private boolean tryCollectConstantCollection(ExprTy[] elements, int collectionKind) {
+    private boolean tryLoadConstantCollection(ExprTy[] elements, int collectionKind) {
+        ConstantCollection constantCollection = tryCollectConstantCollection(elements);
+        if (constantCollection == null) {
+            return false;
+        }
+
+        addOp(LOAD_CONST_COLLECTION, addObject(unit.constants, constantCollection.collection), new byte[]{(byte) (constantCollection.elementType | collectionKind)});
+        return true;
+    }
+
+    public static final class ConstantCollection {
+        public final Object collection;
+        public final int elementType;
+
+        ConstantCollection(Object collection, int elementType) {
+            this.collection = collection;
+            this.elementType = elementType;
+        }
+    }
+
+    public static ConstantCollection tryCollectConstantCollection(ExprTy[] elements) {
         /*
          * We try to store the whole tuple as a Java array constant when all the elements are
          * constant and context-independent.
          */
         if (elements == null || elements.length == 0) {
-            return false;
+            return null;
         }
 
         int constantType = -1;
@@ -1944,10 +1984,10 @@ public class Compiler implements SSTreeVisitor<Void> {
                     constantType = determineConstantType(constantType, CollectionBits.ELEMENT_OBJECT);
                     constants.add(PNone.NONE);
                 } else {
-                    return false;
+                    return null;
                 }
             } else {
-                return false;
+                return null;
             }
         }
         Object newConstant = null;
@@ -1988,11 +2028,10 @@ public class Compiler implements SSTreeVisitor<Void> {
                 break;
             }
         }
-        addOp(LOAD_CONST_COLLECTION, addObject(unit.constants, newConstant), new byte[]{(byte) (constantType | collectionKind)});
-        return true;
+        return new ConstantCollection(newConstant, constantType);
     }
 
-    int determineConstantType(int existing, int type) {
+    private static int determineConstantType(int existing, int type) {
         if (existing == -1 || existing == type) {
             return type;
         }

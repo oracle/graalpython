@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -73,6 +74,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateInline(false)
 @GenerateUncached
+@OperationProxy.Proxyable
 public abstract class PyNumberAddNode extends PyNumberAddFastPathsBase {
 
     @Specialization(guards = {"isBuiltinList(left)", "isBuiltinList(right)"})

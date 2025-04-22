@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -54,6 +55,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @GenerateInline(false) // used in BCI root node
+@OperationProxy.Proxyable
 public abstract class GetYieldFromIterNode extends Node {
     public abstract Object execute(VirtualFrame frame, Object receiver);
 

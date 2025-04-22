@@ -1,0 +1,6 @@
+test.test_codeop.CodeopTests.test_filename @ linux-x86_64
+test.test_codeop.CodeopTests.test_invalid @ linux-x86_64
+test.test_codeop.CodeopTests.test_invalid_exec @ linux-x86_64
+test.test_codeop.CodeopTests.test_syntax_errors @ linux-x86_64
+test.test_codeop.CodeopTests.test_valid @ linux-x86_64
+test.test_codeop.CodeopTests.test_warning @ linux-x86_64

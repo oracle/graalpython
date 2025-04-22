@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -83,6 +83,7 @@ class VenvTest(unittest.TestCase):
             assert f"Hello {tmpfile}" in out, out
             assert f'Original "{sys.executable}"' in out, out
 
+    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: issue with passing Bytecode DSL flag to subprocesses")
     def test_create_and_use_basic_venv(self):
         run = None
         run_output = ''
@@ -97,6 +98,7 @@ class VenvTest(unittest.TestCase):
         if sys.platform != 'win32':
             assert self.env_dir in run, run
 
+    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: issue with passing Bytecode DSL flag to subprocesses")
     def test_create_and_use_venv_with_pip(self):
         run = None
         msg = ''

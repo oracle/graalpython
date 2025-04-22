@@ -111,6 +111,7 @@ public class ScopeEnvironment {
     final HashMap<Object, Scope> blocks = new HashMap<>();
     final ParserCallbacks parserCallbacks;
     final EnumSet<FutureFeature> futureFeatures;
+    final HashMap<Scope, Scope> parents = new HashMap<>();
 
     public static ScopeEnvironment analyze(ModTy moduleNode, ParserCallbacks parserCallbacks, EnumSet<FutureFeature> futureFeatures) {
         return new ScopeEnvironment(moduleNode, parserCallbacks, futureFeatures);
@@ -141,6 +142,14 @@ public class ScopeEnvironment {
     public Scope lookupScope(Object key) {
         assert key instanceof SSTNode || key instanceof TypeParamTy[];
         return blocks.get(key);
+    }
+
+    public Scope lookupParent(Scope scope) {
+        return parents.get(scope);
+    }
+
+    public Scope getTopScope() {
+        return topScope;
     }
 
     private void analyzeBlock(Scope scope, HashSet<String> bound, HashSet<String> free, HashSet<String> global, HashSet<String> typeParams, Scope classEntry) {
@@ -397,6 +406,7 @@ public class ScopeEnvironment {
             if (type == Scope.ScopeType.Annotation) {
                 return;
             }
+            env.parents.put(scope, prev);
             if (prev != null) {
                 prev.children.add(scope);
             }

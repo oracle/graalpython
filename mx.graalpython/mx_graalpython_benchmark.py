@@ -37,6 +37,7 @@ from pathlib import Path
 
 import mx
 import mx_benchmark
+import mx_graalpython
 from mx_benchmark import StdOutRule, java_vm_registry, Vm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin
 from mx_graalpython_bench_param import HARNESS_PATH
 
@@ -364,6 +365,9 @@ class GraalPythonVmBase(GuestVm):
 
     def run(self, cwd, args):
         extra_polyglot_args = self.get_extra_polyglot_args()
+
+        if mx_graalpython.BYTECODE_DSL_INTERPRETER:
+            args.insert(0, "--vm.Dpython.EnableBytecodeDSLInterpreter=true")
 
         host_vm = self.host_vm()
         if hasattr(host_vm, 'run_lang'): # this is a full GraalVM build
