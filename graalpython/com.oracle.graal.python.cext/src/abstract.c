@@ -952,7 +952,7 @@ binary_op(PyObject *v, PyObject *w, const int op_slot, const char *op_name)
     if (result == Py_NotImplemented) {
         Py_DECREF(result);
 
-        if (op_slot == NB_SLOT(nb_rshift) &&
+        if (op_slot == (int)NB_SLOT(nb_rshift) &&
             PyCFunction_CheckExact(v) &&
             strcmp(((PyCFunctionObject *)v)->m_ml->ml_name, "print") == 0)
         {

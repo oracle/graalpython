@@ -166,7 +166,7 @@ PyBytes_FromFormatV(const char *format, va_list vargs)
                                              (__buffer)[(__pos)++] = (__spec);\
                                          } while(0)
 
-    for(int i=0; i < sizeof(buffer); i++) {
+    for(int i=0; i < (int)sizeof(buffer); i++) {
     	buffer[i] = '\0';
     }
 

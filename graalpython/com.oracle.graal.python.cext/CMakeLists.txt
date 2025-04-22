@@ -54,7 +54,40 @@ set(TARGET_LIBPYTHON "python-native")
 ######################################################################
 
 if (MSVC)
-  # set(CFLAGS_WARNINGS /Wall /WX)
+  SET(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "" FORCE)
+  SET(CFLAGS_WARNINGS /Wall /WX
+    # Many warnings that are just MSVC being a bit pedantic
+    /wd4255 # no function prototype given: converting '()' to '(void)'
+    /wd4820 # padding added after data member
+    /wd4100 # unreferenced formal parameter
+    /wd4200 # nonstandard extension used: zero-sized array in struct/union
+    /wd4996 # This function or variable may be unsafe ... see _CRT_SECURE_NO_WARNINGS
+    /wd4668 # ... is not defined as a preprocessor macro, replacing with '0' for '#if/#elif'
+    /wd4115 # named type definition in parentheses
+    /wd4152 # nonstandard extension, function/data pointer conversion in expression
+    /wd5045 # Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+    /wd4047 # 'int64_t' differs in levels of indirection from 'char []' / 'void *'
+    /wd4242 # conversion from 'int' to 'char', possible loss of data
+    /wd4244 # conversion from 'long' to 'char', possible loss of data
+    /wd4267 # conversion from 'size_t' to 'int', possible loss of data
+    /wd4127 # conditional expression is constant
+    /wd4702 # unreachable code
+    /wd4101 # unreferenced local variable
+    /wd4456 # declaration hides previous local declaration
+    /wd4459 # declaration hides global declaration
+    /wd4061 # enumerator X in switch of enum Y is not explicitly handled by a case label
+    /wd4464 # relative include path contains '..'
+    /wd4710 # 'fprintf': function not inlined
+    /wd4706 # assignment within conditional expression
+
+    # Some that I'm not so happy about
+    /wd4232 # sre: nonstandard extension used: 'ml_meth': address of dllimport 'Py_GenericAlias' is not static, identity not guaranteed
+    /wd4191 # sre and sqlite: 'type cast': like unsafe conversion from 'PyObject *(__cdecl *)(MatchObject *,PyObject *const *,Py_ssize_t)' to 'void (__cdecl *)(void)'
+    /wd4918 # sre: invalid character in pragma optimization list
+    /wd4701 # cpython_unicodedata: potentially uninitialized local variable 'rc' used
+    /wd4574 # sqlite: 'SQLITE_ATOMIC_INTRINSICS' is defined to be '0': did you mean to use '#if SQLITE_ATOMIC_INTRINSICS'?
+    /wd4310 # xmlparse: cast truncates constant value
+  )
 else()
   set(CFLAGS_WARNINGS -Wall -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable
                     -Wno-unknown-warning-option

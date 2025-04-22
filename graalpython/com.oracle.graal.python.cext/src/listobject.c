@@ -133,7 +133,7 @@ PyTypeObject PyList_Type = {
 
 // alias for internal function, currently used in PyO3
 PyAPI_FUNC(void) _PyList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
-    return PyList_SET_ITEM(a, b, c);
+    PyList_SET_ITEM(a, b, c);
 }
 
 static inline int

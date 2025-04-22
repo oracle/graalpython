@@ -888,7 +888,7 @@ PyLong_FromVoidPtr(void *p)
 {
     // GraalPy change: different implementation
     // directly do the upcall to avoid a cast to primitive and reference counting
-    return ((PyObject* (*)(void*))GraalPyLong_FromUnsignedLongLong)(p);
+    return GraalPyLong_FromUnsignedLongLong((uint64_t)p);
 }
 
 #if 0 // GraalPy change

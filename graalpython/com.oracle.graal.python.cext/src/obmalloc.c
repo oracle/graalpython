@@ -384,7 +384,6 @@ _GraalPyMem_PrepareAlloc(GraalPyMem_t *state, size_t size)
                 __func__, state->native_memory_gc_barrier, size, state->allocated_memory);
 
         size_t delay = 0;
-        int iteration = 0;
         for (int iteration = 0; iteration < MAX_COLLECTION_RETRIES;
                 iteration++) {
             GraalPyTruffle_TriggerGC(delay);

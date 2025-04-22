@@ -1381,7 +1381,6 @@ PyUnicode_New(Py_ssize_t size, Py_UCS4 maxchar)
 {
     // GraalPy change: different implementation
     /* add one to size for the null character */
-	int is_ascii = 0;
     if (maxchar < 128) {
         /* We intentionally use 'size' (which is one element less than the allocated array)
          * because interop users should not see the null character. */

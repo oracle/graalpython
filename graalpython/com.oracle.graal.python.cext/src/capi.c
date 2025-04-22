@@ -262,7 +262,7 @@ static int cdata_getbuffer(PyObject* type, Py_buffer* view, int flags) {
 }
 
 static void cdata_releasebuffer(PyObject* obj, Py_buffer* view) {
-    return GraalPyTruffleCData_ReleaseBuffer(obj, view);
+    GraalPyTruffleCData_ReleaseBuffer(obj, view);
 }
 
 PyAPI_FUNC(void) PyTruffleCData_InitBufferProtocol(PyObject* type) {
@@ -801,7 +801,7 @@ PyAPI_FUNC(int) tuffle_check_basesize_for_getstate(PyTypeObject* type, int slot_
     if (type->tp_weaklistoffset)
         basicsize += sizeof(PyObject *);
     if (slot_num)
-        basicsize += sizeof(PyObject *) * PyList_GET_SIZE(slot_num);
+        basicsize += sizeof(PyObject *) * slot_num;
     return type->tp_basicsize > basicsize;
 }
 
