@@ -131,7 +131,7 @@ public final class NativeLibraryLocator {
         try {
             return resolve(context, original, capiSlot, capiOriginal);
         } catch (ApiInitException e) {
-            throw new ImportException(null, toTruffleStringUncached(original.getName()), toTruffleStringUncached(original.getPath()), toTruffleStringUncached(e.getMessage()));
+            throw new ImportException(null, toTruffleStringUncached(original.getName()), toTruffleStringUncached(original.getPath()), toTruffleStringUncached(e.getMessage() == null ? "" : e.getMessage()));
         }
     }
 
