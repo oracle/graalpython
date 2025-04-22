@@ -391,6 +391,15 @@ def get_path_with_patchelf():
             subprocess.check_call([sys.executable, "-m", "venv", str(venv)])
             subprocess.check_call([str(venv / "bin" / "pip"), "install", "patchelf"])
             mx.log(f"{time.strftime('[%H:%M:%S] ')} Building patchelf-venv with {sys.executable}... [duration: {time.time() - t0}]")
+    if mx.is_windows() and not shutil.which("delvewheel"):
+        venv = Path(SUITE.get_output_root()).absolute() / "delvewheel-venv"
+        path += os.pathsep + str(venv / "Scripts")
+        if not shutil.which("delvewheel", path=path):
+            mx.log(f"{time.strftime('[%H:%M:%S] ')} Building delvewheel-venv with {sys.executable}... [delvewheel not found on PATH]")
+            t0 = time.time()
+            subprocess.check_call([sys.executable, "-m", "venv", str(venv)])
+            subprocess.check_call([str(venv / "Scripts" / "pip.exe"), "install", "delvewheel"])
+            mx.log(f"{time.strftime('[%H:%M:%S] ')} Building delvewheel-venv with {sys.executable}... [duration: {time.time() - t0}]")
     return path
 
 
