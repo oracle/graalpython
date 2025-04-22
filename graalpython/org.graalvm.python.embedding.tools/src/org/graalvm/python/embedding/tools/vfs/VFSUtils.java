@@ -44,7 +44,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -67,7 +66,7 @@ import org.graalvm.python.embedding.tools.exec.SubprocessLog.CollectOutputLog;
 public final class VFSUtils {
 
     /**
-     * Patterns which should be excluded by default, like .gitignore or SCM files
+     * Patterns which should be excluded by default, like .gitignore or SCM files.
      * <ul>
      * <li>Misc: &#42;&#42;/&#42;~, &#42;&#42;/#&#42;#, &#42;&#42;/.#&#42;, &#42;&#42;/%&#42;%,
      * &#42;&#42;/._&#42;</li>
@@ -90,6 +89,9 @@ public final class VFSUtils {
      * &#42;&#42;/.darcsrepo/&#42;&#42;&#42;&#42;/-darcs-backup&#42;, &#42;&#42;/.darcs-temp-mail
      * </ul>
      *
+     *
+     * The list is a copy of the one used in tools like the Maven JAR Plugin. @see <a href=
+     * "https://codehaus-plexus.github.io/plexus-utils/apidocs/org/codehaus/plexus/util/AbstractScanner.html#DEFAULTEXCLUDES">DEFAULTEXCLUDES</a>
      */
     private static final String[] DEFAULT_EXCLUDES = {
                     // Miscellaneous typical temporary files
