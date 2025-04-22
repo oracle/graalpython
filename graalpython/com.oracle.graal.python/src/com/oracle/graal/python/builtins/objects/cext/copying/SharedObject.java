@@ -44,7 +44,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.io.TruffleProcessBuilder;
 
@@ -99,4 +101,26 @@ abstract class SharedObject implements AutoCloseable {
         pb.redirectError(pb.createRedirectToStream(new LoggingOutputStream()));
         return pb;
     }
+
+    private static boolean isExecutable(TruffleFile executable) {
+        try {
+            return executable.isExecutable();
+        } catch (SecurityException e) {
+            return false;
+        }
+    }
+
+    protected static TruffleFile which(PythonContext context, String command) {
+        Env env = context.getEnv();
+        var path = env.getEnvironment().getOrDefault("PATH", "").split(env.getPathSeparator());
+        var executable = env.getPublicTruffleFile(context.getOption(PythonOptions.Executable).toJavaStringUncached());
+        var candidate = executable.resolveSibling(command);
+        var i = 0;
+        while (!isExecutable(candidate) && i < path.length) {
+            candidate = env.getPublicTruffleFile(path[i++]).resolve(command);
+        }
+        return candidate;
+    }
+
+
 }
