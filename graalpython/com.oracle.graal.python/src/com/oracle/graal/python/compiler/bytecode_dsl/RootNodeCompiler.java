@@ -3699,7 +3699,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         /**
-         * Saves subject of the pattern context into BytecodeLocal variable, to be restored eventually.
+         * Saves subject of the pattern context into BytecodeLocal variable, to be restored
+         * eventually.
+         * 
          * @param pc Pattern context, which subject needs to be saved.
          * @return Subject saved in local variable.
          */
@@ -3713,6 +3715,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         /**
          * Loads pattern context subject back into pattern context.
+         * 
          * @param pcSave Variable to restore pattern context subject from.
          * @param pc Pattern context into which the subject should be restored.
          */
@@ -3723,8 +3726,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         /**
-         * Check if attribute and keyword attribute lengths match, or if there isn't too much patterns or attributes.
-         * Throws error on fail.
+         * Check if attribute and keyword attribute lengths match, or if there isn't too much
+         * patterns or attributes. Throws error on fail.
+         * 
          * @param patLen Patterns count
          * @param attrsLen Attributes count
          * @param kwdPatLen Keyword attributes count
@@ -3742,9 +3746,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         /**
-         * Visits sub-patterns for class pattern matching. Regular, positional patterns are handled first, then the
-         * keyword patterns (e.g. the "class.attribute = [keyword] pattern"). Generates boolean value based on
-         * results of the subpatterns; values are evaluated using the AND operator.
+         * Visits sub-patterns for class pattern matching. Regular, positional patterns are handled
+         * first, then the keyword patterns (e.g. the "class.attribute = [keyword] pattern").
+         * Generates boolean value based on results of the subpatterns; values are evaluated using
+         * the AND operator.
+         * 
          * @param patterns Patterns to check as subpatterns.
          * @param kwdPatterns Keyword patterns to check as subpatterns.
          * @param attrsValueUnpacked Values to use as `pc.subject` in sub-pattern check.
@@ -3760,31 +3766,31 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             } else {
                 BytecodeLocal temp = b.createLocal();
                 b.beginStoreLocal(temp);
-                    b.beginPrimitiveBoolAnd();
-                    for (int i = 0; i < patLen; i++) {
-                        b.beginBlock();
-                        b.beginStoreLocal(pc.subject);
-                        b.beginArrayIndex(i);
-                        b.emitLoadLocal(attrsValueUnpacked);
-                        b.endArrayIndex();
-                        b.endStoreLocal();
+                b.beginPrimitiveBoolAnd();
+                for (int i = 0; i < patLen; i++) {
+                    b.beginBlock();
+                    b.beginStoreLocal(pc.subject);
+                    b.beginArrayIndex(i);
+                    b.emitLoadLocal(attrsValueUnpacked);
+                    b.endArrayIndex();
+                    b.endStoreLocal();
 
-                        visitSubpattern(patterns[i], pc);
-                        b.endBlock();
-                    }
+                    visitSubpattern(patterns[i], pc);
+                    b.endBlock();
+                }
 
-                    for (int i = 0, j = patLen; i < attrsLen; i++, j++) {
-                        b.beginBlock();
-                        b.beginStoreLocal(pc.subject);
-                        b.beginArrayIndex(j);
-                        b.emitLoadLocal(attrsValueUnpacked);
-                        b.endArrayIndex();
-                        b.endStoreLocal();
+                for (int i = 0, j = patLen; i < attrsLen; i++, j++) {
+                    b.beginBlock();
+                    b.beginStoreLocal(pc.subject);
+                    b.beginArrayIndex(j);
+                    b.emitLoadLocal(attrsValueUnpacked);
+                    b.endArrayIndex();
+                    b.endStoreLocal();
 
-                        visitSubpattern(kwdPatterns[i], pc);
-                        b.endBlock();
-                    }
-                    b.endPrimitiveBoolAnd();
+                    visitSubpattern(kwdPatterns[i], pc);
+                    b.endBlock();
+                }
+                b.endPrimitiveBoolAnd();
                 b.endStoreLocal();
 
                 patternContextSubjectLoad(pcSave, pc);
@@ -3866,7 +3872,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         /**
-         * Checks if keyword argument names aren't the same or if their name isn't forbidden. Raises error at fail.
+         * Checks if keyword argument names aren't the same or if their name isn't forbidden. Raises
+         * error at fail.
+         * 
          * @param attrs Attributes to check.
          * @param patterns Patterns for error source range.
          */
@@ -3891,8 +3899,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         /**
-         * Checks if keys in pattern are, if present, longer than keys in subject. If yes, pattern should fail,
-         * otherwise, we should continue with evaluation.
+         * Checks if keys in pattern are, if present, longer than keys in subject. If yes, pattern
+         * should fail, otherwise, we should continue with evaluation.
          *
          * Generates result of the comparison (boolean).
          *
@@ -3909,8 +3917,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         /**
-         * Will process pattern keys: Attributes evaluation and constant folding. Checks for duplicate keys and
-         * that only literals and attributes lookups are being matched.
+         * Will process pattern keys: Attributes evaluation and constant folding. Checks for
+         * duplicate keys and that only literals and attributes lookups are being matched.
          *
          * Generates array.
          *
@@ -3962,56 +3970,56 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             int patLen = patterns.length;
 
             b.beginBlock();
-                // unpack values from pc.subject
-                BytecodeLocal valuesUnpacked = b.createLocal();
-                    b.beginStoreLocal(valuesUnpacked);
-                        b.beginUnpackSequence(patLen);
-                        b.emitLoadLocal(values);
-                    b.endUnpackSequence();
+            // unpack values from pc.subject
+            BytecodeLocal valuesUnpacked = b.createLocal();
+            b.beginStoreLocal(valuesUnpacked);
+            b.beginUnpackSequence(patLen);
+            b.emitLoadLocal(values);
+            b.endUnpackSequence();
+            b.endStoreLocal();
+
+            // backup pc.subject, it will get replaced for sub-patterns
+            BytecodeLocal pcSave = patternContextSubjectSave(pc);
+
+            BytecodeLocal temp = b.createLocal();
+            b.beginStoreLocal(temp);
+            b.beginPrimitiveBoolAnd();
+            boolean hadNonWildcardPattern = false;
+            for (int i = 0; i < patLen; i++) {
+                if (wildcardCheck(patterns[i])) {
+                    continue;
+                }
+                hadNonWildcardPattern = true;
+                b.beginBlock();
+                b.beginStoreLocal(pc.subject);
+                b.beginArrayIndex(i);
+                b.emitLoadLocal(valuesUnpacked);
+                b.endArrayIndex();
                 b.endStoreLocal();
 
-                // backup pc.subject, it will get replaced for sub-patterns
-                BytecodeLocal pcSave = patternContextSubjectSave(pc);
+                visitSubpattern(patterns[i], pc);
+                b.endBlock();
+            }
+            if (!hadNonWildcardPattern) {
+                b.emitLoadConstant(true);
+            }
+            b.endPrimitiveBoolAnd();
+            b.endStoreLocal();
 
-                BytecodeLocal temp = b.createLocal();
-                b.beginStoreLocal(temp);
-                    b.beginPrimitiveBoolAnd();
-                        boolean hadNonWildcardPattern = false;
-                        for (int i = 0; i < patLen; i++) {
-                            if (wildcardCheck(patterns[i])) {
-                                continue;
-                            }
-                            hadNonWildcardPattern = true;
-                            b.beginBlock();
-                                b.beginStoreLocal(pc.subject);
-                                    b.beginArrayIndex(i);
-                                        b.emitLoadLocal(valuesUnpacked);
-                                    b.endArrayIndex();
-                                b.endStoreLocal();
+            patternContextSubjectLoad(pcSave, pc);
 
-                                visitSubpattern(patterns[i], pc);
-                            b.endBlock();
-                        }
-                        if (!hadNonWildcardPattern) {
-                            b.emitLoadConstant(true);
-                        }
-                    b.endPrimitiveBoolAnd();
-                b.endStoreLocal();
-
-                patternContextSubjectLoad(pcSave, pc);
-
-                b.emitLoadLocal(temp);
+            b.emitLoadLocal(temp);
             b.endBlock();
         }
 
         private void doVisitPattern(PatternTy.MatchMapping node, PatternContext pc) {
             /**
-             * Mapping pattern match will take the keys and check, whether the keys in the pattern are
-             * present in the subject. This is good enough, since the pattern needs only to be a subset of the subject.
-             * Keys aren't evaluated as subpatterns.
+             * Mapping pattern match will take the keys and check, whether the keys in the pattern
+             * are present in the subject. This is good enough, since the pattern needs only to be a
+             * subset of the subject. Keys aren't evaluated as subpatterns.
              *
-             * After the key check, the values of the pattern are patterns as well and are evaluated as sub-patterns
-             * with values in the subject used as separate respective subjects.
+             * After the key check, the values of the pattern are patterns as well and are evaluated
+             * as sub-patterns with values in the subject used as separate respective subjects.
              */
             ExprTy[] keys = node.keys;
             PatternTy[] patterns = node.patterns;

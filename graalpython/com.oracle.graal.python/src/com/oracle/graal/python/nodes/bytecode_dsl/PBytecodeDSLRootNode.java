@@ -310,6 +310,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 @OperationProxy(value = PyObjectIsNotTrueNode.class, name = "Not")
 @OperationProxy(value = ListNodes.AppendNode.class, name = "ListAppend")
 @OperationProxy(value = SetNodes.AddNode.class, name = "SetAdd")
+// @OperationProxy(value = CopyDictWithoutKeysNode.class, name = "CopyDictWithoutKeys")
 @ShortCircuitOperation(name = "BoolAnd", booleanConverter = PyObjectIsTrueNode.class, operator = Operator.AND_RETURN_VALUE)
 @ShortCircuitOperation(name = "BoolOr", booleanConverter = PyObjectIsTrueNode.class, operator = Operator.OR_RETURN_VALUE)
 @ShortCircuitOperation(name = "PrimitiveBoolAnd", operator = Operator.AND_RETURN_VALUE)
@@ -1147,7 +1148,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = LocalAccessor.class)
     public static final class MatchClass {
         @Specialization
-        public static Object perform(VirtualFrame frame, LocalAccessor attributes, Object subject, Object type, int nargs, TruffleString[] kwArgs, @Bind BytecodeNode bytecodeNode, @Cached MatchClassNode node) {
+        public static Object perform(VirtualFrame frame, LocalAccessor attributes, Object subject, Object type, int nargs, TruffleString[] kwArgs, @Bind BytecodeNode bytecodeNode,
+                        @Cached MatchClassNode node) {
             Object attrs = node.execute(frame, subject, type, nargs, kwArgs);
             attributes.setObject(bytecodeNode, frame, attrs);
             return attrs != null;
