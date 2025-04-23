@@ -62,20 +62,20 @@ public class BytecodeDSLCompiler {
     public static final record BytecodeDSLCompilerResult(PBytecodeDSLRootNode rootNode, BytecodeDSLCodeUnit codeUnit) {
     }
 
-    public static BytecodeDSLCompilerResult compile(PythonLanguage language, PythonContext context, ModTy mod, Source source, int optimize, ParserCallbacksImpl errorCallback,
+    public static BytecodeDSLCompilerResult compile(PythonLanguage language, PythonContext context, ModTy mod, Source source, int optimize, ParserCallbacksImpl parserCallbacks,
                     EnumSet<FutureFeature> futureFeatures) {
         /**
          * Parse __future__ annotations before the analysis step. The analysis does extra validation
          * when __future__.annotations is imported.
          */
-        int futureLineNumber = parseFuture(mod, futureFeatures, errorCallback);
-        ScopeEnvironment scopeEnvironment = ScopeEnvironment.analyze(mod, errorCallback, futureFeatures);
-        BytecodeDSLCompilerContext ctx = new BytecodeDSLCompilerContext(language, context, mod, source, optimize, futureFeatures, futureLineNumber, errorCallback, scopeEnvironment);
+        int futureLineNumber = parseFuture(mod, futureFeatures, parserCallbacks);
+        ScopeEnvironment scopeEnvironment = ScopeEnvironment.analyze(mod, parserCallbacks, futureFeatures);
+        BytecodeDSLCompilerContext ctx = new BytecodeDSLCompilerContext(language, context, mod, source, optimize, futureFeatures, futureLineNumber, parserCallbacks, scopeEnvironment);
         RootNodeCompiler compiler = new RootNodeCompiler(ctx, mod, futureFeatures);
         return compiler.compile();
     }
 
-    private static int parseFuture(ModTy mod, EnumSet<FutureFeature> futureFeatures, ParserCallbacksImpl errorCallback) {
+    private static int parseFuture(ModTy mod, EnumSet<FutureFeature> futureFeatures, ParserCallbacksImpl parserCallbacks) {
         StmtTy[] stmts = null;
         if (mod instanceof ModTy.Module module) {
             stmts = module.body;
@@ -84,7 +84,7 @@ public class BytecodeDSLCompiler {
         } else {
             return -1;
         }
-        return Compiler.parseFuture(stmts, futureFeatures, errorCallback);
+        return Compiler.parseFuture(stmts, futureFeatures, parserCallbacks);
     }
 
     public static class BytecodeDSLCompilerContext {

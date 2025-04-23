@@ -710,16 +710,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private RootNode compileForBytecodeInterpreter(ModTy mod, Source source, int optimize, RaisePythonExceptionErrorCallback errorCallback, EnumSet<FutureFeature> futureFeatures) {
-        Compiler compiler = new Compiler(errorCallback);
+    private RootNode compileForBytecodeInterpreter(ModTy mod, Source source, int optimize, ParserCallbacksImpl parserCallbacks, EnumSet<FutureFeature> futureFeatures) {
+        Compiler compiler = new Compiler(parserCallbacks);
         CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize, futureFeatures);
         BytecodeCodeUnit co = cu.assemble();
-        return PBytecodeRootNode.create(this, co, source, errorCallback);
+        return PBytecodeRootNode.create(this, co, source, parserCallbacks);
     }
 
     private RootNode compileForBytecodeDSLInterpreter(PythonContext context, ModTy mod, Source source, int optimize,
-                    RaisePythonExceptionErrorCallback errorCallback, EnumSet<FutureFeature> futureFeatures) {
-        BytecodeDSLCompilerResult result = BytecodeDSLCompiler.compile(this, context, mod, source, optimize, errorCallback, futureFeatures);
+                    ParserCallbacksImpl parserCallbacks, EnumSet<FutureFeature> futureFeatures) {
+        BytecodeDSLCompilerResult result = BytecodeDSLCompiler.compile(this, context, mod, source, optimize, parserCallbacks, futureFeatures);
         return result.rootNode();
     }
 

@@ -42,6 +42,7 @@ package com.oracle.graal.python.compiler.bytecode_dsl;
 
 import static com.oracle.graal.python.compiler.CompilationScope.Class;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CLASS__;
+import static com.oracle.graal.python.util.PythonUtils.codePointsToTruffleString;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.ArrayList;
@@ -60,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.compiler.CompilationScope;
 import com.oracle.graal.python.compiler.Compiler;
@@ -73,9 +75,9 @@ import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen.Builder;
-import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
-import com.oracle.graal.python.pegparser.ErrorCallback.WarningType;
 import com.oracle.graal.python.pegparser.FutureFeature;
+import com.oracle.graal.python.pegparser.ParserCallbacks.ErrorType;
+import com.oracle.graal.python.pegparser.ParserCallbacks.WarningType;
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.Scope.DefUse;
 import com.oracle.graal.python.pegparser.sst.AliasTy;
@@ -103,6 +105,10 @@ import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy.AsyncFunctionDef;
+import com.oracle.graal.python.pegparser.sst.StmtTy.TypeAlias;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.ParamSpec;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVar;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVarTuple;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
@@ -704,8 +710,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             StmtTy stmt = body[0];
             if (stmt instanceof StmtTy.Expr expr //
                             && expr.value instanceof ExprTy.Constant constant //
-                            && constant.value.kind == ConstantValue.Kind.RAW) {
-                return constant.value.getRaw(TruffleString.class);
+                            && constant.value.kind == ConstantValue.Kind.CODEPOINTS) {
+                return codePointsToTruffleString(constant.value.getCodePoints());
             }
         }
         return null;
@@ -960,6 +966,26 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         return buildComprehensionCodeUnit(node, node.generators, "<generator>",
                         null,
                         (statementCompiler, collection) -> emitYield((statementCompiler_) -> node.element.accept(statementCompiler_), statementCompiler));
+    }
+
+    @Override
+    public BytecodeDSLCompilerResult visit(TypeAlias node) {
+        return null;
+    }
+
+    @Override
+    public BytecodeDSLCompilerResult visit(TypeVar node) {
+        return null;
+    }
+
+    @Override
+    public BytecodeDSLCompilerResult visit(ParamSpec node) {
+        return null;
+    }
+
+    @Override
+    public BytecodeDSLCompilerResult visit(TypeVarTuple node) {
+        return null;
     }
 
     enum NameOperation {
@@ -1781,8 +1807,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     addConstant(value.getBigInteger());
                     b.emitLoadBigInt(value.getBigInteger());
                     break;
-                case RAW:
-                    emitPythonConstant(value.getRaw(TruffleString.class), b);
+                case CODEPOINTS:
+                    b.emitLoadConstant(StringNodes.StringReprNode.getUncached().execute(codePointsToTruffleString(value.getCodePoints())));
                     break;
                 case BYTES:
                     addConstant(value.getBytes());
@@ -2671,6 +2697,26 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
 
             @Override
+            public Void visit(TypeAlias node) {
+                return null;
+            }
+
+            @Override
+            public Void visit(TypeVar node) {
+                return null;
+            }
+
+            @Override
+            public Void visit(ParamSpec node) {
+                return null;
+            }
+
+            @Override
+            public Void visit(TypeVarTuple node) {
+                return null;
+            }
+
+            @Override
             public Void visit(ExprTy.List node) {
                 boolean newStatement = beginSourceSection(node, b);
                 visitIterableAssign(node.elements);
@@ -2739,6 +2785,26 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 endStoreLocal(node.id, b);
 
                 endSourceSection(b, newStatement);
+                return null;
+            }
+
+            @Override
+            public Void visit(TypeVar node) {
+                return null;
+            }
+
+            @Override
+            public Void visit(ParamSpec node) {
+                return null;
+            }
+
+            @Override
+            public Void visit(TypeVarTuple node) {
+                return null;
+            }
+
+            @Override
+            public Void visit(TypeAlias node) {
                 return null;
             }
 
@@ -3056,6 +3122,26 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 visitSequence(node.elements);
                 b.endBlock();
                 endSourceSection(b, newStatement);
+                return null;
+            }
+
+            @Override
+            public Void visit(TypeAlias node) {
+                return null;
+            }
+
+            @Override
+            public Void visit(TypeVar node) {
+                return null;
+            }
+
+            @Override
+            public Void visit(ParamSpec node) {
+                return null;
+            }
+
+            @Override
+            public Void visit(TypeVarTuple node) {
                 return null;
             }
 
@@ -4573,6 +4659,26 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
             b.emitBranch(continueLabel);
             endSourceSection(b, newStatement);
+            return null;
+        }
+
+        @Override
+        public Void visit(TypeAlias node) {
+            return null;
+        }
+
+        @Override
+        public Void visit(TypeVar node) {
+            return null;
+        }
+
+        @Override
+        public Void visit(ParamSpec node) {
+            return null;
+        }
+
+        @Override
+        public Void visit(TypeVarTuple node) {
             return null;
         }
 

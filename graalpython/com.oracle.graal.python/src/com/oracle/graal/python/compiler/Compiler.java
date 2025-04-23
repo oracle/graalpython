@@ -257,9 +257,9 @@ public class Compiler implements SSTreeVisitor<Void> {
     public CompilationUnit compile(ModTy mod, EnumSet<Flags> flags, int optimizationLevel, EnumSet<FutureFeature> futureFeatures) {
         this.flags = flags;
         if (mod instanceof ModTy.Module) {
-            futureLineno = parseFuture(((ModTy.Module) mod).body, futureFeatures, errorCallback);
+            futureLineno = parseFuture(((ModTy.Module) mod).body, futureFeatures, parserCallbacks);
         } else if (mod instanceof ModTy.Interactive) {
-            futureLineno = parseFuture(((ModTy.Interactive) mod).body, futureFeatures, errorCallback);
+            futureLineno = parseFuture(((ModTy.Interactive) mod).body, futureFeatures, parserCallbacks);
         }
         this.futureFeatures.addAll(futureFeatures);
         this.env = ScopeEnvironment.analyze(mod, parserCallbacks, this.futureFeatures);
@@ -271,7 +271,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         return topUnit;
     }
 
-    public static int parseFuture(StmtTy[] modBody, EnumSet<FutureFeature> futureFeatures, ErrorCallback errorCallback) {
+    public static int parseFuture(StmtTy[] modBody, EnumSet<FutureFeature> futureFeatures, ParserCallbacks parserCallbacks) {
         int lastFutureLine = -1;
         if (modBody == null || modBody.length == 0) {
             return lastFutureLine;
@@ -296,7 +296,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                     if (done) {
                         throw parserCallbacks.onError(ErrorType.Syntax, s.getSourceRange(), "from __future__ imports must occur at the beginning of the file");
                     }
-                    parseFutureFeatures(importFrom, futureFeatures, errorCallback);
+                    parseFutureFeatures(importFrom, futureFeatures, parserCallbacks);
                     lastFutureLine = line;
                 } else {
                     done = true;
@@ -308,7 +308,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         return lastFutureLine;
     }
 
-    private static void parseFutureFeatures(StmtTy.ImportFrom node, EnumSet<FutureFeature> features, ErrorCallback errorCallback) {
+    private static void parseFutureFeatures(StmtTy.ImportFrom node, EnumSet<FutureFeature> features, ParserCallbacks parserCallbacks) {
         for (AliasTy alias : node.names) {
             if (alias.name != null) {
                 switch (alias.name) {
