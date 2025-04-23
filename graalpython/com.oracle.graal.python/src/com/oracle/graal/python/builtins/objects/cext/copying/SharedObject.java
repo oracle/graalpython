@@ -121,6 +121,4 @@ abstract class SharedObject implements AutoCloseable {
         }
         return candidate;
     }
-
-
 }
