@@ -639,16 +639,12 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         return python_home
 
     # Build
-    if dev and standalone_type == 'jvm':
-        env_file = 'jvm'
-        standalone_dist = 'GRAALPY_JVM_DEV_STANDALONE'
+    if standalone_type == 'jvm':
+        env_file = 'jvm-ee-libgraal' if enterprise else 'jvm-ce-libgraal'
+        standalone_dist = 'GRAALPY_JVM_STANDALONE'
     else:
-        if standalone_type == 'jvm':
-            env_file = 'jvm-ee-libgraal' if enterprise else 'jvm-ce-libgraal'
-            standalone_dist = 'GRAALPY_JVM_STANDALONE'
-        else:
-            env_file = 'native-ee' if enterprise else 'native-ce'
-            standalone_dist = 'GRAALPY_NATIVE_STANDALONE'
+        env_file = 'native-ee' if enterprise else 'native-ce'
+        standalone_dist = 'GRAALPY_NATIVE_STANDALONE'
 
     mx_args = ['-p', SUITE.dir, '--env', env_file]
     mx_args.append("--extra-image-builder-argument=-g")
