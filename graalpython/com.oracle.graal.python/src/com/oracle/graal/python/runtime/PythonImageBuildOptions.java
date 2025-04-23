@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -76,10 +76,6 @@ public final class PythonImageBuildOptions {
      * This property can be used to exclude socket and inet support from the Java posix backend.
      */
     public static final boolean WITHOUT_JAVA_INET = Boolean.getBoolean("python.WithoutJavaInet");
-    /**
-     * This property can be used to disable any usage of JNI.
-     */
-    public static final boolean WITHOUT_JNI = Boolean.getBoolean("python.WithoutJNI");
 
     private PythonImageBuildOptions() {
     }

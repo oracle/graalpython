@@ -1593,7 +1593,8 @@ gc_collect_main(PyThreadState *tstate, int generation,
     PyGC_Head unreachable; /* non-problematic unreachable trash */
     PyGC_Head finalizers;  /* objects with, & reachable from, __del__ */
     PyGC_Head *gc;
-    _PyTime_t t1 = 0;   /* initialize to prevent a compiler warning */
+    // GraalPy change: t1 usage commented out
+    // _PyTime_t t1 = 0;   /* initialize to prevent a compiler warning */
     GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
 
     if (GraalPyTruffle_DisableReferneceQueuePolling()) {

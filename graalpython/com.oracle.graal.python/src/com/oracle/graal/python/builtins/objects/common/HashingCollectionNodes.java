@@ -256,7 +256,7 @@ public abstract class HashingCollectionNodes {
      * Returns {@link HashingStorage} with the same keys as the given iterator. There is no
      * guarantee about the values!
      *
-     * @see DictNodes.GetDictStorageNode
+     * @see com.oracle.graal.python.builtins.objects.dict.DictNodes.GetDictStorageNode
      */
     @GenerateInline(inlineByDefault = true)
     public abstract static class GetSetStorageNode extends PNodeWithContext {

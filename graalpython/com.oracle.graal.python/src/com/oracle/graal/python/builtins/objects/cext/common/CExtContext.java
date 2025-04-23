@@ -41,13 +41,10 @@
 package com.oracle.graal.python.builtins.objects.cext.common;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-
-import java.io.IOException;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
@@ -61,12 +58,8 @@ import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class CExtContext {
@@ -84,26 +77,20 @@ public abstract class CExtContext {
 
     private final PythonContext context;
 
-    /** The LLVM bitcode library object representing 'libpython.*.so' or similar. */
-    private final Object llvmLibrary;
+    /** The library object representing 'libpython.*.so' or similar. */
+    private final Object library;
 
-    /**
-     * The native API implementation was loaded as native code (as opposed to bitcode via Sulong).
-     */
-    protected final boolean useNativeBackend;
-
-    public CExtContext(PythonContext context, Object llvmLibrary, boolean useNativeBackend) {
+    public CExtContext(PythonContext context, Object library) {
         this.context = context;
-        this.llvmLibrary = llvmLibrary;
-        this.useNativeBackend = useNativeBackend;
+        this.library = library;
     }
 
     public final PythonContext getContext() {
         return context;
     }
 
-    public final Object getLLVMLibrary() {
-        return llvmLibrary;
+    public final Object getLibrary() {
+        return library;
     }
 
     public static boolean isMethVarargs(int flags) {
@@ -156,20 +143,6 @@ public abstract class CExtContext {
             return T_EMPTY_STRING;
         }
         return name.substringUncached(idx + 1, len - idx - 1, TS_ENCODING, true);
-    }
-
-    public static Object loadLLVMLibrary(Node location, PythonContext context, TruffleString name, TruffleString path) throws ImportException, IOException {
-        Env env = context.getEnv();
-        try {
-            TruffleString extSuffix = context.getSoAbi();
-            TruffleFile realPath = context.getPublicTruffleFileRelaxed(path, extSuffix).getCanonicalFile();
-            CallTarget callTarget = env.parseInternal(Source.newBuilder(J_LLVM_LANGUAGE, realPath).build());
-            return callTarget.call();
-        } catch (SecurityException e) {
-            throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_LOAD_M, path, e);
-        } catch (RuntimeException e) {
-            throw reportImportError(e, name, path);
-        }
     }
 
     @TruffleBoundary

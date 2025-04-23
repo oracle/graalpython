@@ -44,7 +44,6 @@ package com.oracle.graal.python.runtime;
 import static com.oracle.graal.python.nodes.StringLiterals.J_DEFAULT;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_IN6_ADDR_S6_ADDR;
 import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_IN_ADDR_S_ADDR;
@@ -453,7 +452,7 @@ public final class NFIPosixSupport extends PosixSupport {
     @CompilationFinal(dimensions = 1) private long[] constantValues;
 
     public NFIPosixSupport(PythonContext context, TruffleString nfiBackend) {
-        assert nfiBackend.equalsUncached(T_NATIVE, TS_ENCODING) || nfiBackend.equalsUncached(T_LLVM_LANGUAGE, TS_ENCODING);
+        assert nfiBackend.equalsUncached(T_NATIVE, TS_ENCODING);
         this.context = context;
         this.nfiBackend = nfiBackend;
         this.cachedFunctions = new AtomicReferenceArray<>(PosixNativeFunction.values().length);

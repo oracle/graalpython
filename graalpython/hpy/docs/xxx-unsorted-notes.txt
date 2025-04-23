@@ -1,0 +1,91 @@
+Goal: better C API for CPython and 1st-class citizen on PyPy
+
+- everything should be opaque by default
+
+  - should we have an API to "query" if an object supports a certain low-level layout? E.g list-of-integer
+
+  - should we have an API to e.g. ask "give me the nth C-level long in the
+    list? And then rely on the compiler to turn this into an efficient loop:
+    long PyObject_GetLongItem(PyHandle h, long index) ?
+
+
+- we need PyObject_GetItem(handle) and PyObject_GetItem(int_index)
+
+- PyHandle PyObject_GetMappingProtocol(PyHandle o): ask a python object if it
+  has the "mapping" interface; then you can close it when you are done with it
+  and e.g. PyPy can release when it's no longer needed
+
+- should we write a tool to convert from the old API to the new API?
+
+- how we do deploy it? Should we have a single PyHandle.h file which is enough
+  to include? Or do like numpy.get_include_dirs()?
+
+  - we need to do what cffi does (and ship our version on PyPy)
+
+  - cython might need/want to ship its own vendored version of PyHandle
+
+- we need a versioning system which is possible to query at runtime? (to check
+  that it was compiled with the "correct/expected" PyHandle version
+
+- what to do with existing code which actively check whether the refcount is 1? E.g. PyString_Resize?
+
+- fast c-to-c calls: should we use argument clinic or something similar?
+
+
+
+Protocol sketch
+----------------
+
+HPySequence_long x = HPy_AsSequence_long(obj); /* it is possible to fail and you should be ready to handle the fallback */
+int len = HPy_Sequence_Len_long(x, obj);
+for(int i=0; i<len; i++) {
+    long item = HPy_Sequence_GetItem_long(x, obj, i);  /* PyList_GET_ITEM */
+ }
+HPySequenceClose_long(x, obj);
+
+
+
+
+HPySequence x = HPy_AsSequence(obj); /* it can raise an exception if it's not iterable */
+int len = HPy_Sequence_Len(x, obj);
+for(int i=0; i<len; i++) {
+    /* HPy_Sequence_GetItem will check a flag on x to see if it can use a
+       fast-path of direct indexing or it needs to go through a generic
+       fallback. And the C compiler will hoist the check out of the loop,
+       hopefully */
+    HPy item = HPy_Sequence_GetItem(x, obj, i);  /* PyList_GET_ITEM */
+ }
+HPySequenceClose(x, obj);
+
+
+
+Protocols in Python that we might want to support
+-------------------------------------------------
+
+* attribute access (get/set/del)
+  * name object lookup
+* item access (get/set/del)
+  * object items and indices
+  * C integer indexing (PyObject_GetItem()/PySequence_GetItem())
+  * C item values (…GetItem_long())
+* iteration (iter/next)
+  * object iterator
+  * sequence iteration
+  * low-level data iterator (int/long) – (optional)
+* sequence (iter + length + index access)
+  * object items
+  * low-level data sequence (int/long) – (optional)
+  * low-level data array (int/long)
+* mapping (iter + length + item access + key/value iter)
+  * object lookup
+  * C number lookup (int/long/…) -> sequence index access
+* comparisons (<, <=, ==, !=, >=, >)
+  * rich comparisons
+  * boolean comparisons (0/1)
+* call (call/vectorcall/method/special-method)
+  * e.g. PyCall_SpecialMethodOneArg(obj, __add__, arg) -> call specific macro
+  * …
+* context manager (enter/exit)
+  * -> call special method
+* async (await/aiter/anext)
+  * -> call special method

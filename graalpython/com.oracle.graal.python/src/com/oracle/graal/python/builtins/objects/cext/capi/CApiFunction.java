@@ -184,7 +184,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 public final class CApiFunction {
 
     /*
-     * Functions that are implemented as C code that can be executed both in native and in Sulong:
+     * Functions that are implemented as C code that can be executed in native
      */
     @CApiBuiltin(name = "PyGILState_Check", ret = Int, args = {}, acquireGil = false, call = CImpl)
     @CApiBuiltin(name = "PyArg_Parse", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)

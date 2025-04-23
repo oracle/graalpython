@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,19 +58,6 @@ public class MultiContextTest extends PythonTests {
     }
 
     @Test
-    public void testSharingWithCpythonSreAndLLVM() {
-        // This test is going to use the Sulong backend.This is why we need "sulong:SULONG_NATIVE"
-        // among the dependencies for GRAALPYTHON_UNIT_TESTS distribution, and
-        // org.graalvm.polyglot:llvm-community dependency in the pom.xml
-        Engine engine = Engine.newBuilder().build();
-        for (int i = 0; i < 10; i++) {
-            try (Context context = newContextWithNativeModulesFalse(engine)) {
-                context.eval("python", "import _cpython_sre\nassert _cpython_sre.ascii_tolower(88) == 120\n");
-            }
-        }
-    }
-
-    @Test
     public void testTryCatch() {
         Engine engine = Engine.newBuilder().build();
         for (int i = 0; i < 10; i++) {
@@ -89,9 +76,5 @@ public class MultiContextTest extends PythonTests {
 
     private static Context newContext(Engine engine) {
         return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).engine(engine).build();
-    }
-
-    private static Context newContextWithNativeModulesFalse(Engine engine) {
-        return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).engine(engine).option("python.NativeModules", "false").build();
     }
 }

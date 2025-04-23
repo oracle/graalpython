@@ -164,8 +164,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotW
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.WritePointerNode;
@@ -178,8 +176,6 @@ import com.oracle.graal.python.builtins.objects.type.TpSlotsFactory.GetTpSlotsNo
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotHPyNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
@@ -217,10 +213,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotV
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.InlineWeakValueProfile;
@@ -1098,29 +1092,21 @@ public record TpSlots(TpSlot nb_bool, //
      * @param wrapper {@code descrobject.h:wrapperbase#wrapper}
      */
     public record TpSlotDef(TruffleString name, PythonFunctionFactory functionFactory,
-                    PExternalFunctionWrapper wrapper, HPySlotWrapper hpyWrapper) {
-        public static TpSlotDef withoutHPy(TruffleString name, PythonFunctionFactory functionFactory, PExternalFunctionWrapper wrapper) {
-            return new TpSlotDef(name, functionFactory, wrapper, null);
+                    PExternalFunctionWrapper wrapper) {
+        public static TpSlotDef create(TruffleString name, PythonFunctionFactory functionFactory, PExternalFunctionWrapper wrapper) {
+            return new TpSlotDef(name, functionFactory, wrapper);
         }
 
         public static TpSlotDef withSimpleFunction(TruffleString name, PExternalFunctionWrapper wrapper) {
-            return new TpSlotDef(name, SimplePythonWrapper.INSTANCE, wrapper, null);
-        }
-
-        public static TpSlotDef withSimpleFunction(TruffleString name, PExternalFunctionWrapper wrapper, HPySlotWrapper hpyWrapper) {
-            return new TpSlotDef(name, SimplePythonWrapper.INSTANCE, wrapper, hpyWrapper);
+            return new TpSlotDef(name, SimplePythonWrapper.INSTANCE, wrapper);
         }
 
         public static TpSlotDef withNoFunctionNoWrapper(TruffleString name) {
-            return new TpSlotDef(name, null, null, null);
+            return new TpSlotDef(name, null, null);
         }
 
         public static TpSlotDef withNoFunction(TruffleString name, PExternalFunctionWrapper wrapper) {
-            return new TpSlotDef(name, null, wrapper, null);
-        }
-
-        public static TpSlotDef withNoFunction(TruffleString name, PExternalFunctionWrapper wrapper, HPySlotWrapper hpyWrapper) {
-            return new TpSlotDef(name, null, wrapper, hpyWrapper);
+            return new TpSlotDef(name, null, wrapper);
         }
     }
 
@@ -1148,22 +1134,22 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotDef.withNoFunctionNoWrapper(T___DELATTR__));
         addSlotDef(s, TpSlotMeta.TP_HASH, TpSlotDef.withSimpleFunction(T___HASH__, PExternalFunctionWrapper.HASHFUNC));
         addSlotDef(s, TpSlotMeta.TP_GETATTRO,
-                        TpSlotDef.withoutHPy(T___GETATTRIBUTE__, TpSlotGetAttrPython::create, PExternalFunctionWrapper.BINARYFUNC),
-                        TpSlotDef.withoutHPy(T___GETATTR__, TpSlotGetAttrPython::create, null));
+                        TpSlotDef.create(T___GETATTRIBUTE__, TpSlotGetAttrPython::create, PExternalFunctionWrapper.BINARYFUNC),
+                        TpSlotDef.create(T___GETATTR__, TpSlotGetAttrPython::create, null));
         addSlotDef(s, TpSlotMeta.TP_SETATTRO,
-                        TpSlotDef.withoutHPy(T___SETATTR__, TpSlotSetAttrPython::create, PExternalFunctionWrapper.SETATTRO),
-                        TpSlotDef.withoutHPy(T___DELATTR__, TpSlotSetAttrPython::create, PExternalFunctionWrapper.DELATTRO));
+                        TpSlotDef.create(T___SETATTR__, TpSlotSetAttrPython::create, PExternalFunctionWrapper.SETATTRO),
+                        TpSlotDef.create(T___DELATTR__, TpSlotSetAttrPython::create, PExternalFunctionWrapper.DELATTRO));
         addSlotDef(s, TpSlotMeta.TP_RICHCOMPARE,
-                        TpSlotDef.withoutHPy(T___LT__, TpSlotRichCmpPython::create, PExternalFunctionWrapper.BINARYFUNC),
-                        TpSlotDef.withoutHPy(T___LE__, TpSlotRichCmpPython::create, PExternalFunctionWrapper.BINARYFUNC),
-                        TpSlotDef.withoutHPy(T___EQ__, TpSlotRichCmpPython::create, PExternalFunctionWrapper.BINARYFUNC),
-                        TpSlotDef.withoutHPy(T___NE__, TpSlotRichCmpPython::create, PExternalFunctionWrapper.BINARYFUNC),
-                        TpSlotDef.withoutHPy(T___GT__, TpSlotRichCmpPython::create, PExternalFunctionWrapper.BINARYFUNC),
-                        TpSlotDef.withoutHPy(T___GE__, TpSlotRichCmpPython::create, PExternalFunctionWrapper.BINARYFUNC));
+                        TpSlotDef.create(T___LT__, TpSlotRichCmpPython::create, PExternalFunctionWrapper.BINARYFUNC),
+                        TpSlotDef.create(T___LE__, TpSlotRichCmpPython::create, PExternalFunctionWrapper.BINARYFUNC),
+                        TpSlotDef.create(T___EQ__, TpSlotRichCmpPython::create, PExternalFunctionWrapper.BINARYFUNC),
+                        TpSlotDef.create(T___NE__, TpSlotRichCmpPython::create, PExternalFunctionWrapper.BINARYFUNC),
+                        TpSlotDef.create(T___GT__, TpSlotRichCmpPython::create, PExternalFunctionWrapper.BINARYFUNC),
+                        TpSlotDef.create(T___GE__, TpSlotRichCmpPython::create, PExternalFunctionWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.TP_DESCR_GET, TpSlotDef.withSimpleFunction(T___GET__, PExternalFunctionWrapper.DESCR_GET));
         addSlotDef(s, TpSlotMeta.TP_DESCR_SET, //
-                        TpSlotDef.withoutHPy(T___SET__, TpSlotDescrSetPython::create, PExternalFunctionWrapper.DESCR_SET), //
-                        TpSlotDef.withoutHPy(T___DELETE__, TpSlotDescrSetPython::create, PExternalFunctionWrapper.DESCR_DELETE));
+                        TpSlotDef.create(T___SET__, TpSlotDescrSetPython::create, PExternalFunctionWrapper.DESCR_SET), //
+                        TpSlotDef.create(T___DELETE__, TpSlotDescrSetPython::create, PExternalFunctionWrapper.DESCR_DELETE));
         addSlotDef(s, TpSlotMeta.TP_ITER, TpSlotDef.withSimpleFunction(T___ITER__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.TP_ITERNEXT, TpSlotDef.withSimpleFunction(T___NEXT__, PExternalFunctionWrapper.ITERNEXT));
         addSlotDef(s, TpSlotMeta.TP_STR, TpSlotDef.withSimpleFunction(T___STR__, PExternalFunctionWrapper.UNARYFUNC));
@@ -1172,59 +1158,59 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.TP_NEW, TpSlotDef.withSimpleFunction(T___NEW__, PExternalFunctionWrapper.NEW));
         addSlotDef(s, TpSlotMeta.TP_CALL, TpSlotDef.withSimpleFunction(T___CALL__, PExternalFunctionWrapper.CALL));
         addSlotDef(s, TpSlotMeta.NB_ADD,
-                        TpSlotDef.withoutHPy(T___ADD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
-                        TpSlotDef.withoutHPy(T___RADD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+                        TpSlotDef.create(T___ADD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.create(T___RADD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_SUBTRACT,
-                        TpSlotDef.withoutHPy(T___SUB__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
-                        TpSlotDef.withoutHPy(T___RSUB__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+                        TpSlotDef.create(T___SUB__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.create(T___RSUB__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_MULTIPLY,
-                        TpSlotDef.withoutHPy(T___MUL__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
-                        TpSlotDef.withoutHPy(T___RMUL__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+                        TpSlotDef.create(T___MUL__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.create(T___RMUL__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_REMAINDER,
-                        TpSlotDef.withoutHPy(T___MOD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
-                        TpSlotDef.withoutHPy(T___RMOD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+                        TpSlotDef.create(T___MOD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.create(T___RMOD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_LSHIFT,
-                        TpSlotDef.withoutHPy(T___LSHIFT__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
-                        TpSlotDef.withoutHPy(T___RLSHIFT__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+                        TpSlotDef.create(T___LSHIFT__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.create(T___RLSHIFT__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_RSHIFT,
-                        TpSlotDef.withoutHPy(T___RSHIFT__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
-                        TpSlotDef.withoutHPy(T___RRSHIFT__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+                        TpSlotDef.create(T___RSHIFT__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.create(T___RRSHIFT__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_AND,
-                        TpSlotDef.withoutHPy(T___AND__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
-                        TpSlotDef.withoutHPy(T___RAND__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+                        TpSlotDef.create(T___AND__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.create(T___RAND__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_XOR,
-                        TpSlotDef.withoutHPy(T___XOR__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
-                        TpSlotDef.withoutHPy(T___RXOR__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+                        TpSlotDef.create(T___XOR__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.create(T___RXOR__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_OR,
-                        TpSlotDef.withoutHPy(T___OR__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
-                        TpSlotDef.withoutHPy(T___ROR__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+                        TpSlotDef.create(T___OR__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.create(T___ROR__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_FLOOR_DIVIDE,
-                        TpSlotDef.withoutHPy(T___FLOORDIV__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
-                        TpSlotDef.withoutHPy(T___RFLOORDIV__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+                        TpSlotDef.create(T___FLOORDIV__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.create(T___RFLOORDIV__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_TRUE_DIVIDE,
-                        TpSlotDef.withoutHPy(T___TRUEDIV__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
-                        TpSlotDef.withoutHPy(T___RTRUEDIV__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+                        TpSlotDef.create(T___TRUEDIV__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.create(T___RTRUEDIV__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_DIVMOD,
-                        TpSlotDef.withoutHPy(T___DIVMOD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
-                        TpSlotDef.withoutHPy(T___RDIVMOD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+                        TpSlotDef.create(T___DIVMOD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.create(T___RDIVMOD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_MATRIX_MULTIPLY,
-                        TpSlotDef.withoutHPy(T___MATMUL__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
-                        TpSlotDef.withoutHPy(T___RMATMUL__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+                        TpSlotDef.create(T___MATMUL__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.create(T___RMATMUL__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_POWER,
-                        TpSlotDef.withoutHPy(T___POW__, TpSlotReversiblePython::create, PExternalFunctionWrapper.TERNARYFUNC),
-                        TpSlotDef.withoutHPy(T___RPOW__, TpSlotReversiblePython::create, PExternalFunctionWrapper.TERNARYFUNC_R));
-        addSlotDef(s, TpSlotMeta.NB_INPLACE_ADD, TpSlotDef.withSimpleFunction(T___IADD__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
-        addSlotDef(s, TpSlotMeta.NB_INPLACE_SUBTRACT, TpSlotDef.withSimpleFunction(T___ISUB__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
-        addSlotDef(s, TpSlotMeta.NB_INPLACE_MULTIPLY, TpSlotDef.withSimpleFunction(T___IMUL__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
-        addSlotDef(s, TpSlotMeta.NB_INPLACE_REMAINDER, TpSlotDef.withSimpleFunction(T___IMOD__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
-        addSlotDef(s, TpSlotMeta.NB_INPLACE_LSHIFT, TpSlotDef.withSimpleFunction(T___ILSHIFT__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
-        addSlotDef(s, TpSlotMeta.NB_INPLACE_RSHIFT, TpSlotDef.withSimpleFunction(T___IRSHIFT__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
-        addSlotDef(s, TpSlotMeta.NB_INPLACE_AND, TpSlotDef.withSimpleFunction(T___IAND__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
-        addSlotDef(s, TpSlotMeta.NB_INPLACE_XOR, TpSlotDef.withSimpleFunction(T___IXOR__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
-        addSlotDef(s, TpSlotMeta.NB_INPLACE_OR, TpSlotDef.withSimpleFunction(T___IOR__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
-        addSlotDef(s, TpSlotMeta.NB_INPLACE_FLOOR_DIVIDE, TpSlotDef.withSimpleFunction(T___IFLOORDIV__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
-        addSlotDef(s, TpSlotMeta.NB_INPLACE_TRUE_DIVIDE, TpSlotDef.withSimpleFunction(T___ITRUEDIV__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
-        addSlotDef(s, TpSlotMeta.NB_INPLACE_MATRIX_MULTIPLY, TpSlotDef.withSimpleFunction(T___IMATMUL__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
+                        TpSlotDef.create(T___POW__, TpSlotReversiblePython::create, PExternalFunctionWrapper.TERNARYFUNC),
+                        TpSlotDef.create(T___RPOW__, TpSlotReversiblePython::create, PExternalFunctionWrapper.TERNARYFUNC_R));
+        addSlotDef(s, TpSlotMeta.NB_INPLACE_ADD, TpSlotDef.withSimpleFunction(T___IADD__, PExternalFunctionWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_INPLACE_SUBTRACT, TpSlotDef.withSimpleFunction(T___ISUB__, PExternalFunctionWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_INPLACE_MULTIPLY, TpSlotDef.withSimpleFunction(T___IMUL__, PExternalFunctionWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_INPLACE_REMAINDER, TpSlotDef.withSimpleFunction(T___IMOD__, PExternalFunctionWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_INPLACE_LSHIFT, TpSlotDef.withSimpleFunction(T___ILSHIFT__, PExternalFunctionWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_INPLACE_RSHIFT, TpSlotDef.withSimpleFunction(T___IRSHIFT__, PExternalFunctionWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_INPLACE_AND, TpSlotDef.withSimpleFunction(T___IAND__, PExternalFunctionWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_INPLACE_XOR, TpSlotDef.withSimpleFunction(T___IXOR__, PExternalFunctionWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_INPLACE_OR, TpSlotDef.withSimpleFunction(T___IOR__, PExternalFunctionWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_INPLACE_FLOOR_DIVIDE, TpSlotDef.withSimpleFunction(T___IFLOORDIV__, PExternalFunctionWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_INPLACE_TRUE_DIVIDE, TpSlotDef.withSimpleFunction(T___ITRUEDIV__, PExternalFunctionWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_INPLACE_MATRIX_MULTIPLY, TpSlotDef.withSimpleFunction(T___IMATMUL__, PExternalFunctionWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_INPLACE_POWER, TpSlotDef.withSimpleFunction(T___IPOW__, PExternalFunctionWrapper.TERNARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_BOOL, TpSlotDef.withSimpleFunction(T___BOOL__, PExternalFunctionWrapper.INQUIRY));
         addSlotDef(s, TpSlotMeta.NB_INDEX, TpSlotDef.withSimpleFunction(T___INDEX__, PExternalFunctionWrapper.UNARYFUNC));
@@ -1234,26 +1220,26 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.NB_POSITIVE, TpSlotDef.withSimpleFunction(T___POS__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_NEGATIVE, TpSlotDef.withSimpleFunction(T___NEG__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_INVERT, TpSlotDef.withSimpleFunction(T___INVERT__, PExternalFunctionWrapper.UNARYFUNC));
-        addSlotDef(s, TpSlotMeta.MP_LENGTH, TpSlotDef.withSimpleFunction(T___LEN__, PExternalFunctionWrapper.LENFUNC, HPySlotWrapper.LENFUNC));
-        addSlotDef(s, TpSlotMeta.MP_SUBSCRIPT, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.MP_LENGTH, TpSlotDef.withSimpleFunction(T___LEN__, PExternalFunctionWrapper.LENFUNC));
+        addSlotDef(s, TpSlotMeta.MP_SUBSCRIPT, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.MP_ASS_SUBSCRIPT,
-                        TpSlotDef.withoutHPy(T___SETITEM__, TpSlotMpAssSubscriptPython::create, PExternalFunctionWrapper.OBJOBJARGPROC),
-                        TpSlotDef.withoutHPy(T___DELITEM__, TpSlotMpAssSubscriptPython::create, PExternalFunctionWrapper.MP_DELITEM));
-        addSlotDef(s, TpSlotMeta.SQ_LENGTH, TpSlotDef.withSimpleFunction(T___LEN__, PExternalFunctionWrapper.LENFUNC, HPySlotWrapper.LENFUNC));
+                        TpSlotDef.create(T___SETITEM__, TpSlotMpAssSubscriptPython::create, PExternalFunctionWrapper.OBJOBJARGPROC),
+                        TpSlotDef.create(T___DELITEM__, TpSlotMpAssSubscriptPython::create, PExternalFunctionWrapper.MP_DELITEM));
+        addSlotDef(s, TpSlotMeta.SQ_LENGTH, TpSlotDef.withSimpleFunction(T___LEN__, PExternalFunctionWrapper.LENFUNC));
         // sq_concat does not have a slotdef for __radd__ unlike sq_repeat. This have consequences
         // w.r.t. inheritance from native classes, where sq_repeat is not overridden by __mul__.
         // Makes one wonder whether this CPython behavior is intended.
         // see test_sq_repeat_mul_without_rmul_inheritance
         addSlotDef(s, TpSlotMeta.SQ_CONCAT, TpSlotDef.withNoFunction(T___ADD__, PExternalFunctionWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.SQ_REPEAT,
-                        TpSlotDef.withNoFunction(T___MUL__, PExternalFunctionWrapper.SSIZE_ARG, HPySlotWrapper.INDEXARGFUNC),
-                        TpSlotDef.withNoFunction(T___RMUL__, PExternalFunctionWrapper.SSIZE_ARG, HPySlotWrapper.INDEXARGFUNC));
-        addSlotDef(s, TpSlotMeta.SQ_ITEM, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.GETITEM, HPySlotWrapper.SQ_ITEM));
+                        TpSlotDef.withNoFunction(T___MUL__, PExternalFunctionWrapper.SSIZE_ARG),
+                        TpSlotDef.withNoFunction(T___RMUL__, PExternalFunctionWrapper.SSIZE_ARG));
+        addSlotDef(s, TpSlotMeta.SQ_ITEM, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.GETITEM));
         addSlotDef(s, TpSlotMeta.SQ_ASS_ITEM,
-                        TpSlotDef.withoutHPy(T___SETITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.SETITEM),
-                        TpSlotDef.withoutHPy(T___DELITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.DELITEM));
+                        TpSlotDef.create(T___SETITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.SETITEM),
+                        TpSlotDef.create(T___DELITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.DELITEM));
         addSlotDef(s, TpSlotMeta.SQ_INPLACE_CONCAT, TpSlotDef.withNoFunction(T___IADD__, PExternalFunctionWrapper.BINARYFUNC));
-        addSlotDef(s, TpSlotMeta.SQ_INPLACE_REPEAT, TpSlotDef.withNoFunction(T___IMUL__, PExternalFunctionWrapper.SSIZE_ARG, HPySlotWrapper.INDEXARGFUNC));
+        addSlotDef(s, TpSlotMeta.SQ_INPLACE_REPEAT, TpSlotDef.withNoFunction(T___IMUL__, PExternalFunctionWrapper.SSIZE_ARG));
         addSlotDef(s, TpSlotMeta.SQ_CONTAINS, TpSlotDef.withSimpleFunction(T___CONTAINS__, PExternalFunctionWrapper.OBJOBJPROC));
         addSlotDef(s, TpSlotMeta.AM_AWAIT, TpSlotDef.withSimpleFunction(T___AWAIT__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.AM_ANEXT, TpSlotDef.withSimpleFunction(T___ANEXT__, PExternalFunctionWrapper.UNARYFUNC));
@@ -1729,55 +1715,6 @@ public record TpSlots(TpSlot nb_bool, //
                     var value = builtinSlot.createBuiltin(core, type, slotDef.name(), slotDef.wrapper());
                     pythonBuiltinClass.setAttribute(slotDef.name(), value);
                 }
-            }
-        }
-    }
-
-    /**
-     * Version of CPython's {@code add_operators} that assumes only native slots. This is useful for
-     * the HPy case where users cannot "steal" other type's slots or builtin slots. TODO: (GR-53923)
-     * extend this to support python/builtin slots, use it instead of PyTruffleType_AddSlot upcalls.
-     */
-    @TruffleBoundary
-    public void addOperators(PythonClass type) {
-        // Current version assumes no dict and writes to the object directly
-        assert GetDictIfExistsNode.getUncached().execute(type) == null;
-
-        PythonContext context = PythonContext.get(null);
-        PythonLanguage language = context.getLanguage();
-        for (Entry<TpSlotMeta, TpSlotDef[]> slotDefEntry : SLOTDEFS.entrySet()) {
-            TpSlotMeta tpSlotMeta = slotDefEntry.getKey();
-            for (TpSlotDef tpSlotDef : slotDefEntry.getValue()) {
-                if (tpSlotDef.wrapper == null) {
-                    continue;
-                }
-                TpSlot value = tpSlotMeta.getValue(this);
-                if (value == null) {
-                    continue;
-                }
-                Object existingValue = ReadAttributeFromObjectNode.getUncachedForceType().execute(type, tpSlotDef.name);
-                if (!PGuards.isNoValue(existingValue)) {
-                    continue;
-                }
-                Object wrapperDescriptor = null;
-                if (value == TpSlotHashFun.HASH_NOT_IMPLEMENTED) {
-                    wrapperDescriptor = PNone.NO_VALUE;
-                } else if (value instanceof TpSlotBuiltin<?> builtinSlot) {
-                    wrapperDescriptor = builtinSlot.createBuiltin(context, type, tpSlotDef.name, tpSlotDef.wrapper);
-                } else if (value instanceof TpSlotPython) {
-                    // TODO: see CExtNodes$CreateFunctionNode
-                    throw new IllegalStateException("addOperators: TpSlotPython not implemented yet");
-                } else if (value instanceof TpSlotNative nativeSlot) {
-                    if (nativeSlot instanceof TpSlotHPyNative hpySlot) {
-                        wrapperDescriptor = HPyExternalFunctionNodes.createWrapperFunction(language, context.getHPyContext(), tpSlotDef.hpyWrapper, hpySlot, tpSlotDef.wrapper, tpSlotDef.name,
-                                        nativeSlot.getCallable(), type);
-                    } else {
-                        wrapperDescriptor = PExternalFunctionWrapper.createWrapperFunction(tpSlotDef.name, (TpSlotCExtNative) nativeSlot, type, tpSlotDef.wrapper, language);
-                    }
-                }
-                assert wrapperDescriptor != null;
-                // TODO: optionally take TpDict and write into it if provided
-                WriteAttributeToPythonObjectNode.executeUncached(type, tpSlotDef.name, wrapperDescriptor);
             }
         }
     }

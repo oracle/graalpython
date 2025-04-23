@@ -243,7 +243,6 @@ def bundle_python_resources(target_dir, project, venv=None):
                     "ensurepip",
                     "tkinter",
                     "turtledemo",
-                    "sulong",
                     "llvm-toolchain",
                 ]
     )

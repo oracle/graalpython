@@ -115,8 +115,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltins.HPyObjectNewNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -1456,7 +1454,7 @@ public abstract class TypeNodes {
                             DynamicObjectLibrary.getUncached());
             Object baseNewMethod = LookupAttributeInMRONode.lookup(T___NEW__, GetMroStorageNode.executeUncached(base), ReadAttributeFromObjectNode.getUncached(), true,
                             DynamicObjectLibrary.getUncached());
-            return !HasSameConstructorNode.isSameFunction(typeNewMethod, baseNewMethod);
+            return typeNewMethod != baseNewMethod;
         }
 
         @TruffleBoundary
@@ -1803,11 +1801,6 @@ public abstract class TypeNodes {
 
         @Specialization
         static boolean doUserClass(PythonClass obj) {
-            // Special case for custom classes created via HPy: They are managed classes but can
-            // have custom flags. The flags may prohibit subtyping.
-            if (obj.isHPyType()) {
-                return (obj.getFlags() & GraalHPyDef.HPy_TPFLAGS_BASETYPE) != 0;
-            }
             return true;
         }
 
@@ -2793,25 +2786,7 @@ public abstract class TypeNodes {
 
             Object leftNew = leftNewProfile.profile(inliningTarget, lookupNew.execute(left, T___NEW__));
             Object rightNew = rightNewProfile.profile(inliningTarget, lookupNew.execute(right, T___NEW__));
-            return isSameFunction(leftNew, rightNew);
-        }
-
-        static boolean isSameFunction(Object leftFunc, Object rightFunc) {
-            Object leftResolved = leftFunc;
-            if (leftFunc instanceof PBuiltinFunction builtinFunction) {
-                Object typeDecorated = HPyObjectNewNode.getDecoratedSuperConstructor(builtinFunction);
-                if (typeDecorated != null) {
-                    leftResolved = typeDecorated;
-                }
-            }
-            Object rightResolved = rightFunc;
-            if (rightFunc instanceof PBuiltinFunction builtinFunction) {
-                Object baseDecorated = HPyObjectNewNode.getDecoratedSuperConstructor(builtinFunction);
-                if (baseDecorated != null) {
-                    rightResolved = baseDecorated;
-                }
-            }
-            return leftResolved == rightResolved;
+            return leftNew == rightNew;
         }
     }
 

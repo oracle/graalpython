@@ -71,7 +71,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.THIS_TYPE_HAS_NO_SIZE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_MANY_ARGUMENTS_D_MAXIMUM_IS_D;
 import static com.oracle.graal.python.nodes.StringLiterals.J_DEFAULT;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EMPTY_STRING;
-import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.runtime.PosixConstants.RTLD_GLOBAL;
@@ -87,7 +86,6 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -121,9 +119,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
-import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
-import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -166,7 +161,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -275,22 +269,8 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
                 PythonModule sysModule = context.getSysModule();
                 Object loadLibraryMethod = ReadAttributeFromObjectNode.getUncached().execute(ctypesModule, toTruffleStringUncached("LoadLibrary"));
-                Object pythonLib = CallNode.executeUncached(loadLibraryMethod, toTruffleStringUncached(GraalHPyJNIContext.getJNILibrary()), 0);
+                Object pythonLib = CallNode.executeUncached(loadLibraryMethod, toTruffleStringUncached(PythonContext.getSupportLibName("python-native")), 0);
                 WriteAttributeToPythonObjectNode.getUncached().execute(sysModule, toTruffleStringUncached("dllhandle"), pythonLib);
-            }
-        } else if (!PythonOptions.NativeModules.getValue(context.getEnv().getOptions())) {
-            // If native is not available, we can use the C API support library only if it was
-            // loaded through LLVM and not NFI. This limitation can be lifted: we can reload the
-            // library with LLVM here.
-            try {
-                Object llvmLibrary = CApiContext.ensureCApiLLVMLibrary(context);
-                handle = new DLHandler(llvmLibrary, 0, J_EMPTY_STRING, true);
-            } catch (ApiInitException e) {
-                throw e.reraise(null, null, PConstructAndRaiseNode.Lazy.getUncached());
-            } catch (ImportException e) {
-                throw e.reraise(null, null, PConstructAndRaiseNode.Lazy.getUncached());
-            } catch (IOException e) {
-                throw PConstructAndRaiseNode.getUncached().raiseOSError(null, e, EqualNode.getUncached());
             }
         }
         if (handle != null) {
@@ -351,10 +331,6 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         protected boolean isManaged() {
             return isManaged;
-        }
-
-        protected boolean isLLVM() {
-            return sym instanceof CallLLVMFunction;
         }
 
         protected boolean isManaged(long address) {
@@ -687,16 +663,6 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        protected static Object loadLLVMLibrary(PythonContext context, Node nodeForRaise, TruffleString path) throws ImportException, ApiInitException, IOException {
-            context.ensureLLVMLanguage(nodeForRaise);
-            if (path.isEmpty()) {
-                return CApiContext.ensureCApiLLVMLibrary(context);
-            }
-            Source loadSrc = Source.newBuilder(J_LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path)).build();
-            return context.getEnv().parseInternal(loadSrc).call();
-        }
-
-        @TruffleBoundary
         private static TruffleString getErrMsg(Exception e) {
             String errmsg = e != null ? e.getMessage() : null;
             if (errmsg == null || errmsg.isEmpty()) {
@@ -725,13 +691,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             DLHandler handle;
             Exception exception = null;
             try {
-                if (!context.getEnv().isNativeAccessAllowed() && !PythonOptions.NativeModules.getValue(context.getEnv().getOptions())) {
-                    Object handler = loadLLVMLibrary(context, inliningTarget, name);
-                    long adr = PyObjectHashNode.executeUncached(handler);
-                    handle = new DLHandler(handler, adr, name.toJavaStringUncached(), true);
-                    registerAddress(context, handle.adr, handle);
-                    return PFactory.createNativeVoidPtr(language, handle);
-                } else if (context.getEnv().isNativeAccessAllowed()) {
+                if (context.getEnv().isNativeAccessAllowed()) {
                     CtypesThreadState ctypes = CtypesThreadState.get(context, context.getLanguage());
                     /*-
                      TODO: (mq) cryptography in macos isn't always compatible with ctypes.
@@ -789,17 +749,11 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             }
             try {
                 Object sym = ilib.readMember(handle.library, name);
-                boolean isManaged = handle.isManaged;
-                long adr = isManaged ? hashNode.execute(frame, inliningTarget, sym) : ilib.asPointer(sym);
-                sym = isManaged ? CallLLVMFunction.create(sym, ilib) : sym;
-                NativeFunction func = new NativeFunction(sym, adr, name, isManaged);
+                long adr = ilib.asPointer(sym);
+                NativeFunction func = new NativeFunction(sym, adr, name, false);
                 registerAddress(context, adr, func);
                 // PyLong_FromVoidPtr(ptr);
-                if (!isManaged) {
-                    return PFactory.createNativeVoidPtr(context.getLanguage(inliningTarget), func, adr);
-                } else {
-                    return PFactory.createNativeVoidPtr(context.getLanguage(inliningTarget), func);
-                }
+                return PFactory.createNativeVoidPtr(context.getLanguage(inliningTarget), func, adr);
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 throw raiseNode.raise(inliningTarget, error, e);
             }
@@ -1162,11 +1116,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             /* Convert the arguments */
             BackendMode mode = BackendMode.NFI;
             if (pProc.isManaged()) {
-                if (pProc.isLLVM()) {
-                    mode = BackendMode.LLVM;
-                } else {
-                    mode = BackendMode.INTRINSIC;
-                }
+                mode = BackendMode.INTRINSIC;
             }
             for (int i = 0; i < argcount; ++i) {
                 args[i] = new CTypesCallArgument();

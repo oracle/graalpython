@@ -1,0 +1,8 @@
+# Requirements for building the documentation
+Jinja2==3.1.3
+sphinx==5.0.2
+sphinx-rtd-theme==2.0.0
+sphinx-autobuild==2021.3.14
+sphinx-c-autodoc==1.3.0
+clang==17.0.6
+docutils==0.16  # docutils >= 0.17 fails to render bullet lists :/

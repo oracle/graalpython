@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -71,8 +71,6 @@ public class PythonObject extends PythonAbstractObject {
     public static final byte IS_STATIC_BASE = 0b10000;
 
     private final Object initialPythonClass;
-
-    private Object[] hpyData;
 
     @SuppressWarnings("this-escape") // escapes in the assertion
     public PythonObject(Object pythonClass, Shape instanceShape) {
@@ -157,13 +155,5 @@ public class PythonObject extends PythonAbstractObject {
     /* needed for some guards in exported messages of subclasses */
     public static int getCallSiteInlineCacheMaxDepth() {
         return PythonOptions.getCallSiteInlineCacheMaxDepth();
-    }
-
-    public final Object[] getHPyData() {
-        return hpyData;
-    }
-
-    public final void setHPyData(Object[] hpyFields) {
-        this.hpyData = hpyFields;
     }
 }

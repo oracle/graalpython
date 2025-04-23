@@ -99,7 +99,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
-import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -282,14 +281,6 @@ public final class PFactory {
      */
     public static PythonObject createPythonObject(PythonLanguage language, Object cls, Shape shape) {
         return trace(language, new PythonObject(cls, shape));
-    }
-
-    /**
-     * Creates a PythonObject for the given class. This is potentially slightly slower than if the
-     * shape had been cached, due to the additional shape lookup.
-     */
-    public static PythonObject createPythonHPyObject(PythonLanguage language, Object cls, Shape shape, Object hpyNativeSpace) {
-        return trace(language, new PythonHPyObject(cls, shape, hpyNativeSpace));
     }
 
     public static PythonNativeVoidPtr createNativeVoidPtr(PythonLanguage language, Object obj) {

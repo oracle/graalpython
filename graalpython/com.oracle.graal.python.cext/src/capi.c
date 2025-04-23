@@ -262,7 +262,7 @@ static int cdata_getbuffer(PyObject* type, Py_buffer* view, int flags) {
 }
 
 static void cdata_releasebuffer(PyObject* obj, Py_buffer* view) {
-    return GraalPyTruffleCData_ReleaseBuffer(obj, view);
+    GraalPyTruffleCData_ReleaseBuffer(obj, view);
 }
 
 PyAPI_FUNC(void) PyTruffleCData_InitBufferProtocol(PyObject* type) {
@@ -518,7 +518,7 @@ PyAPI_FUNC(size_t) PyTruffle_GetCurrentRSS() {
     // Linux
     FILE* fp = NULL;
     if ((fp = fopen( "/proc/self/statm", "r" )) != NULL) {
-        if (fscanf(fp, "%*s%ld", (long) &rss)) {
+        if (fscanf(fp, "%*s%ld", (long *) &rss)) {
             rss *= (uint64_t) sysconf( _SC_PAGESIZE);
         }
         fclose(fp);
@@ -660,12 +660,7 @@ PyAPI_FUNC(int) WriteStringMember(void* object, Py_ssize_t offset, char* value) 
 
 PyAPI_FUNC(int) WriteStringInPlaceMember(void* object, Py_ssize_t offset, char* value) {
     char *addr = (char*) (((char*) object) + offset);
-    size_t n;
-//    if (polyglot_has_array_elements(value)) {
-//        n = polyglot_get_array_size(value);
-//    } else {
-        n = strlen(value);
-//    }
+    size_t n = strlen(value);
     memcpy(addr, value, n);
     return 0;
 }
@@ -767,11 +762,11 @@ PyAPI_FUNC(void*) truffle_ptr_convert(size_t value) {
 }
 
 PyAPI_FUNC(void*) truffle_ptr_add(void* x, Py_ssize_t y) {
-    return x + y;
+    return (char *)x + y;
 }
 
 PyAPI_FUNC(void) truffle_memcpy_bytes(void *dest, size_t dest_offset, void *src, size_t src_offset, size_t len) {
-    memcpy(dest + dest_offset, src + src_offset, len);
+    memcpy((char *)dest + dest_offset, (char *)src + src_offset, len);
 }
 
 PyAPI_FUNC(void*) truffle_calloc(size_t count, size_t elsize) {
@@ -806,7 +801,7 @@ PyAPI_FUNC(int) tuffle_check_basesize_for_getstate(PyTypeObject* type, int slot_
     if (type->tp_weaklistoffset)
         basicsize += sizeof(PyObject *);
     if (slot_num)
-        basicsize += sizeof(PyObject *) * PyList_GET_SIZE(slot_num);
+        basicsize += sizeof(PyObject *) * slot_num;
     return type->tp_basicsize > basicsize;
 }
 
@@ -939,42 +934,8 @@ PyAPI_FUNC(int8_t *) GraalPy_get_finalize_capi_pointer() {
     return _graalpy_finalizing;
 }
 
-#if ((__linux__ && __GNU_LIBRARY__) || __APPLE__)
-
-#include <stdlib.h>
-#include <string.h>
-#include <execinfo.h>
-
-static void print_c_stacktrace() {
-    size_t max_stack_size = 16;
-    void* stack = calloc(sizeof(void*), max_stack_size);
-    if (stack == NULL) {
-        return;
-    }
-
-    size_t stack_size = backtrace(stack, max_stack_size);
-    char** symbols = backtrace_symbols(stack, stack_size);
-    if (symbols == NULL) {
-        free(stack);
-        return;
-    }
-
-	for (size_t i = 0; i < stack_size; i++) {
-		printf ("%s\n", symbols[i]);
-    }
-}
-
-#else
-
-static void print_c_stacktrace() {
-    // other platforms are not supported
-}
-
-#endif
-
 static void unimplemented(const char* name) {
     printf("Function not implemented in GraalPy: %s\n", name);
-    printf("Native stacktrace:\n");
     print_c_stacktrace();
 }
 

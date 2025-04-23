@@ -57,8 +57,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
-import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
@@ -563,14 +561,6 @@ public abstract class PGuards {
 
     public static boolean isCDataObject(Object obj) {
         return obj instanceof CDataObject;
-    }
-
-    public static boolean isHPyHandle(Object obj) {
-        return obj instanceof GraalHPyHandle;
-    }
-
-    public static boolean isHPyObject(Object obj) {
-        return obj instanceof PythonHPyObject;
     }
 
     public static boolean expectBoolean(Object result) throws UnexpectedResultException {

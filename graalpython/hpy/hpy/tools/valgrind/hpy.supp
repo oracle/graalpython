@@ -1,0 +1,44 @@
+{
+   <_HPyModuleDef_CreatePyModuleDef_leak>
+   Memcheck:Leak
+   match-leak-kinds: definite,indirect
+   ...
+   fun:_HPyModuleDef_CreatePyModuleDef
+   ...
+}
+
+{
+  <ctx_Type_FromSpec_leak>
+  Memcheck:Leak
+  match-leak-kinds: definite
+  ...
+  fun:ctx_Type_FromSpec
+  ...
+}
+
+{
+   <PyUnicode_New_leak>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   fun:PyUnicode_New.part.42
+   ...
+}
+
+{
+   <PyUnicode_New_leak2>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   fun:PyUnicode_New
+   ...
+}
+
+{
+   <PyLong_FromLong_leak>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   fun:PyLong_FromLong
+   ...
+}
