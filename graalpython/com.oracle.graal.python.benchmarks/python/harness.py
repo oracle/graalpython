@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -270,9 +270,10 @@ class BenchRunner(object):
         name = bench_file.rpartition(os.sep)[2].partition(".")[0].replace('.py', '')
         directory = bench_file.rpartition(os.sep)[0]
         pkg = []
-        while any(f.endswith("__init__.py") for f in os.listdir(directory)):
-            directory, slash, postfix = directory.rpartition("/")
-            pkg.insert(0, postfix)
+        if directory:
+            while any(f.endswith("__init__.py") for f in os.listdir(directory)):
+                directory, slash, postfix = directory.rpartition("/")
+                pkg.insert(0, postfix)
 
         if pkg:
             sys.path.insert(0, directory)
