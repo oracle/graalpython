@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Speci
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.DictKey;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutUnsafeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -131,11 +132,15 @@ public class EconomicMapStorage extends HashingStorage {
         map.clear();
     }
 
+    public boolean mapIsEqualTo(ObjectHashMap other) {
+        return other == this.map;
+    }
+
     public HashingStorage copy() {
         return new EconomicMapStorage(this.map, true);
     }
 
-    protected void setValueForAllKeys(VirtualFrame frame, Node inliningTarget, Object value, PutNode putNode, InlinedLoopConditionProfile loopProfile) {
+    protected void setValueForAllKeys(VirtualFrame frame, Node inliningTarget, Object value, PutUnsafeNode putNode, InlinedLoopConditionProfile loopProfile) {
         MapCursor cursor = map.getEntries();
         final int size = map.size();
         loopProfile.profileCounted(inliningTarget, size);
@@ -147,17 +152,17 @@ public class EconomicMapStorage extends HashingStorage {
 
     @TruffleBoundary
     public void putUncached(TruffleString key, Object value) {
-        ObjectHashMap.PutNode.putUncached(this.map, key, PyObjectHashNode.hash(key, HashCodeNode.getUncached()), value);
+        PutUnsafeNode.putUncached(this.map, key, PyObjectHashNode.hash(key, HashCodeNode.getUncached()), value);
     }
 
     private void putUncached(Object key, Object value) {
-        ObjectHashMap.PutNode.putUncached(this.map, key, PyObjectHashNode.executeUncached(key), value);
+        PutNode.getUncached().put(null, null, this.map, key, PyObjectHashNode.executeUncached(key), value);
     }
 
     // Solves boot-order problem, do not use in normal code or during startup when __eq__ of
     // builtins may not be properly set-up
     public void putUncachedWithJavaEq(Object key, long keyHash, Object value) {
-        ObjectHashMap.PutNode.putUncachedWithJavaEq(this.map, key, keyHash, value);
+        PutUnsafeNode.putUncachedWithJavaEq(this.map, key, keyHash, value);
     }
 
     public void putUncachedWithJavaEq(TruffleString key, Object value) {
@@ -212,7 +217,7 @@ public class EconomicMapStorage extends HashingStorage {
         @Specialization
         static void doIt(Node inliningTarget, HashingStorage self, TruffleString key, Object value,
                         @Cached PyObjectHashNode hashNode,
-                        @Cached PutNode putNode) {
+                        @Cached PutUnsafeNode putNode) {
             putNode.put(null, inliningTarget, ((EconomicMapStorage) self).map, key, hashNode.execute(null, inliningTarget, key), value);
         }
     }

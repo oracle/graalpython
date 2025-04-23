@@ -1798,7 +1798,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     b.endMakeTuple();
                     break;
                 case FROZENSET:
-                    b.beginMakeFrozenSet(value.getFrozensetElements().length);
+                    b.beginMakeFrozenSet();
                     for (ConstantValue cv : value.getFrozensetElements()) {
                         createConstant(cv);
                     }

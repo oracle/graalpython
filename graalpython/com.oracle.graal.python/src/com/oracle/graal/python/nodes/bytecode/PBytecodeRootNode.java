@@ -65,11 +65,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
 import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNodeGen;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageFactory;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.DictNodesFactory;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -149,6 +151,7 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetIterNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetMethod;
 import com.oracle.graal.python.lib.PyObjectGetMethodNodeGen;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNodeGen;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
@@ -172,6 +175,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodesFactory;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNodeFactory.ObjHashMapPutNodeGen;
 import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNode.ListFromStackNode;
 import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNode.TupleFromStackNode;
 import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNodeFactory.ListFromStackNodeGen;
@@ -237,6 +241,11 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -271,6 +280,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private static final NodeSupplier<SetItemNode> NODE_SET_ITEM = HashingCollectionNodes.SetItemNode::create;
     private static final SetItemNode UNCACHED_SET_ITEM = HashingCollectionNodes.SetItemNode.getUncached();
+    private static final NodeSupplier<ObjHashMapPutNode> NODE_OBJ_HASHMAP_PUT = ObjHashMapPutNodeGen::create;
+    private static final ObjHashMapPutNode UNCACHED_OBJ_HASHMAP_PUT = ObjHashMapPutNodeGen.getUncached();
     private static final NodeSupplier<CastToJavaIntExactNode> NODE_CAST_TO_JAVA_INT_EXACT = CastToJavaIntExactNode::create;
     private static final CastToJavaIntExactNode UNCACHED_CAST_TO_JAVA_INT_EXACT = CastToJavaIntExactNode.getUncached();
     private static final ImportNode UNCACHED_IMPORT = ImportNode.getUncached();
@@ -5523,25 +5534,44 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    @ExplodeLoop
-    private static void moveFromStack(VirtualFrame virtualFrame, int start, int stop, PSet target, HashingCollectionNodes.SetItemNode setItem) {
-        CompilerAsserts.partialEvaluationConstant(start);
-        CompilerAsserts.partialEvaluationConstant(stop);
-        for (int i = start; i < stop; i++) {
-            setItem.executeCached(virtualFrame, target, virtualFrame.getObject(i), PNone.NONE);
-            virtualFrame.clear(i);
+    @GenerateInline(false)
+    @GenerateUncached
+    abstract static class ObjHashMapPutNode extends Node {
+        public abstract void execute(VirtualFrame frame, ObjectHashMap map, Object key, Object value);
+
+        @Specialization
+        static void doIt(VirtualFrame frame, ObjectHashMap map, Object key, Object value,
+                        @Bind Node inliningTarget,
+                        @Cached PyObjectHashNode hashNode,
+                        @Cached ObjectHashMap.PutNode putNode) {
+            long hash = hashNode.execute(frame, inliningTarget, key);
+            putNode.put(frame, inliningTarget, map, key, hash, value);
         }
     }
 
     @ExplodeLoop
-    private static void moveFromStack(VirtualFrame virtualFrame, int start, int stop, PDict target, HashingCollectionNodes.SetItemNode setItem) {
+    private static ObjectHashMap moveFromStackToSetHashMap(VirtualFrame virtualFrame, int start, int stop, ObjHashMapPutNode putNode) {
         CompilerAsserts.partialEvaluationConstant(start);
         CompilerAsserts.partialEvaluationConstant(stop);
+        var result = new ObjectHashMap(stop - start, false);
+        for (int i = start; i < stop; i++) {
+            putNode.execute(virtualFrame, result, virtualFrame.getObject(i), PNone.NONE);
+            virtualFrame.clear(i);
+        }
+        return result;
+    }
+
+    @ExplodeLoop
+    private static ObjectHashMap moveFromStackToDictHashMap(VirtualFrame virtualFrame, int start, int stop, ObjHashMapPutNode putNode) {
+        CompilerAsserts.partialEvaluationConstant(start);
+        CompilerAsserts.partialEvaluationConstant(stop);
+        var result = new ObjectHashMap((stop - start) / 2, false);
         for (int i = start; i + 1 < stop; i += 2) {
-            setItem.executeCached(virtualFrame, target, virtualFrame.getObject(i), virtualFrame.getObject(i + 1));
+            putNode.execute(virtualFrame, result, virtualFrame.getObject(i), virtualFrame.getObject(i + 1));
             virtualFrame.clear(i);
             virtualFrame.clear(i + 1);
         }
+        return result;
     }
 
     @BytecodeInterpreterSwitch
@@ -5562,20 +5592,18 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 break;
             }
             case CollectionBits.KIND_SET: {
-                PSet set = PFactory.createSet(getLanguage());
-                HashingCollectionNodes.SetItemNode newNode = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.class, NODE_SET_ITEM,
+                ObjHashMapPutNode putNode = insertChildNode(localNodes, nodeIndex, UNCACHED_OBJ_HASHMAP_PUT, ObjHashMapPutNodeGen.class, NODE_OBJ_HASHMAP_PUT,
                                 useCachedNodes);
-                moveFromStack(virtualFrame, stackTop - count + 1, stackTop + 1, set, newNode);
-                res = set;
+                ObjectHashMap storage = moveFromStackToSetHashMap(virtualFrame, stackTop - count + 1, stackTop + 1, putNode);
+                res = PFactory.createSet(getLanguage(), new EconomicMapStorage(storage, false));
                 break;
             }
             case CollectionBits.KIND_DICT: {
-                PDict dict = PFactory.createDict(getLanguage());
-                HashingCollectionNodes.SetItemNode setItem = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.class, NODE_SET_ITEM,
+                ObjHashMapPutNode putNode = insertChildNode(localNodes, nodeIndex, UNCACHED_OBJ_HASHMAP_PUT, ObjHashMapPutNodeGen.class, NODE_OBJ_HASHMAP_PUT,
                                 useCachedNodes);
                 assert count % 2 == 0;
-                moveFromStack(virtualFrame, stackTop - count + 1, stackTop + 1, dict, setItem);
-                res = dict;
+                ObjectHashMap storage = moveFromStackToDictHashMap(virtualFrame, stackTop - count + 1, stackTop + 1, putNode);
+                res = PFactory.createDict(getLanguage(), new EconomicMapStorage(storage, false));
                 break;
             }
             case CollectionBits.KIND_KWORDS: {

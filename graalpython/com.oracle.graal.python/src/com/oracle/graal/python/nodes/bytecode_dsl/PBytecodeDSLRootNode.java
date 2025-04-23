@@ -65,10 +65,10 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
@@ -138,6 +138,7 @@ import com.oracle.graal.python.lib.PyObjectFunctionStr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetMethod;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectIsNotTrueNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -250,13 +251,11 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -1459,74 +1458,38 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     @ImportStatic({PBytecodeDSLRootNode.class})
     public static final class MakeSet {
-        @Specialization(guards = {"elements.length == length", "length <= EXPLODE_LOOP_THRESHOLD"}, limit = "1")
-        @ExplodeLoop
-        public static PSet doExploded(VirtualFrame frame, Object[] elements,
-                        @Bind PBytecodeDSLRootNode rootNode,
-                        @Bind Node node,
-                        @Cached(value = "elements.length") int length,
-                        @Shared @Cached SetNodes.AddNode addNode,
-                        @Shared @Cached HashingCollectionNodes.SetItemNode setItemNode) {
-            PSet set = PFactory.createSet(rootNode.getLanguage());
-            for (int i = 0; i < length; i++) {
-                SetNodes.AddNode.add(frame, set, elements[i], addNode, setItemNode);
-            }
-            return set;
+        @Specialization(guards = "elements.length == 0")
+        public static PSet doEmpty(VirtualFrame frame, Object[] elements,
+                        @Bind PBytecodeDSLRootNode rootNode) {
+            // creates set backed by empty HashingStorage
+            return PFactory.createSet(rootNode.getLanguage());
         }
 
-        @Specialization(replaces = "doExploded")
-        public static PSet performRegular(VirtualFrame frame, Object[] elements,
+        @Specialization(guards = "elements.length != 0")
+        public static PSet doNonEmpty(VirtualFrame frame, Object[] elements,
                         @Bind PBytecodeDSLRootNode rootNode,
-                        @Bind Node node,
-                        @Shared @Cached SetNodes.AddNode addNode,
-                        @Shared @Cached HashingCollectionNodes.SetItemNode setItemNode) {
-            PSet set = PFactory.createSet(rootNode.getLanguage());
-            for (int i = 0; i < elements.length; i++) {
-                SetNodes.AddNode.add(frame, set, elements[i], addNode, setItemNode);
-            }
-            return set;
+                        @Bind Node inliningTarget,
+                        @Cached MakeSetStorageNode makeSetStorageNode) {
+            return PFactory.createSet(rootNode.getLanguage(), makeSetStorageNode.execute(frame, inliningTarget, elements));
         }
     }
 
     @Operation
-    @ConstantOperand(type = int.class)
     public static final class MakeFrozenSet {
-        @Specialization
-        public static PFrozenSet perform(VirtualFrame frame,
-                        int length,
-                        @Variadic Object[] elements,
-                        @Cached HashingStorageSetItem hashingStorageLibrary,
+        @Specialization(guards = "elements.length == 0")
+        public static PFrozenSet doEmpty(VirtualFrame frame, @Variadic Object[] elements,
+                        @Bind PBytecodeDSLRootNode rootNode) {
+            // creates set backed by empty HashingStorage
+            return PFactory.createFrozenSet(rootNode.getLanguage());
+        }
+
+        @Specialization(guards = "elements.length != 0")
+        public static PFrozenSet doNonEmpty(VirtualFrame frame, @Variadic Object[] elements,
                         @Bind PBytecodeDSLRootNode rootNode,
-                        @Bind Node inliningTarget) {
-            HashingStorage setStorage;
-            if (length <= EXPLODE_LOOP_THRESHOLD) {
-                setStorage = doExploded(frame, inliningTarget, elements, length, hashingStorageLibrary);
-            } else {
-                setStorage = doRegular(frame, inliningTarget, elements, length, hashingStorageLibrary);
-            }
-            return PFactory.createFrozenSet(rootNode.getLanguage(), setStorage);
+                        @Bind Node inliningTarget,
+                        @Cached MakeSetStorageNode makeSetStorageNode) {
+            return PFactory.createFrozenSet(rootNode.getLanguage(), makeSetStorageNode.execute(frame, inliningTarget, elements));
         }
-
-        @ExplodeLoop
-        private static HashingStorage doExploded(VirtualFrame frame, Node inliningTarget, Object[] elements, int length, HashingStorageSetItem hashingStorageLibrary) {
-            CompilerAsserts.partialEvaluationConstant(length);
-            HashingStorage setStorage = EmptyStorage.INSTANCE;
-            for (int i = 0; i < length; ++i) {
-                Object o = elements[i];
-                setStorage = hashingStorageLibrary.execute(frame, inliningTarget, setStorage, o, PNone.NONE);
-            }
-            return setStorage;
-        }
-
-        private static HashingStorage doRegular(VirtualFrame frame, Node inliningTarget, Object[] elements, int length, HashingStorageSetItem hashingStorageLibrary) {
-            HashingStorage setStorage = EmptyStorage.INSTANCE;
-            for (int i = 0; i < length; ++i) {
-                Object o = elements[i];
-                setStorage = hashingStorageLibrary.execute(frame, inliningTarget, setStorage, o, PNone.NONE);
-            }
-            return setStorage;
-        }
-
     }
 
     @Operation
@@ -1728,30 +1691,35 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     @ConstantOperand(type = int.class)
     public static final class MakeDict {
-        // TODO: GR-64247, split to empty dict and non-empty dict created directly from preallocated
-        // hashmap
-        // storage
+        @Specialization(guards = "entries == 0")
+        public static PDict empty(VirtualFrame frame, int entries, @Variadic Object[] keysAndValues,
+                        @Bind PBytecodeDSLRootNode rootNode) {
+            // creates a dict with empty hashing storage
+            return PFactory.createDict(rootNode.getLanguage());
+        }
+
         @Specialization
-        @ExplodeLoop
-        public static PDict empty(VirtualFrame frame,
-                        int entries,
-                        @Variadic Object[] keysAndValues,
+        public static PDict empty(VirtualFrame frame, int entries, @Variadic Object[] keysAndValues,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Bind Node inliningTarget,
-                        @Cached HashingCollectionNodes.SetItemNode setItemNode,
+                        @Cached PyObjectHashNode hashNode,
+                        @Cached ObjectHashMap.PutNode putNode,
                         @Cached DictNodes.UpdateNode updateNode) {
             if (keysAndValues.length != entries * 2) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
-            PDict dict = PFactory.createDict(rootNode.getLanguage());
+            ObjectHashMap map = new ObjectHashMap(keysAndValues.length / 2, false);
+            PDict dict = PFactory.createDict(rootNode.getLanguage(), new EconomicMapStorage(map, false));
             for (int i = 0; i < entries; i++) {
                 Object key = keysAndValues[i * 2];
                 Object value = keysAndValues[i * 2 + 1];
                 // Each entry represents either a k: v pair or a **splats. splats have no key.
                 if (key == PNone.NO_VALUE) {
                     updateNode.execute(frame, dict, value);
+                    assert dict.getDictStorage() instanceof EconomicMapStorage es && es.mapIsEqualTo(map);
                 } else {
-                    setItemNode.execute(frame, inliningTarget, dict, key, value);
+                    long hash = hashNode.execute(frame, inliningTarget, key);
+                    putNode.put(frame, inliningTarget, map, key, hash, value);
                 }
             }
             return dict;
@@ -2482,7 +2450,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class Unstar {
         @Specialization(guards = "length != 1")
         public static Object[] perform(@Variadic Object[] values, int length) {
-            assert length > 1; // we should emit load constant: empty array, or emit just unpack starred
+            // if len <= 1, we should emit load constant "empty array", or emit just unpack starred
+            assert length > 1;
             CompilerAsserts.partialEvaluationConstant(length);
             int totalLength = 0;
             for (int i = 0; i < length; i++) {
