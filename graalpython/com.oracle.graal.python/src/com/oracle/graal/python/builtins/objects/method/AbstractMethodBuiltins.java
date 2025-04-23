@@ -70,6 +70,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -110,27 +111,19 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_call, isComplex = true)
     @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class CallNode extends PythonVarargsBuiltinNode {
-        @Child private com.oracle.graal.python.nodes.call.CallNode callNode = com.oracle.graal.python.nodes.call.CallNode.create();
+    abstract static class CallNode extends PythonVarargsBuiltinNode {
 
-        @Specialization(guards = "isFunction(self.getFunction())")
-        protected Object doIt(VirtualFrame frame, PMethod self, Object[] arguments, PKeyword[] keywords) {
-            return callNode.execute(frame, self, arguments, keywords);
-        }
-
-        @Specialization(guards = "isFunction(self.getFunction())")
-        protected Object doIt(VirtualFrame frame, PBuiltinMethod self, Object[] arguments, PKeyword[] keywords) {
-            return callNode.execute(frame, self, arguments, keywords);
-        }
-
-        @Specialization(guards = "!isFunction(self.getFunction())")
-        protected Object doItNonFunction(VirtualFrame frame, PMethod self, Object[] arguments, PKeyword[] keywords) {
+        @Specialization
+        static Object doItNonFunction(VirtualFrame frame, PMethod self, Object[] arguments, PKeyword[] keywords,
+                        @Cached com.oracle.graal.python.nodes.call.CallNode callNode) {
             return callNode.execute(frame, self.getFunction(), PythonUtils.prependArgument(self.getSelf(), arguments), keywords);
         }
 
-        @Specialization(guards = "!isFunction(self.getFunction())")
-        protected Object doItNonFunction(VirtualFrame frame, PBuiltinMethod self, Object[] arguments, PKeyword[] keywords) {
-            return callNode.execute(frame, self.getFunction(), PythonUtils.prependArgument(self.getSelf(), arguments), keywords);
+        @Specialization
+        static Object doItNonFunction(VirtualFrame frame, PBuiltinMethod self, Object[] arguments, PKeyword[] keywords,
+                        @Bind Node inliningTarget,
+                        @Cached CallDispatchers.BuiltinMethodCachedCallNode callNode) {
+            return callNode.execute(frame, inliningTarget, self, arguments, keywords);
         }
 
     }
