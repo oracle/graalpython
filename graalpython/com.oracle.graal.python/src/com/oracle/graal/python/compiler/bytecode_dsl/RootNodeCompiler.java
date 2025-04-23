@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.compiler.CompilationScope;
 import com.oracle.graal.python.compiler.Compiler;
@@ -1808,7 +1807,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     b.emitLoadBigInt(value.getBigInteger());
                     break;
                 case CODEPOINTS:
-                    b.emitLoadConstant(StringNodes.StringReprNode.getUncached().execute(codePointsToTruffleString(value.getCodePoints())));
+                    b.emitLoadConstant(codePointsToTruffleString(value.getCodePoints()));
                     break;
                 case BYTES:
                     addConstant(value.getBytes());
