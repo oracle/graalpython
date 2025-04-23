@@ -4,5 +4,4 @@ COMPONENTS=SubstrateVM Enterprise,Truffle SVM Macro Enterprise
 NATIVE_IMAGES=lib:pythonvm
 EXTRA_IMAGE_BUILDER_ARGUMENTS=pythonvm:-H:+AuxiliaryEngineCache pythonvm:-H:ReservedAuxiliaryImageBytes=1073741824
 NATIVE_IMAGE_AUXILIARY_ENGINE_CACHE=true
-GENERATE_DEBUGINFO=false
 GRAALVM_SKIP_ARCHIVE=true
