@@ -596,6 +596,7 @@ def _graalpy_launcher():
     return f"{name}.exe" if WIN32 else name
 
 
+# dev means Default TruffleRuntime and "build the minimum possible"
 def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=True):
     assert standalone_type in ['native', 'jvm']
     assert not (enterprise and dev), "EE dev standalones are not implemented yet"
@@ -639,27 +640,20 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
         return python_home
 
-    env_file = 'ce-python'
-    vm_suite_path = os.path.join(mx.suite('truffle').dir, '..', 'vm')
-    svm_component = '_SVM'
-    if enterprise:
-        env_file = 'ee-python'
-        enterprise_suite = mx.suite('graal-enterprise', fatalIfMissing=False)
-        enterprise_suite_dir = enterprise_suite.dir if enterprise_suite else os.path.join(SUITE.dir, '..', 'graal-enterprise', 'graal-enterprise')
-        vm_suite_path = os.path.join(enterprise_suite_dir, '..', 'vm-enterprise')
-        svm_component = '_SVM_SVMEE'
-    if dev:
-        if standalone_type == 'jvm':
-            svm_component = ''
-            mx_args = ['--dy', '/vm']
-        else:
-            dev_env_file = os.path.join(os.path.abspath(SUITE.dir), 'mx.graalpython/graalpython-svm-standalone')
-            mx_args = ['-p', vm_suite_path, '--env', dev_env_file]
+    # Build
+    if dev and standalone_type == 'jvm':
+        env_file = 'jvm'
+        standalone_dist = 'GRAALPY_JVM_DEV_STANDALONE'
     else:
-        mx_args = ['-p', vm_suite_path, '--env', env_file]
+        if standalone_type == 'jvm':
+            env_file = 'jvm-ee-libgraal' if enterprise else 'jvm-ce-libgraal'
+            standalone_dist = 'GRAALPY_JVM_STANDALONE'
+        else:
+            env_file = 'native-ee' if enterprise else 'native-ce'
+            standalone_dist = 'GRAALPY_NATIVE_STANDALONE'
 
+    mx_args = ['-p', SUITE.dir, '--env', env_file]
     mx_args.append("--extra-image-builder-argument=-g")
-
     if BUILD_NATIVE_IMAGE_WITH_ASSERTIONS:
         mx_args.append("--extra-image-builder-argument=-ea")
 
@@ -668,20 +662,14 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         mx_build_args = mx_args
         if BYTECODE_DSL_INTERPRETER:
             mx_build_args = mx_args + ["--extra-image-builder-argument=-Dpython.EnableBytecodeDSLInterpreter=true"]
+        mx.run_mx(mx_build_args + ["build", "--target", standalone_dist])
 
-        # Example of a string we're building here: PYTHON_JAVA_STANDALONE_SVM_SVMEE_JAVA21
-        mx.run_mx(mx_build_args + ["build", "--dep", f"PYTHON_{dep_type}_STANDALONE{svm_component}_JAVA{jdk_version.parts[0]}"])
+    python_home = os.path.join(SUITE.dir, 'mxbuild', f"{mx.get_os()}-{mx.get_arch()}", standalone_dist)
 
-    out = mx.OutputCapture()
-    # note: 'quiet=True' is important otherwise if the outer MX runs verbose,
-    # this might fail because of additional output
-    mx.run_mx(mx_args + ["standalone-home", "--type", standalone_type, "python"], out=out, quiet=True)
-    python_home = out.data.splitlines()[-1].strip()
     if dev and standalone_type == 'native':
-        path = Path(python_home)
-        debuginfo = path / '../../libpythonvm.so.image/libpythonvm.so.debug'
-        if debuginfo.exists():
-            shutil.copy(debuginfo, path / 'lib')
+        debuginfo = os.path.join(SUITE.dir, 'mxbuild', f"{mx.get_os()}-{mx.get_arch()}", "libpythonvm", "libpythonvm.so.debug")
+        if os.path.exists(debuginfo):
+            shutil.copy(debuginfo, os.path.join(python_home, 'lib'))
     return python_home
 
 
