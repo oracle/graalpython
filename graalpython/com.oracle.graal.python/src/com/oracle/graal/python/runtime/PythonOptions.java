@@ -93,6 +93,12 @@ public final class PythonOptions {
         // no instances
     }
 
+    public static void checkBytecodeDSLEnv() {
+        if (!ENABLE_BYTECODE_DSL_INTERPRETER && "true".equalsIgnoreCase(System.getenv("BYTECODE_DSL_INTERPRETER"))) {
+            System.err.println("WARNING: found environment variable BYTECODE_DSL_INTERPRETER=true, but the python.EnableBytecodeDSLInterpreter Java property was not set.");
+        }
+    }
+
     @Option(category = OptionCategory.EXPERT, help = "Set the home of Python. Equivalent of GRAAL_PYTHONHOME env variable. " +
                     "Determines default values for the CoreHome, StdLibHome, SysBasePrefix, SysPrefix.", usageSyntax = "<path>", stability = OptionStability.STABLE) //
     public static final OptionKey<String> PythonHome = new OptionKey<>("");

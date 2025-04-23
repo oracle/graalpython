@@ -1627,6 +1627,7 @@ public final class PythonContext extends Python3Core {
             }
             releaseGil();
         }
+        PythonOptions.checkBytecodeDSLEnv();
     }
 
     public void resetPerfCounter() {
@@ -1648,6 +1649,7 @@ public final class PythonContext extends Python3Core {
         } finally {
             releaseGil();
         }
+        PythonOptions.checkBytecodeDSLEnv();
     }
 
     private void importSiteIfForced() {
