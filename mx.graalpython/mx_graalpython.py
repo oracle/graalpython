@@ -99,6 +99,8 @@ GRAAL_VERSION_MAJ_MIN = ".".join(GRAAL_VERSION.split(".")[:2])
 PYTHON_VERSION = SUITE.suiteDict[f'{SUITE.name}:pythonVersion']
 PYTHON_VERSION_MAJ_MIN = ".".join(PYTHON_VERSION.split('.')[:2])
 
+LATEST_JAVA_HOME = {"JAVA_HOME": os.environ.get("LATEST_JAVA_HOME", mx.get_jdk().home)}
+
 # this environment variable is used by some of our maven projects and jbang integration to build against the unreleased master version during development
 os.environ["GRAALPY_VERSION"] = GRAAL_VERSION
 
@@ -643,6 +645,8 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     else:
         env_file = 'native-ee' if enterprise else 'native-ce'
         standalone_dist = 'GRAALPY_NATIVE_STANDALONE'
+        if "GraalVM" in subprocess.check_output([get_jdk().java, '-version'], stderr=subprocess.STDOUT, text=True):
+            assert False, "Cannot build a GraalPy native standalone with a Graal JDK, we only support latest for building the native images"
 
     mx_args = ['-p', SUITE.dir, *(['--env', env_file] if env_file else [])]
     mx_args.append("--extra-image-builder-argument=-g")
@@ -654,6 +658,8 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         mx_build_args = mx_args
         if BYTECODE_DSL_INTERPRETER:
             mx_build_args = mx_args + ["--extra-image-builder-argument=-Dpython.EnableBytecodeDSLInterpreter=true"]
+        # This build is purposefully done without the LATEST_JAVA_HOME in the
+        # environment, so we can build JVM standalones on an older Graal JDK
         mx.run_mx(mx_build_args + ["build", "--target", standalone_dist])
 
     python_home = os.path.join(SUITE.dir, 'mxbuild', f"{mx.get_os()}-{mx.get_arch()}", standalone_dist)
@@ -736,7 +742,7 @@ def graalvm_jdk():
     jdk_major_version = mx.get_jdk().version.parts[0]
     mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce']
     if not DISABLE_REBUILD:
-        mx.run_mx(mx_args + ["build", "--dep", f"GRAALVM_COMMUNITY_JAVA{jdk_major_version}"])
+        mx.run_mx(mx_args + ["build", "--dep", f"GRAALVM_COMMUNITY_JAVA{jdk_major_version}"], env={**os.environ, **LATEST_JAVA_HOME})
     out = mx.OutputCapture()
     mx.run_mx(mx_args + ["graalvm-home"], out=out)
     return out.data.splitlines()[-1].strip()
@@ -758,7 +764,7 @@ def deploy_local_maven_repo():
 
     if not DISABLE_REBUILD:
         # build GraalPy and all the necessary dependencies, so that we can deploy them
-        mx.run_mx(["-p", os.path.join(mx.suite('truffle').dir, '..', 'vm'), "--dy", "graalpython", "build"], env=env)
+        mx.run_mx(["-p", os.path.join(mx.suite('truffle').dir, '..', 'vm'), "--dy", "graalpython", "build"], env={**env, **LATEST_JAVA_HOME})
 
     # deploy maven artifacts
     version = GRAAL_VERSION
@@ -852,22 +858,6 @@ def python_svm(_=None):
     launcher = graalpy_standalone('native', dev=True)
     mx.log(launcher)
     return launcher
-
-
-def native_image(args):
-    mx.run_mx([
-        "-p", os.path.join(mx.suite("truffle").dir, "..", "substratevm"),
-        "--dy", "graalpython",
-        "--native-images=",
-        "build",
-    ])
-    mx.run_mx([
-        "-p", os.path.join(mx.suite("truffle").dir, "..", "substratevm"),
-        "--dy", "graalpython",
-        "--native-images=",
-        "native-image",
-        *args
-    ])
 
 
 def _python_test_runner():
@@ -1140,7 +1130,7 @@ def graalpython_gate_runner(args, tasks):
     # JUnit tests
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
-            mx.run_mx(["build", "--dep", "GRAALPYTHON_UNIT_TESTS,GRAALPYTHON_INTEGRATION_UNIT_TESTS,GRAALPYTHON_TCK"])
+            mx.run_mx(["build", "--dep", "GRAALPYTHON_UNIT_TESTS,GRAALPYTHON_INTEGRATION_UNIT_TESTS,GRAALPYTHON_TCK"], env={**os.environ, **LATEST_JAVA_HOME})
             if WIN32:
                 punittest(
                     [
@@ -1346,9 +1336,9 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython VFSUtils long running tests', tasks, tags=[GraalPythonTags.junit_vfsutils]) as task:
         if task:
+            mx.run_mx(["build", "--dep", "GRAALPYTHON_UNIT_TESTS,GRAALPYTHON_INTEGRATION_UNIT_TESTS,GRAALPYTHON_TCK"], env={**os.environ, **LATEST_JAVA_HOME})
             args =['--verbose']
             vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false']
-            mx.build(["--dep", "org.graalvm.python.embedding"])
             mx_unittest.unittest(vm_args + ['org.graalvm.python.embedding.vfs.test'] + args + ["--use-graalvm"])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
@@ -1391,7 +1381,7 @@ def graalpython_gate_runner(args, tasks):
                 "-p", os.path.join(mx.suite("truffle"), "..", "vm"),
                 "--native-images=",
                 "build",
-            ])
+            ], env={**os.environ, **LATEST_JAVA_HOME})
             mx.run_mx([
                 "--dy", "graalpython,/substratevm",
                 "-p", os.path.join(mx.suite("truffle"), "..", "vm"),
@@ -2177,7 +2167,7 @@ def python_coverage(args):
     args = parser.parse_args(args)
 
     # do not endlessly rebuild tests
-    mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
+    mx.run_mx(["build", "--dep", "com.oracle.graal.python.test"], env={**os.environ, **LATEST_JAVA_HOME})
     env = extend_os_env(
         GRAALPYTHON_MX_DISABLE_REBUILD="True",
         GRAALPYTEST_FAIL_FAST="False",
