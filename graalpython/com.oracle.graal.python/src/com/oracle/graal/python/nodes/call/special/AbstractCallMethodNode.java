@@ -40,24 +40,16 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_D_ARGS;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinDescriptor;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.UnaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -66,12 +58,10 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils.NodeCounterWithLimit;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -151,30 +141,6 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
         return -1;
     }
 
-    public PythonUnaryBuiltinNode getBuiltin(UnaryBuiltinDescriptor descriptor) {
-        PythonUnaryBuiltinNode builtin = descriptor.createNode();
-        if (!callerExceedsMaxSize(builtin)) {
-            return builtin;
-        }
-        return null;
-    }
-
-    public PythonBinaryBuiltinNode getBuiltin(BinaryBuiltinDescriptor descriptor) {
-        PythonBinaryBuiltinNode builtin = descriptor.createNode();
-        if (!callerExceedsMaxSize(builtin)) {
-            return builtin;
-        }
-        return null;
-    }
-
-    public PythonTernaryBuiltinNode getBuiltin(TernaryBuiltinDescriptor descriptor) {
-        PythonTernaryBuiltinNode builtin = descriptor.createNode();
-        if (!callerExceedsMaxSize(builtin)) {
-            return builtin;
-        }
-        return null;
-    }
-
     private <T extends PythonBuiltinBaseNode> boolean callerExceedsMaxSize(T builtinNode) {
         CompilerAsserts.neverPartOfCompilation();
         if (isAdoptable() && !isMaxSizeExceeded()) {
@@ -227,38 +193,6 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
         return true;
     }
 
-    PythonVarargsBuiltinNode getVarargs(VirtualFrame frame, Object func) {
-        CompilerAsserts.neverPartOfCompilation();
-        if (func instanceof PBuiltinFunction builtinFunc) {
-            NodeFactory<? extends PythonBuiltinBaseNode> builtinNodeFactory = builtinFunc.getBuiltinNodeFactory();
-            if (builtinNodeFactory == null) {
-                return null; // see for example MethodDescriptorRoot and subclasses
-            }
-            Class<? extends PythonBuiltinBaseNode> nodeClass = builtinNodeFactory.getNodeClass();
-            if (!PythonVarargsBuiltinNode.class.isAssignableFrom(nodeClass)) {
-                // This filters out slots for now. They do not have @Builtin annotation
-                return null;
-            }
-            SlotSignature slotSignature = nodeClass.getAnnotation(SlotSignature.class);
-            if (slotSignature != null) {
-                if (slotSignature.needsFrame() && frame == null) {
-                    return null;
-                }
-            } else {
-                Builtin[] builtinAnnotations = nodeClass.getAnnotationsByType(Builtin.class);
-                assert builtinAnnotations.length > 0 : "PBuiltinFunction " + builtinFunc + " is expected to have a Builtin annotated node.";
-                if (builtinAnnotations[0].needsFrame() && frame == null) {
-                    return null;
-                }
-            }
-            PythonVarargsBuiltinNode builtinNode = (PythonVarargsBuiltinNode) builtinFunc.getBuiltinNodeFactory().createNode();
-            if (!callerExceedsMaxSize(builtinNode)) {
-                return builtinNode;
-            }
-        }
-        return null;
-    }
-
     protected static boolean takesSelfArg(Object func) {
         if (func instanceof PBuiltinFunction) {
             RootNode functionRootNode = ((PBuiltinFunction) func).getFunctionRootNode();
@@ -277,17 +211,6 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
 
     protected static RootCallTarget getCallTarget(PBuiltinMethod meth, GetCallTargetNode getCtNode) {
         return getCtNode.execute(meth.getFunction());
-    }
-
-    protected void raiseInvalidArgsNumUncached(boolean hasValidArgsNum, BuiltinMethodDescriptor descr) {
-        if (!hasValidArgsNum) {
-            raiseInvalidArgsNumUncached(descr);
-        }
-    }
-
-    @TruffleBoundary
-    private void raiseInvalidArgsNumUncached(BuiltinMethodDescriptor descr) {
-        throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, EXPECTED_D_ARGS, descr.minNumOfPositionalArgs());
     }
 
     protected static Object callUnaryBuiltin(VirtualFrame frame, PythonBuiltinBaseNode builtin, Object arg1) {

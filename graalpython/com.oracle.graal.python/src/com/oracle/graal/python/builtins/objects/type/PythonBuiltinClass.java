@@ -101,10 +101,6 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         // builtins. So there should be no assumptions to invalidate yet
         assert !getMethodResolutionOrder().invalidateAttributeInMROFinalAssumptions(key);
         assert checkSpecialMethodUpdate(key, newValue);
-        SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlotUncached(key);
-        if (slot != null) {
-            SpecialMethodSlot.fixupSpecialMethodSlot(this, slot, newValue);
-        }
         // NO_VALUE changes MRO lookup results without actually changing any Shapes in the MRO, this
         // can prevent some optimizations, so it is best to avoid any code that triggers such code
         // paths during initialization

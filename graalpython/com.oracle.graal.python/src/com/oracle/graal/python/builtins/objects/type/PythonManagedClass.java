@@ -47,7 +47,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -71,13 +70,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     private TruffleString name;
     private TruffleString qualName;
     private int indexedSlotCount;
-
-    /**
-     * Access using methods in {@link SpecialMethodSlot}.
-     *
-     * @see SpecialMethodSlot
-     */
-    Object[] specialMethodSlots;
 
     protected TpSlots tpSlots;
 
@@ -147,10 +139,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             this.setMRO(mro);
         }
         mroInitialized = true;
-    }
-
-    public Assumption getLookupStableAssumption() {
-        return methodResolutionOrder.getLookupStableAssumption();
     }
 
     /**
@@ -241,7 +229,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     public boolean canSkipOnAttributeUpdate(TruffleString key, @SuppressWarnings("unused") Object value, TruffleString.CodePointLengthNode codePointLengthNode,
                     TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         return !methodResolutionOrder.hasAttributeInMROFinalAssumptions() &&
-                        !SpecialMethodSlot.canBeSpecial(key, codePointLengthNode, codePointAtIndexNode);
+                        !TpSlots.canBeSpecialMethod(key, codePointLengthNode, codePointAtIndexNode);
     }
 
     @TruffleBoundary
@@ -252,11 +240,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                 // This is called during type instantiation from copyDictSlots when the tp slots are
                 // not initialized yet
                 TpSlots.updateSlot(this, key);
-            }
-            // TODO: will be removed:
-            SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlotUncached(key);
-            if (slot != null) {
-                SpecialMethodSlot.fixupSpecialMethodSlot(this, slot, value);
             }
         }
     }

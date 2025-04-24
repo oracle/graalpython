@@ -42,7 +42,6 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -51,7 +50,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -63,7 +61,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 @GenerateInline
 @GenerateCached(false)
-@ImportStatic(SpecialMethodSlot.class)
 public abstract class PyNumberCheckNode extends PNodeWithContext {
     public abstract boolean execute(Node inliningTarget, Object object);
 

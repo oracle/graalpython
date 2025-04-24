@@ -220,7 +220,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTupleGetter;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence.BuiltinTypeDescriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
@@ -466,7 +465,6 @@ public final class PFactory {
         PythonClass result = trace(language, new PythonClass(language, metaclass, metaclassShape, name, base, bases));
         // Fixup tp slots
         MroSequenceStorage mro = GetMroStorageNode.executeUncached(result);
-        SpecialMethodSlot.initializeSpecialMethodSlots(result, mro, language);
         TpSlots.inherit(result, null, mro, true);
         TpSlots.fixupSlotDispatchers(result);
         result.initializeMroShape(language);
@@ -474,8 +472,6 @@ public final class PFactory {
     }
 
     public static PythonClass createPythonClass(PythonLanguage language, Object metaclass, Shape metaclassShape, TruffleString name, boolean invokeMro, Object base, PythonAbstractClass[] bases) {
-        // Note: called from type ctor, which itself will invoke setupSpecialMethodSlots at the
-        // right point
         return trace(language, new PythonClass(language, metaclass, metaclassShape, name, invokeMro, base, bases));
     }
 
@@ -570,10 +566,6 @@ public final class PFactory {
         return trace(language, new PBuiltinFunction(type, type.getInstanceShape(language), function.getName(), klass,
                         function.getDefaults(), function.getKwDefaults(), function.getFlags(), function.getCallTarget(),
                         function.getSlot(), function.getSlotWrapper()));
-    }
-
-    public static GetSetDescriptor createGetSetDescriptor(PythonLanguage language, Object get, Object set, TruffleString name, Object type) {
-        return trace(language, new GetSetDescriptor(language, get, set, name, type));
     }
 
     public static GetSetDescriptor createGetSetDescriptor(PythonLanguage language, Object get, Object set, TruffleString name, Object type, boolean allowsDelete) {

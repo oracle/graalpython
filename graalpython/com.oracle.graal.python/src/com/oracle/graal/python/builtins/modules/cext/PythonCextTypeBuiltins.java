@@ -93,7 +93,6 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescripto
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyDictGetItem;
@@ -214,18 +213,6 @@ public final class PythonCextTypeBuiltins {
             PDict dict = PFactory.createDict(language, new DynamicObjectStorage(nativeTypeStore));
             HiddenAttr.WriteNode.executeUncached(dict, HiddenAttr.INSTANCESHAPE, language.getShapeForClass(nativeClass));
             return dict;
-        }
-    }
-
-    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyTypeObject}, call = Ignored)
-    abstract static class PyTruffle_InitializeOldStyleSlots extends CApiUnaryBuiltinNode {
-
-        @TruffleBoundary
-        @Specialization
-        static Object doIt(PythonAbstractNativeObject clazz,
-                        @Bind("this") Node inliningTarget) {
-            SpecialMethodSlot.reinitializeSpecialMethodSlots(clazz, PythonLanguage.get(inliningTarget));
-            return PNone.NO_VALUE;
         }
     }
 

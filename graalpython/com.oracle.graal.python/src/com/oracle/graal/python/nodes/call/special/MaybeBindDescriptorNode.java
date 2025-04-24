@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,11 +41,9 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
@@ -55,7 +53,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -68,7 +65,6 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateUncached
 @GenerateInline
 @GenerateCached(false)
-@ImportStatic(SpecialMethodSlot.class)
 public abstract class MaybeBindDescriptorNode extends PNodeWithContext {
 
     public abstract Object execute(Frame frame, Node inliningTarget, Object descriptor, Object receiver, Object receiverType);
@@ -79,11 +75,6 @@ public abstract class MaybeBindDescriptorNode extends PNodeWithContext {
 
     @Specialization(guards = "isNoValue(descriptor)")
     static Object doNoValue(Object descriptor, @SuppressWarnings("unused") Object receiver, @SuppressWarnings("unused") Object receiverType) {
-        return descriptor;
-    }
-
-    @Specialization
-    static Object doBuiltin(BuiltinMethodDescriptor descriptor, @SuppressWarnings("unused") Object receiver, @SuppressWarnings("unused") Object receiverType) {
         return descriptor;
     }
 
@@ -103,8 +94,7 @@ public abstract class MaybeBindDescriptorNode extends PNodeWithContext {
     }
 
     public static boolean isMethodDescriptor(Object descriptor) {
-        return descriptor instanceof BuiltinMethodDescriptor || (descriptor instanceof PBuiltinFunction pbf && !pbf.needsDeclaringType()) ||
-                        descriptor instanceof PFunction;
+        return (descriptor instanceof PBuiltinFunction pbf && !pbf.needsDeclaringType()) || descriptor instanceof PFunction;
     }
 
     public static boolean needsToBind(Object descriptor) {

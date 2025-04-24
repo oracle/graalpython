@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadI64Node;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetTpSlotsNode;
@@ -76,7 +75,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -84,7 +82,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@ImportStatic(SpecialMethodSlot.class)
 @GenerateUncached
 @GenerateCached(false)
 @GenerateInline
@@ -175,7 +172,6 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
                     @Cached GetClassNode getClassNode,
                     @Cached GetCachedTpSlotsNode getSlotsNode,
                     @Cached CStructAccess.ReadI64Node readTypeObjectFieldNode,
-                    @Cached InlinedConditionProfile tpDictIsNullProfile,
                     @Cached InlinedConditionProfile typeIsNotReadyProfile,
                     @Cached("createFor(this)") IndirectCallData indirectCallData,
                     @Cached CallSlotHashFunNode callHashFun,

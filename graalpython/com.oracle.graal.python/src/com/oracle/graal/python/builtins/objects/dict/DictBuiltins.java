@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStoragePop;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltinsFactory.DispatchMissingNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
@@ -86,6 +85,7 @@ import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
@@ -371,7 +371,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @ImportStatic(SpecialMethodSlot.class)
+    @ImportStatic(SpecialMethodNames.class)
     @GenerateInline(false)      // not inlining this node since GetItemNode prefers lazy creation
     protected abstract static class DispatchMissingNode extends Node {
 
@@ -380,7 +380,7 @@ public final class DictBuiltins extends PythonBuiltins {
         @Specialization
         static Object missing(VirtualFrame frame, Object self, Object key,
                         @Bind("this") Node inliningTarget,
-                        @Cached("create(Missing)") LookupAndCallBinaryNode callMissing,
+                        @Cached("create(T___MISSING__)") LookupAndCallBinaryNode callMissing,
                         @Cached PRaiseNode raiseNode) {
             try {
                 return callMissing.executeObject(frame, self, key);

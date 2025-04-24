@@ -191,10 +191,10 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectGetBasesNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectIsSubclassNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -1917,7 +1917,7 @@ public abstract class TypeNodes {
         }
     }
 
-    @ImportStatic({SpecialMethodNames.class, SpecialAttributeNames.class, SpecialMethodSlot.class})
+    @ImportStatic({SpecialMethodNames.class, SpecialAttributeNames.class})
     public abstract static class CreateTypeNode extends Node {
         public abstract PythonClass execute(VirtualFrame frame, PDict namespaceOrig, TruffleString name, PTuple bases, Object metaclass, PKeyword[] kwds);
 
@@ -1960,7 +1960,8 @@ public abstract class TypeNodes {
                         @Cached HashingStorageIteratorKey itKey,
                         @Cached HashingStorageIteratorValue itValue,
                         @Cached HashingStorageDelItem delItemNamespace,
-                        @Cached("create(SetName)") LookupInheritedSlotNode getSetNameNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached("create(T___SET_NAME__)") LookupSpecialMethodNode getSetNameNode,
                         @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
                         @Cached("create(T___INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
@@ -1968,115 +1969,108 @@ public abstract class TypeNodes {
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raise,
                         @Cached AllocateTypeWithMetaclassNode typeMetaclass) {
-            try {
-                assert SpecialMethodSlot.pushInitializedTypePlaceholder();
-                PDict namespace = PFactory.createDict(language);
-                namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
-                PythonClass newType = typeMetaclass.execute(frame, name, bases, namespace, metaclass);
+            PDict namespace = PFactory.createDict(language);
+            namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
+            PythonClass newType = typeMetaclass.execute(frame, name, bases, namespace, metaclass);
 
-                // set '__module__' attribute
-                Object moduleAttr = ensureReadAttrNode().execute(newType, SpecialAttributeNames.T___MODULE__);
-                if (moduleAttr == PNone.NO_VALUE) {
-                    PythonObject globals;
-                    if (getRootNode() instanceof BuiltinFunctionRootNode) {
-                        PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
-                        globals = callerFrame != null ? callerFrame.getGlobals() : null;
-                    } else {
-                        globals = PArguments.getGlobals(frame);
-                    }
-                    if (globals != null) {
-                        TruffleString moduleName = getModuleNameFromGlobals(inliningTarget, globals, getItemGlobals);
-                        if (moduleName != null) {
-                            newType.setAttribute(SpecialAttributeNames.T___MODULE__, moduleName);
-                        }
+            // set '__module__' attribute
+            Object moduleAttr = ensureReadAttrNode().execute(newType, SpecialAttributeNames.T___MODULE__);
+            if (moduleAttr == PNone.NO_VALUE) {
+                PythonObject globals;
+                if (getRootNode() instanceof BuiltinFunctionRootNode) {
+                    PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
+                    globals = callerFrame != null ? callerFrame.getGlobals() : null;
+                } else {
+                    globals = PArguments.getGlobals(frame);
+                }
+                if (globals != null) {
+                    TruffleString moduleName = getModuleNameFromGlobals(inliningTarget, globals, getItemGlobals);
+                    if (moduleName != null) {
+                        newType.setAttribute(SpecialAttributeNames.T___MODULE__, moduleName);
                     }
                 }
-
-                // delete __qualname__ from namespace
-                delItemNamespace.execute(inliningTarget, namespace.getDictStorage(), T___QUALNAME__, namespace);
-
-                // initialize '__doc__' attribute
-                if (newType.getAttribute(SpecialAttributeNames.T___DOC__) == PNone.NO_VALUE) {
-                    newType.setAttribute(SpecialAttributeNames.T___DOC__, PNone.NONE);
-                }
-
-                // set __class__ cell contents
-                Object classcell = getItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__);
-                if (classcell != null) {
-                    if (classcell instanceof PCell) {
-                        ((PCell) classcell).setRef(newType);
-                    } else {
-                        throw raise.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_A_CELL, "__classcell__");
-                    }
-                    delItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__, namespace);
-                }
-
-                SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode.execute(inliningTarget, newType), language);
-
-                // Initialization of the type slots:
-                //
-                // For now, we have the same helper functions as CPython and we execute them in the
-                // same order even-though we could squash them and optimize the wrapping and
-                // unwrapping of slots, but it would be more difficult to make sure that at the end
-                // of the day we produce exactly the same results, especially if there are native
-                // types in the MRO (we can, e.g., optimize this only for pure Python types to keep
-                // it still simple).
-                //
-                // From CPython point of view: we are in "type_new_impl", we call PyType_Ready,
-                // which calls:
-                //
-                // - type_ready_fill_dict, which calls add_operators, which fills the dunder methods
-                // from the slots. Here we are creating a managed type, so there cannot be any
-                // native slots, so this is a no-op for us.
-                //
-                // - type_ready_inherit to inherit the type slots. Here we may inherit slots from
-                // native classes in the MRO and things would get complicated if we did not follow
-                // CPython structure.
-                //
-                // - type_ready_set_hash: sets tp_hash=PyObject_HashNotImplemented and __hash__=None
-                // if tp_hash is NULL (it must be, this is managed class) and there's no __hash__
-                // magic method.
-                //
-                // - fixup_slot_dispatchers to set the slots according to magic methods.
-
-                Builder inheritedSlots = TpSlots.buildInherited(newType, namespace, getMroStorageNode.execute(inliningTarget, newType), true);
-                // type_ready_set_hash
-                if (inheritedSlots.get(TpSlotMeta.TP_HASH) == null) {
-                    Object dunderHash = getItemNamespace.execute(inliningTarget, namespace.getDictStorage(), T___HASH__);
-                    if (dunderHash == null) {
-                        inheritedSlots.set(TpSlotMeta.TP_HASH, TpSlotHashFun.HASH_NOT_IMPLEMENTED);
-                        newType.setAttribute(T___HASH__, PNone.NONE);
-                    }
-                }
-                TpSlots.fixupSlotDispatchers(newType, inheritedSlots);
-                newType.setTpSlots(inheritedSlots.build());
-
-                HashingStorage storage = namespace.getDictStorage();
-                HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
-                while (itNext.execute(inliningTarget, storage, it)) {
-                    Object value = itValue.execute(inliningTarget, storage, it);
-                    Object setName = getSetNameNode.execute(value);
-                    if (setName != PNone.NO_VALUE) {
-                        Object key = itKey.execute(inliningTarget, storage, it);
-                        try {
-                            callSetNameNode.execute(frame, setName, value, newType, key);
-                        } catch (PException e) {
-                            throw raise.raiseWithCause(inliningTarget, PythonBuiltinClassType.RuntimeError, e, ErrorMessages.ERROR_CALLING_SET_NAME, value, key, newType);
-                        }
-                    }
-                }
-
-                // Call __init_subclass__ on the parent of a newly generated type
-                SuperObject superObject = PFactory.createSuperObject(language);
-                superObject.init(newType, newType, newType);
-                callInitSubclassNode.execute(frame, getInitSubclassNode.executeObject(frame, superObject), PythonUtils.EMPTY_OBJECT_ARRAY, kwds);
-
-                newType.initializeMroShape(language);
-
-                return newType;
-            } finally {
-                assert SpecialMethodSlot.popInitializedType();
             }
+
+            // delete __qualname__ from namespace
+            delItemNamespace.execute(inliningTarget, namespace.getDictStorage(), T___QUALNAME__, namespace);
+
+            // initialize '__doc__' attribute
+            if (newType.getAttribute(SpecialAttributeNames.T___DOC__) == PNone.NO_VALUE) {
+                newType.setAttribute(SpecialAttributeNames.T___DOC__, PNone.NONE);
+            }
+
+            // set __class__ cell contents
+            Object classcell = getItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__);
+            if (classcell != null) {
+                if (classcell instanceof PCell) {
+                    ((PCell) classcell).setRef(newType);
+                } else {
+                    throw raise.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_A_CELL, "__classcell__");
+                }
+                delItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__, namespace);
+            }
+
+            // Initialization of the type slots:
+            //
+            // For now, we have the same helper functions as CPython and we execute them in the
+            // same order even-though we could squash them and optimize the wrapping and
+            // unwrapping of slots, but it would be more difficult to make sure that at the end
+            // of the day we produce exactly the same results, especially if there are native
+            // types in the MRO (we can, e.g., optimize this only for pure Python types to keep
+            // it still simple).
+            //
+            // From CPython point of view: we are in "type_new_impl", we call PyType_Ready,
+            // which calls:
+            //
+            // - type_ready_fill_dict, which calls add_operators, which fills the dunder methods
+            // from the slots. Here we are creating a managed type, so there cannot be any
+            // native slots, so this is a no-op for us.
+            //
+            // - type_ready_inherit to inherit the type slots. Here we may inherit slots from
+            // native classes in the MRO and things would get complicated if we did not follow
+            // CPython structure.
+            //
+            // - type_ready_set_hash: sets tp_hash=PyObject_HashNotImplemented and __hash__=None
+            // if tp_hash is NULL (it must be, this is managed class) and there's no __hash__
+            // magic method.
+            //
+            // - fixup_slot_dispatchers to set the slots according to magic methods.
+
+            Builder inheritedSlots = TpSlots.buildInherited(newType, namespace, getMroStorageNode.execute(inliningTarget, newType), true);
+            // type_ready_set_hash
+            if (inheritedSlots.get(TpSlotMeta.TP_HASH) == null) {
+                Object dunderHash = getItemNamespace.execute(inliningTarget, namespace.getDictStorage(), T___HASH__);
+                if (dunderHash == null) {
+                    inheritedSlots.set(TpSlotMeta.TP_HASH, TpSlotHashFun.HASH_NOT_IMPLEMENTED);
+                    newType.setAttribute(T___HASH__, PNone.NONE);
+                }
+            }
+            TpSlots.fixupSlotDispatchers(newType, inheritedSlots);
+            newType.setTpSlots(inheritedSlots.build());
+
+            HashingStorage storage = namespace.getDictStorage();
+            HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
+            while (itNext.execute(inliningTarget, storage, it)) {
+                Object value = itValue.execute(inliningTarget, storage, it);
+                Object setName = getSetNameNode.execute(frame, getClassNode.execute(inliningTarget, value), value);
+                if (setName != PNone.NO_VALUE) {
+                    Object key = itKey.execute(inliningTarget, storage, it);
+                    try {
+                        callSetNameNode.execute(frame, setName, value, newType, key);
+                    } catch (PException e) {
+                        throw raise.raiseWithCause(inliningTarget, PythonBuiltinClassType.RuntimeError, e, ErrorMessages.ERROR_CALLING_SET_NAME, value, key, newType);
+                    }
+                }
+            }
+
+            // Call __init_subclass__ on the parent of a newly generated type
+            SuperObject superObject = PFactory.createSuperObject(language);
+            superObject.init(newType, newType, newType);
+            callInitSubclassNode.execute(frame, getInitSubclassNode.executeObject(frame, superObject), PythonUtils.EMPTY_OBJECT_ARRAY, kwds);
+
+            newType.initializeMroShape(language);
+
+            return newType;
         }
 
         private TruffleString getModuleNameFromGlobals(Node inliningTarget, PythonObject globals, HashingStorageGetItem getItem) {
@@ -2101,7 +2095,7 @@ public abstract class TypeNodes {
         }
     }
 
-    @ImportStatic({SpecialMethodNames.class, SpecialAttributeNames.class, SpecialMethodSlot.class})
+    @ImportStatic({SpecialMethodNames.class, SpecialAttributeNames.class})
     @GenerateInline(false) // footprint reduction 208 -> 190
     protected abstract static class AllocateTypeWithMetaclassNode extends Node {
 
@@ -2186,7 +2180,6 @@ public abstract class TypeNodes {
             // 1.) create class, but avoid calling mro method - it might try to access __dict__ so
             // we have to copy dict slots first
             PythonClass pythonClass = PFactory.createPythonClass(language, metaclass, getInstanceShape.execute(metaclass), name, false, base, basesArray);
-            assert SpecialMethodSlot.replaceInitializedTypeTop(pythonClass);
 
             // 2.) copy the dictionary slots
             copyDictSlots(frame, inliningTarget, language, ctx, pythonClass, namespace, setHashingStorageItem,

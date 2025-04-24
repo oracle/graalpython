@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
@@ -73,7 +72,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Equivalent of CPython's {@code PySequence_GetItem}. For native object it would only call
  * {@code sq_item} and never {@code mp_subscript}.
  */
-@ImportStatic({PGuards.class, SpecialMethodSlot.class, ExternalFunctionNodes.PExternalFunctionWrapper.class})
+@ImportStatic({PGuards.class, ExternalFunctionNodes.PExternalFunctionWrapper.class})
 @GenerateInline(false) // One lazy usage, one eager usage => not worth it
 @GenerateUncached
 public abstract class PySequenceGetItemNode extends Node {
@@ -154,7 +153,7 @@ public abstract class PySequenceGetItemNode extends Node {
                         @Exclusive @Cached IndexForSqSlotInt indexForSqSlotInt,
                         @Cached PRaiseNode raiseNode) {
             if (!checkNode.execute(inliningTarget, indexObj)) {
-                raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SEQUENCE_INDEX_MUST_BE_INT_NOT_P, indexObj);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SEQUENCE_INDEX_MUST_BE_INT_NOT_P, indexObj);
             }
             int index = asSizeNode.executeExact(frame, inliningTarget, indexObj, PythonBuiltinClassType.IndexError);
             return indexForSqSlotInt.execute(frame, inliningTarget, object, slots, index);

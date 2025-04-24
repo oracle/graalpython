@@ -49,9 +49,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.UnaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -59,8 +56,6 @@ import com.oracle.graal.python.nodes.argument.CreateArgumentsNode.CreateAndCheck
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -86,9 +81,8 @@ import com.oracle.truffle.nfi.api.SignatureLibrary;
 /**
  * A wrapper class for managed functions such that they can be called with native function pointers
  * (like C type {@code PyCFunction}). This is very similar to {@link PyProcsWrapper} but the main
- * difference is that this wrapper does not keep a reference to the function object but only to
- * either the {@link RootCallTarget} or the {@link BuiltinMethodDescriptor} (in case of built-in
- * functions).
+ * difference is that this wrapper does not keep a reference to the function object but only to the
+ * {@link RootCallTarget}
  * <p>
  * Since in C, function pointers are expected to valid the whole time, NFI closure must be kept
  * alive as long as the context lives. Referencing a function object like {@link PyProcsWrapper}
@@ -101,18 +95,6 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
     protected final RootCallTarget callTarget;
     protected final Signature signature;
     protected final TruffleString callTargetName;
-    /**
-     * This uses the fact that {@link BuiltinMethodDescriptor} is context independent (but language
-     * dependent) so it is "more" shareable in the native, and we can use create a
-     * {@link BuiltinMethodDescriptor} not only for slots but for any builtin.
-     * <p/>
-     * Once {@link BuiltinMethodDescriptor} is phased out, we should reconsider if we need a context
-     * independent token for builtins for which one can look up a call target in the current
-     * language or a {@code PBuiltinFunction} in the current context. We can reuse the TpSlots
-     * mechanism like we reused {@link BuiltinMethodDescriptor} originally intended for slots only,
-     * but is it worth the effort and complexity?
-     */
-    protected final BuiltinMethodDescriptor builtinMethodDescriptor;
     protected final CApiTiming timing;
     private long pointer;
 
@@ -123,17 +105,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         this.signature = signature;
         String ctName = callTarget.getRootNode().getName();
         this.callTargetName = PythonUtils.toTruffleStringUncached(ctName);
-        this.builtinMethodDescriptor = null;
         this.timing = CApiTiming.create(false, ctName);
-    }
-
-    protected PyCFunctionWrapper(BuiltinMethodDescriptor builtinMethodDescriptor) {
-        assert builtinMethodDescriptor != null;
-        this.callTarget = null;
-        this.signature = null;
-        this.callTargetName = null;
-        this.builtinMethodDescriptor = builtinMethodDescriptor;
-        this.timing = CApiTiming.create(false, builtinMethodDescriptor.getName());
     }
 
     public final RootCallTarget getCallTarget() {
@@ -141,9 +113,6 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
     }
 
     public final Object getDelegate() {
-        if (builtinMethodDescriptor != null) {
-            return builtinMethodDescriptor;
-        }
         assert callTarget != null;
         return callTarget;
     }
@@ -192,38 +161,18 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
     @Override
     @TruffleBoundary
     public String toString() {
-        return PyCFunctionWrapper.toString(builtinMethodDescriptor != null ? builtinMethodDescriptor.getName() : callTargetName, getFlagsRepr(), pointer);
+        return PyCFunctionWrapper.toString(callTargetName, getFlagsRepr(), pointer);
     }
 
     /**
      * Creates a wrapper for a {@link PBuiltinFunction} that can go to native. The flags are
      * required to determine the signature. The resulting {@link PyCFunctionWrapper} will not
-     * reference the built-in function object but will only wrap either its
-     * {@link BuiltinMethodDescriptor} (if available) or its {@link RootCallTarget}.
+     * reference the built-in function object but will only wrap its {@link RootCallTarget}.
      */
     @TruffleBoundary
     public static PyCFunctionWrapper createFromBuiltinFunction(CApiContext cApiContext, PBuiltinFunction builtinFunction) {
         int flags = builtinFunction.getFlags();
 
-        // try to use the BuiltinMethodDescriptor if available
-        BuiltinMethodDescriptor builtinMethodDescriptor = BuiltinMethodDescriptor.get(builtinFunction);
-        if (builtinMethodDescriptor != null) {
-            /*
-             * If we create a PyCFunctionWrapper for a BuiltinMethodDescriptor, we need to register
-             * the call target because it may happen that the wrapper is used to create another
-             * 'builtin_function_or_method' or 'method_descriptor' in which case we need to have the
-             * call target available.
-             */
-            if (CExtContext.isMethNoArgs(flags) && builtinMethodDescriptor instanceof UnaryBuiltinDescriptor ||
-                            CExtContext.isMethO(flags) && builtinMethodDescriptor instanceof BinaryBuiltinDescriptor) {
-                cApiContext.getContext().getLanguage().registerBuiltinDescriptorCallTarget(builtinMethodDescriptor, builtinFunction.getCallTarget());
-            }
-            if (CExtContext.isMethNoArgs(flags) && builtinMethodDescriptor instanceof UnaryBuiltinDescriptor) {
-                return cApiContext.getOrCreatePyCFunctionWrapper(builtinMethodDescriptor, PyCFunctionUnaryWrapper::new);
-            } else if (CExtContext.isMethO(flags) && builtinMethodDescriptor instanceof BinaryBuiltinDescriptor) {
-                return cApiContext.getOrCreatePyCFunctionWrapper(builtinMethodDescriptor, PyCFunctionBinaryWrapper::new);
-            }
-        }
         RootCallTarget ct = builtinFunction.getCallTarget();
         Signature signature = builtinFunction.getSignature();
         if (CExtContext.isMethNoArgs(flags)) {
@@ -248,15 +197,10 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
             super(callTarget, signature);
         }
 
-        private PyCFunctionUnaryWrapper(BuiltinMethodDescriptor builtinMethodDescriptor) {
-            super(builtinMethodDescriptor);
-        }
-
         @ExportMessage
         Object execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CallUnaryMethodNode callUnaryNode,
                         @Cached CreateAndCheckArgumentsNode createArgsNode,
                         @Cached CallDispatchers.CallTargetCachedInvokeNode invokeNode,
                         @Cached NativeToPythonNode toJavaNode,
@@ -276,16 +220,9 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                 try {
                     Object result;
                     Object jArg0 = toJavaNode.execute(arguments[0]);
-                    if (builtinMethodDescriptor != null) {
-                        assert callTarget == null;
-                        result = callUnaryNode.executeObject(null, builtinMethodDescriptor, jArg0);
-                    } else {
-                        assert callTarget != null;
-                        assert callTargetName != null;
-                        Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, signature, jArg0, null,
-                                        PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, false);
-                        result = invokeNode.execute(null, inliningTarget, callTarget, pArgs);
-                    }
+                    Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, signature, jArg0, null,
+                                    PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, false);
+                    result = invokeNode.execute(null, inliningTarget, callTarget, pArgs);
                     return toNativeNode.execute(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, toString(), "");
@@ -317,15 +254,10 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
             super(callTarget, signature);
         }
 
-        private PyCFunctionBinaryWrapper(BuiltinMethodDescriptor builtinMethodDescriptor) {
-            super(builtinMethodDescriptor);
-        }
-
         @ExportMessage
         Object execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CallBinaryMethodNode callBinaryMethodNode,
                         @Cached CallDispatchers.CallTargetCachedInvokeNode invokeNode,
                         @Cached CreateAndCheckArgumentsNode createArgsNode,
                         @Cached NativeToPythonNode toJavaNode,
@@ -342,17 +274,9 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                     Object result;
                     Object jArg0 = toJavaNode.execute(arguments[0]);
                     Object jArg1 = toJavaNode.execute(arguments[1]);
-                    if (builtinMethodDescriptor != null) {
-                        assert callTarget == null;
-                        assert builtinMethodDescriptor instanceof BinaryBuiltinDescriptor;
-                        result = callBinaryMethodNode.executeObject(builtinMethodDescriptor, jArg0, jArg1);
-                    } else {
-                        assert callTarget != null;
-                        assert callTargetName != null;
-                        Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, new Object[]{jArg1}, PKeyword.EMPTY_KEYWORDS, signature, jArg0, null,
-                                        PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, false);
-                        result = invokeNode.execute(null, inliningTarget, callTarget, pArgs);
-                    }
+                    Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, new Object[]{jArg1}, PKeyword.EMPTY_KEYWORDS, signature, jArg0, null,
+                                    PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, false);
+                    result = invokeNode.execute(null, inliningTarget, callTarget, pArgs);
                     return toNativeNode.execute(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, toString(), "");
@@ -419,9 +343,6 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                     Object result;
                     Object receiver = toJavaNode.execute(arguments[0]);
                     Object starArgs = toJavaNode.execute(arguments[1]);
-                    // currently, we do not have a BuiltinMethodDescriptor for varargs functions
-                    assert builtinMethodDescriptor == null;
-                    assert callTarget != null;
                     Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
                     Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, starArgsArray, PKeyword.EMPTY_KEYWORDS, signature, receiver, null,
                                     PBuiltinFunction.generateDefaults(numDefaults), PKeyword.EMPTY_KEYWORDS, false);
@@ -486,10 +407,6 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                     Object receiver = toJavaNode.execute(arguments[0]);
                     Object starArgs = toJavaNode.execute(arguments[1]);
                     Object kwArgs = toJavaNode.execute(arguments[2]);
-                    // currently, we do not have a BuiltinMethodDescriptor for varargs functions
-                    assert builtinMethodDescriptor == null;
-                    assert callTarget != null;
-                    assert callTargetName != null;
 
                     Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
                     PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);

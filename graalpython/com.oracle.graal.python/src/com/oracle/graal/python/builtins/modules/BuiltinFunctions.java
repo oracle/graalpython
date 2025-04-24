@@ -160,7 +160,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -1387,7 +1386,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached IsBuiltinClassExactProfile classProfile,
                         @Cached GetClassNode getInstanceClassNode,
                         @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
-                        @Cached("create(InstanceCheck)") LookupAndCallBinaryNode instanceCheckNode,
+                        @Cached("create(T___INSTANCECHECK__)") LookupAndCallBinaryNode instanceCheckNode,
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached TypeNodes.GenericInstanceCheckNode genericInstanceCheckNode,
                         @Cached InlinedBranchProfile noInstanceCheckProfile) {
@@ -1434,7 +1433,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached GetClassNode getClsClassNode,
                         @Cached IsBuiltinClassExactProfile classProfile,
-                        @Cached("create(Subclasscheck)") LookupAndCallBinaryNode subclassCheckNode,
+                        @Cached("create(T___SUBCLASSCHECK__)") LookupAndCallBinaryNode subclassCheckNode,
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached TypeNodes.GenericSubclassCheckNode genericSubclassCheckNode,
                         @Cached InlinedBranchProfile noInstanceCheckProfile) {
@@ -1860,7 +1859,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         public static Object format(VirtualFrame frame, Object obj, Object formatSpec,
                         @Bind("this") Node inliningTarget,
-                        @Cached("create(Format)") LookupAndCallBinaryNode callFormat,
+                        @Cached("create(T___FORMAT__)") LookupAndCallBinaryNode callFormat,
                         @Cached InlinedConditionProfile formatIsNoValueProfile,
                         @Cached PRaiseNode raiseNode) {
             Object format = formatIsNoValueProfile.profile(inliningTarget, isNoValue(formatSpec)) ? T_EMPTY_STRING : formatSpec;
@@ -1901,7 +1900,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         static Object round(VirtualFrame frame, Object x, @SuppressWarnings("unused") PNone n,
                         @Bind("this") Node inliningTarget,
-                        @Cached("create(Round)") LookupAndCallUnaryNode callRound,
+                        @Cached("create(T___ROUND__)") LookupAndCallUnaryNode callRound,
                         @Shared @Cached PRaiseNode raiseNode) {
             Object result = callRound.executeObject(frame, x);
             if (result == PNone.NO_VALUE) {
@@ -1913,7 +1912,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = "!isPNone(n)")
         static Object round(VirtualFrame frame, Object x, Object n,
                         @Bind("this") Node inliningTarget,
-                        @Cached("create(Round)") LookupAndCallBinaryNode callRound,
+                        @Cached("create(T___ROUND__)") LookupAndCallBinaryNode callRound,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 return callRound.executeObject(frame, x, n);
@@ -2395,7 +2394,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     @Builtin(name = J___BUILD_CLASS__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    @ImportStatic(SpecialMethodSlot.class)
     public abstract static class BuildClassNode extends PythonVarargsBuiltinNode {
         private static final TruffleString T_METACLASS = tsLiteral("metaclass");
         public static final TruffleString T_BUILD_JAVA_CLASS = tsLiteral("build_java_class");

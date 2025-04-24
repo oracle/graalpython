@@ -47,7 +47,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.P_HAS_RO_ATTRS_S_TO_AS
 import static com.oracle.graal.python.nodes.ErrorMessages.P_HAS_RO_ATTRS_S_TO_DELETE;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.CallSlotSetAttrNode;
@@ -59,7 +58,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -75,7 +73,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 @GenerateInline(inlineByDefault = true)
 @GenerateCached
-@ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectSetAttr extends PNodeWithContext {
     public static void executeUncached(Object receiver, TruffleString name, Object value) {
         PyObjectSetAttr.getUncached().execute(null, null, receiver, name, value);

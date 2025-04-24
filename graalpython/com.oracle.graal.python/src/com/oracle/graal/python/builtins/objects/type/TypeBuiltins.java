@@ -706,7 +706,6 @@ public final class TypeBuiltins extends PythonBuiltins {
             checkCompatibleForAssigment.execute(frame, oldBase, newBestBase);
 
             cls.setBases(inliningTarget, newBestBase, baseClasses);
-            SpecialMethodSlot.reinitializeSpecialMethodSlots(cls, PythonLanguage.get(inliningTarget));
             TpSlots.updateAllSlots(cls);
 
             return PNone.NONE;

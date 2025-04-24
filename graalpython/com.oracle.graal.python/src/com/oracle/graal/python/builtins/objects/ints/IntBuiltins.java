@@ -2382,31 +2382,6 @@ public final class IntBuiltins extends PythonBuiltins {
             }
         }
 
-        private static long normalizeValue(Object val, InteropLibrary lib) throws OverflowException {
-            if (val instanceof PythonNativeVoidPtr xPtr) {
-                if (!xPtr.isNativePointer()) {
-                    lib.toNative(xPtr.getPointerObject());
-                    try {
-                        return lib.asPointer(xPtr.getPointerObject());
-                    } catch (UnsupportedMessageException e) {
-                        throw CompilerDirectives.shouldNotReachHere(e);
-                    }
-                } else {
-                    return xPtr.getNativePointer();
-                }
-            } else if (val instanceof Long) {
-                return (long) val;
-            } else if (val instanceof Integer) {
-                return (int) val;
-            } else if (val instanceof Boolean) {
-                return PInt.intValue((Boolean) val);
-            } else if (val instanceof PInt pint) {
-                return pint.longValueExact();
-            } else {
-                throw OverflowException.INSTANCE;
-            }
-        }
-
         @SuppressWarnings("unused")
         @Fallback
         static PNotImplemented doGeneric(Object a, Object b, RichCmpOp op) {
@@ -2623,7 +2598,7 @@ public final class IntBuiltins extends PythonBuiltins {
         @Specialization
         static Object fromObject(VirtualFrame frame, Object cl, Object object, TruffleString byteorder, boolean signed,
                         @Bind("this") Node inliningTarget,
-                        @Cached("create(Bytes)") LookupAndCallUnaryNode callBytes,
+                        @Cached("create(T___BYTES__)") LookupAndCallUnaryNode callBytes,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached IsBuiltinClassExactProfile isBuiltinIntProfile,
                         @Cached InlinedBranchProfile hasBytesProfile,

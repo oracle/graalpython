@@ -46,17 +46,13 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -122,25 +118,20 @@ public abstract class PyObjectFormat extends PNodeWithContext {
         // Note: PRaiseNode is @Exclusive to workaround a bug in DSL
         @Specialization(guards = "isString(formatSpec)")
         static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object obj, Object formatSpec,
-                        @Cached(parameters = "Format", inline = false) LookupAndCallBinaryNode callFormat,
+                        @Cached GetClassNode getClassNode,
+                        @Cached LookupSpecialMethodNode.Dynamic lookupFormat,
+                        @Cached CallBinaryMethodNode callFormat,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            try {
+            Object formatMethod = lookupFormat.execute(frame, inliningTarget, getClassNode.execute(inliningTarget, obj), T___FORMAT__, obj);
+            if (formatMethod != PNone.NO_VALUE) {
                 Object res = callFormat.executeObject(frame, obj, formatSpec);
                 if (!PGuards.isString(res)) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, T___FORMAT__, "str", res);
                 }
                 return res;
-            } catch (SpecialMethodNotFound ignore) {
+            } else {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_FORMAT, obj);
             }
-        }
-
-        @Specialization(guards = "isString(formatSpec)", replaces = "doGeneric")
-        static Object doGenericUncached(VirtualFrame frame, Object obj, Object formatSpec) {
-            PythonUtils.assertUncached();
-            Object klass = GetClassNode.executeUncached(obj);
-            Object slot = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.Format).execute(klass);
-            return CallBinaryMethodNode.getUncached().executeObject(frame, slot, obj, formatSpec);
         }
 
         // Note: PRaiseNode is @Exclusive to workaround a bug in DSL

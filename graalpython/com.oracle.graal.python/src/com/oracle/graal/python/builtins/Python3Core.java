@@ -362,7 +362,6 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
@@ -920,14 +919,12 @@ public abstract class Python3Core {
         initializeImportlib();
         context.applyModuleOptions();
         initializePython3Core(context.getCoreHomeOrFail());
-        assert SpecialMethodSlot.checkSlotOverrides(this);
         initialized = true;
     }
 
     private void initializeJavaCore() {
         initializeTypes();
         populateBuiltins();
-        SpecialMethodSlot.initializeBuiltinsSpecialMethodSlots(this);
         publishBuiltinModules();
         builtinsModule = builtinModules.get(BuiltinNames.T_BUILTINS);
     }

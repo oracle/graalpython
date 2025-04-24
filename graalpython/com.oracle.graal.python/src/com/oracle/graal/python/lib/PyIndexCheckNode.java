@@ -41,7 +41,6 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -50,7 +49,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -59,7 +57,6 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Check if the object supports conversion to index (integer). Equivalent of CPython's
  * {@code PyIndex_Check}. The return value doesn't need to be profiled in most cases.
  */
-@ImportStatic(SpecialMethodSlot.class)
 @GenerateUncached
 @GenerateInline
 @GenerateCached(false)
