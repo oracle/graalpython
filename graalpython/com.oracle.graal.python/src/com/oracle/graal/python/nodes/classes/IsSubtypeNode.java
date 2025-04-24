@@ -336,11 +336,11 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     @Exclusive @Cached InlinedConditionProfile exceptionDerivedProfile,
                     @Exclusive @Cached InlinedConditionProfile exceptionClsProfile,
                     @Cached PRaiseNode raise) {
-        if (exceptionDerivedProfile.profile(inliningTarget, getBasesNode.execute(frame, derived) == null)) {
+        if (exceptionDerivedProfile.profile(inliningTarget, getBasesNode.execute(frame, inliningTarget, derived) == null)) {
             throw raise.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.ARG_D_MUST_BE_S, "issubclass()", 1, "class");
         }
 
-        if (exceptionClsProfile.profile(inliningTarget, getBasesNode.execute(frame, cls) == null)) {
+        if (exceptionClsProfile.profile(inliningTarget, getBasesNode.execute(frame, inliningTarget, cls) == null)) {
             throw raise.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE);
         }
 

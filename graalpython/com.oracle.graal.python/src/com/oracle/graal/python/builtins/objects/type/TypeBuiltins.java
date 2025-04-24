@@ -837,7 +837,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached AbstractObjectIsSubclassNode abstractIsSubclassNode,
                         @Cached AbstractObjectGetBasesNode getBasesNode,
                         @Cached PRaiseNode raiseNode) {
-            if (typeErrorProfile.profile(inliningTarget, getBasesNode.execute(frame, cls) == null)) {
+            if (typeErrorProfile.profile(inliningTarget, getBasesNode.execute(frame, inliningTarget, cls) == null)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_TYPE, instance);
             }
 
