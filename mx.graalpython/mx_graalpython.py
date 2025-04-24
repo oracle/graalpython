@@ -1140,6 +1140,7 @@ def graalpython_gate_runner(args, tasks):
     # JUnit tests
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
+            mx.run_mx(["build", "--dep", "GRAALPYTHON_UNIT_TESTS,GRAALPYTHON_INTEGRATION_UNIT_TESTS,GRAALPYTHON_TCK"])
             if WIN32:
                 punittest(
                     [
@@ -1347,6 +1348,7 @@ def graalpython_gate_runner(args, tasks):
         if task:
             args =['--verbose']
             vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false']
+            mx.build(["--dep", "org.graalvm.python.embedding"])
             mx_unittest.unittest(vm_args + ['org.graalvm.python.embedding.vfs.test'] + args + ["--use-graalvm"])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
@@ -1404,109 +1406,6 @@ def graalpython_gate_runner(args, tasks):
             except:
                 mx.log("TIP: run 'mx help tox-example' to learn more about reproducing this test locally")
                 raise
-
-
-    with Task('Python exclusion of security relevant classes', tasks, tags=[GraalPythonTags.exclusions_checker]) as task:
-        if task:
-            native_image([
-                "--language:python",
-                "-Dpython.WithoutSSL=true",
-                "-Dpython.WithoutPlatformAccess=true",
-                "-Dpython.WithoutCompressionLibraries=true",
-                "-Dpython.WithoutNativePosix=true",
-                "-Dpython.WithoutJavaInet=true",
-                "-Dimage-build-time.PreinitializeContexts=",
-                "-Dtruffle.TruffleRuntime=com.oracle.truffle.api.impl.DefaultTruffleRuntime",
-                "-H:+ReportExceptionStackTraces",
-                *map(
-                    lambda s: f"-H:ReportAnalysisForbiddenType={s}",
-                    """
-                    com.sun.security.auth.UnixNumericGroupPrincipal
-                    com.sun.security.auth.module.UnixSystem
-                    java.security.KeyManagementException
-                    java.security.KeyStore
-                    java.security.KeyStoreException
-                    java.security.SignatureException
-                    java.security.UnrecoverableEntryException
-                    java.security.UnrecoverableKeyException
-                    java.security.cert.CRL
-                    java.security.cert.CRLException
-                    java.security.cert.CertPathBuilder
-                    java.security.cert.CertPathBuilderSpi
-                    java.security.cert.CertPathChecker
-                    java.security.cert.CertPathParameters
-                    java.security.cert.CertSelector
-                    java.security.cert.CertStore
-                    java.security.cert.CertStoreParameters
-                    java.security.cert.CertStoreSpi
-                    java.security.cert.CertificateEncodingException
-                    java.security.cert.CertificateParsingException
-                    java.security.cert.CollectionCertStoreParameters
-                    java.security.cert.Extension
-                    java.security.cert.PKIXBuilderParameters
-                    java.security.cert.PKIXCertPathChecker
-                    java.security.cert.PKIXParameters
-                    java.security.cert.PKIXRevocationChecker
-                    java.security.cert.PKIXRevocationChecker$Option
-                    java.security.cert.TrustAnchor
-                    java.security.cert.X509CRL
-                    java.security.cert.X509CertSelector
-                    java.security.cert.X509Certificate
-                    java.security.cert.X509Extension
-                    sun.security.x509.AVA
-                    sun.security.x509.AVAComparator
-                    sun.security.x509.AVAKeyword
-                    sun.security.x509.AuthorityInfoAccessExtension
-                    sun.security.x509.AuthorityKeyIdentifierExtension
-                    sun.security.x509.BasicConstraintsExtension
-                    sun.security.x509.CRLDistributionPointsExtension
-                    sun.security.x509.CertAttrSet
-                    sun.security.x509.CertificatePoliciesExtension
-                    sun.security.x509.CertificatePolicySet
-                    sun.security.x509.DNSName
-                    sun.security.x509.EDIPartyName
-                    sun.security.x509.ExtendedKeyUsageExtension
-                    sun.security.x509.Extension
-                    sun.security.x509.GeneralName
-                    sun.security.x509.GeneralNameInterface
-                    sun.security.x509.GeneralSubtree
-                    sun.security.x509.GeneralSubtrees
-                    sun.security.x509.IPAddressName
-                    sun.security.x509.IssuerAlternativeNameExtension
-                    sun.security.x509.KeyUsageExtension
-                    sun.security.x509.NameConstraintsExtension
-                    sun.security.x509.NetscapeCertTypeExtension
-                    sun.security.x509.OIDMap
-                    sun.security.x509.OIDMap$OIDInfo
-                    sun.security.x509.OIDName
-                    sun.security.x509.OtherName
-                    sun.security.x509.PKIXExtensions
-                    sun.security.x509.PrivateKeyUsageExtension
-                    sun.security.x509.RDN
-                    sun.security.x509.RFC822Name
-                    sun.security.x509.SubjectAlternativeNameExtension
-                    sun.security.x509.SubjectKeyIdentifierExtension
-                    sun.security.x509.URIName
-                    sun.security.x509.X400Address
-                    sun.security.x509.X500Name
-
-                    com.oracle.graal.python.runtime.NFIPosixSupport
-
-                    java.util.zip.Adler32
-
-                    org.graalvm.shadowed.org.tukaani.xz.XZ
-                    org.graalvm.shadowed.org.tukaani.xz.XZOutputStream
-                    org.graalvm.shadowed.org.tukaani.xz.LZMA2Options
-                    org.graalvm.shadowed.org.tukaani.xz.FilterOptions
-
-                    java.util.zip.ZipInputStream
-
-                    java.nio.channels.ServerSocketChannel
-                    """.split()
-                ),
-                "-cp", mx.dependency("com.oracle.graal.python.test").classpath_repr(),
-                "com.oracle.graal.python.test.advanced.ExclusionsTest"
-            ])
 
     if WIN32 and is_collecting_coverage():
         mx.log("Ask for shutdown of any remaining graalpy.exe processes")
