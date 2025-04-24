@@ -215,8 +215,8 @@ public abstract class GetClassNode extends PNodeWithContext {
     }
 
     @Specialization
-    static Object getPBCT(@SuppressWarnings("unused") PythonBuiltinClassType object) {
-        return PythonBuiltinClassType.PythonClass;
+    static Object getPBCT(PythonBuiltinClassType object) {
+        return object.getType();
     }
 
     @Specialization
