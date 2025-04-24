@@ -155,23 +155,20 @@ public class EconomicMapStorage extends HashingStorage {
         PutUnsafeNode.putUncached(this.map, key, PyObjectHashNode.hash(key, HashCodeNode.getUncached()), value);
     }
 
-    private void putUncached(Object key, Object value) {
-        PutNode.getUncached().put(null, null, this.map, key, PyObjectHashNode.executeUncached(key), value);
+    @TruffleBoundary
+    public void putUncached(Object key, Object value) {
+        PutNode.getUncached().execute(null, null, this.map, key, PyObjectHashNode.executeUncached(key), value);
     }
 
-    // Solves boot-order problem, do not use in normal code or during startup when __eq__ of
-    // builtins may not be properly set-up
-    public void putUncachedWithJavaEq(Object key, long keyHash, Object value) {
-        PutUnsafeNode.putUncachedWithJavaEq(this.map, key, keyHash, value);
+    @TruffleBoundary
+    public void putUncached(int key, Object value) {
+        PutUnsafeNode.putUncached(this.map, key, PyObjectHashNode.hash(key), value);
     }
 
-    public void putUncachedWithJavaEq(TruffleString key, Object value) {
-        putUncachedWithJavaEq(key, PyObjectHashNode.hash(key, HashCodeNode.getUncached()), value);
-    }
-
-    public void putUncachedWithJavaEq(String key, Object value) {
+    @TruffleBoundary
+    public void putUncached(String key, Object value) {
         TruffleString ts = toTruffleStringUncached(key);
-        putUncachedWithJavaEq(ts, value);
+        putUncached(ts, value);
     }
 
     private static void putAllUncached(LinkedHashMap<String, Object> map, EconomicMapStorage result) {

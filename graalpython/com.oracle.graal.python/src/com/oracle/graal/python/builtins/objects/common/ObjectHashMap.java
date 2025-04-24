@@ -44,16 +44,12 @@ import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMapFactory.IsSideEffectingKeyNodeGen;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMapFactory.PutNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -621,14 +617,6 @@ public final class ObjectHashMap {
 
         abstract void execute(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash, Object value);
 
-        static void putUncachedWithJavaEq(ObjectHashMap map, Object key, long keyHash, Object value) {
-            assert isJavaEqualsAllowed(key) : key;
-            doPutWithRestart(null, null, map, key, keyHash, value,
-                            InlinedBranchProfile.getUncached(), InlinedCountingConditionProfile.getUncached(), InlinedCountingConditionProfile.getUncached(),
-                            InlinedCountingConditionProfile.getUncached(), InlinedCountingConditionProfile.getUncached(), InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached(),
-                            null);
-        }
-
         // "public" for testing...
         @Specialization
         public static void doPutWithRestart(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash, Object value,
@@ -908,10 +896,6 @@ public final class ObjectHashMap {
         if (originalKey == key) {
             return true;
         }
-        if (CompilerDirectives.inInterpreter() && eqNode == null) {
-            // this is hack, see putUncachedWithJavaEq
-            return javaEquals(originalKey, key);
-        }
         boolean result = eqNode.executeEq(frame, inliningTarget, originalKey, key);
         if (getKey(index) != originalKey || indices != originalIndices) {
             // Either someone overridden the slot we are just examining, or rehasing reallocated the
@@ -928,18 +912,6 @@ public final class ObjectHashMap {
             throw RestartLookupException.INSTANCE;
         }
         return result;
-    }
-
-    private static boolean javaEquals(Object a, Object b) {
-        CompilerAsserts.neverPartOfCompilation();
-        assert isJavaEqualsAllowed(a) : a;
-        assert isJavaEqualsAllowed(b) : b;
-        return a.equals(b);
-    }
-
-    private static boolean isJavaEqualsAllowed(Object o) {
-        return o instanceof PythonManagedClass || o instanceof PythonBuiltinClassType || //
-                        o instanceof PythonNativeClass || o instanceof Number || o instanceof TruffleString;
     }
 
     /**

@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -82,6 +81,6 @@ public final class ErrnoModuleBuiltins extends PythonBuiltins {
 
     private void addConstant(int number, TruffleString name, EconomicMapStorage storage) {
         addBuiltinConstant(name, number);
-        storage.putUncachedWithJavaEq(number, PyObjectHashNode.hash(number), name);
+        storage.putUncached(number, name);
     }
 }

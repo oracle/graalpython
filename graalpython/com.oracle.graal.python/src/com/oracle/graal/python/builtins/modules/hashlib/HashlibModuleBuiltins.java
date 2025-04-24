@@ -157,7 +157,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         EconomicMapStorage algos = EconomicMapStorage.create(DIGEST_ALGORITHMS.length);
         for (var digest : DIGEST_ALGORITHMS) {
-            algos.putUncachedWithJavaEq(digest, PNone.NONE);
+            algos.putUncached(digest, PNone.NONE);
         }
         PythonLanguage language = core.getLanguage();
         addBuiltinConstant("openssl_md_meth_names", PFactory.createFrozenSet(language, algos));
