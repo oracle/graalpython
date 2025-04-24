@@ -2243,7 +2243,7 @@ public final class IntBuiltins extends PythonBuiltins {
             return op.compareResultToBool(left.compareTo(right));
         }
 
-        @Specialization(guards = "isFloatSubtype(frame, inliningTarget, y, getClass, isSubtype)")
+        @Specialization(guards = "isFloatSubtype(inliningTarget, y, getClass, isSubtype)")
         @InliningCutoff
         static boolean doDN(VirtualFrame frame, Node inliningTarget, long x, PythonAbstractNativeObject y, RichCmpOp op,
                         @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClass,
@@ -2253,8 +2253,8 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {
-                        "isFloatSubtype(frame, inliningTarget, x, getClass, isSubtype)",
-                        "isFloatSubtype(frame, inliningTarget, y, getClass, isSubtype)"})
+                        "isFloatSubtype(inliningTarget, x, getClass, isSubtype)",
+                        "isFloatSubtype(inliningTarget, y, getClass, isSubtype)"})
         @InliningCutoff
         static boolean doDN(VirtualFrame frame, Node inliningTarget, PythonAbstractNativeObject x, PythonAbstractNativeObject y, RichCmpOp op,
                         @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClass,
@@ -2264,7 +2264,7 @@ public final class IntBuiltins extends PythonBuiltins {
             return op.compareResultToBool(PFloat.compare(nativeLeft.execute(frame, x), nativeRight.execute(frame, y)));
         }
 
-        @Specialization(guards = "isFloatSubtype(frame, inliningTarget, x, getClass, isSubtype)")
+        @Specialization(guards = "isFloatSubtype(inliningTarget, x, getClass, isSubtype)")
         @InliningCutoff
         static boolean doDN(VirtualFrame frame, Node inliningTarget, PythonAbstractNativeObject x, double y, RichCmpOp op,
                         @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClass,

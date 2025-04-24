@@ -163,8 +163,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
@@ -237,6 +236,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
@@ -308,7 +308,6 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
-import com.oracle.truffle.api.utilities.TriState;
 
 @CoreFunctions(defineModule = J_BUILTINS, isEager = true)
 public final class BuiltinFunctions extends PythonBuiltins {
@@ -1381,40 +1380,33 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return BuiltinFunctionsFactory.IsInstanceNodeFactory.create(newDepth);
         }
 
-        private static TriState isInstanceCheckInternal(VirtualFrame frame, Object instance, Object cls, LookupAndCallBinaryNode instanceCheckNode,
-                        PyObjectIsTrueNode castToBooleanNode) {
+        @Specialization(guards = "!isPTuple(cls)")
+        static boolean isInstance(VirtualFrame frame, Object instance, Object cls,
+                        @Bind Node inliningTarget,
+                        @Cached GetClassNode getClsClassNode,
+                        @Cached IsBuiltinClassExactProfile classProfile,
+                        @Cached GetClassNode getInstanceClassNode,
+                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                        @Cached("create(InstanceCheck)") LookupAndCallBinaryNode instanceCheckNode,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached TypeNodes.GenericInstanceCheckNode genericInstanceCheckNode,
+                        @Cached InlinedBranchProfile noInstanceCheckProfile) {
+            if (isSameTypeNode.execute(inliningTarget, getInstanceClassNode.execute(inliningTarget, instance), cls)) {
+                // Exact match, don't call __instancecheck__
+                return true;
+            }
+            if (classProfile.profileClass(inliningTarget, getClsClassNode.execute(inliningTarget, cls), PythonBuiltinClassType.PythonClass)) {
+                // Avoid the lookup and call overhead when we know we're calling
+                // type.__instancecheck__
+                return genericInstanceCheckNode.execute(frame, inliningTarget, instance, cls);
+            }
             try {
-                Object instanceCheckResult = instanceCheckNode.executeObject(frame, cls, instance);
-                return TriState.valueOf(castToBooleanNode.execute(frame, instanceCheckResult));
+                Object result = instanceCheckNode.executeObject(frame, cls, instance);
+                return isTrueNode.execute(frame, result);
             } catch (SpecialMethodNotFound ignore) {
-                return TriState.UNDEFINED;
+                noInstanceCheckProfile.enter(inliningTarget);
+                return genericInstanceCheckNode.execute(frame, inliningTarget, instance, cls);
             }
-        }
-
-        @Specialization(guards = "isPythonClass(cls)")
-        static boolean isInstance(VirtualFrame frame, Object instance, Object cls,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("instanceCheck") @Cached("create(InstanceCheck)") LookupAndCallBinaryNode instanceCheckNode,
-                        @Exclusive @Cached PyObjectIsTrueNode castToBooleanNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsSameTypeNode isSameTypeNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
-            Object instanceClass = getClassNode.execute(inliningTarget, instance);
-            return isSameTypeNode.execute(inliningTarget, instanceClass, cls) || isSubtypeNode.execute(frame, instanceClass, cls)//
-                            || isInstanceCheckInternal(frame, instance, cls, instanceCheckNode, castToBooleanNode) == TriState.TRUE;
-        }
-
-        @Specialization(guards = {"!isPTuple(cls)", "!isPythonClass(cls)"})
-        static boolean isInstance(VirtualFrame frame, Object instance, Object cls,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("instanceCheck") @Cached("create(InstanceCheck)") LookupAndCallBinaryNode instanceCheckNode,
-                        @Exclusive @Cached PyObjectIsTrueNode castToBooleanNode,
-                        @Cached TypeBuiltins.InstanceCheckNode typeInstanceCheckNode) {
-            TriState check = isInstanceCheckInternal(frame, instance, cls, instanceCheckNode, castToBooleanNode);
-            if (check == TriState.UNDEFINED) {
-                return typeInstanceCheckNode.executeWith(frame, cls, instance);
-            }
-            return check == TriState.TRUE;
         }
     }
 
@@ -1439,14 +1431,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "!isPTuple(cls)")
         static boolean isSubclass(VirtualFrame frame, Object derived, Object cls,
+                        @Bind Node inliningTarget,
+                        @Cached GetClassNode getClsClassNode,
+                        @Cached IsBuiltinClassExactProfile classProfile,
                         @Cached("create(Subclasscheck)") LookupAndCallBinaryNode subclassCheckNode,
-                        @Cached PyObjectIsTrueNode castToBooleanNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached TypeNodes.GenericSubclassCheckNode genericSubclassCheckNode,
+                        @Cached InlinedBranchProfile noInstanceCheckProfile) {
+            if (classProfile.profileClass(inliningTarget, getClsClassNode.execute(inliningTarget, cls), PythonBuiltinClassType.PythonClass)) {
+                // Avoid the lookup and call overhead when we know we're calling
+                // type.__subclasscheck__
+                return genericSubclassCheckNode.execute(frame, inliningTarget, derived, cls);
+            }
             try {
-                Object instanceCheckResult = subclassCheckNode.executeObject(frame, cls, derived);
-                return castToBooleanNode.execute(frame, instanceCheckResult);
+                Object result = subclassCheckNode.executeObject(frame, cls, derived);
+                return isTrueNode.execute(frame, result);
             } catch (SpecialMethodNotFound ignore) {
-                return isSubtypeNode.execute(frame, derived, cls);
+                noInstanceCheckProfile.enter(inliningTarget);
+                return genericSubclassCheckNode.execute(frame, inliningTarget, derived, cls);
             }
         }
 
@@ -1508,9 +1510,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Exclusive @Cached PyObjectRichCompareBool compareNode,
                         @Exclusive @Cached PyObjectGetIter getIter,
                         @Exclusive @Cached PyIterNextNode nextNode,
-                        @Exclusive @Cached PyObjectIsTrueNode castToBooleanNode,
                         @Exclusive @Cached CallNode.Lazy keyCall,
-                        @Exclusive @Cached InlinedBranchProfile seenNonBoolean,
                         @Exclusive @Cached InlinedConditionProfile keywordArgIsNone,
                         @Exclusive @Cached InlinedConditionProfile hasDefaultProfile,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -1555,8 +1555,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         RichCmpOp op,
                         @Exclusive @Cached PyObjectRichCompareBool compareNode,
                         @Exclusive @Cached CallNode.Lazy keyCall,
-                        @Exclusive @Cached PyObjectIsTrueNode castToBooleanNode,
-                        @Exclusive @Cached InlinedBranchProfile seenNonBoolean,
                         @Exclusive @Cached InlinedConditionProfile keywordArgIsNone,
                         @Exclusive @Cached InlinedConditionProfile moreThanTwo,
                         @Exclusive @Cached InlinedLoopConditionProfile loopProfile,

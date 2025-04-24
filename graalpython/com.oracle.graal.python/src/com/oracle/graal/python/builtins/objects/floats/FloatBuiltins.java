@@ -307,7 +307,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             // floatobject.c we have to first create a temporary float, then fill it into
             // a natively allocated subtype structure
             @Specialization(guards = {"needsNativeAllocation", //
-                            "isSubtypeOfFloat(frame, isSubtype, cls)"}, limit = "1")
+                            "isSubtypeOfFloat( isSubtype, cls)"}, limit = "1")
             @InliningCutoff
             static Object floatFromObjectNativeSubclass(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") boolean needsNativeAllocation,
                             @Bind("this") @SuppressWarnings("unused") Node inliningTarget,
@@ -317,8 +317,8 @@ public final class FloatBuiltins extends PythonBuiltins {
                 return subtypeNew.call(cls, recursiveCallNode.execute(frame, inliningTarget, obj));
             }
 
-            protected static boolean isSubtypeOfFloat(VirtualFrame frame, IsSubtypeNode isSubtypeNode, Object cls) {
-                return isSubtypeNode.execute(frame, cls, PythonBuiltinClassType.PFloat);
+            protected static boolean isSubtypeOfFloat(IsSubtypeNode isSubtypeNode, Object cls) {
+                return isSubtypeNode.execute(cls, PythonBuiltinClassType.PFloat);
             }
         }
 

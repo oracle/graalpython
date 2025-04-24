@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBCLASS_CHECK;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_qualname;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_base;
@@ -82,6 +83,7 @@ import static com.oracle.graal.python.nodes.HiddenAttr.DICTOFFSET;
 import static com.oracle.graal.python.nodes.HiddenAttr.ITEMSIZE;
 import static com.oracle.graal.python.nodes.HiddenAttr.WEAKLISTOFFSET;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSCELL__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
@@ -176,6 +178,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameType
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetTypeFlagsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -192,6 +195,8 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.classes.AbstractObjectGetBasesNode;
+import com.oracle.graal.python.nodes.classes.AbstractObjectIsSubclassNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -206,6 +211,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
@@ -2807,6 +2813,87 @@ public abstract class TypeNodes {
                         @Cached GetCachedTpSlotsNode getSlots) {
             TpSlots slots = getSlots.execute(inliningTarget, type);
             return slots.tp_init() == ObjectBuiltins.SLOTS.tp_init();
+        }
+    }
+
+    /** Equivalent of CPython's {@code recursive_isinstance} */
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GenericInstanceCheckNode extends Node {
+
+        public abstract boolean execute(VirtualFrame frame, Node inliningTarget, Object instance, Object cls);
+
+        @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)", limit = "1")
+        static boolean isInstance(VirtualFrame frame, Node inliningTarget, Object instance, Object cls,
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached IsTypeNode isTypeNode,
+                        @Cached InlinedConditionProfile classSameResult,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
+            Object type = getClassNode.execute(inliningTarget, instance);
+            if (isSubtypeNode.execute(type, cls)) {
+                return true;
+            }
+
+            Object instanceClass = lookupAttr.execute(frame, inliningTarget, instance, T___CLASS__);
+            if (classSameResult.profile(inliningTarget, instanceClass == type)) {
+                // We already did a check on this type
+                return false;
+            } else if (isTypeNode.execute(inliningTarget, instanceClass)) {
+                return isSubtypeNode.execute(instanceClass, cls);
+            } else {
+                return false;
+            }
+        }
+
+        @Fallback
+        static boolean isInstance(VirtualFrame frame, Node inliningTarget, Object instance, Object cls,
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached AbstractObjectIsSubclassNode abstractIsSubclassNode,
+                        @Cached AbstractObjectGetBasesNode getBasesNode,
+                        @Cached PRaiseNode raiseNode) {
+            if (getBasesNode.execute(frame, inliningTarget, cls) == null) {
+                throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_TYPE, instance);
+            }
+
+            Object instanceClass = lookupAttr.execute(frame, inliningTarget, instance, T___CLASS__);
+            if (instanceClass != NO_VALUE) {
+                return abstractIsSubclassNode.execute(frame, instanceClass, cls);
+            } else {
+                return false;
+            }
+        }
+    }
+
+    /** Equivalent of CPython's {@code recursive_issubclass} */
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GenericSubclassCheckNode extends Node {
+
+        public abstract boolean execute(VirtualFrame frame, Node inliningTarget, Object derived, Object cls);
+
+        @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "isTypeNode.execute(inliningTarget, derived)"}, limit = "1")
+        static boolean doTypes(Node inliningTarget, Object derived, Object cls,
+                        @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
+                        @Cached IsSameTypeNode isSameTypeNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
+            return isSameTypeNode.execute(inliningTarget, cls, derived) || isSubtypeNode.execute(derived, cls);
+        }
+
+        @Fallback
+        @InliningCutoff
+        static boolean doObjects(VirtualFrame frame, Node inliningTarget, Object derived, Object cls,
+                        @Cached AbstractObjectGetBasesNode getBasesNode,
+                        @Cached AbstractObjectIsSubclassNode abstractIsSubclassNode,
+                        @Cached PRaiseNode raiseDerived,
+                        @Cached PRaiseNode raiseCls) {
+            if (getBasesNode.execute(frame, inliningTarget, derived) == null) {
+                throw raiseDerived.raise(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S, "issubclass()", 1, "class");
+            }
+            if (getBasesNode.execute(frame, inliningTarget, cls) == null) {
+                throw raiseCls.raise(inliningTarget, TypeError, ErrorMessages.ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE);
+            }
+            return abstractIsSubclassNode.execute(frame, derived, cls);
         }
     }
 }

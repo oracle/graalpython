@@ -137,7 +137,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         ArrayBuiltins.FromBytesNode fromBytesNode, ArrayBuiltins.FromUnicodeNode fromUnicodeNode, IsSubtypeNode isSubtypeNode,
                         ArrayBuiltins.ByteSwapNode byteSwapNode, BufferFormat format,
                         TypeNodes.GetInstanceShape getInstanceShape, PRaiseNode raiseNode) {
-            if (!isSubtypeNode.execute(frame, arrayType, PythonBuiltinClassType.PArray)) {
+            if (!isSubtypeNode.execute(arrayType, PythonBuiltinClassType.PArray)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.N_NOT_SUBTYPE_OF_ARRAY, arrayType);
             }
             MachineFormat machineFormat = MachineFormat.fromCode(mformatCode);

@@ -900,7 +900,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
             PSet names = PFactory.createSet(language);
             Object updateCallable = lookupAttrNode.execute(frame, inliningTarget, names, T_UPDATE);
             Object ns = lookupAttrNode.execute(frame, inliningTarget, obj, T___DICT__);
-            if (isSubtypeNode.execute(frame, getClassNode.execute(inliningTarget, ns), PythonBuiltinClassType.PDict)) {
+            if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, ns), PythonBuiltinClassType.PDict)) {
                 callNode.execute(frame, updateCallable, ns);
             }
             Object klass = lookupAttrNode.execute(frame, inliningTarget, obj, T___CLASS__);

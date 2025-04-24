@@ -87,7 +87,7 @@ public abstract class ExceptMatchNode extends Node {
                     @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtype) {
         raiseIfNoException(frame, inliningTarget, clause, isValidException);
-        return isSubtype.execute(frame, getClassNode.execute(inliningTarget, e.getUnreifiedException()), clause);
+        return isSubtype.execute(getClassNode.execute(inliningTarget, e.getUnreifiedException()), clause);
     }
 
     @Specialization(guards = {"!isPTuple(clause)", "!isPException(e)"}, limit = "1")

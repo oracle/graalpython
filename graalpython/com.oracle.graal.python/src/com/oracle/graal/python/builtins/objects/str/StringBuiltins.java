@@ -311,7 +311,7 @@ public final class StringBuiltins extends PythonBuiltins {
          * CPython {@code unicodeobject.c} we have to first create a temporary string, then fill it
          * into a natively allocated subtype structure
          */
-        @Specialization(guards = {"needsNativeAllocationNode.execute(inliningTarget, cls)", "isSubtypeOfString(frame, isSubtype, cls)", //
+        @Specialization(guards = {"needsNativeAllocationNode.execute(inliningTarget, cls)", "isSubtypeOfString(isSubtype, cls)", //
                         "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
         static Object doNativeSubclass(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
@@ -326,7 +326,7 @@ public final class StringBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"needsNativeAllocationNode.execute(inliningTarget, cls)", "isSubtypeOfString(frame, isSubtype, cls)", //
+        @Specialization(guards = {"needsNativeAllocationNode.execute(inliningTarget, cls)", "isSubtypeOfString(isSubtype, cls)", //
                         "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "1")
         static Object doNativeSubclassEncodeErr(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
@@ -363,8 +363,8 @@ public final class StringBuiltins extends PythonBuiltins {
             }
         }
 
-        protected static boolean isSubtypeOfString(VirtualFrame frame, IsSubtypeNode isSubtypeNode, Object cls) {
-            return isSubtypeNode.execute(frame, cls, PythonBuiltinClassType.PString);
+        protected static boolean isSubtypeOfString(IsSubtypeNode isSubtypeNode, Object cls) {
+            return isSubtypeNode.execute(cls, PythonBuiltinClassType.PString);
         }
 
         private static Object asPString(Object cls, TruffleString str, Node inliningTarget, IsBuiltinClassExactProfile isPrimitiveProfile,
@@ -1120,7 +1120,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 try {
                     translated = getItemNode.execute(frame, inliningTarget, table, original);
                 } catch (PException e) {
-                    if (!isSubtypeNode.execute(null, getClassNode.execute(inliningTarget, e.getUnreifiedException()), PythonBuiltinClassType.LookupError)) {
+                    if (!isSubtypeNode.execute(getClassNode.execute(inliningTarget, e.getUnreifiedException()), PythonBuiltinClassType.LookupError)) {
                         throw e;
                     }
                 }

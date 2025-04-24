@@ -156,7 +156,7 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
     }
 
     static boolean isFloatSubtype(Node inliningTarget, Object object, GetClassNode getClass, IsSubtypeNode isSubtype) {
-        return FromNativeSubclassNode.isFloatSubtype(null, inliningTarget, object, getClass, isSubtype);
+        return FromNativeSubclassNode.isFloatSubtype(inliningTarget, object, getClass, isSubtype);
     }
 
     @GenerateInline(false) // Uncommon

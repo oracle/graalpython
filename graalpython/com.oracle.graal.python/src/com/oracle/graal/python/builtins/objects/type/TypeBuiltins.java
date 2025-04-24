@@ -50,7 +50,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___WEAKREFOFF
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
@@ -100,7 +99,6 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDelet
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
@@ -131,7 +129,6 @@ import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -143,15 +140,12 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttribu
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.classes.AbstractObjectGetBasesNode;
-import com.oracle.graal.python.nodes.classes.AbstractObjectIsSubclassNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -387,9 +381,9 @@ public final class TypeBuiltins extends PythonBuiltins {
                     throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TYPE_IS_NOT_ACCEPTABLE_BASE_TYPE, base);
                 }
                 Object typ = getClassNode.execute(inliningTarget, base);
-                if (isSubType(frame, winner, typ)) {
+                if (isSubType(winner, typ)) {
                     continue;
-                } else if (isSubType(frame, typ, winner)) {
+                } else if (isSubType(typ, winner)) {
                     winner = typ;
                     continue;
                 }
@@ -398,12 +392,12 @@ public final class TypeBuiltins extends PythonBuiltins {
             return winner;
         }
 
-        protected boolean isSubType(VirtualFrame frame, Object subclass, Object superclass) {
+        protected boolean isSubType(Object subclass, Object superclass) {
             if (isSubtypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isSubtypeNode = insert(IsSubtypeNode.create());
             }
-            return isSubtypeNode.execute(frame, subclass, superclass);
+            return isSubtypeNode.execute(subclass, superclass);
         }
 
         @NeverDefault
@@ -673,7 +667,6 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object setBases(VirtualFrame frame, PythonClass cls, PTuple value,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetNameNode getName,
                         @Cached GetObjectArrayNode getArray,
                         @Cached GetBaseClassNode getBase,
                         @Cached GetBestBaseClassNode getBestBase,
@@ -690,7 +683,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             PythonAbstractClass[] baseClasses = new PythonAbstractClass[a.length];
             for (int i = 0; i < a.length; i++) {
                 if (PGuards.isPythonClass(a[i])) {
-                    if (isSubtypeNode.execute(frame, a[i], cls) ||
+                    if (isSubtypeNode.execute(a[i], cls) ||
                                     hasMRO(inliningTarget, getMroNode, a[i]) && typeIsSubtypeBaseChain(inliningTarget, a[i], cls, getBase, isSameTypeNode)) {
                         throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.BASES_ITEM_CAUSES_INHERITANCE_CYCLE);
                     }
@@ -793,56 +786,13 @@ public final class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___INSTANCECHECK__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class InstanceCheckNode extends PythonBinaryBuiltinNode {
-        @Child private PyObjectLookupAttr getAttributeNode;
+    abstract static class InstanceCheckNode extends PythonBinaryBuiltinNode {
 
-        public abstract boolean executeWith(VirtualFrame frame, Object cls, Object instance);
-
-        public PyObjectLookupAttr getGetAttributeNode() {
-            if (getAttributeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getAttributeNode = insert(PyObjectLookupAttr.create());
-            }
-            return getAttributeNode;
-        }
-
-        private PythonObject getInstanceClassAttr(VirtualFrame frame, Object instance) {
-            Object classAttr = getGetAttributeNode().executeCached(frame, instance, T___CLASS__);
-            if (classAttr instanceof PythonObject) {
-                return (PythonObject) classAttr;
-            }
-            return null;
-        }
-
-        @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)", limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        boolean isInstance(VirtualFrame frame, Object cls, Object instance,
+        @Specialization
+        static boolean isInstance(VirtualFrame frame, Object cls, Object instance,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
-            if (instance instanceof PythonObject && isSubtypeNode.execute(frame, getClassNode.execute(inliningTarget, instance), cls)) {
-                return true;
-            }
-
-            Object instanceClass = getGetAttributeNode().executeCached(frame, instance, T___CLASS__);
-            return PGuards.isManagedClass(instanceClass) && isSubtypeNode.execute(frame, instanceClass, cls);
-        }
-
-        @Fallback
-        @SuppressWarnings("truffle-static-method")
-        boolean isInstance(VirtualFrame frame, Object cls, Object instance,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile typeErrorProfile,
-                        @Cached AbstractObjectIsSubclassNode abstractIsSubclassNode,
-                        @Cached AbstractObjectGetBasesNode getBasesNode,
-                        @Cached PRaiseNode raiseNode) {
-            if (typeErrorProfile.profile(inliningTarget, getBasesNode.execute(frame, inliningTarget, cls) == null)) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_TYPE, instance);
-            }
-
-            PythonObject instanceClass = getInstanceClassAttr(frame, instance);
-            return instanceClass != null && abstractIsSubclassNode.execute(frame, instanceClass, cls);
+                        @Cached TypeNodes.GenericInstanceCheckNode genericInstanceCheckNode) {
+            return genericInstanceCheckNode.execute(frame, inliningTarget, instance, cls);
         }
     }
 
@@ -850,54 +800,11 @@ public final class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SubclassCheckNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = {"!isNativeClass(cls)", "!isNativeClass(derived)"})
-        static boolean doManagedManaged(VirtualFrame frame, Object cls, Object derived,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached IsSameTypeNode isSameTypeNode,
-                        @Exclusive @Cached IsSubtypeNode isSubtypeNode) {
-            return isSameTypeNode.execute(inliningTarget, cls, derived) || isSubtypeNode.execute(frame, derived, cls);
-        }
-
         @Specialization
-        static boolean doObjectObject(VirtualFrame frame, Object cls, Object derived,
+        static boolean check(VirtualFrame frame, Object cls, Object derived,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached IsSameTypeNode isSameTypeNode,
-                        @Exclusive @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached IsBuiltinObjectProfile isAttrErrorProfile,
-                        @Cached("create(T___BASES__)") GetFixedAttributeNode getBasesAttrNode,
-                        @Cached PyTupleCheckNode tupleCheck,
-                        @Cached TypeNodes.IsTypeNode isClsTypeNode,
-                        @Cached TypeNodes.IsTypeNode isDerivedTypeNode,
-                        @Cached PRaiseNode raiseNode) {
-            if (isSameTypeNode.execute(inliningTarget, cls, derived)) {
-                return true;
-            }
-
-            // no profiles required because IsTypeNode profiles already
-            if (isClsTypeNode.execute(inliningTarget, cls) && isDerivedTypeNode.execute(inliningTarget, derived)) {
-                return isSubtypeNode.execute(frame, derived, cls);
-            }
-            if (!checkClass(frame, inliningTarget, derived, getBasesAttrNode, tupleCheck, isAttrErrorProfile)) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S, "issubclass()", 1, "class");
-            }
-            if (!checkClass(frame, inliningTarget, cls, getBasesAttrNode, tupleCheck, isAttrErrorProfile)) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE);
-            }
-            return false;
-        }
-
-        // checks if object has '__bases__' (see CPython 'abstract.c' function
-        // 'recursive_issubclass')
-        private static boolean checkClass(VirtualFrame frame, Node inliningTarget, Object obj, GetFixedAttributeNode getBasesAttrNode, PyTupleCheckNode tupleCheck,
-                        IsBuiltinObjectProfile isAttrErrorProfile) {
-            Object basesObj;
-            try {
-                basesObj = getBasesAttrNode.executeObject(frame, obj);
-            } catch (PException e) {
-                e.expectAttributeError(inliningTarget, isAttrErrorProfile);
-                return false;
-            }
-            return tupleCheck.execute(inliningTarget, basesObj);
+                        @Cached TypeNodes.GenericSubclassCheckNode genericSubclassCheckNode) {
+            return genericSubclassCheckNode.execute(frame, inliningTarget, derived, cls);
         }
     }
 

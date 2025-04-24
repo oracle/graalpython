@@ -91,7 +91,7 @@ public abstract class CallTernaryOpNode extends Node {
         }
 
         if (slotV != null) {
-            if (slotW != null && isSubtypeNode.execute(frame, classW, classV)) {
+            if (slotW != null && isSubtypeNode.execute(classW, classV)) {
                 assert !sameTypes;
                 Object result = callSlotWNode.execute(frame, inliningTarget, slotW, v, classV, w, slotW, classW, z, false);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
