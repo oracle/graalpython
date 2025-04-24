@@ -259,6 +259,7 @@ public abstract class ErrorMessages {
     public static final TruffleString COMPLEX_EXPONENTIATION = tsLiteral("complex exponentiation");
     public static final TruffleString COMPLEX_ZERO_TO_NEGATIVE_POWER = tsLiteral("0.0 to a negative or complex power");
     public static final TruffleString COMPLEX_MODULO = tsLiteral("complex modulo");
+    public static final TruffleString COMPLEX_SECOND_ARG_CANT_BE_STRING = tsLiteral("complex() second arg can't be a string");
     public static final TruffleString COMPLEX_RETURNED_NON_COMPLEX = tsLiteral("__complex__ returned non-complex (type %p)");
     public static final TruffleString CONSTRAINTS_CANNOT_BE_COMBINED_WITH_BOUND = tsLiteral("Constraints cannot be combined with bound=...");
     public static final TruffleString CONSTRUCTOR_REQUIRES_A_SEQUENCE = tsLiteral("constructor requires a sequence");
