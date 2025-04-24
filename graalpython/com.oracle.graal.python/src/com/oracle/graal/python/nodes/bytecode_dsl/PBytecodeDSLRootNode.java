@@ -306,6 +306,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 @OperationProxy(GetYieldFromIterNode.class)
 @OperationProxy(GetAwaitableNode.class)
 @OperationProxy(SetupAnnotationsNode.class)
+@OperationProxy(value = CopyDictWithoutKeysNode.class, name = "CopyDictWithoutKeys")
 @OperationProxy(value = PyObjectIsTrueNode.class, name = "Yes")
 @OperationProxy(value = PyObjectIsNotTrueNode.class, name = "Not")
 @OperationProxy(value = ListNodes.AppendNode.class, name = "ListAppend")
@@ -1132,14 +1133,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static boolean perform(VirtualFrame frame, LocalAccessor values, Object map, Object[] keys, @Bind BytecodeNode bytecodeNode, @Cached MatchKeysNode node) {
             values.setObject(bytecodeNode, frame, node.execute(frame, map, keys));
             return node.execute(frame, map, keys) != PNone.NONE;
-        }
-    }
-
-    @Operation
-    public static final class CopyDictWithoutKeys {
-        @Specialization
-        public static PDict perform(VirtualFrame frame, Object map, Object[] keys, @Cached CopyDictWithoutKeysNode node) {
-            return node.execute(frame, map, keys);
         }
     }
 
