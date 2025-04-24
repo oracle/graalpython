@@ -80,7 +80,7 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
         Object[] arguments = frame.getArguments();
 
         PythonLanguage language = PythonLanguage.get(this);
-        // This is passed from InvokeNode node
+        // This is passed from the dispatch node
         PFunction generatorFunction = PArguments.getGeneratorFunction(arguments);
         assert generatorFunction != null;
         if (rootNode.getCodeUnit().isGenerator()) {

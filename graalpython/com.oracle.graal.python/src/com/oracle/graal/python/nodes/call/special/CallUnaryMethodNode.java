@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -126,12 +126,12 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
     Object callSpecialMethodSlotCallTarget(VirtualFrame frame, BuiltinMethodDescriptor info, Object receiver,
                     @Bind("this") Node inliningTarget,
                     @Exclusive @Cached InlinedConditionProfile invalidArgsProfile,
-                    @Cached GenericInvokeNode invokeNode) {
+                    @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
         raiseInvalidArgsNumUncached(invalidArgsProfile.profile(inliningTarget, hasAllowedArgsNum(info)), info);
         RootCallTarget callTarget = PythonLanguage.get(this).getDescriptorCallTarget(info);
         Object[] arguments = PArguments.create(1);
         PArguments.setArgument(arguments, 0, receiver);
-        return invokeNode.execute(frame, callTarget, arguments);
+        return invoke.execute(frame, inliningTarget, callTarget, arguments);
     }
 
     @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null"}, //

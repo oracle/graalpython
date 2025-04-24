@@ -80,6 +80,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode.CreateAndCheckArgumentsNode;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -89,8 +90,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -99,6 +98,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -110,9 +110,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
-import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class TpSlotVarargs {
@@ -247,12 +245,11 @@ public final class TpSlotVarargs {
         @InliningCutoff
         static Object callGenericBuiltin(VirtualFrame frame, Node inliningTarget, TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached CreateAndCheckArgumentsNode createArgumentsNode,
-                        @Cached(inline = false) CallContext callContext,
-                        @Cached InlinedConditionProfile isNullFrameProfile,
-                        @Cached(inline = false) IndirectCallNode indirectCallNode) {
+                        @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
             Object[] arguments = createArgumentsNode.execute(inliningTarget, slot.getName(), args, keywords, slot.getSignature(), self, null, slot.getDefaults(), slot.getKwDefaults(),
                             false);
-            return BuiltinDispatchers.callGenericBuiltin(frame, inliningTarget, slot.callTargetIndex, arguments, callContext, isNullFrameProfile, indirectCallNode);
+            RootCallTarget callTarget = PythonLanguage.get(inliningTarget).getBuiltinSlotCallTarget(slot.callTargetIndex);
+            return invoke.execute(frame, inliningTarget, callTarget, arguments);
         }
     }
 
@@ -264,27 +261,16 @@ public final class TpSlotVarargs {
 
         @Specialization
         static Object call(VirtualFrame frame, Node inliningTarget, TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
-                        @Bind PythonLanguage language,
-                        @Bind("language.getBuiltinSlotCallTarget(slot.callTargetIndex)") RootCallTarget callTarget,
                         @Cached CreateAndCheckArgumentsNode createArgumentsNode,
-                        @Cached CallContext callContext,
-                        @Cached InlinedConditionProfile frameProfile,
-                        @Cached(parameters = "callTarget") DirectCallNode callNode) {
+                        @Cached("createDirectCallNode(slot)") DirectCallNode callNode,
+                        @Cached CallDispatchers.SimpleDirectInvokeNode invoke) {
             CompilerAsserts.partialEvaluationConstant(slot);
             Object[] arguments = createArgumentsNode.execute(inliningTarget, slot.getName(), args, keywords, slot.getSignature(), self, null, slot.getDefaults(), slot.getKwDefaults(), false);
-            if (frameProfile.profile(inliningTarget, frame != null)) {
-                callContext.prepareCall(frame, arguments, callTarget, inliningTarget);
-                return callNode.call(arguments);
-            } else {
-                PythonContext context = PythonContext.get(inliningTarget);
-                PythonThreadState threadState = context.getThreadState(language);
-                Object state = IndirectCalleeContext.enter(threadState, arguments, callTarget);
-                try {
-                    return callNode.call(arguments);
-                } finally {
-                    IndirectCalleeContext.exit(threadState, state);
-                }
-            }
+            return invoke.execute(frame, inliningTarget, callNode, arguments);
+        }
+
+        protected static DirectCallNode createDirectCallNode(TpSlotVarargsBuiltin<?> slot) {
+            return Truffle.getRuntime().createDirectCallNode(PythonLanguage.get(null).getBuiltinSlotCallTarget(slot.callTargetIndex));
         }
     }
 

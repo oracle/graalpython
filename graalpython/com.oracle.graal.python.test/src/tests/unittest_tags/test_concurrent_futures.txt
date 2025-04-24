@@ -68,7 +68,7 @@ test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTe
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_context_manager_shutdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 # Transiently times out GR-52666
 !test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_del_shutdown
-test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_hang_gh94440 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+!test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_hang_gh94440
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_hang_issue12364 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_processes_terminate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_run_after_shutdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

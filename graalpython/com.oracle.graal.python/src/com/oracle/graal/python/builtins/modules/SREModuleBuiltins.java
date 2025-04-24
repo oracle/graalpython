@@ -78,6 +78,7 @@ import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonSenaryBuiltinNode;
@@ -595,7 +596,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object createMatch(VirtualFrame frame, Node inliningTarget, Object pattern, int pos, int endPos, Object regexResult, Object input,
-                        @Cached("lookupMatchConstructor()") Object matchConstructor,
+                        @Cached GetMatchConstructorNode getConstructor,
                         @Cached InlinedConditionProfile matchProfile,
                         @CachedLibrary(limit = "1") InteropLibrary libResult,
                         @Cached PyObjectLookupAttr lookupIndexGroupNode,
@@ -603,7 +604,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             try {
                 if (matchProfile.profile(inliningTarget, (boolean) libResult.readMember(regexResult, "isMatch"))) {
                     Object indexGroup = lookupIndexGroupNode.execute(frame, inliningTarget, pattern, T__PATTERN__INDEXGROUP);
-                    return constructResultNode.execute(frame, matchConstructor, pattern, pos, endPos, regexResult, input, indexGroup);
+                    return constructResultNode.execute(frame, getConstructor.execute(inliningTarget), pattern, pos, endPos, regexResult, input, indexGroup);
                 } else {
                     return PNone.NONE;
                 }
@@ -612,11 +613,31 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @TruffleBoundary
-        @NeverDefault
-        protected Object lookupMatchConstructor() {
-            PythonModule module = getContext().lookupBuiltinModule(BuiltinNames.T__SRE);
-            return PyObjectLookupAttr.executeUncached(module, T_MATCH_CONSTRUCTOR);
+        @GenerateInline
+        @GenerateCached(false)
+        abstract static class GetMatchConstructorNode extends PNodeWithContext {
+            public abstract Object execute(Node inliningTarget);
+
+            @Specialization(guards = "isSingleContext()")
+            static Object doSingleContext(
+                            @Cached("lookupMatchConstructor()") Object constructor) {
+                return constructor;
+            }
+
+            @Specialization(replaces = "doSingleContext")
+            static Object doRead(
+                            @Bind PythonContext context,
+                            @Cached ReadAttributeFromObjectNode read) {
+                PythonModule module = context.lookupBuiltinModule(BuiltinNames.T__SRE);
+                return read.execute(module, T_MATCH_CONSTRUCTOR);
+            }
+
+            @TruffleBoundary
+            @NeverDefault
+            protected static Object lookupMatchConstructor() {
+                PythonModule module = PythonContext.get(null).lookupBuiltinModule(BuiltinNames.T__SRE);
+                return PyObjectLookupAttr.executeUncached(module, T_MATCH_CONSTRUCTOR);
+            }
         }
     }
 

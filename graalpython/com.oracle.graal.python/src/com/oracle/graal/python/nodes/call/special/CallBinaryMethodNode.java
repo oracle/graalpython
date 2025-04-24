@@ -52,7 +52,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -124,13 +124,13 @@ public abstract class CallBinaryMethodNode extends AbstractCallMethodNode {
     Object callSpecialMethodSlotCallTarget(VirtualFrame frame, BuiltinMethodDescriptor info, Object arg1, Object arg2,
                     @Bind("this") Node inliningTarget,
                     @Exclusive @Cached InlinedConditionProfile invalidArgsProfile,
-                    @Cached GenericInvokeNode invokeNode) {
+                    @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
         raiseInvalidArgsNumUncached(invalidArgsProfile.profile(inliningTarget, hasAllowedArgsNum(info)), info);
         RootCallTarget callTarget = PythonLanguage.get(this).getDescriptorCallTarget(info);
         Object[] arguments = PArguments.create(2);
         PArguments.setArgument(arguments, 0, arg1);
         PArguments.setArgument(arguments, 1, arg2);
-        return invokeNode.execute(frame, callTarget, arguments);
+        return invoke.execute(frame, inliningTarget, callTarget, arguments);
     }
 
     @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")

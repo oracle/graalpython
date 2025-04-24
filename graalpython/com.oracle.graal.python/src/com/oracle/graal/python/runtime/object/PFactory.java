@@ -244,9 +244,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -535,10 +533,8 @@ public final class PFactory {
     }
 
     public static PFunction createFunction(PythonLanguage language, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
-                    PCell[] closure,
-                    Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
-        return trace(language, new PFunction(language, name, qualname, code, globals, defaultValues, kwDefaultValues, closure,
-                        codeStableAssumption, defaultsStableAssumption));
+                    PCell[] closure, Assumption codeStableAssumption) {
+        return trace(language, new PFunction(language, name, qualname, code, globals, defaultValues, kwDefaultValues, closure, codeStableAssumption));
     }
 
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget) {
@@ -1126,10 +1122,6 @@ public final class PFactory {
         return trace(language, new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), callTarget, signature,
                         nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars,
                         filename, name, qualname, firstlineno, linetable));
-    }
-
-    public static PCode createCode(PythonLanguage language, Supplier<CallTarget> createCode, int flags, int firstlineno, byte[] lnotab, TruffleString filename) {
-        return trace(language, new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), createCode, flags, firstlineno, lnotab, filename));
     }
 
     /*

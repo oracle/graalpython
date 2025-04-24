@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -53,17 +54,16 @@ import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.TpSlotUnaryFuncBuiltin;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.FunctionInvokeNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -73,9 +73,8 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.IndirectCallNode;
+import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
 public final class TpSlotRepr {
@@ -120,12 +119,11 @@ public final class TpSlotRepr {
         @Specialization(replaces = "callCachedBuiltin")
         @InliningCutoff
         static Object callGenericBuiltin(VirtualFrame frame, Node inliningTarget, TpSlotUnaryFuncBuiltin<?> slot, Object self,
-                        @Cached(inline = false) CallContext callContext,
-                        @Cached InlinedConditionProfile isNullFrameProfile,
-                        @Cached(inline = false) IndirectCallNode indirectCallNode) {
+                        @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
             Object[] arguments = PArguments.create(1);
             PArguments.setArgument(arguments, 0, self);
-            return BuiltinDispatchers.callGenericBuiltin(frame, inliningTarget, slot.callTargetIndex, arguments, callContext, isNullFrameProfile, indirectCallNode);
+            RootCallTarget callTarget = PythonLanguage.get(inliningTarget).getBuiltinSlotCallTarget(slot.callTargetIndex);
+            return invoke.execute(frame, inliningTarget, callTarget, arguments);
         }
     }
 
@@ -145,7 +143,7 @@ public final class TpSlotRepr {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    @ImportStatic(PGuards.class)
+    @ImportStatic(CallDispatchers.class)
     abstract static class ReprPythonSlotDispatcherNode extends PythonDispatchers.PythonSlotDispatcherNodeBase {
         final Object execute(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self) {
             assert !(callable instanceof TruffleWeakReference<?>);
@@ -157,12 +155,13 @@ public final class TpSlotRepr {
 
         @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "isSimpleSignature(cachedCallee, 1)"}, //
                         limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "cachedCallee.getCodeStableAssumption()")
-        protected static Object doCachedPFunction(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self,
+        protected static Object doCachedPFunction(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self,
                         @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
-                        @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
+                        @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
+                        @Cached CallDispatchers.FunctionDirectInvokeNode invoke) {
             Object[] arguments = PArguments.create(1);
             PArguments.setArgument(arguments, 0, self);
-            return invoke.execute(frame, arguments);
+            return invoke.execute(frame, inliningTarget, callNode, cachedCallee, arguments);
         }
 
         @Specialization(replaces = "doCachedPFunction")

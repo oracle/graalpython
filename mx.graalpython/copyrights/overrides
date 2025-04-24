@@ -597,8 +597,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/argument/R
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/argument/ReadVarKeywordsNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/bytecode/ImportStarNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/bytecode/RaiseNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/call/CallDispatchNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/call/InvokeNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/expression/BinaryOpNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/expression/UnaryOpNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/ReadGlobalOrBuiltinNode.java,zippy.copyright

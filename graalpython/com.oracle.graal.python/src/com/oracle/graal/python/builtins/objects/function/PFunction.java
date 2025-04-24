@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -43,6 +43,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -62,12 +63,12 @@ public final class PFunction extends PythonObject {
     private TruffleString qualname;
     private boolean forceSplitDirectCalls;
     private final Assumption codeStableAssumption;
-    private final Assumption defaultsStableAssumption;
     private final PythonObject globals;
     @CompilationFinal private boolean isBuiltin;
     @CompilationFinal(dimensions = 1) private final PCell[] closure;
     @CompilationFinal private PCode finalCode;
     private PCode code;
+    private RootCallTarget callTarget;
     @CompilationFinal(dimensions = 1) private Object[] finalDefaultValues;
     private Object[] defaultValues;
     @CompilationFinal(dimensions = 1) private PKeyword[] finalKwDefaultValues;
@@ -79,34 +80,28 @@ public final class PFunction extends PythonObject {
     }
 
     public PFunction(PythonLanguage lang, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, Object[] defaultValues,
-                    PKeyword[] kwDefaultValues,
-                    PCell[] closure) {
-        this(lang, name, qualname, code, globals, defaultValues, kwDefaultValues, closure, Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
+                    PKeyword[] kwDefaultValues, PCell[] closure) {
+        this(lang, name, qualname, code, globals, defaultValues, kwDefaultValues, closure, Truffle.getRuntime().createAssumption());
     }
 
     public PFunction(PythonLanguage lang, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, Object[] defaultValues,
-                    PKeyword[] kwDefaultValues,
-                    PCell[] closure, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
+                    PKeyword[] kwDefaultValues, PCell[] closure, Assumption codeStableAssumption) {
         super(PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PFunction.getInstanceShape(lang));
         this.name = name;
         this.qualname = qualname;
         assert code != null;
         this.code = this.finalCode = code;
+        this.callTarget = code.getRootCallTarget();
         this.globals = globals;
         this.defaultValues = this.finalDefaultValues = defaultValues == null ? PythonUtils.EMPTY_OBJECT_ARRAY : defaultValues;
         this.kwDefaultValues = this.finalKwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
         this.closure = closure;
         this.codeStableAssumption = codeStableAssumption;
-        this.defaultsStableAssumption = defaultsStableAssumption;
         this.forceSplitDirectCalls = false;
     }
 
     public Assumption getCodeStableAssumption() {
         return codeStableAssumption;
-    }
-
-    public Assumption getDefaultsStableAssumption() {
-        return defaultsStableAssumption;
     }
 
     public PythonObject getGlobals() {
@@ -185,17 +180,22 @@ public final class PFunction extends PythonObject {
         return code;
     }
 
+    public RootCallTarget getCallTarget() {
+        return callTarget;
+    }
+
     @TruffleBoundary
     public void setCode(PCode code) {
         codeStableAssumption.invalidate("code changed for function " + getName());
         assert code != null : "code cannot be null";
         this.finalCode = null;
         this.code = code;
+        this.callTarget = code.getRootCallTarget();
     }
 
     public Object[] getDefaults() {
         if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(this)) {
-            if (defaultsStableAssumption.isValid()) {
+            if (codeStableAssumption.isValid()) {
                 return finalDefaultValues;
             }
         }
@@ -204,14 +204,14 @@ public final class PFunction extends PythonObject {
 
     @TruffleBoundary
     public void setDefaults(Object[] defaults) {
-        this.defaultsStableAssumption.invalidate("defaults changed for function " + getName());
+        this.codeStableAssumption.invalidate("defaults changed for function " + getName());
         this.finalDefaultValues = null; // avoid leak, and make code that wrongly uses it crash
         this.defaultValues = defaults;
     }
 
     public PKeyword[] getKwDefaults() {
         if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(this)) {
-            if (defaultsStableAssumption.isValid()) {
+            if (codeStableAssumption.isValid()) {
                 return finalKwDefaultValues;
             }
         }
@@ -220,7 +220,7 @@ public final class PFunction extends PythonObject {
 
     @TruffleBoundary
     public void setKwDefaults(PKeyword[] defaults) {
-        this.defaultsStableAssumption.invalidate("kw defaults changed for function " + getName());
+        this.codeStableAssumption.invalidate("kw defaults changed for function " + getName());
         this.finalDefaultValues = null; // avoid leak, and make code that wrongly uses it crash
         this.kwDefaultValues = defaults;
     }

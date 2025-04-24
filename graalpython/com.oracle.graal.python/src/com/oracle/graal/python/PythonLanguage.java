@@ -86,7 +86,7 @@ import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -783,7 +783,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         RootCallTarget callTarget = parse(context, request.getSource(), InputType.EVAL, false, 0, false, null, EnumSet.noneOf(FutureFeature.class));
         return new ExecutableNode(this) {
             @Child private GilNode gilNode = GilNode.create();
-            @Child private GenericInvokeNode invokeNode = GenericInvokeNode.create();
+            @Child private CallDispatchers.SimpleIndirectInvokeNode invokeNode = CallDispatchers.SimpleIndirectInvokeNode.create();
             @Child private MaterializeFrameNode materializeFrameNode = MaterializeFrameNode.create();
             @Child private GetFrameLocalsNode getFrameLocalsNode = GetFrameLocalsNode.create();
 
@@ -797,7 +797,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
                 boolean wasAcquired = gilNode.acquire();
                 try {
-                    return invokeNode.execute(callTarget, arguments);
+                    return invokeNode.executeCached(frame, callTarget, arguments);
                 } finally {
                     gilNode.release(wasAcquired);
                 }

@@ -70,7 +70,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -158,7 +158,7 @@ public final class PythonCextCEvalBuiltins {
                         @Cached CodeNodes.GetCodeSignatureNode getSignatureNode,
                         @Cached CodeNodes.GetCodeCallTargetNode getCallTargetNode,
                         @Cached CreateArgumentsNode.CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                        @Cached GenericInvokeNode invokeNode) {
+                        @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
             Object[] defaults = readNode.readPyObjectArray(defaultValueArrayPtr, defaultValueCount);
             PKeyword[] kwdefaults = castKwargsNode.execute(inliningTarget, kwdefaultsWrapper);
             PCell[] closure = null;
@@ -194,7 +194,7 @@ public final class PythonCextCEvalBuiltins {
             }
 
             RootCallTarget rootCallTarget = getCallTargetNode.execute(inliningTarget, code);
-            return invokeNode.execute(rootCallTarget, pArguments);
+            return invoke.execute(null, inliningTarget, rootCallTarget, pArguments);
         }
     }
 

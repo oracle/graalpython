@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,40 +38,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.type.slots;
+package com.oracle.graal.python.nodes.bytecode;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.truffle.api.CallTarget;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.IndirectCallNode;
+import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
-public class BuiltinDispatchers {
-    static Object callGenericBuiltin(VirtualFrame frame, Node inliningTarget, int callTargetIndex, Object[] arguments,
-                    CallContext callContext, InlinedConditionProfile isNullFrameProfile, IndirectCallNode indirectCallNode) {
-        PythonLanguage language = PythonLanguage.get(inliningTarget);
-        CallTarget callTarget = language.getBuiltinSlotCallTarget(callTargetIndex);
-        if (isNullFrameProfile.profile(inliningTarget, frame != null)) {
-            callContext.prepareIndirectCall(frame, arguments, inliningTarget);
-            return indirectCallNode.call(callTarget, arguments);
-        } else {
-            return callWithNullFrame(inliningTarget, indirectCallNode, language, arguments, callTarget);
-        }
+@GenerateInline(false)
+@ImportStatic(CallDispatchers.class)
+public abstract class CallComprehensionNode extends Node {
+    public abstract Object execute(VirtualFrame frame, PFunction callee, Object[] arguments);
+
+    // No guard, comprehension functions don't change
+    @Specialization
+    static Object call(VirtualFrame frame, PFunction callee, Object[] arguments,
+                    @Bind Node inliningTarget,
+                    @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
+                    @Cached CallDispatchers.FunctionDirectInvokeNode invoke) {
+        return invoke.execute(frame, inliningTarget, callNode, callee, arguments);
     }
 
-    private static Object callWithNullFrame(Node inliningTarget, IndirectCallNode indirectCallNode, PythonLanguage language, Object[] arguments, CallTarget callTarget) {
-        PythonContext context = PythonContext.get(inliningTarget);
-        PythonThreadState threadState = context.getThreadState(language);
-        Object state = IndirectCalleeContext.enterIndirect(threadState, arguments);
-        try {
-            return indirectCallNode.call(callTarget, arguments);
-        } finally {
-            IndirectCalleeContext.exit(threadState, state);
-        }
+    @NeverDefault
+    public static CallComprehensionNode create() {
+        return CallComprehensionNodeGen.create();
     }
 }

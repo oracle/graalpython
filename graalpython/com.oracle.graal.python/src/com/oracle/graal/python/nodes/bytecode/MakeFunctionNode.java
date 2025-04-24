@@ -71,8 +71,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
     private final Signature signature;
     @CompilationFinal private PCode cachedCode;
 
-    private final Assumption sharedCodeStableAssumption = Truffle.getRuntime().createAssumption("shared code stable assumption");
-    private final Assumption sharedDefaultsStableAssumption = Truffle.getRuntime().createAssumption("shared defaults stable assumption");
+    private final Assumption codeStableAssumption = Truffle.getRuntime().createAssumption("code stable assumption");
 
     public abstract int execute(VirtualFrame frame, Object globals, int initialStackTop, int flags);
 
@@ -125,17 +124,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
             frame.setObject(stackTop--, null);
         }
 
-        Assumption codeStableAssumption;
-        Assumption defaultsStableAssumption;
-        if (CompilerDirectives.inCompiledCode()) {
-            codeStableAssumption = sharedCodeStableAssumption;
-            defaultsStableAssumption = sharedDefaultsStableAssumption;
-        } else {
-            codeStableAssumption = Truffle.getRuntime().createAssumption();
-            defaultsStableAssumption = Truffle.getRuntime().createAssumption();
-        }
-        PFunction function = PFactory.createFunction(language, code.name, code.qualname, codeObj, (PythonObject) globals, defaults, kwdefaults, closure, codeStableAssumption,
-                        defaultsStableAssumption);
+        PFunction function = PFactory.createFunction(language, code.name, code.qualname, codeObj, (PythonObject) globals, defaults, kwdefaults, closure, codeStableAssumption);
 
         if (annotations != null) {
             writeAttrNode.execute(function, T___ANNOTATIONS__, annotations);

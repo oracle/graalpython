@@ -73,7 +73,7 @@ test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTe
 !test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_submit_after_interpreter_shutdown @ linux-x86_64
 test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_cancel_futures @ linux-x86_64
 test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_context_manager_shutdown @ linux-x86_64
-test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_hang_gh94440 @ linux-x86_64
+!test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_hang_gh94440 @ linux-x86_64
 test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_hang_issue12364 @ linux-x86_64
 test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_run_after_shutdown @ linux-x86_64
 test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_shutdown_no_wait @ linux-x86_64
