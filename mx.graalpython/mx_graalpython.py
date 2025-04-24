@@ -625,11 +625,6 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
         launcher = os.path.join(python_home, 'bin', _graalpy_launcher())
         out = mx.OutputCapture()
-        import_ee_status = mx.run([launcher, "-c", "import sys; assert 'Oracle GraalVM' in sys.version"], nonZeroIsFatal=False, out=out, err=out)
-        if enterprise != (import_ee_status == 0):
-            mx.abort(f"GRAALPY_HOME is not compatible with requested distribution kind ({import_ee_status=}, {enterprise=}, {out=}).")
-
-        out = mx.OutputCapture()
         mx.run([launcher, "-c", "print(__graalpython__.is_bytecode_dsl_interpreter)"], nonZeroIsFatal=False, out=out, err=out)
         is_bytecode_dsl_interpreter = out.data.strip() == "True"
         if is_bytecode_dsl_interpreter != BYTECODE_DSL_INTERPRETER:
