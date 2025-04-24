@@ -660,7 +660,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
             mx_build_args = mx_args + ["--extra-image-builder-argument=-Dpython.EnableBytecodeDSLInterpreter=true"]
         # This build is purposefully done without the LATEST_JAVA_HOME in the
         # environment, so we can build JVM standalones on an older Graal JDK
-        mx.run_mx(mx_build_args + ["build", "--target", standalone_dist])
+        run_mx(mx_build_args + ["build", "--target", standalone_dist])
 
     python_home = os.path.join(SUITE.dir, 'mxbuild', f"{mx.get_os()}-{mx.get_arch()}", standalone_dist)
 
@@ -705,7 +705,7 @@ def graalvm_jdk():
         graal_jdk_home = os.path.abspath(glob.glob(graal_jdk_home)[0])
         if sys.platform == "darwin":
             graal_jdk_home = os.path.join(graal_jdk_home, 'Contents', 'Home')
-        mx.log("Using GraalPy standalone from GRAAL_JDK_HOME: " + graal_jdk_home)
+        mx.log("Using Graal from GRAAL_JDK_HOME: " + graal_jdk_home)
 
         # Try to verify that we're getting what we expect:
         has_java = os.path.exists(os.path.join(graal_jdk_home, 'bin', mx.exe_suffix('java')))
@@ -742,9 +742,9 @@ def graalvm_jdk():
     jdk_major_version = mx.get_jdk().version.parts[0]
     mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce']
     if not DISABLE_REBUILD:
-        mx.run_mx(mx_args + ["build", "--dep", f"GRAALVM_COMMUNITY_JAVA{jdk_major_version}"], env={**os.environ, **LATEST_JAVA_HOME})
+        run_mx(mx_args + ["build", "--dep", f"GRAALVM_COMMUNITY_JAVA{jdk_major_version}"], env={**os.environ, **LATEST_JAVA_HOME})
     out = mx.OutputCapture()
-    mx.run_mx(mx_args + ["graalvm-home"], out=out)
+    run_mx(mx_args + ["graalvm-home"], out=out)
     return out.data.splitlines()[-1].strip()
 
 def get_maven_cache():
@@ -764,7 +764,7 @@ def deploy_local_maven_repo():
 
     if not DISABLE_REBUILD:
         # build GraalPy and all the necessary dependencies, so that we can deploy them
-        mx.run_mx(["-p", os.path.join(mx.suite('truffle').dir, '..', 'vm'), "--dy", "graalpython", "build"], env={**env, **LATEST_JAVA_HOME})
+        run_mx(["-p", os.path.join(mx.suite('truffle').dir, '..', 'vm'), "--dy", "graalpython", "build"], env={**env, **LATEST_JAVA_HOME})
 
     # deploy maven artifacts
     version = GRAAL_VERSION
@@ -1130,7 +1130,7 @@ def graalpython_gate_runner(args, tasks):
     # JUnit tests
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
-            mx.run_mx(["build", "--dep", "GRAALPYTHON_UNIT_TESTS,GRAALPYTHON_INTEGRATION_UNIT_TESTS,GRAALPYTHON_TCK"], env={**os.environ, **LATEST_JAVA_HOME})
+            run_mx(["build", "--dep", "GRAALPYTHON_UNIT_TESTS,GRAALPYTHON_INTEGRATION_UNIT_TESTS,GRAALPYTHON_TCK"], env={**os.environ, **LATEST_JAVA_HOME})
             if WIN32:
                 punittest(
                     [
@@ -1336,7 +1336,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython VFSUtils long running tests', tasks, tags=[GraalPythonTags.junit_vfsutils]) as task:
         if task:
-            mx.run_mx(["build", "--dep", "GRAALPYTHON_UNIT_TESTS,GRAALPYTHON_INTEGRATION_UNIT_TESTS,GRAALPYTHON_TCK"], env={**os.environ, **LATEST_JAVA_HOME})
+            run_mx(["build", "--dep", "GRAALPYTHON_UNIT_TESTS,GRAALPYTHON_INTEGRATION_UNIT_TESTS,GRAALPYTHON_TCK"], env={**os.environ, **LATEST_JAVA_HOME})
             args =['--verbose']
             vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false']
             mx_unittest.unittest(vm_args + ['org.graalvm.python.embedding.vfs.test'] + args + ["--use-graalvm"])
@@ -1376,13 +1376,13 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('Python SVM Truffle TCK', tasks, tags=[GraalPythonTags.language_checker], report=True) as task:
         if task:
-            mx.run_mx([
+            run_mx([
                 "--dy", "graalpython,/substratevm",
                 "-p", os.path.join(mx.suite("truffle"), "..", "vm"),
                 "--native-images=",
                 "build",
             ], env={**os.environ, **LATEST_JAVA_HOME})
-            mx.run_mx([
+            run_mx([
                 "--dy", "graalpython,/substratevm",
                 "-p", os.path.join(mx.suite("truffle"), "..", "vm"),
                 "--native-images=",
@@ -1864,7 +1864,7 @@ def update_import_cmd(args):
         join(overlaydir, "python", "graal", "ci"),
         dirs_exist_ok=True)
 
-    mx.run_mx(['--dynamicimports', '/graal-enterprise', 'checkout-downstream', 'compiler', 'graal-enterprise'])
+    run_mx(['--dynamicimports', '/graal-enterprise', 'checkout-downstream', 'compiler', 'graal-enterprise'])
     enterprisedir = join(SUITE.dir, "..", "graal-enterprise")
     shutil.copy(
         join(enterprisedir, "common.json"),
@@ -1881,9 +1881,9 @@ def update_import_cmd(args):
     for repo in repos:
         basename = os.path.basename(repo)
         cmdname = "%s-update-import" % basename
-        is_mx_command = mx.run_mx(["-p", repo, "help", cmdname], out=output, err=output, nonZeroIsFatal=False, quiet=True) == 0
+        is_mx_command = run_mx(["-p", repo, "help", cmdname], out=output, err=output, nonZeroIsFatal=False, quiet=True) == 0
         if is_mx_command:
-            mx.run_mx(["-p", repo, cmdname, "--overlaydir=%s" % overlaydir], suite=repo, nonZeroIsFatal=True)
+            run_mx(["-p", repo, cmdname, "--overlaydir=%s" % overlaydir], suite=repo, nonZeroIsFatal=True)
         else:
             print(mx.colorize('%s command for %s.. skipped!' % (cmdname, basename), color='magenta', bright=True, stream=sys.stdout))
 
@@ -2167,7 +2167,7 @@ def python_coverage(args):
     args = parser.parse_args(args)
 
     # do not endlessly rebuild tests
-    mx.run_mx(["build", "--dep", "com.oracle.graal.python.test"], env={**os.environ, **LATEST_JAVA_HOME})
+    run_mx(["build", "--dep", "com.oracle.graal.python.test"], env={**os.environ, **LATEST_JAVA_HOME})
     env = extend_os_env(
         GRAALPYTHON_MX_DISABLE_REBUILD="True",
         GRAALPYTEST_FAIL_FAST="False",
@@ -2184,14 +2184,14 @@ def python_coverage(args):
             '--jacocout', 'coverage',
             '--jacoco-format', 'lcov',
         ]
-        mx.run_mx([
+        run_mx([
             '--strict-compliance',
             '--primary', 'gate',
             '-B=--force-deprecation-as-warning-for-dependencies',
             '--strict-mode',
             '--tags', args.tags,
         ] + jacoco_args, env=env)
-        mx.run_mx([
+        run_mx([
             '--strict-compliance',
             '--kill-with-sigquit',
             'jacocoreport',
@@ -2519,6 +2519,22 @@ def no_return(fn):
     def inner(*args, **kwargs):
         fn(*args, **kwargs)
     return inner
+
+
+def run_mx(args, *splat, **kwargs):
+    env = kwargs.get("env", os.environ)
+    extra_env = {k: v for k, v in env.items() if os.environ.get(k) != v}
+
+    # Sigh. mx.run_mx forcibly overrides the environment JAVA_HOME by passing
+    # --java-home to the subprocess...
+    if jh := extra_env.get("JAVA_HOME"):
+        args = [f"--java-home={jh}"] + args
+
+    msg = f"Running: mx {shlex.join(args)}"
+    if extra_env:
+        msg += f" (with extra env: " + shlex.join([f"{k}={v}" for k, v in extra_env.items()]) + ")"
+    mx.log(mx.colorize(msg, color="blue"))
+    return mx.run_mx(args, *splat, **kwargs)
 
 
 def host_inlining_log_extract_method(args_in):
