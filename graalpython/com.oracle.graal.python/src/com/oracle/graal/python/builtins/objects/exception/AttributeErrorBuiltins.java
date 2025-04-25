@@ -68,16 +68,22 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -99,6 +105,10 @@ public final class AttributeErrorBuiltins extends PythonBuiltins {
     private static final TruffleString T_OBJ = tsLiteral("obj");
 
     private static final BaseExceptionAttrNode.StorageFactory ATTR_FACTORY = (args) -> new Object[NUM_ATTRS];
+
+    public static Object[] dataForObjKey(Object obj, Object key) {
+        return new Object[]{key, obj};
+    }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
     @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
@@ -197,6 +207,29 @@ public final class AttributeErrorBuiltins extends PythonBuiltins {
             Object args = getArgsNode.execute(inliningTarget, self);
             Object state = getStateNode.execute(frame, self);
             return PFactory.createTuple(language, new Object[]{clazz, args, state});
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class SetAttributeErrorContext extends Node {
+        public abstract PException execute(Node inliningTarget, PException e, Object obj, Object name);
+
+        @Specialization
+        static PException set(Node inliningTarget, PException e, Object obj, Object name,
+                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile errorProfile,
+                        @Cached BaseExceptionAttrNode attrNode,
+                        @Cached InlinedConditionProfile writeAttrsProfile) {
+            e.expectAttributeError(inliningTarget, errorProfile);
+            if (writeAttrsProfile.profile(inliningTarget, e.getUnreifiedException() instanceof PBaseException exception &&
+                            exception.getExceptionAttributes() != null &&
+                            exception.getExceptionAttributes()[IDX_NAME] == null && exception.getExceptionAttributes()[IDX_OBJ] == null)) {
+                PBaseException exception = (PBaseException) e.getUnreifiedException();
+                attrNode.set(exception, name, IDX_NAME, ATTR_FACTORY);
+                attrNode.set(exception, obj, IDX_OBJ, ATTR_FACTORY);
+            }
+            throw e;
         }
     }
 }

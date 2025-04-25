@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -52,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -160,7 +157,7 @@ public abstract class PyObjectGetMethod extends Node {
         if (descr != PNone.NO_VALUE) {
             return new BoundDescriptor(descr);
         }
-        throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
+        throw raiseNode.raiseAttributeError(inliningTarget, receiver, name);
     }
 
     // No explicit branch profiling when we're looking up multiple things
@@ -205,7 +202,7 @@ public abstract class PyObjectGetMethod extends Node {
         if (descr != PNone.NO_VALUE) {
             return new BoundDescriptor(descr);
         }
-        throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
+        throw raiseNode.raiseAttributeError(inliningTarget, receiver, name);
     }
 
     @Specialization(guards = "isForeignObject(inliningTarget, isForeignObjectNode, receiver)", limit = "1")

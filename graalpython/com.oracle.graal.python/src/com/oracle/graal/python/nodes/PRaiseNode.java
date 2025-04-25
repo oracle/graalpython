@@ -46,6 +46,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.AttributeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -126,6 +127,26 @@ public abstract class PRaiseNode extends Node {
     public static PException raiseWithDataStatic(Node node, PythonBuiltinClassType type, Object[] data) {
         PythonLanguage language = PythonLanguage.get(node);
         PBaseException pythonException = PFactory.createBaseException(language, type, data, null);
+        throw raiseExceptionObject(node, pythonException, language);
+    }
+
+    public final PException raiseAttributeError(Node inliningTarget, Object obj, Object key) {
+        executeEnterProfile(inliningTarget);
+        throw raiseAttributeErrorStatic(inliningTarget, obj, key);
+    }
+
+    public static PException raiseAttributeErrorStatic(Node inliningTarget, Object obj, Object key) {
+        throw raiseWithDataStatic(inliningTarget, PythonBuiltinClassType.AttributeError, AttributeErrorBuiltins.dataForObjKey(obj, key), ErrorMessages.OBJ_P_HAS_NO_ATTR_S, obj, key);
+    }
+
+    public final PException raiseWithData(Node inliningTarget, PythonBuiltinClassType type, Object[] data, TruffleString format, Object... formatArgs) {
+        executeEnterProfile(inliningTarget);
+        throw raiseWithDataStatic(inliningTarget, type, data, format, formatArgs);
+    }
+
+    public static PException raiseWithDataStatic(Node node, PythonBuiltinClassType type, Object[] data, TruffleString format, Object... formatArgs) {
+        PythonLanguage language = PythonLanguage.get(node);
+        PBaseException pythonException = PFactory.createBaseException(language, type, data, format, formatArgs);
         throw raiseExceptionObject(node, pythonException, language);
     }
 

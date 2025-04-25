@@ -40,14 +40,14 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.AttributeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.CallSlotGetAttrNode;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -96,6 +96,7 @@ public abstract class PyObjectGetAttr extends Node {
                     @Cached GetClassNode getClass,
                     @Cached GetObjectSlotsNode getSlotsNode,
                     @Cached CallSlotGetAttrNode callGetAttrNode,
+                    @Cached AttributeErrorBuiltins.SetAttributeErrorContext setContext,
                     @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
                     @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         Object type = getClass.execute(inliningTarget, receiver);
@@ -105,12 +106,16 @@ public abstract class PyObjectGetAttr extends Node {
             Object result = PyObjectLookupAttr.readAttributeQuickly(type, slots, receiver, name, codePointLengthNode, codePointAtIndexNode);
             if (result != null) {
                 if (result == PNone.NO_VALUE) {
-                    throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
+                    throw PRaiseNode.raiseAttributeErrorStatic(inliningTarget, receiver, name);
                 }
                 return result;
             }
         }
-        return callGetAttrNode.execute((VirtualFrame) frame, inliningTarget, slots, receiver, name);
+        try {
+            return callGetAttrNode.execute((VirtualFrame) frame, inliningTarget, slots, receiver, name);
+        } catch (PException e) {
+            throw setContext.execute(inliningTarget, e, receiver, name);
+        }
     }
 
     @NeverDefault

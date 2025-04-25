@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.attributes;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.AttributeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -52,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.CallSlo
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNodeFactory.GetFixedAttributeNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -133,7 +135,7 @@ public final class GetAttributeNode extends PNodeWithContext {
 
         @Specialization(guards = "isModuleGetAttribute(slots)")
         final Object doBuiltinModule(VirtualFrame frame, Object object, @SuppressWarnings("unused") TpSlots slots,
-                        @Cached ModuleBuiltins.ModuleGetattritbuteNode getAttributeNode) {
+                        @Cached ModuleBuiltins.ModuleGetattributeNode getAttributeNode) {
             assert hasNoGetAttr(object);
             return getAttributeNode.execute(frame, object, key);
         }
@@ -141,8 +143,13 @@ public final class GetAttributeNode extends PNodeWithContext {
         @Specialization(replaces = {"doBuiltinObject", "doBuiltinType", "doBuiltinModule"})
         final Object doGeneric(VirtualFrame frame, Object object, TpSlots slots,
                         @Bind("this") Node inliningTarget,
-                        @Cached CallSlotGetAttrNode callGetAttrNode) {
-            return callGetAttrNode.execute(frame, inliningTarget, slots, object, key);
+                        @Cached CallSlotGetAttrNode callGetAttrNode,
+                        @Cached AttributeErrorBuiltins.SetAttributeErrorContext setContext) {
+            try {
+                return callGetAttrNode.execute(frame, inliningTarget, slots, object, key);
+            } catch (PException e) {
+                throw setContext.execute(inliningTarget, e, object, key);
+            }
         }
 
         @NeverDefault

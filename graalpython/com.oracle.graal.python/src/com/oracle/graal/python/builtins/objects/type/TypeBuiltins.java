@@ -93,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.AttributeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
@@ -574,7 +575,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                 }
             }
             errorProfile.enter(inliningTarget);
-            throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, object, key);
+            throw raiseNode.raiseWithData(inliningTarget, AttributeError, AttributeErrorBuiltins.dataForObjKey(object, key), ErrorMessages.OBJ_N_HAS_NO_ATTR_S, object, key);
         }
 
         private Object readAttribute(Object object, TruffleString key) {
