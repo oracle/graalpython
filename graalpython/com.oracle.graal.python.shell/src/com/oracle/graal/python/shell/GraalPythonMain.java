@@ -848,7 +848,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                 rc = readEvalPrint(context, consoleHandler);
             }
         } catch (RuntimeException e) {
-            if (e.getMessage().contains("did not complete all polyglot threads")) {
+            if (e.getMessage() != null && e.getMessage().contains("did not complete all polyglot threads")) {
                 // Python may end up with stuck threads and code would legitimately expect those to
                 // simply die with the process. In an embedding (or CPython subinterpreters) this
                 // is a problem, so Truffle throws an IllegalStateException when closing the
