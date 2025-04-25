@@ -717,14 +717,11 @@ def graalvm_jdk():
             mx.abort(f"No 'release' file in GRAAL_JDK_HOME.")
 
         java_version = None
-        implementor = None
         with open(release, 'r') as f:
-            while not (java_version and implementor):
+            while not java_version:
                 line = f.readline()
                 if 'JAVA_VERSION=' in line:
                     java_version = line
-                if 'IMPLEMENTOR=' in line:
-                    implementor = line
 
         if not java_version:
             mx.abort(f"Could not check Java version in GRAAL_JDK_HOME 'release' file.")
@@ -733,10 +730,6 @@ def graalvm_jdk():
             mx.abort(f"GRAAL_JDK_HOME is not compatible with the requested JDK version.\n"
              f"actual version: '{actual_jdk_version}', version string: {java_version}, requested version: {jdk_version}.")
 
-        if not implementor:
-            mx.abort(f"Could not check implementor in GRAAL_JDK_HOME 'release' file.")
-        if 'GraalVM' not in implementor:
-            mx.abort(f"GRAAL_JDK_HOME 'releases' has an unexpected implementor: '{implementor}'.")
         return graal_jdk_home
 
     jdk_major_version = mx.get_jdk().version.parts[0]
