@@ -605,7 +605,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
     # Check if GRAALPY_HOME points to some compatible pre-built GraalPy standalone
     python_home = os.environ.get("GRAALPY_HOME", None)
-    if python_home and "*" in python_home:
+    if python_home:
         python_home = os.path.abspath(glob.glob(python_home)[0])
         mx.log("Using GraalPy standalone from GRAALPY_HOME: " + python_home)
         # Try to verify that we're getting what we expect:
@@ -701,7 +701,7 @@ def graalvm_jdk():
 
     # Check if GRAAL_JDK_HOME points to some compatible pre-built gvm
     graal_jdk_home = os.environ.get("GRAAL_JDK_HOME", None)
-    if graal_jdk_home and "*" in graal_jdk_home:
+    if graal_jdk_home:
         graal_jdk_home = os.path.abspath(glob.glob(graal_jdk_home)[0])
         if sys.platform == "darwin":
             graal_jdk_home = os.path.join(graal_jdk_home, 'Contents', 'Home')
