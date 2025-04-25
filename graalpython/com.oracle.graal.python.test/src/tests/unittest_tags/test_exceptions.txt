@@ -1,5 +1,9 @@
+test.test_exceptions.AttributeErrorTests.test_attribute_error_with_bad_name @ linux-x86_64
 test.test_exceptions.AttributeErrorTests.test_attribute_error_with_failing_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.AttributeErrorTests.test_attributes @ linux-x86_64
 test.test_exceptions.AttributeErrorTests.test_getattr_error_bad_suggestions_do_not_trigger_for_small_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.AttributeErrorTests.test_getattr_has_name_and_obj @ linux-x86_64
+test.test_exceptions.AttributeErrorTests.test_getattr_has_name_and_obj_for_method @ linux-x86_64
 test.test_exceptions.AttributeErrorTests.test_getattr_suggestions_do_not_trigger_for_big_dicts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exceptions.AttributeErrorTests.test_getattr_suggestions_do_not_trigger_for_long_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exceptions.AttributeErrorTests.test_getattr_suggestions_for_same_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
