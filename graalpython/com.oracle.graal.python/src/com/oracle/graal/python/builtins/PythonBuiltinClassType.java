@@ -135,6 +135,7 @@ import com.oracle.graal.python.builtins.objects.dict.DefaultDictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictValuesBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictViewBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.AttributeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignBooleanBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
@@ -468,7 +469,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     OverflowError("OverflowError", J_BUILTINS, Flags.EXCEPTION),
     ZeroDivisionError("ZeroDivisionError", J_BUILTINS, Flags.EXCEPTION),
     AssertionError("AssertionError", J_BUILTINS, Flags.EXCEPTION),
-    AttributeError("AttributeError", J_BUILTINS, Flags.EXCEPTION),
+    AttributeError("AttributeError", J_BUILTINS, Flags.EXCEPTION, AttributeErrorBuiltins.SLOTS),
     BufferError("BufferError", J_BUILTINS, Flags.EXCEPTION),
     EOFError("EOFError", J_BUILTINS, Flags.EXCEPTION),
     ImportError("ImportError", J_BUILTINS, Flags.EXCEPTION),
