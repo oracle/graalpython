@@ -87,7 +87,6 @@ import com.oracle.truffle.api.strings.TruffleString;
                 PythonBuiltinClassType.PProfilerSubentry,
                 PythonBuiltinClassType.PStructPasswd,
                 PythonBuiltinClassType.PStructRusage,
-                PythonBuiltinClassType.PWindowsVersion,
                 PythonBuiltinClassType.PFloatInfo,
                 PythonBuiltinClassType.PIntInfo,
                 PythonBuiltinClassType.PHashInfo,
