@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -188,7 +189,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
     }
 
     // write to the dict: the basic specialization for non-classes
-    @Specialization(guards = {"dict != null", "!isManagedClass(object)"})
+    @Specialization(guards = {"dict != null", "!isManagedClass(object)", "!isNoValue(value)"})
     static boolean writeToDictNoType(@SuppressWarnings("unused") PythonObject object, TruffleString key, Object value,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
@@ -199,7 +200,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
     }
 
     // write to the dict & PythonManagedClass -> requires calling onAttributeUpdate
-    @Specialization(guards = {"dict != null"})
+    @Specialization(guards = {"dict != null", "!isNoValue(value)"})
     boolean writeToDictBuiltinType(PythonBuiltinClass klass, TruffleString key, Object value,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
@@ -216,7 +217,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
         }
     }
 
-    @Specialization(guards = {"dict != null"})
+    @Specialization(guards = {"dict != null", "!isNoValue(value)"})
     static boolean writeToDictClass(PythonClass klass, TruffleString key, Object value,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
@@ -227,6 +228,36 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
                     @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         return writeToDictManagedClass(klass, dict, key, value, inliningTarget, callAttrUpdate, updateStorage, setHashingStorageItem, codePointLengthNode, codePointAtIndexNode);
+    }
+
+    @Specialization(guards = {"dict != null", "isNoValue(value)", "!isPythonBuiltinClass(obj)"})
+    static boolean deleteFromPythonObject(PythonObject obj, TruffleString key, Object value,
+                    @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
+                    @Bind("getDict.execute(obj)") PDict dict,
+                    @Shared("callAttrUpdate") @Cached InlinedBranchProfile callAttrUpdate,
+                    @Cached HashingStorageNodes.HashingStorageDelItem hashingStorageDelItem,
+                    @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+        try {
+            HashingStorage dictStorage = dict.getDictStorage();
+            return hashingStorageDelItem.execute(inliningTarget, dictStorage, key, dict);
+        } finally {
+            if (obj instanceof PythonManagedClass klass) {
+                if (!klass.canSkipOnAttributeUpdate(key, value, codePointLengthNode, codePointAtIndexNode)) {
+                    callAttrUpdate.enter(inliningTarget);
+                    klass.onAttributeUpdate(key, value);
+                }
+            }
+        }
+    }
+
+    @Specialization(guards = {"dict != null", "isNoValue(value)"})
+    static boolean deleteFromPythonBuiltinClass(PythonBuiltinClass klass, TruffleString key, Object value,
+                    @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
+                    @Bind("getDict.execute(klass)") PDict dict) {
+        throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, key, klass);
     }
 
     private static boolean writeToDictManagedClass(PythonManagedClass klass, PDict dict, TruffleString key, Object value, Node inliningTarget,
