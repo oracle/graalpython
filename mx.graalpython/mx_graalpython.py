@@ -764,6 +764,7 @@ def deploy_local_maven_repo():
     path = os.path.join(SUITE.get_mx_output_dir(), 'public-maven-repo')
     licenses = ['EPL-2.0', 'PSF-License', 'GPLv2-CPE', 'ICU,GPLv2', 'BSD-simplified', 'BSD-new', 'UPL', 'MIT']
     deploy_args = [
+        'maven-deploy',
         '--tags=public',
         '--all-suites',
         '--all-distribution-types',
@@ -778,11 +779,7 @@ def deploy_local_maven_repo():
     if not DISABLE_REBUILD:
         mx.rmtree(path, ignore_errors=True)
         os.mkdir(path)
-        if m2_cache:
-            with set_env(MAVEN_OPTS = maven_opts):
-                mx.maven_deploy(deploy_args)
-        else:
-            mx.maven_deploy(deploy_args)
+        run_mx(deploy_args, env={**env, **LATEST_JAVA_HOME})
     return path, version, env
 
 
