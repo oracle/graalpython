@@ -127,7 +127,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
                     @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
                     @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
                     @Exclusive @Cached GetClassNode getClassNode,
-                    @Exclusive @Cached("createLookup()") LookupSpecialBaseNode getattr) {
+                    @Exclusive @Cached("create(name)") LookupSpecialMethodNode getattr) {
         return doCallObject(frame, inliningTarget, left, right, getClassNode, getattr);
     }
 
@@ -137,21 +137,16 @@ public abstract class LookupAndCallBinaryNode extends Node {
     Object callObjectMegamorphic(VirtualFrame frame, Object left, Object right,
                     @Bind("this") Node inliningTarget,
                     @Exclusive @Cached GetClassNode getClassNode,
-                    @Exclusive @Cached("createLookup()") LookupSpecialBaseNode getattr) {
+                    @Exclusive @Cached("create(name)") LookupSpecialMethodNode getattr) {
         return doCallObject(frame, inliningTarget, left, right, getClassNode, getattr);
     }
 
-    private Object doCallObject(VirtualFrame frame, Node inliningTarget, Object left, Object right, GetClassNode getClassNode, LookupSpecialBaseNode getattr) {
+    private Object doCallObject(VirtualFrame frame, Node inliningTarget, Object left, Object right, GetClassNode getClassNode, LookupSpecialMethodNode getattr) {
         Object leftClass = getClassNode.execute(inliningTarget, left);
         Object leftCallable = getattr.execute(frame, leftClass, left);
         if (PGuards.isNoValue(leftCallable)) {
             throw SpecialMethodNotFound.INSTANCE;
         }
         return ensureDispatch().executeObject(frame, leftCallable, left, right);
-    }
-
-    @NeverDefault
-    protected final LookupSpecialBaseNode createLookup() {
-        return LookupSpecialMethodNode.create(name);
     }
 }

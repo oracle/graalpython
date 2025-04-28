@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -84,7 +84,10 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
-public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
+public abstract class LookupAttributeInMRONode extends PNodeWithContext {
+
+    public abstract Object execute(Object klass);
+
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 36 -> 17
     public abstract static class Dynamic extends PNodeWithContext {

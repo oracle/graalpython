@@ -137,7 +137,7 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached("receiver.getClass()") Class<?> cachedClass,
                     @Shared @Cached GetClassNode getClassNode,
-                    @Shared @Cached("createLookup()") LookupSpecialBaseNode getattr,
+                    @Shared @Cached("create(name)") LookupSpecialMethodNode getattr,
                     @Shared @Cached CallUnaryMethodNode dispatchNode) {
         return doCallObject(frame, inliningTarget, receiver, getClassNode, getattr, dispatchNode);
     }
@@ -148,7 +148,7 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
     Object callObjectMegamorphic(VirtualFrame frame, Object receiver,
                     @Bind("this") Node inliningTarget,
                     @Shared @Cached GetClassNode getClassNode,
-                    @Shared @Cached("createLookup()") LookupSpecialBaseNode getattr,
+                    @Shared @Cached("create(name)") LookupSpecialMethodNode getattr,
                     @Shared @Cached CallUnaryMethodNode dispatchNode) {
         return doCallObject(frame, inliningTarget, receiver, getClassNode, getattr, dispatchNode);
     }
@@ -157,7 +157,7 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
         return object.getClass();
     }
 
-    private Object doCallObject(VirtualFrame frame, Node inliningTarget, Object receiver, GetClassNode getClassNode, LookupSpecialBaseNode getattr, CallUnaryMethodNode dispatchNode) {
+    private Object doCallObject(VirtualFrame frame, Node inliningTarget, Object receiver, GetClassNode getClassNode, LookupSpecialMethodNode getattr, CallUnaryMethodNode dispatchNode) {
         Object attr = getattr.execute(frame, getClassNode.execute(inliningTarget, receiver), receiver);
         if (attr == PNone.NO_VALUE) {
             if (handlerFactory != null) {
@@ -171,11 +171,6 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
         } else {
             return dispatchNode.executeObject(frame, attr, receiver);
         }
-    }
-
-    @NeverDefault
-    protected final LookupSpecialBaseNode createLookup() {
-        return LookupSpecialMethodNode.create(name);
     }
 
     @GenerateUncached
