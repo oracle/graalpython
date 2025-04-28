@@ -41,6 +41,7 @@ from functools import wraps
 from pathlib import Path
 from textwrap import dedent
 
+import mx_graalpython_benchmark
 import mx_graalpython_gradleproject
 import mx_urlrewrites
 
@@ -55,7 +56,6 @@ from zipfile import ZipFile
 
 import mx
 import mx_util
-import mx_benchmark
 import mx_gate
 import mx_native
 import mx_unittest
@@ -71,20 +71,8 @@ from mx_cmake import CMakeNinjaProject #pylint: disable=unused-import
 from mx_graalpython_gradleproject import GradlePluginProject #pylint: disable=unused-import
 
 from mx_gate import Task
-from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JAVA_DRIVER_BENCHMARKS, \
-    HEAP_BENCHMARKS
-from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, \
-    GraalPythonVm, \
-    CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
-    CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI, \
-    CONFIGURATION_DEFAULT_MULTI_TIER, CONFIGURATION_NATIVE_MULTI_TIER, \
-    PythonVmWarmupBenchmarkSuite, \
-    CONFIGURATION_INTERPRETER, CONFIGURATION_INTERPRETER_MULTI, CONFIGURATION_NATIVE_INTERPRETER, \
-    CONFIGURATION_NATIVE_INTERPRETER_MULTI, PythonJavaEmbeddingBenchmarkSuite, python_java_embedding_vm_registry, \
-    GraalPythonJavaDriverVm, CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED, \
-    CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI, CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED, \
-    CONFIGURATION_JAVA_EMBEDDING_MULTI, CONFIGURATION_PANAMA, PythonJMHDistMxBenchmarkSuite, \
-    PythonHeapBenchmarkSuite
+from mx_graalpython_bench_param import PATH_MESO
+
 
 if not sys.modules.get("__main__"):
     # workaround for pdb++
@@ -2197,76 +2185,6 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
 # post init
 #
 # ----------------------------------------------------------------------------------------------------------------------
-def _register_vms(namespace):
-    # cpython
-    python_vm_registry.add_vm(CPythonVm(config_name=CONFIGURATION_DEFAULT), SUITE)
-
-    # pypy
-    python_vm_registry.add_vm(PyPyVm(config_name=CONFIGURATION_DEFAULT), SUITE)
-
-    # jython
-    python_vm_registry.add_vm(JythonVm(config_name=CONFIGURATION_DEFAULT), SUITE)
-
-    # graalpython
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER, extra_polyglot_args=[
-        '--experimental-options', '--engine.Compilation=false'
-    ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context',
-    ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context', '--engine.Compilation=false'
-    ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_MULTI_TIER, extra_polyglot_args=[
-        '--experimental-options', '--engine.MultiTier=true',
-    ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED, extra_polyglot_args=SANDBOXED_OPTIONS), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE, extra_polyglot_args=[
-    ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_INTERPRETER, extra_polyglot_args=[
-        '--experimental-options', '--engine.Compilation=false']), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context'] + SANDBOXED_OPTIONS), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context'
-    ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_INTERPRETER_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context', '--engine.Compilation=false'
-    ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI_TIER, extra_polyglot_args=[
-        '--experimental-options', '--engine.MultiTier=true'
-    ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_PANAMA, extra_polyglot_args=[
-        '--experimental-options', '--python.UsePanama=true'
-    ]), SUITE, 10)
-
-    # java embedding driver
-    python_java_embedding_vm_registry.add_vm(
-        GraalPythonJavaDriverVm(config_name=CONFIGURATION_JAVA_EMBEDDING_MULTI,
-                                extra_polyglot_args=['-multi-context']), SUITE, 10)
-    python_java_embedding_vm_registry.add_vm(
-        GraalPythonJavaDriverVm(config_name=CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED,
-                                extra_polyglot_args=['-multi-context', '-shared-engine']), SUITE, 10)
-    python_java_embedding_vm_registry.add_vm(
-        GraalPythonJavaDriverVm(config_name=CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI,
-                                extra_polyglot_args=['-multi-context', '-interpreter']), SUITE, 10)
-    python_java_embedding_vm_registry.add_vm(
-        GraalPythonJavaDriverVm(config_name=CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED,
-                                extra_polyglot_args=['-multi-context', '-interpreter', '-shared-engine']), SUITE, 10)
-
-
-def _register_bench_suites(namespace):
-    for py_bench_suite in PythonBenchmarkSuite.get_benchmark_suites(BENCHMARKS):
-        mx_benchmark.add_bm_suite(py_bench_suite)
-    for py_bench_suite in PythonJavaEmbeddingBenchmarkSuite.get_benchmark_suites(JAVA_DRIVER_BENCHMARKS):
-        mx_benchmark.add_bm_suite(py_bench_suite)
-    for py_bench_suite in PythonVmWarmupBenchmarkSuite.get_benchmark_suites(WARMUP_BENCHMARKS):
-        mx_benchmark.add_bm_suite(py_bench_suite)
-    mx_benchmark.add_bm_suite(PythonJMHDistMxBenchmarkSuite())
-    for py_bench_suite in PythonHeapBenchmarkSuite.get_benchmark_suites(HEAP_BENCHMARKS):
-        mx_benchmark.add_bm_suite(py_bench_suite)
-
 
 class CharsetFilteringPariticpant:
     """
@@ -2339,8 +2257,8 @@ def warn_about_old_hardcoded_version():
 
 def mx_post_parse_cmd_line(namespace):
     # all projects are now available at this time
-    _register_vms(namespace)
-    _register_bench_suites(namespace)
+    mx_graalpython_benchmark.register_vms(SUITE, SANDBOXED_OPTIONS)
+    mx_graalpython_benchmark.register_suites()
     mx_graalpython_python_benchmarks.register_python_benchmarks()
 
     for dist in mx.suite('graalpython').dists:
