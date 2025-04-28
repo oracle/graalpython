@@ -350,23 +350,23 @@ public abstract class CExtNodes {
         public abstract Double execute(VirtualFrame frame, PythonAbstractNativeObject object);
 
         @Specialization
-        static Double doDouble(VirtualFrame frame, PythonAbstractNativeObject object,
+        static Double doDouble(PythonAbstractNativeObject object,
                         @Bind("this") Node inliningTarget,
                         @Cached GetPythonObjectClassNode getClass,
                         @Cached IsSubtypeNode isSubtype,
                         @Cached CStructAccess.ReadDoubleNode read) {
-            if (isFloatSubtype(frame, inliningTarget, object, getClass, isSubtype)) {
+            if (isFloatSubtype(inliningTarget, object, getClass, isSubtype)) {
                 return read.readFromObj(object, PyFloatObject__ob_fval);
             }
             return null;
         }
 
-        public static boolean isFloatSubtype(VirtualFrame frame, Node inliningTarget, Object object, GetClassNode getClass, IsSubtypeNode isSubtype) {
-            return isSubtype.execute(frame, getClass.execute(inliningTarget, object), PythonBuiltinClassType.PFloat);
+        public static boolean isFloatSubtype(Node inliningTarget, Object object, GetClassNode getClass, IsSubtypeNode isSubtype) {
+            return isSubtype.execute(getClass.execute(inliningTarget, object), PythonBuiltinClassType.PFloat);
         }
 
-        public static boolean isFloatSubtype(VirtualFrame frame, Node inliningTarget, PythonAbstractNativeObject object, GetPythonObjectClassNode getClass, IsSubtypeNode isSubtype) {
-            return isSubtype.execute(frame, getClass.execute(inliningTarget, object), PythonBuiltinClassType.PFloat);
+        public static boolean isFloatSubtype(Node inliningTarget, PythonAbstractNativeObject object, GetPythonObjectClassNode getClass, IsSubtypeNode isSubtype) {
+            return isSubtype.execute(getClass.execute(inliningTarget, object), PythonBuiltinClassType.PFloat);
         }
 
         @NeverDefault

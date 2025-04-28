@@ -57,7 +57,6 @@ import com.oracle.graal.python.builtins.objects.range.PBigRange;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
@@ -70,7 +69,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -86,7 +85,6 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -114,7 +112,6 @@ public final class ReversedBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_new, isComplex = true)
     @SlotSignature(name = J_REVERSED, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @ImportStatic(SpecialMethodSlot.class)
     public abstract static class ReversedNode extends PythonBuiltinNode {
 
         @Specialization
@@ -179,7 +176,7 @@ public final class ReversedBuiltins extends PythonBuiltins {
         static Object reversed(VirtualFrame frame, Object cls, Object sequence,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached("create(Reversed)") LookupSpecialMethodSlotNode lookupReversed,
+                        @Cached("create(T___REVERSED__)") LookupSpecialMethodNode lookupReversed,
                         @Cached CallUnaryMethodNode callReversed,
                         @Cached PySequenceSizeNode pySequenceSizeNode,
                         @Cached InlinedConditionProfile noReversedProfile,

@@ -105,7 +105,6 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactor
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
@@ -1493,22 +1492,16 @@ public final class CApiContext extends CExtContext {
     }
 
     /**
-     * A table mapping {@link BuiltinMethodDescriptor} or {@link RootCallTarget} to the appropriate
-     * {@link PyCFunctionWrapper}. This could actually be shared between Python contexts but
-     * {@link PyCFunctionWrapper} is still a {@link TruffleObject} and so it is assumed to be
-     * context-specific although our wrapper doesn't contain any data and is just used for executing
-     * code.
+     * A table mapping a {@link RootCallTarget} to the appropriate {@link PyCFunctionWrapper}. This
+     * could actually be shared between Python contexts but {@link PyCFunctionWrapper} is still a
+     * {@link TruffleObject} and so it is assumed to be context-specific although our wrapper
+     * doesn't contain any data and is just used for executing code.
      */
-    private final ConcurrentHashMap<Object, PyCFunctionWrapper> pyCFunctionWrappers = new ConcurrentHashMap<>(4);
-
-    @TruffleBoundary
-    public PyCFunctionWrapper getOrCreatePyCFunctionWrapper(BuiltinMethodDescriptor builtinMethodDescriptor, Function<BuiltinMethodDescriptor, PyCFunctionWrapper> cons) {
-        return pyCFunctionWrappers.computeIfAbsent(builtinMethodDescriptor, k -> cons.apply((BuiltinMethodDescriptor) k));
-    }
+    private final ConcurrentHashMap<RootCallTarget, PyCFunctionWrapper> pyCFunctionWrappers = new ConcurrentHashMap<>(4);
 
     @TruffleBoundary
     public PyCFunctionWrapper getOrCreatePyCFunctionWrapper(RootCallTarget ct, Function<RootCallTarget, PyCFunctionWrapper> cons) {
-        return pyCFunctionWrappers.computeIfAbsent(ct, k -> cons.apply((RootCallTarget) k));
+        return pyCFunctionWrappers.computeIfAbsent(ct, cons);
     }
 
     public static boolean isPointerObject(Object object) {

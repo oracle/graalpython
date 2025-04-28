@@ -42,9 +42,7 @@ package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.UnaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
@@ -74,7 +72,6 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
     }
 
     protected final TruffleString name;
-    private final SpecialMethodSlot slot;
     protected final Supplier<NoAttributeHandler> handlerFactory;
     @Child private NoAttributeHandler handler;
 
@@ -91,28 +88,11 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
     }
 
     @NeverDefault
-    public static LookupAndCallUnaryNode create(SpecialMethodSlot slot) {
-        return LookupAndCallUnaryNodeGen.create(slot, null);
-    }
-
-    @NeverDefault
     public static LookupAndCallUnaryNode create(TruffleString name, Supplier<NoAttributeHandler> handlerFactory) {
         return LookupAndCallUnaryNodeGen.create(name, handlerFactory);
     }
 
-    @NeverDefault
-    public static LookupAndCallUnaryNode create(SpecialMethodSlot slot, Supplier<NoAttributeHandler> handlerFactory) {
-        return LookupAndCallUnaryNodeGen.create(slot, handlerFactory);
-    }
-
-    LookupAndCallUnaryNode(SpecialMethodSlot slot, Supplier<NoAttributeHandler> handlerFactory) {
-        this.slot = slot;
-        this.name = slot.getName();
-        this.handlerFactory = handlerFactory;
-    }
-
     LookupAndCallUnaryNode(TruffleString name, Supplier<NoAttributeHandler> handlerFactory) {
-        this.slot = null;
         this.name = name;
         this.handlerFactory = handlerFactory;
     }
@@ -122,14 +102,6 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
     }
 
     protected final PythonUnaryBuiltinNode getUnaryBuiltin(PythonBuiltinClassType clazz) {
-        if (slot != null) {
-            Object attribute = slot.getValue(clazz);
-            if (attribute instanceof UnaryBuiltinDescriptor) {
-                return ((UnaryBuiltinDescriptor) attribute).createNode();
-            }
-            // If the slot does not contain builtin, full lookup wouldn't find a builtin either
-            return null;
-        }
         Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(clazz, name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
@@ -165,7 +137,7 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached("receiver.getClass()") Class<?> cachedClass,
                     @Shared @Cached GetClassNode getClassNode,
-                    @Shared @Cached("createLookup()") LookupSpecialBaseNode getattr,
+                    @Shared @Cached("create(name)") LookupSpecialMethodNode getattr,
                     @Shared @Cached CallUnaryMethodNode dispatchNode) {
         return doCallObject(frame, inliningTarget, receiver, getClassNode, getattr, dispatchNode);
     }
@@ -176,7 +148,7 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
     Object callObjectMegamorphic(VirtualFrame frame, Object receiver,
                     @Bind("this") Node inliningTarget,
                     @Shared @Cached GetClassNode getClassNode,
-                    @Shared @Cached("createLookup()") LookupSpecialBaseNode getattr,
+                    @Shared @Cached("create(name)") LookupSpecialMethodNode getattr,
                     @Shared @Cached CallUnaryMethodNode dispatchNode) {
         return doCallObject(frame, inliningTarget, receiver, getClassNode, getattr, dispatchNode);
     }
@@ -185,7 +157,7 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
         return object.getClass();
     }
 
-    private Object doCallObject(VirtualFrame frame, Node inliningTarget, Object receiver, GetClassNode getClassNode, LookupSpecialBaseNode getattr, CallUnaryMethodNode dispatchNode) {
+    private Object doCallObject(VirtualFrame frame, Node inliningTarget, Object receiver, GetClassNode getClassNode, LookupSpecialMethodNode getattr, CallUnaryMethodNode dispatchNode) {
         Object attr = getattr.execute(frame, getClassNode.execute(inliningTarget, receiver), receiver);
         if (attr == PNone.NO_VALUE) {
             if (handlerFactory != null) {
@@ -199,14 +171,6 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
         } else {
             return dispatchNode.executeObject(frame, attr, receiver);
         }
-    }
-
-    @NeverDefault
-    protected final LookupSpecialBaseNode createLookup() {
-        if (slot != null) {
-            return LookupSpecialMethodSlotNode.create(slot);
-        }
-        return LookupSpecialMethodNode.create(name);
     }
 
     @GenerateUncached

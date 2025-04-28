@@ -74,7 +74,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.IsKeysSubset;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -488,7 +487,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
-    @ImportStatic({PGuards.class, SpecialMethodSlot.class})
+    @ImportStatic(PGuards.class)
     protected abstract static class ConvertKeyNode extends PNodeWithContext {
         public abstract Object execute(Node inliningTarget, Object key);
 

@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.function;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 
-import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -80,7 +79,6 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     private final int flags;
     private final TpSlot slot;
     private final PExternalFunctionWrapper slotWrapper;
-    private BuiltinMethodDescriptor descriptor;
     @CompilationFinal(dimensions = 1) private final Object[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
@@ -265,24 +263,5 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     @ExportMessage
     TruffleString getExecutableName() {
         return getName();
-    }
-
-    public void setDescriptor(BuiltinMethodDescriptor value) {
-        assert value.getName().equals(getName().toJavaStringUncached()) && getBuiltinNodeFactory() == value.getFactory() : getName() + " vs " + value;
-        // Only make sure that info is fully initialized, otherwise it is fine if it is set multiple
-        // times from different threads, all of them should set the same value
-        VarHandle.storeStoreFence();
-        BuiltinMethodDescriptor local = descriptor;
-        assert local == null || local == value : value;
-        this.descriptor = value;
-    }
-
-    /**
-     * The descriptor is set lazily once this builtin function is stored in any special method slot.
-     * I.e., one can assume that any builtin function looked up via special method slots has its
-     * descriptor set.
-     */
-    public BuiltinMethodDescriptor getDescriptor() {
-        return descriptor;
     }
 }

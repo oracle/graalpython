@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
@@ -76,7 +75,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
@@ -112,7 +111,7 @@ public abstract class IteratorNodes {
      */
     @GenerateInline
     @GenerateCached(false)
-    @ImportStatic({PGuards.class, SpecialMethodNames.class, SpecialMethodSlot.class})
+    @ImportStatic({PGuards.class, SpecialMethodNames.class})
     public abstract static class GetLength extends PNodeWithContext {
 
         public abstract int execute(VirtualFrame frame, Node inliningTarget, Object iterable);
@@ -172,7 +171,7 @@ public abstract class IteratorNodes {
                         @Cached GetCachedTpSlotsNode getSlotsNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached(value = "create(LengthHint)", inline = false) LookupSpecialMethodSlotNode lenHintNode,
+                        @Cached LookupSpecialMethodNode.Dynamic lenHintNode,
                         @Cached CallSlotLenNode callSlotLenNode,
                         @Cached(inline = false) CallUnaryMethodNode dispatchLenOrLenHint,
                         @Cached IsBuiltinObjectProfile errorProfile,
@@ -191,9 +190,7 @@ public abstract class IteratorNodes {
                     e.expect(inliningTarget, TypeError, errorProfile);
                 }
             }
-            // TODO: __len_hint__ is not a slot, but it is resolved using _PyObject_LookupSpecial,
-            // so looked up only on type, so we can cache it in slots
-            Object attrLenHintObj = lenHintNode.execute(frame, clazz, iterable);
+            Object attrLenHintObj = lenHintNode.execute(frame, inliningTarget, clazz, T___LENGTH_HINT__, iterable);
             if (hasLengthHintProfile.profile(inliningTarget, attrLenHintObj != PNone.NO_VALUE)) {
                 Object len = null;
                 try {

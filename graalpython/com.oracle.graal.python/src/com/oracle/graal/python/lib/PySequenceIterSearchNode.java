@@ -41,7 +41,6 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -52,7 +51,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.LoopNode;
@@ -64,7 +62,6 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
  * Equivalent of CPython's {@code _PySequence_IterSearch}.
  */
 @GenerateUncached
-@ImportStatic(SpecialMethodSlot.class)
 @GenerateInline(inlineByDefault = true)
 public abstract class PySequenceIterSearchNode extends PNodeWithContext {
     // return # of times obj appears in seq.

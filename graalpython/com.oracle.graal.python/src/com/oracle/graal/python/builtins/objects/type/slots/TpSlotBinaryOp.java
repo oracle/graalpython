@@ -421,7 +421,7 @@ public class TpSlotBinaryOp {
             TpSlot selfSlotValue = op.getSlotValue(selfSlots);
             // Note: the slot may be other's slot, not self's slot, so this test may not pass
             if (isSameReversibleWrapper(selfSlotValue, op)) {
-                if (doOther && isSubtypeNode.execute(frame, otherType, selfType)) {
+                if (doOther && isSubtypeNode.execute(otherType, selfType)) {
                     if (methodIsOverloaded(frame, inliningTarget, slot, otherSlotValue, neNode)) {
                         Object result = dispatchIfAvailable(frame, inliningTarget, dispatchR1Profile, dispatcherNode, other, self, otherSlotValue.getRight(), otherSlotValue.getType());
                         if (result != PNotImplemented.NOT_IMPLEMENTED) {

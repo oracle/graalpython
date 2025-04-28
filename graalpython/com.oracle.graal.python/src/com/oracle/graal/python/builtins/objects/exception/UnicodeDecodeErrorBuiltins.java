@@ -215,7 +215,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
         public abstract Object execute(Node inliningTarget, PBaseException exceptionObject);
 
         @Specialization
-        static Object doIt(VirtualFrame frame, Node inliningTarget, PBaseException exceptionObject,
+        static Object doIt(Node inliningTarget, PBaseException exceptionObject,
                         @Cached(inline = false) BaseExceptionAttrNode attrNode,
                         @Cached GetClassNode getClassNode,
                         @Cached(inline = false) IsSubtypeNode isSubtypeNode,
@@ -224,7 +224,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
             if (obj == null) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_ATTRIBUTE_NOT_SET, "object");
             }
-            if (!isSubtypeNode.execute(frame, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes)) {
+            if (!isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_ATTRIBUTE_MUST_BE_BYTES, "object");
             }
             return obj;

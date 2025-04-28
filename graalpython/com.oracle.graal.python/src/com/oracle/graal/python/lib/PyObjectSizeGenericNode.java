@@ -42,7 +42,6 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen;
@@ -52,7 +51,6 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -60,7 +58,6 @@ import com.oracle.truffle.api.nodes.Node;
 
 // Note: this has to be a top-level class because of bug/restriction in Truffle DSL
 @GenerateUncached
-@ImportStatic(SpecialMethodSlot.class)
 @GenerateInline(false) // intentionally lazy initialized...
 abstract class PyObjectSizeGenericNode extends Node {
     abstract int execute(Frame frame, Object object);

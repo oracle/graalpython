@@ -152,7 +152,7 @@ public final class TupleBuiltins extends PythonBuiltins {
         }
 
         // delegate to tuple_subtype_new(PyTypeObject *type, PyObject *x)
-        @Specialization(guards = {"needsNativeAllocationNode.execute(inliningTarget, cls)", "isSubtypeOfTuple(frame, isSubtype, cls)"}, limit = "1")
+        @Specialization(guards = {"needsNativeAllocationNode.execute(inliningTarget, cls)", "isSubtypeOfTuple( isSubtype, cls)"}, limit = "1")
         @InliningCutoff
         static Object doNative(@SuppressWarnings("unused") VirtualFrame frame, Object cls, Object iterable,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
@@ -166,8 +166,8 @@ public final class TupleBuiltins extends PythonBuiltins {
             return cls == PythonBuiltinClassType.PTuple;
         }
 
-        protected static boolean isSubtypeOfTuple(VirtualFrame frame, IsSubtypeNode isSubtypeNode, Object cls) {
-            return isSubtypeNode.execute(frame, cls, PythonBuiltinClassType.PTuple);
+        protected static boolean isSubtypeOfTuple(IsSubtypeNode isSubtypeNode, Object cls) {
+            return isSubtypeNode.execute(cls, PythonBuiltinClassType.PTuple);
         }
 
         @Fallback

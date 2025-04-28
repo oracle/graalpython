@@ -49,6 +49,8 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATION
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AEXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AssertionError;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -93,7 +95,6 @@ import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.compiler.CodeUnit;
@@ -175,7 +176,7 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.exception.ExceptMatchNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
@@ -1393,7 +1394,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
-    @ImportStatic(SpecialMethodSlot.class)
     public static final class DeleteItem {
         @Specialization
         public static void doWithFrame(VirtualFrame frame, Object primary, Object index,
@@ -2827,7 +2827,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)
-    @ImportStatic({SpecialMethodSlot.class})
     public static final class ContextManagerEnter {
         @Specialization
         @InliningCutoff
@@ -2838,16 +2837,16 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind Node inliningTarget,
                         @Bind BytecodeNode bytecode,
                         @Cached GetClassNode getClass,
-                        @Cached(parameters = "Enter") LookupSpecialMethodSlotNode lookupEnter,
-                        @Cached(parameters = "Exit") LookupSpecialMethodSlotNode lookupExit,
+                        @Cached LookupSpecialMethodNode.Dynamic lookupEnter,
+                        @Cached LookupSpecialMethodNode.Dynamic lookupExit,
                         @Cached CallUnaryMethodNode callEnter,
                         @Cached PRaiseNode raiseNode) {
             Object type = getClass.execute(inliningTarget, contextManager);
-            Object enter = lookupEnter.execute(frame, type, contextManager);
+            Object enter = lookupEnter.execute(frame, inliningTarget, type, T___ENTER__, contextManager);
             if (enter == PNone.NO_VALUE) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.N_OBJECT_DOES_NOT_SUPPORT_CONTEXT_MANAGER_PROTOCOL, type);
             }
-            Object exit = lookupExit.execute(frame, type, contextManager);
+            Object exit = lookupExit.execute(frame, inliningTarget, type, T___EXIT__, contextManager);
             if (exit == PNone.NO_VALUE) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.N_OBJECT_DOES_NOT_SUPPORT_CONTEXT_MANAGER_PROTOCOL_EXIT, type);
             }
@@ -2903,7 +2902,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)
-    @ImportStatic({SpecialMethodSlot.class})
     public static final class AsyncContextManagerEnter {
         @Specialization
         @InliningCutoff
@@ -2914,16 +2912,16 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind Node inliningTarget,
                         @Bind BytecodeNode bytecode,
                         @Cached GetClassNode getClass,
-                        @Cached(parameters = "AEnter") LookupSpecialMethodSlotNode lookupEnter,
-                        @Cached(parameters = "AExit") LookupSpecialMethodSlotNode lookupExit,
+                        @Cached LookupSpecialMethodNode.Dynamic lookupEnter,
+                        @Cached LookupSpecialMethodNode.Dynamic lookupExit,
                         @Cached CallUnaryMethodNode callEnter,
                         @Cached PRaiseNode raiseNode) {
             Object type = getClass.execute(inliningTarget, contextManager);
-            Object enter = lookupEnter.execute(frame, type, contextManager);
+            Object enter = lookupEnter.execute(frame, inliningTarget, type, T___AENTER__, contextManager);
             if (enter == PNone.NO_VALUE) {
                 throw raiseNode.raise(inliningTarget, AttributeError, new Object[]{T___AENTER__});
             }
-            Object exit = lookupExit.execute(frame, type, contextManager);
+            Object exit = lookupExit.execute(frame, inliningTarget, type, T___AEXIT__, contextManager);
             if (exit == PNone.NO_VALUE) {
                 throw raiseNode.raise(inliningTarget, AttributeError, new Object[]{T___AEXIT__});
             }

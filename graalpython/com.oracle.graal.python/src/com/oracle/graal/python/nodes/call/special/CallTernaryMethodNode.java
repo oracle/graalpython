@@ -40,18 +40,13 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinDescriptor;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
-import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -78,26 +73,6 @@ public abstract class CallTernaryMethodNode extends AbstractCallMethodNode {
     }
 
     public abstract Object execute(Frame frame, Object callable, Object arg1, Object arg2, Object arg3);
-
-    @Specialization(guards = {"cachedInfo == info", "node != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    static Object callSpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") TernaryBuiltinDescriptor info, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("info") TernaryBuiltinDescriptor cachedInfo,
-                    @Cached("getBuiltin(cachedInfo)") PythonTernaryBuiltinNode node) {
-        return node.execute(frame, arg1, arg2, arg3);
-    }
-
-    @Specialization(replaces = "callSpecialMethodSlotInlined")
-    @InliningCutoff
-    static Object callSpecialMethodSlotCallTarget(VirtualFrame frame, TernaryBuiltinDescriptor info, Object arg1, Object arg2, Object arg3,
-                    @Bind Node inliningTarget,
-                    @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
-        RootCallTarget callTarget = PythonLanguage.get(inliningTarget).getDescriptorCallTarget(info);
-        Object[] arguments = PArguments.create(3);
-        PArguments.setArgument(arguments, 0, arg1);
-        PArguments.setArgument(arguments, 1, arg2);
-        PArguments.setArgument(arguments, 2, arg3);
-        return invoke.execute(frame, inliningTarget, callTarget, arguments);
-    }
 
     @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object doBuiltinFunctionCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
@@ -148,7 +123,7 @@ public abstract class CallTernaryMethodNode extends AbstractCallMethodNode {
         return callQuaternaryBuiltin(frame, builtinNode, func.getSelf(), arg1, arg2, arg3);
     }
 
-    @Specialization(guards = "!isTernaryBuiltinDescriptor(func)", replaces = {"doBuiltinFunctionCached", "doBuiltinFunctionCtCached",
+    @Specialization(replaces = {"doBuiltinFunctionCached", "doBuiltinFunctionCtCached",
                     "doBuiltinMethodCached", "doBuiltinMethodCtCached", "callSelfMethodSingleContext", "callSelfMethod"})
     @Megamorphic
     @InliningCutoff

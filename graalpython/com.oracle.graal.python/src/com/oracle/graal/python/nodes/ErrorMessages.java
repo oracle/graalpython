@@ -883,6 +883,7 @@ public abstract class ErrorMessages {
     public static final TruffleString BYTES_OR_INT_ADDR_EXPECTED_INSTEAD_OF_P = tsLiteral("bytes or integer address expected instead of %p instance");
     public static final TruffleString UNICODE_STR_OR_INT_ADDR_EXPECTED_INSTEAD_OF_P = tsLiteral("unicode string or integer address expected instead of %p instance");
     public static final TruffleString N_NOT_SUBTYPE_OF_ARRAY = tsLiteral("%n is not a subtype of array");
+    public static final TruffleString FIRST_ARGUMENT_MUST_BE_A_TYPE_OBJECT_NOT_P = tsLiteral("first argument must be a type object, not %p");
     public static final TruffleString CANNOT_BE_CONVERTED_TO_POINTER = tsLiteral("cannot be converted to pointer");
     public static final TruffleString PY_OBJ_IS_NULL = tsLiteral("PyObject is NULL");
     public static final TruffleString OUT_OF_RANGE_FLOAT_NOT_JSON_COMPLIANT = tsLiteral("Out of range float values are not JSON compliant");

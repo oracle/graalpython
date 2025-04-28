@@ -69,16 +69,10 @@ import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinDescriptor;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.UnaryBuiltinDescriptor;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -97,7 +91,6 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -115,58 +108,19 @@ import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
 public abstract class PGuards {
-    /**
-     * Specialization guards.
-     */
-
-    public static boolean stringEquals(String expected, String other, ConditionProfile profile) {
-        if (profile.profile(expected == other)) {
-            return true;
-        }
-        return expected.equals(other);
-    }
-
-    public static boolean stringEquals(String expected, String other, Node inliningTarget, InlinedConditionProfile profile) {
-        if (profile.profile(inliningTarget, expected == other)) {
-            return true;
-        }
-        return expected.equals(other);
-    }
-
-    public static boolean stringEquals(TruffleString expected, TruffleString other, TruffleString.EqualNode equalNode, ConditionProfile profile) {
-        if (profile.profile(expected == other)) {
-            return true;
-        }
-        return equalNode.execute(expected, other, TS_ENCODING);
-    }
-
-    public static boolean stringEquals(TruffleString expected, TruffleString other, TruffleString.EqualNode equalNode, Node inliningTarget, InlinedConditionProfile profile) {
-        if (profile.profile(inliningTarget, expected == other)) {
-            return true;
-        }
-        return equalNode.execute(expected, other, TS_ENCODING);
-    }
 
     public static boolean stringEquals(TruffleString key, TruffleString cachedKey, TruffleString.EqualNode equalNode) {
         return equalNode.execute(cachedKey, key, TS_ENCODING);
-    }
-
-    public static boolean isSameObject(Object left, Object right) {
-        return left == right;
     }
 
     public static boolean isEmpty(Object[] array) {
@@ -228,25 +182,8 @@ public abstract class PGuards {
         return value instanceof PBuiltinFunction || value instanceof PFunction || value instanceof PBuiltinMethod || value instanceof PMethod;
     }
 
-    /**
-     * Use instead of {@link #isCallable(Object)} for objects coming from
-     * {@link com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode}. Note that such
-     * objects can be then forwarded only to call nodes that support them.
-     */
-    public static boolean isCallableOrDescriptor(Object value) {
-        return isCallable(value) || BuiltinMethodDescriptor.isInstance(value);
-    }
-
-    public static boolean isBuiltinDescriptor(Object value) {
-        return BuiltinMethodDescriptor.isInstance(value);
-    }
-
     public static boolean isClass(Node inliningTarget, Object obj, TypeNodes.IsTypeNode isTypeNode) {
         return isTypeNode.execute(inliningTarget, obj);
-    }
-
-    public static boolean isClassUncached(Object obj) {
-        return TypeNodes.IsTypeNode.executeUncached(obj);
     }
 
     public static boolean isEmptyStorage(PSequence sequence) {
@@ -261,36 +198,16 @@ public abstract class PGuards {
         return array.getSequenceStorage() instanceof ByteSequenceStorage;
     }
 
-    public static boolean areBothIntStorage(PSequence first, PSequence second) {
-        return first.getSequenceStorage() instanceof IntSequenceStorage && second.getSequenceStorage() instanceof IntSequenceStorage;
-    }
-
-    public static boolean areBothByteStorage(PSequence first, PSequence second) {
-        return first.getSequenceStorage() instanceof ByteSequenceStorage && second.getSequenceStorage() instanceof ByteSequenceStorage;
-    }
-
     public static boolean isLongStorage(PSequence sequence) {
         return sequence.getSequenceStorage() instanceof LongSequenceStorage;
-    }
-
-    public static boolean areBothLongStorage(PList first, PList second) {
-        return first.getSequenceStorage() instanceof LongSequenceStorage && second.getSequenceStorage() instanceof LongSequenceStorage;
     }
 
     public static boolean isDoubleStorage(PSequence sequence) {
         return sequence.getSequenceStorage() instanceof DoubleSequenceStorage;
     }
 
-    public static boolean areBothDoubleStorage(PList first, PList second) {
-        return first.getSequenceStorage() instanceof DoubleSequenceStorage && second.getSequenceStorage() instanceof DoubleSequenceStorage;
-    }
-
     public static boolean isObjectStorage(PSequence list) {
         return list.getSequenceStorage() instanceof ObjectSequenceStorage;
-    }
-
-    public static boolean areBothObjectStorage(PList first, PList second) {
-        return first.getSequenceStorage() instanceof ObjectSequenceStorage && second.getSequenceStorage() instanceof ObjectSequenceStorage;
     }
 
     public static boolean isForeignSequenceStorage(SequenceStorage sequenceStorage) {
@@ -309,61 +226,12 @@ public abstract class PGuards {
         return self instanceof EconomicMapStorage || self instanceof EmptyStorage;
     }
 
-    public static boolean isObjectStorageIterator(PSequenceIterator iterator) {
-        if (!iterator.isPSequence()) {
-            return false;
-        }
-
-        PSequence sequence = iterator.getPSequence();
-
-        if (sequence instanceof PList list) {
-            return list.getSequenceStorage() instanceof ObjectSequenceStorage;
-        }
-
-        return false;
-    }
-
     public static boolean isPythonObject(Object obj) {
         return obj instanceof PythonObject;
     }
 
     public static boolean isPythonModule(Object obj) {
         return obj instanceof PythonModule;
-    }
-
-    /**
-     * Argument guards.
-     */
-    public static boolean emptyArguments(VirtualFrame frame) {
-        return PArguments.getUserArgumentLength(frame) == 0;
-    }
-
-    public static boolean argGiven(Object object) {
-        return object == PNone.NO_VALUE;
-    }
-
-    public static boolean emptyArguments(PNone none) {
-        return none == PNone.NO_VALUE;
-    }
-
-    public static boolean isIndexPositive(int idx) {
-        return idx >= 0;
-    }
-
-    public static boolean isIndexNegative(int idx) {
-        return idx < 0;
-    }
-
-    public static boolean isIndexPositive(long idx) {
-        return idx >= 0;
-    }
-
-    public static boolean isIndexNegative(long idx) {
-        return idx < 0;
-    }
-
-    public static boolean isPythonUserClass(Object klass) {
-        return klass instanceof PythonClass || PythonNativeClass.isInstance(klass);
     }
 
     public static boolean isPythonBuiltinClassType(Object klass) {
@@ -577,16 +445,6 @@ public abstract class PGuards {
         throw new UnexpectedResultException(result);
     }
 
-    public static int expectInt(Object result) throws UnexpectedResultException, OverflowException {
-        if (result instanceof Integer) {
-            return (Integer) result;
-        }
-        if (result instanceof Long) {
-            return PInt.intValueExact((Long) result);
-        }
-        throw new UnexpectedResultException(result);
-    }
-
     public static long expectLong(Object result) throws UnexpectedResultException {
         if (result instanceof Long) {
             return (Long) result;
@@ -662,22 +520,6 @@ public abstract class PGuards {
 
     public static boolean isKindOfBuiltinClass(Object clazz) {
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
-    }
-
-    public static boolean isUnaryBuiltinDescriptor(Object value) {
-        return value instanceof UnaryBuiltinDescriptor;
-    }
-
-    public static boolean isBinaryBuiltinDescriptor(Object value) {
-        return value instanceof BinaryBuiltinDescriptor;
-    }
-
-    public static boolean isTernaryBuiltinDescriptor(Object value) {
-        return value instanceof TernaryBuiltinDescriptor;
-    }
-
-    public static boolean isMinusOne(long l) {
-        return l == -1;
     }
 
     public static boolean isAscii(TruffleString str, TruffleString.GetCodeRangeNode getCodeRangeNode) {

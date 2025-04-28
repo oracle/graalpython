@@ -57,7 +57,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
@@ -345,8 +344,8 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
     }
 
     @GenerateUncached
-    @ImportStatic(SpecialMethodSlot.class)
     @GenerateInline(false) // footprint reduction 132 -> 115
+    @ImportStatic(TpSlots.class)
     protected abstract static class WriteAttributeToObjectTpDictNode extends WriteAttributeToObjectNode {
 
         private static void checkNativeImmutable(Node inliningTarget, PythonAbstractNativeObject object, TruffleString key,
@@ -362,7 +361,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
          * Simplest case: the key object is a String (so it cannot be a hidden key) and it's not a
          * special method slot.
          */
-        @Specialization(guards = "!canBeSpecial(key, codePointLengthNode, codePointAtIndexNode)")
+        @Specialization(guards = "!canBeSpecialMethod(key, codePointLengthNode, codePointAtIndexNode)")
         static boolean writeNativeClassSimple(PythonAbstractNativeObject object, TruffleString key, Object value,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CStructAccess.ReadI64Node getNativeFlags,
@@ -397,8 +396,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
                         @Cached IsTypeNode isTypeNode,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                        @Cached TruffleString.EqualNode equalNode) {
+                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
             try {
                 checkNativeImmutable(inliningTarget, object, key, getNativeFlags, raiseNode);
                 /*
@@ -421,11 +419,6 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
                     // have this hook
                     if (isTypeNode.execute(inliningTarget, object)) {
                         TpSlots.updateSlot(object, key);
-                    }
-                    // TODO: will be removed:
-                    SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key, codePointLengthNode, codePointAtIndexNode, equalNode);
-                    if (slot != null) {
-                        SpecialMethodSlot.fixupSpecialMethodSlot(object, slot, value);
                     }
                 }
             }

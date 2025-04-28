@@ -113,7 +113,7 @@ public abstract class CallBinaryOp1Node extends PNodeWithContext {
                 sameTypes = isSameTypeProfile.profile(inliningTarget, isSameTypeNode.execute(inliningTarget, classW, classV));
                 if (!sameTypes) {
                     if (!isSameSlotProfile.profile(inliningTarget, isSameSlotNode.execute(inliningTarget, slotW, slotV))) {
-                        if (isSubtypeNode.execute(frame, classW, classV)) {
+                        if (isSubtypeNode.execute(classW, classV)) {
                             Object result = callSlotWNode.execute(frame, inliningTarget, slotW, v, classV, w, slotW, classW, false, op);
                             if (wResultProfile.profile(inliningTarget, result != PNotImplemented.NOT_IMPLEMENTED)) {
                                 return result;
