@@ -628,6 +628,8 @@ public final class ObjectHashMap {
                         @Cached InlinedBranchProfile rehash1Profile,
                         @Cached InlinedBranchProfile rehash2Profile,
                         @Cached PyObjectRichCompareBool eqNode) {
+            // If this assert fires: you're probably using PutUnsafeNode, but should use PutNode
+            assert map.hasSideEffectingKeys || (!IsSideEffectingKeyNodeGen.getUncached().execute(null, key));
             while (true) {
                 try {
                     doPut(frame, map, key, keyHash, value, inliningTarget, foundNullKey, foundEqKey,

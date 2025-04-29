@@ -122,7 +122,7 @@ public class HashingStorageNodes {
 
         public static boolean mayHaveSideEffects(PHashingCollection wrapper) {
             HashingStorage s = wrapper.getDictStorage();
-            return !(s instanceof EconomicMapStorage && ((EconomicMapStorage) s).map.hasSideEffectingKeys());
+            return s instanceof EconomicMapStorage && ((EconomicMapStorage) s).map.hasSideEffectingKeys();
         }
     }
 
