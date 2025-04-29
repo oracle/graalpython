@@ -290,7 +290,7 @@ def full_python(args, env=None):
                  "To build it: mx python-jvm\n" +
                  "Alternatively use: mx python --hosted")
 
-    mx.run([graalpy_path] + args, env=env)
+    run([graalpy_path] + args, env=env)
 
 
 def handle_debug_arg(args):
@@ -755,15 +755,22 @@ def deploy_local_maven_repo():
         env['MAVEN_OPTS'] = maven_opts
         mx.log(f'Added {mvn_repo_local} to MAVEN_OPTS={maven_opts}')
 
+    run_mx_args = [
+        '-p',
+        os.path.join(mx.suite('truffle').dir, '..', 'vm'),
+        '--dy',
+        'graalpython',
+    ]
+
     if not DISABLE_REBUILD:
         # build GraalPy and all the necessary dependencies, so that we can deploy them
-        run_mx(["-p", os.path.join(mx.suite('truffle').dir, '..', 'vm'), "--dy", "graalpython", "build"], env={**env, **LATEST_JAVA_HOME})
+        run_mx(run_mx_args + ["build"], env={**env, **LATEST_JAVA_HOME})
 
     # deploy maven artifacts
     version = GRAAL_VERSION
     path = os.path.join(SUITE.get_mx_output_dir(), 'public-maven-repo')
     licenses = ['EPL-2.0', 'PSF-License', 'GPLv2-CPE', 'ICU,GPLv2', 'BSD-simplified', 'BSD-new', 'UPL', 'MIT']
-    deploy_args = [
+    deploy_args = run_mx_args + [
         'maven-deploy',
         '--tags=public',
         '--all-suites',
@@ -901,7 +908,7 @@ def graalpytest(args):
         env['PYTHONPATH'] = os.pathsep.join(pythonpath)
     if python_binary:
         try:
-            result = mx.run([python_binary, *cmd_args], nonZeroIsFatal=True, env=env)
+            result = run([python_binary, *cmd_args], nonZeroIsFatal=True, env=env)
             print(f"back from mx.run, returning {result}")
             return result
         except BaseException as e:
@@ -1001,7 +1008,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     mx.logv(shlex.join([python_binary] + args))
     if lock:
         lock.release()
-    result = mx.run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
+    result = run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
     if lock:
         lock.acquire()
 
@@ -1195,7 +1202,7 @@ def graalpython_gate_runner(args, tasks):
         if task:
             env = extend_os_env(PYTHONHASHSEED='0')
             test_args = [get_cpython(), _python_test_runner(), "run", "-n", "6", "graalpython/com.oracle.graal.python.test/src/tests"]
-            mx.run(test_args, nonZeroIsFatal=True, env=env)
+            run(test_args, nonZeroIsFatal=True, env=env)
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
@@ -1355,7 +1362,7 @@ def graalpython_gate_runner(args, tasks):
                 svm_image = python_svm()
                 benchmark = os.path.join(PATH_MESO, "image-magix.py")
                 out = mx.OutputCapture()
-                mx.run([svm_image, "-S", "--log.python.level=FINE", benchmark], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
+                run([svm_image, "-S", "--log.python.level=FINE", benchmark], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
             success = "\n".join([
                 "[0, 0, 0, 0, 0, 0, 10, 10, 10, 0, 0, 10, 3, 10, 0, 0, 10, 10, 10, 0, 0, 0, 0, 0, 0]",
             ])
@@ -2511,6 +2518,14 @@ def no_return(fn):
     return inner
 
 
+def run(args, *splat, **kwargs):
+    if not mx.get_opts().quiet:
+        env = kwargs.get("env", os.environ)
+        extra_env = shlex.join([f"{k}={v}" for k, v in env.items() if os.environ.get(k) != v])
+        mx.log(mx.colorize(f"Running: {extra_env} {shlex.join(args)}", color="green"))
+    return mx.run(args, *splat, **kwargs)
+
+
 def run_mx(args, *splat, **kwargs):
     env = kwargs.get("env", os.environ)
     extra_env = {k: v for k, v in env.items() if os.environ.get(k) != v}
@@ -2520,10 +2535,12 @@ def run_mx(args, *splat, **kwargs):
     if jh := extra_env.get("JAVA_HOME"):
         args = [f"--java-home={jh}"] + args
 
-    msg = f"Running: mx {shlex.join(args)}"
+    msg = "Running: "
     if extra_env:
-        msg += f" (with extra env: " + shlex.join([f"{k}={v}" for k, v in extra_env.items()]) + ")"
-    mx.log(mx.colorize(msg, color="blue"))
+        msg += shlex.join([f"{k}={v}" for k, v in extra_env.items()])
+    msg += f" mx {shlex.join(args)}"
+    if not mx.get_opts().quiet:
+        mx.log(mx.colorize(msg, color="green"))
     return mx.run_mx(args, *splat, **kwargs)
 
 
