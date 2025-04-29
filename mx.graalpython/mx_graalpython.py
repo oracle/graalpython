@@ -100,6 +100,8 @@ PYTHON_VERSION = SUITE.suiteDict[f'{SUITE.name}:pythonVersion']
 PYTHON_VERSION_MAJ_MIN = ".".join(PYTHON_VERSION.split('.')[:2])
 
 LATEST_JAVA_HOME = {"JAVA_HOME": os.environ.get("LATEST_JAVA_HOME", mx.get_jdk().home)}
+RUNNING_ON_LATEST_JAVA = os.environ.get("LATEST_JAVA_HOME", os.environ.get("JAVA_HOME")) == mx.get_jdk().home
+
 
 # this environment variable is used by some of our maven projects and jbang integration to build against the unreleased master version during development
 os.environ["GRAALPY_VERSION"] = GRAAL_VERSION
@@ -1127,7 +1129,7 @@ def graalpython_gate_runner(args, tasks):
     # JUnit tests
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
-            run_mx(["build", "--dep", "GRAALPYTHON_UNIT_TESTS,GRAALPYTHON_INTEGRATION_UNIT_TESTS,GRAALPYTHON_TCK"], env={**os.environ, **LATEST_JAVA_HOME})
+            run_mx(["build"], env={**os.environ, **LATEST_JAVA_HOME})
             if WIN32:
                 punittest(
                     [
@@ -1241,7 +1243,7 @@ def graalpython_gate_runner(args, tasks):
             standalone_home = graalpy_standalone_home('jvm')
             mvn_repo_path, version, env = deploy_local_maven_repo()
 
-            if os.environ.get("LATEST_JAVA_HOME", os.environ.get("JAVA_HOME")) == mx.get_jdk().home:
+            if RUNNING_ON_LATEST_JAVA:
                 # our standalone python binary is meant for standalone graalpy
                 # releases which are only for latest
                 env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
