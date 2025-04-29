@@ -583,7 +583,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
                     return dispatch(frame, object, type, descr, descrGetSlot);
                 }
             }
-            throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
+            throw raiseNode.raiseAttributeError(inliningTarget, object, key);
         }
 
         private Object readAttribute(Object object, TruffleString key) {

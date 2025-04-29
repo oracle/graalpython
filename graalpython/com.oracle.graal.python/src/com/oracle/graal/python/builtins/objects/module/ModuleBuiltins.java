@@ -251,7 +251,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.tp_getattro, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class ModuleGetattritbuteNode extends GetAttrBuiltinNode {
+    public abstract static class ModuleGetattributeNode extends GetAttrBuiltinNode {
         @Specialization
         static Object getattributeStr(VirtualFrame frame, PythonModule self, TruffleString key,
                         @Shared @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,

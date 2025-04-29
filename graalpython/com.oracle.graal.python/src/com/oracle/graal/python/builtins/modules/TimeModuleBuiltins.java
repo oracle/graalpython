@@ -328,7 +328,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 }
                 TimeZone.setDefault(TimeZone.getTimeZone(tzEnv));
             } else {
-                PRaiseNode.raiseStatic(this, PythonBuiltinClassType.AttributeError, SET_TIMEZONE_ERROR);
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.AttributeError, SET_TIMEZONE_ERROR);
             }
             return PNone.NONE;
         }

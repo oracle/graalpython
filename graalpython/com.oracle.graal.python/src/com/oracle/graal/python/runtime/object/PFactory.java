@@ -918,13 +918,13 @@ public final class PFactory {
         return createBaseException(language, type, type.getInstanceShape(language), null, format, formatArgs);
     }
 
-    public static PBaseException createBaseException(PythonLanguage language, PythonBuiltinClassType type, Object[] data, TruffleString format, Object[] args) {
-        return createBaseException(language, type, type.getInstanceShape(language), data, format, args);
+    public static PBaseException createBaseException(PythonLanguage language, PythonBuiltinClassType type, Object[] data, TruffleString format, Object[] formatArgs) {
+        return createBaseException(language, type, type.getInstanceShape(language), data, format, formatArgs);
     }
 
-    public static PBaseException createBaseException(PythonLanguage language, Object cls, Shape shape, Object[] data, TruffleString format, Object[] args) {
+    public static PBaseException createBaseException(PythonLanguage language, Object cls, Shape shape, Object[] data, TruffleString format, Object[] formatArgs) {
         assert format != null;
-        return trace(language, new PBaseException(cls, shape, data, format, args));
+        return trace(language, new PBaseException(cls, shape, data, format, formatArgs));
     }
 
     public static PBaseException createBaseException(PythonLanguage language, Object cls, Shape shape) {
