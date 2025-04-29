@@ -44,7 +44,12 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -53,9 +58,11 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -107,7 +114,7 @@ public class CallDispatchers {
     /**
      * Node for invoking call targets of builtin functions, modules or generators when the call
      * target is a PE constant. Use {@link #createDirectCallNodeFor(PBuiltinFunction)} to create the
-     * direct call node for builtin functions.
+     * direct call node for builtin functions. Takes PArguments
      */
     @GenerateInline
     @GenerateCached(false)
@@ -138,7 +145,7 @@ public class CallDispatchers {
 
     /**
      * Node for invoking call targets of builtin functions, modules or generators when the call
-     * target is dynamic.
+     * target is dynamic. Takes PArguments
      */
     @GenerateInline(inlineByDefault = true)
     @GenerateUncached
@@ -182,7 +189,7 @@ public class CallDispatchers {
 
     /**
      * Node for invoking builtin functions with an inline cache on the function object and a
-     * secondary inline cache on the call target.
+     * secondary inline cache on the call target. Takes PArguments
      */
     @GenerateInline
     @GenerateCached(false)
@@ -199,7 +206,7 @@ public class CallDispatchers {
             return invoke.execute(frame, inliningTarget, callNode, arguments);
         }
 
-        @Specialization(guards = "sameCallTarget(callee.getCallTarget(), callNode)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "sameCallTarget(callee.getCallTarget(), callNode)", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinFunctionCached")
         static Object callBuiltinFunctionCachedCt(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PBuiltinFunction callee, Object[] arguments,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
                         @Cached SimpleDirectInvokeNode invoke) {
@@ -216,9 +223,126 @@ public class CallDispatchers {
     }
 
     /**
+     * Node for calling builtin functions with an inline cache on the function object and a
+     * secondary inline cache on the call target.
+     */
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    @ImportStatic({CallDispatchers.class, PythonOptions.class})
+    public abstract static class BuiltinFunctionCachedCallNode extends PNodeWithContext {
+
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, PBuiltinFunction callee, Object[] arguments, PKeyword[] keywords);
+
+        @Specialization(guards = {"isSingleContext()", "callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        static Object callBuiltinFunctionCached(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PBuiltinFunction callee, Object[] arguments, PKeyword[] keywords,
+                        @Cached("callee") PBuiltinFunction cachedCallee,
+                        @Cached CreateArgumentsNode createArgs,
+                        @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
+                        @Cached SimpleDirectInvokeNode invoke) {
+            Object[] pArguments = createArgs.execute(inliningTarget, cachedCallee, arguments, keywords, cachedCallee.getSignature(), null, null,
+                            cachedCallee.getDefaults(), cachedCallee.getKwDefaults(), false);
+            return invoke.execute(frame, inliningTarget, callNode, pArguments);
+        }
+
+        @Specialization(guards = "sameCallTarget(callee.getCallTarget(), callNode)", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinFunctionCached")
+        static Object callBuiltinFunctionCachedCt(VirtualFrame frame, Node inliningTarget, PBuiltinFunction callee, Object[] arguments, PKeyword[] keywords,
+                        @Cached CreateArgumentsNode createArgs,
+                        @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
+                        @Cached SimpleDirectInvokeNode invoke) {
+            Signature signature;
+            /*
+             * The signature is PE-constant for a given callTarget, but getting it from there needs
+             * multiple virtual calls in the interpreter.
+             */
+            if (CompilerDirectives.inCompiledCode()) {
+                signature = Signature.fromCallTarget((RootCallTarget) callNode.getCallTarget());
+            } else {
+                signature = callee.getSignature();
+            }
+            Object[] pArguments = createArgs.execute(inliningTarget, callee, arguments, keywords, signature, null, null,
+                            callee.getDefaults(), callee.getKwDefaults(), false);
+            return invoke.execute(frame, inliningTarget, callNode, pArguments);
+        }
+
+        @Specialization(replaces = {"callBuiltinFunctionCached", "callBuiltinFunctionCachedCt"})
+        @Megamorphic
+        @InliningCutoff
+        static Object callBuiltinFunctionMegamorphic(VirtualFrame frame, Node inliningTarget, PBuiltinFunction callee, Object[] arguments, PKeyword[] keywords,
+                        @Cached CreateArgumentsNode createArgs,
+                        @Cached SimpleIndirectInvokeNode invoke) {
+            Object[] pArguments = createArgs.execute(inliningTarget, callee, arguments, keywords, callee.getSignature(), null, null,
+                            callee.getDefaults(), callee.getKwDefaults(), false);
+            return invoke.execute(frame, inliningTarget, callee.getCallTarget(), pArguments);
+        }
+    }
+
+    /**
+     * Node for calling builtin functions with an inline cache on the method object and a secondary
+     * inline cache on the call target.
+     */
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    @ImportStatic({CallDispatchers.class, PythonOptions.class})
+    public abstract static class BuiltinMethodCachedCallNode extends PNodeWithContext {
+
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, PBuiltinMethod callee, Object[] arguments, PKeyword[] keywords);
+
+        @Specialization(guards = {"isSingleContext()", "callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        static Object callBuiltinMethodCached(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PBuiltinMethod callee, Object[] arguments, PKeyword[] keywords,
+                        @Cached(value = "callee", weak = true) PBuiltinMethod cachedCallee,
+                        @Bind("cachedCallee.getBuiltinFunction()") PBuiltinFunction function,
+                        @Cached CreateArgumentsNode createArgs,
+                        @Cached("createDirectCallNodeFor(function)") DirectCallNode callNode,
+                        @Cached SimpleDirectInvokeNode invoke) {
+            Object[] pArguments = createArgs.execute(inliningTarget, cachedCallee, arguments, keywords, function.getSignature(), callee.getSelf(), callee.getClassObject(),
+                            function.getDefaults(), function.getKwDefaults(), isMethodcall(callee));
+            return invoke.execute(frame, inliningTarget, callNode, pArguments);
+        }
+
+        @Specialization(guards = "sameCallTarget(function.getCallTarget(), callNode)", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinMethodCached")
+        static Object callBuiltinMethodCachedCt(VirtualFrame frame, Node inliningTarget, PBuiltinMethod callee, Object[] arguments, PKeyword[] keywords,
+                        @Bind("callee.getBuiltinFunction()") PBuiltinFunction function,
+                        @Cached CreateArgumentsNode createArgs,
+                        @Cached("createDirectCallNodeFor(function)") DirectCallNode callNode,
+                        @Cached SimpleDirectInvokeNode invoke) {
+            Signature signature;
+            /*
+             * The signature is PE-constant for a given callTarget, but getting it from there needs
+             * multiple virtual calls in the interpreter.
+             */
+            if (CompilerDirectives.inCompiledCode()) {
+                signature = Signature.fromCallTarget((RootCallTarget) callNode.getCallTarget());
+            } else {
+                signature = function.getSignature();
+            }
+            Object[] pArguments = createArgs.execute(inliningTarget, callee, arguments, keywords, signature, callee.getSelf(), callee.getClassObject(),
+                            function.getDefaults(), function.getKwDefaults(), isMethodcall(callee));
+            return invoke.execute(frame, inliningTarget, callNode, pArguments);
+        }
+
+        @Specialization(replaces = {"callBuiltinMethodCached", "callBuiltinMethodCachedCt"})
+        @Megamorphic
+        @InliningCutoff
+        static Object callBuiltinMethodMegamorphic(VirtualFrame frame, Node inliningTarget, PBuiltinMethod callee, Object[] arguments, PKeyword[] keywords,
+                        @Cached CreateArgumentsNode createArgs,
+                        @Cached SimpleIndirectInvokeNode invoke) {
+            PBuiltinFunction function = callee.getBuiltinFunction();
+            Object[] pArguments = createArgs.execute(inliningTarget, callee, arguments, keywords, function.getSignature(), callee.getSelf(), callee.getClassObject(),
+                            function.getDefaults(), function.getKwDefaults(), isMethodcall(callee));
+            return invoke.execute(frame, inliningTarget, function.getCallTarget(), pArguments);
+        }
+
+        private static boolean isMethodcall(PBuiltinMethod callee) {
+            return !(callee.getSelf() instanceof PythonModule);
+        }
+    }
+
+    /**
      * Node for invoking python functions when the call target of the function is PE constant (the
      * function itself doesn't have to be). Use {@link #createDirectCallNodeFor(PFunction)} to
-     * create the call node.
+     * create the call node. Takes PArguments
      */
     @GenerateInline
     @GenerateCached(false)
@@ -241,7 +365,7 @@ public class CallDispatchers {
     }
 
     /**
-     * Node for invoking python functions when the call target is dynamic.
+     * Node for invoking python functions when the call target is dynamic. Takes PArguments
      */
     @GenerateInline
     @GenerateCached(false)
@@ -266,7 +390,7 @@ public class CallDispatchers {
 
     /**
      * Node for invoking python functions with an inline cache on the function object and a
-     * secondary inline cache on the call target.
+     * secondary inline cache on the call target. Takes PArguments
      */
     @GenerateInline
     @GenerateCached(false)
@@ -302,7 +426,63 @@ public class CallDispatchers {
     }
 
     /**
-     * Node for invoking a call target with an inline cache.
+     * Node for calling python functions with an inline cache on the function object and a secondary
+     * inline cache on the call target. Takes PArguments
+     */
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    @ImportStatic({CallDispatchers.class, PythonOptions.class})
+    public abstract static class FunctionCachedCallNode extends PNodeWithContext {
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, PFunction callee, Object[] arguments, PKeyword[] keywords);
+
+        // We only have a single context and this function never changed its code
+        @Specialization(guards = {"isSingleContext()", "callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "cachedCallee.getCodeStableAssumption()")
+        static Object callFunctionCached(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PFunction callee, Object[] arguments, PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Cached(value = "callee", weak = true) PFunction cachedCallee,
+                        @Cached CreateArgumentsNode createArgs,
+                        @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
+                        @Cached FunctionDirectInvokeNode invoke) {
+            Object[] pArguments = createArgs.execute(inliningTarget, cachedCallee, arguments, keywords, cachedCallee.getCode().getSignature(), null, null,
+                            cachedCallee.getDefaults(), cachedCallee.getKwDefaults(), false);
+            return invoke.execute(frame, inliningTarget, callNode, cachedCallee, pArguments);
+        }
+
+        // We have multiple contexts, don't cache the objects so that contexts can be cleaned up
+        @Specialization(guards = {"sameCallTarget(callee.getCallTarget(), callNode)"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCached")
+        static Object callFunctionCachedCt(VirtualFrame frame, Node inliningTarget, PFunction callee, Object[] arguments, PKeyword[] keywords,
+                        @Cached CreateArgumentsNode createArgs,
+                        @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
+                        @Cached FunctionDirectInvokeNode invoke) {
+            Signature signature;
+            /*
+             * The signature is PE-constant for a given callTarget, but getting it from there needs
+             * multiple virtual calls in the interpreter.
+             */
+            if (CompilerDirectives.inCompiledCode()) {
+                signature = Signature.fromCallTarget((RootCallTarget) callNode.getCallTarget());
+            } else {
+                signature = callee.getCode().getSignature();
+            }
+            Object[] pArguments = createArgs.execute(inliningTarget, callee, arguments, keywords, signature, null, null,
+                            callee.getDefaults(), callee.getKwDefaults(), false);
+            return invoke.execute(frame, inliningTarget, callNode, callee, pArguments);
+        }
+
+        @Specialization(replaces = {"callFunctionCached", "callFunctionCachedCt"})
+        @Megamorphic
+        @InliningCutoff
+        static Object callFunctionMegamorphic(VirtualFrame frame, Node inliningTarget, PFunction callee, Object[] arguments, PKeyword[] keywords,
+                        @Cached CreateArgumentsNode createArgs,
+                        @Cached FunctionIndirectInvokeNode invoke) {
+            Object[] pArguments = createArgs.execute(inliningTarget, callee, arguments, keywords, callee.getCode().getSignature(), null, null,
+                            callee.getDefaults(), callee.getKwDefaults(), false);
+            return invoke.execute(frame, inliningTarget, callee, pArguments);
+        }
+    }
+
+    /**
+     * Node for invoking a call target with an inline cache. Takes PArguments
      */
     @GenerateInline
     @GenerateCached(false)

@@ -415,7 +415,7 @@ class GraalPythonVmBase(GuestVm):
             return self._validate_output(*host_vm.run(cwd, cmd))
 
     def is_bytecode_dsl_config(self):
-        return self._extra_vm_args and '--vm.Dpython.EnableBytecodeDSLInterpreter=true' in self._extra_vm_args
+        return bool(self._extra_vm_args and '--vm.Dpython.EnableBytecodeDSLInterpreter=true' in self._extra_vm_args)
 
     def _validate_output(self, code, out, dims):
         is_bytecode_dsl_config = self.is_bytecode_dsl_config()

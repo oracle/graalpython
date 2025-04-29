@@ -31,13 +31,16 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class Signature {
     public static final Signature EMPTY = new Signature(-1, false, -1, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
+    public static final Signature GENERIC_VARARGS = new Signature(-1, true, 0, null, null);
 
     private final int varArgIndex;
     private final int positionalOnlyArgIndex;
@@ -81,10 +84,6 @@ public final class Signature {
         this.checkEnclosingType = checkEnclosingType;
         this.raiseErrorName = raiseErrorName;
         this.hidden = hidden;
-    }
-
-    public static Signature createVarArgsAndKwArgsOnly() {
-        return new Signature(-1, true, 0, null, null);
     }
 
     public int getNumOfRequiredKeywords() {
@@ -162,5 +161,9 @@ public final class Signature {
      */
     public boolean isHidden() {
         return hidden;
+    }
+
+    public static Signature fromCallTarget(RootCallTarget callTarget) {
+        return callTarget.getRootNode() instanceof PRootNode rootNode ? rootNode.getSignature() : Signature.GENERIC_VARARGS;
     }
 }

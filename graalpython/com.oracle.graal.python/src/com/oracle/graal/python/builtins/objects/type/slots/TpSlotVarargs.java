@@ -78,7 +78,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSi
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode.CreateAndCheckArgumentsNode;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -244,7 +244,7 @@ public final class TpSlotVarargs {
         @Specialization(replaces = "callCachedBuiltin")
         @InliningCutoff
         static Object callGenericBuiltin(VirtualFrame frame, Node inliningTarget, TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
-                        @Cached CreateAndCheckArgumentsNode createArgumentsNode,
+                        @Cached CreateArgumentsNode createArgumentsNode,
                         @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
             Object[] arguments = createArgumentsNode.execute(inliningTarget, slot.getName(), args, keywords, slot.getSignature(), self, null, slot.getDefaults(), slot.getKwDefaults(),
                             false);
@@ -261,7 +261,7 @@ public final class TpSlotVarargs {
 
         @Specialization
         static Object call(VirtualFrame frame, Node inliningTarget, TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
-                        @Cached CreateAndCheckArgumentsNode createArgumentsNode,
+                        @Cached CreateArgumentsNode createArgumentsNode,
                         @Cached("createDirectCallNode(slot)") DirectCallNode callNode,
                         @Cached CallDispatchers.SimpleDirectInvokeNode invoke) {
             CompilerAsserts.partialEvaluationConstant(slot);
