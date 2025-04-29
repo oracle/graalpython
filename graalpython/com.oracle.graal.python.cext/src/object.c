@@ -2688,7 +2688,8 @@ _decref_notify(const PyObject *op, const Py_ssize_t updated_refcnt)
             GraalPyTruffle_BulkNotifyRefCount(deferred_notify_ops, DEFERRED_NOTIFY_SIZE);
         }
 #else
-        GraalPyTruffle_BulkNotifyRefCount(&op, 1);
+        PyObject *nonConstOp = (PyObject *)op;
+        GraalPyTruffle_BulkNotifyRefCount(&nonConstOp, 1);
 #endif
     }
 }
