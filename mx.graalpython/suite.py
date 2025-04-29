@@ -1075,7 +1075,6 @@ suite = {
                 "sdk:COLLECTIONS",
                 "truffle:TRUFFLE_NFI",
                 "truffle:TRUFFLE_NFI_LIBFFI", # runtime dependency for convenience
-                "truffle:TRUFFLE_NFI_PANAMA", # runtime dependency for convenience
                 "truffle:TRUFFLE_ICU4J",
                 "truffle:TRUFFLE_XZ",
             ],
