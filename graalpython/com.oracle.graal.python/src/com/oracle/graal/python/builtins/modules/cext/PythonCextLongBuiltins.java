@@ -51,6 +51,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyLongObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
@@ -61,6 +62,7 @@ import java.math.BigInteger;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.MathModuleBuiltins.Log10Node;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -194,6 +196,35 @@ public final class PythonCextLongBuiltins {
 
         protected boolean isPIntSubtype(Node inliningTarget, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
             return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PInt);
+        }
+    }
+
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyLongObject}, call = Ignored)
+    abstract static class PyTruffleLong_DigitCount extends CApiUnaryBuiltinNode {
+
+        static int getDigitCount(long n) {
+            return (int) Math.floor(Math.log10(n) + 1);
+        }
+
+        @Specialization
+        static int i(int n) {
+            return getDigitCount(n);
+        }
+
+        @Specialization
+        static int l(long n) {
+            return getDigitCount(n);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        static int b(boolean b) {
+            return 1;
+        }
+
+        @Specialization
+        static int p(PInt n) {
+            return Log10Node.getDigitCount(n.getValue());
         }
     }
 

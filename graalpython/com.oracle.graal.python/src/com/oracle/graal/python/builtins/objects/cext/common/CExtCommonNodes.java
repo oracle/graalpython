@@ -144,11 +144,11 @@ import com.oracle.truffle.nfi.api.SignatureLibrary;
 public abstract class CExtCommonNodes {
     @TruffleBoundary
     public static void fatalError(Node location, PythonContext context, TruffleString prefix, TruffleString msg, int status) {
-        fatalError(location, context, prefix != null ? prefix.toJavaStringUncached() : null, msg.toJavaStringUncached(), status);
+        fatalErrorString(location, context, prefix != null ? prefix.toJavaStringUncached() : null, msg.toJavaStringUncached(), status);
     }
 
     @TruffleBoundary
-    public static void fatalError(Node location, PythonContext context, String prefix, String msg, int status) {
+    public static void fatalErrorString(Node location, PythonContext context, String prefix, String msg, int status) {
         PrintWriter stderr = new PrintWriter(context.getStandardErr());
         stderr.print("Fatal Python error: ");
         if (prefix != null) {

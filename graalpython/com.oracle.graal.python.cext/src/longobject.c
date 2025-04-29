@@ -9,8 +9,8 @@
 
 #include "capi.h" // GraalPy change
 #include "Python.h"
-#if 0 // GraalPy change
 #include "pycore_bitutils.h"      // _Py_popcount32()
+#if 0 // GraalPy change
 #include "pycore_initconfig.h"    // _PyStatus_OK()
 #endif // GraalPy change
 #include "pycore_long.h"          // _Py_SmallInts
@@ -58,10 +58,10 @@ class int "PyObject *" "&PyLong_Type"
 #define IS_SMALL_INT(ival) (-_PY_NSMALLNEGINTS <= (ival) && (ival) < _PY_NSMALLPOSINTS)
 #define IS_SMALL_UINT(ival) ((ival) < _PY_NSMALLPOSINTS)
 
-#if 0 // GraalPy change
 #define _MAX_STR_DIGITS_ERROR_FMT_TO_INT "Exceeds the limit (%d digits) for integer string conversion: value has %zd digits; use sys.set_int_max_str_digits() to increase the limit"
 #define _MAX_STR_DIGITS_ERROR_FMT_TO_STR "Exceeds the limit (%d digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit"
 
+#if 0 // GraalPy change
 /* If defined, use algorithms from the _pylong.py module */
 #define WITH_PYLONG_MODULE 1
 
@@ -80,6 +80,14 @@ is_medium_int(stwodigits x)
     return x_plus_mask < ((twodigits)PyLong_MASK) + PyLong_BASE;
 }
 #endif // GraalPy change
+
+static inline Py_ssize_t
+_PyLong_DigitCount(const PyLongObject *op)
+{
+    assert(PyLong_Check(op));
+    // GraalPy change: use our managed check
+    return GraalPyTruffleLong_DigitCount(op);
+}
 
 static PyObject *
 get_small_int(sdigit ival)
@@ -603,6 +611,7 @@ _PyLong_Sign(PyObject *vv)
     }
     return _PyLong_NonCompactSign(v);
 }
+#endif // GraalPy change
 
 static int
 bit_length_digit(digit x)
@@ -614,6 +623,7 @@ bit_length_digit(digit x)
     return _Py_bit_length((unsigned long)x);
 }
 
+#if 0 // GraalPy change
 size_t
 _PyLong_NumBits(PyObject *vv)
 {
@@ -1411,6 +1421,7 @@ success:
         return 0;
 }
 #endif /* WITH_PYLONG_MODULE */
+#endif // GraalPy change
 
 /* Convert an integer to a base 10 string.  Returns a new non-shared
    string.  (Return value is non-shared so that callers can modify the
@@ -1446,6 +1457,7 @@ long_to_decimal_string_internal(PyObject *aa,
 
        explanation in https://github.com/python/cpython/pull/96537
     */
+#if 0 // GraalPy change: interp->long_state not supported yet
     if (size_a >= 10 * _PY_LONG_MAX_STR_DIGITS_THRESHOLD
                   / (3 * PyLong_SHIFT) + 2) {
         PyInterpreterState *interp = _PyInterpreterState_GET();
@@ -1457,6 +1469,7 @@ long_to_decimal_string_internal(PyObject *aa,
             return -1;
         }
     }
+    #endif // GraalPy change
 
 #if WITH_PYLONG_MODULE
     if (size_a > 1000) {
@@ -1510,10 +1523,12 @@ long_to_decimal_string_internal(PyObject *aa,
             hi /= _PyLong_DECIMAL_BASE;
         }
         /* check for keyboard interrupt */
+#if 0 // GraalPy change
         SIGCHECK({
                 Py_DECREF(scratch);
                 return -1;
             });
+#endif // GraalPy change
     }
     /* pout should have at least one digit, so that the case when a = 0
        works correctly */
@@ -1528,6 +1543,7 @@ long_to_decimal_string_internal(PyObject *aa,
         tenpow *= 10;
         strlen++;
     }
+#if 0 // GraalPy change: interp->long_state not supported yet
     if (strlen > _PY_LONG_MAX_STR_DIGITS_THRESHOLD) {
         PyInterpreterState *interp = _PyInterpreterState_GET();
         int max_str_digits = interp->long_state.max_str_digits;
@@ -1539,6 +1555,7 @@ long_to_decimal_string_internal(PyObject *aa,
             return -1;
         }
     }
+#endif // GraalPy change
     if (writer) {
         if (_PyUnicodeWriter_Prepare(writer, strlen, '9') == -1) {
             Py_DECREF(scratch);
@@ -1625,7 +1642,11 @@ long_to_decimal_string_internal(PyObject *aa,
 #undef WRITE_DIGITS
 #undef WRITE_UNICODE_DIGITS
 
+#if 0 // GraalPy change: _Py_DECREF_SPECIALIZED not supported
     _Py_DECREF_INT(scratch);
+#else // GraalPy change
+    Py_DECREF(scratch);
+#endif // GraalPy change
     if (writer) {
         writer->pos += strlen;
     }
@@ -1864,7 +1885,6 @@ _PyLong_FormatBytesWriter(_PyBytesWriter *writer, char *str,
     assert(str2 != NULL);
     return str2;
 }
-#endif // GraalPy change
 
 /* Table of digit values for 8-bit string -> integer conversion.
  * '0' maps to 0, ..., '9' maps to 9.

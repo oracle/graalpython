@@ -51,10 +51,14 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "pycore_atomic_funcs.h"  // _Py_atomic_size_get()
 #include "pycore_bytesobject.h"   // _PyBytes_Repeat()
 #include "pycore_bytes_methods.h" // _Py_bytes_lower()
+#endif // GraalPy change
 #include "pycore_format.h"        // F_LJUST
+#if 0 // GraalPy change
 #include "pycore_initconfig.h"    // _PyStatus_OK()
 #include "pycore_interp.h"        // PyInterpreterState.fs_codec
+#endif // GraalPy change
 #include "pycore_long.h"          // _PyLong_FormatWriter()
+#if 0 // GraalPy change
 #include "pycore_object.h"        // _PyObject_GC_TRACK(), _Py_FatalRefcountError()
 #include "pycore_pathconfig.h"    // _Py_DumpPathConfig()
 #include "pycore_pylifecycle.h"   // _Py_SetFileSystemEncoding()
@@ -191,6 +195,7 @@ extern "C" {
 
 #if 0 // GraalPy change
 #define LATIN1 _Py_LATIN1_CHR
+#endif // GraalPy change
 
 #ifdef MS_WINDOWS
    /* On Windows, overallocate by 50% is the best factor */
@@ -205,6 +210,7 @@ static inline int
 _PyUnicodeWriter_WriteCharInline(_PyUnicodeWriter *writer, Py_UCS4 ch);
 static inline void
 _PyUnicodeWriter_InitWithBuffer(_PyUnicodeWriter *writer, PyObject *buffer);
+#if 0 // GraalPy change
 static PyObject *
 unicode_encode_utf8(PyObject *unicode, _Py_error_handler error_handler,
                     const char *errors);
@@ -212,6 +218,7 @@ static PyObject *
 unicode_decode_utf8(const char *s, Py_ssize_t size,
                     _Py_error_handler error_handler, const char *errors,
                     Py_ssize_t *consumed);
+#endif // GraalPy change
 #ifdef Py_DEBUG
 static inline int unicode_is_finalizing(void);
 static int unicode_is_singleton(PyObject *unicode);
@@ -221,8 +228,12 @@ static int unicode_is_singleton(PyObject *unicode);
 // Return a borrowed reference to the empty string singleton.
 static inline PyObject* unicode_get_empty(void)
 {
+#if 0 // GraalPy change
     _Py_DECLARE_STR(empty, "");
     return &_Py_STR(empty);
+#else // GraalPy change: TODO: reuse singleton objects
+    return PyUnicode_FromString("");
+#endif // GraalPy change
 }
 
 
@@ -233,6 +244,7 @@ static inline PyObject* unicode_new_empty(void)
     return Py_NewRef(empty);
 }
 
+#if 0 // GraalPy change
 /* This dictionary holds per-interpreter interned strings.
  * See InternalDocs/string_interning.md for details.
  */
@@ -399,6 +411,7 @@ static void clear_global_interned_strings(void)
         INTERNED_STRINGS = NULL;
     }
 }
+#endif // GraalPy change
 
 #define _Py_RETURN_UNICODE_EMPTY()   \
     do {                             \
@@ -437,7 +450,6 @@ unicode_fill(int kind, void *data, Py_UCS4 value,
     default: Py_UNREACHABLE();
     }
 }
-#endif // GraalPy change
 
 
 /* Fast detection of the most frequent whitespace characters */
@@ -474,8 +486,8 @@ const unsigned char _Py_ascii_whitespace[] = {
 #if 0 // GraalPy change
 /* forward */
 static PyObject* get_latin1_char(unsigned char ch);
-static int unicode_modifiable(PyObject *unicode);
 #endif // GraalPy change
+static int unicode_modifiable(PyObject *unicode);
 
 
 static PyObject *
@@ -649,6 +661,7 @@ unicode_check_encoding_errors(const char *encoding, const char *errors)
     return 0;
 }
 
+#endif // GraalPy change
 
 int
 _PyUnicode_CheckConsistency(PyObject *op, int check_content)
@@ -774,6 +787,7 @@ _PyUnicode_CheckConsistency(PyObject *op, int check_content)
 static PyObject*
 unicode_result(PyObject *unicode)
 {
+#if 0 // GraalPy change
     assert(_PyUnicode_CHECK(unicode));
 
     Py_ssize_t length = PyUnicode_GET_LENGTH(unicode);
@@ -801,9 +815,11 @@ unicode_result(PyObject *unicode)
     }
 
     assert(_PyUnicode_CheckConsistency(unicode, 1));
+#endif // GraalPy change
     return unicode;
 }
 
+#if 0 // GraalPy change
 static PyObject*
 unicode_result_unchanged(PyObject *unicode)
 {
@@ -1005,6 +1021,7 @@ make_bloom_mask(int kind, const void* ptr, Py_ssize_t len)
 
 #undef BLOOM_UPDATE
 }
+#endif // GraalPy change
 
 static int
 ensure_unicode(PyObject *obj)
@@ -1018,6 +1035,7 @@ ensure_unicode(PyObject *obj)
     return 0;
 }
 
+#if 0 // GraalPy change
 /* Compilation of templated routines */
 
 #define STRINGLIB_GET_EMPTY() unicode_get_empty()
@@ -1113,6 +1131,7 @@ unicode_fill_invalid(PyObject *unicode, Py_ssize_t old_length)
     memset(data + old_length * kind, 0xff, (length - old_length) * kind);
 }
 #endif
+#endif // GraalPy change
 
 static PyObject*
 resize_compact(PyObject *unicode, Py_ssize_t length)
@@ -1168,6 +1187,7 @@ resize_compact(PyObject *unicode, Py_ssize_t length)
     return unicode;
 }
 
+#if 0 // GraalPy change
 static int
 resize_inplace(PyObject *unicode, Py_ssize_t length)
 {
@@ -1238,6 +1258,7 @@ resize_copy(PyObject *unicode, Py_ssize_t length)
     _PyUnicode_FastCopyCharacters(copy, 0, unicode, 0, copy_length);
     return copy;
 }
+#endif // GraalPy change
 
 static const char*
 unicode_kind_name(PyObject *unicode)
@@ -1276,6 +1297,7 @@ unicode_kind_name(PyObject *unicode)
     }
 }
 
+#if 0 // GraalPy change
 #ifdef Py_DEBUG
 /* Functions wrapping macros for use in debugger */
 const char *_PyUnicode_utf8(void *unicode_raw){
@@ -1392,7 +1414,6 @@ unicode_convert_wchar_to_ucs4(const wchar_t *begin, const wchar_t *end,
 }
 #endif
 
-#if 0 // GraalPy change
 static int
 unicode_check_modifiable(PyObject *unicode)
 {
@@ -1445,6 +1466,7 @@ _copy_characters(PyObject *to, Py_ssize_t to_start,
 #endif
 
     if (from_kind == to_kind) {
+#if 0 // GraalPy change
         if (check_maxchar
             && !PyUnicode_IS_ASCII(from) && PyUnicode_IS_ASCII(to))
         {
@@ -1456,6 +1478,7 @@ _copy_characters(PyObject *to, Py_ssize_t to_start,
             if (max_char >= 128)
                 return -1;
         }
+#endif // GraalPy change
         memcpy((char*)to_data + to_kind * to_start,
                   (const char*)from_data + from_kind * from_start,
                   to_kind * how_many);
@@ -1647,7 +1670,6 @@ find_maxchar_surrogates(const wchar_t *begin, const wchar_t *end,
     }
     return 0;
 }
-#endif // GraalPy change
 
 // GraalPy change: export
 PyAPI_FUNC(void)
@@ -1735,7 +1757,6 @@ unicode_dealloc(PyObject *unicode)
     Py_TYPE(unicode)->tp_free(unicode);
 }
 
-#if 0 // GraalPy change
 #ifdef Py_DEBUG
 static int
 unicode_is_singleton(PyObject *unicode)
@@ -1759,6 +1780,9 @@ static int
 unicode_modifiable(PyObject *unicode)
 {
     assert(_PyUnicode_CHECK(unicode));
+    // GraalPy change
+    if (points_to_py_handle_space(unicode) && Py_REFCNT(unicode) != MANAGED_REFCNT) // GraalPy change
+        return GraalPyTruffleUnicode_IsMaterialized(unicode) == 0;
     if (Py_REFCNT(unicode) != 1)
         return 0;
     if (_PyUnicode_HASH(unicode) != -1)
@@ -1774,6 +1798,7 @@ unicode_modifiable(PyObject *unicode)
     return 1;
 }
 
+#if 0 // GraalPy change
 static int
 unicode_resize(PyObject **p_unicode, Py_ssize_t length)
 {
@@ -2058,6 +2083,7 @@ unicode_clear_identifiers(struct _Py_unicode_state *state)
     // Don't reset _PyRuntime next_index: _Py_Identifier.id remains valid
     // after Py_Finalize().
 }
+#endif // GraalPy change
 
 
 /* Internal function, doesn't check maximum character */
@@ -2067,12 +2093,14 @@ _PyUnicode_FromASCII(const char *buffer, Py_ssize_t size)
 {
     const unsigned char *s = (const unsigned char *)buffer;
     PyObject *unicode;
+#if 0 // GraalPy change
     if (size == 1) {
 #ifdef Py_DEBUG
         assert((unsigned char)s[0] < 128);
 #endif
         return get_latin1_char(s[0]);
     }
+#endif // GraalPy change
     unicode = PyUnicode_New(size, 127);
     if (!unicode)
         return NULL;
@@ -2095,7 +2123,6 @@ kind_maxchar_limit(int kind)
         Py_UNREACHABLE();
     }
 }
-#endif // GraalPy change
 
 static PyObject*
 _PyUnicode_FromUCS1(const Py_UCS1* u, Py_ssize_t size)
@@ -2140,7 +2167,6 @@ PyUnicode_FromKindAndData(int kind, const void *buffer, Py_ssize_t size)
     }
 }
 
-#if 0 // GraalPy change
 Py_UCS4
 _PyUnicode_FindMaxChar(PyObject *unicode, Py_ssize_t start, Py_ssize_t end)
 {
@@ -2160,6 +2186,7 @@ _PyUnicode_FindMaxChar(PyObject *unicode, Py_ssize_t start, Py_ssize_t end)
     if (PyUnicode_IS_ASCII(unicode))
         return 127;
 
+#if 0 // GraalPy change: ucs*lib isn't supported
     kind = PyUnicode_KIND(unicode);
     startptr = PyUnicode_DATA(unicode);
     endptr = (char *)startptr + end * kind;
@@ -2174,8 +2201,12 @@ _PyUnicode_FindMaxChar(PyObject *unicode, Py_ssize_t start, Py_ssize_t end)
     default:
         Py_UNREACHABLE();
     }
+#else // GraalPy change: use the generic path
+    return PyUnicode_MAX_CHAR_VALUE(unicode);
+#endif // GraalPy change
 }
 
+#if 0 // GraalPy change
 /* Ensure that a string uses the most efficient storage, if it is not the
    case: create a new string with of the right kind. Write NULL into *p_unicode
    on error. */
@@ -2365,7 +2396,6 @@ PyUnicode_AsUCS4Copy(PyObject *string)
    plus 1 for the terminal NUL. */
 #define MAX_INTMAX_CHARS (5 + (sizeof(intmax_t)*8-1) / 3)
 
-#if 0 // GraalPy change
 static int
 unicode_fromformat_write_str(_PyUnicodeWriter *writer, PyObject *str,
                              Py_ssize_t width, Py_ssize_t precision, int flags)
@@ -2836,27 +2866,73 @@ unicode_fromformat_arg(_PyUnicodeWriter *writer,
     return f;
 }
 
-#endif // GraalPy change
 PyObject *
 PyUnicode_FromFormatV(const char *format, va_list vargs)
 {
-    // GraalPy change: different implementation
-    va_list lva;
-    va_copy(lva, vargs);
-    PyObject* res = GraalPyTruffle_Unicode_FromFormat(format, &lva);
-    va_end(lva);
-    return res;
+    va_list vargs2;
+    const char *f;
+    _PyUnicodeWriter writer;
+
+    _PyUnicodeWriter_Init(&writer);
+    writer.min_length = strlen(format) + 100;
+    writer.overallocate = 1;
+
+    // Copy varags to be able to pass a reference to a subfunction.
+    va_copy(vargs2, vargs);
+
+    for (f = format; *f; ) {
+        if (*f == '%') {
+            f = unicode_fromformat_arg(&writer, f, &vargs2);
+            if (f == NULL)
+                goto fail;
+        }
+        else {
+            const char *p;
+            Py_ssize_t len;
+
+            p = f;
+            do
+            {
+                if ((unsigned char)*p > 127) {
+                    PyErr_Format(PyExc_ValueError,
+                        "PyUnicode_FromFormatV() expects an ASCII-encoded format "
+                        "string, got a non-ASCII byte: 0x%02x",
+                        (unsigned char)*p);
+                    goto fail;
+                }
+                p++;
+            }
+            while (*p != '\0' && *p != '%');
+            len = p - f;
+
+            if (*p == '\0')
+                writer.overallocate = 0;
+
+            if (_PyUnicodeWriter_WriteASCIIString(&writer, f, len) < 0)
+                goto fail;
+
+            f = p;
+        }
+    }
+    va_end(vargs2);
+    return _PyUnicodeWriter_Finish(&writer);
+
+  fail:
+    va_end(vargs2);
+    _PyUnicodeWriter_Dealloc(&writer);
+    return NULL;
 }
 
 PyObject *
 PyUnicode_FromFormat(const char *format, ...)
 {
-    // GraalPy change: different implementation
-    va_list args;
-    va_start(args, format);
-    PyObject* result = GraalPyTruffle_Unicode_FromFormat(format, &args);
-    va_end(args);
-    return result;
+    PyObject* ret;
+    va_list vargs;
+
+    va_start(vargs, format);
+    ret = PyUnicode_FromFormatV(format, vargs);
+    va_end(vargs);
+    return ret;
 }
 
 static Py_ssize_t
@@ -9353,6 +9429,7 @@ _PyUnicode_JoinArray(PyObject *separator, PyObject *const *items, Py_ssize_t seq
     Py_XDECREF(res);
     return NULL;
 }
+#endif // GraalPy change
 
 void
 _PyUnicode_FastFill(PyObject *unicode, Py_ssize_t start, Py_ssize_t length,
@@ -9400,6 +9477,7 @@ PyUnicode_Fill(PyObject *unicode, Py_ssize_t start, Py_ssize_t length,
     return length;
 }
 
+#if 0 // GraalPy change
 static PyObject *
 pad(PyObject *self,
     Py_ssize_t left,
@@ -12501,6 +12579,7 @@ unicode_endswith(PyObject *self,
         return NULL;
     return PyBool_FromLong(result);
 }
+#endif // GraalPy change
 
 static inline void
 _PyUnicodeWriter_Update(_PyUnicodeWriter *writer)
@@ -12593,7 +12672,9 @@ _PyUnicodeWriter_PrepareInternal(_PyUnicodeWriter *writer,
         if (newlen < writer->min_length)
             newlen = writer->min_length;
 
+#if 0 // GraalPy change: forcing a supported path
         if (maxchar > writer->maxchar || writer->readonly) {
+#endif // GraalPy change
             /* resize + widen */
             maxchar = Py_MAX(maxchar, writer->maxchar);
             newbuffer = PyUnicode_New(newlen, maxchar);
@@ -12603,12 +12684,14 @@ _PyUnicodeWriter_PrepareInternal(_PyUnicodeWriter *writer,
                                           writer->buffer, 0, writer->pos);
             Py_DECREF(writer->buffer);
             writer->readonly = 0;
+#if 0 // GraalPy change
         }
         else {
             newbuffer = resize_compact(writer->buffer, newlen);
             if (newbuffer == NULL)
                 return -1;
         }
+#endif // GraalPy change
         writer->buffer = newbuffer;
     }
     else if (maxchar > writer->maxchar) {
@@ -12692,6 +12775,7 @@ _PyUnicodeWriter_WriteStr(_PyUnicodeWriter *writer, PyObject *str)
     return 0;
 }
 
+#if 0 // GraalPy change
 int
 _PyUnicodeWriter_WriteSubstring(_PyUnicodeWriter *writer, PyObject *str,
                                 Py_ssize_t start, Py_ssize_t end)
@@ -12723,6 +12807,7 @@ _PyUnicodeWriter_WriteSubstring(_PyUnicodeWriter *writer, PyObject *str,
     writer->pos += len;
     return 0;
 }
+#endif // GraalPy change
 
 int
 _PyUnicodeWriter_WriteASCIIString(_PyUnicodeWriter *writer,
@@ -12784,6 +12869,7 @@ _PyUnicodeWriter_WriteASCIIString(_PyUnicodeWriter *writer,
     return 0;
 }
 
+#if 0 // GraalPy change
 int
 _PyUnicodeWriter_WriteLatin1String(_PyUnicodeWriter *writer,
                                    const char *str, Py_ssize_t len)
@@ -12797,6 +12883,7 @@ _PyUnicodeWriter_WriteLatin1String(_PyUnicodeWriter *writer,
     writer->pos += len;
     return 0;
 }
+#endif // GraalPy change
 
 PyObject *
 _PyUnicodeWriter_Finish(_PyUnicodeWriter *writer)
@@ -12818,11 +12905,19 @@ _PyUnicodeWriter_Finish(_PyUnicodeWriter *writer)
 
     if (PyUnicode_GET_LENGTH(str) != writer->pos) {
         PyObject *str2;
+#if 0 // GraalPy change: different implementation
         str2 = resize_compact(str, writer->pos);
         if (str2 == NULL) {
             Py_DECREF(str);
             return NULL;
         }
+#else // GraalPy change
+        str2 = PyUnicode_New(writer->pos, writer->maxchar);
+        if (str2 == NULL)
+            return -1;
+        _PyUnicode_FastCopyCharacters(str2, 0, str, 0, writer->pos);
+        Py_DECREF(str);
+#endif // GraalPy change
         str = str2;
     }
 
@@ -12836,6 +12931,7 @@ _PyUnicodeWriter_Dealloc(_PyUnicodeWriter *writer)
     Py_CLEAR(writer->buffer);
 }
 
+#if 0 // GraalPy change
 #include "stringlib/unicode_format.h"
 
 PyDoc_STRVAR(format__doc__,
@@ -13076,6 +13172,7 @@ static PyMappingMethods unicode_as_mapping = {
     (binaryfunc)unicode_subscript,  /* mp_subscript */
     (objobjargproc)0,           /* mp_ass_subscript */
 };
+#endif // GraalPy change
 
 
 /* Helpers for PyUnicode_Format() */
@@ -13162,6 +13259,7 @@ formatfloat(PyObject *v, struct unicode_format_arg_t *arg,
     return 0;
 }
 
+#if 0 // GraalPy change
 /* formatlong() emulates the format codes d, u, o, x and X, and
  * the F_ALT flag, for Python's long (unbounded) ints.  It's not used for
  * Python's regular ints.
@@ -13304,6 +13402,7 @@ _PyUnicode_FormatLong(PyObject *val, int alt, int prec, int type)
     }
     return result;
 }
+#endif // GraalPy change
 
 /* Format an integer or a float as an integer.
  * Return 1 if the number has been formatted into the writer,
@@ -14017,6 +14116,7 @@ PyUnicode_Format(PyObject *format, PyObject *args)
     return NULL;
 }
 
+#if 0 // GraalPy change
 static PyObject *
 unicode_subtype_new(PyTypeObject *type, PyObject *unicode);
 

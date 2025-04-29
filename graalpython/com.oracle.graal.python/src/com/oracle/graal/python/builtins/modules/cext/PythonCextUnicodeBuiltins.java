@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeDecodeError;
@@ -70,6 +71,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor._PY_ERROR_HANDLER;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
+import static com.oracle.graal.python.nodes.ErrorMessages.PRECISION_TOO_LARGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEPARATOR_EXPECTED_STR_INSTANCE_P_FOUND;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -91,9 +93,12 @@ import java.nio.charset.StandardCharsets;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.ChrNode;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.HexNode;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.CodecsEncodeNode;
 import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltins.PyNumber_ToBase;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -111,6 +116,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
@@ -128,11 +134,11 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EncodeNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EndsWithNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.FindNode;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ModNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.RFindNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ReplaceNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StartsWithNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
@@ -149,11 +155,14 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -354,29 +363,115 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int, Int, Int}, call = Direct)
     @ImportStatic(PythonCextUnicodeBuiltins.class)
-    abstract static class PyUnicode_Format extends CApiBinaryBuiltinNode {
-        @Specialization(guards = {"isString(format) || isStringSubtype(inliningTarget, format, getClassNode, isSubtypeNode)"})
-        static Object find(Object format, Object args,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ModNode modNode,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            checkNonNullArg(inliningTarget, format, args, raiseNode);
-            return modNode.execute(null, format, args);
+    abstract static class _PyUnicode_FormatLong extends CApiQuaternaryBuiltinNode {
+
+        protected static boolean isOF(int prec) {
+            return prec > Integer.MAX_VALUE - 3;
         }
 
-        @Specialization(guards = {"!isTruffleString(format)", "isStringSubtype(inliningTarget, format, getClassNode, isSubtypeNode)"})
-        static Object find(Object format, @SuppressWarnings("unused") Object args,
-                        @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            checkNonNullArg(inliningTarget, format, args, raiseNode);
-            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_STR_NOT_P, format);
+        @TruffleBoundary
+        private static char[] getCharArray(String s) {
+            return s.toCharArray();
         }
+
+        @Specialization(guards = "isOF(prec)")
+        @SuppressWarnings("unused")
+        static Object overflow(Object val, int alt, int prec, int type,
+                        @Bind("this") Node inliningTarget) {
+            /* Avoid exceeding SSIZE_T_MAX */
+            throw PRaiseNode.raiseStatic(inliningTarget, OverflowError, PRECISION_TOO_LARGE);
+        }
+
+        @Specialization(guards = "!isOF(prec)")
+        static Object formatLong(Object val, int alt, int prec, int type,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached OctNode toOctBase,
+                        @Cached HexNode toHexBase,
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached StringBuiltins.StrNewNode strNode,
+                        @Cached CastToJavaStringNode cast,
+                        @Cached TruffleString.FromCharArrayUTF16Node fromCharArrayNode) {
+            int numnondigits = 0;
+            TruffleString result = null;
+            switch (type) {
+                case 'd', 'i', 'u' ->
+                    /* int and int subclasses should print numerically when a numeric */
+                    /* format code is used (see issue18780) */
+                    result = (TruffleString) PyNumber_ToBase.toBase10(val, 10, inliningTarget, indexNode, strNode);
+                case 'o' -> {
+                    numnondigits = 2;
+                    result = (TruffleString) PyNumber_ToBase.toBase8(val, 8, toOctBase);
+                }
+                case 'x', 'X' -> {
+                    numnondigits = 2;
+                    result = (TruffleString) PyNumber_ToBase.toBase16(val, 16, inliningTarget, indexNode, toHexBase);
+                }
+                default -> CExtCommonNodes.fatalErrorString(inliningTarget, context, null, null, -1);
+            }
+
+            char[] buf = getCharArray(cast.execute(result));
+            int bufi = 0;
+            int len = buf.length;
+            /*- mq: this beyond the java limit anyway
+            llen = buf.length;
+            if (llen > Integer.MAX_VALUE) {
+                throw PRaiseNode.raiseStatic(inliningTarget, ValueError, STRING_TOO_LARGE_IN_PY_UNICODE_FORMAT_LONG);
+            }
+            int len = (int)llen;
+            */
+            int sign = buf[0] == '-' ? 1 : 0;
+            numnondigits += sign;
+            int numdigits = len - numnondigits;
+            assert (numdigits > 0);
+
+            /* Get rid of base marker unless F_ALT */
+            if ((alt == 0 && (type == 'o' || type == 'x' || type == 'X'))) {
+                assert (buf[bufi + sign] == '0');
+                assert (buf[bufi + sign + 1] == 'x' || buf[sign + 1] == 'X' || buf[bufi + sign + 1] == 'o');
+                numnondigits -= 2;
+                bufi += 2;
+                len -= 2;
+                /*- mq: already has this value
+                if (sign != 0)
+                    buf[0] = '-';
+                 */
+                assert (len == numnondigits + numdigits);
+            }
+
+            /* Fill with leading zeroes to meet minimum width. */
+            if (prec > numdigits) {
+                char[] b1 = new char[numnondigits + prec];
+                int b1i = 0;
+                for (int i = 0; i < numnondigits; ++i) {
+                    b1[b1i++] = buf[bufi++];
+                }
+                for (int i = 0; i < prec - numdigits; i++) {
+                    b1[b1i++] = '0';
+                }
+                for (int i = 0; i < numdigits; i++) {
+                    b1[b1i++] = buf[bufi++];
+                    b1[b1i] = '\0';
+                }
+                buf = b1;
+                len = numnondigits + prec;
+            }
+
+            /* Fix up case for hex conversions. */
+            if (type == 'X') {
+                /*
+                 * Need to convert all lower case letters to upper case. and need to convert 0x to
+                 * 0X (and -0x to -0X).
+                 */
+                for (int i = bufi; i < len; i++)
+                    if (buf[i] >= 'a' && buf[i] <= 'x')
+                        buf[i] -= 'a' - 'A';
+            }
+            return fromCharArrayNode.execute(buf);
+        }
+
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, PY_UCS4, Py_ssize_t, Py_ssize_t, Int}, call = Direct)
@@ -1123,6 +1218,23 @@ public final class PythonCextUnicodeBuiltins {
         static Object doError(Object s, Object sizePtr,
                         @Bind("this") Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored)
+    abstract static class PyTruffleUnicode_IsMaterialized extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static int pstring(PString s) {
+            if (s.isNativeCharSequence()) {
+                return s.isNativeMaterialized() ? 1 : 0;
+            }
+            return s.isMaterialized() ? 1 : 0;
+        }
+
+        @Fallback
+        static Object other(@SuppressWarnings("unused") Object s) {
+            return 1;
         }
     }
 
