@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBCLASS_CHECK;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_qualname;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_base;
@@ -83,6 +84,7 @@ import static com.oracle.graal.python.nodes.HiddenAttr.ITEMSIZE;
 import static com.oracle.graal.python.nodes.HiddenAttr.WEAKLISTOFFSET;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSDICTCELL__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
@@ -116,8 +118,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltins.HPyObjectNewNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -180,6 +180,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameType
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetTypeFlagsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -192,10 +193,12 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
+import com.oracle.graal.python.nodes.classes.AbstractObjectGetBasesNode;
+import com.oracle.graal.python.nodes.classes.AbstractObjectIsSubclassNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -210,6 +213,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
@@ -1439,7 +1443,7 @@ public abstract class TypeNodes {
                             DynamicObjectLibrary.getUncached());
             Object baseNewMethod = LookupAttributeInMRONode.lookup(T___NEW__, GetMroStorageNode.executeUncached(base), ReadAttributeFromObjectNode.getUncached(), true,
                             DynamicObjectLibrary.getUncached());
-            return !HasSameConstructorNode.isSameFunction(typeNewMethod, baseNewMethod);
+            return typeNewMethod != baseNewMethod;
         }
 
         @TruffleBoundary
@@ -1786,11 +1790,6 @@ public abstract class TypeNodes {
 
         @Specialization
         static boolean doUserClass(PythonClass obj) {
-            // Special case for custom classes created via HPy: They are managed classes but can
-            // have custom flags. The flags may prohibit subtyping.
-            if (obj.isHPyType()) {
-                return (obj.getFlags() & GraalHPyDef.HPy_TPFLAGS_BASETYPE) != 0;
-            }
             return true;
         }
 
@@ -1901,7 +1900,7 @@ public abstract class TypeNodes {
         }
     }
 
-    @ImportStatic({SpecialMethodNames.class, SpecialAttributeNames.class, SpecialMethodSlot.class})
+    @ImportStatic({SpecialMethodNames.class, SpecialAttributeNames.class})
     public abstract static class CreateTypeNode extends Node {
         public abstract PythonClass execute(VirtualFrame frame, PDict namespaceOrig, TruffleString name, PTuple bases, Object metaclass, PKeyword[] kwds);
 
@@ -1944,7 +1943,8 @@ public abstract class TypeNodes {
                         @Cached HashingStorageIteratorKey itKey,
                         @Cached HashingStorageIteratorValue itValue,
                         @Cached HashingStorageDelItem delItemNamespace,
-                        @Cached("create(SetName)") LookupInheritedSlotNode getSetNameNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached("create(T___SET_NAME__)") LookupSpecialMethodNode getSetNameNode,
                         @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
                         @Cached("create(T___INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
@@ -1954,127 +1954,120 @@ public abstract class TypeNodes {
                         @Cached ExceptionNodes.FormatNoteNode formatNoteNode,
                         @Cached AllocateTypeWithMetaclassNode typeMetaclass,
                         @Cached GetOrCreateDictNode getOrCreateDictNode) {
-            try {
-                assert SpecialMethodSlot.pushInitializedTypePlaceholder();
-                PDict namespace = PFactory.createDict(language);
-                namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
-                PythonClass newType = typeMetaclass.execute(frame, name, bases, namespace, metaclass);
+            PDict namespace = PFactory.createDict(language);
+            namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
+            PythonClass newType = typeMetaclass.execute(frame, name, bases, namespace, metaclass);
 
-                // set '__module__' attribute
-                Object moduleAttr = ensureReadAttrNode().execute(newType, SpecialAttributeNames.T___MODULE__);
-                if (moduleAttr == PNone.NO_VALUE) {
-                    PythonObject globals;
-                    if (getRootNode() instanceof BuiltinFunctionRootNode) {
-                        PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
-                        globals = callerFrame != null ? callerFrame.getGlobals() : null;
-                    } else {
-                        globals = PArguments.getGlobals(frame);
-                    }
-                    if (globals != null) {
-                        TruffleString moduleName = getModuleNameFromGlobals(inliningTarget, globals, getItemGlobals);
-                        if (moduleName != null) {
-                            newType.setAttribute(SpecialAttributeNames.T___MODULE__, moduleName);
-                        }
+            // set '__module__' attribute
+            Object moduleAttr = ensureReadAttrNode().execute(newType, SpecialAttributeNames.T___MODULE__);
+            if (moduleAttr == PNone.NO_VALUE) {
+                PythonObject globals;
+                if (getRootNode() instanceof BuiltinFunctionRootNode) {
+                    PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
+                    globals = callerFrame != null ? callerFrame.getGlobals() : null;
+                } else {
+                    globals = PArguments.getGlobals(frame);
+                }
+                if (globals != null) {
+                    TruffleString moduleName = getModuleNameFromGlobals(inliningTarget, globals, getItemGlobals);
+                    if (moduleName != null) {
+                        newType.setAttribute(SpecialAttributeNames.T___MODULE__, moduleName);
                     }
                 }
-
-                // delete __qualname__ from namespace
-                delItemNamespace.execute(inliningTarget, namespace.getDictStorage(), T___QUALNAME__, namespace);
-
-                // initialize '__doc__' attribute
-                if (newType.getAttribute(SpecialAttributeNames.T___DOC__) == PNone.NO_VALUE) {
-                    newType.setAttribute(SpecialAttributeNames.T___DOC__, PNone.NONE);
-                }
-
-                // set __class__ cell contents
-                Object classcell = getItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__);
-                if (classcell != null) {
-                    if (classcell instanceof PCell) {
-                        ((PCell) classcell).setRef(newType);
-                    } else {
-                        throw raise.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_A_CELL, "__classcell__");
-                    }
-                    delItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__, namespace);
-                }
-
-                // set __classdict__ cell contents
-                Object classdictcell = getItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSDICTCELL__);
-                if (classdictcell != null) {
-                    if (classdictcell instanceof PCell cell) {
-                        cell.setRef(getOrCreateDictNode.execute(inliningTarget, newType));
-                    } else {
-                        throw raise.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_A_CELL, "__classdictcell__");
-                    }
-                    delItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSDICTCELL__, namespace);
-                }
-
-                SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode.execute(inliningTarget, newType), language);
-
-                // Initialization of the type slots:
-                //
-                // For now, we have the same helper functions as CPython and we execute them in the
-                // same order even-though we could squash them and optimize the wrapping and
-                // unwrapping of slots, but it would be more difficult to make sure that at the end
-                // of the day we produce exactly the same results, especially if there are native
-                // types in the MRO (we can, e.g., optimize this only for pure Python types to keep
-                // it still simple).
-                //
-                // From CPython point of view: we are in "type_new_impl", we call PyType_Ready,
-                // which calls:
-                //
-                // - type_ready_fill_dict, which calls add_operators, which fills the dunder methods
-                // from the slots. Here we are creating a managed type, so there cannot be any
-                // native slots, so this is a no-op for us.
-                //
-                // - type_ready_inherit to inherit the type slots. Here we may inherit slots from
-                // native classes in the MRO and things would get complicated if we did not follow
-                // CPython structure.
-                //
-                // - type_ready_set_hash: sets tp_hash=PyObject_HashNotImplemented and __hash__=None
-                // if tp_hash is NULL (it must be, this is managed class) and there's no __hash__
-                // magic method.
-                //
-                // - fixup_slot_dispatchers to set the slots according to magic methods.
-
-                Builder inheritedSlots = TpSlots.buildInherited(newType, namespace, getMroStorageNode.execute(inliningTarget, newType), true);
-                // type_ready_set_hash
-                if (inheritedSlots.get(TpSlotMeta.TP_HASH) == null) {
-                    Object dunderHash = getItemNamespace.execute(inliningTarget, namespace.getDictStorage(), T___HASH__);
-                    if (dunderHash == null) {
-                        inheritedSlots.set(TpSlotMeta.TP_HASH, TpSlotHashFun.HASH_NOT_IMPLEMENTED);
-                        newType.setAttribute(T___HASH__, PNone.NONE);
-                    }
-                }
-                TpSlots.fixupSlotDispatchers(newType, inheritedSlots);
-                newType.setTpSlots(inheritedSlots.build());
-
-                HashingStorage storage = namespace.getDictStorage();
-                HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
-                while (itNext.execute(inliningTarget, storage, it)) {
-                    Object value = itValue.execute(inliningTarget, storage, it);
-                    Object setName = getSetNameNode.execute(value);
-                    if (setName != PNone.NO_VALUE) {
-                        Object key = itKey.execute(inliningTarget, storage, it);
-                        try {
-                            callSetNameNode.execute(frame, setName, value, newType, key);
-                        } catch (PException e) {
-                            formatNoteNode.execute(frame, inliningTarget, e, ErrorMessages.ERROR_CALLING_SET_NAME, value, key, newType);
-                            throw e;
-                        }
-                    }
-                }
-
-                // Call __init_subclass__ on the parent of a newly generated type
-                SuperObject superObject = PFactory.createSuperObject(language);
-                superObject.init(newType, newType, newType);
-                callInitSubclassNode.execute(frame, getInitSubclassNode.executeObject(frame, superObject), PythonUtils.EMPTY_OBJECT_ARRAY, kwds);
-
-                newType.initializeMroShape(language);
-
-                return newType;
-            } finally {
-                assert SpecialMethodSlot.popInitializedType();
             }
+
+            // delete __qualname__ from namespace
+            delItemNamespace.execute(inliningTarget, namespace.getDictStorage(), T___QUALNAME__, namespace);
+
+            // initialize '__doc__' attribute
+            if (newType.getAttribute(SpecialAttributeNames.T___DOC__) == PNone.NO_VALUE) {
+                newType.setAttribute(SpecialAttributeNames.T___DOC__, PNone.NONE);
+            }
+
+            // set __class__ cell contents
+            Object classcell = getItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__);
+            if (classcell != null) {
+                if (classcell instanceof PCell) {
+                    ((PCell) classcell).setRef(newType);
+                } else {
+                    throw raise.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_A_CELL, "__classcell__");
+                }
+                delItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__, namespace);
+            }
+
+            // set __classdict__ cell contents
+            Object classdictcell = getItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSDICTCELL__);
+            if (classdictcell != null) {
+                if (classdictcell instanceof PCell cell) {
+                    cell.setRef(getOrCreateDictNode.execute(inliningTarget, newType));
+                } else {
+                    throw raise.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_A_CELL, "__classdictcell__");
+                }
+                delItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSDICTCELL__, namespace);
+            }
+
+            // Initialization of the type slots:
+            //
+            // For now, we have the same helper functions as CPython and we execute them in the
+            // same order even-though we could squash them and optimize the wrapping and
+            // unwrapping of slots, but it would be more difficult to make sure that at the end
+            // of the day we produce exactly the same results, especially if there are native
+            // types in the MRO (we can, e.g., optimize this only for pure Python types to keep
+            // it still simple).
+            //
+            // From CPython point of view: we are in "type_new_impl", we call PyType_Ready,
+            // which calls:
+            //
+            // - type_ready_fill_dict, which calls add_operators, which fills the dunder methods
+            // from the slots. Here we are creating a managed type, so there cannot be any
+            // native slots, so this is a no-op for us.
+            //
+            // - type_ready_inherit to inherit the type slots. Here we may inherit slots from
+            // native classes in the MRO and things would get complicated if we did not follow
+            // CPython structure.
+            //
+            // - type_ready_set_hash: sets tp_hash=PyObject_HashNotImplemented and __hash__=None
+            // if tp_hash is NULL (it must be, this is managed class) and there's no __hash__
+            // magic method.
+            //
+            // - fixup_slot_dispatchers to set the slots according to magic methods.
+
+            Builder inheritedSlots = TpSlots.buildInherited(newType, namespace, getMroStorageNode.execute(inliningTarget, newType), true);
+            // type_ready_set_hash
+            if (inheritedSlots.get(TpSlotMeta.TP_HASH) == null) {
+                Object dunderHash = getItemNamespace.execute(inliningTarget, namespace.getDictStorage(), T___HASH__);
+                if (dunderHash == null) {
+                    inheritedSlots.set(TpSlotMeta.TP_HASH, TpSlotHashFun.HASH_NOT_IMPLEMENTED);
+                    newType.setAttribute(T___HASH__, PNone.NONE);
+                }
+            }
+            TpSlots.fixupSlotDispatchers(newType, inheritedSlots);
+            newType.setTpSlots(inheritedSlots.build());
+
+            HashingStorage storage = namespace.getDictStorage();
+            HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
+            while (itNext.execute(inliningTarget, storage, it)) {
+                Object value = itValue.execute(inliningTarget, storage, it);
+                Object setName = getSetNameNode.execute(frame, getClassNode.execute(inliningTarget, value), value);
+                if (setName != PNone.NO_VALUE) {
+                    Object key = itKey.execute(inliningTarget, storage, it);
+                    try {
+                        callSetNameNode.execute(frame, setName, value, newType, key);
+                    } catch (PException e) {
+                        formatNoteNode.execute(frame, inliningTarget, e, ErrorMessages.ERROR_CALLING_SET_NAME, value, key, newType);
+                        throw e;
+                    }
+                }
+            }
+
+            // Call __init_subclass__ on the parent of a newly generated type
+            SuperObject superObject = PFactory.createSuperObject(language);
+            superObject.init(newType, newType, newType);
+            callInitSubclassNode.execute(frame, getInitSubclassNode.executeObject(frame, superObject), PythonUtils.EMPTY_OBJECT_ARRAY, kwds);
+
+            newType.initializeMroShape(language);
+
+            return newType;
         }
 
         private TruffleString getModuleNameFromGlobals(Node inliningTarget, PythonObject globals, HashingStorageGetItem getItem) {
@@ -2099,7 +2092,7 @@ public abstract class TypeNodes {
         }
     }
 
-    @ImportStatic({SpecialMethodNames.class, SpecialAttributeNames.class, SpecialMethodSlot.class})
+    @ImportStatic({SpecialMethodNames.class, SpecialAttributeNames.class})
     @GenerateInline(false) // footprint reduction 208 -> 190
     protected abstract static class AllocateTypeWithMetaclassNode extends Node {
 
@@ -2183,7 +2176,6 @@ public abstract class TypeNodes {
             // 1.) create class, but avoid calling mro method - it might try to access __dict__ so
             // we have to copy dict slots first
             PythonClass pythonClass = PFactory.createPythonClass(language, metaclass, getInstanceShape.execute(metaclass), name, false, base, basesArray);
-            assert SpecialMethodSlot.replaceInitializedTypeTop(pythonClass);
 
             // 2.) copy the dictionary slots
             copyDictSlots(frame, inliningTarget, language, ctx, pythonClass, namespace, setHashingStorageItem,
@@ -2784,25 +2776,7 @@ public abstract class TypeNodes {
 
             Object leftNew = leftNewProfile.profile(inliningTarget, lookupNew.execute(left, T___NEW__));
             Object rightNew = rightNewProfile.profile(inliningTarget, lookupNew.execute(right, T___NEW__));
-            return isSameFunction(leftNew, rightNew);
-        }
-
-        static boolean isSameFunction(Object leftFunc, Object rightFunc) {
-            Object leftResolved = leftFunc;
-            if (leftFunc instanceof PBuiltinFunction builtinFunction) {
-                Object typeDecorated = HPyObjectNewNode.getDecoratedSuperConstructor(builtinFunction);
-                if (typeDecorated != null) {
-                    leftResolved = typeDecorated;
-                }
-            }
-            Object rightResolved = rightFunc;
-            if (rightFunc instanceof PBuiltinFunction builtinFunction) {
-                Object baseDecorated = HPyObjectNewNode.getDecoratedSuperConstructor(builtinFunction);
-                if (baseDecorated != null) {
-                    rightResolved = baseDecorated;
-                }
-            }
-            return leftResolved == rightResolved;
+            return leftNew == rightNew;
         }
     }
 
@@ -2823,6 +2797,87 @@ public abstract class TypeNodes {
                         @Cached GetCachedTpSlotsNode getSlots) {
             TpSlots slots = getSlots.execute(inliningTarget, type);
             return slots.tp_init() == ObjectBuiltins.SLOTS.tp_init();
+        }
+    }
+
+    /** Equivalent of CPython's {@code recursive_isinstance} */
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GenericInstanceCheckNode extends Node {
+
+        public abstract boolean execute(VirtualFrame frame, Node inliningTarget, Object instance, Object cls);
+
+        @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)", limit = "1")
+        static boolean isInstance(VirtualFrame frame, Node inliningTarget, Object instance, Object cls,
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached IsTypeNode isTypeNode,
+                        @Cached InlinedConditionProfile classSameResult,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
+            Object type = getClassNode.execute(inliningTarget, instance);
+            if (isSubtypeNode.execute(type, cls)) {
+                return true;
+            }
+
+            Object instanceClass = lookupAttr.execute(frame, inliningTarget, instance, T___CLASS__);
+            if (classSameResult.profile(inliningTarget, instanceClass == type)) {
+                // We already did a check on this type
+                return false;
+            } else if (isTypeNode.execute(inliningTarget, instanceClass)) {
+                return isSubtypeNode.execute(instanceClass, cls);
+            } else {
+                return false;
+            }
+        }
+
+        @Fallback
+        static boolean isInstance(VirtualFrame frame, Node inliningTarget, Object instance, Object cls,
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached AbstractObjectIsSubclassNode abstractIsSubclassNode,
+                        @Cached AbstractObjectGetBasesNode getBasesNode,
+                        @Cached PRaiseNode raiseNode) {
+            if (getBasesNode.execute(frame, inliningTarget, cls) == null) {
+                throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_TYPE, instance);
+            }
+
+            Object instanceClass = lookupAttr.execute(frame, inliningTarget, instance, T___CLASS__);
+            if (instanceClass != NO_VALUE) {
+                return abstractIsSubclassNode.execute(frame, instanceClass, cls);
+            } else {
+                return false;
+            }
+        }
+    }
+
+    /** Equivalent of CPython's {@code recursive_issubclass} */
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GenericSubclassCheckNode extends Node {
+
+        public abstract boolean execute(VirtualFrame frame, Node inliningTarget, Object derived, Object cls);
+
+        @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "isTypeNode.execute(inliningTarget, derived)"}, limit = "1")
+        static boolean doTypes(Node inliningTarget, Object derived, Object cls,
+                        @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
+                        @Cached IsSameTypeNode isSameTypeNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
+            return isSameTypeNode.execute(inliningTarget, cls, derived) || isSubtypeNode.execute(derived, cls);
+        }
+
+        @Fallback
+        @InliningCutoff
+        static boolean doObjects(VirtualFrame frame, Node inliningTarget, Object derived, Object cls,
+                        @Cached AbstractObjectGetBasesNode getBasesNode,
+                        @Cached AbstractObjectIsSubclassNode abstractIsSubclassNode,
+                        @Cached PRaiseNode raiseDerived,
+                        @Cached PRaiseNode raiseCls) {
+            if (getBasesNode.execute(frame, inliningTarget, derived) == null) {
+                throw raiseDerived.raise(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S, "issubclass()", 1, "class");
+            }
+            if (getBasesNode.execute(frame, inliningTarget, cls) == null) {
+                throw raiseCls.raise(inliningTarget, TypeError, ErrorMessages.ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE);
+            }
+            return abstractIsSubclassNode.execute(frame, derived, cls);
         }
     }
 }

@@ -46,7 +46,6 @@ import org.graalvm.polyglot.io.ByteSequence;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.code.CodeNodesFactory.GetCodeCallTargetNodeGen;
 import com.oracle.graal.python.builtins.objects.code.CodeNodesFactory.GetCodeRootNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -198,7 +197,7 @@ public abstract class CodeNodes {
             };
 
             if (context.isCoreInitialized() || isNotAModule) {
-                return PFactory.createCode(language, createCode, flags, firstlineno, lnotab, filename);
+                return PFactory.createCode(language, (RootCallTarget) createCode.get(), flags, firstlineno, lnotab, filename);
             } else {
                 RootCallTarget ct = (RootCallTarget) language.cacheCode(filename, createCode);
                 return PFactory.createCode(language, ct, flags, firstlineno, lnotab, filename);
@@ -216,34 +215,17 @@ public abstract class CodeNodes {
     @GenerateCached(false)
     public abstract static class GetCodeCallTargetNode extends PNodeWithContext {
 
-        GetCodeCallTargetNode() {
-        }
-
         public abstract RootCallTarget execute(Node inliningTarget, PCode code);
-
-        public static RootCallTarget executeUncached(PCode code) {
-            return GetCodeCallTargetNodeGen.getUncached().execute(null, code);
-        }
 
         @Specialization(guards = {"cachedCode == code", "isSingleContext()"}, limit = "2")
         static RootCallTarget doCachedCode(@SuppressWarnings("unused") PCode code,
-                        @SuppressWarnings("unused") @Cached(value = "code", weak = true) PCode cachedCode,
-                        @Cached(value = "code.initializeCallTarget()", weak = true) RootCallTarget cachedRootCallTarget) {
-            return cachedRootCallTarget;
+                        @Cached(value = "code", weak = true) PCode cachedCode) {
+            return cachedCode.getRootCallTarget();
         }
 
         @Specialization(replaces = "doCachedCode")
-        static RootCallTarget doGeneric(Node inliningTarget, PCode code,
-                        @Cached InlinedConditionProfile hasCtProfile) {
-            return getInMultiContext(inliningTarget, code, hasCtProfile);
-        }
-
-        public static RootCallTarget getInMultiContext(Node inliningTarget, PCode code, InlinedConditionProfile hasCtProfile) {
-            RootCallTarget ct = code.callTarget;
-            if (hasCtProfile.profile(inliningTarget, ct == null)) {
-                ct = code.initializeCallTarget();
-            }
-            return ct;
+        static RootCallTarget doGeneric(PCode code) {
+            return code.getRootCallTarget();
         }
     }
 

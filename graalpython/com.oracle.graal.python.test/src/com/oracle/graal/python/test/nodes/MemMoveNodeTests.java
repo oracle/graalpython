@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,7 +54,9 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Map;
@@ -63,9 +65,14 @@ public class MemMoveNodeTests {
 
     private GilNode.UncachedAcquire gil;
 
+    @BeforeClass
+    public static void setUpClass() {
+        Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("mac"));
+    }
+
     @Before
     public void setUp() {
-        PythonTests.enterContext(Map.of("python.NativeModules", "false"), new String[0]);
+        PythonTests.enterContext(Map.of("python.IsolateNativeModules", "true"), new String[0]);
         this.gil = GilNode.uncachedAcquire();
         CApiContext.ensureCapiWasLoaded("internal");
     }

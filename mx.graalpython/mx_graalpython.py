@@ -41,6 +41,7 @@ from functools import wraps
 from pathlib import Path
 from textwrap import dedent
 
+import mx_graalpython_benchmark
 import mx_graalpython_gradleproject
 import mx_urlrewrites
 
@@ -55,7 +56,6 @@ from zipfile import ZipFile
 
 import mx
 import mx_util
-import mx_benchmark
 import mx_gate
 import mx_native
 import mx_unittest
@@ -71,20 +71,8 @@ from mx_cmake import CMakeNinjaProject #pylint: disable=unused-import
 from mx_graalpython_gradleproject import GradlePluginProject #pylint: disable=unused-import
 
 from mx_gate import Task
-from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JAVA_DRIVER_BENCHMARKS, \
-    HEAP_BENCHMARKS
-from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, \
-    GraalPythonVm, \
-    CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
-    CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI, \
-    CONFIGURATION_DEFAULT_MULTI_TIER, CONFIGURATION_NATIVE_MULTI_TIER, \
-    PythonVmWarmupBenchmarkSuite, \
-    CONFIGURATION_INTERPRETER, CONFIGURATION_INTERPRETER_MULTI, CONFIGURATION_NATIVE_INTERPRETER, \
-    CONFIGURATION_NATIVE_INTERPRETER_MULTI, PythonJavaEmbeddingBenchmarkSuite, python_java_embedding_vm_registry, \
-    GraalPythonJavaDriverVm, CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED, \
-    CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI, CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED, \
-    CONFIGURATION_JAVA_EMBEDDING_MULTI, CONFIGURATION_PANAMA, PythonJMHDistMxBenchmarkSuite, \
-    PythonHeapBenchmarkSuite
+from mx_graalpython_bench_param import PATH_MESO
+
 
 if not sys.modules.get("__main__"):
     # workaround for pdb++
@@ -110,15 +98,12 @@ PYTHON_VERSION_MAJ_MIN = ".".join(PYTHON_VERSION.split('.')[:2])
 os.environ["GRAALPY_VERSION"] = GRAAL_VERSION
 
 MAIN_BRANCH = 'master'
-HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
 
 GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
 
 
 SANDBOXED_OPTIONS = [
     '--experimental-options',
-    '--python.UseSystemToolchain=false', # Use the Sulong toolchain
-    '--python.NativeModules=false', # Load extensions with Sulong
     '--python.PosixModuleBackend=java',
     '--python.Sha3ModuleBackend=java',
 ]
@@ -208,9 +193,6 @@ def _get_stdlib_home():
 
 def _get_capi_home(args=None):
     return os.path.join(mx.distribution("GRAALPYTHON_NATIVE_LIBS").get_output(), mx.get_os(), mx.get_arch())
-
-
-_get_jni_home = _get_capi_home
 
 
 def _extract_graalpython_internal_options(args):
@@ -305,17 +287,10 @@ def python(args, **kwargs):
 
 
 def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, main_class=GRAALPYTHON_MAIN_CLASS, minimal=False, **kwargs):
-    experimental_opt_added = False
     if not any(arg.startswith("--python.CAPI") for arg in args):
         capi_home = _get_capi_home()
         args.insert(0, "--python.CAPI=%s" % capi_home)
         args.insert(0, "--experimental-options")
-        experimental_opt_added = True
-
-    if not any(arg.startswith("--python.JNIHome") for arg in args):
-        args.insert(0, "--python.JNIHome=" + _get_jni_home())
-        if not experimental_opt_added:
-            args.insert(0, "--experimental-options")
 
     if not env:
         env = os.environ.copy()
@@ -340,7 +315,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         cp_prefix = ver_dep if cp_prefix is None else (ver_dep + os.pathsep + cp_prefix)
     else:
         dists = ['GRAALPYTHON']
-    dists += ['TRUFFLE_NFI', 'SULONG_NATIVE', 'GRAALPYTHON-LAUNCHER']
+    dists += ['TRUFFLE_NFI', 'TRUFFLE_NFI_LIBFFI', 'GRAALPYTHON-LAUNCHER']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     if minimal:
@@ -380,7 +355,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
 
 def node_footprint_analyzer(args, **kwargs):
     main_class = 'com.oracle.graal.python.test.advanced.NodeFootprintAnalyzer'
-    vm_args = mx.get_runtime_jvm_args(['GRAALPYTHON_UNIT_TESTS', 'GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE'])
+    vm_args = mx.get_runtime_jvm_args(['GRAALPYTHON_UNIT_TESTS', 'GRAALPYTHON', 'TRUFFLE_NFI', 'TRUFFLE_NFI_LIBFFI'])
     return mx.run_java(vm_args + [main_class] + args, **kwargs)
 
 
@@ -393,12 +368,7 @@ def _dev_pythonhome():
     return os.path.join(SUITE.dir, "graalpython")
 
 
-def punittest(ars, report=False):
-    """
-    Runs GraalPython junit tests and memory leak tests, which can be skipped using --no-leak-tests.
-    Pass --regex to further filter the junit and TSK tests. GraalPy tests are always run in two configurations:
-    with language home on filesystem and with language home served from the Truffle resources.
-    """
+def get_path_with_patchelf():
     path = os.environ.get("PATH", "")
     if mx.is_linux() and not shutil.which("patchelf"):
         venv = Path(SUITE.get_output_root()).absolute() / "patchelf-venv"
@@ -409,7 +379,25 @@ def punittest(ars, report=False):
             subprocess.check_call([sys.executable, "-m", "venv", str(venv)])
             subprocess.check_call([str(venv / "bin" / "pip"), "install", "patchelf"])
             mx.log(f"{time.strftime('[%H:%M:%S] ')} Building patchelf-venv with {sys.executable}... [duration: {time.time() - t0}]")
+    if mx.is_windows() and not shutil.which("delvewheel"):
+        venv = Path(SUITE.get_output_root()).absolute() / "delvewheel-venv"
+        path += os.pathsep + str(venv / "Scripts")
+        if not shutil.which("delvewheel", path=path):
+            mx.log(f"{time.strftime('[%H:%M:%S] ')} Building delvewheel-venv with {sys.executable}... [delvewheel not found on PATH]")
+            t0 = time.time()
+            subprocess.check_call([sys.executable, "-m", "venv", str(venv)])
+            subprocess.check_call([str(venv / "Scripts" / "pip.exe"), "install", "delvewheel"])
+            mx.log(f"{time.strftime('[%H:%M:%S] ')} Building delvewheel-venv with {sys.executable}... [duration: {time.time() - t0}]")
+    return path
 
+
+def punittest(ars, report=False):
+    """
+    Runs GraalPython junit tests and memory leak tests, which can be skipped using --no-leak-tests.
+    Pass --regex to further filter the junit and TSK tests. GraalPy tests are always run in two configurations:
+    with language home on filesystem and with language home served from the Truffle resources.
+    """
+    path = get_path_with_patchelf()
     args = [] if ars is None else ars
     @dataclass
     class TestConfig:
@@ -486,8 +474,6 @@ PYTHON_NATIVE_PROJECTS = ["python-libbz2",
                           "python-liblzma",
                           "python-libzsupport",
                           "python-libposix",
-                          "com.oracle.graal.python.hpy.llvm",
-                          "com.oracle.graal.python.jni",
                           "com.oracle.graal.python.cext"]
 
 
@@ -891,13 +877,6 @@ def _python_unittest_root():
     return os.path.join(SUITE.dir, "graalpython", "com.oracle.graal.python.test", "src", "tests")
 
 
-# name of the project containing the HPy tests
-HPY_TEST_PROJECT = "com.oracle.graal.python.hpy.test"
-
-def _hpy_test_root():
-    return os.path.join(mx.dependency(HPY_TEST_PROJECT).get_output_root(), "bin", "hpytest")
-
-
 def graalpytest(args):
     # help is delegated to the runner, it will fake the mx-specific options as well
     parser = ArgumentParser(prog='mx graalpytest', add_help=False)
@@ -913,7 +892,7 @@ def graalpytest(args):
     python_args = []
     runner_args = []
     for arg in unknown_args:
-        if arg.startswith(('--python.', '--engine.', '--llvm.', '--vm.', '--inspect', '--log.', '--experimental-options')):
+        if arg.startswith(('--python.', '--engine.', '--vm.', '--inspect', '--log.', '--experimental-options')):
             python_args.append(arg)
         else:
             runner_args.append(arg)
@@ -995,6 +974,8 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         # Windows machines don't seem to have much memory
         parallel = min(parallel, 2)
 
+    parallelism = str(min(os.cpu_count(), parallel))
+
     args = args or []
     args = [
         "--vm.ea",
@@ -1012,22 +993,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
 
     if BYTECODE_DSL_INTERPRETER:
         args += ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
-
-    # just to be able to verify, print C ext mode (also works for CPython)
-    mx.run(
-        [
-            python_binary,
-            *args,
-            "-c",
-            "import sys; print('C EXT MODE: ' + (__graalpython__.ext_mode if sys.implementation.name == 'graalpy' else 'cpython'))",
-        ],
-        nonZeroIsFatal=True, env=env, out=out, err=err,
-    )
-
-    if use_pytest:
-        args += ["-m", "pytest", "-v", "--assert=plain", "--tb=native"]
-    else:
-        args += [_python_test_runner(), "run", "--durations", "10", "-n", str(min(os.cpu_count(), parallel)), f"--subprocess-args={shlex.join(args)}"]
+    args += [_python_test_runner(), "run", "--durations", "10", "-n", parallelism, f"--subprocess-args={shlex.join(args)}"]
 
     if runner_args:
         args += runner_args
@@ -1037,17 +1003,15 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
             args += ['--ignore', file]
 
     if is_collecting_coverage() and mx_gate.get_jacoco_agent_args():
-        if not use_pytest:
-            # jacoco only dumps the data on exit, and when we run all our unittests
-            # at once it generates so much data we run out of heap space
-            args.append('--separate-workers')
+        # jacoco only dumps the data on exit, and when we run all our unittests
+        # at once it generates so much data we run out of heap space
+        args.append('--separate-workers')
 
     if report:
         reportfile = None
         t0 = time.time()
-        if not use_pytest:
-            reportfile = os.path.abspath(tempfile.mktemp(prefix="test-report-", suffix=".json"))
-            args += ["--mx-report", reportfile]
+        reportfile = os.path.abspath(tempfile.mktemp(prefix="test-report-", suffix=".json"))
+        args += ["--mx-report", reportfile]
 
     if paths is not None:
         args += paths
@@ -1075,93 +1039,15 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     return result
 
 
-def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, nonZeroIsFatal=True, timeout=None, report=False):
-    args = [] if args is None else args
-    mx.command_function("build")(["--dep", HPY_TEST_PROJECT])
-    with tempfile.TemporaryDirectory(prefix='hpy-test-site-') as d:
-        env = env or os.environ.copy()
-        prefix = str(d)
-        env.update(PYTHONUSERBASE=prefix)
-        delete_bad_env_keys(env)
-        mx.run_mx(["build", "--dependencies", "LLVM_TOOLCHAIN"])
-        env.update(LLVM_TOOLCHAIN_VANILLA=mx_subst.path_substitutions.substitute('<path:LLVM_TOOLCHAIN>/bin'))
-        mx.log("LLVM Toolchain (vanilla): {!s}".format(env["LLVM_TOOLCHAIN_VANILLA"]))
-        mx.run([python_binary] + args + ["-m", "ensurepip", "--user"],
-               nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
-        mx.run([python_binary] + args + ["-m", "pip", "install", "--user", "pytest<=6.2.3", "pytest-xdist", "filelock"],
-               nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
-        if not is_collecting_coverage():
-            global DISABLE_REBUILD
-            DISABLE_REBUILD = True
-            # parallelize
-            import threading
-            threads = []
-            lock = threading.RLock()
-
-            class HPyUnitTestsThread(threading.Thread):
-                def __init__(self, **tkwargs):
-                    super().__init__(**tkwargs)
-                    self.out = mx.LinesOutputCapture()
-                    self.result = None
-
-                def run(self):
-                    # Note: for some reason catching BaseException is not enough to catch mx.abort,
-                    # so we use nonZeroIsFatal=False instead.
-                    try:
-                        self.result = run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()],
-                                                      env=tenv, use_pytest=True, lock=lock, nonZeroIsFatal=False,
-                                                      out=self.out, err=self.out, timeout=timeout, report=report)
-                        self.out.lines.append(f"Thread {self.name} finished with result {self.result}")
-                    except BaseException as e: # pylint: disable=broad-except;
-                        self.out.lines.append(f"Thread {self.name} finished with exception {e}")
-                        self.result = e
-        else:
-            threads = []
-            class HPyUnitTestsThread:
-                def __init__(self, name):
-                    self.name = name
-                    self.out = mx.LinesOutputCapture()
-
-                def start(self):
-                    self.result = run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()],
-                                                       env=tenv, use_pytest=True, nonZeroIsFatal=nonZeroIsFatal,
-                                                       timeout=timeout, report=report)
-                    print(f"Thread {self.name} finished with result {self.result}")
-
-                def join(self, *args, **kwargs):
-                    return
-
-                def is_alive(self):
-                    return False
-
-        abi_list = ['cpython', 'universal']
-        if include_native:
-            # modes 'debug' and 'nfi' can only be used if native access is allowed
-            abi_list.append('debug')
-        for abi in abi_list:
-            tenv = env.copy()
-            tenv["TEST_HPY_ABI"] = abi
-            thread = HPyUnitTestsThread(name=abi)
-            threads.append(thread)
-            thread.start()
-
-        alive = [True] * len(threads)
-        while any(alive):
-            for i, t in enumerate(threads):
-                t.join(timeout=1.0)
-                mx.logv("## Progress (last 5 lines) of thread %r:\n%s\n" % (t.name, os.linesep.join(t.out.lines[-5:])))
-                alive[i] = t.is_alive()
-
-        failed_threads = [t for t in threads if t.result != 0]
-        for t in threads:
-            mx.log("\n\n### Output of thread %r: \n\n%s" % (t.name, t.out))
-        if any(failed_threads):
-            threads_info = [f"{t.name} (result: {t.result})" for t in failed_threads]
-            message = "HPy testing threads failed: " + ', '.join(threads_info)
-            if nonZeroIsFatal:
-                mx.abort("ERROR: " + message)
-            else:
-                mx.warn(message)
+def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, timeout=None, report=False):
+    t0 = time.time()
+    result = downstream_test_hpy(python_binary, args=args, env=env, nonZeroIsFatal=nonZeroIsFatal, timeout=timeout)
+    if report:
+        mx_gate.make_test_report([{
+            "name": report.title,
+            "status": "PASSED" if result == 0 else "FAILED",
+            "duration": int((time.time() - t0) * 1000)
+        }], report.title)
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True, checkIfWithGraalPythonEE=False,
@@ -1304,6 +1190,8 @@ def graalpython_gate_runner(args, tasks):
                             f'-Dcom.oracle.graal.python.test.central_repo={central_override}',
                             '--batch-mode']
 
+            env['PATH'] = get_path_with_patchelf()
+
             mx.log("Running integration JUnit tests on GraalVM SDK")
             env['JAVA_HOME'] = graalvm_jdk()
             mx.run_maven(mvn_cmd_base + ['-U', 'clean', 'test'], env=env)
@@ -1350,7 +1238,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
         if task:
-            run_hpy_unittests(graalpy_standalone_native_enterprise(), args=SANDBOXED_OPTIONS, include_native=False, report=report())
+            run_hpy_unittests(graalpy_standalone_native_enterprise(), args=SANDBOXED_OPTIONS, report=report())
 
     with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
         if task:
@@ -1843,9 +1731,12 @@ def _get_src_dir(projectname):
 
 
 def _get_output_root(projectname):
+    prefix, _, suffix = projectname.rpartition(":")
     for suite in mx.suites():
-        for p in suite.projects:
-            if p.name == projectname:
+        if prefix and suite.name != prefix:
+            continue
+        for p in itertools.chain(suite.projects, suite.dists):
+            if p.name == suffix:
                 return p.get_output_root()
     mx.abort("Could not find out dir for project %s" % projectname)
 
@@ -1906,9 +1797,7 @@ def release_level(variant=None):
     return level
 
 
-def graalpy_ext(llvm_mode, **kwargs):
-    if not llvm_mode:
-        mx.abort("substitution 'graalpy_ext' is missing argument 'llvm_mode'")
+def graalpy_ext(*args, **kwargs):
     os = mx_subst.path_substitutions.substitute('<os>')
     arch = mx_subst.path_substitutions.substitute('<arch>')
     if arch == 'amd64':
@@ -1924,7 +1813,7 @@ def graalpy_ext(llvm_mode, **kwargs):
     # on Windows we use '.pyd' else '.so' but never '.dylib' (similar to CPython):
     # https://github.com/python/cpython/issues/37510
     ext = 'pyd' if os == 'windows' else 'so'
-    return f'.graalpy{GRAAL_VERSION_MAJ_MIN.replace(".", "") + dev_tag()}-{PYTHON_VERSION_MAJ_MIN.replace(".", "")}-{llvm_mode}-{arch}-{pyos}.{ext}'
+    return f'.graalpy{GRAAL_VERSION_MAJ_MIN.replace(".", "") + dev_tag()}-{PYTHON_VERSION_MAJ_MIN.replace(".", "")}-native-{arch}-{pyos}.{ext}'
 
 
 def dev_tag(arg=None, **kwargs):
@@ -1959,8 +1848,8 @@ mx_subst.path_substitutions.register_with_arg('graal_ver', graal_version_short)
 mx_subst.path_substitutions.register_with_arg('release_level', release_level)
 mx_subst.results_substitutions.register_with_arg('dev_tag', dev_tag)
 
-mx_subst.path_substitutions.register_with_arg('graalpy_ext', graalpy_ext)
-mx_subst.results_substitutions.register_with_arg('graalpy_ext', graalpy_ext)
+mx_subst.path_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
+mx_subst.results_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
 
 
 def update_import(name, suite_py, args):
@@ -2166,7 +2055,7 @@ def python_checkcopyrights(args):
         content = listfile.read()
     with open(listfilename, "w") as listfile:
         for line in content.split("\n"):
-            if "lib-python/3" in line or "com.oracle.graal.python.test/testData" in line or "com.oracle.graal.python.pegparser.test/testData" in line:
+            if any(x in line for x in ["lib-python/3", ".test/testData", "/hpy/"]):
                 pass
             elif os.path.splitext(line)[1] in [".py", ".java", ".c", ".h", ".sh"]:
                 listfile.write(line)
@@ -2226,9 +2115,8 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
 
 
 standalone_dependencies_common = {
-    'LLVM Runtime Core': ('lib/sulong', []),
-    'LLVM Runtime Native': ('lib/sulong', []),
-    'LLVM.org toolchain': ('lib/llvm-toolchain', []),
+    "Truffle NFI": "truffle:TRUFFLE_NFI",
+    "Truffle NFI LIBFFI": "truffle:TRUFFLE_NFI_LIBFFI",
 }
 
 def bytecode_dsl_build_args():
@@ -2247,8 +2135,6 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     dependencies=[
         'pynl',
         'Truffle',
-        'LLVM Runtime Native',
-        'LLVM.org toolchain',
         'TRegex',
         'ICU4J',
         'XZ',
@@ -2257,10 +2143,6 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
         'GraalVM Python license files': ('', []),
     }},
     standalone_dependencies_enterprise={**standalone_dependencies_common, **{
-        **({} if mx.is_windows() else {
-            'LLVM Runtime Enterprise': ('lib/sulong', []),
-            'LLVM Runtime Native Enterprise': ('lib/sulong', []),
-        }),
         'GraalVM Python license files EE': ('', []),
         'GraalVM enterprise license files': ('', ['LICENSE.txt', 'GRAALVM-README.md']),
     }},
@@ -2277,7 +2159,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     ],
     library_configs=[
         mx_sdk.LanguageLibraryConfig(
-            launchers=['bin/<exe:graalpy>', 'bin/<exe:graalpy-lt>', 'bin/<exe:python>', 'bin/<exe:python3>', 'libexec/<exe:graalpy-polyglot-get>'],
+            launchers=['bin/<exe:graalpy>', 'bin/<exe:python>', 'bin/<exe:python3>', 'libexec/<exe:graalpy-polyglot-get>'],
             jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER', 'sdk:MAVEN_DOWNLOADER'],
             main_class=GRAALPYTHON_MAIN_CLASS,
             build_args=[
@@ -2303,77 +2185,6 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
 # post init
 #
 # ----------------------------------------------------------------------------------------------------------------------
-def _register_vms(namespace):
-    # cpython
-    python_vm_registry.add_vm(CPythonVm(config_name=CONFIGURATION_DEFAULT), SUITE)
-
-    # pypy
-    python_vm_registry.add_vm(PyPyVm(config_name=CONFIGURATION_DEFAULT), SUITE)
-
-    # jython
-    python_vm_registry.add_vm(JythonVm(config_name=CONFIGURATION_DEFAULT), SUITE)
-
-    # graalpython
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER, extra_polyglot_args=[
-        '--experimental-options', '--engine.Compilation=false'
-    ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context',
-    ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context', '--engine.Compilation=false'
-    ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_MULTI_TIER, extra_polyglot_args=[
-        '--experimental-options', '--engine.MultiTier=true',
-    ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED, extra_polyglot_args=SANDBOXED_OPTIONS), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE, extra_polyglot_args=[
-        '--experimental-options', '--python.HPyBackend=JNI'
-    ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_INTERPRETER, extra_polyglot_args=[
-        '--experimental-options', '--engine.Compilation=false', '--python.HPyBackend=JNI']), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context'] + SANDBOXED_OPTIONS), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context', '--python.HPyBackend=JNI'
-    ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_INTERPRETER_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context', '--engine.Compilation=false', '--python.HPyBackend=JNI'
-    ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI_TIER, extra_polyglot_args=[
-        '--experimental-options', '--engine.MultiTier=true', '--python.HPyBackend=JNI'
-    ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_PANAMA, extra_polyglot_args=[
-        '--experimental-options', '--python.UsePanama=true'
-    ]), SUITE, 10)
-
-    # java embedding driver
-    python_java_embedding_vm_registry.add_vm(
-        GraalPythonJavaDriverVm(config_name=CONFIGURATION_JAVA_EMBEDDING_MULTI,
-                                extra_polyglot_args=['-multi-context']), SUITE, 10)
-    python_java_embedding_vm_registry.add_vm(
-        GraalPythonJavaDriverVm(config_name=CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED,
-                                extra_polyglot_args=['-multi-context', '-shared-engine']), SUITE, 10)
-    python_java_embedding_vm_registry.add_vm(
-        GraalPythonJavaDriverVm(config_name=CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI,
-                                extra_polyglot_args=['-multi-context', '-interpreter']), SUITE, 10)
-    python_java_embedding_vm_registry.add_vm(
-        GraalPythonJavaDriverVm(config_name=CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED,
-                                extra_polyglot_args=['-multi-context', '-interpreter', '-shared-engine']), SUITE, 10)
-
-
-def _register_bench_suites(namespace):
-    for py_bench_suite in PythonBenchmarkSuite.get_benchmark_suites(BENCHMARKS):
-        mx_benchmark.add_bm_suite(py_bench_suite)
-    for py_bench_suite in PythonJavaEmbeddingBenchmarkSuite.get_benchmark_suites(JAVA_DRIVER_BENCHMARKS):
-        mx_benchmark.add_bm_suite(py_bench_suite)
-    for py_bench_suite in PythonVmWarmupBenchmarkSuite.get_benchmark_suites(WARMUP_BENCHMARKS):
-        mx_benchmark.add_bm_suite(py_bench_suite)
-    mx_benchmark.add_bm_suite(PythonJMHDistMxBenchmarkSuite())
-    for py_bench_suite in PythonHeapBenchmarkSuite.get_benchmark_suites(HEAP_BENCHMARKS):
-        mx_benchmark.add_bm_suite(py_bench_suite)
-
 
 class CharsetFilteringPariticpant:
     """
@@ -2446,8 +2257,8 @@ def warn_about_old_hardcoded_version():
 
 def mx_post_parse_cmd_line(namespace):
     # all projects are now available at this time
-    _register_vms(namespace)
-    _register_bench_suites(namespace)
+    mx_graalpython_benchmark.register_vms(SUITE, SANDBOXED_OPTIONS)
+    mx_graalpython_benchmark.register_suites()
     mx_graalpython_python_benchmarks.register_python_benchmarks()
 
     for dist in mx.suite('graalpython').dists:
@@ -2509,15 +2320,12 @@ def python_coverage(args):
             {"args": []},
             # Run only a few tagged tests that are relevant to the files in lib-graalpython
             {"tagged": True, "paths": ["test_re.py", "test_unicodedata.py"]},
-            # Sulong is not reporting coverage with Truffle coverage very well, so we just disable it
-            # {"args": SANDBOXED_OPTIONS},
             {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
             {"hpy": True},
         ]
 
         common_coverage_args = [
             "--experimental-options",
-            "--llvm.lazyParsing=false",
             "--python.DisableFrozenModules",  # To have proper source information about lib-graalpython
             "--coverage",
             "--coverage.TrackInternal",
@@ -2764,203 +2572,6 @@ def python_clean(args):
         if count > 0:
             print('Cleaning', count, "`*.pyc` files...")
 
-def update_hpy_import_cmd(args):
-    """Update our import of HPy sources."""
-    parser = ArgumentParser('mx python-update-hpy-import')
-    parser.add_argument('--pull', action='store_true', help='Perform a pull of the HPy repo first.', required=False)
-    parser.add_argument('hpy_repo', metavar='HPY_REPO', help='Path to the HPy repo to import from.')
-    parsed_args, _ = parser.parse_known_args(args)
-
-    join = os.path.join
-    vc = SUITE.vc
-
-    current_branch = vc.active_branch(SUITE.dir)
-    if current_branch == "master":
-        mx.abort("updating imports should be done on a branch")
-    if vc.isDirty(SUITE.dir):
-        mx.abort("updating imports should be done on a clean branch")
-
-    hpy_repo_path = parsed_args.hpy_repo
-
-    # do sanity check of the HPy repo
-    hpy_repo_include_dir = join(hpy_repo_path, "hpy", "devel", "include")
-    hpy_repo_src_dir = join(hpy_repo_path, "hpy", "devel", "src")
-    hpy_repo_debug_dir = join(hpy_repo_path, "hpy", "debug")
-    hpy_repo_trace_dir = join(hpy_repo_path, "hpy", "trace")
-    hpy_repo_test_dir = join(hpy_repo_path, "test")
-    for d in [hpy_repo_path, hpy_repo_include_dir, hpy_repo_src_dir, hpy_repo_test_dir]:
-        if not os.path.isdir(d):
-            mx.abort("HPy import repo is missing directory {}".format(d))
-
-    # We should use 'SUITE.vc' here because HPy always uses Git and this may be different from 'SUITE.vc'.
-    vc_git = mx.vc_system("git")
-
-    # Now that we know the 'hpy_repo_path' looks sane, do a pull if requested.
-    if parsed_args.pull:
-        if not vc_git.is_this_vc(hpy_repo_path):
-            mx.abort("Cannot perform pull for HPy repo because {} is not a valid Git repo.".format(hpy_repo_path))
-        vc_git.pull(hpy_repo_path, update=True)
-
-    # determine short revision of HPy
-    import_version = vc_git.git_command(hpy_repo_path, ["rev-parse", "--short", "HEAD"]).strip()
-    mx.log("Determined HPy revision {}".format(import_version))
-
-    if vc_git.isDirty(hpy_repo_path):
-        res = input("WARNING: your HPy repo is not clean. Do you want to proceed? (n/y) ")
-        if str(res).strip().lower() != "y":
-            return
-
-    # switch to the HPy import orphan branch
-    vc.git_command(SUITE.dir, ["checkout", HPY_IMPORT_ORPHAN_BRANCH_NAME])
-    assert not SUITE.vc.isDirty(SUITE.dir)
-
-    def import_file(src_file, dest_file):
-        mx.logv("Importing HPy file {} to {}".format(src_file, dest_file))
-
-        # ensure that relative parent directories already exist (ignore existing)
-        os.makedirs(os.path.dirname(dest_file), exist_ok=True)
-
-        # copy file (overwrite existing)
-        mx.copyfile(src_file, dest_file)
-        # we may copy ignored files
-        vc.add(SUITE.dir, dest_file, abortOnError=False)
-
-    def import_files(from_dir, to_dir, exclude=lambda x: False):
-        mx.log("Importing HPy files from {}".format(from_dir))
-        for dirpath, _, filenames in os.walk(from_dir):
-            relative_dir_path = os.path.relpath(dirpath, start=from_dir)
-            for filename in filenames:
-                src_file = join(dirpath, filename)
-                relative_src_file = join(relative_dir_path, filename)
-                if not exclude(relative_src_file):
-                    dest_file = join(to_dir, relative_src_file)
-                    import_file(src_file, dest_file)
-
-    def remove_inexistent_file(src_file, dest_file):
-        if not os.path.exists(dest_file):
-            mx.logv("Removing file {} since {} does not exist".format(src_file, dest_file))
-            vc.git_command(SUITE.dir, ["rm", src_file])
-
-    def remove_inexistent_files(hpy_dir, our_dir):
-        mx.log("Looking for removed files in {} (HPy reference dir {})".format(our_dir, hpy_dir))
-        for dirpath, _, filenames in os.walk(our_dir):
-            relative_dir_path = os.path.relpath(dirpath, start=our_dir)
-            for filename in filenames:
-                src_file = join(dirpath, filename)
-                dest_file = join(hpy_dir, relative_dir_path, filename)
-                remove_inexistent_file(src_file, dest_file)
-
-    def exclude_subdir(subdir):
-        return lambda relpath: relpath.startswith(subdir)
-
-    def exclude_files(*files):
-        return lambda relpath: str(os.path.normpath(relpath)) in files
-
-    # headers go into 'com.oracle.graal.python.hpy.llvm/include'
-    header_dest = join(mx.project("com.oracle.graal.python.hpy.llvm").dir, "include")
-
-    # copy 'hpy/devel/__init__.py' to 'lib-graalpython/module/hpy/devel/__init__.py'
-    dest_devel_file = join(_get_core_home(), "modules", "hpy", "devel", "__init__.py")
-    src_devel_file = join(hpy_repo_path, "hpy", "devel", "__init__.py")
-    if not os.path.exists(src_devel_file):
-        SUITE.vc.git_command(SUITE.dir, ["reset", "--hard"])
-        SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
-        mx.abort("File '{}' is missing but required.".format(src_devel_file))
-    import_file(src_devel_file, dest_devel_file)
-
-    # 'version.py' goes to 'lib-graalpython/module/hpy/devel/'
-    dest_version_file = join(_get_core_home(), "modules", "hpy", "devel", "version.py")
-    src_version_file = join(hpy_repo_path, "hpy", "devel", "version.py")
-    if not os.path.exists(src_version_file):
-        SUITE.vc.git_command(SUITE.dir, ["reset", "--hard"])
-        SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
-        mx.abort("File 'version.py' is not available. Did you forget to run 'setup.py build' ?")
-    import_file(src_version_file, dest_version_file)
-
-    # 'abitag.py' goes to 'lib-graalpython/module/hpy/devel/'
-    dest_abitag_file = join(_get_core_home(), "modules", "hpy", "devel", "abitag.py")
-    src_abitag_file = join(hpy_repo_path, "hpy", "devel", "abitag.py")
-    if not os.path.exists(src_abitag_file):
-        SUITE.vc.git_command(SUITE.dir, ["reset", "--hard"])
-        SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
-        mx.abort("File 'abitag.py' is not available. Did you forget to run 'setup.py build' ?")
-    import_file(src_abitag_file, dest_abitag_file)
-
-    # copy headers from .../hpy/hpy/devel/include' to 'header_dest'
-    # but exclude subdir 'cpython' (since that's only for CPython)
-    import_files(hpy_repo_include_dir, header_dest)
-    remove_inexistent_files(hpy_repo_include_dir, header_dest)
-
-
-    # runtime sources go into 'lib-graalpython/module/hpy/devel/src'
-    runtime_files_dest = join(_get_core_home(), "modules", "hpy", "devel", "src")
-    import_files(hpy_repo_src_dir, runtime_files_dest)
-    remove_inexistent_files(hpy_repo_src_dir, runtime_files_dest)
-
-    # 'ctx_tracker.c' also goes to 'com.oracle.graal.python.jni/src/ctx_tracker.c'
-    tracker_file_src = join(hpy_repo_src_dir, "runtime", "ctx_tracker.c")
-    if not os.path.exists(tracker_file_src):
-        mx.abort("File '{}' is missing but required.".format(tracker_file_src))
-    jni_project_dir = mx.project("com.oracle.graal.python.jni").dir
-    tracker_file_dest = join(jni_project_dir, "src", "ctx_tracker.c")
-    import_file(tracker_file_src, tracker_file_dest)
-
-    # tests go to 'com.oracle.graal.python.hpy.test/src/hpytest'
-    test_files_dest = join(mx.dependency(HPY_TEST_PROJECT).dir, "src", "hpytest")
-    import_files(hpy_repo_test_dir, test_files_dest)
-    remove_inexistent_files(hpy_repo_test_dir, test_files_dest)
-
-    # debug Python sources go into 'lib-graalpython/module/hpy/debug'
-    debug_files_dest = join(_get_core_home(), "modules", "hpy", "debug")
-    import_files(hpy_repo_debug_dir, debug_files_dest, exclude_subdir("src"))
-    remove_inexistent_files(hpy_repo_debug_dir, debug_files_dest)
-
-    # debug mode goes into 'com.oracle.graal.python.jni/src/debug'
-    debugctx_src = join(hpy_repo_debug_dir, "src")
-    debugctx_dest = join(jni_project_dir, "src", "debug")
-    debugctx_hdr = join(debugctx_src, "include", "hpy_debug.h")
-    import_files(debugctx_src, debugctx_dest, exclude_files(
-        "autogen_debug_ctx_call.i", "debug_ctx_cpython.c", debugctx_hdr))
-    import_file(debugctx_hdr, join(debugctx_dest, "hpy_debug.h"))
-
-    # trace Python sources go into 'lib-graalpython/module/hpy/trace'
-    trace_files_dest = join(_get_core_home(), "modules", "hpy", "trace")
-    import_files(hpy_repo_debug_dir, trace_files_dest, exclude_subdir("src"))
-    remove_inexistent_files(hpy_repo_trace_dir, trace_files_dest)
-
-    # trace mode goes into 'com.oracle.graal.python.jni/src/trace'
-    tracectx_src = join(hpy_repo_trace_dir, "src")
-    tracectx_dest = join(jni_project_dir, "src", "trace")
-    tracectx_hdr = join(tracectx_src, "include", "hpy_trace.h")
-    import_files(tracectx_src, tracectx_dest, exclude_files(tracectx_hdr))
-    import_file(tracectx_hdr, join(tracectx_dest, "hpy_trace.h"))
-
-    # import 'version.py' by path and read '__version__'
-    from importlib import util
-    spec = util.spec_from_file_location("version", dest_version_file)
-    version_module = util.module_from_spec(spec)
-    spec.loader.exec_module(version_module)
-    imported_version = version_module.__version__
-
-    SUITE.vc.git_command(SUITE.dir, ["add", header_dest, test_files_dest, runtime_files_dest, tracker_file_dest])
-    input("Check that the updated files look as intended, then press RETURN...")
-    SUITE.vc.commit(SUITE.dir, "Update HPy inlined files: %s" % import_version)
-    SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
-    SUITE.vc.git_command(SUITE.dir, ["merge", HPY_IMPORT_ORPHAN_BRANCH_NAME])
-
-    # update PKG-INFO version
-    pkg_info_file = join(_get_core_home(), "modules", "hpy.egg-info", "PKG-INFO")
-    with open(pkg_info_file, "w") as f:
-        f.write("Metadata-Version: 2.1\n"
-                "Name: hpy\n"
-                "Version: {}\n"
-                "Summary: UNKNOWN\n"
-                "Home-page: UNKNOWN\n"
-                "License: UNKNOWN\n"
-                "Description: UNKNOWN\n"
-                "Platform: UNKNOWN\n"
-                "Provides-Extra: dev\n".format(imported_version).strip())
-
 
 def run_leak_launcher(input_args):
     args = input_args
@@ -2983,7 +2594,7 @@ def run_leak_launcher(input_args):
 
     env = os.environ.copy()
 
-    dists = ['GRAALPYTHON', 'GRAALPYTHON_RESOURCES', 'TRUFFLE_NFI', 'SULONG_NATIVE', 'GRAALPYTHON_UNIT_TESTS']
+    dists = ['GRAALPYTHON', 'GRAALPYTHON_RESOURCES', 'TRUFFLE_NFI', 'TRUFFLE_NFI_LIBFFI', 'GRAALPYTHON_UNIT_TESTS']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     vm_args += mx.get_runtime_jvm_args(dists)
@@ -3063,7 +2674,6 @@ class PythonMxUnittestConfig(mx_unittest.MxUnittestConfig):
     # We use global state, which influences what this unit-test config is going to do
     # The global state can be adjusted before a test run to achieve a different tests configuration
     useResources = True # Whether to use resources, or language home of filesystem
-    # Possible future extensions: useSulong = True
 
     def apply(self, config):
         (vmArgs, mainClass, mainClassArgs) = config
@@ -3110,7 +2720,7 @@ def graalpy_jmh(args):
 
 
 def run_in_venv(venv, cmd, **kwargs):
-    return mx.run(['sh', '-c', f"source {venv}/bin/activate && {shlex.join(cmd)}"], **kwargs)
+    return mx.run(['sh', '-c', f". {venv}/bin/activate && {shlex.join(cmd)}"], **kwargs)
 
 
 DOWNSTREAM_TESTS = {}
@@ -3120,6 +2730,43 @@ def downstream_test(name):
         DOWNSTREAM_TESTS[name] = fn
         return fn
     return decorator
+
+
+@downstream_test('hpy')
+def downstream_test_hpy(graalpy, args=None, env=None, nonZeroIsFatal=True, timeout=None):
+    testdir = Path('upstream-tests').absolute()
+    shutil.rmtree(testdir, ignore_errors=True)
+    testdir.mkdir(exist_ok=True)
+    hpy_root = os.path.join(mx.dependency("hpy").dir)
+    shutil.copytree(hpy_root, testdir / "hpy")
+    hpy_root = testdir / "hpy"
+    hpy_test_root = hpy_root / "test"
+    venv = testdir / 'hpy_venv'
+    mx.run([graalpy, "-m", "venv", str(venv)])
+    run_in_venv(venv, ["pip", "install", "pytest", "pytest-xdist", "pytest-rerunfailures", "filelock"])
+    env = env or os.environ.copy()
+    env["SETUPTOOLS_SCM_PRETEND_VERSION"] = "0.9.0"
+    run_in_venv(venv, ["pip", "install", "-e", "."], cwd=str(hpy_root), env=env)
+    parallelism = str(min(os.cpu_count(), int(os.cpu_count() / 4)))
+    args = args or []
+    args = [
+        "python",
+        "--vm.ea",
+        "--experimental-options=true",
+        "--python.EnableDebuggingBuiltins",
+        *args,
+        "-m", "pytest",
+        "-v",
+        # for those cases where testing invalid handles corrupts the process so
+        # much that we crash - we don't recover gracefully in some cases :(
+        "--reruns", "3",
+        "-n", parallelism,
+        str(hpy_test_root),
+        # test_distutils is just slow and testing the build infrastructure
+        "-k", "not test_distutils"
+    ]
+    mx.logv(shlex.join(args))
+    return run_in_venv(venv, args, env=env, cwd=str(hpy_root), nonZeroIsFatal=nonZeroIsFatal, timeout=timeout)
 
 
 @downstream_test('pybind11')
@@ -3192,7 +2839,6 @@ mx.update_commands(SUITE, {
     'punittest': [punittest, ''],
     'graalpytest': [graalpytest, '[-h] [--python PYTHON] [TESTS]'],
     'clean': [python_clean, '[--just-pyc]'],
-    'python-update-hpy-import': [update_hpy_import_cmd, '[--no-pull] PATH_TO_HPY'],
     'bisect-benchmark': [mx_graalpython_bisect.bisect_benchmark, ''],
     'python-leak-test': [run_leak_launcher, ''],
     'python-nodes-footprint': [node_footprint_analyzer, ''],

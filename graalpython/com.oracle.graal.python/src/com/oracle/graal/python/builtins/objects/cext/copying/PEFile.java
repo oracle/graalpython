@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,6 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.TruffleFile;
 
 final class PEFile extends SharedObject {
@@ -66,12 +65,40 @@ final class PEFile extends SharedObject {
         // TODO
     }
 
+    private String getDelvewheelPython() {
+        TruffleFile delvewheel = which(context, "delvewheel.exe");
+        if (!delvewheel.exists()) {
+            delvewheel = which(context, "delvewheel.bat");
+        }
+        if (!delvewheel.exists()) {
+            delvewheel = which(context, "delvewheel.cmd");
+        }
+        TruffleFile python = delvewheel.resolveSibling("python.exe");
+        if (!python.exists()) {
+            python = delvewheel.resolveSibling("python.bat");
+        }
+        if (!python.exists()) {
+            python = delvewheel.resolveSibling("python.cmd");
+        }
+        if (!python.exists()) {
+            python = delvewheel.getParent().resolveSibling("python.exe");
+        }
+        if (!python.exists()) {
+            python = delvewheel.getParent().resolveSibling("python.bat");
+        }
+        if (!python.exists()) {
+            python = delvewheel.getParent().resolveSibling("python.cmd");
+        }
+        return python.toString();
+    }
+
     @Override
     public void changeOrAddDependency(String oldName, String newName) throws IOException, InterruptedException {
         var pb = newProcessBuilder(context);
         var tempfileWithForwardSlashes = tempfile.toString().replace('\\', '/');
-        pb.command(context.getOption(PythonOptions.Executable).toJavaStringUncached(),
-                        "-c", String.format("from delvewheel import _dll_utils; _dll_utils.replace_needed('%s', ['%s'], {'%s': '%s'}, strip=True, verbose=2, test=[])",
+        String pythonExe = getDelvewheelPython();
+        pb.command(pythonExe, "-c",
+                        String.format("from delvewheel import _dll_utils; _dll_utils.replace_needed('%s', ['%s'], {'%s': '%s'}, strip=True, verbose=2, test=[])",
                                         tempfileWithForwardSlashes, oldName, oldName, newName));
         var proc = pb.start();
         if (proc.waitFor() != 0) {

@@ -41,9 +41,7 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -69,33 +67,17 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic(PythonOptions.class)
 public abstract class LookupAndCallBinaryNode extends Node {
     @Child private CallBinaryMethodNode dispatchNode;
-    protected final SpecialMethodSlot slot;
     protected final TruffleString name;
 
     LookupAndCallBinaryNode(TruffleString name) {
         this.name = name;
-        this.slot = null;
-    }
-
-    LookupAndCallBinaryNode(SpecialMethodSlot slot) {
-        this.name = slot.getName();
-        this.slot = slot;
     }
 
     public abstract Object executeObject(VirtualFrame frame, Object arg, Object arg2) throws SpecialMethodNotFound;
 
     @NeverDefault
     public static LookupAndCallBinaryNode create(TruffleString name) {
-        // Use SpecialMethodSlot overload for special slots, if there is a need to create
-        // LookupAndCallBinaryNode for dynamic name, then we should change this method or the caller
-        // to try to lookup a slot and use that if found
-        assert SpecialMethodSlot.findSpecialSlotUncached(name) == null : name;
         return LookupAndCallBinaryNodeGen.create(name);
-    }
-
-    @NeverDefault
-    public static LookupAndCallBinaryNode create(SpecialMethodSlot slot) {
-        return LookupAndCallBinaryNodeGen.create(slot);
     }
 
     protected final CallBinaryMethodNode ensureDispatch() {
@@ -108,14 +90,6 @@ public abstract class LookupAndCallBinaryNode extends Node {
     }
 
     protected final PythonBinaryBuiltinNode getBinaryBuiltin(PythonBuiltinClassType clazz) {
-        if (slot != null) {
-            Object attribute = slot.getValue(clazz);
-            if (attribute instanceof BinaryBuiltinDescriptor) {
-                return ((BinaryBuiltinDescriptor) attribute).createNode();
-            }
-            // If the slot does not contain builtin, full lookup wouldn't find a builtin either
-            return null;
-        }
         Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(clazz, name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
@@ -153,7 +127,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
                     @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
                     @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
                     @Exclusive @Cached GetClassNode getClassNode,
-                    @Exclusive @Cached("createLookup()") LookupSpecialBaseNode getattr) {
+                    @Exclusive @Cached("create(name)") LookupSpecialMethodNode getattr) {
         return doCallObject(frame, inliningTarget, left, right, getClassNode, getattr);
     }
 
@@ -163,24 +137,16 @@ public abstract class LookupAndCallBinaryNode extends Node {
     Object callObjectMegamorphic(VirtualFrame frame, Object left, Object right,
                     @Bind("this") Node inliningTarget,
                     @Exclusive @Cached GetClassNode getClassNode,
-                    @Exclusive @Cached("createLookup()") LookupSpecialBaseNode getattr) {
+                    @Exclusive @Cached("create(name)") LookupSpecialMethodNode getattr) {
         return doCallObject(frame, inliningTarget, left, right, getClassNode, getattr);
     }
 
-    private Object doCallObject(VirtualFrame frame, Node inliningTarget, Object left, Object right, GetClassNode getClassNode, LookupSpecialBaseNode getattr) {
+    private Object doCallObject(VirtualFrame frame, Node inliningTarget, Object left, Object right, GetClassNode getClassNode, LookupSpecialMethodNode getattr) {
         Object leftClass = getClassNode.execute(inliningTarget, left);
         Object leftCallable = getattr.execute(frame, leftClass, left);
         if (PGuards.isNoValue(leftCallable)) {
             throw SpecialMethodNotFound.INSTANCE;
         }
         return ensureDispatch().executeObject(frame, leftCallable, left, right);
-    }
-
-    @NeverDefault
-    protected final LookupSpecialBaseNode createLookup() {
-        if (slot != null) {
-            return LookupSpecialMethodSlotNode.create(slot);
-        }
-        return LookupSpecialMethodNode.create(name);
     }
 }

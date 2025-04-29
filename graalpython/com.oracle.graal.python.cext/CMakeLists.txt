@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2023, 2025, Oracle and/or its affiliates.
 #
 # All rights reserved.
 #
@@ -36,19 +36,10 @@ function(require_var var)
 endfunction()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -g2 -ggdb")
 
-if(MSVC)
-    message(FATAL_ERROR "C API cannot be built with MSVC")
-endif()
-
-if(WIN32)
-    require_var(GRAALVM_LLVM_LIB_DIR)
-endif()
 require_var(GRAALPY_PARENT_DIR)
 require_var(CAPI_INC_DIR)
 require_var(PYCONFIG_INCLUDE_DIR)
-require_var(TRUFFLE_H_INC)
 require_var(TRUFFLE_NFI_H_INC)
 require_var(GRAALPY_EXT)
 
@@ -62,24 +53,59 @@ set(TARGET_LIBPYTHON "python-native")
 # common variables and compile/link options (for all build targets)
 ######################################################################
 
-set(CFLAGS_WARNINGS -ggdb -g2 -O0 -Wall -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable
+if (MSVC)
+  SET(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "" FORCE)
+  SET(CFLAGS_WARNINGS /Wall /WX
+    # Many warnings that are just MSVC being a bit pedantic
+    /wd4255 # no function prototype given: converting '()' to '(void)'
+    /wd4820 # padding added after data member
+    /wd4100 # unreferenced formal parameter
+    /wd4200 # nonstandard extension used: zero-sized array in struct/union
+    /wd4996 # This function or variable may be unsafe ... see _CRT_SECURE_NO_WARNINGS
+    /wd4668 # ... is not defined as a preprocessor macro, replacing with '0' for '#if/#elif'
+    /wd4115 # named type definition in parentheses
+    /wd4152 # nonstandard extension, function/data pointer conversion in expression
+    /wd5045 # Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+    /wd4047 # 'int64_t' differs in levels of indirection from 'char []' / 'void *'
+    /wd4242 # conversion from 'int' to 'char', possible loss of data
+    /wd4244 # conversion from 'long' to 'char', possible loss of data
+    /wd4267 # conversion from 'size_t' to 'int', possible loss of data
+    /wd4127 # conditional expression is constant
+    /wd4702 # unreachable code
+    /wd4101 # unreferenced local variable
+    /wd4456 # declaration hides previous local declaration
+    /wd4459 # declaration hides global declaration
+    /wd4061 # enumerator X in switch of enum Y is not explicitly handled by a case label
+    /wd4464 # relative include path contains '..'
+    /wd4710 # 'fprintf': function not inlined
+    /wd4706 # assignment within conditional expression
+
+    # Some that I'm not so happy about
+    /wd4232 # sre: nonstandard extension used: 'ml_meth': address of dllimport 'Py_GenericAlias' is not static, identity not guaranteed
+    /wd4191 # sre and sqlite: 'type cast': like unsafe conversion from 'PyObject *(__cdecl *)(MatchObject *,PyObject *const *,Py_ssize_t)' to 'void (__cdecl *)(void)'
+    /wd4918 # sre: invalid character in pragma optimization list
+    /wd4701 # cpython_unicodedata: potentially uninitialized local variable 'rc' used
+    /wd4574 # sqlite: 'SQLITE_ATOMIC_INTRINSICS' is defined to be '0': did you mean to use '#if SQLITE_ATOMIC_INTRINSICS'?
+    /wd4310 # xmlparse: cast truncates constant value
+  )
+else()
+  set(CFLAGS_WARNINGS -Wall -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable
+                    -Wno-unknown-warning-option
+                    -Wno-discarded-qualifiers                         # _testbuffer.c
                     -Wno-tautological-constant-out-of-range-compare   # fileutils.c: wchar_t > MAX_UNICODE is always false on Windows
                     -Wno-unused-but-set-variable                      # sqlite.c: BOOL bRc
                     -Wno-ignored-pragmas                              # sre.c: #pragma optimize("agtw", on)
-                    -Wno-discarded-qualifiers                         # longobject.c: *pend = str; (gcc only hence: '-Wunknown-warning-option')
                     -Wno-int-to-pointer-cast -Wno-int-conversion -Wno-void-pointer-to-int-cast
-                    -Wno-incompatible-pointer-types-discards-qualifiers -Wno-pointer-type-mismatch
+                    -Wno-incompatible-pointer-types-discards-qualifiers
                     -Wno-braced-scalar-init -Wno-deprecated-declarations)
+  add_compile_options(-ffile-prefix-map=${GRAALPY_PARENT_DIR}=.)
+endif()
 
-add_compile_options(-ffile-prefix-map=${GRAALPY_PARENT_DIR}=.)
 
 # preprocessor defines for all platforms
 add_compile_definitions(
     NDEBUG
-    GRAALVM_PYTHON_LLVM
 )
-
-add_compile_definitions(GRAALVM_PYTHON_LLVM_NATIVE)
 
 
 if(WIN32)
@@ -157,7 +183,6 @@ include_directories(
     "${SRC_DIR}/include"
     "${CAPI_INC_DIR}"
     "${PYCONFIG_INCLUDE_DIR}"
-    "${TRUFFLE_H_INC}"
     "${TRUFFLE_NFI_H_INC}"
 )
 
@@ -322,9 +347,9 @@ target_compile_definitions(${TARGET_LIBPYTHON} PRIVATE Py_BUILD_CORE Py_BUILD_CO
 target_compile_options(${TARGET_LIBPYTHON} PRIVATE ${CFLAGS_WARNINGS})
 
 if(WIN32)
-    target_link_directories(${TARGET_LIBPYTHON} PRIVATE ${GRAALVM_LLVM_LIB_DIR})
-    target_compile_options(${TARGET_LIBPYTHON} PRIVATE "-fmsc-version=1920")
-    target_link_libraries(${TARGET_LIBPYTHON} sulong-native graalvm-llvm)
+    if (NOT MSVC)
+        target_compile_options(${TARGET_LIBPYTHON} PRIVATE "-fmsc-version=1920")
+    endif()
 else()
     # Link to math library; required for functions like 'hypot' or similar
     target_link_libraries(${TARGET_LIBPYTHON} m)

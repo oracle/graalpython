@@ -105,7 +105,6 @@ import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -521,15 +520,15 @@ public final class PythonCextDictBuiltins {
         @Specialization(guards = {"override != 0"})
         static int merge(PDict a, Object b, @SuppressWarnings("unused") int override,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookupKeys,
-                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Shared @Cached PyObjectGetAttr getKeys,
+                        @Cached PyObjectGetAttr getUpdate,
                         @Shared @Cached CallNode callNode,
                         @Cached PRaiseNode raiseNode) {
             // lookup "keys" to raise the right error:
-            if (lookupKeys.execute(null, inliningTarget, b, T_KEYS) == PNone.NO_VALUE) {
+            if (getKeys.execute(null, inliningTarget, b, T_KEYS) == PNone.NO_VALUE) {
                 throw raiseNode.raise(inliningTarget, AttributeError, OBJ_P_HAS_NO_ATTR_S, b, T_KEYS);
             }
-            Object updateCallable = lookupAttr.execute(null, inliningTarget, a, T_UPDATE);
+            Object updateCallable = getUpdate.execute(null, inliningTarget, a, T_UPDATE);
             callNode.executeWithoutFrame(updateCallable, new Object[]{b});
             return 0;
         }
@@ -561,7 +560,7 @@ public final class PythonCextDictBuiltins {
         @Specialization(guards = {"override == 0", "!isDict(b)"})
         static int merge(PDict a, Object b, @SuppressWarnings("unused") int override,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetAttr getAttrNode,
+                        @Shared @Cached PyObjectGetAttr getKeys,
                         @Shared @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
                         @Cached GetItemNode getKeyNode,
@@ -570,7 +569,7 @@ public final class PythonCextDictBuiltins {
                         @Cached HashingStorageSetItem setItemA,
                         @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached InlinedBranchProfile noKeyProfile) {
-            Object attr = getAttrNode.execute(null, inliningTarget, a, T_KEYS);
+            Object attr = getKeys.execute(null, inliningTarget, a, T_KEYS);
             PList keys = listNode.execute(null, callNode.execute(null, attr));
 
             SequenceStorage keysStorage = keys.getSequenceStorage();

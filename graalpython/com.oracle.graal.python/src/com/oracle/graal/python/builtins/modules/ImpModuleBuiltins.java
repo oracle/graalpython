@@ -81,7 +81,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
-import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins.MemoryViewNode;
@@ -101,7 +100,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -697,8 +696,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             WriteAttributeToPythonObjectNode.getUncached().execute(module, T___PATH__, PFactory.createList(core.getLanguage()));
         }
 
-        RootCallTarget callTarget = CodeNodes.GetCodeCallTargetNode.executeUncached(code);
-        GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(module));
+        RootCallTarget callTarget = code.getRootCallTarget();
+        CallDispatchers.SimpleIndirectInvokeNode.executeUncached(callTarget, PArguments.withGlobals(module));
 
         Object origName = info.origName == null ? PNone.NONE : info.origName;
         WriteAttributeToPythonObjectNode.getUncached().execute(module, T___ORIGNAME__, origName);

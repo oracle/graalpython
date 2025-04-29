@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,7 @@ class DummyNonInt():
 class TestPyBool(CPyExtTestCase):
 
     # (tfel): This test actually checks that the wrapped booleans that are
-    # stored as sulong globals are singletons
+    # stored as native globals are singletons
     test_PyBools_areSingleton = CPyExtFunction(
         lambda args: 1,
         lambda: (

@@ -99,6 +99,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyObjectCallMethodObjArgs callDecode,
                         @Exclusive @Cached ArrayBuiltins.FromBytesNode fromBytesNode,
                         @Exclusive @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
+                        @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Exclusive @Cached IsSubtypeNode isSubtypeNode,
                         @Exclusive @Cached ArrayBuiltins.ByteSwapNode byteSwapNode,
                         @Exclusive @Cached TruffleString.CodePointLengthNode lengthNode,
@@ -109,7 +110,8 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             if (format == null) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.BAD_TYPECODE);
             }
-            return doReconstruct(frame, inliningTarget, arrayType, typeCode, cachedCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, formatProfile.profile(format),
+            return doReconstruct(frame, inliningTarget, arrayType, typeCode, cachedCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isTypeNode, isSubtypeNode, byteSwapNode,
+                            formatProfile.profile(format),
                             getInstanceShape, raiseNode);
         }
 
@@ -119,6 +121,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyObjectCallMethodObjArgs callDecode,
                         @Exclusive @Cached ArrayBuiltins.FromBytesNode fromBytesNode,
                         @Exclusive @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
+                        @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Exclusive @Cached IsSubtypeNode isSubtypeNode,
                         @Exclusive @Cached ArrayBuiltins.ByteSwapNode byteSwapNode,
                         @Exclusive @Cached TruffleString.CodePointLengthNode lengthNode,
@@ -129,15 +132,19 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             if (format == null) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.BAD_TYPECODE);
             }
-            return doReconstruct(frame, inliningTarget, arrayType, typeCode, mformatCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, format, getInstanceShape,
+            return doReconstruct(frame, inliningTarget, arrayType, typeCode, mformatCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isTypeNode, isSubtypeNode, byteSwapNode, format,
+                            getInstanceShape,
                             raiseNode);
         }
 
         private static Object doReconstruct(VirtualFrame frame, Node inliningTarget, Object arrayType, TruffleString typeCode, int mformatCode, PBytes bytes, PyObjectCallMethodObjArgs callDecode,
-                        ArrayBuiltins.FromBytesNode fromBytesNode, ArrayBuiltins.FromUnicodeNode fromUnicodeNode, IsSubtypeNode isSubtypeNode,
+                        ArrayBuiltins.FromBytesNode fromBytesNode, ArrayBuiltins.FromUnicodeNode fromUnicodeNode, TypeNodes.IsTypeNode isTypeNode, IsSubtypeNode isSubtypeNode,
                         ArrayBuiltins.ByteSwapNode byteSwapNode, BufferFormat format,
                         TypeNodes.GetInstanceShape getInstanceShape, PRaiseNode raiseNode) {
-            if (!isSubtypeNode.execute(frame, arrayType, PythonBuiltinClassType.PArray)) {
+            if (!isTypeNode.execute(inliningTarget, arrayType)) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.FIRST_ARGUMENT_MUST_BE_A_TYPE_OBJECT_NOT_P, arrayType);
+            }
+            if (!isSubtypeNode.execute(arrayType, PythonBuiltinClassType.PArray)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.N_NOT_SUBTYPE_OF_ARRAY, arrayType);
             }
             MachineFormat machineFormat = MachineFormat.fromCode(mformatCode);

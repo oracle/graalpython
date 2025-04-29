@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.thread;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
 import java.util.List;
 
@@ -185,7 +184,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                     return dispatch(frame, object, type, descr, descrGetSlot);
                 }
             }
-            throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
+            throw raiseNode.raiseAttributeError(inliningTarget, object, key);
         }
 
         private Object dispatch(VirtualFrame frame, Object object, Object type, Object descr, TpSlot get) {

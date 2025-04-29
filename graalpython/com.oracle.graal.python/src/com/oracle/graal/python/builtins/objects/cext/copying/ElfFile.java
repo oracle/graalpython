@@ -46,32 +46,14 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.TruffleLanguage.Env;
 
 final class ElfFile extends SharedObject {
     private final PythonContext context;
     private final TruffleFile tempfile;
 
     private String getPatchelf() {
-        Env env = context.getEnv();
-        var path = env.getEnvironment().getOrDefault("PATH", "").split(env.getPathSeparator());
-        var executable = env.getPublicTruffleFile(context.getOption(PythonOptions.Executable).toJavaStringUncached());
-        var patchelf = executable.resolveSibling("patchelf");
-        var i = 0;
-        while (!isExecutable(patchelf) && i < path.length) {
-            patchelf = env.getPublicTruffleFile(path[i++]).resolve("patchelf");
-        }
-        return patchelf.toString();
-    }
-
-    private static boolean isExecutable(TruffleFile patchelf) {
-        try {
-            return patchelf.isExecutable();
-        } catch (SecurityException e) {
-            return false;
-        }
+        return which(context, "patchelf").toString();
     }
 
     ElfFile(byte[] b, PythonContext context) throws IOException {

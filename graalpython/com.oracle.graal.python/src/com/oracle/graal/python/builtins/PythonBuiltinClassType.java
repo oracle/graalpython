@@ -166,6 +166,7 @@ import com.oracle.graal.python.builtins.objects.dict.DictValuesBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictViewBuiltins;
 import com.oracle.graal.python.builtins.objects.ellipsis.EllipsisBuiltins;
 import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.AttributeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionGroupBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.ImportErrorBuiltins;
@@ -186,7 +187,6 @@ import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.MethodDescriptorBuiltins;
 import com.oracle.graal.python.builtins.objects.function.WrapperDescriptorBuiltins;
@@ -272,7 +272,6 @@ import com.oracle.graal.python.builtins.objects.tuple.InstantiableStructSequence
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltins;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
@@ -702,7 +701,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     OverflowError("OverflowError", ArithmeticError, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     ZeroDivisionError("ZeroDivisionError", ArithmeticError, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     AssertionError("AssertionError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
-    AttributeError("AttributeError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
+    AttributeError("AttributeError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict().slots(AttributeErrorBuiltins.SLOTS)),
     BufferError("BufferError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     EOFError("EOFError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     ImportError("ImportError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict().slots(ImportErrorBuiltins.SLOTS)),
@@ -906,7 +905,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     sys.version_info
 
                     Version information as a named tuple.""")),
-    PWindowsVersion("windowsversion", PTuple, newBuilder().publishInModule("sys").slots(StructSequenceBuiltins.SLOTS, InstantiableStructSequenceBuiltins.SLOTS).doc("""
+    PWindowsVersion("windowsversion", PTuple, newBuilder().publishInModule("sys").disallowInstantiation().slots(StructSequenceBuiltins.SLOTS).doc("""
                     sys.getwindowsversion
 
                     Return info about the running version of Windows as a named tuple.""")),
@@ -1472,15 +1471,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @CompilationFinal private int weaklistoffset;
 
     /**
-     * Lookup cache for special slots defined in {@link SpecialMethodSlot}. Use
-     * {@link SpecialMethodSlot} to access the values. Unlike the cache in
-     * {@link com.oracle.graal.python.builtins.objects.type.PythonManagedClass}, this caches only
-     * builtin context independent values, most notably instances of {@link BuiltinMethodDescriptor}
-     * .
-     */
-    private Object[] specialMethodSlots;
-
-    /**
      * The slots defined directly on the builtin class.
      */
     private final TpSlots declaredSlots;
@@ -1564,24 +1554,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return doc;
     }
 
-    /**
-     * Access the values using methods in {@link SpecialMethodSlot}.
-     */
-    public Object[] getSpecialMethodSlots() {
-        return specialMethodSlots;
-    }
-
     public TpSlots getSlots() {
         return slots;
     }
 
     public TpSlots getDeclaredSlots() {
         return declaredSlots;
-    }
-
-    public void setSpecialMethodSlots(Object[] slots) {
-        assert specialMethodSlots == null; // should be assigned only once per VM
-        specialMethodSlots = slots;
     }
 
     public int getWeaklistoffset() {

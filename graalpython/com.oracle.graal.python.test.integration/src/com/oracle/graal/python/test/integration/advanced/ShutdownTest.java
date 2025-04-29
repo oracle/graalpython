@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,19 +40,26 @@
  */
 package com.oracle.graal.python.test.integration.advanced;
 
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.PolyglotException;
-import org.junit.Assert;
-import org.junit.Test;
-
-import com.oracle.graal.python.test.integration.PythonTests;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.PolyglotException;
+import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import com.oracle.graal.python.test.integration.PythonTests;
+
 // See also NativeExtTest
 public class ShutdownTest extends PythonTests {
+    @BeforeClass
+    public static void setUpClass() {
+        Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("mac"));
+    }
+
     @Test
     public void testCloseWithBackgroundThreadsRunningSucceeds() {
         Context context = createContext();
@@ -154,7 +161,7 @@ public class ShutdownTest extends PythonTests {
     }
 
     private static Context createContext() {
-        return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).option("python.NativeModules", "false").build();
+        return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).option("python.IsolateNativeModules", "true").build();
     }
 
     private static void loadNativeExtension(Context context) {

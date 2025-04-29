@@ -750,15 +750,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             }
         }
 
-        if (isLLVMToolchainLauncher()) {
-            if (!hasContextOptionSetViaCommandLine("UseSystemToolchain")) {
-                contextBuilder.option("python.UseSystemToolchain", "false");
-            }
-            if (!hasContextOptionSetViaCommandLine("NativeModules")) {
-                contextBuilder.option("python.NativeModules", "false");
-            }
-        }
-
         if (relaunchArgs != null) {
             Iterator<String> it = origArgs.iterator();
             while (it.hasNext()) {
@@ -856,13 +847,38 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                 inspectFlag = false;
                 rc = readEvalPrint(context, consoleHandler);
             }
+        } catch (RuntimeException e) {
+            if (e.getMessage() != null && e.getMessage().contains("did not complete all polyglot threads")) {
+                // Python may end up with stuck threads and code would legitimately expect those to
+                // simply die with the process. In an embedding (or CPython subinterpreters) this
+                // is a problem, so Truffle throws an IllegalStateException when closing the
+                // context if that occurs. But here we have a launcher and usually we do not care
+                // about this problem during exit. For an example and some discussion, see
+                // https://discuss.python.org/t/getting-rid-of-daemon-threads/68836/14 where NJS
+                // brings up getaddrinfo which may just block in native for an arbitrary amount of
+                // time and prevent us from shutting down the thread.
+                if (!verboseFlag) {
+                    tryToResetConsoleHandler(consoleHandler);
+                    System.exit(rc);
+                }
+            } else {
+                throw e;
+            }
         } catch (IOException e) {
             rc = 1;
             e.printStackTrace();
         } finally {
-            consoleHandler.setContext(null);
+            tryToResetConsoleHandler(consoleHandler);
         }
         System.exit(rc);
+    }
+
+    private static void tryToResetConsoleHandler(ConsoleHandler consoleHandler) {
+        try {
+            consoleHandler.setContext(null);
+        } catch (Throwable e) {
+            // pass
+        }
     }
 
     private static boolean getBoolEnv(String var) {
@@ -1068,9 +1084,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected void printHelp(OptionCategory maxCategory) {
-        if (isLLVMToolchainLauncher()) {
-            System.out.println("GraalPy launcher to use LLVM toolchain and Sulong execution of native extensions.\n");
-        }
         System.out.println("usage: python [option] ... (-c cmd | file) [arg] ...\n" +
                         "Options and arguments (and corresponding environment variables):\n" +
                         "-B     : this disables writing .py[co] files on import\n" +
@@ -1136,14 +1149,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                                         "                 All following arguments are passed to the compiler.\n" +
                                         "-LD            : run the linker used for generating GraalPython C extensions.\n" +
                                         "                 All following arguments are passed to the linker.\n" +
-                                        "\nEnvironment variables specific to the Graal Python launcher:\n" +
-                                        "SULONG_LIBRARY_PATH: Specifies the library path for Sulong.\n" +
-                                        "   This is required when starting subprocesses of python.\n" : ""));
-    }
-
-    private boolean isLLVMToolchainLauncher() {
-        String exeName = getResolvedExecutableName();
-        return exeName != null && exeName.endsWith("-lt");
+                                        "\nEnvironment variables specific to the Graal Python launcher:\n" : ""));
     }
 
     @Override

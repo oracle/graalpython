@@ -91,7 +91,6 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.Get
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
@@ -267,7 +266,6 @@ public final class ObjectBuiltins extends PythonBuiltins {
 
         @GenerateInline
         @GenerateCached(false)
-        @ImportStatic(SpecialMethodSlot.class)
         abstract static class CheckExcessArgsNode extends Node {
             abstract void execute(Node inliningTarget, Object type, Object[] args, PKeyword[] kwargs);
 
@@ -376,7 +374,6 @@ public final class ObjectBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_init, isComplex = true)
     @SlotSignature(takesVarArgs = true, minNumOfPositionalArgs = 1, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    @ImportStatic(SpecialMethodSlot.class)
     public abstract static class InitNode extends PythonVarargsBuiltinNode {
 
         @Specialization(guards = {"arguments.length == 0", "keywords.length == 0"})
@@ -587,7 +584,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
                     return dispatch(frame, object, type, descr, descrGetSlot);
                 }
             }
-            throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
+            throw raiseNode.raiseAttributeError(inliningTarget, object, key);
         }
 
         private Object readAttribute(Object object, TruffleString key) {
@@ -902,7 +899,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
             PSet names = PFactory.createSet(language);
             Object updateCallable = lookupAttrNode.execute(frame, inliningTarget, names, T_UPDATE);
             Object ns = lookupAttrNode.execute(frame, inliningTarget, obj, T___DICT__);
-            if (isSubtypeNode.execute(frame, getClassNode.execute(inliningTarget, ns), PythonBuiltinClassType.PDict)) {
+            if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, ns), PythonBuiltinClassType.PDict)) {
                 callNode.execute(frame, updateCallable, ns);
             }
             Object klass = lookupAttrNode.execute(frame, inliningTarget, obj, T___CLASS__);

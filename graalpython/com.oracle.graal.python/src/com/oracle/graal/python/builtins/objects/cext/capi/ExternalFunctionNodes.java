@@ -93,7 +93,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -103,7 +102,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -631,9 +629,9 @@ public abstract class ExternalFunctionNodes {
          * @param language The Python language object.
          * @param sig The wrapper/signature ID as defined in {@link PExternalFunctionWrapper}.
          * @param name The name of the method.
-         * @param callable A reference denoting executable code. Currently, there are three
-         *            representations for that: (1) a native function pointer, (2) a
-         *            {@link RootCallTarget}, and (3) a {@link BuiltinMethodDescriptor}.
+         * @param callable A reference denoting executable code. Currently, there are two
+         *            representations for that: a native function pointer or a
+         *            {@link RootCallTarget}
          * @param enclosingType The type the function belongs to (needed for checking of
          *            {@code self}).
          * @return A {@link PBuiltinFunction} implementing the semantics of the specified slot
@@ -670,16 +668,6 @@ public abstract class ExternalFunctionNodes {
                     numDefaults = PythonBuiltins.numDefaults(builtinFunctionRootNode.getBuiltin());
                 }
                 kwDefaults = PKeyword.EMPTY_KEYWORDS;
-            } else if (callable instanceof BuiltinMethodDescriptor builtinMethodDescriptor) {
-                /*
-                 * If we see a built-in method descriptor here, it was originally retrieved by a
-                 * slot lookup. This means, the slot was already properly registered and therefore
-                 * also its call target.
-                 */
-                callTarget = language.getDescriptorCallTarget(builtinMethodDescriptor);
-                // again: special case for built-in functions
-                numDefaults = PythonBuiltins.numDefaults(builtinMethodDescriptor.getBuiltinAnnotation());
-                kwDefaults = PKeyword.EMPTY_KEYWORDS;
             } else {
                 callTarget = getOrCreateCallTarget(sig, language, name, doArgAndResultConversion, CExtContext.isMethStatic(flags));
                 if (callTarget == null) {
@@ -713,20 +701,6 @@ public abstract class ExternalFunctionNodes {
                     return PFactory.createNewWrapper(language, type, defaults, kwDefaults, callTarget, slot);
             }
             return PFactory.createWrapperDescriptor(language, name, type, defaults, kwDefaults, flags, callTarget, slot, sig);
-        }
-
-        /**
-         * {@link #createWrapperFunction(TruffleString, Object, Object, int, PExternalFunctionWrapper, PythonLanguage, boolean)}.
-         */
-        @TruffleBoundary
-        public static PBuiltinFunction createWrapperFunction(TruffleString name, TpSlotCExtNative slot, Object enclosingType, PExternalFunctionWrapper sig, PythonLanguage language) {
-            RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name, true, false);
-            if (callTarget == null) {
-                return null;
-            }
-            var kwDefaults = ExternalFunctionNodes.createKwDefaults(slot.getCallable());
-            Object[] defaults = PBuiltinFunction.generateDefaults(sig.numDefaults);
-            return PFactory.createWrapperDescriptor(language, name, enclosingType, defaults, kwDefaults, 0, callTarget, slot, sig);
         }
 
         private static boolean isClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {
@@ -835,9 +809,6 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    /**
-     * Like {@link com.oracle.graal.python.nodes.call.FunctionInvokeNode} but invokes a C function.
-     */
     @GenerateUncached
     @GenerateCached(false)
     @GenerateInline
@@ -1120,10 +1091,6 @@ public abstract class ExternalFunctionNodes {
         @Child protected ReleaseNativeSequenceStorageNode freeNode;
 
         protected boolean seenNativeArgsTupleStorage;
-
-        public MethKeywordsRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
-            super(language, name, isStatic);
-        }
 
         public MethKeywordsRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);

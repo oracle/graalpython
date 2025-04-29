@@ -48,8 +48,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_DLL;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_DYLIB;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LIB_PREFIX;
-import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
-import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
@@ -57,7 +55,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
-import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SITE;
@@ -100,7 +97,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
-import com.oracle.truffle.api.TruffleOptions;
 import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -116,9 +112,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
-import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -196,6 +190,7 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -243,8 +238,6 @@ public final class PythonContext extends Python3Core {
     public static String getSupportLibName(String libName) {
         return getSupportLibName(getPythonOS(), libName);
     }
-
-    public static final String J_PYTHON_JNI_LIBRARY_NAME = System.getProperty("python.jni.library", getSupportLibName("pythonjni"));
 
     /**
      * An enum of events which can currently be traced using python's tracing
@@ -794,7 +787,6 @@ public final class PythonContext extends Python3Core {
     private static final String J_NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
     private static final String J_NO_STDLIB = "could not determine Graal.Python's standard library path. You need to pass --python.StdLibHome if you want to use the standard library.";
     private static final String J_NO_CAPI = "could not determine Graal.Python's C API library path. You need to pass --python.CAPI if you want to use the C extension modules.";
-    private static final String J_NO_JNI = "could not determine Graal.Python's JNI library. You need to pass --python.JNILibrary if you want to run, for example, binary HPy extension modules.";
 
     private PythonModule mainModule;
     private final List<ShutdownHook> shutdownHooks = new ArrayList<>();
@@ -836,7 +828,6 @@ public final class PythonContext extends Python3Core {
     private OutputStream err;
     private InputStream in;
     @CompilationFinal private CApiContext cApiContext;
-    @CompilationFinal private GraalHPyContext hPyContext;
     @CompilationFinal private boolean nativeAccessAllowed;
 
     private TruffleString soABI; // cache for soAPI
@@ -1358,7 +1349,7 @@ public final class PythonContext extends Python3Core {
                         forceSharing(getOption(PythonOptions.ForceSharingForInnerContexts)).//
                         inheritAllAccess(true).//
                         initializeCreatorContext(true).//
-                        option("python.NativeModules", "false").//
+                        option("python.IsolateNativeModules", "true").//
                         // TODO always force java posix in spawned: test_multiprocessing_spawn fails
                         // with that. Gives "OSError: [Errno 9] Bad file number"
                         // option("python.PosixModuleBackend", "java").//
@@ -1636,6 +1627,7 @@ public final class PythonContext extends Python3Core {
             }
             releaseGil();
         }
+        PythonOptions.checkBytecodeDSLEnv();
     }
 
     public void resetPerfCounter() {
@@ -1657,6 +1649,7 @@ public final class PythonContext extends Python3Core {
         } finally {
             releaseGil();
         }
+        PythonOptions.checkBytecodeDSLEnv();
     }
 
     private void importSiteIfForced() {
@@ -1848,7 +1841,7 @@ public final class PythonContext extends Python3Core {
                                 "switching to Java backend.");
             }
             result = new EmulatedPosixSupport(this);
-        } else if (eqNode.execute(T_NATIVE, option, TS_ENCODING) || eqNode.execute(T_LLVM_LANGUAGE, option, TS_ENCODING)) {
+        } else if (eqNode.execute(T_NATIVE, option, TS_ENCODING)) {
             if (env.isPreInitialization()) {
                 EmulatedPosixSupport emulatedPosixSupport = new EmulatedPosixSupport(this);
                 NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
@@ -1877,13 +1870,12 @@ public final class PythonContext extends Python3Core {
         }
     }
 
-    private TruffleString langHome, sysPrefix, basePrefix, coreHome, capiHome, jniHome, stdLibHome;
+    private TruffleString langHome, sysPrefix, basePrefix, coreHome, capiHome, stdLibHome;
 
     public void initializeHomeAndPrefixPaths(Env newEnv, String languageHome) {
         if (env.isPreInitialization()) {
-            // during pre-initialization we do not need these paths to be valid, since all boot
-            // files are frozen
-            basePrefix = sysPrefix = langHome = coreHome = stdLibHome = capiHome = jniHome = T_DOT;
+            // at buildtime we do not need these paths to be valid, since all boot files are frozen
+            basePrefix = sysPrefix = langHome = coreHome = stdLibHome = capiHome = T_DOT;
             return;
         }
 
@@ -1929,7 +1921,6 @@ public final class PythonContext extends Python3Core {
             coreHome = newEnv.getOptions().get(PythonOptions.CoreHome);
             stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
             capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
-            jniHome = newEnv.getOptions().get(PythonOptions.JNIHome);
             final TruffleFile homeCandidate = (TruffleFile) homeCandidateSupplier.get();
             if (homeCandidate == null) {
                 continue;
@@ -1943,8 +1934,7 @@ public final class PythonContext extends Python3Core {
                             "\n\tCoreHome: {3}" +
                             "\n\tStdLibHome: {4}" +
                             "\n\tCAPI: {5}" +
-                            "\n\tJNI library: {6}" +
-                            "\n\tHome candidate: {7}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, jniHome, homeCandidate.toString()));
+                            "\n\tHome candidate: {6}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, homeCandidate.toString()));
 
             langHome = toTruffleStringUncached(homeCandidate.toString());
             TruffleString prefix = toTruffleStringUncached(homeCandidate.getAbsoluteFile().getPath());
@@ -2012,10 +2002,6 @@ public final class PythonContext extends Python3Core {
                 capiHome = coreHome;
             }
 
-            if (jniHome.isEmpty()) {
-                jniHome = coreHome;
-            }
-
             if (homeSeemsValid) {
                 break;
             }
@@ -2028,9 +2014,7 @@ public final class PythonContext extends Python3Core {
                         "\n\tCoreHome: {3}" +
                         "\n\tStdLibHome: {4}" +
                         "\n\tExecutable: {5}" +
-                        "\n\tCAPI: {6}" +
-                        "\n\tJNI library: {7}", langHome, sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable), capiHome,
-                        jniHome));
+                        "\n\tCAPI: {6}", langHome, sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable), capiHome));
     }
 
     @TruffleBoundary
@@ -2093,15 +2077,6 @@ public final class PythonContext extends Python3Core {
         return capiHome;
     }
 
-    @TruffleBoundary
-    public TruffleString getJNIHome() {
-        if (jniHome.isEmpty()) {
-            writeWarning(J_NO_JNI);
-            return jniHome;
-        }
-        return jniHome;
-    }
-
     private static void writeWarning(String warning) {
         LOGGER.warning(warning);
     }
@@ -2159,7 +2134,6 @@ public final class PythonContext extends Python3Core {
         }
         // interrupt and join or kill system threads
         joinSystemThreads();
-        cleanupHPyResources();
         for (int fd : getChildContextFDs()) {
             if (!getSharedMultiprocessingData().decrementFDRefCount(fd)) {
                 getSharedMultiprocessingData().closePipe(fd);
@@ -2242,12 +2216,6 @@ public final class PythonContext extends Python3Core {
             ts.dispose(this, true);
         }
         threadStateMapping.clear();
-    }
-
-    private void cleanupHPyResources() {
-        if (hPyContext != null) {
-            hPyContext.finalizeContext();
-        }
     }
 
     /**
@@ -2745,34 +2713,6 @@ public final class PythonContext extends Python3Core {
         capiHooks.clear();
     }
 
-    public boolean hasHPyContext() {
-        return hPyContext != null;
-    }
-
-    public synchronized GraalHPyContext createHPyContext(Object hpyLibrary) throws ApiInitException {
-        assert hPyContext == null : "tried to create new HPy context but it was already created";
-        GraalHPyContext hpyContext = new GraalHPyContext(this, hpyLibrary);
-        this.hPyContext = hpyContext;
-        return hpyContext;
-    }
-
-    public GraalHPyContext getHPyContext() {
-        assert hPyContext != null : "tried to get HPy context but was not created yet";
-        return hPyContext;
-    }
-
-    /**
-     * Equivalent of {@code debug_ctx.c: hpy_debug_init_ctx}.
-     */
-    @TruffleBoundary
-    private Object initDebugMode() {
-        if (!hasHPyContext()) {
-            throw CompilerDirectives.shouldNotReachHere("cannot initialize HPy debug context without HPy universal context");
-        }
-        // TODO: call 'hpy_debug_init_ctx'
-        throw CompilerDirectives.shouldNotReachHere("not yet implemented");
-    }
-
     public GCState getGcState() {
         return gcState;
     }
@@ -2805,24 +2745,10 @@ public final class PythonContext extends Python3Core {
         return deserializationId.computeIfAbsent(fileName, f -> new AtomicLong()).incrementAndGet();
     }
 
-    public void ensureLLVMLanguage(Node nodeForRaise) {
-        if (!env.getInternalLanguages().containsKey(J_LLVM_LANGUAGE)) {
-            throw PRaiseNode.raiseStatic(nodeForRaise, PythonBuiltinClassType.SystemError, ErrorMessages.LLVM_NOT_AVAILABLE);
-        }
-    }
-
     public void ensureNFILanguage(Node nodeForRaise, String optionName, String optionValue) {
         if (!env.getInternalLanguages().containsKey(J_NFI_LANGUAGE)) {
             throw PRaiseNode.raiseStatic(nodeForRaise, PythonBuiltinClassType.SystemError, ErrorMessages.NFI_NOT_AVAILABLE, optionName, optionValue);
         }
-    }
-
-    @TruffleBoundary
-    public String getLLVMSupportExt(String libName) {
-        if (!getOption(PythonOptions.NativeModules)) {
-            ensureLLVMLanguage(null);
-        }
-        return PythonContext.getSupportLibName(libName + '-' + J_NATIVE);
     }
 
     @TruffleBoundary

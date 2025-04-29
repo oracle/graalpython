@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -374,7 +374,7 @@ _PyType_PreHeaderSize(PyTypeObject *tp)
 
 void _PyObject_GC_Link(PyObject *op);
 
-void _GraalPyObject_GC_NotifyOwnershipTransfer(PyObject *op);
+PyAPI_FUNC(void) _GraalPyObject_GC_NotifyOwnershipTransfer(PyObject *op);
 
 // Usage: assert(_Py_CheckSlotResult(obj, "__getitem__", result != NULL));
 extern int _Py_CheckSlotResult(

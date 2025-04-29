@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -85,8 +84,8 @@ import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.Bytecod
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -370,14 +369,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * specific initialization only once.
      */
     private volatile boolean isLanguageInitialized;
-
-    /**
-     * A map to retrieve call targets of special slot methods for a given BuiltinMethodDescriptor.
-     * Used to perform uncached calls to slots. The call targets are not directly part of
-     * descriptors because that would make them specific to a language instance. We want to have
-     * them global in order to be able to efficiently compare them in guards.
-     */
-    private final ConcurrentHashMap<BuiltinMethodDescriptor, RootCallTarget> descriptorCallTargets = new ConcurrentHashMap<>();
 
     private final Shape emptyShape = Shape.newBuilder().allowImplicitCastIntToDouble(false).allowImplicitCastIntToLong(true).shapeFlags(0).propertyAssumptions(true).build();
     @CompilationFinal(dimensions = 1) private final Shape[] builtinTypeInstanceShapes = new Shape[PythonBuiltinClassType.VALUES.length];
@@ -784,7 +775,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         RootCallTarget callTarget = parse(context, request.getSource(), InputType.EVAL, false, 0, false, null, EnumSet.noneOf(FutureFeature.class));
         return new ExecutableNode(this) {
             @Child private GilNode gilNode = GilNode.create();
-            @Child private GenericInvokeNode invokeNode = GenericInvokeNode.create();
+            @Child private CallDispatchers.SimpleIndirectInvokeNode invokeNode = CallDispatchers.SimpleIndirectInvokeNode.create();
             @Child private MaterializeFrameNode materializeFrameNode = MaterializeFrameNode.create();
             @Child private GetFrameLocalsNode getFrameLocalsNode = GetFrameLocalsNode.create();
 
@@ -798,7 +789,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
                 boolean wasAcquired = gilNode.acquire();
                 try {
-                    return invokeNode.execute(callTarget, arguments);
+                    return invokeNode.executeCached(frame, callTarget, arguments);
                 } finally {
                     gilNode.release(wasAcquired);
                 }
@@ -1188,22 +1179,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private RootCallTarget createCachedCallTargetUnsafe(Function<PythonLanguage, RootNode> rootNodeFunction, boolean cacheInSingleContext, Object... cacheKeys) {
         return createCachedCallTargetUnsafe(rootNodeFunction, Arrays.asList(cacheKeys), cacheInSingleContext);
-    }
-
-    public void registerBuiltinDescriptorCallTarget(BuiltinMethodDescriptor descriptor, RootCallTarget callTarget) {
-        descriptorCallTargets.put(descriptor, callTarget);
-    }
-
-    /**
-     * Gets a {@link CallTarget} for given {@link BuiltinMethodDescriptor}. The
-     * {@link BuiltinMethodDescriptor} must have been inserted into the slots of some Python class
-     * in the current context, otherwise its {@link CallTarget} will not be cached here.
-     */
-    @TruffleBoundary
-    public RootCallTarget getDescriptorCallTarget(BuiltinMethodDescriptor descriptor) {
-        RootCallTarget callTarget = descriptorCallTargets.get(descriptor);
-        assert callTarget != null : "Missing call target for builtin slot descriptor " + descriptor;
-        return callTarget;
     }
 
     @Override

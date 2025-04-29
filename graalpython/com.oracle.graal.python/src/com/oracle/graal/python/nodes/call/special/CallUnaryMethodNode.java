@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,24 +40,13 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinDescriptor;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.UnaryBuiltinDescriptor;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
@@ -90,48 +79,6 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
 
     public final Object executeObject(Object callable, Object receiver) {
         return executeObject(null, callable, receiver);
-    }
-
-    @Specialization(guards = {"cachedInfo == info", "node != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    Object callUnarySpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") UnaryBuiltinDescriptor info, Object receiver,
-                    @SuppressWarnings("unused") @Cached("info") UnaryBuiltinDescriptor cachedInfo,
-                    @Cached("getBuiltin(cachedInfo)") PythonUnaryBuiltinNode node) {
-        return node.execute(frame, receiver);
-    }
-
-    protected static boolean hasAllowedArgsNum(BuiltinMethodDescriptor descr) {
-        return descr.minNumOfPositionalArgs() <= 1;
-    }
-
-    @Specialization(guards = {"cachedInfo == info", "node != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    Object callBinarySpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") BinaryBuiltinDescriptor info, Object receiver,
-                    @SuppressWarnings("unused") @Cached("info") BinaryBuiltinDescriptor cachedInfo,
-                    @Cached("hasAllowedArgsNum(cachedInfo)") boolean hasValidArgsNum,
-                    @Cached("getBuiltin(cachedInfo)") PythonBinaryBuiltinNode node) {
-        raiseInvalidArgsNumUncached(hasValidArgsNum, cachedInfo);
-        return node.execute(frame, receiver, PNone.NO_VALUE);
-    }
-
-    @Specialization(guards = {"cachedInfo == info", "node != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    Object callTernarySpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") TernaryBuiltinDescriptor info, Object receiver,
-                    @SuppressWarnings("unused") @Cached("info") TernaryBuiltinDescriptor cachedInfo,
-                    @Cached("hasAllowedArgsNum(cachedInfo)") boolean hasValidArgsNum,
-                    @Cached("getBuiltin(cachedInfo)") PythonTernaryBuiltinNode node) {
-        raiseInvalidArgsNumUncached(hasValidArgsNum, cachedInfo);
-        return node.execute(frame, receiver, PNone.NO_VALUE, PNone.NO_VALUE);
-    }
-
-    @Specialization(guards = "isBuiltinDescriptor(info)", replaces = {"callUnarySpecialMethodSlotInlined", "callBinarySpecialMethodSlotInlined", "callTernarySpecialMethodSlotInlined"})
-    @InliningCutoff
-    Object callSpecialMethodSlotCallTarget(VirtualFrame frame, BuiltinMethodDescriptor info, Object receiver,
-                    @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached InlinedConditionProfile invalidArgsProfile,
-                    @Cached GenericInvokeNode invokeNode) {
-        raiseInvalidArgsNumUncached(invalidArgsProfile.profile(inliningTarget, hasAllowedArgsNum(info)), info);
-        RootCallTarget callTarget = PythonLanguage.get(this).getDescriptorCallTarget(info);
-        Object[] arguments = PArguments.create(1);
-        PArguments.setArgument(arguments, 0, receiver);
-        return invokeNode.execute(frame, callTarget, arguments);
     }
 
     @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null"}, //
@@ -184,7 +131,7 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
         return callBinaryBuiltin(frame, builtinNode, func.getSelf(), arg);
     }
 
-    @Specialization(guards = "!isBuiltinDescriptor(func)", replaces = {"callObjectSingle", "callObject", "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod"})
+    @Specialization(replaces = {"callObjectSingle", "callObject", "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod"})
     @Megamorphic
     @InliningCutoff
     static Object call(VirtualFrame frame, Object func, Object receiver,

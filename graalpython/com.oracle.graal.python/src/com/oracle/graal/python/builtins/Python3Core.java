@@ -75,9 +75,6 @@ import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.GraalHPyTraceModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.GraalHPyUniversalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
@@ -246,6 +243,7 @@ import com.oracle.graal.python.builtins.objects.dict.DictViewBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.EllipsisBuiltins;
 import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.AttributeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionGroupBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.ImportErrorBuiltins;
@@ -367,7 +365,6 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
@@ -385,7 +382,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.object.GetForeignObjectClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.pegparser.FutureFeature;
@@ -583,6 +580,7 @@ public abstract class Python3Core {
                         new GenericAliasIteratorBuiltins(),
                         new com.oracle.graal.python.builtins.objects.types.UnionTypeBuiltins(),
                         // exceptions
+                        new AttributeErrorBuiltins(),
                         new SystemExitBuiltins(),
                         new ImportErrorBuiltins(),
                         new StopIterationBuiltins(),
@@ -794,11 +792,6 @@ public abstract class Python3Core {
                         new PyCPointerBuiltins(),
                         new CDataBuiltins(),
 
-                        // _hpy_universal, _hpy_debug, and _hpy_trace
-                        new GraalHPyUniversalModuleBuiltins(),
-                        new GraalHPyDebugModuleBuiltins(),
-                        new GraalHPyTraceModuleBuiltins(),
-
                         new StructModuleBuiltins(),
                         new StructBuiltins(),
                         new StructUnpackIteratorBuiltins(),
@@ -948,14 +941,12 @@ public abstract class Python3Core {
         initializeImportlib();
         context.applyModuleOptions();
         initializePython3Core(context.getCoreHomeOrFail());
-        assert SpecialMethodSlot.checkSlotOverrides(this);
         initialized = true;
     }
 
     private void initializeJavaCore() {
         initializeTypes();
         populateBuiltins();
-        SpecialMethodSlot.initializeBuiltinsSpecialMethodSlots(this);
         publishBuiltinModules();
         builtinsModule = builtinModules.get(BuiltinNames.T_BUILTINS);
     }
@@ -1340,7 +1331,7 @@ public abstract class Python3Core {
             return getLanguage().parse(getContext(), source, InputType.FILE, false, 0, false, null, EnumSet.noneOf(FutureFeature.class));
         };
         RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);
-        GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(mod));
+        CallDispatchers.SimpleIndirectInvokeNode.executeUncached(callTarget, PArguments.withGlobals(mod));
     }
 
     public final PInt getTrue() {

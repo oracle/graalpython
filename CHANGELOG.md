@@ -8,6 +8,8 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * `GRAALPY_VERSION_NUM` C macro now inlcudes the release level and serial number at the end to conform to the `hexversion` format. This shouldn't break any existing comparisons.
 * `dir(foreign_object)` now returns both foreign methods and Python methods (it used to return only foreign methods).
 * Support `__name__`, `__doc__`, `__text_signature__` fields on foreign executables to serve as their proper counterparts on the Python side. This is useful to, for example, use Java functional interfaces in lieu of Python functions for things like LangChain's `@tool` annotation that want to inspect the underlying function.
+* Remove support for running C extensions as LLVM bitcode. This also removes the related options `python.UseSystemToolchain` and `python.NativeModules`.
+* Remove built-in HPy module. HPy can now be installed and used from the upstream sources.
 
 ## Version 24.2.0
 * Updated developer metadata of Maven artifacts.

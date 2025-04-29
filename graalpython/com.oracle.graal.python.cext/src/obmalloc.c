@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -386,7 +386,6 @@ _GraalPyMem_PrepareAlloc(GraalPyMem_t *state, size_t size)
                 __func__, state->native_memory_gc_barrier, size, state->allocated_memory);
 
         size_t delay = 0;
-        int iteration = 0;
         for (int iteration = 0; iteration < MAX_COLLECTION_RETRIES;
                 iteration++) {
             GraalPyTruffle_TriggerGC(delay);

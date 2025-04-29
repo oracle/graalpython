@@ -53,10 +53,8 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_INSERT;
-import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COLON;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
-import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
@@ -132,8 +130,6 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.CreateTypeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -151,7 +147,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -198,13 +193,11 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.llvm.api.Toolchain;
 
 @CoreFunctions(defineModule = J___GRAALPYTHON__, isEager = true)
 public final class GraalPythonModuleBuiltins extends PythonBuiltins {
@@ -272,14 +265,11 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         mod.setAttribute(tsLiteral("core_home"), coreHome);
         mod.setAttribute(tsLiteral("stdlib_home"), stdlibHome);
         mod.setAttribute(tsLiteral("capi_home"), capiHome);
-        mod.setAttribute(tsLiteral("jni_home"), context.getJNIHome());
         Object[] arr = convertToObjectArray(PythonOptions.getExecutableList(context));
         PList executableList = PFactory.createList(language, arr);
         mod.setAttribute(tsLiteral("executable_list"), executableList);
         mod.setAttribute(tsLiteral("venvlauncher_command"), context.getOption(PythonOptions.VenvlauncherCommand));
         mod.setAttribute(tsLiteral("ForeignType"), core.lookupType(PythonBuiltinClassType.ForeignObject));
-        mod.setAttribute(tsLiteral("use_system_toolchain"), context.getOption(PythonOptions.UseSystemToolchain));
-        mod.setAttribute(tsLiteral("ext_mode"), context.getOption(PythonOptions.NativeModules) ? T_NATIVE : T_LLVM_LANGUAGE);
 
         if (!context.getOption(PythonOptions.EnableDebuggingBuiltins)) {
             mod.setAttribute(tsLiteral("dump_truffle_ast"), PNone.NO_VALUE);
@@ -599,117 +589,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         public Object doIt(PFunction func) {
             func.setForceSplitDirectCalls(true);
             return func;
-        }
-    }
-
-    @Builtin(name = "get_toolchain_tools_for_venv")
-    @GenerateNodeFactory
-    public abstract static class GetToolchainToolsForVenv extends PythonBuiltinNode {
-        private static final class Tool {
-            final String name;
-            final boolean isVariableName;
-            final Object[] targets;
-
-            public Tool(String name, boolean isVariableName, Object[] targets) {
-                this.name = name;
-                this.isVariableName = isVariableName;
-                this.targets = targets;
-            }
-
-            static Tool forVariable(String name, Object... targets) {
-                return new Tool(name, true, targets);
-            }
-
-            static Tool forBinary(String name, Object... targets) {
-                return new Tool(name, true, targets);
-            }
-        }
-
-        static final Tool[] tools = new Tool[]{
-                        Tool.forVariable("AR", tsLiteral("ar")),
-                        Tool.forVariable("RANLIB", tsLiteral("ranlib")),
-                        Tool.forVariable("NM", tsLiteral("nm")),
-                        Tool.forVariable("LD", tsLiteral("ld.lld"), tsLiteral("ld"), tsLiteral("lld")),
-                        Tool.forVariable("CC", tsLiteral("clang"), tsLiteral("cc")),
-                        Tool.forVariable("CXX", tsLiteral("clang++"), tsLiteral("c++")),
-                        Tool.forVariable("FC", tsLiteral("graalvm-flang"), tsLiteral("flang-new"), tsLiteral("flang")),
-                        Tool.forBinary("llvm-as", tsLiteral("as")),
-                        Tool.forBinary("clang-cl", tsLiteral("cl")),
-                        Tool.forBinary("clang-cpp", tsLiteral("cpp")),
-        };
-
-        @Specialization
-        @TruffleBoundary
-        Object getToolPath() {
-            PythonContext context = getContext();
-            Env env = context.getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
-            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            List<TruffleFile> toolchainPaths = toolchain.getPaths("PATH");
-            EconomicMapStorage storage = EconomicMapStorage.create(tools.length);
-            for (Tool tool : tools) {
-                String path = null;
-                if (tool.isVariableName) {
-                    TruffleFile toolPath = toolchain.getToolPath(tool.name);
-                    if (toolPath != null) {
-                        path = toolPath.getAbsoluteFile().getPath();
-                    }
-                } else {
-                    for (TruffleFile toolchainPath : toolchainPaths) {
-                        LOGGER.finest(() -> " Testing path " + toolchainPath.getPath() + " for tool " + tool.name);
-                        TruffleFile pathToTest = toolchainPath.resolve(tool.name);
-                        if (pathToTest.exists()) {
-                            path = pathToTest.getAbsoluteFile().getPath();
-                            break;
-                        }
-                    }
-                }
-                if (path != null) {
-                    storage.putUncached(toTruffleStringUncached(path), PFactory.createTuple(context.getLanguage(), tool.targets));
-                } else {
-                    LOGGER.fine("Could not locate tool " + tool.name);
-                }
-            }
-            return PFactory.createDict(context.getLanguage(), storage);
-        }
-    }
-
-    @Builtin(name = "get_toolchain_tool_path", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class GetToolPathNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        protected Object getToolPath(TruffleString tool) {
-            Env env = getContext().getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
-            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            TruffleFile toolPath = toolchain.getToolPath(tool.toJavaStringUncached());
-            if (toolPath == null) {
-                return PNone.NONE;
-            }
-            return toTruffleStringUncached(toolPath.toString().replace("\\", "/"));
-        }
-    }
-
-    @Builtin(name = "get_toolchain_paths", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class GetToolchainPathsNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        protected Object getToolPath(TruffleString tool) {
-            PythonContext context = getContext();
-            Env env = context.getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
-            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            List<TruffleFile> toolPaths = toolchain.getPaths(tool.toJavaStringUncached());
-            if (toolPaths == null) {
-                return PNone.NONE;
-            }
-            Object[] pathNames = new Object[toolPaths.size()];
-            for (int i = 0; i < pathNames.length; i++) {
-                pathNames[i] = toTruffleStringUncached(toolPaths.get(i).toString().replace("\\", "/"));
-            }
-            return PFactory.createList(context.getLanguage(), pathNames);
         }
     }
 
@@ -1068,17 +947,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         static boolean doGeneric(int id) {
             PythonObjectReference ref = CApiTransitions.nativeStubLookupGet(PythonContext.get(null).nativeContext, 0, id);
             return ref != null && ref.isStrongReference();
-        }
-    }
-
-    // This is only used from HPy
-    @Builtin(name = "PyTruffle_CreateType", minNumOfPositionalArgs = 4)
-    @GenerateNodeFactory
-    abstract static class PyTruffle_CreateType extends PythonQuaternaryBuiltinNode {
-        @Specialization
-        static PythonClass createType(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespaceOrig, Object metaclass,
-                        @Cached CreateTypeNode createType) {
-            return createType.execute(frame, namespaceOrig, name, bases, metaclass, PKeyword.EMPTY_KEYWORDS);
         }
     }
 

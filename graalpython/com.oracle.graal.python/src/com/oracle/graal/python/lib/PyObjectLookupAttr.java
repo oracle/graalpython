@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
@@ -94,7 +93,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 @GenerateInline(inlineByDefault = true)
 @GenerateCached
-@ImportStatic({SpecialMethodSlot.class, SpecialMethodNames.class, PGuards.class})
+@ImportStatic({SpecialMethodNames.class, PGuards.class})
 public abstract class PyObjectLookupAttr extends Node {
     public static Object executeUncached(Object receiver, TruffleString name) {
         return PyObjectLookupAttrNodeGen.getUncached().execute(null, null, receiver, name);
@@ -133,9 +132,7 @@ public abstract class PyObjectLookupAttr extends Node {
     }
 
     protected static boolean isTypeSlot(TruffleString name, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-        return SpecialMethodSlot.canBeSpecial(name, codePointLengthNode, codePointAtIndexNode) || //
-                        TpSlots.canBeSpecialMethod(name, codePointLengthNode, codePointAtIndexNode) || //
-                        name.equalsUncached(T_MRO, TS_ENCODING);
+        return TpSlots.canBeSpecialMethod(name, codePointLengthNode, codePointAtIndexNode) || name.equalsUncached(T_MRO, TS_ENCODING);
     }
 
     // simple version that needs no calls and only reads from the object directly
@@ -341,7 +338,7 @@ public abstract class PyObjectLookupAttr extends Node {
             // this is slightly simpler than the previous case, since we don't need to check
             // the type. There may be a module-level __getattr__, however. Since that would be
             // a call anyway, we return to the generic code in that case
-            if (!SpecialMethodSlot.canBeSpecial(stringName, codePointLengthNode, codePointAtIndexNode)) {
+            if (!TpSlots.canBeSpecialMethod(stringName, codePointLengthNode, codePointAtIndexNode)) {
                 // not a special name, so this attribute cannot be on the module class
                 ReadAttributeFromObjectNode readUncached = ReadAttributeFromObjectNode.getUncached();
                 Object result = readUncached.execute(receiver, stringName);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -165,7 +165,7 @@ PyBytes_FromFormatV(const char *format, va_list vargs)
                                              (__buffer)[(__pos)++] = (__spec);\
                                          } while(0)
 
-    for(int i=0; i < sizeof(buffer); i++) {
+    for(int i=0; i < (int)sizeof(buffer); i++) {
     	buffer[i] = '\0';
     }
 

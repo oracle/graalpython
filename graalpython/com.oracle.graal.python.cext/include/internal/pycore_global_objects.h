@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2023 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -70,6 +70,7 @@ struct _Py_static_objects {
         PyHamtNode_Bitmap hamt_bitmap_node_empty;
         _PyContextTokenMissing context_token_missing;
 #endif // GraalPy change
+        char GraalDummyField;
     } singletons;
 };
 

@@ -47,7 +47,6 @@ import java.util.Arrays;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -436,9 +435,6 @@ public final class ObjectHashMap {
                         @Cached InlinedCountingConditionProfile collisionFoundNoValue,
                         @Cached InlinedCountingConditionProfile collisionFoundEqKey,
                         @Cached PyObjectRichCompareBool eqNode) {
-            // Must not call generic __eq__ before builtins are initialized
-            // If this assert fires: we'll need something like putUncachedWithJavaEq also for get
-            assert map.size == 0 || SpecialMethodSlot.areBuiltinSlotsInitialized();
             while (true) {
                 try {
                     return doGet(frame, map, key, keyHash, inliningTarget, foundNullKey, foundSameHashKey,
@@ -560,9 +556,6 @@ public final class ObjectHashMap {
                         @Cached InlinedBranchProfile rehash1Profile,
                         @Cached InlinedBranchProfile rehash2Profile,
                         @Cached PyObjectRichCompareBool eqNode) {
-            // Must not call generic __eq__ before builtins are initialized
-            // If this assert fires: make sure to use putUncachedWithJavaEq during initialization
-            assert map.size == 0 || (SpecialMethodSlot.areBuiltinSlotsInitialized() || eqNode == null);
             while (true) {
                 try {
                     doPut(frame, map, key, keyHash, value, inliningTarget, foundNullKey, foundEqKey,

@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -1208,7 +1208,7 @@ pattern_subx(_sremodulestate* module_state,
         ptr = getstring(ptemplate, &n, &isbytes, &charsize, &view);
         if (ptr) {
             if (charsize == 1)
-                literal = _memchr(ptr, '\\', n) == NULL;
+                literal = memchr(ptr, '\\', n) == NULL;
             else
                 literal = PyUnicode_FindChar(ptemplate, '\\', 0, n, 1) == -1;
         } else {

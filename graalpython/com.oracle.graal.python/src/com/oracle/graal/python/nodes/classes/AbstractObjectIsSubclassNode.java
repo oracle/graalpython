@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -106,7 +106,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
                     @Cached AbstractObjectIsSubclassNode isSubclassNode,
                     @Shared @Cached GetObjectArrayNode getObjectArrayNode) {
         CompilerAsserts.partialEvaluationConstant(depth);
-        PTuple bases = getBasesNode.execute(frame, cachedDerived);
+        PTuple bases = getBasesNode.execute(frame, inliningTarget, cachedDerived);
         if (bases == null || isEmpty(bases)) {
             return false;
         }
@@ -158,7 +158,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
             return true;
         }
 
-        PTuple bases = getBasesNode.execute(frame, derived);
+        PTuple bases = getBasesNode.execute(frame, inliningTarget, derived);
         if (bases == null || isEmpty(bases)) {
             return false;
         }

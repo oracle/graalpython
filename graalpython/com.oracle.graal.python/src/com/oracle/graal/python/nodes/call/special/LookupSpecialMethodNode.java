@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -60,12 +61,14 @@ import com.oracle.truffle.api.strings.TruffleString;
  * differentiate it from the unbound case. {@link CallUnaryMethodNode} and other method calling
  * nodes handle this wrapper.
  */
-public abstract class LookupSpecialMethodNode extends LookupSpecialBaseNode {
+public abstract class LookupSpecialMethodNode extends PNodeWithContext {
     protected final TruffleString name;
 
     public LookupSpecialMethodNode(TruffleString name) {
         this.name = name;
     }
+
+    public abstract Object execute(Frame frame, Object type, Object receiver);
 
     @NeverDefault
     public static LookupSpecialMethodNode create(TruffleString name) {

@@ -41,27 +41,26 @@
 package com.oracle.graal.python.nodes.bytecode;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AEXIT__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
-@ImportStatic(SpecialMethodSlot.class)
 @GenerateInline(false) // used in BCI root node
 public abstract class SetupAwithNode extends PNodeWithContext {
     public abstract int execute(Frame frame, int stackTop);
@@ -70,18 +69,18 @@ public abstract class SetupAwithNode extends PNodeWithContext {
     static int setup(VirtualFrame frame, int stackTopIn,
                     @Bind("this") Node inliningTarget,
                     @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "AEnter") LookupSpecialMethodSlotNode lookupAEnter,
-                    @Cached(parameters = "AExit") LookupSpecialMethodSlotNode lookupAExit,
+                    @Cached LookupSpecialMethodNode.Dynamic lookupAEnter,
+                    @Cached LookupSpecialMethodNode.Dynamic lookupAExit,
                     @Cached CallUnaryMethodNode callEnter,
                     @Cached PRaiseNode raiseNode) {
         int stackTop = stackTopIn;
         Object contextManager = frame.getObject(stackTop);
         Object type = getClassNode.execute(inliningTarget, contextManager);
-        Object enter = lookupAEnter.execute(frame, type, contextManager);
+        Object enter = lookupAEnter.execute(frame, inliningTarget, type, T___AENTER__, contextManager);
         if (enter == PNone.NO_VALUE) {
             throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.N_OBJECT_DOES_NOT_SUPPORT_THE_ASYNC_CONTEXT_MANAGER_PROTOCOL, type);
         }
-        Object exit = lookupAExit.execute(frame, type, contextManager);
+        Object exit = lookupAExit.execute(frame, inliningTarget, type, T___AEXIT__, contextManager);
         if (exit == PNone.NO_VALUE) {
             throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.N_OBJECT_DOES_NOT_SUPPORT_THE_ASYNC_CONTEXT_MANAGER_PROTOCOL_AEXIT, type);
         }

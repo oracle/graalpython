@@ -75,10 +75,6 @@ class EnvBuilder:
         self.setup_python(context)
         if self.with_pip:
             self._setup_pip(context)
-        # Truffle change
-        if not __graalpython__.use_system_toolchain:
-            self._install_compilers(context)
-        # End of Truffle change
         if not self.upgrade:
             self.setup_scripts(context)
             self.post_setup(context)
@@ -211,50 +207,6 @@ class EnvBuilder:
                                context.env_exe, real_env_exe)
                 context.env_exec_cmd = real_env_exe
         return context
-
-
-    def _install_compilers(self, context):
-        """Puts the Graal LLVM compiler tools on the path."""
-        bin_dir = os.path.join(context.env_dir, context.bin_name)
-        for (tool_path, names) in __graalpython__.get_toolchain_tools_for_venv().items():
-            for name in names:
-                dest = os.path.join(bin_dir, name)
-                if not os.path.exists(dest):
-                    os.symlink(tool_path, dest)
-
-        self._wrap_gfortran(context)
-
-    def _which_gfortran(self, context):
-        wrapper_path = os.path.join(context.bin_path, "gfortran")
-        extensions = [".bat", ".exe"] if sys.platform == "win32" else [""]
-        for p in os.environ.get("PATH", "").split(";" if sys.platform == "win32" else ":"):
-            if p != wrapper_path:
-                for ext in extensions:
-                    gfortran = os.path.join(p, "gfortran{}".format(ext))
-                    if os.path.exists(gfortran):
-                        return gfortran
-        return None
-
-    def _wrap_gfortran(self, context):
-        gfortran = self._which_gfortran(context)
-        if gfortran:
-            script = os.path.join(context.bin_path, "gfortran")
-            logger.warning("gfortran compiler found: {}, creating wrapper: {}".format(gfortran, script))
-            if sys.platform == 'win32':
-                script += ".bat"
-
-            with open(script, "w") as f:
-                if sys.platform != "win32":
-                    f.write("#!/bin/sh\n")
-                f.write("{} -shared -fPIC".format(gfortran))
-                if sys.platform == "win32":
-                    f.write(" %*")
-                else:
-                    f.write(" \"$@\"")
-
-            if sys.platform != "win32":
-                os.chmod(script, 0o777)
-
 
     def create_configuration(self, context):
         """

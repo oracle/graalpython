@@ -470,7 +470,7 @@ public abstract class BytesNodes {
                         @Cached GetClassNode getClassNode,
                         @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
             Object type = getClassNode.execute(inliningTarget, obj);
-            return isSubtypeNode.execute(null, type, PythonBuiltinClassType.PBytes) || isSubtypeNode.execute(null, type, PythonBuiltinClassType.PByteArray);
+            return isSubtypeNode.execute(type, PythonBuiltinClassType.PBytes) || isSubtypeNode.execute(type, PythonBuiltinClassType.PByteArray);
         }
 
         @Fallback

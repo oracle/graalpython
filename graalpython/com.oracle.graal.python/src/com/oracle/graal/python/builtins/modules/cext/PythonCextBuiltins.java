@@ -891,9 +891,9 @@ public final class PythonCextBuiltins {
          */
         Direct,
         /**
-         * This builtin has an explicit C implementation that can be executed both from native and
-         * from Sulong - no automatic stub will be generated. Further, there *MUST NOT* be a C API
-         * builtin that would implement the function in Java.
+         * This builtin has an explicit C implementation that can be executed both from native - no
+         * automatic stub will be generated. Further, there *MUST NOT* be a C API builtin that would
+         * implement the function in Java.
          */
         CImpl,
         /**

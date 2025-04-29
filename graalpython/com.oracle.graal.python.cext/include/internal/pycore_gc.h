@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -200,7 +200,8 @@ struct _gc_runtime_state {
 
 extern void _PyGC_InitState(struct _gc_runtime_state *);
 
-extern Py_ssize_t _PyGC_CollectNoFail(PyThreadState *tstate);
+// GraalPy change: exporting _PyGC_CollectNoFail
+extern PyAPI_FUNC(Py_ssize_t) _PyGC_CollectNoFail(PyThreadState *tstate);
 
 
 // Functions to clear types free lists

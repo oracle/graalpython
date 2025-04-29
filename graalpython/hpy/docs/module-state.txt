@@ -1,0 +1,44 @@
+How to replace global variables
+-------------------------------
+
+In a given .c source, write:
+
+
+typedef struct {
+    long x;
+    HPy y;
+} my_globals_t;
+
+static void my_globals_traverse(traversefunc traverse, my_globals_t *g)
+{
+    traverse(g->y);
+}
+
+HPyGlobalSpec my_globals = {
+    .m_size = sizeof(my_globals_t),
+    .m_traverse = my_globals_traverse
+};
+
+
+There can be several HPyGlobalSpec structures around; in CPython it's done as
+part of the PyModuleDef type, but there is no real reason for why it should
+be tightly tied to a module.
+
+
+To use:
+    
+    my_globals_t *g = HPy_GetState(ctx, &my_globals);
+    g->x++;
+    HPy_DoRandomStuffWithHandle(ctx, g->y);
+
+
+Implementation: the type HPyGlobalSpec contains extra internal fields
+which should give us a very fast cache: _last_ctx and _last_result,
+and HPy_GetState() can be:
+    
+    if (ctx == globspec->_last_ctx)
+        return globspec->_last_result;
+    else
+        look up globspec in a dictionary attached to ctx, or vice-versa,
+        or maybe initialize globspec->_index with a unique incrementing
+        index and use that to index an array attached to ctx

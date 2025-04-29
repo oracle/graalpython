@@ -608,7 +608,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         Object doGeneric(VirtualFrame frame, Object self, Object n,
                         @Bind("this") Node inliningTarget,
                         @Cached UnboxNode unboxNode,
-                        @Cached("create(Round)") LookupAndCallBinaryNode callRound) {
+                        @Cached("create(T___ROUND__)") LookupAndCallBinaryNode callRound) {
             Object unboxed = unboxNode.execute(inliningTarget, self);
             try {
                 return callRound.executeObject(frame, unboxed, n);

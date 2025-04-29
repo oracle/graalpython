@@ -71,8 +71,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.bytecode.GeneratorReturnException;
 import com.oracle.graal.python.nodes.bytecode.GeneratorYieldResult;
-import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -83,8 +82,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.bytecode.ContinuationResult;
 import com.oracle.truffle.api.dsl.Bind;
@@ -99,6 +96,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -158,13 +156,14 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
-    @ImportStatic({PGuards.class, PythonOptions.class})
+    @ImportStatic({PGuards.class, PythonOptions.class, CallDispatchers.class})
     abstract static class ResumeGeneratorNode extends Node {
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue);
 
-        @Specialization(guards = {"!isBytecodeDSLInterpreter()", "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"!isBytecodeDSLInterpreter()", "sameCallTarget(self.getCurrentCallTarget(), callNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
         static Object cached(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
-                        @Cached(value = "createDirectCall(self.getCurrentCallTarget())", inline = false) CallTargetInvokeNode call,
+                        @Cached(parameters = "self.getCurrentCallTarget()") DirectCallNode callNode,
+                        @Cached CallDispatchers.SimpleDirectInvokeNode invoke,
                         @Exclusive @Cached InlinedBranchProfile returnProfile,
                         @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -175,7 +174,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
             }
             GeneratorYieldResult result;
             try {
-                result = (GeneratorYieldResult) call.execute(frame, null, null, null, arguments);
+                result = (GeneratorYieldResult) invoke.execute(frame, inliningTarget, callNode, arguments);
             } catch (PException e) {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
             } catch (GeneratorReturnException e) {
@@ -187,10 +186,10 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
             return handleResult(inliningTarget, self, result);
         }
 
-        @Specialization(guards = {"isBytecodeDSLInterpreter()", "sameCallTarget(currentCallTarget, call.getCallTarget())"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"isBytecodeDSLInterpreter()", "sameCallTarget(self.getCurrentCallTarget(), callNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
         static Object cachedBytecodeDSL(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
-                        @Bind("self.getCurrentCallTarget()") @SuppressWarnings("unused") RootCallTarget currentCallTarget,
-                        @Cached(value = "createDirectCall(currentCallTarget)", inline = false) CallTargetInvokeNode call,
+                        @Cached(parameters = "self.getCurrentCallTarget()") DirectCallNode callNode,
+                        @Cached CallDispatchers.SimpleDirectInvokeNode invoke,
                         @Cached("self.getContinuation() == null") boolean firstCall,
                         @Exclusive @Cached InlinedBranchProfile returnProfile,
                         @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
@@ -227,7 +226,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                     // Subsequent invocations: call a continuation root node.
                     arguments = new Object[]{continuation.getFrame(), sendValue};
                 }
-                generatorResult = call.execute(frame, null, null, null, arguments);
+                generatorResult = invoke.execute(frame, inliningTarget, callNode, arguments);
             } catch (PException e) {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
             } finally {
@@ -245,8 +244,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
         @Specialization(replaces = "cached", guards = "!isBytecodeDSLInterpreter()")
         @Megamorphic
         static Object generic(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
-                        @Cached InlinedConditionProfile hasFrameProfile,
-                        @Cached(inline = false) GenericInvokeNode call,
+                        @Cached CallDispatchers.SimpleIndirectInvokeNode invoke,
                         @Exclusive @Cached InlinedBranchProfile returnProfile,
                         @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -257,11 +255,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
             }
             GeneratorYieldResult result;
             try {
-                if (hasFrameProfile.profile(inliningTarget, frame != null)) {
-                    result = (GeneratorYieldResult) call.execute(frame, self.getCurrentCallTarget(), arguments);
-                } else {
-                    result = (GeneratorYieldResult) call.execute(self.getCurrentCallTarget(), arguments);
-                }
+                result = (GeneratorYieldResult) invoke.execute(frame, inliningTarget, self.getCurrentCallTarget(), arguments);
             } catch (PException e) {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
             } catch (GeneratorReturnException e) {
@@ -276,8 +270,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
         @Specialization(replaces = "cachedBytecodeDSL", guards = "isBytecodeDSLInterpreter()")
         @Megamorphic
         static Object genericBytecodeDSL(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
-                        @Cached InlinedConditionProfile hasFrameProfile,
-                        @Cached(inline = false) GenericInvokeNode call,
+                        @Cached CallDispatchers.SimpleIndirectInvokeNode invoke,
                         @Cached InlinedConditionProfile firstInvocationProfile,
                         @Cached InlinedBranchProfile returnProfile,
                         @Cached IsBuiltinObjectProfile errorProfile,
@@ -295,11 +288,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                     arguments = new Object[]{continuation.getFrame(), sendValue};
                 }
 
-                if (hasFrameProfile.profile(inliningTarget, frame != null)) {
-                    generatorResult = call.execute(frame, self.getCurrentCallTarget(), arguments);
-                } else {
-                    generatorResult = call.execute(self.getCurrentCallTarget(), arguments);
-                }
+                generatorResult = invoke.execute(frame, inliningTarget, self.getCurrentCallTarget(), arguments);
             } catch (PException e) {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
             } finally {
@@ -341,14 +330,6 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
             } else {
                 throw TpIterNextBuiltin.iteratorExhausted();
             }
-        }
-
-        protected static CallTargetInvokeNode createDirectCall(CallTarget target) {
-            return CallTargetInvokeNode.create(target, false, true);
-        }
-
-        protected static boolean sameCallTarget(RootCallTarget target1, CallTarget target2) {
-            return target1 == target2;
         }
     }
 

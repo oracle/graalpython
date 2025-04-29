@@ -100,7 +100,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
-import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -223,7 +222,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTupleGetter;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence.BuiltinTypeDescriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
@@ -254,9 +252,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -291,14 +287,6 @@ public final class PFactory {
      */
     public static PythonObject createPythonObject(PythonLanguage language, Object cls, Shape shape) {
         return trace(language, new PythonObject(cls, shape));
-    }
-
-    /**
-     * Creates a PythonObject for the given class. This is potentially slightly slower than if the
-     * shape had been cached, due to the additional shape lookup.
-     */
-    public static PythonObject createPythonHPyObject(PythonLanguage language, Object cls, Shape shape, Object hpyNativeSpace) {
-        return trace(language, new PythonHPyObject(cls, shape, hpyNativeSpace));
     }
 
     public static PythonNativeVoidPtr createNativeVoidPtr(PythonLanguage language, Object obj) {
@@ -486,7 +474,6 @@ public final class PFactory {
         PythonClass result = trace(language, new PythonClass(language, metaclass, metaclassShape, name, base, bases));
         // Fixup tp slots
         MroSequenceStorage mro = GetMroStorageNode.executeUncached(result);
-        SpecialMethodSlot.initializeSpecialMethodSlots(result, mro, language);
         TpSlots.inherit(result, null, mro, true);
         TpSlots.fixupSlotDispatchers(result);
         result.initializeMroShape(language);
@@ -494,8 +481,6 @@ public final class PFactory {
     }
 
     public static PythonClass createPythonClass(PythonLanguage language, Object metaclass, Shape metaclassShape, TruffleString name, boolean invokeMro, Object base, PythonAbstractClass[] bases) {
-        // Note: called from type ctor, which itself will invoke setupSpecialMethodSlots at the
-        // right point
         return trace(language, new PythonClass(language, metaclass, metaclassShape, name, invokeMro, base, bases));
     }
 
@@ -553,10 +538,8 @@ public final class PFactory {
     }
 
     public static PFunction createFunction(PythonLanguage language, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
-                    PCell[] closure,
-                    Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
-        return trace(language, new PFunction(language, name, qualname, code, globals, defaultValues, kwDefaultValues, closure,
-                        codeStableAssumption, defaultsStableAssumption));
+                    PCell[] closure, Assumption codeStableAssumption) {
+        return trace(language, new PFunction(language, name, qualname, code, globals, defaultValues, kwDefaultValues, closure, codeStableAssumption));
     }
 
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget) {
@@ -592,10 +575,6 @@ public final class PFactory {
         return trace(language, new PBuiltinFunction(type, type.getInstanceShape(language), function.getName(), klass,
                         function.getDefaults(), function.getKwDefaults(), function.getFlags(), function.getCallTarget(),
                         function.getSlot(), function.getSlotWrapper()));
-    }
-
-    public static GetSetDescriptor createGetSetDescriptor(PythonLanguage language, Object get, Object set, TruffleString name, Object type) {
-        return trace(language, new GetSetDescriptor(language, get, set, name, type));
     }
 
     public static GetSetDescriptor createGetSetDescriptor(PythonLanguage language, Object get, Object set, TruffleString name, Object type, boolean allowsDelete) {
@@ -948,13 +927,13 @@ public final class PFactory {
         return createBaseException(language, type, type.getInstanceShape(language), null, format, formatArgs);
     }
 
-    public static PBaseException createBaseException(PythonLanguage language, PythonBuiltinClassType type, Object[] data, TruffleString format, Object[] args) {
-        return createBaseException(language, type, type.getInstanceShape(language), data, format, args);
+    public static PBaseException createBaseException(PythonLanguage language, PythonBuiltinClassType type, Object[] data, TruffleString format, Object[] formatArgs) {
+        return createBaseException(language, type, type.getInstanceShape(language), data, format, formatArgs);
     }
 
-    public static PBaseException createBaseException(PythonLanguage language, Object cls, Shape shape, Object[] data, TruffleString format, Object[] args) {
+    public static PBaseException createBaseException(PythonLanguage language, Object cls, Shape shape, Object[] data, TruffleString format, Object[] formatArgs) {
         assert format != null;
-        return trace(language, new PBaseException(cls, shape, data, format, args));
+        return trace(language, new PBaseException(cls, shape, data, format, formatArgs));
     }
 
     public static PBaseException createBaseException(PythonLanguage language, Object cls, Shape shape) {
@@ -1144,10 +1123,6 @@ public final class PFactory {
         return trace(language, new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), callTarget, signature,
                         nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars,
                         filename, name, qualname, firstlineno, linetable));
-    }
-
-    public static PCode createCode(PythonLanguage language, Supplier<CallTarget> createCode, int flags, int firstlineno, byte[] lnotab, TruffleString filename) {
-        return trace(language, new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), createCode, flags, firstlineno, lnotab, filename));
     }
 
     /*

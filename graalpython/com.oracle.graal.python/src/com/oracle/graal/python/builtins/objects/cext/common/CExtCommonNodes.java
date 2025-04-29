@@ -535,7 +535,7 @@ public abstract class CExtCommonNodes {
         /**
          * Checks the current exception state with respect to flag {@code indicatesError} (and
          * {@code strict}).
-         * 
+         *
          *
          * @param inliningTarget The processing node (also needed for the source location if a
          *            {@code SystemError} is raised).
@@ -954,7 +954,6 @@ public abstract class CExtCommonNodes {
      * This node converts a {@link String} object to a {@link TruffleString} or it converts a
      * {@code NULL} pointer to {@link PNone#NONE}. This is a very special use case and certainly
      * only good for reading a member of type
-     * {@link com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef#HPY_MEMBER_STRING} or
      * {@link com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes#T_STRING}.
      */
     @GenerateInline(false) // footprint reduction 32 -> 13, inherits non-inlineable execute()

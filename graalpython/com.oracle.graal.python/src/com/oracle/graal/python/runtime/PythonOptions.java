@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -38,7 +38,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,25 +87,16 @@ public final class PythonOptions {
      * bytecode interpreter.
      */
     public static final boolean ENABLE_BYTECODE_DSL_INTERPRETER = Boolean.getBoolean("python.EnableBytecodeDSLInterpreter");
-
-    public enum HPyBackendMode {
-        NFI,
-        JNI,
-        LLVM
-    }
-
-    static final OptionType<HPyBackendMode> HPY_BACKEND_TYPE = new OptionType<>("HPyBackend", s -> {
-        try {
-            return HPyBackendMode.valueOf(s.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Backend can be one of: " + Arrays.toString(HPyBackendMode.values()));
-        }
-    });
-
     private static final OptionType<TruffleString> TS_OPTION_TYPE = new OptionType<>("graal.python.TruffleString", PythonUtils::toTruffleStringUncached);
 
     private PythonOptions() {
         // no instances
+    }
+
+    public static void checkBytecodeDSLEnv() {
+        if (!ENABLE_BYTECODE_DSL_INTERPRETER && "true".equalsIgnoreCase(System.getenv("BYTECODE_DSL_INTERPRETER"))) {
+            System.err.println("WARNING: found environment variable BYTECODE_DSL_INTERPRETER=true, but the python.EnableBytecodeDSLInterpreter Java property was not set.");
+        }
     }
 
     @Option(category = OptionCategory.EXPERT, help = "Set the home of Python. Equivalent of GRAAL_PYTHONHOME env variable. " +
@@ -250,20 +240,6 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.INTERNAL, usageSyntax = "true|false", help = "Enable catching all Exceptions in generic try-catch statements.") //
     public static final OptionKey<Boolean> CatchAllExceptions = new OptionKey<>(false);
 
-    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Choose the backend for HPy binary mode.", usageSyntax = "jni|nfi|llvm", stability = OptionStability.EXPERIMENTAL) //
-    public static final OptionKey<HPyBackendMode> HPyBackend = new OptionKey<>(HPyBackendMode.JNI, HPY_BACKEND_TYPE);
-
-    @EngineOption @Option(category = OptionCategory.INTERNAL, usageSyntax = "true|false", help = "If {@code true}, code is enabled that tries to reduce expensive upcalls into the runtime" +
-                    "when HPy API functions are used. This is achieved by mirroring data in native memory.", stability = OptionStability.EXPERIMENTAL) //
-    public static final OptionKey<Boolean> HPyEnableJNIFastPaths = new OptionKey<>(true);
-
-    @EngineOption @Option(category = OptionCategory.INTERNAL, usageSyntax = "<time>", help = "Specifies the interval (ms) for periodically printing HPy upcall statistics. If {@code 0}" +
-                    "or not specified, nothing will be printed (default).", stability = OptionStability.EXPERIMENTAL) //
-    public static final OptionKey<Integer> HPyTraceUpcalls = new OptionKey<>(0);
-
-    @Option(category = OptionCategory.INTERNAL, usageSyntax = "<path>", help = "Specify the directory where the JNI library is located.", stability = OptionStability.EXPERIMENTAL) //
-    public static final OptionKey<TruffleString> JNIHome = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
-
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Prints path to parsed files") //
     public static final OptionKey<Boolean> ParserLogFiles = new OptionKey<>(false);
 
@@ -351,9 +327,6 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Forces AST sharing for inner contexts.") //
     public static final OptionKey<Boolean> ForceSharingForInnerContexts = new OptionKey<>(true);
 
-    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Whether C extension modules should be loaded as native code (as opposed to LLVM bitcode execution).") //
-    public static final OptionKey<Boolean> NativeModules = new OptionKey<>(true);
-
     @Option(category = OptionCategory.USER, stability = OptionStability.EXPERIMENTAL, usageSyntax = "true|false", help = "Whether the context should isolate its loading of C extension modules. " +
                     "This allows more than one context to access C extensions. " +
                     "Note that all contexts in the operating system process must set this option to true to cooperatively allow this feature to work.") //
@@ -406,9 +379,6 @@ public final class PythonOptions {
 
     @Option(category = OptionCategory.INTERNAL, help = "The list of the original command line arguments passed to the Python executable.") //
     public static final OptionKey<TruffleString> OrigArgv = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
-
-    @Option(category = OptionCategory.EXPERT, help = "If true, use the system's toolchain for native extension compilation. Otherwise, use the LLVM Toolchain included with GraalVM.") //
-    public static final OptionKey<Boolean> UseSystemToolchain = new OptionKey<>(true);
 
     @EngineOption @Option(category = OptionCategory.INTERNAL, usageSyntax = "true|false", help = "If true, uses native storage strategy for primitive types") //
     public static final OptionKey<Boolean> UseNativePrimitiveStorageStrategy = new OptionKey<>(false);

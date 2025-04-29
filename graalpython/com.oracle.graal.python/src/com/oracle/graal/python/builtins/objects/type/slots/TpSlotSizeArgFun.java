@@ -53,8 +53,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -63,15 +61,14 @@ import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.Wrap
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.BinaryPythonSlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotHPyNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFunFactory.FixNegativeIndexNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFunFactory.WrapIndexArgFuncBuiltinNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFunFactory.WrapSqItemBuiltinNodeGen;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -88,9 +85,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class TpSlotSizeArgFun {
@@ -267,31 +262,15 @@ public class TpSlotSizeArgFun {
             return checkResultNode.execute(threadState, T___GETITEM__, toPythonNode.execute(result));
         }
 
-        @Specialization
-        @InliningCutoff
-        static Object callHPy(VirtualFrame frame, Node inliningTarget, TpSlotHPyNative slot, Object self, int index,
-                        @Exclusive @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached(inline = false) HPyAsHandleNode toNativeNode,
-                        @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Cached(inline = false) HPyAsPythonObjectNode toPythonNode,
-                        @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
-            PythonContext ctx = PythonContext.get(inliningTarget);
-            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GETITEM__, slot.callable, ctx.getHPyContext().getBackend(), toNativeNode.execute(self),
-                            (long) index);
-            return checkResultNode.execute(threadState, T___GETITEM__, toPythonNode.execute(result));
-        }
-
         @Specialization(replaces = "callCachedBuiltin")
         @InliningCutoff
         static Object callGenericBuiltin(VirtualFrame frame, Node inliningTarget, TpSlotSizeArgFunBuiltin<?> slot, Object self, int index,
-                        @Cached(inline = false) CallContext callContext,
-                        @Cached InlinedConditionProfile isNullFrameProfile,
-                        @Cached(inline = false) IndirectCallNode indirectCallNode) {
+                        @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
             Object[] arguments = PArguments.create(2);
             PArguments.setArgument(arguments, 0, self);
             PArguments.setArgument(arguments, 1, index);
-            return BuiltinDispatchers.callGenericBuiltin(frame, inliningTarget, slot.callTargetIndex, arguments, callContext, isNullFrameProfile, indirectCallNode);
+            RootCallTarget callTarget = PythonLanguage.get(inliningTarget).getBuiltinSlotCallTarget(slot.callTargetIndex);
+            return invoke.execute(frame, inliningTarget, callTarget, arguments);
         }
     }
 }

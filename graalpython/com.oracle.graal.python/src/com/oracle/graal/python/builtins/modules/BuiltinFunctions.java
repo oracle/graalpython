@@ -157,13 +157,10 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListSortNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
@@ -218,9 +215,8 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.bytecode.GetAIterNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -237,6 +233,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
@@ -308,7 +305,6 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
-import com.oracle.truffle.api.utilities.TriState;
 
 @CoreFunctions(defineModule = J_BUILTINS, isEager = true)
 public final class BuiltinFunctions extends PythonBuiltins {
@@ -784,191 +780,116 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    // eval(expression, globals=None, locals=None)
-    @Builtin(name = J_EVAL, minNumOfPositionalArgs = 1, parameterNames = {"expression", "globals", "locals"})
-    @GenerateNodeFactory
-    public abstract static class EvalNode extends PythonBuiltinNode {
-        @Child protected CompileNode compileNode;
-        @Child private GenericInvokeNode invokeNode = GenericInvokeNode.create();
-        @Child private GetOrCreateDictNode getOrCreateDictNode;
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class CreateEvalExecArgumentsNode extends Node {
+        public abstract Object[] execute(VirtualFrame frame, Node inliningTarget, Object globals, Object locals, TruffleString mode);
 
-        final void assertNoFreeVars(Node inliningTarget, PCode code, PRaiseNode raiseNode) {
-            Object[] freeVars = code.getFreeVars();
-            if (freeVars.length > 0) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CODE_OBJ_NO_FREE_VARIABLES, getMode());
-            }
-        }
-
-        protected TruffleString getMode() {
-            return T_EVAL;
-        }
-
-        static boolean isMapping(Node inliningTarget, PyMappingCheckNode mappingCheckNode, Object object) {
-            return mappingCheckNode.execute(inliningTarget, object);
-        }
-
-        static boolean isAnyNone(Object object) {
-            return object instanceof PNone;
-        }
-
-        final PCode createAndCheckCode(VirtualFrame frame, Node inliningTarget, Object source, PRaiseNode raiseNode) {
-            PCode code = getCompileNode().compile(frame, source, T_STRING_SOURCE, getMode(), -1, -1);
-            assertNoFreeVars(inliningTarget, code, raiseNode);
-            return code;
-        }
-
-        private static void inheritGlobals(PFrame callerFrame, Object[] args) {
+        @Specialization
+        static Object[] inheritGlobals(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PNone globals, Object locals, TruffleString mode,
+                        @Exclusive @Cached ReadCallerFrameNode readCallerFrameNode,
+                        @Exclusive @Cached InlinedConditionProfile haveLocals,
+                        @Exclusive @Cached PyMappingCheckNode mappingCheckNode,
+                        @Exclusive @Cached GetFrameLocalsNode getFrameLocalsNode,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
+            Object[] args = PArguments.create();
             PArguments.setGlobals(args, callerFrame.getGlobals());
+            if (haveLocals.profile(inliningTarget, locals instanceof PNone)) {
+                Object callerLocals = getFrameLocalsNode.execute(inliningTarget, callerFrame);
+                setCustomLocals(args, callerLocals);
+            } else {
+                if (!mappingCheckNode.execute(inliningTarget, locals)) {
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.LOCALS_MUST_BE_MAPPING, mode, locals);
+                }
+                setCustomLocals(args, locals);
+            }
+            return args;
         }
 
-        private static void inheritLocals(Node inliningTarget, PFrame callerFrame, Object[] args, GetFrameLocalsNode getFrameLocalsNode) {
-            Object callerLocals = getFrameLocalsNode.execute(inliningTarget, callerFrame);
-            setCustomLocals(args, callerLocals);
+        @Specialization
+        static Object[] customGlobals(VirtualFrame frame, Node inliningTarget, PDict globals, Object locals, TruffleString mode,
+                        @Bind PythonContext context,
+                        @Exclusive @Cached InlinedConditionProfile haveLocals,
+                        @Exclusive @Cached PyMappingCheckNode mappingCheckNode,
+                        @Exclusive @Cached GetOrCreateDictNode getOrCreateDictNode,
+                        @Exclusive @Cached HashingCollectionNodes.SetItemNode setBuiltins,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            Object[] args = PArguments.create();
+            PythonModule builtins = context.getBuiltins();
+            // Builtins may be null during context initialization
+            if (builtins != null) {
+                PDict builtinsDict = getOrCreateDictNode.execute(inliningTarget, builtins);
+                setBuiltins.execute(frame, inliningTarget, globals, T___BUILTINS__, builtinsDict);
+            }
+            PArguments.setGlobals(args, globals);
+            if (haveLocals.profile(inliningTarget, locals instanceof PNone)) {
+                setCustomLocals(args, globals);
+            } else {
+                if (!mappingCheckNode.execute(inliningTarget, locals)) {
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.LOCALS_MUST_BE_MAPPING, mode, locals);
+                }
+                setCustomLocals(args, locals);
+            }
+
+            return args;
+        }
+
+        @Fallback
+        static Object[] badGlobals(Node inliningTarget, Object globals, @SuppressWarnings("unused") Object locals, TruffleString mode) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.GLOBALS_MUST_BE_DICT, mode, globals);
         }
 
         private static void setCustomLocals(Object[] args, Object locals) {
             PArguments.setSpecialArgument(args, locals);
         }
+    }
 
-        private void setBuiltinsInGlobals(VirtualFrame frame, Node inliningTarget, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins) {
-            if (builtins != null) {
-                PDict builtinsDict = getOrCreateDictNode(builtins);
-                setBuiltins.execute(frame, inliningTarget, globals, T___BUILTINS__, builtinsDict);
-            } else {
-                // This happens during context initialization
-                return;
-            }
-        }
-
-        private void setCustomGlobals(VirtualFrame frame, Node inliningTarget, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, Object[] args) {
-            PythonModule builtins = getContext().getBuiltins();
-            setBuiltinsInGlobals(frame, inliningTarget, globals, setBuiltins, builtins);
-            PArguments.setGlobals(args, globals);
-        }
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class EvalExecNode extends Node {
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object source, Object globals, Object locals, TruffleString mode, boolean shouldStripLeadingWhitespace);
 
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object execInheritGlobalsInheritLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached ReadCallerFrameNode readCallerFrameNode,
-                        @Exclusive @Cached CodeNodes.GetCodeCallTargetNode getCt,
-                        @Cached GetFrameLocalsNode getFrameLocalsNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
-            PCode code = createAndCheckCode(frame, inliningTarget, source, raiseNode);
-            PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
-            Object[] args = PArguments.create();
-            inheritGlobals(callerFrame, args);
-            inheritLocals(inliningTarget, callerFrame, args, getFrameLocalsNode);
-
-            return invokeNode.execute(frame, getCt.execute(inliningTarget, code), args);
+        static Object eval(VirtualFrame frame, Node inliningTarget, Object source, Object globals, Object locals, TruffleString mode, @SuppressWarnings("unused") boolean shouldStripLeadingWhitespace,
+                        @Cached("create(false, shouldStripLeadingWhitespace)") CompileNode compileNode,
+                        @Cached CreateEvalExecArgumentsNode createArguments,
+                        @Cached CodeNodes.GetCodeCallTargetNode getCallTarget,
+                        @Cached CallDispatchers.CallTargetCachedInvokeNode invoke,
+                        @Cached PRaiseNode raiseNode) {
+            PCode code = compileNode.compile(frame, source, T_STRING_SOURCE, mode, -1, -1);
+            if (code.getFreeVars().length > 0) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CODE_OBJ_NO_FREE_VARIABLES, mode);
+            }
+            Object[] args = createArguments.execute(frame, inliningTarget, globals, locals, mode);
+            RootCallTarget callTarget = getCallTarget.execute(inliningTarget, code);
+            return invoke.execute(frame, inliningTarget, callTarget, args);
         }
+    }
+
+    // eval(expression, globals=None, locals=None)
+    @Builtin(name = J_EVAL, minNumOfPositionalArgs = 1, parameterNames = {"expression", "globals", "locals"})
+    @GenerateNodeFactory
+    public abstract static class EvalNode extends PythonBuiltinNode {
 
         @Specialization
-        Object execCustomGlobalsGlobalLocals(VirtualFrame frame, Object source, PDict globals, @SuppressWarnings("unused") PNone locals,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached HashingCollectionNodes.SetItemNode setBuiltins,
-                        @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            PCode code = createAndCheckCode(frame, inliningTarget, source, raiseNode);
-            Object[] args = PArguments.create();
-            setCustomGlobals(frame, inliningTarget, globals, setBuiltins, args);
-            setCustomLocals(args, globals);
-            RootCallTarget rootCallTarget = getCt.execute(inliningTarget, code);
-            if (rootCallTarget == null) {
-                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.CANNOT_CREATE_CALL_TARGET, code);
-            }
-
-            return invokeNode.execute(frame, rootCallTarget, args);
-        }
-
-        @Specialization(guards = {"isMapping(inliningTarget, mappingCheckNode, locals)"})
-        @SuppressWarnings("truffle-static-method")
-        Object execInheritGlobalsCustomLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, Object locals,
-                        @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached PyMappingCheckNode mappingCheckNode,
-                        @Exclusive @Cached ReadCallerFrameNode readCallerFrameNode,
-                        @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            PCode code = createAndCheckCode(frame, inliningTarget, source, raiseNode);
-            PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
-            Object[] args = PArguments.create();
-            inheritGlobals(callerFrame, args);
-            setCustomLocals(args, locals);
-
-            return invokeNode.execute(frame, getCt.execute(inliningTarget, code), args);
-        }
-
-        @Specialization(guards = {"isMapping(inliningTarget, mappingCheckNode, locals)"})
-        @SuppressWarnings("truffle-static-method")
-        Object execCustomGlobalsCustomLocals(VirtualFrame frame, Object source, PDict globals, Object locals,
-                        @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached PyMappingCheckNode mappingCheckNode,
-                        @Shared @Cached HashingCollectionNodes.SetItemNode setBuiltins,
-                        @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            PCode code = createAndCheckCode(frame, inliningTarget, source, raiseNode);
-            Object[] args = PArguments.create();
-            setCustomGlobals(frame, inliningTarget, globals, setBuiltins, args);
-            setCustomLocals(args, locals);
-
-            return invokeNode.execute(frame, getCt.execute(inliningTarget, code), args);
-        }
-
-        @Specialization(guards = {"!isAnyNone(globals)", "!isDict(globals)"})
-        @SuppressWarnings({"unused", "truffle-static-method"})
-        PNone badGlobals(Object source, Object globals, Object locals,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.GLOBALS_MUST_BE_DICT, getMode(), globals);
-        }
-
-        @Specialization(guards = {"isAnyNone(globals) || isDict(globals)", "!isAnyNone(locals)", "!isMapping(inliningTarget, mappingCheckNode, locals)"})
-        @SuppressWarnings({"unused", "truffle-static-method"})
-        PNone badLocals(Object source, PDict globals, Object locals,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyMappingCheckNode mappingCheckNode) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.LOCALS_MUST_BE_MAPPING, getMode(), locals);
-        }
-
-        private CompileNode getCompileNode() {
-            if (compileNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                compileNode = insert(CompileNode.create(false, shouldStripLeadingWhitespace()));
-            }
-            return compileNode;
-        }
-
-        private PDict getOrCreateDictNode(PythonObject object) {
-            if (getOrCreateDictNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getOrCreateDictNode = insert(GetOrCreateDictNode.create());
-            }
-            return getOrCreateDictNode.executeCached(object);
-        }
-
-        protected boolean shouldStripLeadingWhitespace() {
-            return true;
+        static Object eval(VirtualFrame frame, Object source, Object globals, Object locals,
+                        @Bind Node inliningTarget,
+                        @Cached EvalExecNode evalNode) {
+            return evalNode.execute(frame, inliningTarget, source, globals, locals, T_EVAL, true);
         }
     }
 
     @Builtin(name = J_EXEC, minNumOfPositionalArgs = 1, parameterNames = {"source", "globals", "locals"})
     @GenerateNodeFactory
-    abstract static class ExecNode extends EvalNode {
-        protected abstract Object executeInternal(VirtualFrame frame);
+    public abstract static class ExecNode extends PythonBuiltinNode {
 
-        @Override
-        protected TruffleString getMode() {
-            return T_EXEC;
-        }
-
-        @Override
-        public final Object execute(VirtualFrame frame) {
-            executeInternal(frame);
-            return PNone.NONE;
-        }
-
-        @Override
-        protected boolean shouldStripLeadingWhitespace() {
-            return false;
+        @Specialization
+        static Object exec(VirtualFrame frame, Object source, Object globals, Object locals,
+                        @Bind Node inliningTarget,
+                        @Cached EvalExecNode evalNode) {
+            evalNode.execute(frame, inliningTarget, source, globals, locals, T_EXEC, false);
+            return NONE;
         }
     }
 
@@ -1451,40 +1372,33 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return BuiltinFunctionsFactory.IsInstanceNodeFactory.create(newDepth);
         }
 
-        private static TriState isInstanceCheckInternal(VirtualFrame frame, Object instance, Object cls, LookupAndCallBinaryNode instanceCheckNode,
-                        PyObjectIsTrueNode castToBooleanNode) {
+        @Specialization(guards = "!isPTuple(cls)")
+        static boolean isInstance(VirtualFrame frame, Object instance, Object cls,
+                        @Bind Node inliningTarget,
+                        @Cached GetClassNode getClsClassNode,
+                        @Cached IsBuiltinClassExactProfile classProfile,
+                        @Cached GetClassNode getInstanceClassNode,
+                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                        @Cached("create(T___INSTANCECHECK__)") LookupAndCallBinaryNode instanceCheckNode,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached TypeNodes.GenericInstanceCheckNode genericInstanceCheckNode,
+                        @Cached InlinedBranchProfile noInstanceCheckProfile) {
+            if (isSameTypeNode.execute(inliningTarget, getInstanceClassNode.execute(inliningTarget, instance), cls)) {
+                // Exact match, don't call __instancecheck__
+                return true;
+            }
+            if (classProfile.profileClass(inliningTarget, getClsClassNode.execute(inliningTarget, cls), PythonBuiltinClassType.PythonClass)) {
+                // Avoid the lookup and call overhead when we know we're calling
+                // type.__instancecheck__
+                return genericInstanceCheckNode.execute(frame, inliningTarget, instance, cls);
+            }
             try {
-                Object instanceCheckResult = instanceCheckNode.executeObject(frame, cls, instance);
-                return TriState.valueOf(castToBooleanNode.execute(frame, instanceCheckResult));
+                Object result = instanceCheckNode.executeObject(frame, cls, instance);
+                return isTrueNode.execute(frame, result);
             } catch (SpecialMethodNotFound ignore) {
-                return TriState.UNDEFINED;
+                noInstanceCheckProfile.enter(inliningTarget);
+                return genericInstanceCheckNode.execute(frame, inliningTarget, instance, cls);
             }
-        }
-
-        @Specialization(guards = "isPythonClass(cls)")
-        static boolean isInstance(VirtualFrame frame, Object instance, Object cls,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("instanceCheck") @Cached("create(InstanceCheck)") LookupAndCallBinaryNode instanceCheckNode,
-                        @Exclusive @Cached PyObjectIsTrueNode castToBooleanNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsSameTypeNode isSameTypeNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
-            Object instanceClass = getClassNode.execute(inliningTarget, instance);
-            return isSameTypeNode.execute(inliningTarget, instanceClass, cls) || isSubtypeNode.execute(frame, instanceClass, cls)//
-                            || isInstanceCheckInternal(frame, instance, cls, instanceCheckNode, castToBooleanNode) == TriState.TRUE;
-        }
-
-        @Specialization(guards = {"!isPTuple(cls)", "!isPythonClass(cls)"})
-        static boolean isInstance(VirtualFrame frame, Object instance, Object cls,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("instanceCheck") @Cached("create(InstanceCheck)") LookupAndCallBinaryNode instanceCheckNode,
-                        @Exclusive @Cached PyObjectIsTrueNode castToBooleanNode,
-                        @Cached TypeBuiltins.InstanceCheckNode typeInstanceCheckNode) {
-            TriState check = isInstanceCheckInternal(frame, instance, cls, instanceCheckNode, castToBooleanNode);
-            if (check == TriState.UNDEFINED) {
-                return typeInstanceCheckNode.executeWith(frame, cls, instance);
-            }
-            return check == TriState.TRUE;
         }
     }
 
@@ -1509,14 +1423,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "!isPTuple(cls)")
         static boolean isSubclass(VirtualFrame frame, Object derived, Object cls,
-                        @Cached("create(Subclasscheck)") LookupAndCallBinaryNode subclassCheckNode,
-                        @Cached PyObjectIsTrueNode castToBooleanNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
+                        @Bind Node inliningTarget,
+                        @Cached GetClassNode getClsClassNode,
+                        @Cached IsBuiltinClassExactProfile classProfile,
+                        @Cached("create(T___SUBCLASSCHECK__)") LookupAndCallBinaryNode subclassCheckNode,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached TypeNodes.GenericSubclassCheckNode genericSubclassCheckNode,
+                        @Cached InlinedBranchProfile noInstanceCheckProfile) {
+            if (classProfile.profileClass(inliningTarget, getClsClassNode.execute(inliningTarget, cls), PythonBuiltinClassType.PythonClass)) {
+                // Avoid the lookup and call overhead when we know we're calling
+                // type.__subclasscheck__
+                return genericSubclassCheckNode.execute(frame, inliningTarget, derived, cls);
+            }
             try {
-                Object instanceCheckResult = subclassCheckNode.executeObject(frame, cls, derived);
-                return castToBooleanNode.execute(frame, instanceCheckResult);
+                Object result = subclassCheckNode.executeObject(frame, cls, derived);
+                return isTrueNode.execute(frame, result);
             } catch (SpecialMethodNotFound ignore) {
-                return isSubtypeNode.execute(frame, derived, cls);
+                noInstanceCheckProfile.enter(inliningTarget);
+                return genericSubclassCheckNode.execute(frame, inliningTarget, derived, cls);
             }
         }
 
@@ -1578,9 +1502,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Exclusive @Cached PyObjectRichCompareBool compareNode,
                         @Exclusive @Cached PyObjectGetIter getIter,
                         @Exclusive @Cached PyIterNextNode nextNode,
-                        @Exclusive @Cached PyObjectIsTrueNode castToBooleanNode,
                         @Exclusive @Cached CallNode.Lazy keyCall,
-                        @Exclusive @Cached InlinedBranchProfile seenNonBoolean,
                         @Exclusive @Cached InlinedConditionProfile keywordArgIsNone,
                         @Exclusive @Cached InlinedConditionProfile hasDefaultProfile,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -1625,8 +1547,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         RichCmpOp op,
                         @Exclusive @Cached PyObjectRichCompareBool compareNode,
                         @Exclusive @Cached CallNode.Lazy keyCall,
-                        @Exclusive @Cached PyObjectIsTrueNode castToBooleanNode,
-                        @Exclusive @Cached InlinedBranchProfile seenNonBoolean,
                         @Exclusive @Cached InlinedConditionProfile keywordArgIsNone,
                         @Exclusive @Cached InlinedConditionProfile moreThanTwo,
                         @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
@@ -1932,7 +1852,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         public static Object format(VirtualFrame frame, Object obj, Object formatSpec,
                         @Bind("this") Node inliningTarget,
-                        @Cached("create(Format)") LookupAndCallBinaryNode callFormat,
+                        @Cached("create(T___FORMAT__)") LookupAndCallBinaryNode callFormat,
                         @Cached InlinedConditionProfile formatIsNoValueProfile,
                         @Cached PRaiseNode raiseNode) {
             Object format = formatIsNoValueProfile.profile(inliningTarget, isNoValue(formatSpec)) ? T_EMPTY_STRING : formatSpec;
@@ -1973,7 +1893,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         static Object round(VirtualFrame frame, Object x, @SuppressWarnings("unused") PNone n,
                         @Bind("this") Node inliningTarget,
-                        @Cached("create(Round)") LookupAndCallUnaryNode callRound,
+                        @Cached("create(T___ROUND__)") LookupAndCallUnaryNode callRound,
                         @Shared @Cached PRaiseNode raiseNode) {
             Object result = callRound.executeObject(frame, x);
             if (result == PNone.NO_VALUE) {
@@ -1985,7 +1905,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = "!isPNone(n)")
         static Object round(VirtualFrame frame, Object x, Object n,
                         @Bind("this") Node inliningTarget,
-                        @Cached("create(Round)") LookupAndCallBinaryNode callRound,
+                        @Cached("create(T___ROUND__)") LookupAndCallBinaryNode callRound,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 return callRound.executeObject(frame, x, n);
@@ -2467,7 +2387,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     @Builtin(name = J___BUILD_CLASS__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    @ImportStatic(SpecialMethodSlot.class)
     public abstract static class BuildClassNode extends PythonVarargsBuiltinNode {
         private static final TruffleString T_METACLASS = tsLiteral("metaclass");
         public static final TruffleString T_BUILD_JAVA_CLASS = tsLiteral("build_java_class");
@@ -2481,12 +2400,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @InliningCutoff
-        private static Object buildJavaClass(VirtualFrame frame, PythonLanguage language, PFunction function, Object[] arguments, CallDispatchNode callBody,
+        private static Object buildJavaClass(VirtualFrame frame, Node inliningTarget, PythonLanguage language, PFunction function, Object[] arguments,
+                        CallDispatchers.FunctionCachedInvokeNode invokeBody,
                         TruffleString name) {
             PDict ns = PFactory.createDict(language, new DynamicObjectStorage(language));
             Object[] args = PArguments.create(0);
             PArguments.setSpecialArgument(args, ns);
-            callBody.executeCall(frame, function, args);
+            invokeBody.execute(frame, inliningTarget, function, args);
             return buildJavaClass(ns, name, arguments[1]);
         }
 
@@ -2500,7 +2420,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached PyMappingCheckNode pyMappingCheckNode,
                         @Cached CallNode callPrep,
                         @Cached CallNode callType,
-                        @Cached CallDispatchNode callBody,
+                        @Cached CallDispatchers.FunctionCachedInvokeNode invokeBody,
                         @Cached UpdateBasesNode update,
                         @Cached PyObjectSetItem setOrigBases,
                         @Cached GetClassNode getClass,
@@ -2530,7 +2450,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
             if (arguments.length == 2 && env.isHostObject(arguments[1]) && env.asHostObject(arguments[1]) instanceof Class<?>) {
                 // we want to subclass a Java class
-                return buildJavaClass(frame, language, (PFunction) function, arguments, callBody, name);
+                return buildJavaClass(frame, inliningTarget, language, (PFunction) function, arguments, invokeBody, name);
             }
 
             class InitializeBuildClass {
@@ -2599,7 +2519,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             Object[] bodyArguments = PArguments.create(0);
             PArguments.setSpecialArgument(bodyArguments, ns);
-            callBody.executeCall(frame, (PFunction) function, bodyArguments);
+            invokeBody.execute(frame, inliningTarget, (PFunction) function, bodyArguments);
             if (init.bases != origBases) {
                 setOrigBases.execute(frame, inliningTarget, ns, SpecialAttributeNames.T___ORIG_BASES__, origBases);
             }

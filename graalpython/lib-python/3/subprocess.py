@@ -1819,7 +1819,10 @@ class Popen:
                     executable = next(shlex.shlex(list2cmdline(args)))
                     if executable.startswith('"') and executable.endswith('"'):
                         executable = executable[1:-1]
-                if (len(args) == 1 and executable != args[0]) or shell:
+                if len(args) == 1 and executable != args[0] and executable.startswith("cmd /u /c "):
+                    executable = "cmd.exe"
+                    args = ["cmd.exe", "/u", "/c", args[0][len("cmd /u /c "):]]
+                elif (len(args) == 1 and executable != args[0]) or shell:
                     if not shell:
                         warnings.warn(f"Running\n\t{args[0]!r} in a cmd shell", RuntimeWarning)
                     shell = False

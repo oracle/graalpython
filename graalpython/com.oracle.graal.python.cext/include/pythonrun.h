@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -31,10 +31,12 @@ PyAPI_DATA(int) (*PyOS_InputHook)(void);
    to an 8k margin. */
 #define PYOS_STACK_MARGIN 2048
 
+#if 0 // GraalPy change
 #if defined(WIN32) && !defined(MS_WIN64) && !defined(_M_ARM) && defined(_MSC_VER) && _MSC_VER >= 1300
 /* Enable stack checking under Microsoft C */
 // When changing the platforms, ensure PyOS_CheckStack() docs are still correct
 #define USE_STACKCHECK
+#endif
 #endif
 
 #ifdef USE_STACKCHECK

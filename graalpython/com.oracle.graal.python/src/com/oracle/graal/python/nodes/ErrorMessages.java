@@ -907,6 +907,7 @@ public abstract class ErrorMessages {
     public static final TruffleString BYTES_OR_INT_ADDR_EXPECTED_INSTEAD_OF_P = tsLiteral("bytes or integer address expected instead of %p instance");
     public static final TruffleString UNICODE_STR_OR_INT_ADDR_EXPECTED_INSTEAD_OF_P = tsLiteral("unicode string or integer address expected instead of %p instance");
     public static final TruffleString N_NOT_SUBTYPE_OF_ARRAY = tsLiteral("%n is not a subtype of array");
+    public static final TruffleString FIRST_ARGUMENT_MUST_BE_A_TYPE_OBJECT_NOT_P = tsLiteral("first argument must be a type object, not %p");
     public static final TruffleString CANNOT_BE_CONVERTED_TO_POINTER = tsLiteral("cannot be converted to pointer");
     public static final TruffleString PY_OBJ_IS_NULL = tsLiteral("PyObject is NULL");
     public static final TruffleString OUT_OF_RANGE_FLOAT_NOT_JSON_COMPLIANT = tsLiteral("Out of range float values are not JSON compliant: %s");
@@ -1460,63 +1461,9 @@ public abstract class ErrorMessages {
 
     public static final TruffleString NULL_ARG_INTERNAL = tsLiteral("null argument to internal routine");
 
-    // HPy
-
-    public static final TruffleString UNSUPPORTED_HYPMETH_SIG = tsLiteral("Unsupported HPyMeth signature");
-    public static final TruffleString NULL_CHAR_PASSED = tsLiteral("NULL char * passed to HPyBytes_FromStringAndSize");
-    public static final TruffleString CAPSULE_GETDESTRUCTOR_WITH_INVALID_CAPSULE = tsLiteral("HPyCapsule_GetDestructor called with invalid PyCapsule object");
-    public static final TruffleString CAPSULE_GETPOINTER_WITH_INVALID_CAPSULE = tsLiteral("HPyCapsule_GetPointer called with invalid PyCapsule object");
-    public static final TruffleString CAPSULE_GETCONTEXT_WITH_INVALID_CAPSULE = tsLiteral("HPyCapsule_GetContext called with invalid PyCapsule object");
-    public static final TruffleString CAPSULE_GETNAME_WITH_INVALID_CAPSULE = tsLiteral("HPyCapsule_GetName called with invalid PyCapsule object");
-    public static final TruffleString HPY_NEW_ARG_1_MUST_BE_A_TYPE = tsLiteral("HPy_New arg 1 must be a type");
-    public static final TruffleString ERROR_LOADING_HPY_EXT_S_S = tsLiteral("Error during loading of the HPy extension module at path '%s'. Function HPyInit_'%s' returned NULL.");
-    public static final TruffleString HPY_CAPI_SYM_NOT_CALLABLE = tsLiteral("HPy C API symbol %s is not callable");
-    public static final TruffleString HPY_CALLTUPLEDICT_REQUIRES_ARGS_TUPLE_OR_NULL = tsLiteral("HPy_CallTupleDict requires args to be a tuple or null handle");
-    public static final TruffleString HPY_CALLTUPLEDICT_REQUIRES_KW_DICT_OR_NULL = tsLiteral("HPy_CallTupleDict requires kw to be a dict or null handle");
-    public static final TruffleString CANNOT_INITIALIZE_EXT_NO_ENTRY = tsLiteral("cannot initialize extension '%s' at path '%s', entry point '%s' not found");
-    public static final TruffleString HPY_S_MODE_NOT_AVAILABLE = tsLiteral("HPy %s mode is not available");
-    public static final TruffleString HPY_UNEXPECTED_HPY_NULL = tsLiteral("unexpected HPy_NULL");
-    public static final TruffleString HPY_MOD_CREATE_RETURNED_BUILTIN_MOD = tsLiteral("HPy_mod_create slot returned a builtin module object. This is currently not supported.");
-    public static final TruffleString HPYCAPSULE_NEW_NULL_PTR_ERROR = tsLiteral("HPyCapsule_New called with null pointer");
-    public static final TruffleString INVALID_HPYCAPSULE_DESTRUCTOR = tsLiteral("Invalid HPyCapsule destructor");
-    public static final TruffleString HPY_MODE_VALUE_MUST_BE_STRING = tsLiteral("Value of HPy mode environment variable must be a string");
-    public static final TruffleString HPY_METACLASS_IS_NOT_A_TYPE = tsLiteral("Metaclass '%s' is not a subclass of 'type'.");
-    public static final TruffleString HPY_METACLASS_WITH_CUSTOM_CONS_NOT_SUPPORTED = tsLiteral("Metaclasses with custom constructor are not supported.");
-    public static final TruffleString HPY_ERROR_LOADING_EXT_MODULE = tsLiteral("Error during loading of the HPy extension module at path '%s'. " +
-                    "Cannot locate the required minimal HPy versions as symbols '%s' and `%s`. Error message from dlopen/WinAPI: %s");
-    public static final TruffleString HPY_ABI_VERSION_ERROR = tsLiteral("HPy extension module '%s' requires unsupported version of the HPy runtime. " +
-                    "Requested version: %d.%d. Current HPy version: %d.%d.");
-    public static final TruffleString HPY_ABI_TAG_MISMATCH = tsLiteral("HPy extension module '%s' at path '%s': mismatch between the HPy ABI tag encoded in the filename " +
-                    "and the major version requested by the HPy extension itself. Major version tag parsed from filename: %d. Requested version: %d.%d.");
-    public static final TruffleString HPY_NO_ABI_TAG = tsLiteral("HPy extension module '%s' at path '%s': could not find HPy ABI tag encoded in the filename. " +
-                    "The extension claims to be compiled with HPy ABI version: %d.%d.");
-    public static final TruffleString HPY_INVALID_SOURCE_KIND = tsLiteral("invalid source kind");
-    public static final TruffleString HPY_OBJECT_DOES_NOT_SUPPORT_CALL = tsLiteral("'%p' object does not support HPy call protocol");
-    public static final TruffleString HPY_TYPE_DOES_NOT_IMPLEMENT_CALL_PROTOCOL = tsLiteral("type '%p' does not implement the HPy call protocol");
-    public static final TruffleString HPY_METACLASS_SPECIFIED_MULTIPLE_TIMES = tsLiteral("metaclass was specified multiple times");
-    public static final TruffleString HPY_INVALID_BUILTIN_SHAPE = tsLiteral("invalid shape: %d");
-    public static final TruffleString HPY_CANNOT_USE_CALL_WITH_VAR_OBJECTS = tsLiteral("Cannot use HPy call protocol with var objects");
-    public static final TruffleString HPY_CANNOT_HAVE_CALL_AND_VECTORCALLOFFSET = tsLiteral("Cannot have HPy_tp_call and explicit member '__vectorcalloffset__'. Specify just one of them.");
-    public static final TruffleString HPY_CANNOT_SPECIFY_LEG_SLOTS_WO_SETTING_LEG = tsLiteral("cannot specify .legacy_slots without setting .builtin_shape=HPyType_BuiltinShape_Legacy");
-    public static final TruffleString HPY_CANNOT_USE_CALL_WITH_LEGACY = tsLiteral("Cannot use HPy call protocol with legacy types that inherit the struct. " +
-                    "Either set the basicsize to a non-zero value or use legacy slot 'Py_tp_call'.");
     public static final TruffleString NFI_NOT_AVAILABLE = tsLiteral("GraalPy option '%s' is set to '%s, but the 'nfi' language, which is required for this feature, is not available. " +
                     "If this is a GraalPy standalone distribution: this indicates internal error. If GraalPy was used as a Maven dependency: " +
                     "are you missing a runtime dependency 'org.graalvm.truffle:truffle-nfi-libffi', which should be a dependency of 'org.graalvm.polyglot:python{-community}'?");
-
-    public static final TruffleString LLVM_NOT_AVAILABLE = tsLiteral("GraalPy option 'NativeModules' is set to false, but the 'llvm' language, which is required for this feature, is not available. " +
-                    "If this is a GraalPy standalone distribution: this indicates internal error. If GraalPy was used as a Maven dependency: are you missing a runtime dependency " +
-                    "'org.graalvm.polyglot:llvm{-community}'?");
-    public static final TruffleString HPY_CANNOT_USE_JNI_BACKEND = tsLiteral("Cannot use HPy JNI backend because JNI access is forbidden.");
-    public static final TruffleString HPY_NFI_NOT_YET_IMPLEMENTED = tsLiteral("HPy NFI backend is not yet implemented");
-    public static final TruffleString HPY_UNKNOWN_BACKEND = tsLiteral("unknown HPy backend: ");
-    private static final String HPY_NON_DEFAULT_MESSAGE = "This is not allowed because custom HPy_mod_create slot cannot return a builtin module object and cannot make any use of any other " +
-                    "data defined in the HPyModuleDef. Either do not define HPy_mod_create slot and let the runtime create a builtin module object from the provided HPyModuleDef, or do not " +
-                    "define anything else but the HPy_mod_create slot.";
-    public static final TruffleString HPY_DEFINES_CREATE_AND_NON_DEFAULT = tsLiteral("HPyModuleDef defines a HPy_mod_create slot and some of the other fields are not set to their default value. " +
-                    HPY_NON_DEFAULT_MESSAGE);
-    public static final TruffleString HPY_DEFINES_CREATE_AND_OTHER_SLOTS = tsLiteral("HPyModuleDef defines a HPy_mod_create slot and some other slots or methods. " +
-                    HPY_NON_DEFAULT_MESSAGE);
 
     // AST Validator
     public static final TruffleString ANN_ASSIGN_WITH_SIMPLE_NON_NAME_TARGET = tsLiteral("AnnAssign with simple non-Name target");

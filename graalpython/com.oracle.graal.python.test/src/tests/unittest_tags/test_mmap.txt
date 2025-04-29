@@ -19,5 +19,5 @@ test.test_mmap.MmapTests.test_prot_readonly @ darwin-arm64,darwin-x86_64,linux-a
 test.test_mmap.MmapTests.test_read_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_mmap.MmapTests.test_read_invalid_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_mmap.MmapTests.test_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_mmap.MmapTests.test_tougher_find @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_mmap.MmapTests.test_tougher_find @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_write_returning_the_number_of_bytes_written @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

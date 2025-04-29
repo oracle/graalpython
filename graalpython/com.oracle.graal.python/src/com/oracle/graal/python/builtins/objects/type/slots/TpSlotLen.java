@@ -51,24 +51,20 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.type.slots.HPyDispatchers.UnaryHPySlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.UnaryPythonSlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotHPyNative;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
-import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -84,11 +80,9 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public abstract class TpSlotLen {
     private TpSlotLen() {
@@ -186,23 +180,6 @@ public abstract class TpSlotLen {
             return (int) l;
         }
 
-        @Specialization
-        static int callHPy(VirtualFrame frame, Node inliningTarget, TpSlotHPyNative slot, Object self,
-                        @Exclusive @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached(inline = false) HPyAsHandleNode toNativeNode,
-                        @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Exclusive @Cached PRaiseNode raiseNode,
-                        @Exclusive @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResultNode) {
-            PythonContext ctx = PythonContext.get(inliningTarget);
-            PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___LEN__, slot.callable, ctx.getHPyContext().getBackend(), toNativeNode.execute(self));
-            long l = checkResultNode.executeLong(state, T___LEN__, result);
-            if (!PInt.isIntRange(l)) {
-                raiseOverflow(inliningTarget, raiseNode, l);
-            }
-            return (int) l;
-        }
-
         @InliningCutoff
         private static void raiseOverflow(Node inliningTarget, PRaiseNode raiseNode, long l) {
             throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, l);
@@ -216,30 +193,11 @@ public abstract class TpSlotLen {
         @Specialization(replaces = "callCachedBuiltin")
         @InliningCutoff
         static int callGenericComplexBuiltin(VirtualFrame frame, Node inliningTarget, TpSlotLenBuiltinComplex<?> slot, Object self,
-                        @Cached(inline = false) CallContext callContext,
-                        @Cached InlinedConditionProfile isNullFrameProfile,
-                        @Cached(inline = false) IndirectCallNode indirectCallNode) {
+                        @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
             Object[] arguments = PArguments.create(1);
             PArguments.setArgument(arguments, 0, self);
-            return (int) BuiltinDispatchers.callGenericBuiltin(frame, inliningTarget, slot.callTargetIndex, arguments, callContext, isNullFrameProfile, indirectCallNode);
-        }
-
-        // @Specialization(guards = "slot.isHPySlot()")
-        // @InliningCutoff
-        @SuppressWarnings("unused")
-        static int callHPy(VirtualFrame frame, Node inliningTarget, TpSlotNative slot, Object self,
-                        @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached UnaryHPySlotDispatcherNode hpyDispatcher,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResultNode) {
-            PythonContext ctx = PythonContext.get(inliningTarget);
-            PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = hpyDispatcher.execute(frame, inliningTarget, ctx, state, slot.callable, self);
-            long l = checkResultNode.executeLong(state, T___LEN__, result);
-            if (!PInt.isIntRange(l)) {
-                raiseOverflow(inliningTarget, raiseNode, l);
-            }
-            return (int) l;
+            RootCallTarget callTarget = PythonLanguage.get(inliningTarget).getBuiltinSlotCallTarget(slot.callTargetIndex);
+            return (int) invoke.execute(frame, inliningTarget, callTarget, arguments);
         }
     }
 

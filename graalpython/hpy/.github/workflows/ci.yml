@@ -1,0 +1,427 @@
+---
+name: tests
+
+on: [pull_request]
+
+jobs:
+  main_tests:
+    name: Main tests ${{ matrix.os }} ${{ matrix.python-version }} ${{ matrix.compiler }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      # Duplicate changes to this matrix to 'poc_tests'
+      matrix:
+        os: [ubuntu-latest, macos-13, windows-latest]
+        python-version: ['3.9', '3.10']
+        compiler: [""]
+        include:
+          - os: ubuntu-latest
+            python-version: '3.8'
+          - os: ubuntu-latest
+            python-version: '3.10'
+            compiler: 'g++'
+          - os: ubuntu-latest
+            python-version: '3.11'
+          - os: ubuntu-latest
+            python-version: '3.12'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # - template: azure-templates/ccache.yml
+      #   parameters:
+      #     pythonVersion: $(python.version)
+      # - template: azure-templates/python.yml
+      #   parameters:
+      #     pythonVersion: $(python.version)
+
+      - name: Set up Python
+        uses: actions/setup-python@v5.4
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+
+      - name: Install/Upgrade Python dependencies
+        run: python -m pip install --upgrade pip wheel 'setuptools>=60.2'
+
+      - name: Build
+        run: |
+          make
+          python -m pip install .
+
+      - if: ${{ matrix.compiler }}
+        # Only set the compiler for the tests, not for the build
+        run: echo "CC=${{ matrix.compiler }}" >> $GITHUB_ENV
+
+      - name: Run tests
+        run: |
+          python -m pip install pytest pytest-xdist filelock
+          python -m pytest --basetemp=.tmpdir --durations=16 -n auto test/
+
+  main_tests_debug:
+    name: Main tests on CPython debug builds
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        # Cannot install 3.12 on ubuntu-latest
+        python-version: ['3.11', '3.10', '3.9', '3.8']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python from deadsnakes
+        uses: deadsnakes/action@v3.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          debug: true
+
+      - name: Check Python debug build
+        run: python -c "import sys; print(hasattr(sys, 'gettotalrefcount'))"
+
+      - name: Install/Upgrade Python dependencies
+        run: python -m pip install --upgrade pip wheel
+
+      - name: Build
+        run: |
+          make
+          python -m pip install .
+
+      - name: Run tests
+        run: |
+          python -m pip install pytest pytest-xdist filelock
+          python -m pytest --durations=16 -n auto test/
+
+  poc_tests:
+    name: Proof of concept tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-13, windows-latest]
+        python-version: ['3.10']
+        include:
+          - os: ubuntu-latest
+            python-version: '3.8'
+          - os: ubuntu-latest
+            python-version: '3.9'
+          - os: ubuntu-latest
+            python-version: '3.11'
+          - os: ubuntu-latest
+            python-version: '3.12'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # - template: azure-templates/ccache.yml
+      #   parameters:
+      #     pythonVersion: $(python.version)
+      # - template: azure-templates/python.yml
+      #   parameters:
+      #     pythonVersion: $(python.version)
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+
+      - name: Install/Upgrade Python dependencies
+        run: python -m pip install --upgrade pip wheel
+        shell: bash
+
+      - name: 'Test setup.py --hpy-abi=cpython bdist_wheel'
+        run: proof-of-concept/test_pof.sh wheel cpython
+        shell: bash
+
+      - name: 'Test setup.py --hpy-abi=universal bdist_wheel'
+        run: proof-of-concept/test_pof.sh wheel universal
+        shell: bash
+
+      - name: 'Test setup.py --hpy-abi=cpython install'
+        run: proof-of-concept/test_pof.sh setup_py_install cpython
+        shell: bash
+
+      - name: 'Test setup.py --hpy-abi=universal install'
+        run: proof-of-concept/test_pof.sh setup_py_install universal
+        shell: bash
+
+      - name: 'Test setup.py --hpy-abi=cpython build_ext --inplace'
+        run: proof-of-concept/test_pof.sh setup_py_build_ext_inplace cpython
+        shell: bash
+
+      - name: 'Test setup.py --hpy-abi=universal build_ext --inplace'
+        run: proof-of-concept/test_pof.sh setup_py_build_ext_inplace universal
+        shell: bash
+
+
+  porting_example_tests:
+    name: Porting example tests
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-13, windows-latest]
+        python-version: ['3.9']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install/Upgrade Python dependencies
+        run: python -m pip install --upgrade pip wheel
+        shell: bash
+
+      - name: Install HPy
+        run: python -m pip install .
+
+      - name: Install pytest
+        run: |
+          python -m pip install pytest
+
+      - name: Run tests
+        run: make porting-example-tests
+        shell: bash
+
+      - name: Run tests of completed port in debug mode
+        env:
+          HPY_DEBUG: "1"
+          TEST_ARGS: "-s -k hpy_final"
+        run: make porting-example-tests
+        shell: bash
+
+
+  valgrind_tests_1:
+    name: 'Valgrind tests (1/3)'
+    uses: ./.github/workflows/valgrind-tests.yml
+    with:
+      portion: '1/3'
+
+
+  valgrind_tests_2:
+    name: 'Valgrind tests (2/3)'
+    uses: ./.github/workflows/valgrind-tests.yml
+    with:
+      portion: '2/3'
+
+
+  valgrind_tests_3:
+    name: 'Valgrind tests (3/3)'
+    uses: ./.github/workflows/valgrind-tests.yml
+    with:
+      portion: '3/3'
+
+
+  docs_examples_tests:
+    name: Documentation examples tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-13, windows-latest]
+        python-version: ['3.10']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install/Upgrade Python dependencies
+        run: python -m pip install --upgrade pip wheel
+        shell: bash
+
+      - name: Install HPy
+        run: python -m pip install .
+
+      - name: Install pytest
+        run: |
+          python -m pip install pytest pytest-xdist filelock
+      - name: Run tests
+        run: make docs-examples-tests
+        shell: bash
+
+  build_docs:
+    name: Build documentation
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: actions/checkout@v4
+
+      # - template: azure-templates/python.yml
+
+      - name: Install / Upgrade system requirements
+        run: sudo apt update && sudo apt install -y libclang-17-dev
+
+      - name: Install / Upgrade Python requirements
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r docs/requirements.txt
+
+      - name: Build docs
+        run: |
+          cd docs;
+          python -m sphinx -T -W -E -b html -d _build/doctrees -D language=en . _build/html
+
+      - name: Upload built HTML files
+        uses: actions/upload-artifact@v4
+        with:
+          name: hpy_html_docs
+          path: docs/_build/html/*
+          if-no-files-found: error
+          retention-days: 5
+
+  c_tests:
+    name: C tests
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: actions/checkout@v4
+      - run: make -C c_test
+
+
+  check_autogen:
+    name: Check autogen
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: actions/checkout@v4
+
+    # - template: azure-templates/python.yml
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          # autogen needs distutils
+          python-version: '3.11'
+
+      - name: Install/Upgrade Python dependencies
+        run: python -m pip install --upgrade pip wheel
+
+      - name: Install autogen dependencies
+        run: pip install -r requirements-autogen.txt
+
+      - name: make autogen
+        run: |
+          make autogen
+          if [ -z "$(git status --porcelain)" ]; then
+              # clean working copy
+              echo "Working copy is clean, everything ok"
+          else
+              # Uncommitted changes
+              echo "ERROR: uncommitted changes after running make autogen"
+              echo "git status"
+              git status
+              echo
+              echo "git diff"
+              git diff
+              exit 1
+          fi
+
+
+  check_py27_compat:
+    name: Check Python 2.7 compatibility
+    runs-on: 'ubuntu-20.04'
+    steps:
+      - uses: actions/checkout@v4
+
+    # - template: azure-templates/python.yml
+    #   parameters:
+    #     pythonVersion: "2.7"
+
+      - name: Set up Python2
+        # Copied from cython's ci.yml
+        run: |
+            sudo ln -fs python2 /usr/bin/python
+            sudo apt-get update
+            sudo apt-get install python-setuptools python2.7 python2.7-dev
+            curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
+            sudo python2 get-pip.py
+            ls -l /usr/bin/pip* /usr/local/bin/pip*
+            which pip
+
+      - name: Install/Upgrade Python dependencies
+        run: python -m pip install --upgrade pip wheel
+
+      - name: check_py27_compat.py
+        run: |
+          python -m pip install pytest pytest-xdist filelock pathlib
+          python test/check_py27_compat.py
+
+
+  cpp_check:
+    name: Cppcheck static analysis
+    runs-on: 'ubuntu-22.04'
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Cppcheck
+        run: sudo apt-get -qq -y install cppcheck=2.7-1
+
+      - name: Run Cppcheck
+        run: make cppcheck
+
+
+  infer:
+    name: Infer static analysis
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: actions/checkout@v4
+
+      # - template: azure-templates/python.yml
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install/Upgrade Python dependencies
+        run: python -m pip install --upgrade pip wheel
+
+      - name: Install Infer
+        run: |
+          python -m pip install compiledb wheel;
+          VERSION=1.1.0; \
+          curl -sSL "https://github.com/facebook/infer/releases/download/v$VERSION/infer-linux64-v$VERSION.tar.xz" \
+          | sudo tar -C /opt -xJ && \
+          echo "/opt/infer-linux64-v$VERSION/bin" >> $GITHUB_PATH
+
+      - name: Run Infer
+        run: make infer
+
+  check_microbench:
+    name: Check micro benchmarks
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install / Upgrade system dependencies
+        run: sudo apt update && sudo apt install -y valgrind
+
+      - name: Install / Upgrade Python requirements
+        run: |
+          python -m pip install --upgrade pip wheel 'setuptools>=60.2'
+          python -m pip install pytest cffi
+
+      - name: Build and install HPy
+        run: |
+          make
+          python -m pip install .
+
+      - name: Run microbenchmarks
+        run: |
+          cd microbench
+          python setup.py build_ext -i
+          python -m pytest -v

@@ -160,6 +160,46 @@ extern THREAD_LOCAL Py_LOCAL_SYMBOL PyThreadState *tstate_current;
 extern Py_LOCAL_SYMBOL int8_t *_graalpy_finalizing;
 #define graalpy_finalizing (_graalpy_finalizing != NULL && *_graalpy_finalizing)
 
+#if (__linux__ && __GNU_LIBRARY__)
+#include <stdlib.h>
+#include <string.h>
+#include <execinfo.h>
+#include <unistd.h>
+static void print_c_stacktrace() {
+    fprintf(stderr, "Native stacktrace:\n");
+    intptr_t stack[16];
+    size_t stack_size = backtrace((void *)stack, sizeof(stack) / sizeof(stack[0]));
+    backtrace_symbols_fd((void *)stack, stack_size, STDERR_FILENO);
+    fflush(stderr);
+}
+
+static void attach_gdb() {
+    pid_t my_pid = getpid();
+    char pathname = "/bin/sh";
+    char gdbcmd[28] = {'\0'};
+    snprintf(gdbcmd, sizeof(gdbcmd) - 1, "gdb -p %u", my_pid);
+    char *argv[4];
+    argv[0] = pathname;
+    argv[1] = "-c";
+    argv[2] = gdbcmd;
+    argv[3] = NULL;
+    if (fork() == 0) {
+        execv(pathname, argv);
+    } else {
+        // give gdb time to attach
+        sleep(5);
+    }
+}
+#else
+static void print_c_stacktrace() {
+    // not supported
+}
+
+static void attach_gdb() {
+    // not supported
+}
+#endif
+
 /* Flags definitions representing global (debug) options. */
 static MUST_INLINE int PyTruffle_Trace_Memory() {
     return Py_Truffle_Options & PY_TRUFFLE_TRACE_MEM;

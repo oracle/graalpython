@@ -49,7 +49,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
@@ -103,7 +103,7 @@ public class ConversionNodeTests {
             PythonThreadState threadState = pythonContext.getThreadState(language);
             Object state = IndirectCalleeContext.enter(threadState, arguments, callTarget);
             try {
-                return CallTargetInvokeNode.invokeUncached(callTarget, arguments);
+                return CallDispatchers.SimpleIndirectInvokeNode.executeUncached(callTarget, arguments);
             } finally {
                 IndirectCalleeContext.exit(threadState, state);
             }

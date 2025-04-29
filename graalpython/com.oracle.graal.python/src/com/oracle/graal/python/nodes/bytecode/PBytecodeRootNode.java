@@ -181,8 +181,6 @@ import com.oracle.graal.python.nodes.bytecode.instrumentation.InstrumentationSup
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.CallNodeGen;
-import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
-import com.oracle.graal.python.nodes.call.CallTargetInvokeNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
@@ -411,6 +409,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<StoreSubscrSeq.ONode> NODE_STORE_SUBSCR_SEQ_O = StoreSubscrSeq.ONode::create;
     private static final NodeSupplier<StoreSubscrSeq.INode> NODE_STORE_SUBSCR_SEQ_I = StoreSubscrSeq.INode::create;
     private static final NodeSupplier<StoreSubscrSeq.DNode> NODE_STORE_SUBSCR_SEQ_D = StoreSubscrSeq.DNode::create;
+    private static final NodeSupplier<CallComprehensionNode> NODE_CALL_COMPREHENSION = CallComprehensionNode::create;
 
     private static final NodeSupplier<IntBuiltins.AddNode> NODE_INT_ADD = IntBuiltins.AddNode::create;
     private static final NodeSupplier<IntBuiltins.SubNode> NODE_INT_SUB = IntBuiltins.SubNode::create;
@@ -798,15 +797,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (expectedClass.isInstance(node)) {
             return (T) node;
         }
-        return doInsertChildNodeInt(nodes, nodeIndex, nodeSupplier, argument);
+        return doInsertChildNodeInt(nodes, nodeIndex, expectedClass, nodeSupplier, argument);
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Node> T doInsertChildNodeInt(Node[] nodes, int nodeIndex, IntNodeFunction<T> nodeSupplier, int argument) {
+    private <T extends Node, U> T doInsertChildNodeInt(Node[] nodes, int nodeIndex, Class<U> expectedClass, IntNodeFunction<T> nodeSupplier, int argument) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         Lock lock = getLock();
         lock.lock();
         try {
+            Node node = nodes[nodeIndex];
+            if (expectedClass.isInstance(node)) {
+                return (T) node;
+            }
             T newNode = nodeSupplier.apply(argument);
             doInsertChildNode(nodes, nodeIndex, newNode);
             return newNode;
@@ -821,15 +824,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (node != null && node.getClass() == cachedClass) {
             return CompilerDirectives.castExact(node, cachedClass);
         }
-        return CompilerDirectives.castExact(doInsertChildNode(nodes, nodeIndex, nodeSupplier), cachedClass);
+        return CompilerDirectives.castExact(doInsertChildNode(nodes, nodeIndex, cachedClass, nodeSupplier), cachedClass);
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Node> T doInsertChildNode(Node[] nodes, int nodeIndex, NodeSupplier<T> nodeSupplier) {
+    private <T extends Node, U> T doInsertChildNode(Node[] nodes, int nodeIndex, Class<U> cachedClass, NodeSupplier<T> nodeSupplier) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         Lock lock = getLock();
         lock.lock();
         try {
+            Node node = nodes[nodeIndex];
+            if (node != null && node.getClass() == cachedClass) {
+                return (T) node;
+            }
             T newNode = nodeSupplier.get();
             doInsertChildNode(nodes, nodeIndex, newNode);
             return newNode;
@@ -847,7 +854,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (node != null && node.getClass() == cachedClass) {
             return CompilerDirectives.castExact(node, cachedClass);
         }
-        return CompilerDirectives.castExact(doInsertChildNode(nodes, nodeIndex, nodeSupplier), cachedClass);
+        return CompilerDirectives.castExact(doInsertChildNode(nodes, nodeIndex, cachedClass, nodeSupplier), cachedClass);
     }
 
     private void doInsertChildNode(Node[] nodes, int nodeIndex, Node newNode) {
@@ -5344,14 +5351,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @BytecodeInterpreterSwitch
     private int bytecodeCallComprehension(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, MutableLoopData mutableData, byte tracingOrProfilingEnabled) {
         PFunction func = (PFunction) virtualFrame.getObject(stackTop - 1);
-        CallTargetInvokeNode callNode = insertChildNode(localNodes, bci, CallTargetInvokeNodeGen.class, () -> CallTargetInvokeNode.create(func));
+        CallComprehensionNode callNode = insertChildNode(localNodes, bci, CallComprehensionNodeGen.class, NODE_CALL_COMPREHENSION);
 
         Object result;
         profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_CALL, mutableData, tracingOrProfilingEnabled);
         try {
             Object[] arguments = PArguments.create(1);
             PArguments.setArgument(arguments, 0, virtualFrame.getObject(stackTop));
-            result = callNode.execute(virtualFrame, func, func.getGlobals(), func.getClosure(), arguments);
+            result = callNode.execute(virtualFrame, func, arguments);
             profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_RETURN, mutableData, tracingOrProfilingEnabled);
         } catch (AbstractTruffleException e) {
             profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_EXCEPTION, mutableData, tracingOrProfilingEnabled);

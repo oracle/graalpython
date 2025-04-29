@@ -60,7 +60,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -155,7 +155,7 @@ public class AsyncHandler {
                     }
                     debugger.disableStepping();
                     try {
-                        GenericInvokeNode.getUncached().execute(context.getAsyncHandler().callTarget, args);
+                        CallDispatchers.SimpleIndirectInvokeNode.executeUncached(context.getAsyncHandler().callTarget, args);
                     } catch (PException e) {
                         handleException(e);
                     } finally {
