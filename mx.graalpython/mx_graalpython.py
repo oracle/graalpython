@@ -1241,7 +1241,10 @@ def graalpython_gate_runner(args, tasks):
             standalone_home = graalpy_standalone_home('jvm')
             mvn_repo_path, version, env = deploy_local_maven_repo()
 
-            env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
+            if os.environ.get("LATEST_JAVA_HOME", os.environ.get("JAVA_HOME")) == mx.get_jdk().home:
+                # our standalone python binary is meant for standalone graalpy
+                # releases which are only for latest
+                env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
             env['ENABLE_JBANG_INTEGRATION_UNITTESTS'] ='true'
             env['JAVA_HOME'] = gvm_jdk
             env['PYTHON_STANDALONE_HOME'] = standalone_home
