@@ -607,7 +607,6 @@ _PyStructSequence_InitBuiltinWithFlags(PyInterpreterState *interp,
     {
         goto error;
     }
-#endif // GraalPy change
 
     return 0;
 
@@ -616,6 +615,9 @@ error:
         PyMem_Free(members);
     }
     return -1;
+#endif // GraalPy change
+
+    return 0;
 }
 
 int

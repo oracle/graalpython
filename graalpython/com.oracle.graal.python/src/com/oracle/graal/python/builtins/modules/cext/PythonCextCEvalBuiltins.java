@@ -155,6 +155,7 @@ public final class PythonCextCEvalBuiltins {
                         Object argumentArrayPtr, int argumentCount, Object kwsPtr, int kwsCount, Object defaultValueArrayPtr, int defaultValueCount,
                         Object kwdefaultsWrapper, Object closureObj,
                         @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode raiseNode,
                         @Cached CStructAccess.ReadObjectNode readNode,
                         @Cached PythonCextBuiltins.CastKwargsNode castKwargsNode,
                         @Cached CastToTruffleStringNode castToStringNode,
@@ -165,7 +166,7 @@ public final class PythonCextCEvalBuiltins {
                         @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
             Object[] defaults = readNode.readPyObjectArray(defaultValueArrayPtr, defaultValueCount);
             if (!PGuards.isPNone(kwdefaultsWrapper) && !PGuards.isDict(kwdefaultsWrapper)) {
-                PRaiseNode.raiseStatic(invokeNode, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+                throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
             }
             PKeyword[] kwdefaults = castKwargsNode.execute(inliningTarget, kwdefaultsWrapper);
             PCell[] closure = null;

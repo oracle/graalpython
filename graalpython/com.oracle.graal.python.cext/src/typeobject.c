@@ -7662,9 +7662,6 @@ type_ready(PyTypeObject *type, int rerunbuiltin)
 
     assert(_PyType_CheckConsistency(type));
 
-    // GraalPy change
-	GraalPyTruffle_InitializeOldStyleSlots(type);
-	
     // GraalPy change: for reason, see first call to Py_INCREF in this function
 	Py_DECREF(type);    
     return 0;

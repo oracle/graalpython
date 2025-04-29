@@ -43,7 +43,8 @@
 
 PyObject marker_struct = {
     _PyObject_EXTRA_INIT
-    1, &PyBaseObject_Type
+    { _Py_IMMORTAL_REFCNT },
+    &PyBaseObject_Type
 };
 
 int PyContextVar_Get(PyObject *var, PyObject *default_value, PyObject **value) {
