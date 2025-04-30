@@ -40,7 +40,8 @@ _PyErr_FormatV(PyThreadState *tstate, PyObject *exception,
 void
 _PyErr_SetRaisedException(PyThreadState *tstate, PyObject *exc)
 {
-    PyObject *old_exc = tstate->current_exception;
+    // GraalPy change
+    // PyObject *old_exc = tstate->current_exception;
     tstate->current_exception = exc;
     // Py_XDECREF(old_exc);
 }

@@ -84,6 +84,5 @@ _PyRuntimeState _PyRuntime
 __attribute__ ((section (".PyRuntime")))
 #endif
 = _PyRuntimeState_INIT(_PyRuntime);
-_Py_COMP_DIAG_POP
 
 static int runtime_initialized = 0;

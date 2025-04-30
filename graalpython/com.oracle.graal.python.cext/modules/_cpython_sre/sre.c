@@ -1111,8 +1111,7 @@ error:
 
 }
 
-__attribute__((always_inline))
-inline static void *_memchr(const void *s, int c, Py_ssize_t n) {
+static void *_memchr(const void *s, int c, Py_ssize_t n) {
     unsigned char *p = (unsigned char*)s;
     while(n--) {
         if(*p != (unsigned char)c) {

@@ -7195,7 +7195,7 @@ type_dict_set_doc(PyTypeObject *type)
 {
     PyObject *dict = lookup_tp_dict(type);
     // GraalPy change: cannot use CPython's current _Py_ID mechanism
-    int r = _PyDict_ContainsId(type->tp_dict, &PyId___doc__);
+    int r = _PyDict_ContainsId(dict, &PyId___doc__);
     if (r < 0) {
         return -1;
     }
@@ -7212,7 +7212,7 @@ type_dict_set_doc(PyTypeObject *type)
         }
 
         // GraalPy change: cannot use CPython's current _Py_ID mechanism
-        if (_PyDict_SetItemId(type->tp_dict, &PyId___doc__, doc) < 0) {
+        if (_PyDict_SetItemId(dict, &PyId___doc__, doc) < 0) {
             Py_DECREF(doc);
             return -1;
         }
@@ -7220,7 +7220,7 @@ type_dict_set_doc(PyTypeObject *type)
     }
     else {
         // GraalPy change: cannot use CPython's current _Py_ID mechanism
-        if (_PyDict_SetItemId(type->tp_dict, &PyId___doc__, Py_None) < 0) {
+        if (_PyDict_SetItemId(dict, &PyId___doc__, Py_None) < 0) {
             return -1;
         }
     }
@@ -7422,7 +7422,7 @@ type_ready_set_hash(PyTypeObject *type)
 
     PyObject *dict = lookup_tp_dict(type);
     // GraalPy change: cannot use CPython's current _Py_ID mechanism
-    int r = _PyDict_ContainsId(type->tp_dict, &PyId___hash__);
+    int r = _PyDict_ContainsId(dict, &PyId___hash__);
     if (r < 0) {
         return -1;
     }
@@ -7431,7 +7431,7 @@ type_ready_set_hash(PyTypeObject *type)
     }
 
     // GraalPy change: cannot use CPython's current _Py_ID mechanism
-    if (_PyDict_SetItemId(type->tp_dict, &PyId___hash__, Py_None) < 0) {
+    if (_PyDict_SetItemId(dict, &PyId___hash__, Py_None) < 0) {
         return -1;
     }
     type->tp_hash = PyObject_HashNotImplemented;
