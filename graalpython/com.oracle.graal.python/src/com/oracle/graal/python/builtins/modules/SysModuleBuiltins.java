@@ -611,6 +611,9 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         }
         sys.setAttribute(tsLiteral("dont_write_bytecode"), context.getOption(PythonOptions.DontWriteBytecodeFlag));
         TruffleString pycachePrefix = context.getOption(PythonOptions.PyCachePrefix);
+        if (pycachePrefix.isEmpty() && PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && System.getenv("CI") == null) {
+            pycachePrefix = PythonUtils.toTruffleStringUncached("__bci_dsl_pycache__");
+        }
         sys.setAttribute(tsLiteral("pycache_prefix"), pycachePrefix.isEmpty() ? PNone.NONE : pycachePrefix);
         sys.setAttribute(tsLiteral("_stdlib_dir"), stdlibHome);
 
@@ -683,7 +686,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     private static PFrozenSet createStdLibModulesSet(PythonLanguage language) {
         EconomicMapStorage storage = EconomicMapStorage.create(STDLIB_MODULE_NAMES.length);
         for (String s : STDLIB_MODULE_NAMES) {
-            storage.putUncachedWithJavaEq(s, PNone.NONE);
+            storage.putUncached(s, PNone.NONE);
         }
         return PFactory.createFrozenSet(language, storage);
     }

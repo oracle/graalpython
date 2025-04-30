@@ -52,7 +52,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
-import com.oracle.graal.python.lib.RichCmpOp;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -68,8 +67,10 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PopNode;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutUnsafeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
@@ -100,7 +101,7 @@ public class ObjectHashMapTests {
 
     @Test
     public void testCollisionsByPuttingManyKeysWithSameHash() {
-        ObjectHashMap map = new ObjectHashMap();
+        ObjectHashMap map = new ObjectHashMap(true);
         LinkedHashMap<DictKey, Object> expected = new LinkedHashMap<>();
         for (int i = 0; i < 100; i++) {
             DictKey key = new DictKey(42);
@@ -126,7 +127,7 @@ public class ObjectHashMapTests {
 
     @Test
     public void testCollisionsByPuttingAndRemovingTheSameKey() {
-        ObjectHashMap map = new ObjectHashMap();
+        ObjectHashMap map = new ObjectHashMap(true);
         LinkedHashMap<DictKey, Object> expected = new LinkedHashMap<>();
         DictKey key = new DictKey(42);
         for (int i = 0; i < 100; i++) {
@@ -143,7 +144,7 @@ public class ObjectHashMapTests {
 
     @Test
     public void testCollisionsByPuttingAndRemovingTheSameKeys() {
-        ObjectHashMap map = new ObjectHashMap();
+        ObjectHashMap map = new ObjectHashMap(true);
         LinkedHashMap<DictKey, Object> expected = new LinkedHashMap<>();
         DictKey[] keys = new DictKey[]{new DictKey(42), new DictKey(1)};
         for (int i = 0; i < 100; i++) {
@@ -162,7 +163,7 @@ public class ObjectHashMapTests {
 
     @Test
     public void testLongHashMapStressTest() {
-        ObjectHashMap map = new ObjectHashMap();
+        ObjectHashMap map = new ObjectHashMap(true);
 
         // put/remove many random (with fixed seed) keys, check consistency against LinkedHashMap
         testBasics(map);
@@ -373,7 +374,7 @@ public class ObjectHashMapTests {
 
     private static void put(ObjectHashMap map, Object key, long hash, Object value) {
         InlinedCountingConditionProfile uncachedCounting = InlinedCountingConditionProfile.getUncached();
-        ObjectHashMap.PutNode.doPutWithRestart(null, null, map, key, hash, value,
+        PutUnsafeNode.doPutWithRestart(null, null, map, key, hash, value,
                         InlinedBranchProfile.getUncached(), uncachedCounting, uncachedCounting, uncachedCounting,
                         uncachedCounting, InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached(),
                         new EqNodeStub());

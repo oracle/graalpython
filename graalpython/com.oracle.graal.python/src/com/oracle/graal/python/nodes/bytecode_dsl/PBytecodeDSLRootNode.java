@@ -65,10 +65,10 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
@@ -138,6 +138,7 @@ import com.oracle.graal.python.lib.PyObjectFunctionStr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetMethod;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectIsNotTrueNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -250,7 +251,6 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -260,6 +260,7 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @GenerateBytecode(//
                 languageClass = PythonLanguage.class, //
@@ -1458,74 +1459,38 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     @ImportStatic({PBytecodeDSLRootNode.class})
     public static final class MakeSet {
-        @Specialization(guards = {"elements.length == length", "length <= EXPLODE_LOOP_THRESHOLD"}, limit = "1")
-        @ExplodeLoop
-        public static PSet doExploded(VirtualFrame frame, Object[] elements,
-                        @Bind PBytecodeDSLRootNode rootNode,
-                        @Bind Node node,
-                        @Cached(value = "elements.length") int length,
-                        @Shared @Cached SetNodes.AddNode addNode,
-                        @Shared @Cached HashingCollectionNodes.SetItemNode setItemNode) {
-            PSet set = PFactory.createSet(rootNode.getLanguage());
-            for (int i = 0; i < length; i++) {
-                SetNodes.AddNode.add(frame, set, elements[i], addNode, setItemNode);
-            }
-            return set;
+        @Specialization(guards = "elements.length == 0")
+        public static PSet doEmpty(VirtualFrame frame, Object[] elements,
+                        @Bind PBytecodeDSLRootNode rootNode) {
+            // creates set backed by empty HashingStorage
+            return PFactory.createSet(rootNode.getLanguage());
         }
 
-        @Specialization(replaces = "doExploded")
-        public static PSet performRegular(VirtualFrame frame, Object[] elements,
+        @Specialization(guards = "elements.length != 0")
+        public static PSet doNonEmpty(VirtualFrame frame, Object[] elements,
                         @Bind PBytecodeDSLRootNode rootNode,
-                        @Bind Node node,
-                        @Shared @Cached SetNodes.AddNode addNode,
-                        @Shared @Cached HashingCollectionNodes.SetItemNode setItemNode) {
-            PSet set = PFactory.createSet(rootNode.getLanguage());
-            for (int i = 0; i < elements.length; i++) {
-                SetNodes.AddNode.add(frame, set, elements[i], addNode, setItemNode);
-            }
-            return set;
+                        @Bind Node inliningTarget,
+                        @Cached MakeSetStorageNode makeSetStorageNode) {
+            return PFactory.createSet(rootNode.getLanguage(), makeSetStorageNode.execute(frame, inliningTarget, elements));
         }
     }
 
     @Operation
-    @ConstantOperand(type = int.class)
     public static final class MakeFrozenSet {
-        @Specialization
-        public static PFrozenSet perform(VirtualFrame frame,
-                        int length,
-                        @Variadic Object[] elements,
-                        @Cached HashingStorageSetItem hashingStorageLibrary,
+        @Specialization(guards = "elements.length == 0")
+        public static PFrozenSet doEmpty(VirtualFrame frame, @Variadic Object[] elements,
+                        @Bind PBytecodeDSLRootNode rootNode) {
+            // creates set backed by empty HashingStorage
+            return PFactory.createFrozenSet(rootNode.getLanguage());
+        }
+
+        @Specialization(guards = "elements.length != 0")
+        public static PFrozenSet doNonEmpty(VirtualFrame frame, @Variadic Object[] elements,
                         @Bind PBytecodeDSLRootNode rootNode,
-                        @Bind Node inliningTarget) {
-            HashingStorage setStorage;
-            if (length <= EXPLODE_LOOP_THRESHOLD) {
-                setStorage = doExploded(frame, inliningTarget, elements, length, hashingStorageLibrary);
-            } else {
-                setStorage = doRegular(frame, inliningTarget, elements, length, hashingStorageLibrary);
-            }
-            return PFactory.createFrozenSet(rootNode.getLanguage(), setStorage);
+                        @Bind Node inliningTarget,
+                        @Cached MakeSetStorageNode makeSetStorageNode) {
+            return PFactory.createFrozenSet(rootNode.getLanguage(), makeSetStorageNode.execute(frame, inliningTarget, elements));
         }
-
-        @ExplodeLoop
-        private static HashingStorage doExploded(VirtualFrame frame, Node inliningTarget, Object[] elements, int length, HashingStorageSetItem hashingStorageLibrary) {
-            CompilerAsserts.partialEvaluationConstant(length);
-            HashingStorage setStorage = EmptyStorage.INSTANCE;
-            for (int i = 0; i < length; ++i) {
-                Object o = elements[i];
-                setStorage = hashingStorageLibrary.execute(frame, inliningTarget, setStorage, o, PNone.NONE);
-            }
-            return setStorage;
-        }
-
-        private static HashingStorage doRegular(VirtualFrame frame, Node inliningTarget, Object[] elements, int length, HashingStorageSetItem hashingStorageLibrary) {
-            HashingStorage setStorage = EmptyStorage.INSTANCE;
-            for (int i = 0; i < length; ++i) {
-                Object o = elements[i];
-                setStorage = hashingStorageLibrary.execute(frame, inliningTarget, setStorage, o, PNone.NONE);
-            }
-            return setStorage;
-        }
-
     }
 
     @Operation
@@ -1687,24 +1652,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MakeKeywords {
         @Specialization
         public static PKeyword[] perform(@Variadic Object[] values, TruffleString[] keys) {
-            if (keys.length <= EXPLODE_LOOP_THRESHOLD) {
-                return doExploded(keys, values);
-            } else {
-                return doRegular(keys, values);
-            }
-        }
-
-        @ExplodeLoop
-        private static PKeyword[] doExploded(TruffleString[] keys, Object[] values) {
             CompilerAsserts.partialEvaluationConstant(keys.length);
-            PKeyword[] result = new PKeyword[keys.length];
-            for (int i = 0; i < keys.length; i++) {
-                result[i] = new PKeyword(keys[i], values[i]);
-            }
-            return result;
-        }
-
-        private static PKeyword[] doRegular(TruffleString[] keys, Object[] values) {
             PKeyword[] result = new PKeyword[keys.length];
             for (int i = 0; i < keys.length; i++) {
                 result[i] = new PKeyword(keys[i], values[i]);
@@ -1727,30 +1675,35 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     @ConstantOperand(type = int.class)
     public static final class MakeDict {
-        // TODO: GR-64247, split to empty dict and non-empty dict created directly from preallocated
-        // hashmap
-        // storage
+        @Specialization(guards = "entries == 0")
+        public static PDict empty(VirtualFrame frame, int entries, @Variadic Object[] keysAndValues,
+                        @Bind PBytecodeDSLRootNode rootNode) {
+            // creates a dict with empty hashing storage
+            return PFactory.createDict(rootNode.getLanguage());
+        }
+
         @Specialization
-        @ExplodeLoop
-        public static PDict empty(VirtualFrame frame,
-                        int entries,
-                        @Variadic Object[] keysAndValues,
+        public static PDict empty(VirtualFrame frame, int entries, @Variadic Object[] keysAndValues,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Bind Node inliningTarget,
-                        @Cached HashingCollectionNodes.SetItemNode setItemNode,
+                        @Cached PyObjectHashNode hashNode,
+                        @Cached ObjectHashMap.PutNode putNode,
                         @Cached DictNodes.UpdateNode updateNode) {
             if (keysAndValues.length != entries * 2) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
-            PDict dict = PFactory.createDict(rootNode.getLanguage());
+            ObjectHashMap map = new ObjectHashMap(keysAndValues.length / 2, false);
+            PDict dict = PFactory.createDict(rootNode.getLanguage(), new EconomicMapStorage(map, false));
             for (int i = 0; i < entries; i++) {
                 Object key = keysAndValues[i * 2];
                 Object value = keysAndValues[i * 2 + 1];
                 // Each entry represents either a k: v pair or a **splats. splats have no key.
                 if (key == PNone.NO_VALUE) {
                     updateNode.execute(frame, dict, value);
+                    assert dict.getDictStorage() instanceof EconomicMapStorage es && es.mapIsEqualTo(map);
                 } else {
-                    setItemNode.execute(frame, inliningTarget, dict, key, value);
+                    long hash = hashNode.execute(frame, inliningTarget, key);
+                    putNode.put(frame, inliningTarget, map, key, hash, value);
                 }
             }
             return dict;
@@ -1789,7 +1742,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ImportStatic({PGuards.class})
     public static final class UnpackToLocals {
         @Specialization(guards = "isBuiltinSequence(sequence)")
-        @ExplodeLoop
         public static void doUnpackSequence(VirtualFrame localFrame, LocalRangeAccessor results, PSequence sequence,
                         @Bind Node inliningTarget,
                         @Bind BytecodeNode bytecode,
@@ -1798,25 +1750,28 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Shared @Cached PRaiseNode raiseNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, sequence);
             int len = storage.length();
-
             int count = results.getLength();
             CompilerAsserts.partialEvaluationConstant(count);
 
-            if (len == count) {
-                for (int i = 0; i < count; i++) {
-                    results.setObject(bytecode, localFrame, i, getItemNode.execute(inliningTarget, storage, i));
-                }
+            if (len != count) {
+                raiseError(inliningTarget, raiseNode, len, count);
+            }
+
+            for (int i = 0; i < count; i++) {
+                results.setObject(bytecode, localFrame, i, getItemNode.execute(inliningTarget, storage, i));
+            }
+        }
+
+        @InliningCutoff
+        private static void raiseError(Node inliningTarget, PRaiseNode raiseNode, int len, int count) {
+            if (len < count) {
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, count, len);
             } else {
-                if (len < count) {
-                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, count, len);
-                } else {
-                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, count);
-                }
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, count);
             }
         }
 
         @Specialization
-        @ExplodeLoop
         @InliningCutoff
         public static void doUnpackIterable(VirtualFrame virtualFrame, LocalRangeAccessor results, Object collection,
                         @Bind Node inliningTarget,
@@ -1935,7 +1890,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             }
         }
 
-        @ExplodeLoop
         private static void copyToLocalsFromIterator(VirtualFrame frame, Node inliningTarget, Object iterator, int length, LocalRangeAccessor results,
                         BytecodeNode bytecode, int requiredLength,
                         PyIterNextNode getNextNode, PRaiseNode raiseNode) {
@@ -1950,7 +1904,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             }
         }
 
-        @ExplodeLoop
         private static void copyToLocalsFromSequence(SequenceStorage storage, int runOffset, int offset, int length, LocalRangeAccessor run,
                         VirtualFrame localFrame, Node inliningTarget, BytecodeNode bytecode, SequenceStorageNodes.GetItemScalarNode getItemNode) {
             CompilerAsserts.partialEvaluationConstant(length);
@@ -2454,7 +2407,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = LocalRangeAccessor.class)
     public static final class StoreRange {
         @Specialization
-        @ExplodeLoop
         public static void perform(VirtualFrame frame, LocalRangeAccessor locals, Object[] values,
                         @Bind BytecodeNode bytecode) {
             CompilerAsserts.partialEvaluationConstant(locals.getLength());
@@ -2479,34 +2431,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     @ConstantOperand(type = int.class, specifyAtEnd = true)
     public static final class Unstar {
-        @Specialization
-        public static Object[] perform(@Variadic Object[] values,
-                        int length) {
-            if (length <= EXPLODE_LOOP_THRESHOLD) {
-                return doExploded(values, length);
-            } else {
-                return doRegular(values, length);
-            }
-        }
-
-        @ExplodeLoop
-        private static Object[] doExploded(Object[] values, int length) {
+        @Specialization(guards = "length != 1")
+        public static Object[] perform(@Variadic Object[] values, int length) {
+            // if len <= 1, we should emit load constant "empty array", or emit just unpack starred
+            assert length > 1;
             CompilerAsserts.partialEvaluationConstant(length);
-            int totalLength = 0;
-            for (int i = 0; i < length; i++) {
-                totalLength += ((Object[]) values[i]).length;
-            }
-            Object[] result = new Object[totalLength];
-            int idx = 0;
-            for (int i = 0; i < length; i++) {
-                int nl = ((Object[]) values[i]).length;
-                System.arraycopy(values[i], 0, result, idx, nl);
-                idx += nl;
-            }
-            return result;
-        }
-
-        private static Object[] doRegular(Object[] values, int length) {
             int totalLength = 0;
             for (int i = 0; i < length; i++) {
                 totalLength += ((Object[]) values[i]).length;
@@ -2561,8 +2490,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         static Object[] fromListOrTuple(PSequence seq,
                         @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached InlinedConditionProfile isListProfile,
+                        @Exclusive @Cached SequenceNodes.GetPSequenceStorageNode getStorage,
                         @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
-            return toArrayNode.execute(inliningTarget, seq.getSequenceStorage());
+            return toArrayNode.execute(inliningTarget, getStorage.execute(inliningTarget, seq));
         }
 
         @Specialization(guards = "isNoValue(none)")
@@ -2603,33 +2533,34 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ImportStatic({PGuards.class})
     public static final class UnpackSequence {
         @Specialization(guards = "isBuiltinSequence(sequence)")
-        @ExplodeLoop
-        public static Object[] doUnpackSequence(VirtualFrame localFrame,
-                        int count,
-                        PSequence sequence,
+        public static Object[] doUnpackSequence(VirtualFrame localFrame, int count, PSequence sequence,
                         @Bind Node inliningTarget,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            CompilerAsserts.partialEvaluationConstant(count);
             SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, sequence);
             int len = storage.length();
-            if (len == count) {
-                Object[] result = new Object[len];
-                for (int i = 0; i < count; i++) {
-                    result[i] = getItemNode.execute(inliningTarget, storage, i);
-                }
-                return result;
+            if (len != count) {
+                throw raiseError(inliningTarget, raiseNode, len, count);
+            }
+            Object[] result = new Object[len];
+            for (int i = 0; i < count; i++) {
+                result[i] = getItemNode.execute(inliningTarget, storage, i);
+            }
+            return result;
+        }
+
+        @InliningCutoff
+        private static PException raiseError(Node inliningTarget, PRaiseNode raiseNode, int len, int count) {
+            if (len < count) {
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, count, len);
             } else {
-                if (len < count) {
-                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, count, len);
-                } else {
-                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, count);
-                }
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, count);
             }
         }
 
         @Specialization
-        @ExplodeLoop
         @InliningCutoff
         public static Object[] doUnpackIterable(VirtualFrame virtualFrame,
                         int count,
@@ -2638,7 +2569,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile notIterableProfile,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            CompilerAsserts.partialEvaluationConstant(count);
             Object iterator;
             try {
                 iterator = getIter.execute(virtualFrame, inliningTarget, collection);
@@ -2736,7 +2668,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return result;
         }
 
-        @ExplodeLoop
         private static void copyItemsToArray(VirtualFrame frame, Node inliningTarget, Object iterator, Object[] destination, int destinationOffset, int length, int totalLength,
                         PyIterNextNode getNextNode, PRaiseNode raiseNode) {
             CompilerAsserts.partialEvaluationConstant(destinationOffset);
@@ -2752,7 +2683,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             }
         }
 
-        @ExplodeLoop
         private static void copyItemsToArray(Node inliningTarget, SequenceStorage source, int sourceOffset, Object[] destination, int destinationOffset, int length,
                         SequenceStorageNodes.GetItemScalarNode getItemNode) {
             CompilerAsserts.partialEvaluationConstant(sourceOffset);
@@ -3003,27 +2933,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Variadic Object[] strings,
                         @Cached TruffleStringBuilder.AppendStringNode appendNode,
                         @Cached TruffleStringBuilder.ToStringNode toString) {
-            TruffleStringBuilder tsb = TruffleStringBuilder.create(PythonUtils.TS_ENCODING);
-            if (length <= EXPLODE_LOOP_THRESHOLD) {
-                doExploded(strings, length, appendNode, tsb);
-            } else {
-                doRegular(strings, length, appendNode, tsb);
-            }
-            return toString.execute(tsb);
-        }
-
-        @ExplodeLoop
-        private static void doExploded(Object[] strings, int length, TruffleStringBuilder.AppendStringNode appendNode, TruffleStringBuilder tsb) {
+            var tsb = TruffleStringBuilderUTF32.create(PythonUtils.TS_ENCODING);
             CompilerAsserts.partialEvaluationConstant(length);
             for (int i = 0; i < length; i++) {
                 appendNode.execute(tsb, (TruffleString) strings[i]);
             }
-        }
-
-        private static void doRegular(Object[] strings, int length, TruffleStringBuilder.AppendStringNode appendNode, TruffleStringBuilder tsb) {
-            for (int i = 0; i < length; i++) {
-                appendNode.execute(tsb, (TruffleString) strings[i]);
-            }
+            return toString.execute(tsb);
         }
     }
 

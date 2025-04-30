@@ -133,7 +133,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         Object typeBuiltin = builtins.getAttribute(T_TYPE);
         PTuple bases = PFactory.createTuple(language, new Object[]{PythonBuiltinClassType.PBaseExceptionGroup, PythonBuiltinClassType.Exception});
         EconomicMapStorage dictStorage = EconomicMapStorage.create(1);
-        dictStorage.putUncachedWithJavaEq(T___MODULE__, T_BUILTINS);
+        dictStorage.putUncached(T___MODULE__, T_BUILTINS);
         PDict dict = PFactory.createDict(language, dictStorage);
         Object exceptionGroupType = CallNode.executeUncached(typeBuiltin, T_EXCEPTION_GROUP, bases, dict);
         builtins.setAttribute(T_EXCEPTION_GROUP, exceptionGroupType);

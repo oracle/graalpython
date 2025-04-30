@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,49 +38,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.nodes.bytecode_dsl;
 
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
+import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 
-@CoreFunctions(defineModule = "errno")
-public final class ErrnoModuleBuiltins extends PythonBuiltins {
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
-    }
+@GenerateInline
+@GenerateUncached
+@GenerateCached(false)
+public abstract class MakeSetStorageNode extends Node {
+    public abstract EconomicMapStorage execute(VirtualFrame frame, Node inliningTarget, Object[] elements);
 
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-        OSErrorEnum[] enumValues = OSErrorEnum.values();
-        EconomicMapStorage storage = EconomicMapStorage.create(enumValues.length + 1);
-
-        for (OSErrorEnum value : enumValues) {
-            // if more OSError have the same number -> the last one wins
-            addConstant(value.getNumber(), toTruffleStringUncached(value.name()), storage);
+    @Specialization
+    public static EconomicMapStorage doNonEmpty(VirtualFrame frame, Node inliningTarget, Object[] elements,
+                    @Cached InlinedIntValueProfile lengthProfile,
+                    @Cached PyObjectHashNode hashNode,
+                    @Cached PutNode putNode) {
+        int profiledLen = lengthProfile.profile(inliningTarget, elements.length);
+        ObjectHashMap map = new ObjectHashMap(profiledLen, false);
+        for (int i = 0; i < profiledLen; i++) {
+            Object key = elements[i];
+            long keyHash = hashNode.execute(frame, inliningTarget, key);
+            putNode.put(frame, inliningTarget, map, key, keyHash, PNone.NONE);
         }
-
-        // publish the dictionary with mapping code -> string name
-        PDict errorCode = PFactory.createDict(core.getLanguage(), storage);
-        addBuiltinConstant("errorcode", errorCode);
-    }
-
-    private void addConstant(int number, TruffleString name, EconomicMapStorage storage) {
-        addBuiltinConstant(name, number);
-        storage.putUncached(number, name);
+        return new EconomicMapStorage(map, false);
     }
 }

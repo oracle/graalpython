@@ -2874,8 +2874,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         public static final EconomicMapStorage SYSCONF_NAMES = EconomicMapStorage.create();
         static {
             // TODO populate from constants
-            SYSCONF_NAMES.putUncachedWithJavaEq(T_SC_CLK_TCK, SC_CLK_TCK);
-            SYSCONF_NAMES.putUncachedWithJavaEq(T_SC_NPROCESSORS_ONLN, SC_NPROCESSORS_ONLN);
+            SYSCONF_NAMES.putUncached(T_SC_CLK_TCK, SC_CLK_TCK);
+            SYSCONF_NAMES.putUncached(T_SC_NPROCESSORS_ONLN, SC_NPROCESSORS_ONLN);
         }
 
         @Specialization

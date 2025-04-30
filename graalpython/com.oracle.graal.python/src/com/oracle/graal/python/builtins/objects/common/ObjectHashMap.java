@@ -44,19 +44,21 @@ import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMapFactory.IsSideEffectingKeyNodeGen;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMapFactory.PutNodeGen;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.LoopNode;
@@ -68,7 +70,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Generic dictionary/set backing storage implementation.
- *
+ * <p>
  * The basic algorithm is hash table with open addressing for collision resolution. For that we need
  * to have a fixed order of indexes to probe if collision happens. Simple implementations use linear
  * search (+/-1) from the bucket where the collision happened. We use the same more advanced scheme
@@ -77,7 +79,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * <code>
  * j = ((5*j) + 1) mod N^2
  * </code>
- *
+ * <p>
  * generates all numbers from 0 to (N^2)-1, but not in linear order, i.e., for j=1, N=3, we get: 1 6
  * 7 4 5 2 3 0. In our case we set j to the index of the bucket that has the collision. To make this
  * scheme also dependent on the higher bits of the hash, we use this formula (also like CPython):
@@ -86,29 +88,29 @@ import com.oracle.truffle.api.strings.TruffleString;
  * perturb >>= PERTURB_SHIFT
  * j = ((5*j) + perturb + 1) mod N^2
  * </code>
- *
+ * <p>
  * Which is not guaranteed to generate numbers from 0 to (N^2)-1 in general, but when the perturb
  * value is shifted often enough, it becomes 0, and then we're effectively using the original
  * version of the recurrence that does guarantee that.
- *
+ * <p>
  * Additionally, we use the same trick as PyPy/CPython: there is one sparse array, which is the
  * actual hash table, but it does not contain the entries, it contains indices into compact arrays
  * with hashes and keys and values. This not only should be memory efficient and cache friendly, but
  * it preserves the insertion order, which is a requirement.
- *
+ * <p>
  * On top of the PyPy/CPython design: we use the highest bit in the indices stored in the sparse
  * array to indicate whether given bucket participates in some collisions chain. When searching
  * through a collision chain, we can stop at items that do not have this bit set. The practical
  * implications of this is that for close to full maps, lookups of items that are not present in the
  * map are faster, because we can terminate the collisions chain chasing earlier.
- *
+ * <p>
  * Notable use case that does not (yet) work well with this approach: repeated insertion and removal
  * of the same key. This keeps on adding dummy entries when removing the entry and creating long
  * collisions chains that the insertion needs to follow to find a free slot. This all repeats until
  * the insertion concludes that the map is too full and rehashes it, in this case actually not
  * growing it, but just removing the dummy entries. The same seems to happen on CPython also, but
  * can be improved.
- *
+ * <p>
  * Areas for future improvements:
  * <ul>
  * <li>Use byte[] array for the sparse indices array and determine the size of an index according to
@@ -202,8 +204,9 @@ public final class ObjectHashMap {
     boolean hasSideEffectingKeys;
 
     public ObjectHashMap(int capacity, boolean hasSideEffects) {
+        int allocateSize;
         if (capacity <= INITIAL_INDICES_SIZE) {
-            allocateData(INITIAL_INDICES_SIZE);
+            allocateSize = INITIAL_INDICES_SIZE;
         } else {
             // We need the hash table of this size, in order to accommodate "capacity" many entries
             int indicesCapacity = capacity + (capacity / 3);
@@ -214,13 +217,14 @@ public final class ObjectHashMap {
                 // reach the memory limit. We'd fail on the memory limit earlier -> difference in
                 // behavior, so we take it easy if the requested size is too large. Maybe we should
                 // rather revisit all such callsites instead of fixing this here...
-                allocateData(MAX_PREALLOCATED_INDICES_SIZE);
+                allocateSize = MAX_PREALLOCATED_INDICES_SIZE;
             } else {
                 int pow2 = getNextPow2(indicesCapacity);
                 assert pow2 > INITIAL_INDICES_SIZE;
-                allocateData(pow2);
+                allocateSize = pow2;
             }
         }
+        allocateData(allocateSize);
         hasSideEffectingKeys = hasSideEffects;
     }
 
@@ -247,10 +251,6 @@ public final class ObjectHashMap {
         keysAndValues = new Object[usableSize * 2];
     }
 
-    public void setSideEffectingKeysFlag() {
-        hasSideEffectingKeys = true;
-    }
-
     public void clear() {
         size = 0;
         usedHashes = 0;
@@ -274,7 +274,7 @@ public final class ObjectHashMap {
         return new MapCursor();
     }
 
-    public boolean hasSideEffect() {
+    public boolean hasSideEffectingKeys() {
         return hasSideEffectingKeys;
     }
 
@@ -522,7 +522,87 @@ public final class ObjectHashMap {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
+    abstract static class UpdateSideEffectingFlag extends Node {
+        public abstract void execute(Node inliningTarget, ObjectHashMap self, Object key);
+
+        @Specialization(guards = "self.hasSideEffectingKeys()")
+        static void flagAlreadySet(@SuppressWarnings("unused") ObjectHashMap self, @SuppressWarnings("unused") Object key) {
+            // nop
+        }
+
+        @Specialization(guards = "!self.hasSideEffectingKeys()")
+        static void flagNotSet(Node inliningTarget, ObjectHashMap self, Object key,
+                        @Cached IsSideEffectingKey isSideEffectingKey) {
+            if (isSideEffectingKey.execute(inliningTarget, key)) {
+                self.hasSideEffectingKeys = true;
+            }
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(PGuards.class)
+    abstract static class IsSideEffectingKey extends Node {
+        public abstract boolean execute(Node inliningTarget, Object key);
+
+        @Specialization
+        static boolean doBuiltinString(@SuppressWarnings("unused") int key) {
+            return false;
+        }
+
+        @Specialization
+        static boolean doString(@SuppressWarnings("unused") long key) {
+            return false;
+        }
+
+        @Specialization
+        static boolean doString(@SuppressWarnings("unused") TruffleString object) {
+            return false;
+        }
+
+        @Specialization(guards = "isBuiltinPString(string)")
+        static boolean doBuiltinString(@SuppressWarnings("unused") PString string) {
+            return false;
+        }
+
+        @Fallback
+        static boolean doOthers(@SuppressWarnings("unused") Object key) {
+            return true;
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class PutNode extends Node {
+        public static PutNode getUncached() {
+            return PutNodeGen.getUncached();
+        }
+
+        public final void put(Frame frame, Node inliningTarget, ObjectHashMap map, DictKey key, Object value) {
+            execute(frame, inliningTarget, map, key.getValue(), key.getPythonHash(), value);
+        }
+
+        public final void put(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash, Object value) {
+            execute(frame, inliningTarget, map, key, keyHash, value);
+        }
+
+        abstract void execute(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash, Object value);
+
+        @Specialization
+        static void doIt(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash, Object value,
+                        @Cached UpdateSideEffectingFlag updateSideEffectingFlag,
+                        @Cached PutUnsafeNode putUnsafeNode) {
+            updateSideEffectingFlag.execute(inliningTarget, map, key);
+            putUnsafeNode.execute(frame, inliningTarget, map, key, keyHash, value);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class PutUnsafeNode extends Node {
         public final void put(Frame frame, Node inliningTarget, ObjectHashMap map, DictKey key, Object value) {
             execute(frame, inliningTarget, map, key.getValue(), key.getPythonHash(), value);
         }
@@ -537,14 +617,6 @@ public final class ObjectHashMap {
 
         abstract void execute(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash, Object value);
 
-        static void putUncachedWithJavaEq(ObjectHashMap map, Object key, long keyHash, Object value) {
-            assert isJavaEqualsAllowed(key) : key;
-            doPutWithRestart(null, null, map, key, keyHash, value,
-                            InlinedBranchProfile.getUncached(), InlinedCountingConditionProfile.getUncached(), InlinedCountingConditionProfile.getUncached(),
-                            InlinedCountingConditionProfile.getUncached(), InlinedCountingConditionProfile.getUncached(), InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached(),
-                            null);
-        }
-
         // "public" for testing...
         @Specialization
         public static void doPutWithRestart(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash, Object value,
@@ -556,6 +628,8 @@ public final class ObjectHashMap {
                         @Cached InlinedBranchProfile rehash1Profile,
                         @Cached InlinedBranchProfile rehash2Profile,
                         @Cached PyObjectRichCompareBool eqNode) {
+            // If this assert fires: you're probably using PutUnsafeNode, but should use PutNode
+            assert map.hasSideEffectingKeys || (!IsSideEffectingKeyNodeGen.getUncached().execute(null, key));
             while (true) {
                 try {
                     doPut(frame, map, key, keyHash, value, inliningTarget, foundNullKey, foundEqKey,
@@ -824,10 +898,6 @@ public final class ObjectHashMap {
         if (originalKey == key) {
             return true;
         }
-        if (CompilerDirectives.inInterpreter() && eqNode == null) {
-            // this is hack, see putUncachedWithJavaEq
-            return javaEquals(originalKey, key);
-        }
         boolean result = eqNode.executeEq(frame, inliningTarget, originalKey, key);
         if (getKey(index) != originalKey || indices != originalIndices) {
             // Either someone overridden the slot we are just examining, or rehasing reallocated the
@@ -844,18 +914,6 @@ public final class ObjectHashMap {
             throw RestartLookupException.INSTANCE;
         }
         return result;
-    }
-
-    private static boolean javaEquals(Object a, Object b) {
-        CompilerAsserts.neverPartOfCompilation();
-        assert isJavaEqualsAllowed(a) : a;
-        assert isJavaEqualsAllowed(b) : b;
-        return a.equals(b);
-    }
-
-    private static boolean isJavaEqualsAllowed(Object o) {
-        return o instanceof PythonManagedClass || o instanceof PythonBuiltinClassType || //
-                        o instanceof PythonNativeClass || o instanceof Number || o instanceof TruffleString;
     }
 
     /**
