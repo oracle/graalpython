@@ -60,7 +60,6 @@ import mx_gate
 import mx_native
 import mx_unittest
 import mx_sdk
-import mx_sdk_vm_ng
 import mx_subst
 import mx_truffle
 import mx_graalpython_bisect
@@ -642,12 +641,12 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     if standalone_type == 'jvm':
         env_file = 'jvm-ee-libgraal' if enterprise else 'jvm-ce-libgraal'
         standalone_dist = 'GRAALPY_JVM_STANDALONE'
-        if "GraalVM" in subprocess.check_output([get_jdk().java, '-version'], stderr=subprocess.STDOUT, text=True):
+        if "GraalVM" in subprocess.check_output([get_jdk().java, '-version'], stderr=subprocess.STDOUT, universal_newlines=True):
             env_file = ""
     else:
         env_file = 'native-ee' if enterprise else 'native-ce'
         standalone_dist = 'GRAALPY_NATIVE_STANDALONE'
-        if "GraalVM" in subprocess.check_output([get_jdk().java, '-version'], stderr=subprocess.STDOUT, text=True):
+        if "GraalVM" in subprocess.check_output([get_jdk().java, '-version'], stderr=subprocess.STDOUT, universal_newlines=True):
             assert False, "Cannot build a GraalPy native standalone with a Graal JDK, we only support latest for building the native images"
 
     mx_args = ['-p', SUITE.dir, *(['--env', env_file] if env_file else [])]
@@ -656,7 +655,6 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         mx_args.append("--extra-image-builder-argument=-ea")
 
     if mx_gate.get_jacoco_agent_args() or (build and not DISABLE_REBUILD):
-        dep_type = 'JAVA' if standalone_type == 'jvm' else 'NATIVE'
         mx_build_args = mx_args
         if BYTECODE_DSL_INTERPRETER:
             mx_build_args = mx_args + ["--extra-image-builder-argument=-Dpython.EnableBytecodeDSLInterpreter=true"]
