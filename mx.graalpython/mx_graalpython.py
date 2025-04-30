@@ -60,6 +60,7 @@ import mx_gate
 import mx_native
 import mx_unittest
 import mx_sdk
+import mx_sdk_vm_ng
 import mx_subst
 import mx_truffle
 import mx_graalpython_bisect
@@ -101,6 +102,9 @@ PYTHON_VERSION_MAJ_MIN = ".".join(PYTHON_VERSION.split('.')[:2])
 LATEST_JAVA_HOME = {"JAVA_HOME": os.environ.get("LATEST_JAVA_HOME", mx.get_jdk().home)}
 RUNNING_ON_LATEST_JAVA = os.environ.get("LATEST_JAVA_HOME", os.environ.get("JAVA_HOME")) == mx.get_jdk().home
 
+if not SUITE._output_root_includes_config():
+    # Workaround bug in mx_sdk_vm_ng.JavaHomeDependency not being a project yet relying on the underlying get_output_root implementation
+    mx_sdk_vm_ng.JavaHomeDependency.get_output_root = lambda s: os.path.join(s.get_output_base(), s.name)
 
 # this environment variable is used by some of our maven projects and jbang integration to build against the unreleased master version during development
 os.environ["GRAALPY_VERSION"] = GRAAL_VERSION
