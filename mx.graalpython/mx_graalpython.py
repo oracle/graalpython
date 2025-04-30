@@ -2542,6 +2542,13 @@ def run_mx(args, *splat, **kwargs):
     if jh := extra_env.get("JAVA_HOME"):
         args = [f"--java-home={jh}"] + args
 
+    if "-p" not in args and "--dy" not in args and "--dynamicimports" not in args:
+        if dy := mx.get_dynamic_imports():
+            args = [
+                "--dy",
+                ",".join(f"{'/' if subdir else ''}{name}" for name, subdir in dy)
+            ] + args
+
     msg = "Running: "
     if extra_env:
         msg += shlex.join([f"{k}={v}" for k, v in extra_env.items()])
