@@ -2170,7 +2170,8 @@ def python_coverage(args):
     truffle_parser.set_defaults(mode='truffle')
     args = parser.parse_args(args)
 
-    # do not endlessly rebuild tests
+    # do not endlessly rebuild tests, build once for all
+    run_mx(["build"], env={**os.environ, **LATEST_JAVA_HOME})
     run_mx(["build", "--dep", "com.oracle.graal.python.test"], env={**os.environ, **LATEST_JAVA_HOME})
     env = extend_os_env(
         GRAALPYTHON_MX_DISABLE_REBUILD="True",
