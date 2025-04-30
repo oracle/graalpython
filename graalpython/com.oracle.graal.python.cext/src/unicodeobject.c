@@ -12774,7 +12774,6 @@ _PyUnicodeWriter_WriteStr(_PyUnicodeWriter *writer, PyObject *str)
     return 0;
 }
 
-#if 0 // GraalPy change
 int
 _PyUnicodeWriter_WriteSubstring(_PyUnicodeWriter *writer, PyObject *str,
                                 Py_ssize_t start, Py_ssize_t end)
@@ -12806,7 +12805,6 @@ _PyUnicodeWriter_WriteSubstring(_PyUnicodeWriter *writer, PyObject *str,
     writer->pos += len;
     return 0;
 }
-#endif // GraalPy change
 
 int
 _PyUnicodeWriter_WriteASCIIString(_PyUnicodeWriter *writer,

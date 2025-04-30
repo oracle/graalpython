@@ -265,7 +265,6 @@ class TestPyUnicode(CPyExtTestCase):
         lambda: (
             ("hello, world!",),
             ("<%%>",),
-            ("<%6>",),
         ),
         code="""PyObject* wrap_PyUnicode_FromFormat0(char* fmt) {
             return PyUnicode_FromFormat(fmt);

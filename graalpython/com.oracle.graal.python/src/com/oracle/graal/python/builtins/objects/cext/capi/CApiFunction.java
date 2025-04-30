@@ -1176,7 +1176,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyUnicodeWriter_WriteChar", ret = Int, args = {_PYUNICODEWRITER_PTR, PY_UCS4}, call = CImpl)
     @CApiBuiltin(name = "_PyUnicodeWriter_WriteLatin1String", ret = Int, args = {_PYUNICODEWRITER_PTR, ConstCharPtrAsTruffleString, Py_ssize_t}, call = NotImplemented)
     @CApiBuiltin(name = "_PyUnicodeWriter_WriteStr", ret = Int, args = {_PYUNICODEWRITER_PTR, PyObject}, call = CImpl)
-    @CApiBuiltin(name = "_PyUnicodeWriter_WriteSubstring", ret = Int, args = {_PYUNICODEWRITER_PTR, PyObject, Py_ssize_t, Py_ssize_t}, call = NotImplemented)
+    @CApiBuiltin(name = "_PyUnicodeWriter_WriteSubstring", ret = Int, args = {_PYUNICODEWRITER_PTR, PyObject, Py_ssize_t, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "_PyUnicode_CheckConsistency", ret = Int, args = {PyObject, Int}, call = CImpl)
     @CApiBuiltin(name = "_PyUnicode_Copy", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyUnicode_DecodeRawUnicodeEscapeStateful", ret = PyObject, args = {ConstCharPtr, Py_ssize_t, ConstCharPtr, PY_SSIZE_T_PTR}, call = NotImplemented)
