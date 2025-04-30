@@ -1340,7 +1340,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython VFSUtils long running tests', tasks, tags=[GraalPythonTags.junit_vfsutils]) as task:
         if task:
-            run_mx(["build", "--dep", "GRAALPYTHON_UNIT_TESTS,GRAALPYTHON_INTEGRATION_UNIT_TESTS,GRAALPYTHON_TCK"], env={**os.environ, **LATEST_JAVA_HOME})
+            run_mx(["build"], env={**os.environ, **LATEST_JAVA_HOME})
             args =['--verbose']
             vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false']
             mx_unittest.unittest(vm_args + ['org.graalvm.python.embedding.vfs.test'] + args + ["--use-graalvm"])
