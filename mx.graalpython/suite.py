@@ -830,19 +830,17 @@ suite = {
             "build_args": [
                 # From mx.graalpython/native-image.properties
                 "-Dpolyglot.image-build-time.PreinitializeContexts=python",
-                # "-Dorg.graalvm.language.python.home=<path:GRAALPY_STANDALONE_COMMON>", # TODO needed?
                 "--add-exports", "org.graalvm.nativeimage/org.graalvm.nativeimage.impl=ALL-UNNAMED",
                 "-R:StackSize=16777216",
                 "-H:+AddAllCharsets",
                 "-H:IncludeLocales=no,be,ro,ru,es,se,in,ka,hu,hr,bg,is,mk,da,nn,cs,sq,fr,pl,fo,bs,kl,fa,sv,it,uk,af,tg,ps,de",
                 # Configure launcher
                 "-Dorg.graalvm.launcher.class=com.oracle.graal.python.shell.GraalPythonMain",
-                # From mx.graalpython/mx_graalpython.py
+                # GraalPy standalone specific flags
                 "-J-Xms14g", # GR-46399: libpythonvm needs more than the default minimum of 8 GB to be built
                 "-H:-CopyLanguageResources",
                 "-Dpolyglot.python.PosixModuleBackend=native",
                 "-Dpolyglot.python.Sha3ModuleBackend=native",
-                "--verbose", # TODO remove
             ],
         },
     },
