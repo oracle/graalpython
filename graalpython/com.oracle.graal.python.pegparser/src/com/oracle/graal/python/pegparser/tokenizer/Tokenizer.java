@@ -566,7 +566,7 @@ public class Tokenizer {
         if (cp != '_' && !UCharacter.hasBinaryProperty(cp, UProperty.XID_START)) {
             invalid = 0;
         }
-        for (int i = 1; i < invalid;) {
+        for (int i = Character.charCount(cp); i < invalid;) {
             cp = tokenString.codePointAt(i);
             if (!UCharacter.hasBinaryProperty(cp, UProperty.XID_CONTINUE)) {
                 invalid = i;
