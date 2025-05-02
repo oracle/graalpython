@@ -248,7 +248,8 @@ def get_jdk():
 
 # Called from suite.py
 def graalpy_standalone_deps():
-    deps = mx_truffle.resolve_truffle_dist_names()
+    include_truffle_runtime = not os.environ.get("EXCLUDE_TRUFFLE_RUNTIME")
+    deps = mx_truffle.resolve_truffle_dist_names(use_optimized_runtime=include_truffle_runtime)
     return deps
 
 
