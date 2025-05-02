@@ -635,7 +635,10 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
     # Build
     if standalone_type == 'jvm':
-        env_file = 'jvm-ee-libgraal' if enterprise else 'jvm-ce-libgraal'
+        if dev:
+            env_file = 'jvm'
+        else:
+            env_file = 'jvm-ee-libgraal' if enterprise else 'jvm-ce-libgraal'
         standalone_dist = 'GRAALPY_JVM_STANDALONE'
         if "GraalVM" in subprocess.check_output([get_jdk().java, '-version'], stderr=subprocess.STDOUT, universal_newlines=True):
             env_file = ""
