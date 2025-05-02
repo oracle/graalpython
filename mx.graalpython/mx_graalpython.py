@@ -246,14 +246,6 @@ def get_jdk():
     return mx.get_jdk()
 
 
-def has_suite(name):
-    return mx.suite(name, fatalIfMissing=False)
-
-
-def is_ee():
-    return has_suite('graal-enterprise')
-
-
 # Called from suite.py
 def graalpy_standalone_deps():
     deps = mx_truffle.resolve_truffle_dist_names()
