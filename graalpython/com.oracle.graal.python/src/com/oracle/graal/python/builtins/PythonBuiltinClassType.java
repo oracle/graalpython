@@ -224,6 +224,7 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinFunctionOrMethodBuiltins;
@@ -482,6 +483,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     PythonObject,
                     newBuilder().publishInModule(J_BUILTINS).slots(MemoryViewBuiltins.SLOTS).doc("""
                                     Create a new memoryview object which references the given object.""")),
+    PMemoryViewIterator("memory_iterator", PythonObject, newBuilder().slots(MemoryViewIteratorBuiltins.SLOTS)),
     PAsyncGenASend("async_generator_asend", PythonObject, newBuilder().slots(AsyncGenSendBuiltins.SLOTS)),
     PAsyncGenAThrow("async_generator_athrow", PythonObject, newBuilder().slots(AsyncGenThrowBuiltins.SLOTS)),
     PAsyncGenAWrappedValue("async_generator_wrapped_value", PythonObject, newBuilder()),

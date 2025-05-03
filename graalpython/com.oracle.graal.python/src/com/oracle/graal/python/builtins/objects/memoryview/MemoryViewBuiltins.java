@@ -45,6 +45,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.systemHashCodeAsHexString;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMORYVIEW;
+import static com.oracle.graal.python.nodes.ErrorMessages.DIM_MEMORY_HAS_NO_LENGTH;
+import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY;
+import static com.oracle.graal.python.nodes.ErrorMessages.MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -219,7 +222,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             if (zeroDimProfile.profile(inliningTarget, self.getDimensions() == 0)) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+                throw raiseNode.raise(inliningTarget, TypeError, INVALID_INDEXING_OF_0_DIM_MEMORY);
             }
             int[] shape = self.getBufferShape();
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, shape[0], sliceUnpack.execute(inliningTarget, slice));
@@ -317,7 +320,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
             if (zeroDimProfile.profile(inliningTarget, self.getDimensions() == 0)) {
                 writeItemAtNode.execute(frame, self, self.getBufferPointer(), 0, object);
             } else {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+                throw raiseNode.raise(inliningTarget, TypeError, INVALID_INDEXING_OF_0_DIM_MEMORY);
             }
         }
 
@@ -769,7 +772,11 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile zeroDimProfile,
                         @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
-            return zeroDimProfile.profile(inliningTarget, self.getDimensions() == 0) ? 1 : self.getBufferShape()[0];
+            if (zeroDimProfile.profile(inliningTarget, self.getDimensions() == 0)) {
+                throw raiseNode.raise(inliningTarget, TypeError, DIM_MEMORY_HAS_NO_LENGTH);
+            } else {
+                return self.getBufferShape()[0];
+            }
         }
     }
 
@@ -814,6 +821,29 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static int hashArray(byte[] array) {
             return Arrays.hashCode(array);
+        }
+    }
+
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
+    @GenerateNodeFactory
+    public abstract static class IterNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object iter(PMemoryView self,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached InlinedConditionProfile zeroDimProfile,
+                        @Cached PRaiseNode raiseNode) {
+            self.checkReleased(inliningTarget, raiseNode);
+            int ndims = self.getDimensions();
+            if (ndims == 0) {
+                throw raiseNode.raise(inliningTarget, TypeError, INVALID_INDEXING_OF_0_DIM_MEMORY);
+            }
+            if (ndims != 1) {
+                throw raiseNode.raise(inliningTarget, NotImplementedError, MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED);
+            }
+
+            int length = LenNode.len(self, inliningTarget, zeroDimProfile, raiseNode);
+            return PFactory.createMemoryViewIterator(language, self, 0, length, self.getFormat());
         }
     }
 

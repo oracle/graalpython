@@ -177,6 +177,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewIterator;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
@@ -498,6 +499,10 @@ public final class PFactory {
         return trace(language, new PMemoryView(cls, cls.getInstanceShape(language), null, null, buffer, owner, length, readonly, itemsize,
                         BufferFormat.forMemoryView(format, lengthNode, atIndexNode), format, 1, null, 0, new int[]{length / itemsize}, new int[]{itemsize}, null,
                         PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN));
+    }
+
+    public static MemoryViewIterator createMemoryViewIterator(PythonLanguage language, PMemoryView seq, int index, int length, BufferFormat fmt) {
+        return trace(language, new MemoryViewIterator(PythonBuiltinClassType.PMemoryViewIterator, PythonBuiltinClassType.PMemoryViewIterator.getInstanceShape(language), seq, index, length, fmt));
     }
 
     public static PMethod createMethod(PythonLanguage language, Object cls, Shape shape, Object self, Object function) {

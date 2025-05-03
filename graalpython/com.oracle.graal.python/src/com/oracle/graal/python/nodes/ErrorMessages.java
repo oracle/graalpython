@@ -1676,4 +1676,5 @@ public abstract class ErrorMessages {
     public static final TruffleString TYPE_EXC_TB_OF_THROW_IS_DEPRECATED = tsLiteral("the (type, exc, tb) signature of throw() is deprecated, use the single-arg signature instead.");
     public static final TruffleString PRECISION_TOO_LARGE = tsLiteral("precision too large");
     public static final TruffleString STRING_TOO_LARGE_IN_PY_UNICODE_FORMAT_LONG = tsLiteral("string too large in _PyUnicode_FormatLong");
+    public static final TruffleString DIM_MEMORY_HAS_NO_LENGTH = tsLiteral("0-dim memory has no length");
 }
