@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2021, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2021 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -566,7 +566,7 @@ public class Tokenizer {
         if (cp != '_' && !UCharacter.hasBinaryProperty(cp, UProperty.XID_START)) {
             invalid = 0;
         }
-        for (int i = 1; i < invalid;) {
+        for (int i = Character.charCount(cp); i < invalid;) {
             cp = tokenString.codePointAt(i);
             if (!UCharacter.hasBinaryProperty(cp, UProperty.XID_CONTINUE)) {
                 invalid = i;

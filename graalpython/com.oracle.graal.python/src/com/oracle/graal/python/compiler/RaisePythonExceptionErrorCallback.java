@@ -175,7 +175,7 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
         // Not very nice. This counts on the implementation in traceback.py where if the value of
         // text attribute is NONE, then the line is not printed
         Object text = PNone.NONE;
-        if (sourceRange.startLine <= source.getLineCount()) {
+        if (source.hasCharacters() && sourceRange.startLine <= source.getLineCount()) {
             text = toTruffleStringUncached(source.getCharacters(sourceRange.startLine).toString());
         }
         excAttrs[SyntaxErrorBuiltins.IDX_MSG] = message;
