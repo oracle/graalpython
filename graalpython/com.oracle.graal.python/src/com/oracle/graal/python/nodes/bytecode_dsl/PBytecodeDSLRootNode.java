@@ -163,12 +163,15 @@ import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.bytecode.CopyDictWithoutKeysNode;
 import com.oracle.graal.python.nodes.bytecode.GetSendValueNode;
 import com.oracle.graal.python.nodes.bytecode.GetTPFlagsNode;
 import com.oracle.graal.python.nodes.bytecode.GetYieldFromIterNode;
 import com.oracle.graal.python.nodes.bytecode.ImportFromNode;
 import com.oracle.graal.python.nodes.bytecode.ImportNode;
 import com.oracle.graal.python.nodes.bytecode.ImportStarNode;
+import com.oracle.graal.python.nodes.bytecode.MatchClassNode;
+import com.oracle.graal.python.nodes.bytecode.MatchKeysNode;
 import com.oracle.graal.python.nodes.bytecode.PrintExprNode;
 import com.oracle.graal.python.nodes.bytecode.RaiseNode;
 import com.oracle.graal.python.nodes.bytecode.SetupAnnotationsNode;
@@ -304,6 +307,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 @OperationProxy(GetYieldFromIterNode.class)
 @OperationProxy(GetAwaitableNode.class)
 @OperationProxy(SetupAnnotationsNode.class)
+@OperationProxy(value = CopyDictWithoutKeysNode.class, name = "CopyDictWithoutKeys")
 @OperationProxy(value = PyObjectIsTrueNode.class, name = "Yes")
 @OperationProxy(value = PyObjectIsNotTrueNode.class, name = "Not")
 @OperationProxy(value = ListNodes.AppendNode.class, name = "ListAppend")
@@ -1120,6 +1124,28 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static void perform(VirtualFrame frame, Object object,
                         @Cached PrintExprNode printExprNode) {
             printExprNode.execute(frame, object);
+        }
+    }
+
+    @Operation
+    @ConstantOperand(type = LocalAccessor.class)
+    public static final class MatchKeys {
+        @Specialization
+        public static boolean perform(VirtualFrame frame, LocalAccessor values, Object map, Object[] keys, @Bind BytecodeNode bytecodeNode, @Cached MatchKeysNode node) {
+            values.setObject(bytecodeNode, frame, node.execute(frame, map, keys));
+            return node.execute(frame, map, keys) != PNone.NONE;
+        }
+    }
+
+    @Operation
+    @ConstantOperand(type = LocalAccessor.class)
+    public static final class MatchClass {
+        @Specialization
+        public static Object perform(VirtualFrame frame, LocalAccessor attributes, Object subject, Object type, int nargs, TruffleString[] kwArgs, @Bind BytecodeNode bytecodeNode,
+                        @Cached MatchClassNode node) {
+            Object attrs = node.execute(frame, subject, type, nargs, kwArgs);
+            attributes.setObject(bytecodeNode, frame, attrs);
+            return attrs != null;
         }
     }
 
