@@ -15,6 +15,9 @@ class MyInt():
     def __index__(self):
         return self.value
 
+    def __bool__(self):
+        return bool(self.value)
+
 class BinASCIITest(unittest.TestCase):
 
     type2test = bytes
@@ -49,10 +52,11 @@ class BinASCIITest(unittest.TestCase):
             self.assertEqual(binascii.b2a_base64(b, newline=MyInt(0)),
                          b'aGVsbG8=')
 
-    def test_b2a_base64_wrong_newline(self):
+    def test_b2a_base64_str_newline(self):
         b = self.type2test(b'hello')
         if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
-            self.assertRaises(TypeError, binascii.b2a_base64, b, newline='ahoj')
+            self.assertEqual(binascii.b2a_base64(b, newline='ahoj'), b'aGVsbG8=\n')
+            self.assertEqual(binascii.b2a_base64(b, newline=''), b'aGVsbG8=')
 
     def test_b2a_base64_return_type(self):
         b = self.type2test(b'hello')
