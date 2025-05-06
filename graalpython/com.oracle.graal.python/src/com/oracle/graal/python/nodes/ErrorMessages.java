@@ -708,7 +708,7 @@ public abstract class ErrorMessages {
     public static final TruffleString SWITCHING_FROM_MANUAL_TO_AUTOMATIC_NUMBERING = tsLiteral("switching from manual to automatic numbering");
     public static final TruffleString SRC_CODE_CANNOT_CONTAIN_NULL_BYTES = tsLiteral("source code string cannot contain null bytes");
     public static final TruffleString DICT_SLOT_DISALLOWED_WE_GOT_ONE = tsLiteral("__dict__ slot disallowed: we already got one");
-    public static final TruffleString WEAKREF_SLOT_DISALLOWED_WE_GOT_ONE = tsLiteral("__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0");
+    public static final TruffleString WEAKREF_SLOT_DISALLOWED_WE_GOT_ONE = tsLiteral("__weakref__ slot disallowed: we already got one");
     public static final TruffleString STAR_WANTS_INT = tsLiteral("* wants int");
     public static final TruffleString TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING = tsLiteral("Too many decimal digits in format string");
     public static final TruffleString SLOTS_MUST_BE_IDENTIFIERS = tsLiteral("__slots__ must be identifiers");
