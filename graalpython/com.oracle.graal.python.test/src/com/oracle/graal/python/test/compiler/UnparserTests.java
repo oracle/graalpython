@@ -94,7 +94,7 @@ public class UnparserTests extends PythonTests {
 
     private static void checkRoundTrip(String source) {
         ParserCallbacks parserCallbacks = new TestParserCallbacksImpl();
-        Parser parser = Compiler.createParser(source, parserCallbacks, InputType.EVAL, false);
+        Parser parser = Compiler.createParser(source, parserCallbacks, InputType.EVAL, false, false);
         ModTy.Expression result = (ModTy.Expression) parser.parse();
         assertEquals(source, unparse(result.body));
     }

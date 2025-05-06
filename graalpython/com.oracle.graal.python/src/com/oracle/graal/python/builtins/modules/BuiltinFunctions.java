@@ -1023,7 +1023,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     return context.getEnv().parsePublic(source);
                 } else {
                     Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.MIME_TYPE);
-                    return context.getLanguage().parse(context, source, InputType.SINGLE, false, optimize, false, null, FutureFeature.fromFlags(flags));
+                    boolean allowIncomplete = (flags & PyCF_ALLOW_INCOMPLETE_INPUT) != 0;
+                    return context.getLanguage().parse(context, source, InputType.SINGLE, false, optimize, false, allowIncomplete, null, FutureFeature.fromFlags(flags));
                 }
             };
             if (getContext().isCoreInitialized()) {

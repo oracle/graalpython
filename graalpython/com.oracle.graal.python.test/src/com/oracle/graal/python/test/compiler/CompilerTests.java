@@ -1106,7 +1106,7 @@ public class CompilerTests extends PythonTests {
 
     private static CodeUnit assemble(String src, InputType type) {
         ParserCallbacks parserCallbacks = new TestParserCallbacksImpl();
-        Parser parser = Compiler.createParser(src, parserCallbacks, type, false);
+        Parser parser = Compiler.createParser(src, parserCallbacks, type, false, false);
         ModTy result = (ModTy) parser.parse();
         Compiler compiler = new Compiler(parserCallbacks);
         CompilationUnit cu = compiler.compile(result, EnumSet.noneOf(Compiler.Flags.class), 2, EnumSet.noneOf(FutureFeature.class));
