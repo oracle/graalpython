@@ -91,6 +91,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(defineModule = J__TYPING)
 public class TypingModuleBuiltins extends PythonBuiltins {
 
+    public static final TruffleString T_GENERIC_ALIAS = tsLiteral("_GenericAlias");
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TypingModuleBuiltinsFactory.getFactories();

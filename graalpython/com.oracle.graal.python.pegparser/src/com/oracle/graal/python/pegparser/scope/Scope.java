@@ -227,6 +227,10 @@ public class Scope {
         return type.isFunctionLike();
     }
 
+    public boolean isTypeParam() {
+        return type == ScopeType.TypeParam;
+    }
+
     public boolean isClass() {
         return type == ScopeType.Class;
     }

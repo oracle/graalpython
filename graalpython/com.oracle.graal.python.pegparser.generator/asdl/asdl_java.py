@@ -108,6 +108,9 @@ class SSTNodeGenerator(Generator):
                     if not f.is_nullable and f.type.java not in ('int', 'boolean'):
                         emitter.println(f'assert {f.name.java} != null;')
                     emitter.println(f'this.{f.name.java} = {f.name.java};')
+            if 'typeParams' in [f.name.java for f in c.fields]:
+                with emitter.define('public boolean isGeneric()'):
+                    emitter.println('return typeParams != null && typeParams.length > 0;')
             # accept() method
             with emitter.define('public <T> T accept(SSTreeVisitor<T> visitor)', '@Override'):
                 emitter.println('return visitor.visit(this);')

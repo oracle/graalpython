@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -210,3 +210,11 @@ class IllegaAssigmentTest(unittest.TestCase):
 
         with self.assertRaisesRegex(SyntaxError, "assign to list comprehension|invalid syntax\. Maybe you meant '==' or ':=' instead of '='\?"):
             compile("[s for s in [1]], b, c = (1, 2, 3)", "<test>", "exec")
+
+
+class NotIllegaAssigmentTest(unittest.TestCase):
+    def test_not_syntax_error(self):
+        # If this changes in CPython, we just need to add the missing forbidden name checks to the bytecode compiler
+        with self.assertRaises(AttributeError):
+            x = object()
+            x.__debug__ += 1

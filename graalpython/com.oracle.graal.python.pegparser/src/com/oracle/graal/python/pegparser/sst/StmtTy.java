@@ -75,6 +75,10 @@ public abstract class StmtTy extends SSTNode {
             this.typeParams = typeParams;
         }
 
+        public boolean isGeneric() {
+            return typeParams != null && typeParams.length > 0;
+        }
+
         @Override
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
@@ -103,6 +107,10 @@ public abstract class StmtTy extends SSTNode {
             this.typeParams = typeParams;
         }
 
+        public boolean isGeneric() {
+            return typeParams != null && typeParams.length > 0;
+        }
+
         @Override
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
@@ -126,6 +134,10 @@ public abstract class StmtTy extends SSTNode {
             this.body = body;
             this.decoratorList = decoratorList;
             this.typeParams = typeParams;
+        }
+
+        public boolean isGeneric() {
+            return typeParams != null && typeParams.length > 0;
         }
 
         @Override
@@ -193,6 +205,10 @@ public abstract class StmtTy extends SSTNode {
             this.typeParams = typeParams;
             assert value != null;
             this.value = value;
+        }
+
+        public boolean isGeneric() {
+            return typeParams != null && typeParams.length > 0;
         }
 
         @Override

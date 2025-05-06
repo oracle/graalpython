@@ -41,7 +41,16 @@
 package com.oracle.graal.python.compiler.bytecode_dsl;
 
 import static com.oracle.graal.python.compiler.CompilationScope.Class;
+import static com.oracle.graal.python.compiler.bytecode_dsl.CompilerUtils.NO_ARGS;
+import static com.oracle.graal.python.compiler.bytecode_dsl.CompilerUtils.TYPE_PARAMS_DEFAULTS;
+import static com.oracle.graal.python.compiler.bytecode_dsl.CompilerUtils.TYPE_PARAMS_DEFAULTS_KWDEFAULTS;
+import static com.oracle.graal.python.compiler.bytecode_dsl.CompilerUtils.TYPE_PARAMS_KWDEFAULTS;
+import static com.oracle.graal.python.compiler.bytecode_dsl.CompilerUtils.addObject;
+import static com.oracle.graal.python.compiler.bytecode_dsl.CompilerUtils.hasDefaultArgs;
+import static com.oracle.graal.python.compiler.bytecode_dsl.CompilerUtils.hasDefaultKwargs;
+import static com.oracle.graal.python.compiler.bytecode_dsl.CompilerUtils.len;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CLASS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TYPE_PARAMS__;
 import static com.oracle.graal.python.util.PythonUtils.codePointsToTruffleString;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
@@ -68,6 +77,7 @@ import com.oracle.graal.python.compiler.CompilationScope;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.Compiler.ConstantCollection;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
+import com.oracle.graal.python.compiler.OpCodes.MakeTypeParamKind;
 import com.oracle.graal.python.compiler.Unparser;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerContext;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerResult;
@@ -99,6 +109,7 @@ import com.oracle.graal.python.pegparser.sst.ExprTy.GeneratorExp;
 import com.oracle.graal.python.pegparser.sst.ExprTy.Lambda;
 import com.oracle.graal.python.pegparser.sst.ExprTy.ListComp;
 import com.oracle.graal.python.pegparser.sst.ExprTy.SetComp;
+import com.oracle.graal.python.pegparser.sst.ExprTy.Tuple;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
@@ -107,7 +118,9 @@ import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy.AsyncFunctionDef;
+import com.oracle.graal.python.pegparser.sst.StmtTy.ClassDef;
 import com.oracle.graal.python.pegparser.sst.StmtTy.TypeAlias;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy;
 import com.oracle.graal.python.pegparser.sst.TypeParamTy.ParamSpec;
 import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVar;
 import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVarTuple;
@@ -163,6 +176,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     private final boolean isInteractive;
     private final EnumSet<FutureFeature> futureFeatures;
 
+    /**
+     * Used for name mangling in the context of type parameters. See
+     * {@link com.oracle.graal.python.pegparser.scope.ScopeEnvironment#maybeMangle(String, Scope, String)}.
+     */
+    private final String privateName;
+
     // Immutable after construction
     private final HashMap<String, Integer> varnames;
     private final HashMap<String, Integer> cellvars;
@@ -181,11 +200,24 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     // Mutable (must be reset)
     private SourceRange currentLocation;
 
-    public RootNodeCompiler(BytecodeDSLCompilerContext ctx, SSTNode rootNode, EnumSet<FutureFeature> futureFeatures) {
+    public RootNodeCompiler(BytecodeDSLCompilerContext ctx, RootNodeCompiler parent, SSTNode rootNode, EnumSet<FutureFeature> futureFeatures) {
+        this(ctx, parent, null, rootNode, rootNode, futureFeatures);
+    }
+
+    public RootNodeCompiler(BytecodeDSLCompilerContext ctx, RootNodeCompiler parent, String privateName, SSTNode rootNode, Object scopeKey, EnumSet<FutureFeature> futureFeatures) {
         this.ctx = ctx;
         this.startNode = rootNode;
-        this.scope = ctx.scopeEnvironment.lookupScope(rootNode);
-        this.scopeType = getScopeType(scope, rootNode);
+        this.scope = ctx.scopeEnvironment.lookupScope(scopeKey);
+        this.scopeType = getScopeType(scope, scopeKey);
+        if (privateName != null) {
+            this.privateName = privateName;
+        } else if (scopeType == Class) {
+            this.privateName = ((ClassDef) rootNode).name;
+        } else if (parent != null) {
+            this.privateName = parent.privateName;
+        } else {
+            this.privateName = null;
+        }
         this.isInteractive = rootNode instanceof ModTy.Interactive;
         this.futureFeatures = futureFeatures;
 
@@ -206,6 +238,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             assert scopeType == Class;
             assert cellvars.isEmpty();
             cellvars.put("__class__", 0);
+        }
+
+        if (scope.needsClassDict()) {
+            assert scopeType == Class;
+            cellvars.put("__classdict__", cellvars.size());
         }
 
         this.freevars = scope.getSymbolsByType(EnumSet.of(Scope.DefUse.Free, Scope.DefUse.DefFreeClass), 0);
@@ -229,18 +266,20 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         this.selfCellName = selfCellNameValue;
     }
 
-    private static CompilationScope getScopeType(Scope scope, SSTNode rootNode) {
+    private static CompilationScope getScopeType(Scope scope, Object scopeKey) {
         if (scope.isModule()) {
             return CompilationScope.Module;
         } else if (scope.isClass()) {
             return CompilationScope.Class;
         } else if (scope.isFunction()) {
-            if (rootNode instanceof Lambda) {
+            if (scopeKey instanceof Lambda) {
                 return CompilationScope.Lambda;
-            } else if (rootNode instanceof AsyncFunctionDef) {
+            } else if (scopeKey instanceof AsyncFunctionDef) {
                 return CompilationScope.AsyncFunction;
-            } else if (rootNode instanceof DictComp || rootNode instanceof ListComp || rootNode instanceof SetComp || rootNode instanceof GeneratorExp) {
+            } else if (scopeKey instanceof DictComp || scopeKey instanceof ListComp || scopeKey instanceof SetComp || scopeKey instanceof GeneratorExp) {
                 return CompilationScope.Comprehension;
+            } else if (scopeKey instanceof TypeParamTy[]) {
+                return CompilationScope.TypeParams;
             } else {
                 return CompilationScope.Function;
             }
@@ -605,6 +644,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         b.endReturn();
     }
 
+    String maybeMangle(String name) {
+        return ctx.maybeMangle(this.privateName, scope, name);
+    }
+
     // --------------------- visitor ---------------------------
 
     @Override
@@ -719,25 +762,118 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         return null;
     }
 
-    @Override
-    public BytecodeDSLCompilerResult visit(StmtTy.FunctionDef node) {
-        return compileRootNode(node.name, ArgumentInfo.fromArguments(node.args), node.getSourceRange(),
-                        b -> emitFunctionDef(node, node.args, node.body, b, getDocstring(node.body), false));
+    public BytecodeDSLCompilerResult compileFunctionDef(StmtTy node, String name, ArgumentsTy args, StmtTy[] body) {
+        return compileRootNode(name, ArgumentInfo.fromArguments(args), node.getSourceRange(),
+                        b -> emitFunctionDefBody(node, args, body, b, getDocstring(body), false));
     }
 
-    @Override
-    public BytecodeDSLCompilerResult visit(StmtTy.AsyncFunctionDef node) {
-        return compileRootNode(node.name, ArgumentInfo.fromArguments(node.args), node.getSourceRange(),
-                        b -> emitFunctionDef(node, node.args, node.body, b, getDocstring(node.body), false));
+    /**
+     * Creates a code unit that will create the type parameters and invoke "make function" with
+     * given code unit to create the function for the {@link StmtTy.FunctionDef} or
+     * {@link StmtTy.AsyncFunctionDef} that we are processing.
+     * <p/>
+     * The resulting code unit will take the values of the default arguments and default keyword
+     * arguments of the function we are processing as its own arguments. The values of those
+     * arguments are plain Java object arrays.
+     */
+    private BytecodeDSLCompilerResult compileFunctionTypeParams(BytecodeDSLCodeUnit codeUnit, StmtTy node, String name, ArgumentsTy args, ExprTy returns, TypeParamTy[] typeParams) {
+        assert this.scopeType == CompilationScope.TypeParams;
+        // arguments info for the code unit that we are creating
+        ArgumentsTy typeParamsUnitArgs;
+        if (hasDefaultArgs(args) && hasDefaultKwargs(args)) {
+            typeParamsUnitArgs = TYPE_PARAMS_DEFAULTS_KWDEFAULTS;
+        } else if (hasDefaultKwargs(args)) {
+            typeParamsUnitArgs = TYPE_PARAMS_KWDEFAULTS;
+        } else if (hasDefaultArgs(args)) {
+            typeParamsUnitArgs = TYPE_PARAMS_DEFAULTS;
+        } else {
+            typeParamsUnitArgs = NO_ARGS;
+        }
+        ArgumentInfo argInfo = ArgumentInfo.fromArguments(typeParamsUnitArgs);
+        return compileRootNode(name, argInfo, node.getSourceRange(), b -> {
+            beginRootNode(node, typeParamsUnitArgs, b);
+            StatementCompiler statementCompiler = new StatementCompiler(b);
+
+            // typeParamsLocal = {type parameters}
+            BytecodeLocal typeParamsLocal = b.createLocal();
+            b.beginStoreLocal(typeParamsLocal);
+            statementCompiler.visitTypeParams(typeParams);
+            b.endStoreLocal();
+
+            // funLocal = {make function}
+            BytecodeLocal funLocal = b.createLocal();
+            b.beginStoreLocal(funLocal);
+            List<ParamAnnotation> annotations = collectParamAnnotations(args, returns);
+            BytecodeLocal defaultArgsLocal = null;
+            BytecodeLocal defaultKwargsLocal = null;
+            if (hasDefaultArgs(args)) {
+                defaultArgsLocal = locals.get(".defaults");
+                assert defaultArgsLocal != null;
+            }
+            if (hasDefaultKwargs(args)) {
+                defaultKwargsLocal = locals.get(".kwdefaults");
+                assert defaultKwargsLocal != null;
+            }
+            statementCompiler.emitMakeFunction(codeUnit, node, name, defaultArgsLocal, defaultKwargsLocal, null, annotations);
+            b.endStoreLocal();
+
+            // funLocal.__type_params__ = typeParamsLocal
+            beginSetAttribute(J___TYPE_PARAMS__, b);
+            b.emitLoadLocal(typeParamsLocal);
+            b.emitLoadLocal(funLocal);
+            b.endSetAttribute();
+
+            // return funLocal
+            b.beginReturn();
+            b.emitLoadLocal(funLocal);
+            b.endReturn();
+
+            endRootNode(b);
+        });
+    }
+
+    private BytecodeDSLCompilerResult compileBoundTypeVar(TypeVar node) {
+        assert node.bound != null;
+        return compileRootNode(node.name, ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
+            beginRootNode(node, null, b);
+            b.beginReturn();
+            node.bound.accept(new StatementCompiler(b));
+            b.endReturn();
+            endRootNode(b);
+        });
+    }
+
+    private BytecodeDSLCompilerResult compileTypeAliasBody(TypeAlias node) {
+        String name = ((ExprTy.Name) node.name).id;
+        return compileRootNode(name, ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
+            // Make None the first constant, so the evaluate function can't have a docstring.
+            addObject(constants, PNone.NONE);
+            beginRootNode(node, null, b);
+            b.beginReturn();
+            node.value.accept(new StatementCompiler(b));
+            b.endReturn();
+            endRootNode(b);
+        });
+    }
+
+    private BytecodeDSLCompilerResult compileTypeAliasTypeParameters(String name, BytecodeDSLCodeUnit codeUnit, TypeAlias node) {
+        assert this.scopeType == CompilationScope.TypeParams;
+        String typeParamsName = "<generic parameters of " + name + ">";
+        return compileRootNode(typeParamsName, ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
+            beginRootNode(node, null, b);
+            StatementCompiler statementCompiler = new StatementCompiler(b);
+            statementCompiler.emitBuildTypeAlias(codeUnit, node);
+            endRootNode(b);
+        });
     }
 
     @Override
     public BytecodeDSLCompilerResult visit(ExprTy.Lambda node) {
         return compileRootNode("<lambda>", ArgumentInfo.fromArguments(node.args), node.getSourceRange(),
-                        b -> emitFunctionDef(node, node.args, new SSTNode[]{node.body}, b, null, !scope.isGenerator()));
+                        b -> emitFunctionDefBody(node, node.args, new SSTNode[]{node.body}, b, null, !scope.isGenerator()));
     }
 
-    private void emitFunctionDef(SSTNode node, ArgumentsTy args, SSTNode[] body, Builder b, Object docstring, boolean isRegularLambda) {
+    private void emitFunctionDefBody(SSTNode node, ArgumentsTy args, SSTNode[] body, Builder b, Object docstring, boolean isRegularLambda) {
         beginRootNode(node, args, b);
 
         int i = 0;
@@ -772,8 +908,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         endRootNode(b);
     }
 
-    @Override
-    public BytecodeDSLCompilerResult visit(StmtTy.ClassDef node) {
+    public BytecodeDSLCompilerResult compileClassDefBody(StmtTy.ClassDef node) {
         return compileRootNode(node.name, ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
             beginRootNode(node, null, b);
 
@@ -784,6 +919,19 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             beginStoreLocal("__qualname__", b);
             emitPythonConstant(toTruffleStringUncached(ctx.getQualifiedName(scope)), b);
             endStoreLocal("__qualname__", b);
+
+            if (node.isGeneric()) {
+                beginStoreLocal(J___TYPE_PARAMS__, b);
+                emitReadLocal(".type_params", b);
+                endStoreLocal(J___TYPE_PARAMS__, b);
+            }
+
+            if (scope.needsClassDict()) {
+                assert "__classdict__".equals(mangle("__classdict__"));
+                emitNameCellOperation("__classdict__", NameOperation.BeginWrite, b);
+                b.emitLoadSpecialArgument();
+                emitNameCellOperation("__classdict__", NameOperation.EndWrite, b);
+            }
 
             if (containsAnnotations(node.body)) {
                 b.emitSetupAnnotations();
@@ -805,6 +953,14 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 node.body[i].accept(statementCompiler);
             }
 
+            if (scope.needsClassDict()) {
+                emitNameOperation("__classdictcell__", NameOperation.BeginWrite, b);
+                assert "__classdict__".equals(mangle("__classdict__"));
+                BytecodeLocal classDictCell = cellLocals.get("__classdict__");
+                b.emitLoadLocal(classDictCell);
+                emitNameOperation("__classdictcell__", NameOperation.EndWrite, b);
+            }
+
             if (scope.needsClassClosure()) {
                 beginStoreLocal("__classcell__", b);
                 b.emitLoadLocal(cellLocals.get("__class__"));
@@ -819,6 +975,16 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 endReturn(b);
             }
 
+            endRootNode(b);
+        });
+    }
+
+    public BytecodeDSLCompilerResult compileClassTypeParams(StmtTy.ClassDef node, BytecodeDSLCodeUnit classBody) {
+        assert this.scopeType == CompilationScope.TypeParams;
+        return compileRootNode(node.name, ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
+            beginRootNode(node, null, b);
+            StatementCompiler statementCompiler = new StatementCompiler(b);
+            statementCompiler.emitBuildClass(classBody, node);
             endRootNode(b);
         });
     }
@@ -920,6 +1086,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         return buildComprehensionCodeUnit(node, node.generators, "<listcomp>",
                         (statementCompiler) -> {
                             statementCompiler.b.beginMakeList();
+                            // TODO: GR-64741 (do not collect to array manually)
                             statementCompiler.b.emitLoadConstant(PythonUtils.EMPTY_OBJECT_ARRAY);
                             statementCompiler.b.endMakeList();
                         },
@@ -1028,6 +1195,16 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         statementCompiler.b.endResumeYield();
     }
 
+    private void beginSetAttribute(String name, Builder b) {
+        String mangled = maybeMangle(name);
+        b.beginSetAttribute(toTruffleStringUncached(mangled));
+    }
+
+    private void beginGetAttribute(String name, Builder b) {
+        String mangled = maybeMangle(name);
+        b.beginGetAttribute(toTruffleStringUncached(mangled));
+    }
+
     private void emitNameCellOperation(String mangled, NameOperation op, Builder b) {
         int index;
         BytecodeLocal local;
@@ -1042,9 +1219,22 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         switch (op) {
             case Read:
                 if (scope.isClass()) {
-                    b.beginClassLoadCell(index);
+                    b.beginLoadFromDictOrCell(index);
+                    b.emitLoadSpecialArgument();
                     b.emitLoadLocal(local);
-                    b.endClassLoadCell();
+                    b.endLoadFromDictOrCell();
+                } else if (scope.canSeeClassScope()) {
+                    // __classdict__ should have been added during RootNodeCompiler initialization
+                    int classDictIndex = freevars.get("__classdict__");
+                    BytecodeLocal classDictLocal = freeLocals.get("__classdict__");
+                    // @formatter:off
+                    b.beginLoadFromDictOrCell(index);
+                        b.beginLoadCell(classDictIndex);
+                            b.emitLoadLocal(classDictLocal);
+                        b.endLoadCell();
+                        b.emitLoadLocal(local);
+                    b.endLoadFromDictOrCell();
+                    // @formatter:on
                 } else {
                     b.beginLoadCell(index);
                     b.emitLoadLocal(local);
@@ -1066,6 +1256,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             default:
                 throw new UnsupportedOperationException("unknown value: " + op);
         }
+
     }
 
     private void emitNameFastOperation(String mangled, NameOperation op, Builder b) {
@@ -1091,13 +1282,26 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
     }
 
-    private void emitNameGlobalOperation(String name, NameOperation op, Builder b) {
+    private void emitNameGlobalOperation(String name, NameOperation op, Builder b, boolean isImplicitScope) {
         assert locals.get(name) == null;
         names.putIfAbsent(name, names.size());
         TruffleString tsName = toTruffleStringUncached(name);
         switch (op) {
             case Read:
-                b.emitReadGlobal(tsName);
+                if (scope.canSeeClassScope() && isImplicitScope) {
+                    // __classdict__ should have been added during RootNodeCompiler initialization
+                    int classDictIndex = freevars.get("__classdict__");
+                    BytecodeLocal classDictLocal = freeLocals.get("__classdict__");
+                    // @formatter:off
+                    b.beginLoadFromDictOrGlobals(tsName);
+                        b.beginLoadCell(classDictIndex);
+                            b.emitLoadLocal(classDictLocal);
+                        b.endLoadCell();
+                    b.endLoadFromDictOrGlobals();
+                    // @formatter:on
+                } else {
+                    b.emitReadGlobal(tsName);
+                }
                 break;
             case Delete:
                 b.emitDeleteGlobal(tsName);
@@ -1138,7 +1342,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     private void emitNameOperation(String name, NameOperation op, Builder b) {
         checkForbiddenName(name, op);
 
-        String mangled = mangle(name);
+        String mangled = maybeMangle(name);
         EnumSet<DefUse> uses = scope.getUseOfName(mangled);
 
         if (uses != null) {
@@ -1158,11 +1362,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 }
             } else if (uses.contains(DefUse.GlobalImplicit)) {
                 if (scope.isFunction()) {
-                    emitNameGlobalOperation(mangled, op, b);
+                    emitNameGlobalOperation(mangled, op, b, true);
                     return;
                 }
             } else if (uses.contains(DefUse.GlobalExplicit)) {
-                emitNameGlobalOperation(mangled, op, b);
+                emitNameGlobalOperation(mangled, op, b, false);
                 return;
             }
         }
@@ -1186,7 +1390,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     }
 
     private BytecodeLocal getLocal(String name) {
-        return locals.get(mangle(name));
+        return locals.get(maybeMangle(name));
     }
 
     public void setUpFrame(ArgumentsTy args, Builder b) {
@@ -1321,10 +1525,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
     }
 
-    private static <T> int len(T[] arr) {
-        return arr == null ? 0 : arr.length;
-    }
-
     /* ---------------- StatementCompiler -------------------- */
 
     public class StatementCompiler implements BaseBytecodeDSLVisitor<Void> {
@@ -1363,7 +1563,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         public Void visit(ExprTy.Attribute node) {
             boolean newStatement = beginSourceSection(node, b);
 
-            b.beginGetAttribute(toTruffleStringUncached(mangle(node.attr)));
+            beginGetAttribute(node.attr, b);
             node.value.accept(this);
             b.endGetAttribute();
 
@@ -1529,6 +1729,28 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         private static final int NUM_ARGS_MAX_FIXED = 4;
 
+        private void beginCallNAry(int numArgs) {
+            assert numArgs <= NUM_ARGS_MAX_FIXED;
+            switch (numArgs) {
+                case 0 -> b.beginCallNilaryMethod();
+                case 1 -> b.beginCallUnaryMethod();
+                case 2 -> b.beginCallBinaryMethod();
+                case 3 -> b.beginCallTernaryMethod();
+                case 4 -> b.beginCallQuaternaryMethod();
+            }
+        }
+
+        private void endCallNAry(int numArgs) {
+            assert numArgs <= NUM_ARGS_MAX_FIXED;
+            switch (numArgs) {
+                case 0 -> b.endCallNilaryMethod();
+                case 1 -> b.endCallUnaryMethod();
+                case 2 -> b.endCallBinaryMethod();
+                case 3 -> b.endCallTernaryMethod();
+                case 4 -> b.endCallQuaternaryMethod();
+            }
+        }
+
         private void emitCall(ExprTy func, ExprTy[] args, KeywordTy[] keywords) {
             validateKeywords(keywords);
 
@@ -1540,13 +1762,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             if (useVariadic) {
                 b.beginCallVarargsMethod();
             } else {
-                switch (numArgs) {
-                    case 0:  b.beginCallNilaryMethod();     break;
-                    case 1:  b.beginCallUnaryMethod();      break;
-                    case 2:  b.beginCallBinaryMethod();     break;
-                    case 3:  b.beginCallTernaryMethod();    break;
-                    case 4:  b.beginCallQuaternaryMethod(); break;
-                }
+                beginCallNAry(numArgs);
             }
 
             // @formatter:on
@@ -1599,13 +1815,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             if (useVariadic) {
                 b.endCallVarargsMethod();
             } else {
-                switch (numArgs) {
-                    case 0:  b.endCallNilaryMethod();     break;
-                    case 1:  b.endCallUnaryMethod();      break;
-                    case 2:  b.endCallBinaryMethod();     break;
-                    case 3:  b.endCallTernaryMethod();    break;
-                    case 4:  b.endCallQuaternaryMethod(); break;
-                }
+                endCallNAry(numArgs);
             }
             // @formatter:on
         }
@@ -1618,7 +1828,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             attrAccess.value.accept(this);
             b.endStoreLocal();
 
-            String mangled = mangle(attrAccess.attr);
+            String mangled = maybeMangle(attrAccess.attr);
             b.beginGetMethod(toTruffleStringUncached(mangled));
             b.emitLoadLocal(receiver);
             b.endGetMethod();
@@ -1810,7 +2020,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     b.emitLoadBigInt(value.getBigInteger());
                     break;
                 case CODEPOINTS:
-                    b.emitLoadConstant(codePointsToTruffleString(value.getCodePoints()));
+                    emitPythonConstant(codePointsToTruffleString(value.getCodePoints()), b);
                     break;
                 case BYTES:
                     addConstant(value.getBytes());
@@ -1818,6 +2028,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     break;
                 case TUPLE:
                     b.beginMakeTuple();
+                    // TODO: GR-64741 (do not collect to array manually)
                     b.beginCollectToObjectArray();
                     for (ConstantValue cv : value.getTupleElements()) {
                         createConstant(cv);
@@ -1887,7 +2098,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             boolean newStatement = beginSourceSection(node, b);
 
             b.beginCallUnaryMethod();
-            emitMakeFunction(node, "<dictcomp>", COMPREHENSION_ARGS, null);
+            emitMakeFunction(node, "<dictcomp>", CompilerUtils.COMPREHENSION_ARGS);
             node.generators[0].iter.accept(this);
             b.endCallUnaryMethod();
 
@@ -1939,7 +2150,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             boolean newStatement = beginSourceSection(node, b);
 
             b.beginCallUnaryMethod();
-            emitMakeFunction(node, "<generator>", COMPREHENSION_ARGS, null);
+            emitMakeFunction(node, "<generator>", CompilerUtils.COMPREHENSION_ARGS);
             node.generators[0].iter.accept(this);
             b.endCallUnaryMethod();
 
@@ -1980,7 +2191,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         @Override
         public Void visit(ExprTy.Lambda node) {
             boolean newStatement = beginSourceSection(node, b);
-            emitMakeFunction(node, "<lambda>", node.args, null);
+            emitMakeFunction(node, "<lambda>", node.args);
             endSourceSection(b, newStatement);
             return null;
         }
@@ -2002,15 +2213,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             return null;
         }
 
-        private static final String COMPREHENSION_ARGUMENT_NAME = ".0";
-        private static final ArgumentsTy COMPREHENSION_ARGS = new ArgumentsTy(new ArgTy[]{new ArgTy(COMPREHENSION_ARGUMENT_NAME, null, null, null)}, null, null, null, null, null, null, null);
-
         @Override
         public Void visit(ExprTy.ListComp node) {
             boolean newStatement = beginSourceSection(node, b);
 
             b.beginCallUnaryMethod();
-            emitMakeFunction(node, "<listcomp>", COMPREHENSION_ARGS, null);
+            emitMakeFunction(node, "<listcomp>", CompilerUtils.COMPREHENSION_ARGS);
             node.generators[0].iter.accept(this);
             b.endCallUnaryMethod();
 
@@ -2103,6 +2311,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             emitUnstar(null, args);
         }
 
+        private void emitUnstar(Runnable initialElementsProducer, ExprTy[] args) {
+            emitUnstar(initialElementsProducer, args, null);
+        }
+
         /**
          * Same as above, but takes an optional Runnable to produce elements at the beginning of the
          * sequence.
@@ -2111,10 +2323,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
          *            sequence.
          * @param args the sequence of expressions to unstar
          */
-        private void emitUnstar(Runnable initialElementsProducer, ExprTy[] args) {
-            if (initialElementsProducer == null && len(args) == 0) {
+        private void emitUnstar(Runnable initialElementsProducer, ExprTy[] args, Runnable finalElementsProducer) {
+            boolean noExtraElements = initialElementsProducer == null && finalElementsProducer == null;
+            if (noExtraElements && len(args) == 0) {
                 b.emitLoadConstant(PythonUtils.EMPTY_OBJECT_ARRAY);
-            } else if (initialElementsProducer == null && len(args) == 1 && args[0] instanceof ExprTy.Starred) {
+            } else if (noExtraElements && len(args) == 1 && args[0] instanceof ExprTy.Starred) {
                 // Optimization for single starred argument: we can just upack it. For generic
                 // algorithm see the next branch
                 b.beginUnpackStarred();
@@ -2170,6 +2383,14 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     }
                 }
 
+                if (finalElementsProducer != null) {
+                    if (!inVariadic) {
+                        b.beginCollectToObjectArray();
+                        inVariadic = true;
+                    }
+                    finalElementsProducer.run();
+                }
+
                 if (inVariadic) {
                     b.endCollectToObjectArray();
                     numOperands++;
@@ -2182,6 +2403,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     initialElementsProducer.run();
                 }
                 visitSequence(args);
+                if (finalElementsProducer != null) {
+                    finalElementsProducer.run();
+                }
                 b.endCollectToObjectArray();
             }
         }
@@ -2205,7 +2429,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             boolean newStatement = beginSourceSection(node, b);
 
             b.beginCallUnaryMethod();
-            emitMakeFunction(node, "<setcomp>", COMPREHENSION_ARGS, null);
+            emitMakeFunction(node, "<setcomp>", CompilerUtils.COMPREHENSION_ARGS);
             node.generators[0].iter.accept(this);
             b.endCallUnaryMethod();
 
@@ -2239,7 +2463,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.Starred node) {
-            throw new UnsupportedOperationException("" + node.getClass());
+            throw ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "can't use starred expression here");
         }
 
         @Override
@@ -2497,7 +2721,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     b.beginSetDictItem();
                     emitNameOperation("__annotations__", NameOperation.Read, b);
 
-                    String mangled = mangle(name);
+                    String mangled = maybeMangle(name);
                     emitPythonConstant(toTruffleStringUncached(mangled), b);
 
                     if (futureFeatures.contains(FutureFeature.ANNOTATIONS)) {
@@ -2591,6 +2815,30 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             return null;
         }
 
+        /**
+         * Produces a list or tuple containing the type parameters. Each type parameter may also
+         * store to some local variables/cells depending on its semantics.
+         */
+        public void visitTypeParams(TypeParamTy[] typeParams) {
+            boolean useList = typeParams.length > CollectionBits.KIND_MASK;
+            if (useList) {
+                b.beginMakeList();
+            } else {
+                b.beginMakeTuple();
+            }
+            // TODO: GR-64741 (do not collect to array manually)
+            b.beginCollectToObjectArray();
+            for (TypeParamTy typeParam : typeParams) {
+                typeParam.accept(this);
+            }
+            b.endCollectToObjectArray();
+            if (useList) {
+                b.endMakeList();
+            } else {
+                b.endMakeTuple();
+            }
+        }
+
         // --------------------- assign ------------------------
 
         /**
@@ -2619,7 +2867,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             public Void visit(ExprTy.Attribute node) {
                 boolean newStatement = beginSourceSection(node, b);
                 checkForbiddenName(node.attr, NameOperation.BeginWrite);
-                b.beginSetAttribute(toTruffleStringUncached(mangle(node.attr)));
+                beginSetAttribute(node.attr, b);
                 generateValue.run();
                 node.value.accept(StatementCompiler.this);
                 b.endSetAttribute();
@@ -2819,7 +3067,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             @Override
             public Void visit(ExprTy.Attribute node) {
                 boolean newStatement = beginSourceSection(node, b);
-                checkForbiddenName(node.attr, NameOperation.BeginWrite);
                 b.beginBlock();
                 // {
                 BytecodeLocal target = b.createLocal();
@@ -2828,11 +3075,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 node.value.accept(StatementCompiler.this);
                 b.endStoreLocal();
 
-                TruffleString attrName = toTruffleStringUncached(mangle(node.attr));
-                b.beginSetAttribute(attrName);
+                beginSetAttribute(node.attr, b);
                 beginAugAssign();
 
-                b.beginGetAttribute(attrName);
+                beginGetAttribute(node.attr, b);
                 b.emitLoadLocal(target);
                 b.endGetAttribute();
 
@@ -3042,50 +3288,89 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(StmtTy.ClassDef node) {
+            // We need to differentiate between building a plain class or class with type parameters
+            // For type parameters the root node compiler produces intermediate code unit that will
+            // assemble the generic parameters and then call __build_class__ and we just need to
+            // call that code unit
             boolean newStatement = beginSourceSection(node, b);
+            BytecodeLocal[] decoratorsLocals = evaluateDecorators(node.decoratorList);
+
+            beginStoreLocal(node.name, b);
+            beginWrapWithDecorators(decoratorsLocals);
+
+            if (node.isGeneric()) {
+                RootNodeCompiler typeParamsCompiler = new RootNodeCompiler(ctx, RootNodeCompiler.this, node.name, node, node.typeParams, futureFeatures);
+                RootNodeCompiler classBodyCompiler = createRootNodeCompilerFor(node, typeParamsCompiler);
+                BytecodeDSLCompilerResult classBody = classBodyCompiler.compileClassDefBody(node);
+                BytecodeDSLCompilerResult typeParamsFun = typeParamsCompiler.compileClassTypeParams(node, classBody.codeUnit());
+
+                b.beginCallNilaryMethod();
+                String typeParamsName = "<generic parameters of " + node.name + ">";
+                emitMakeFunction(typeParamsFun.codeUnit(), node.typeParams, typeParamsName, null, null);
+                b.endCallNilaryMethod();
+            } else {
+                BytecodeDSLCompilerResult classBody = createRootNodeCompilerFor(node).compileClassDefBody(node);
+                emitBuildClass(classBody.codeUnit(), node);
+            }
+
+            endWrapWithDecorators(decoratorsLocals);
+            endStoreLocal(node.name, b);
+            endSourceSection(b, newStatement);
+            return null;
+        }
+
+        /**
+         * Produces the result of {@code __build_class__} builtin.
+         */
+        private void emitBuildClass(BytecodeDSLCodeUnit body, ClassDef node) {
             b.beginBlock();
+
+            if (node.isGeneric()) {
+                beginStoreLocal(".type_params", b);
+                visitTypeParams(node.typeParams);
+                endStoreLocal(".type_params", b);
+            }
+
             BytecodeLocal buildClassFunction = b.createLocal();
 
             // compute __build_class__ (we need it in multiple places, so store it)
             b.beginStoreLocal(buildClassFunction);
-            b.emitBuildClass();
+            b.emitLoadBuildClass();
             b.endStoreLocal();
 
-            // ClassName = __build_class__(<code>, "ClassName", bases, keywords)
-            beginStoreLocal(node.name, b);
-
-            int numDeco = len(node.decoratorList);
-            for (int i = 0; i < numDeco; i++) {
-                b.beginCallUnaryMethod();
-                node.decoratorList[i].accept(this);
-            }
-
             b.beginCallVarargsMethod();
-
             b.emitLoadLocal(buildClassFunction);
+
+            Runnable finalElements = null;
+            if (node.isGeneric()) {
+                finalElements = () -> {
+                    // call "make generic" operation, store the result to .generic_base and also
+                    // emit it as one of the unstarred arguments
+                    // @formatter:off
+                    b.beginBlock();
+                        beginStoreLocal(".generic_base", b);
+                            b.beginMakeGeneric();
+                                emitReadLocal(".type_params", b);
+                            b.endMakeGeneric();
+                        endStoreLocal(".generic_base", b);
+                        emitReadLocal(".generic_base", b);
+                    b.endBlock();
+                    // @formatter:on
+                };
+            }
 
             // positional args
             emitUnstar(() -> {
-                emitMakeFunction(node, node.name, null, null);
+                emitMakeFunction(body, node, node.name, null, null);
                 emitPythonConstant(toTruffleStringUncached(node.name), b);
-            }, node.bases);
+            }, node.bases, finalElements);
 
             // keyword args
             validateKeywords(node.keywords);
             emitKeywords(node.keywords, buildClassFunction);
 
             b.endCallVarargsMethod();
-
-            for (int i = 0; i < numDeco; i++) {
-                b.endCallUnaryMethod();
-            }
-
-            endStoreLocal(node.name, b);
-
             b.endBlock();
-            endSourceSection(b, newStatement);
-
-            return null;
         }
 
         private class DeleteVisitor implements BaseBytecodeDSLVisitor<Void> {
@@ -3106,8 +3391,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             @Override
             public Void visit(ExprTy.Attribute node) {
                 boolean newStatement = beginSourceSection(node, b);
-                checkForbiddenName(node.attr, NameOperation.BeginWrite);
-                b.beginDeleteAttribute(toTruffleStringUncached(node.attr));
+                b.beginDeleteAttribute(toTruffleStringUncached(maybeMangle(node.attr)));
                 node.value.accept(StatementCompiler.this);
                 b.endDeleteAttribute();
 
@@ -3250,51 +3534,134 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(StmtTy.FunctionDef node) {
+            emitFunctionDef(node, node.name, node.args, node.body, node.decoratorList, node.returns, node.typeParams);
+            return null;
+        }
+
+        public void emitFunctionDef(StmtTy node, String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, TypeParamTy[] typeParams) {
             boolean newStatement = beginSourceSection(node, b);
-            b.beginBlock();
+            BytecodeLocal[] decoratorLocals = evaluateDecorators(decoratorList);
+            beginStoreLocal(name, b);
+            beginWrapWithDecorators(decoratorLocals);
 
-            beginStoreLocal(node.name, b);
+            boolean isGeneric = typeParams != null && typeParams.length > 0;
+            if (isGeneric) {
+                // The values of default positional and keyword arguments must be passed as
+                // arguments to the "type parameters" code unit, because we must eveluate them
+                // already here
+                int argsCount = 0;
+                if (hasDefaultArgs(args)) {
+                    argsCount++;
+                }
+                if (hasDefaultKwargs(args)) {
+                    argsCount++;
+                }
+                beginCallNAry(argsCount);
 
-            int numDeco = len(node.decoratorList);
-            for (int i = 0; i < numDeco; i++) {
-                b.beginCallUnaryMethod();
-                node.decoratorList[i].accept(this);
+                RootNodeCompiler typeParamsCompiler = new RootNodeCompiler(ctx, RootNodeCompiler.this, null, node, typeParams, futureFeatures);
+                RootNodeCompiler funBodyCompiler = createRootNodeCompilerFor(node, typeParamsCompiler);
+                BytecodeDSLCompilerResult funBodyUnit = funBodyCompiler.compileFunctionDef(node, name, args, body);
+                BytecodeDSLCompilerResult typeParamsFunUnit = typeParamsCompiler.compileFunctionTypeParams(funBodyUnit.codeUnit(), node, name, args, returns, typeParams);
+
+                String typeParamsName = "<generic parameters of " + name + ">";
+                emitMakeFunction(typeParamsFunUnit.codeUnit(), typeParams, typeParamsName, null, null);
+
+                if (hasDefaultArgs(args)) {
+                    emitDefaultArgsArray(args);
+                }
+                if (hasDefaultKwargs(args)) {
+                    emitDefaultKwargsArray(args);
+                }
+
+                endCallNAry(argsCount);
+            } else {
+                BytecodeDSLCompilerResult funBodyCodeUnit = createRootNodeCompilerFor(node).compileFunctionDef(node, name, args, body);
+                emitBuildFunction(funBodyCodeUnit.codeUnit(), node, name, args, decoratorList, returns);
             }
 
-            List<ParamAnnotation> annotations = collectParamAnnotations(node.args, node.returns);
-            emitMakeFunction(node, node.name, node.args, annotations);
+            endWrapWithDecorators(decoratorLocals);
+            endStoreLocal(name, b);
+            endSourceSection(b, newStatement);
+        }
 
-            for (int i = 0; i < numDeco; i++) {
+        private void emitDefaultArgsArray(ArgumentsTy args) {
+            if (hasDefaultArgs(args)) {
+                b.beginCollectToObjectArray();
+                for (int i = 0; i < args.defaults.length; i++) {
+                    args.defaults[i].accept(this);
+                }
+                b.endCollectToObjectArray();
+            } else {
+                b.emitLoadConstant(PythonUtils.EMPTY_OBJECT_ARRAY);
+            }
+        }
+
+        private void emitDefaultKwargsArray(ArgumentsTy args) {
+            // We only emit keywords with default values. Check if any exist.
+            if (!hasDefaultKwargs(args)) {
+                b.emitLoadConstant(PKeyword.EMPTY_KEYWORDS);
+            } else {
+                ArgTy[] kwOnlyArgs = args.kwOnlyArgs;
+
+                List<TruffleString> keys = new ArrayList<>();
+                b.beginMakeKeywords();
+                for (int i = 0; i < args.kwDefaults.length; i++) {
+                    // Only emit keywords with default values.
+                    if (args.kwDefaults[i] != null) {
+                        keys.add(toTruffleStringUncached(mangle(kwOnlyArgs[i].arg)));
+                        args.kwDefaults[i].accept(this);
+                    }
+                }
+                b.endMakeKeywords(keys.toArray(new TruffleString[0]));
+            }
+        }
+
+        /**
+         * Produces the function object.
+         */
+        public void emitBuildFunction(BytecodeDSLCodeUnit codeUnit, StmtTy node, String name, ArgumentsTy args, ExprTy[] decoratorList, ExprTy returns) {
+            List<ParamAnnotation> annotations = collectParamAnnotations(args, returns);
+            emitMakeFunction(codeUnit, node, name, args, annotations);
+        }
+
+        /**
+         * Evaluates the decorator expressions and stores them in bytecode locals that are returned.
+         */
+        public BytecodeLocal[] evaluateDecorators(ExprTy[] decorators) {
+            int numDeco = len(decorators);
+            BytecodeLocal[] locals = new BytecodeLocal[numDeco];
+            for (int i = 0; i < locals.length; i++) {
+                BytecodeLocal local = locals[i] = b.createLocal();
+                b.beginStoreLocal(local);
+                decorators[i].accept(this);
+                b.endStoreLocal();
+            }
+            return locals;
+        }
+
+        /**
+         * Emits the "opening parentheses" of expression {@code decorator1( decoractor2( ... (
+         * {value} )) ... )}.
+         */
+        public void beginWrapWithDecorators(BytecodeLocal[] locals) {
+            for (int i = 0; i < locals.length; i++) {
+                b.beginCallUnaryMethod();
+                b.emitLoadLocal(locals[i]);
+            }
+        }
+
+        /**
+         * "Closing parentheses" for {@link #beginWrapWithDecorators(BytecodeLocal[])}.
+         */
+        public void endWrapWithDecorators(BytecodeLocal[] locals) {
+            for (int i = 0; i < locals.length; i++) {
                 b.endCallUnaryMethod();
             }
-
-            endStoreLocal(node.name, b);
-
-            b.endBlock();
-            endSourceSection(b, newStatement);
-            return null;
         }
 
         @Override
         public Void visit(StmtTy.AsyncFunctionDef node) {
-            boolean newStatement = beginSourceSection(node, b);
-            beginStoreLocal(node.name, b);
-
-            int numDeco = len(node.decoratorList);
-            for (int i = 0; i < numDeco; i++) {
-                b.beginCallUnaryMethod();
-                node.decoratorList[i].accept(this);
-            }
-
-            List<ParamAnnotation> annotations = collectParamAnnotations(node.args, node.returns);
-            emitMakeFunction(node, node.name, node.args, annotations);
-
-            for (int i = 0; i < numDeco; i++) {
-                b.endCallUnaryMethod();
-            }
-
-            endStoreLocal(node.name, b);
-            endSourceSection(b, newStatement);
+            emitFunctionDef(node, node.name, node.args, node.body, node.decoratorList, node.returns, node.typeParams);
             return null;
         }
 
@@ -3320,12 +3687,35 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
         }
 
-        private void emitMakeFunction(SSTNode node, String name, ArgumentsTy args, List<ParamAnnotation> annotations) {
+        private void emitMakeFunction(SSTNode node, String name, ArgumentsTy args) {
             BytecodeDSLCompilerResult compilerResult = compileNode(node);
             BytecodeDSLCodeUnit codeUnit = compilerResult.codeUnit();
+            emitMakeFunction(codeUnit, node, name, args, null);
+        }
 
+        private void emitMakeFunction(BytecodeDSLCodeUnit codeUnit, Object scopeKey, String name,
+                        ArgumentsTy args, List<ParamAnnotation> annotations) {
+            emitMakeFunction(codeUnit, scopeKey, name, null, null, args, annotations);
+        }
+
+        /**
+         * Emits "make function" operation, which takes:
+         * <ul>
+         * <li>Array of default arguments' values. The value is loaded from {@code defaultArgsLocal}
+         * if not {@code null}, otherwise the value is generated inline.</li>
+         * <li>Array of default keyword arguments' values. The value is loaded from
+         * {@code defaultArgsLocal} if not {@code null}, otherwise the value is generated
+         * inline.</li>
+         * <li>Array of cells created from freevars. This method emits the array inline.</li>
+         * <li>Dictionary with annotations. This method emits the dictionary creation from the
+         * values passed in the {@code annotations} argument.</li>
+         * </ul>
+         */
+        private void emitMakeFunction(BytecodeDSLCodeUnit codeUnit, Object scopeKey, String name,
+                        BytecodeLocal defaultArgsLocal, BytecodeLocal defaultKwargsLocal,
+                        ArgumentsTy argsForDefaults, List<ParamAnnotation> annotations) {
             TruffleString functionName = toTruffleStringUncached(name);
-            Scope targetScope = ctx.scopeEnvironment.lookupScope(node);
+            Scope targetScope = ctx.scopeEnvironment.lookupScope(scopeKey);
             TruffleString qualifiedName = toTruffleStringUncached(ctx.getQualifiedName(targetScope));
 
             // Register these in the Python constants list.
@@ -3334,42 +3724,18 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             b.beginMakeFunction(functionName, qualifiedName, codeUnit);
 
-            if (args == null || len(args.defaults) == 0) {
-                b.emitLoadConstant(PythonUtils.EMPTY_OBJECT_ARRAY);
+            if (defaultArgsLocal != null) {
+                assert argsForDefaults == null;
+                b.emitLoadLocal(defaultArgsLocal);
             } else {
-                b.beginCollectToObjectArray();
-                for (int i = 0; i < args.defaults.length; i++) {
-                    args.defaults[i].accept(this);
-                }
-                b.endCollectToObjectArray();
+                emitDefaultArgsArray(argsForDefaults);
             }
 
-            boolean hasKeywords = false;
-            if (args != null && len(args.kwDefaults) != 0) {
-                // We only emit keywords with default values. Check if any exist.
-                for (int i = 0; i < args.kwDefaults.length; i++) {
-                    if (args.kwDefaults[i] != null) {
-                        hasKeywords = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!hasKeywords) {
-                b.emitLoadConstant(PKeyword.EMPTY_KEYWORDS);
+            if (defaultKwargsLocal != null) {
+                assert argsForDefaults == null;
+                b.emitLoadLocal(defaultKwargsLocal);
             } else {
-                ArgTy[] kwOnlyArgs = args.kwOnlyArgs;
-
-                List<TruffleString> keys = new ArrayList<>();
-                b.beginMakeKeywords();
-                for (int i = 0; i < args.kwDefaults.length; i++) {
-                    // Only emit keywords with default values.
-                    if (args.kwDefaults[i] != null) {
-                        keys.add(toTruffleStringUncached(mangle(kwOnlyArgs[i].arg)));
-                        args.kwDefaults[i].accept(this);
-                    }
-                }
-                b.endMakeKeywords(keys.toArray(new TruffleString[0]));
+                emitDefaultKwargsArray(argsForDefaults);
             }
 
             if (codeUnit.freevars.length == 0) {
@@ -3379,7 +3745,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 for (int i = 0; i < codeUnit.freevars.length; i++) {
                     String fv = codeUnit.freevars[i].toJavaStringUncached();
                     BytecodeLocal local;
-                    if (scopeType == CompilationScope.Class && "__class__".equals(fv) || scope.getUseOfName(fv).contains(Scope.DefUse.Cell)) {
+                    if ((scopeType == CompilationScope.Class && ("__class__".equals(fv) || "__classdict__".equals(fv))) || scope.getUseOfName(fv).contains(Scope.DefUse.Cell)) {
                         local = cellLocals.get(fv);
                     } else {
                         local = freeLocals.get(fv);
@@ -3404,7 +3770,15 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         private BytecodeDSLCompilerResult compileNode(SSTNode node) {
-            return (new RootNodeCompiler(ctx, node, futureFeatures)).compile();
+            return createRootNodeCompilerFor(node).compile();
+        }
+
+        private RootNodeCompiler createRootNodeCompilerFor(SSTNode node) {
+            return new RootNodeCompiler(ctx, RootNodeCompiler.this, node, futureFeatures);
+        }
+
+        private RootNodeCompiler createRootNodeCompilerFor(SSTNode node, RootNodeCompiler parent) {
+            return new RootNodeCompiler(ctx, RootNodeCompiler.this, node, futureFeatures);
         }
 
         @Override
@@ -3714,7 +4088,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         /**
          * Generates code to test a {@code pattern} against the value stored in {@code subject}.
-         *
+         * <p>
          * Invariants:
          * <ul>
          * <li>The code for each pattern produces a boolean value.
@@ -3792,7 +4166,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         /**
          * Saves subject of the pattern context into BytecodeLocal variable, to be restored
          * eventually.
-         * 
+         *
          * @param pc Pattern context, which subject needs to be saved.
          * @return Subject saved in local variable.
          */
@@ -3806,7 +4180,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         /**
          * Loads pattern context subject back into pattern context.
-         * 
+         *
          * @param pcSave Variable to restore pattern context subject from.
          * @param pc Pattern context into which the subject should be restored.
          */
@@ -3819,7 +4193,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         /**
          * Check if attribute and keyword attribute lengths match, or if there isn't too much
          * patterns or attributes. Throws error on fail.
-         * 
+         *
          * @param patLen Patterns count
          * @param attrsLen Attributes count
          * @param kwdPatLen Keyword attributes count
@@ -3841,7 +4215,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
          * first, then the keyword patterns (e.g. the "class.attribute = [keyword] pattern").
          * Generates boolean value based on results of the subpatterns; values are evaluated using
          * the AND operator.
-         * 
+         *
          * @param patterns Patterns to check as subpatterns.
          * @param kwdPatterns Keyword patterns to check as subpatterns.
          * @param attrsValueUnpacked Values to use as `pc.subject` in sub-pattern check.
@@ -3965,7 +4339,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         /**
          * Checks if keyword argument names aren't the same or if their name isn't forbidden. Raises
          * error at fail.
-         * 
+         *
          * @param attrs Attributes to check.
          * @param patterns Patterns for error source range.
          */
@@ -3992,7 +4366,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         /**
          * Checks if keys in pattern are, if present, longer than keys in subject. If yes, pattern
          * should fail, otherwise, we should continue with evaluation.
-         *
+         * <p>
          * Generates result of the comparison (boolean).
          *
          * @param keyLen Number of keys in pattern.
@@ -4010,7 +4384,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         /**
          * Will process pattern keys: Attributes evaluation and constant folding. Checks for
          * duplicate keys and that only literals and attributes lookups are being matched.
-         *
+         * <p>
          * Generates array.
          *
          * @param keys Pattern keys.
@@ -4050,7 +4424,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         /**
          * Visit all sub-patterns for mapping in pattern (not subject).
-         *
+         * <p>
          * Generates boolean value (AND of result of all sub-patterns).
          *
          * @param patterns Sub-patterns to iterate through.
@@ -5168,26 +5542,122 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(TypeAlias node) {
+            // store the value to a variable and also produce it as the result of this block
+            b.beginBlock();
+            String name = ((ExprTy.Name) node.name).id;
+            beginStoreLocal(name, b);
+
+            if (node.isGeneric()) {
+                RootNodeCompiler typeParamsCompiler = new RootNodeCompiler(ctx, RootNodeCompiler.this, null, node, node.typeParams, futureFeatures);
+                BytecodeDSLCompilerResult body = createRootNodeCompilerFor(node, typeParamsCompiler).compileTypeAliasBody(node);
+                BytecodeDSLCompilerResult typeParamsFun = typeParamsCompiler.compileTypeAliasTypeParameters(name, body.codeUnit(), node);
+
+                String typeParamsName = "<generic parameters of " + name + ">";
+                b.beginCallNilaryMethod();
+                emitMakeFunction(typeParamsFun.codeUnit(), node.typeParams, typeParamsName, null, null);
+                b.endCallNilaryMethod();
+            } else {
+                BytecodeDSLCompilerResult body = createRootNodeCompilerFor(node).compileTypeAliasBody(node);
+                emitBuildTypeAlias(body.codeUnit(), node);
+            }
+
+            endStoreLocal(name, b);
+            emitReadLocal(name, b);
+            b.endBlock();
             return null;
+        }
+
+        public void emitBuildTypeAlias(BytecodeDSLCodeUnit body, TypeAlias node) {
+            String name = ((ExprTy.Name) node.name).id;
+            // @formatter:off
+            b.beginMakeTypeAliasType();
+                emitPythonConstant(toTruffleStringUncached(name), b);
+                if (node.isGeneric()) {
+                    visitTypeParams(node.typeParams);
+                } else {
+                    b.emitLoadNull();
+                }
+                emitMakeFunction(body, node, name, null, null);
+            b.endMakeTypeAliasType();
+            // @formatter:on
         }
 
         @Override
         public Void visit(TypeVar node) {
+            b.beginBlock();
+
+            // store the value to the variable
+            beginStoreLocal(node.name, b);
+            if (node.bound != null) {
+                BytecodeDSLCompilerResult code = createRootNodeCompilerFor(node).compileBoundTypeVar(node);
+                int kind = node.bound instanceof Tuple ? MakeTypeParamKind.TYPE_VAR_WITH_CONSTRAINTS : MakeTypeParamKind.TYPE_VAR_WITH_BOUND;
+                // @formatter:off
+                b.beginMakeTypeParam(kind);
+                    emitPythonConstant(toTruffleStringUncached(node.name), b);
+                    emitMakeFunction(code.codeUnit(), node, node.name, null, null);
+                b.endMakeTypeParam();
+                // @formatter:on
+            } else {
+                // @formatter:off
+                b.beginMakeTypeParam(MakeTypeParamKind.TYPE_VAR);
+                    emitPythonConstant(toTruffleStringUncached(node.name), b);
+                    b.emitLoadNull(); // boundOrConstraints
+                b.endMakeTypeParam();
+                // @formatter:on
+            }
+            endStoreLocal(node.name, b);
+
+            // produce the value stored to the variable as the result of this block
+            emitReadLocal(node.name, b);
+
+            b.endBlock();
             return null;
         }
 
         @Override
         public Void visit(ParamSpec node) {
+            b.beginBlock();
+
+            // store the value to the variable
+            // @formatter:off
+            beginStoreLocal(node.name, b);
+                b.beginMakeTypeParam(MakeTypeParamKind.PARAM_SPEC);
+                    emitPythonConstant(toTruffleStringUncached(node.name), b);
+                    b.emitLoadNull();
+                b.endMakeTypeParam();
+            endStoreLocal(node.name, b);
+            // @formatter:on
+
+            // produce the value stored to the variable as the result of this block
+            emitReadLocal(node.name, b);
+
+            b.endBlock();
             return null;
         }
 
         @Override
         public Void visit(TypeVarTuple node) {
+            b.beginBlock();
+
+            // store the value to the variable
+            // @formatter:off
+            beginStoreLocal(node.name, b);
+                b.beginMakeTypeParam(MakeTypeParamKind.TYPE_VAR_TUPLE);
+                    emitPythonConstant(toTruffleStringUncached(node.name), b);
+                    b.emitLoadNull(); // boundOrConstraints
+                b.endMakeTypeParam();
+            endStoreLocal(node.name, b);
+            // formatter:@on
+
+            // produce the value stored to the variable as the result of this block
+            emitReadLocal(node.name, b);
+
+            b.endBlock();
             return null;
         }
 
         @Override
-        public Void visit(StmtTy.Pass aThis) {
+        public Void visit(StmtTy.Pass node) {
             return null;
         }
     }

@@ -117,7 +117,10 @@ def get_setuptools(setuptools='setuptools==67.6.1'):
             py_executable = temp_env / 'Scripts' / 'python.exe'
         else:
             py_executable = temp_env / 'bin' / 'python3'
-        subprocess.run([py_executable, "-m", "pip", "install", "--target", str(setuptools_path), setuptools], check=True)
+        extra_args = []
+        if GRAALPYTHON and __graalpython__.is_bytecode_dsl_interpreter:
+            extra_args = ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
+        subprocess.run([py_executable, *extra_args, "-m", "pip", "install", "--target", str(setuptools_path), setuptools], check=True)
         print('setuptools is installed in %s' % setuptools_path)
         shutil.rmtree(temp_env)
     

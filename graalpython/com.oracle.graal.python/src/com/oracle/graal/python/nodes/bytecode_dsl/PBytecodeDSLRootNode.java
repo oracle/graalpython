@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.GeneratorE
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.T_GENERIC_ALIAS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AENTER__;
@@ -52,7 +53,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AEXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AssertionError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.math.BigInteger;
 import java.util.Iterator;
@@ -61,6 +64,8 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.CallTypingFuncObjectNode;
+import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.UnpackTypeVarTuplesNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -97,7 +102,9 @@ import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
 import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.OpCodes.MakeTypeParamKind;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterCheckNode;
@@ -185,6 +192,7 @@ import com.oracle.graal.python.nodes.exception.ExceptMatchNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadFromLocalsNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadNameNode;
@@ -1460,16 +1468,19 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
+    /**
+     * Returns the {@code __build_class__} builtin.
+     */
     @Operation
-    public static final class BuildClass {
+    public static final class LoadBuildClass {
 
         public static final TruffleString NAME = BuiltinNames.T___BUILD_CLASS__;
 
         @Specialization
         @InliningCutoff
         public static Object perform(VirtualFrame frame,
-                        @Cached ReadGlobalOrBuiltinNode readNode) {
-            return readNode.execute(frame, NAME);
+                        @Cached ReadBuiltinNode readNode) {
+            return readNode.execute(NAME);
         }
     }
 
@@ -2359,24 +2370,66 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
+    /**
+     * Attempts to read a value from a dict (argument), and if not present, reads a local cell
+     * variable (next argument). The immediate operand is the cell index, so that we can find out
+     * the name of the variable for the dict lookup.
+     */
     @Operation
     @ConstantOperand(type = int.class)
-    public static final class ClassLoadCell {
+    public static final class LoadFromDictOrCell {
         @Specialization
-        public static Object doLoadCell(VirtualFrame frame, int index, PCell cell,
+        public static Object doLoadCell(VirtualFrame frame, int index, Object locals, PCell cell,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Bind Node inliningTarget,
                         @Cached ReadFromLocalsNode readLocalsNode,
                         @Cached PRaiseNode raiseNode) {
             CodeUnit co = rootNode.getCodeUnit();
-            TruffleString name = co.freevars[index - co.cellvars.length];
-            Object locals = PArguments.getSpecialArgument(frame);
+            TruffleString name;
+            if (index < co.cellvars.length) {
+                name = co.cellvars[index];
+            } else {
+                name = co.freevars[index - co.cellvars.length];
+            }
             Object value = readLocalsNode.execute(frame, inliningTarget, locals, name);
             if (value != PNone.NO_VALUE) {
                 return value;
             } else {
                 return checkUnboundCell(cell, index, rootNode, inliningTarget, raiseNode);
             }
+        }
+    }
+
+    /**
+     * Attempts to read a value from a dict (argument), and if not present, reads a global variable
+     * of given name (immediate argument).
+     */
+    @Operation
+    @ConstantOperand(type = TruffleString.class)
+    public static final class LoadFromDictOrGlobals {
+        @Specialization
+        public static Object doLoadCell(VirtualFrame frame, TruffleString name, Object dict,
+                        @Bind PBytecodeDSLRootNode rootNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectGetItem getItemNode,
+                        @Cached ReadGlobalOrBuiltinNode readGlobal,
+                        @Cached IsBuiltinObjectProfile errorProfile) {
+            Object value;
+            try {
+                value = getItemNode.execute(frame, inliningTarget, dict, name);
+            } catch (PException e) {
+                e.expect(inliningTarget, KeyError, errorProfile);
+                value = readGlobal.read(frame, PArguments.getGlobals(frame), name);
+            }
+            return value;
+        }
+    }
+
+    @Operation
+    public static final class LoadSpecialArgument {
+        @Specialization
+        public static Object doLoadCell(VirtualFrame frame) {
+            return PArguments.getSpecialArgument(frame);
         }
     }
 
@@ -3365,6 +3418,70 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind Node node) {
             throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.NotImplementedError, name);
 
+        }
+    }
+
+    /**
+     * Creates a TypeVar, TypeVarTuple or ParamSpec object. The constant argument determines
+     * (defined in {@link MakeTypeParamKind}) which and whether it will need to pop bound or
+     * constraints for a TypeVar.
+     */
+    @Operation
+    @ConstantOperand(type = int.class)
+    public static final class MakeTypeParam {
+        @Specialization
+        public static Object doObject(int kind, TruffleString name, Object boundOrConstraint,
+                        @Bind PBytecodeDSLRootNode rootNode) {
+            Object evaluateBound = null;
+            Object evaluateConstraints = null;
+
+            if (kind == MakeTypeParamKind.TYPE_VAR_WITH_BOUND) {
+                evaluateBound = boundOrConstraint;
+            } else if (kind == MakeTypeParamKind.TYPE_VAR_WITH_CONSTRAINTS) {
+                evaluateConstraints = boundOrConstraint;
+            }
+
+            PythonLanguage language = PythonLanguage.get(rootNode);
+            return switch (kind) {
+                case MakeTypeParamKind.TYPE_VAR, MakeTypeParamKind.TYPE_VAR_WITH_BOUND, MakeTypeParamKind.TYPE_VAR_WITH_CONSTRAINTS -> PFactory.createTypeVar(language, name,
+                                evaluateBound == null ? PNone.NONE : null, evaluateBound,
+                                evaluateConstraints == null ? PFactory.createEmptyTuple(language) : null, evaluateConstraints,
+                                false, false, true);
+                case MakeTypeParamKind.PARAM_SPEC -> PFactory.createParamSpec(language, name, PNone.NONE, false, false, true);
+                case MakeTypeParamKind.TYPE_VAR_TUPLE -> PFactory.createTypeVarTuple(language, name);
+                default -> throw shouldNotReachHere();
+            };
+        }
+    }
+
+    /**
+     * Creates a TypeAliasType object. Arguments: name, type parameters (tuple or null), and the
+     * value of the type alias.
+     */
+    @Operation
+    public static final class MakeTypeAliasType {
+        @Specialization
+        public static PTypeAliasType doObject(TruffleString name, Object typeParams, Object computeValue,
+                        @Bind PBytecodeDSLRootNode rootNode) {
+            PythonLanguage language = PythonLanguage.get(rootNode);
+            // bytecode compiler should ensure that typeParams are either PTuple or null
+            return PFactory.createTypeAliasType(language, name, (PTuple) typeParams, computeValue, null, null);
+        }
+    }
+
+    /**
+     * Creates a base for generic classes by calling typing._GenericAlias. Expects Python tuple as
+     * an argument.
+     */
+    @Operation
+    public static final class MakeGeneric {
+        @Specialization
+        static Object makeGeneric(VirtualFrame frame, PTuple params,
+                        @Bind("this") Node inliningTarget,
+                        @Cached UnpackTypeVarTuplesNode unpackTypeVarTuplesNode,
+                        @Cached CallTypingFuncObjectNode callTypingFuncObjectNode) {
+            params = unpackTypeVarTuplesNode.execute(frame, inliningTarget, params);
+            return callTypingFuncObjectNode.execute(frame, inliningTarget, T_GENERIC_ALIAS, PythonBuiltinClassType.PGeneric, params);
         }
     }
 }

@@ -40,9 +40,8 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.CallTypingFuncObjectNode;
 import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.UnpackTypeVarTuplesNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -53,12 +52,9 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
 public abstract class MakeGenericNode extends PNodeWithContext {
-
-    private static final TruffleString T_GENERIC_ALIAS = tsLiteral("_GenericAlias");
 
     public abstract int execute(VirtualFrame frame, int initialStackTop);
 
@@ -73,7 +69,7 @@ public abstract class MakeGenericNode extends PNodeWithContext {
         frame.setObject(stackTop--, null);
 
         params = unpackTypeVarTuplesNode.execute(frame, inliningTarget, params);
-        Object result = callTypingFuncObjectNode.execute(frame, inliningTarget, T_GENERIC_ALIAS, PythonBuiltinClassType.PGeneric, params);
+        Object result = callTypingFuncObjectNode.execute(frame, inliningTarget, TypingModuleBuiltins.T_GENERIC_ALIAS, PythonBuiltinClassType.PGeneric, params);
 
         frame.setObject(++stackTop, result);
         return stackTop;
