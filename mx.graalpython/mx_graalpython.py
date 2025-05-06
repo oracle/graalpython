@@ -2524,9 +2524,13 @@ def no_return(fn):
 
 def run(args, *splat, **kwargs):
     if not mx.get_opts().quiet:
-        env = kwargs.get("env", os.environ)
-        extra_env = shlex.join([f"{k}={v}" for k, v in env.items() if os.environ.get(k) != v])
-        mx.log(mx.colorize(f"Running: {extra_env} {shlex.join(args)}", color="green"))
+        msg = "Running: "
+        env = kwargs.get("env")
+        if env:
+            extra_env = shlex.join([f"{k}={v}" for k, v in env.items() if os.environ.get(k) != v])
+            msg += f'{extra_env} '
+        msg += shlex.join(args)
+        mx.log(mx.colorize(msg, color="green"))
     return mx.run(args, *splat, **kwargs)
 
 
