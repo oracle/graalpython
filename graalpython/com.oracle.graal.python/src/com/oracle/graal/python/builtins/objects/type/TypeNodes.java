@@ -462,6 +462,9 @@ public abstract class TypeNodes {
                 case PBytes:
                     result = DEFAULT | BASETYPE | MATCH_SELF;
                     break;
+                case PIOBase:
+                    result = DEFAULT | BASETYPE | HEAPTYPE;
+                    break;
                 default:
                     // default case; this includes: PythonObject, PCode, PInstancemethod, PNone,
                     // PNotImplemented, PEllipsis, exceptions

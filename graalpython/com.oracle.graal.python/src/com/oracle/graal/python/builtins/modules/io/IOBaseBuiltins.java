@@ -119,6 +119,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.IsNode;
@@ -152,18 +153,6 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return IOBaseBuiltinsFactory.getFactories();
-    }
-
-    @Slot(value = SlotKind.tp_new, isComplex = true)
-    @SlotSignature(name = "_IOBase", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
-    @GenerateNodeFactory
-    public abstract static class IOBaseNode extends PythonBuiltinNode {
-        @Specialization
-        static PythonObject doGeneric(Object cls,
-                        @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createPythonObject(language, cls, getInstanceShape.execute(cls));
-        }
     }
 
     @Builtin(name = J_CLOSED, minNumOfPositionalArgs = 1, isGetter = true)
@@ -349,11 +338,11 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_SEEK, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = J_SEEK, minNumOfPositionalArgs = 2, parameterNames = {"$self", "offset", "whence"})
     @GenerateNodeFactory
-    abstract static class SeekNode extends PythonBuiltinNode {
+    abstract static class SeekNode extends PythonTernaryBuiltinNode {
         @Specialization
-        static Object seek(@SuppressWarnings("unused") PythonObject self, @SuppressWarnings("unused") Object args,
+        static Object seek(@SuppressWarnings("unused") PythonObject self, @SuppressWarnings("unused") Object offset, @SuppressWarnings("unused") Object whence,
                         @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             throw unsupported(inliningTarget, raiseNode, T_SEEK);
