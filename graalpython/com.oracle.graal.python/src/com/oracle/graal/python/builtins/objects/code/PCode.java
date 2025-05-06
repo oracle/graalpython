@@ -685,10 +685,8 @@ public final class PCode extends PythonBuiltinObject {
     public String toDisassembledString(boolean quickened) {
         RootNode rootNode = getRootCallTarget().getRootNode();
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && rootNode instanceof PBytecodeDSLRootNode dslRoot) {
-            return dslRoot.dump();
-        }
-
-        if (rootNode instanceof PBytecodeGeneratorRootNode r) {
+            return dslRoot.getCodeUnit().toString(quickened);
+        } else if (rootNode instanceof PBytecodeGeneratorRootNode r) {
             rootNode = r.getBytecodeRootNode();
         } else if (rootNode instanceof PBytecodeGeneratorFunctionRootNode r) {
             rootNode = r.getBytecodeRootNode();
