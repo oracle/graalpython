@@ -581,8 +581,13 @@ patch = 'pythran-0.13.patch'
 license = 'BSD-3-Clause'
 
 [[pythran.rules]]
-version = '>= 0.14'
+version = '>= 0.14, < 0.16'
 patch = 'pythran-0.15.patch'
+license = 'BSD-3-Clause'
+
+[[pythran.rules]]
+version = '>= 0.16'
+patch = 'pythran-0.16.patch'
 license = 'BSD-3-Clause'
 
 [[pyzmq.rules]]
