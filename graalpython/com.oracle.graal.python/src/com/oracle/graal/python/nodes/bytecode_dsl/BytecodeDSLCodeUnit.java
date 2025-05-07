@@ -129,4 +129,14 @@ public final class BytecodeDSLCodeUnit extends CodeUnit {
         return null;
     }
 
+    @Override
+    protected void dumpBytecode(StringBuilder sb, boolean optimized) {
+        for (int i = 0; i < nodes.count(); i++) {
+            if (i != 0) {
+                sb.append('\n');
+            }
+            sb.append(nodes.getNode(i).dump());
+            sb.append('\n'); // dump does not print newline at the end
+        }
+    }
 }

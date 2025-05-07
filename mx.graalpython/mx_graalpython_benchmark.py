@@ -413,6 +413,9 @@ class GraalPythonVmBase(GuestVm):
         return bool(self._extra_vm_args and '--vm.Dpython.EnableBytecodeDSLInterpreter=true' in self._extra_vm_args)
 
     def _validate_output(self, code, out, dims):
+        if "using bytecode DSL interpreter:" not in out:
+            print(f"BENCHMARK WARNING: could not verify whether running on bytecode DSL or not (expected for heap benchmarks)")
+            return code, out, dims
         is_bytecode_dsl_config = self.is_bytecode_dsl_config()
         if code == 0 and not f"using bytecode DSL interpreter: {is_bytecode_dsl_config}" in out:
             print(f"ERROR: host VM config does not match what the the harness reported. "
