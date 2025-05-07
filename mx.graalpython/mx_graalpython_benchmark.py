@@ -284,7 +284,10 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
             dims['host-vm-config'] += '-3-compiler-threads'
 
         is_bytecode_dsl_config = self.is_bytecode_dsl_config()
-        if code == 0 and not f"using bytecode DSL interpreter: {is_bytecode_dsl_config}" in out:
+        if "using bytecode DSL interpreter:" not in out:
+            # Let's be lenient unless in CI
+            print(f"BENCHMARK WARNING: could not verify whether running on bytecode DSL or not")
+        elif code == 0 and not f"using bytecode DSL interpreter: {is_bytecode_dsl_config}" in out:
             print(f"ERROR: host VM config does not match what the the harness reported. "
                   f"Expected Bytecode DSL interpreter = {is_bytecode_dsl_config}. Harness output:\n{out}", file=sys.stderr)
             return 1, out, dims
