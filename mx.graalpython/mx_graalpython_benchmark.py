@@ -273,11 +273,15 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
         out_version = subprocess.check_output([self.interpreter, '--version'], universal_newlines=True)
         # The benchmark data goes back a ways, we modify the reported dims for
         # continuity with the historical queries
+        graalvm_version_match = re.search(r"\(([^\)]+ ((?:\d+\.?)+))\)", out_version)
         dims = {
             'guest-vm': self.name(),
             'guest-vm-config': self.config_name(),
             'host-vm': 'graalvm-' + ('ee' if 'Oracle GraalVM' in out_version else 'ce'),
             'host-vm-config': self.launcher_type,
+            "platform.graalvm-edition": 'EE' if 'Oracle GraalVM' in out_version else 'CE',
+            "platform.graalvm-version": graalvm_version_match[2],
+            "platform.graalvm-version-string": graalvm_version_match[1],
         }
         if dims['guest-vm-config'].endswith('-3-compiler-threads'):
             dims['guest-vm-config'] = dims['guest-vm-config'].replace('-3-compiler-threads', '')
