@@ -30,7 +30,7 @@ import os
 import re
 import shlex
 import subprocess
-from abc import ABC, abstractproperty, abstractmethod
+from abc import ABC, abstractproperty
 from contextlib import contextmanager
 from os.path import join
 from datetime import datetime
@@ -269,7 +269,7 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
     def is_bytecode_dsl_config(self):
         return '--vm.Dpython.EnableBytecodeDSLInterpreter=true' in self.get_extra_polyglot_args()
 
-    def extract_vm_info(self, args):
+    def extract_vm_info(self, args=None):
         out_version = subprocess.check_output([self.interpreter, '--version'], universal_newlines=True)
         # The benchmark data goes back a ways, we modify the reported dims for
         # continuity with the historical queries

@@ -2011,6 +2011,11 @@ standalone_dependencies_common = {
 def bytecode_dsl_build_args():
     return ['-Dpython.EnableBytecodeDSLInterpreter=true'] if BYTECODE_DSL_INTERPRETER else []
 
+mx_subst.results_substitutions.register_no_arg(
+    'bytecode_dsl_build_args',
+    lambda: f'-Dpython.EnableBytecodeDSLInterpreter={repr(BYTECODE_DSL_INTERPRETER).lower()}'
+)
+
 mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,
     name='GraalVM Python',
