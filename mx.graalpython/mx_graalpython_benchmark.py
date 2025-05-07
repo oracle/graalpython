@@ -247,41 +247,46 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
     @functools.lru_cache
     def launcher_type(self):
         if mx.dependency("GRAALPY_NATIVE_STANDALONE", fatalIfMissing=False):
-            mx.log("GraalPy native standalone is enabled, using it")
             return "native"
         else:
-            mx.log("GraalPy native standalone is not enabled, using JVM standalone")
             return "jvm"
 
     @property
+    @functools.lru_cache
     def interpreter(self):
         from mx_graalpython import graalpy_standalone
-        return graalpy_standalone(self.launcher_type, build=False)
+        launcher = graalpy_standalone(self.launcher_type, build=False)
+        mx.log(f"Using {launcher} based on enabled/excluded GraalPy standalone build targets.")
+        return launcher
 
-    def run_vm(self, args, *splat, **kwargs):
+    def post_process_command_line_args(self, args):
         if os.environ.get('BYTECODE_DSL_INTERPRETER', '').lower() == 'true' and not self.is_bytecode_dsl_config():
             print("Found environment variable BYTECODE_DSL_INTERPRETER, but the guest vm config is not Bytecode DSL config.")
             print("Did you want to use, e.g., `mx benchmark ... -- --host-vm-config=default-bc-dsl`?")
             sys.exit(1)
-        extra_polyglot_args = self.get_extra_polyglot_args()
-        return super().run_vm(extra_polyglot_args + args, *splat, **kwargs)
+        return self.get_extra_polyglot_args() + args
 
     def is_bytecode_dsl_config(self):
         return '--vm.Dpython.EnableBytecodeDSLInterpreter=true' in self.get_extra_polyglot_args()
 
-    def run(self, *args, **kwargs):
-        code, out, dims = super().run(*args, **kwargs)
-
+    def extract_vm_info(self, args):
+        out_version = subprocess.check_output([self.interpreter, '--version'], universal_newlines=True)
         # The benchmark data goes back a ways, we modify the reported dims for
         # continuity with the historical queries
-        _, out_version, _ = super().run(os.getcwd(), ["--version"])
-        dims['guest-vm'] = self.name()
-        dims['guest-vm-config'] = self.config_name()
-        dims['host-vm'] = 'graalvm-' + ('ee' if 'Oracle GraalVM' in out_version else 'ce')
-        dims['host-vm-config'] = self.launcher_type
+        dims = {
+            'guest-vm': self.name(),
+            'guest-vm-config': self.config_name(),
+            'host-vm': 'graalvm-' + ('ee' if 'Oracle GraalVM' in out_version else 'ce'),
+            'host-vm-config': self.launcher_type,
+        }
         if dims['guest-vm-config'].endswith('-3-compiler-threads'):
             dims['guest-vm-config'] = dims['guest-vm-config'].replace('-3-compiler-threads', '')
             dims['host-vm-config'] += '-3-compiler-threads'
+        self._dims = dims
+
+    def run(self, *args, **kwargs):
+        code, out, dims = super().run(*args, **kwargs)
+        dims.update(self._dims)
 
         is_bytecode_dsl_config = self.is_bytecode_dsl_config()
         if "using bytecode DSL interpreter:" not in out:
@@ -292,7 +297,7 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
                   f"Expected Bytecode DSL interpreter = {is_bytecode_dsl_config}. Harness output:\n{out}", file=sys.stderr)
             return 1, out, dims
         return code, out, dims
-        
+
     def get_extra_polyglot_args(self):
         return ["--experimental-options", "-snapshot-startup", "--python.MaxNativeMemory=%s" % (2**34), *self._extra_polyglot_args]
 
@@ -317,12 +322,6 @@ class GraalPythonJavaDriverVm(GuestVm):
 
     def hosting_registry(self):
         return java_vm_registry
-
-    def launcher_class(self):
-        raise NotImplementedError()
-
-    def get_extra_polyglot_args(self):
-        raise NotImplementedError()
 
     def get_classpath(self):
         cp = []
@@ -361,7 +360,7 @@ class GraalPythonJavaDriverVm(GuestVm):
             return code, out, dims
 
     def get_extra_polyglot_args(self):
-        return ["--experimental-options", "--python.MaxNativeMemory=%s" % (2**34)] + self._extra_polyglot_args
+        return ["--experimental-options", "--python.MaxNativeMemory=%s" % (2**34), *self._extra_polyglot_args]
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -575,10 +574,11 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         ret_code, out, dims = super(PythonBaseBenchmarkSuite, self).runAndReturnStdOut(benchmarks, bmSuiteArgs)
 
         # host-vm rewrite rules
-        if mx.suite('graal-enterprise', fatalIfMissing=False):
-            dims['host-vm'] = 'graalvm-ee'
-        else:
-            dims['host-vm'] = 'graalvm-ce'
+        if dims['host-vm'] not in ('graalvm-ce', 'graalvm-ee'):
+            if mx.suite('graal-enterprise', fatalIfMissing=False):
+                dims['host-vm'] = 'graalvm-ee'
+            else:
+                dims['host-vm'] = 'graalvm-ce'
 
         self.post_run_graph(benchmarks[0], dims['host-vm-config'], dims['guest-vm-config'])
 
