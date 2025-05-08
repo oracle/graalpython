@@ -52,7 +52,6 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -61,28 +60,19 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
-import com.oracle.graal.python.builtins.objects.method.PMethodBase;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyPositionalArgumentsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.HandleTooManyArgumentsNodeGen;
-import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
-import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
-import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
-import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -102,288 +92,132 @@ import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
-@ImportStatic({PythonOptions.class, PGuards.class})
 @GenerateUncached
-@GenerateInline(false) // footprint reduction 48 -> 29
+@GenerateInline
+@GenerateCached(false)
 public abstract class CreateArgumentsNode extends PNodeWithContext {
-    public abstract Object[] execute(PMethodBase callable, Object[] userArguments, PKeyword[] keywords);
 
-    public abstract Object[] execute(PFunction callable, Object[] userArguments, PKeyword[] keywords);
+    /**
+     * Creates a {@link PArguments} array from the provided arguments and metadata.
+     *
+     * @param inliningTarget The inlining target.
+     * @param callableOrName This object can either be the function/method object or just a name
+     *            ({@link TruffleString}). It is primarily used to create error messages. It is also
+     *            used to check if the function
+     * @param userArguments The positional arguments as provided by the caller (must not be
+     *            {@code null} but may be empty).
+     * @param keywords The keyword arguments as provided by the caller (must not be {@code null} but
+     *            may be empty).
+     * @param signature The callee's signature (i.e. specifies how the callee needs to be invoked).
+     * @param self The primary (aka. self) object.
+     * @param classObject The class object (if the invoked method is a class method).
+     * @param defaults Array of default values for positional arguments.
+     * @param kwdefaults Array of default values for keyword arguments.
+     * @param methodcall Indicates if this creates arguments for a method call. This is only used
+     *            for creating better error messages.
+     * @return A {@link PArguments} array.
+     */
+    public abstract Object[] execute(Node inliningTarget, Object callableOrName, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object classObject,
+                    Object[] defaults, PKeyword[] kwdefaults, boolean methodcall);
 
-    public abstract Object[] execute(PBuiltinFunction callable, Object[] userArguments, PKeyword[] keywords);
+    @Specialization
+    static Object[] doIt(Node inliningTarget, Object callableOrName, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object classObject, Object[] defaults,
+                    PKeyword[] kwdefaults, boolean methodcall,
+                    @Cached InlinedIntValueProfile lenProfile,
+                    @Cached InlinedIntValueProfile maxPosProfile,
+                    @Cached InlinedIntValueProfile numKwdsProfile,
+                    @Cached LazyApplyKeywordsNode applyKeywords,
+                    @Cached LazyHandleTooManyArgumentsNode handleTooManyArgumentsNode,
+                    @Cached ApplyPositionalArguments applyPositional,
+                    @Cached LazyFillDefaultsNode fillDefaultsNode,
+                    @Cached LazyFillKwDefaultsNode fillKwDefaultsNode,
+                    @Cached CheckEnclosingTypeNode checkEnclosingTypeNode) {
+        int cachedLen = lenProfile.profile(inliningTarget, userArguments.length);
+        int cachedMaxPos = maxPosProfile.profile(inliningTarget, signature.getMaxNumOfPositionalArgs());
+        int cachedNumKwds = numKwdsProfile.profile(inliningTarget, signature.getNumOfRequiredKeywords());
+        assert userArguments.length == cachedLen;
 
-    @Specialization(guards = {"isSingleContext()", "method == cachedMethod"}, limit = "getVariableArgumentInlineCacheLimit()")
-    static Object[] doMethodCached(@SuppressWarnings("unused") PMethodBase method, Object[] userArguments, PKeyword[] keywords,
-                    @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Cached(value = "method", weak = true) PMethodBase cachedMethod) {
+        // see PyPy's Argument#_match_signature method
 
-        CompilerAsserts.partialEvaluationConstant(getFunction(cachedMethod));
-        // Following getters should fold since getFunction(cachedMethod) is constant
-        Signature signature = GetSignatureNode.getMethodSignatureSingleContext(cachedMethod, inliningTarget);
-        Object[] defaults = GetDefaultsNode.getMethodDefaults(cachedMethod);
-        PKeyword[] kwdefaults = GetKeywordDefaultsNode.getMethodKeywords(cachedMethod);
-        Object self = cachedMethod.getSelf();
-        CompilerAsserts.partialEvaluationConstant(self);
-        Object classObject = getClassObject(cachedMethod);
-        CompilerAsserts.partialEvaluationConstant(classObject);
-        return createAndCheckArgumentsNode.execute(inliningTarget, cachedMethod, userArguments, keywords, signature, self, classObject, defaults, kwdefaults, isMethodCall(self));
-    }
+        // expected formal arguments, without * and **
+        boolean too_many_args = false;
 
-    @Specialization(guards = {"isSingleContext()", "getFunction(method) == cachedFunction",
-                    "getSelf(method) == cachedSelf"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodCached")
-    static Object[] doMethodFunctionAndSelfCached(PMethodBase method, Object[] userArguments, PKeyword[] keywords,
-                    @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Cached(value = "getFunction(method)", weak = true) @SuppressWarnings("unused") Object cachedFunction,
-                    @Cached(value = "method.getSelf()", weak = true) Object cachedSelf,
-                    @Cached(value = "getClassObject(method)", weak = true) Object cachedClassObject) {
-        // Following getters should fold since getFunction(cachedMethod) is constant
-        Signature signature = GetSignatureNode.getFunctionSignatureSingleContext(inliningTarget, cachedFunction);
-        Object[] defaults = GetDefaultsNode.getFunctionDefaults(cachedFunction);
-        PKeyword[] kwdefaults = GetKeywordDefaultsNode.getFunctionKeywords(cachedFunction);
-        return createAndCheckArgumentsNode.execute(inliningTarget, method, userArguments, keywords, signature, cachedSelf, cachedClassObject, defaults, kwdefaults, isMethodCall(cachedSelf));
-    }
+        // positional args, kwd only args, varargs, var kwds
+        Object[] scope_w = PArguments.create(cachedMaxPos + cachedNumKwds);
 
-    @Specialization(guards = {"isSingleContext()", "getFunction(method) == cachedFunction"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodFunctionAndSelfCached")
-    static Object[] doMethodFunctionCached(PMethodBase method, Object[] userArguments, PKeyword[] keywords,
-                    @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Cached(value = "getFunction(method)", weak = true) @SuppressWarnings("unused") Object cachedFunction) {
-        // Following getters should fold since getFunction(cachedMethod) is constant
-        Signature signature = GetSignatureNode.getFunctionSignatureSingleContext(inliningTarget, cachedFunction);
-        Object[] defaults = GetDefaultsNode.getFunctionDefaults(cachedFunction);
-        PKeyword[] kwdefaults = GetKeywordDefaultsNode.getFunctionKeywords(cachedFunction);
-        Object self = method.getSelf();
-        Object classObject = getClassObject(method);
-        return createAndCheckArgumentsNode.execute(inliningTarget, method, userArguments, keywords, signature, self, classObject, defaults, kwdefaults, isMethodCall(self));
-    }
-
-    @Specialization(guards = {"isSingleContext()", "callable == cachedCallable"}, limit = "getVariableArgumentInlineCacheLimit()")
-    static Object[] doFunctionCached(PFunction callable, Object[] userArguments, PKeyword[] keywords,
-                    @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Cached(value = "callable", weak = true) @SuppressWarnings("unused") PFunction cachedCallable) {
-        Signature signature = CodeNodes.GetCodeSignatureNode.getInSingleContextMode(inliningTarget, cachedCallable);
-        Object[] defaults = cachedCallable.getDefaults();
-        PKeyword[] kwdefaults = cachedCallable.getKwDefaults();
-        return createAndCheckArgumentsNode.execute(inliningTarget, callable, userArguments, keywords, signature, null, null, defaults, kwdefaults, false);
-    }
-
-    @Specialization(guards = {"isSingleContext()", "callable == cachedCallable"}, limit = "getVariableArgumentInlineCacheLimit()")
-    static Object[] doBuiltinFunctionCached(PBuiltinFunction callable, Object[] userArguments, PKeyword[] keywords,
-                    @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Cached(value = "callable", weak = true) @SuppressWarnings("unused") PBuiltinFunction cachedCallable) {
-
-        Signature signature = cachedCallable.getSignature();
-        Object[] defaults = cachedCallable.getDefaults();
-        PKeyword[] kwdefaults = cachedCallable.getKwDefaults();
-        return createAndCheckArgumentsNode.execute(inliningTarget, callable, userArguments, keywords, signature, null, null, defaults, kwdefaults, false);
-    }
-
-    @Specialization(guards = {"getCt.execute(callable) == cachedCallTarget", "cachedCallTarget != null"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = {"doMethodFunctionCached",
-                    "doFunctionCached"})
-    static Object[] doCallTargetCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
-                    @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
-                    @Exclusive @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Exclusive @SuppressWarnings("unused") @Cached GetSignatureNode getSignatureNode,
-                    // signatures are attached to PRootNodes
-                    @Cached("getSignatureNode.execute(inliningTarget, callable)") Signature signature,
-                    @Cached InlinedConditionProfile gotMethod,
-                    @Exclusive @Cached GetDefaultsNode getDefaultsNode,
-                    @Exclusive @Cached GetKeywordDefaultsNode getKwDefaultsNode,
-                    @Cached("getCt.execute(callable)") @SuppressWarnings("unused") RootCallTarget cachedCallTarget) {
-        Object[] defaults = getDefaultsNode.execute(inliningTarget, callable);
-        PKeyword[] kwdefaults = getKwDefaultsNode.execute(inliningTarget, callable);
-        Object self = null;
-        Object classObject = null;
-        if (gotMethod.profile(inliningTarget, PGuards.isMethod(callable))) {
-            self = getSelf(callable);
-            classObject = getClassObject(callable);
-        }
-        return createAndCheckArgumentsNode.execute(inliningTarget, callable, userArguments, keywords, signature, self, classObject, defaults, kwdefaults, isMethodCall(self));
-    }
-
-    @Specialization(replaces = {"doFunctionCached", "doMethodCached", "doMethodFunctionAndSelfCached", "doMethodFunctionCached", "doCallTargetCached"})
-    static Object[] uncached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
-                    @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Exclusive @Cached GetSignatureNode getSignatureNode,
-                    @Exclusive @Cached GetDefaultsNode getDefaultsNode,
-                    @Exclusive @Cached GetKeywordDefaultsNode getKwDefaultsNode) {
-
-        // mostly we will be calling proper functions directly here,
-        // but sometimes also methods that have functions directly.
-        // In all other cases, the arguments... TODO: unfinished comment?
-        Signature signature = getSignatureNode.execute(inliningTarget, callable);
-        Object[] defaults = getDefaultsNode.execute(inliningTarget, callable);
-        PKeyword[] kwdefaults = getKwDefaultsNode.execute(inliningTarget, callable);
-        Object self = getSelf(callable);
-        Object classObject = getClassObject(callable);
-        boolean methodcall = !(self instanceof PythonModule);
-        return createAndCheckArgumentsNode.execute(inliningTarget, callable, userArguments, keywords, signature, self, classObject, defaults, kwdefaults, methodcall);
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class CreateAndCheckArgumentsNode extends PNodeWithContext {
-        /**
-         * Creates a {@link PArguments} array from the provided arguments and metadata.
-         *
-         * @param inliningTarget The inlining target.
-         * @param callableOrName This object can either be the function/method object or just a name
-         *            ({@link TruffleString}). It is primarily used to create error messages. It is
-         *            also used to check if the function
-         * @param userArguments The positional arguments as provided by the caller (must not be
-         *            {@code null} but may be empty).
-         * @param keywords The keyword arguments as provided by the caller (must not be {@code null}
-         *            but may be empty).
-         * @param signature The callee's signature (i.e. specifies how the callee needs to be
-         *            invoked).
-         * @param self The primary (aka. self) object.
-         * @param classObject The class object (if the invoked method is a class method).
-         * @param defaults Array of default values for positional arguments.
-         * @param kwdefaults Array of default values for keyword arguments.
-         * @param methodcall Indicates if this creates arguments for a method call. This is only
-         *            used for creating better error messages.
-         * @return A {@link PArguments} array.
-         */
-        public abstract Object[] execute(Node inliningTarget, Object callableOrName, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object classObject,
-                        Object[] defaults, PKeyword[] kwdefaults, boolean methodcall);
-
-        @Specialization
-        static Object[] doIt(Node inliningTarget, Object callableOrName, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object classObject, Object[] defaults,
-                        PKeyword[] kwdefaults, boolean methodcall,
-                        @Cached InlinedIntValueProfile lenProfile,
-                        @Cached InlinedIntValueProfile maxPosProfile,
-                        @Cached InlinedIntValueProfile numKwdsProfile,
-                        @Cached LazyApplyKeywordsNode applyKeywords,
-                        @Cached LazyHandleTooManyArgumentsNode handleTooManyArgumentsNode,
-                        @Cached ApplyPositionalArguments applyPositional,
-                        @Cached LazyFillDefaultsNode fillDefaultsNode,
-                        @Cached LazyFillKwDefaultsNode fillKwDefaultsNode,
-                        @Cached CheckEnclosingTypeNode checkEnclosingTypeNode) {
-            int cachedLen = lenProfile.profile(inliningTarget, userArguments.length);
-            int cachedMaxPos = maxPosProfile.profile(inliningTarget, signature.getMaxNumOfPositionalArgs());
-            int cachedNumKwds = numKwdsProfile.profile(inliningTarget, signature.getNumOfRequiredKeywords());
-            return createAndCheckArguments(inliningTarget, callableOrName, userArguments, cachedLen, keywords, signature, self, classObject, defaults, kwdefaults, methodcall,
-                            cachedMaxPos, cachedNumKwds, applyPositional, applyKeywords, handleTooManyArgumentsNode, fillDefaultsNode, fillKwDefaultsNode, checkEnclosingTypeNode);
-        }
-
-        private static Object[] createAndCheckArguments(Node inliningTarget, Object callableOrName, Object[] args_w, int num_args, PKeyword[] keywords, Signature signature, Object self,
-                        Object classObject,
-                        Object[] defaults, PKeyword[] kwdefaults, boolean methodcall, int co_argcount, int co_kwonlyargcount,
-                        ApplyPositionalArguments applyPositional,
-                        LazyApplyKeywordsNode applyKeywords,
-                        LazyHandleTooManyArgumentsNode handleTooMany,
-                        LazyFillDefaultsNode fillDefaults,
-                        LazyFillKwDefaultsNode fillKwDefaults,
-                        CheckEnclosingTypeNode checkEnclosingTypeNode) {
-            assert args_w.length == num_args;
-
-            // see PyPy's Argument#_match_signature method
-
-            // expected formal arguments, without * and **
-            boolean too_many_args = false;
-
-            // positional args, kwd only args, varargs, var kwds
-            Object[] scope_w = PArguments.create(co_argcount + co_kwonlyargcount);
-
-            int upfront = 0;
-            // put the special w_firstarg into the scope, if it exists
-            if (self != null) {
+        int upfront = 0;
+        // put the special w_firstarg into the scope, if it exists
+        if (self != null) {
+            upfront++;
+            if (cachedMaxPos > 0) {
+                PArguments.setArgument(scope_w, 0, self);
+            }
+            if (classObject != null) {
                 upfront++;
-                if (co_argcount > 0) {
-                    PArguments.setArgument(scope_w, 0, self);
-                }
-                if (classObject != null) {
-                    upfront++;
-                    PArguments.setArgument(scope_w, 1, classObject);
-                }
+                PArguments.setArgument(scope_w, 1, classObject);
             }
-
-            int avail = num_args + upfront;
-
-            // put as many positional input arguments into place as available
-            int input_argcount = applyPositional.execute(inliningTarget, args_w, scope_w, upfront, co_argcount, num_args);
-
-            // collect extra positional arguments into the *vararg
-            if (signature.takesVarArgs()) {
-                int args_left = co_argcount - upfront;
-                if (args_left < 0) {
-                    // everything goes to starargs, including any magic self
-                    assert upfront == 1;
-                    Object[] varargs = new Object[num_args + 1];
-                    varargs[0] = self;
-                    PythonUtils.arraycopy(args_w, 0, varargs, 1, num_args);
-                    PArguments.setVariableArguments(scope_w, varargs);
-                } else if (num_args > args_left) {
-                    PArguments.setVariableArguments(scope_w, Arrays.copyOfRange(args_w, args_left, args_w.length));
-                } else {
-                    // no varargs
-                }
-            } else if (avail > co_argcount) {
-                too_many_args = true;
-            }
-
-            // handle keyword arguments
-            // match the keywords given at the call site to the argument names.
-            // the called node takes and collect the rest in the keywords.
-            if (keywords.length > 0) {
-                // the lazy node acts as a profile
-                applyKeywords(callableOrName, signature, scope_w, keywords, applyKeywords.get(inliningTarget));
-            }
-
-            if (too_many_args) {
-                // the node acts as a profile
-                throw handleTooManyArguments(scope_w, callableOrName, signature, co_argcount, co_kwonlyargcount, defaults.length, avail, methodcall, handleTooMany.get(inliningTarget),
-                                self instanceof PythonModule ? 1 : 0);
-            }
-
-            boolean more_filling = input_argcount < co_argcount + co_kwonlyargcount;
-            if (more_filling) {
-
-                // then, fill the normal arguments with defaults_w (if needed)
-                fillDefaults(callableOrName, signature, scope_w, defaults, input_argcount, co_argcount, fillDefaults.get(inliningTarget));
-
-                // finally, fill kwonly arguments with w_kw_defs (if needed)
-                fillKwDefaults(callableOrName, scope_w, signature, kwdefaults, co_argcount, co_kwonlyargcount, fillKwDefaults.get(inliningTarget));
-            }
-
-            // Now we know that everything is fine, so check compatibility of the enclosing type.
-            // If we are calling a built-in method, and it's function has an enclosing type, we
-            // need to check if 'self' is a subtype of the function's enclosing type.
-            checkEnclosingTypeNode.execute(inliningTarget, signature, callableOrName, scope_w);
-
-            return scope_w;
         }
 
-        private static void applyKeywords(Object callable, Signature signature, Object[] scope_w, PKeyword[] keywords, ApplyKeywordsNode node) {
-            node.execute(callable, signature, scope_w, keywords);
+        int avail = cachedLen + upfront;
+
+        // put as many positional input arguments into place as available
+        int input_argcount = applyPositional.execute(inliningTarget, userArguments, scope_w, upfront, cachedMaxPos, cachedLen);
+
+        // collect extra positional arguments into the *vararg
+        if (signature.takesVarArgs()) {
+            int args_left = cachedMaxPos - upfront;
+            if (args_left < 0) {
+                // everything goes to starargs, including any magic self
+                assert upfront == 1;
+                Object[] varargs = new Object[cachedLen + 1];
+                varargs[0] = self;
+                PythonUtils.arraycopy(userArguments, 0, varargs, 1, cachedLen);
+                PArguments.setVariableArguments(scope_w, varargs);
+            } else if (cachedLen > args_left) {
+                PArguments.setVariableArguments(scope_w, Arrays.copyOfRange(userArguments, args_left, userArguments.length));
+            } else {
+                // no varargs
+            }
+        } else if (avail > cachedMaxPos) {
+            too_many_args = true;
         }
 
-        private static PException handleTooManyArguments(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall,
-                        HandleTooManyArgumentsNode node, int adjustCount) {
-            return node.execute(scope_w, callable, signature, co_argcount, co_kwonlyargcount, ndefaults, avail, methodcall, adjustCount);
+        // handle keyword arguments
+        // match the keywords given at the call site to the argument names.
+        // the called node takes and collect the rest in the keywords.
+        if (keywords.length > 0) {
+            // the lazy node acts as a profile
+            applyKeywords.get(inliningTarget).execute(callableOrName, signature, scope_w, keywords);
         }
 
-        private static void fillDefaults(Object callable, Signature signature, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount, FillDefaultsNode node) {
-            node.execute(callable, signature, scope_w, defaults, input_argcount, co_argcount);
+        if (too_many_args) {
+            // the node acts as a profile
+            int adjustCount = self instanceof PythonModule ? 1 : 0;
+            throw handleTooManyArgumentsNode.get(inliningTarget).execute(scope_w, callableOrName, signature, cachedMaxPos, cachedNumKwds, defaults.length, avail, methodcall, adjustCount);
         }
 
-        private static void fillKwDefaults(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount, FillKwDefaultsNode node) {
-            node.execute(callable, scope_w, signature, kwdefaults, co_argcount, co_kwonlyargcount);
+        boolean more_filling = input_argcount < cachedMaxPos + cachedNumKwds;
+        if (more_filling) {
+
+            // then, fill the normal arguments with defaults_w (if needed)
+            fillDefaultsNode.get(inliningTarget).execute(callableOrName, signature, scope_w, defaults, input_argcount, cachedMaxPos);
+
+            // finally, fill kwonly arguments with w_kw_defs (if needed)
+            fillKwDefaultsNode.get(inliningTarget).execute(callableOrName, scope_w, signature, kwdefaults, cachedMaxPos, cachedNumKwds);
         }
 
+        // Now we know that everything is fine, so check compatibility of the enclosing type.
+        // If we are calling a built-in method, and it's function has an enclosing type, we
+        // need to check if 'self' is a subtype of the function's enclosing type.
+        checkEnclosingTypeNode.execute(inliningTarget, signature, callableOrName, scope_w);
+
+        return scope_w;
     }
 
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
-    public abstract static class LazyHandleTooManyArgumentsNode extends Node {
+    abstract static class LazyHandleTooManyArgumentsNode extends Node {
         public final HandleTooManyArgumentsNode get(Node inliningTarget) {
             return execute(inliningTarget);
         }
@@ -534,7 +368,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         public abstract int execute(Node inliningTarget, Object[] args_w, Object[] scope_w, int upfront, int co_argcount, int num_args);
 
         @Specialization(guards = "upfront < co_argcount")
-        int doIt(Object[] args_w, Object[] scope_w, int upfront, int co_argcount, int num_args) {
+        static int doIt(Object[] args_w, Object[] scope_w, int upfront, int co_argcount, int num_args) {
             int take = Math.min(num_args, co_argcount - upfront);
             PythonUtils.arraycopy(args_w, 0, scope_w, PArguments.USER_ARGUMENTS_OFFSET + upfront, take);
             return upfront + take;
@@ -542,7 +376,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @Specialization(guards = "upfront >= co_argcount")
         @SuppressWarnings("unused")
-        int doNothing(Object[] args_w, Object[] scope_w, int upfront, int co_argcount, int num_args) {
+        static int doNothing(Object[] args_w, Object[] scope_w, int upfront, int co_argcount, int num_args) {
             return 0;
         }
 
@@ -554,7 +388,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     @GenerateCached(false)
     @GenerateInline
     @GenerateUncached
-    public abstract static class LazyApplyKeywordsNode extends Node {
+    abstract static class LazyApplyKeywordsNode extends Node {
         public final ApplyKeywordsNode get(Node inliningTarget) {
             return execute(inliningTarget);
         }
@@ -562,7 +396,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         public abstract ApplyKeywordsNode execute(Node inliningTarget);
 
         @Specialization
-        ApplyKeywordsNode doIt(@Cached(inline = false) ApplyKeywordsNode applyKeywordsNode) {
+        static ApplyKeywordsNode doIt(@Cached(inline = false) ApplyKeywordsNode applyKeywordsNode) {
             return applyKeywordsNode;
         }
     }
@@ -959,7 +793,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
     }
 
-    /** finds a keyword-default value by a given name */
+    /**
+     * finds a keyword-default value by a given name
+     */
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
@@ -1053,10 +889,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return null;
     }
 
-    protected static boolean isMethodCall(Object self) {
-        return !(self instanceof PythonModule);
-    }
-
     private static <T> T getProperty(Object callable, Getter<T> getter) {
         if (callable instanceof PFunction) {
             return getter.fromPFunction((PFunction) callable);
@@ -1081,48 +913,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         public abstract T fromPFunction(PFunction fun);
 
         public abstract T fromPBuiltinFunction(PBuiltinFunction fun);
-    }
-
-    private static final class UncachedSignatureGetter extends Getter<Signature> {
-        private static final UncachedSignatureGetter INSTANCE = new UncachedSignatureGetter();
-
-        @Override
-        public Signature fromPFunction(PFunction fun) {
-            return GetSignatureNode.executeUncached(fun);
-        }
-
-        @Override
-        public Signature fromPBuiltinFunction(PBuiltinFunction fun) {
-            return fun.getSignature();
-        }
-    }
-
-    private static final class UncachedDefaultsGetter extends Getter<Object[]> {
-        private static final UncachedDefaultsGetter INSTANCE = new UncachedDefaultsGetter();
-
-        @Override
-        public Object[] fromPFunction(PFunction fun) {
-            return fun.getDefaults();
-        }
-
-        @Override
-        public Object[] fromPBuiltinFunction(PBuiltinFunction fun) {
-            return fun.getDefaults();
-        }
-    }
-
-    private static final class UncachedKwDefaultsGetter extends Getter<PKeyword[]> {
-        private static final UncachedKwDefaultsGetter INSTANCE = new UncachedKwDefaultsGetter();
-
-        @Override
-        public PKeyword[] fromPFunction(PFunction fun) {
-            return fun.getKwDefaults();
-        }
-
-        @Override
-        public PKeyword[] fromPBuiltinFunction(PBuiltinFunction fun) {
-            return fun.getKwDefaults();
-        }
     }
 
     private static final class QualnameGetter extends Getter<TruffleString> {

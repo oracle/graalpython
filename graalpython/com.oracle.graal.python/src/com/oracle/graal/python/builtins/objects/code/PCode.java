@@ -79,8 +79,6 @@ import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
@@ -91,10 +89,8 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -114,7 +110,7 @@ public final class PCode extends PythonBuiltinObject {
     public static final int CO_GRAALPYHON_MODULE = 0x1000;
 
     private final RootCallTarget callTarget;
-    @CompilationFinal private Signature signature;
+    private final Signature signature;
 
     // number of local variables
     private int nlocals = -1;
@@ -151,7 +147,7 @@ public final class PCode extends PythonBuiltinObject {
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget) {
         super(cls, instanceShape);
         this.callTarget = callTarget;
-        initializeSignature(callTarget);
+        this.signature = Signature.fromCallTarget(callTarget);
     }
 
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
@@ -195,6 +191,7 @@ public final class PCode extends PythonBuiltinObject {
         this.cellvars = cellvars;
         this.callTarget = callTarget;
         this.signature = signature;
+        assert signature != null;
     }
 
     private static TruffleString[] extractFreeVars(RootNode rootNode) {
@@ -631,29 +628,6 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public Signature getSignature() {
-        return getSignature(null, InlinedConditionProfile.getUncached());
-    }
-
-    public Signature getSignature(Node inliningTarget, InlinedConditionProfile signatureProfile) {
-        if (signatureProfile.profile(inliningTarget, signature == null)) {
-            if (CompilerDirectives.isPartialEvaluationConstant(this)) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-            }
-            signature = initializeSignature(callTarget);
-        }
-        return signature;
-    }
-
-    @TruffleBoundary
-    synchronized Signature initializeSignature(RootCallTarget rootCallTarget) {
-        assert PythonContext.get(null).ownsGil(); // otherwise this is racy
-        if (signature == null) {
-            if (rootCallTarget.getRootNode() instanceof PRootNode) {
-                signature = ((PRootNode) rootCallTarget.getRootNode()).getSignature();
-            } else {
-                signature = Signature.createVarArgsAndKwArgsOnly();
-            }
-        }
         return signature;
     }
 
@@ -711,10 +685,8 @@ public final class PCode extends PythonBuiltinObject {
     public String toDisassembledString(boolean quickened) {
         RootNode rootNode = getRootCallTarget().getRootNode();
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && rootNode instanceof PBytecodeDSLRootNode dslRoot) {
-            return dslRoot.dump();
-        }
-
-        if (rootNode instanceof PBytecodeGeneratorRootNode r) {
+            return dslRoot.getCodeUnit().toString(quickened);
+        } else if (rootNode instanceof PBytecodeGeneratorRootNode r) {
             rootNode = r.getBytecodeRootNode();
         } else if (rootNode instanceof PBytecodeGeneratorFunctionRootNode r) {
             rootNode = r.getBytecodeRootNode();

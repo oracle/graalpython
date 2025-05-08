@@ -51,27 +51,29 @@ import java.util.Objects;
 
 import org.graalvm.collections.EconomicMap;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
@@ -89,7 +91,6 @@ import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -556,32 +557,26 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         public abstract void execute(VirtualFrame frame, Object input, boolean expectBytes);
 
         @Specialization
-        static void check(VirtualFrame frame, Object input, boolean expectBytes,
+        static void check(Object input, boolean expectBytes,
                         @Bind("this") Node inliningTarget,
-                        @Cached("getSupportedBinaryInputTypes()") PTuple supportedBinaryInputTypes,
-                        @Cached BuiltinFunctions.IsInstanceNode isStringNode,
-                        @Cached BuiltinFunctions.IsInstanceNode isBytesNode,
-                        @Cached InlinedConditionProfile unsupportedInputTypeProfile,
-                        @Cached InlinedConditionProfile unexpectedInputTypeProfile,
-                        @Cached PRaiseNode raiseNode) {
-            boolean isString = (boolean) isStringNode.execute(frame, input, PythonBuiltinClassType.PString);
-            boolean isBytes = !isString && (boolean) isBytesNode.execute(frame, input, supportedBinaryInputTypes);
-            if (unsupportedInputTypeProfile.profile(inliningTarget, !isString && !isBytes)) {
-                throw raiseNode.raise(inliningTarget, TypeError, T_UNSUPPORTED_INPUT_TYPE);
-            }
-            if (unexpectedInputTypeProfile.profile(inliningTarget, expectBytes != isBytes)) {
+                        @Cached PyUnicodeCheckNode unicodeCheckNode,
+                        @Cached BytesNodes.BytesLikeCheck bytesLikeCheck,
+                        @Cached PRaiseNode unexpectedStrRaise,
+                        @Cached PRaiseNode unexpectedBytesRaise,
+                        @Cached PRaiseNode unexpectedTypeRaise) {
+            if (unicodeCheckNode.execute(inliningTarget, input)) {
                 if (expectBytes) {
-                    throw raiseNode.raise(inliningTarget, TypeError, T_UNEXPECTED_STR);
-                } else {
-                    throw raiseNode.raise(inliningTarget, TypeError, T_UNEXPECTED_BYTES);
+                    throw unexpectedStrRaise.raise(inliningTarget, TypeError, T_UNEXPECTED_STR);
                 }
+                return;
             }
-        }
-
-        @NeverDefault
-        protected PTuple getSupportedBinaryInputTypes() {
-            return PFactory.createTuple(PythonLanguage.get(null), new Object[]{PythonBuiltinClassType.PBytes, PythonBuiltinClassType.PByteArray, PythonBuiltinClassType.PMMap,
-                            PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PArray});
+            if (bytesLikeCheck.execute(inliningTarget, input) || input instanceof PMMap || input instanceof PMemoryView || input instanceof PArray) {
+                if (!expectBytes) {
+                    throw unexpectedBytesRaise.raise(inliningTarget, TypeError, T_UNEXPECTED_BYTES);
+                }
+                return;
+            }
+            throw unexpectedTypeRaise.raise(inliningTarget, TypeError, T_UNSUPPORTED_INPUT_TYPE);
         }
     }
 

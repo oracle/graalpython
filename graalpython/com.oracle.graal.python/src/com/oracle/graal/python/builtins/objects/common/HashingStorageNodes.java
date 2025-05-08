@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage.GetKeywordsStorageItemNode;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutUnsafeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
@@ -121,7 +122,7 @@ public class HashingStorageNodes {
 
         public static boolean mayHaveSideEffects(PHashingCollection wrapper) {
             HashingStorage s = wrapper.getDictStorage();
-            return !(s instanceof EconomicMapStorage && ((EconomicMapStorage) s).map.hasSideEffect());
+            return s instanceof EconomicMapStorage && ((EconomicMapStorage) s).map.hasSideEffectingKeys();
         }
     }
 
@@ -252,7 +253,7 @@ public class HashingStorageNodes {
         public abstract void execute(Node inliningTarget, HashingStorage self, TruffleString key, Object value);
     }
 
-    static EconomicMapStorage dynamicObjectStorageToEconomicMap(Node inliningTarget, DynamicObjectStorage s, DynamicObjectLibrary dylib, PyObjectHashNode hashNode, PutNode putNode) {
+    static EconomicMapStorage dynamicObjectStorageToEconomicMap(Node inliningTarget, DynamicObjectStorage s, DynamicObjectLibrary dylib, PyObjectHashNode hashNode, PutUnsafeNode putNode) {
         // TODO: shouldn't we invalidate all MRO assumptions in this case?
         DynamicObject store = s.store;
         EconomicMapStorage result = EconomicMapStorage.create(dylib.getShape(store).getPropertyCount());
@@ -287,24 +288,16 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorage economicMap(Frame frame, Node inliningTarget, EconomicMapStorage self, Object key, long keyHash, Object value,
-                        @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
-                        @Exclusive @Cached ObjectHashMap.PutNode putNode) {
+                        @Exclusive @Cached PutNode putNode) {
             putNode.execute(frame, inliningTarget, self.map, key, keyHash, value);
-            if (!self.map.hasSideEffect() && !isBuiltinString.execute(inliningTarget, key)) {
-                self.map.setSideEffectingKeysFlag();
-            }
             return self;
         }
 
         @Specialization
         static HashingStorage empty(Frame frame, Node inliningTarget, @SuppressWarnings("unused") EmptyStorage self, Object key, long keyHash, Object value,
-                        @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
-                        @Exclusive @Cached ObjectHashMap.PutNode putNode) {
+                        @Exclusive @Cached PutNode putNode) {
             EconomicMapStorage storage = EconomicMapStorage.create(1);
             putNode.execute(frame, inliningTarget, storage.map, key, keyHash, value);
-            if (!isBuiltinString.execute(inliningTarget, key)) {
-                storage.map.setSideEffectingKeysFlag();
-            }
             return storage;
         }
 
@@ -335,17 +328,16 @@ public class HashingStorageNodes {
         @Specialization
         @InliningCutoff
         static HashingStorage keywords(Frame frame, Node inliningTarget, KeywordsStorage self, Object key, long keyHash, Object value,
-                        @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
-                        @Exclusive @Cached ObjectHashMap.PutNode putNode,
+                        @Exclusive @Cached PutNode putNode,
                         @Cached EconomicMapSetStringKey specializedPutNode) {
             // TODO: do we want to try DynamicObjectStorage if the key is a string?
             EconomicMapStorage result = EconomicMapStorage.create(self.length());
             self.addAllTo(inliningTarget, result, specializedPutNode);
-            return economicMap(frame, inliningTarget, result, key, keyHash, value, isBuiltinString, putNode);
+            return economicMap(frame, inliningTarget, result, key, keyHash, value, putNode);
         }
 
         @Specialization
-        static HashingStorage foreign(Frame frame, Node inliningTarget, ForeignHashingStorage self, Object key, long keyHash, Object value,
+        static HashingStorage foreign(Node inliningTarget, ForeignHashingStorage self, Object key, long keyHash, Object value,
                         @Cached ForeignHashingStorage.PutNode putNode) {
             putNode.execute(inliningTarget, self, key, value);
             return self;
@@ -373,8 +365,9 @@ public class HashingStorageNodes {
             static HashingStorage domTransition(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object key, @SuppressWarnings("unused") long keyHash, Object value,
                             @SuppressWarnings("unused") boolean transition, DynamicObjectLibrary dylib,
                             @Cached PyObjectHashNode hashNode,
-                            @Cached ObjectHashMap.PutNode putNode) {
-                EconomicMapStorage result = dynamicObjectStorageToEconomicMap(inliningTarget, self, dylib, hashNode, putNode);
+                            @Cached PutUnsafeNode putUnsafeNode,
+                            @Cached PutNode putNode) {
+                EconomicMapStorage result = dynamicObjectStorageToEconomicMap(inliningTarget, self, dylib, hashNode, putUnsafeNode);
                 putNode.execute(frame, inliningTarget, result.map, key, keyHash, value);
                 return result;
             }
@@ -415,27 +408,22 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorage economicMap(Frame frame, Node inliningTarget, EconomicMapStorage self, Object key, Object value,
-                        @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Exclusive @Cached PyObjectHashNode hashNode,
-                        @Exclusive @Cached ObjectHashMap.PutNode putNode) {
+                        @Exclusive @Cached PutNode putNode) {
             putNode.execute(frame, inliningTarget, self.map, key, hashNode.execute(frame, inliningTarget, key), value);
-            if (!self.map.hasSideEffect() && !isBuiltinString.execute(inliningTarget, key)) {
-                self.map.setSideEffectingKeysFlag();
-            }
             return self;
         }
 
         @Specialization
         static HashingStorage empty(Frame frame, Node inliningTarget, @SuppressWarnings("unused") EmptyStorage self, Object key, Object value,
-                        @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Exclusive @Cached PyObjectHashNode hashNode,
-                        @Exclusive @Cached ObjectHashMap.PutNode putNode) {
+                        @Exclusive @Cached PutNode putNode) {
             // The ObjectHashMap.PutNode is @Exclusive because profiles for a put into a freshly new
             // allocated map can be quite different to profiles in the other situations when we are
             // putting into a map that already has or will have some more items in it
             // It is also @Cached(inline = false) because inlining it triggers GR-44836
             // TODO: do we want to try DynamicObjectStorage if the key is a string?
-            return economicMap(frame, inliningTarget, EconomicMapStorage.create(1), key, value, isBuiltinString, hashNode, putNode);
+            return economicMap(frame, inliningTarget, EconomicMapStorage.create(1), key, value, hashNode, putNode);
         }
 
         @Specialization(guards = "!self.shouldTransitionOnPut()")
@@ -466,13 +454,12 @@ public class HashingStorageNodes {
         @InliningCutoff
         static HashingStorage keywords(Frame frame, Node inliningTarget, KeywordsStorage self, Object key, Object value,
                         @Exclusive @Cached PyObjectHashNode hashNode,
-                        @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
-                        @Exclusive @Cached ObjectHashMap.PutNode putNode,
+                        @Exclusive @Cached PutNode putNode,
                         @Cached EconomicMapSetStringKey specializedPutNode) {
             // TODO: do we want to try DynamicObjectStorage if the key is a string?
             EconomicMapStorage result = EconomicMapStorage.create(self.length());
             self.addAllTo(inliningTarget, result, specializedPutNode);
-            return economicMap(frame, inliningTarget, result, key, value, isBuiltinString, hashNode, putNode);
+            return economicMap(frame, inliningTarget, result, key, value, hashNode, putNode);
         }
 
         @Specialization
@@ -504,8 +491,9 @@ public class HashingStorageNodes {
             static HashingStorage domTransition(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object key, Object value,
                             @SuppressWarnings("unused") boolean transition, DynamicObjectLibrary dylib,
                             @Cached PyObjectHashNode hashNode,
-                            @Cached ObjectHashMap.PutNode putNode) {
-                EconomicMapStorage result = dynamicObjectStorageToEconomicMap(inliningTarget, self, dylib, hashNode, putNode);
+                            @Cached PutUnsafeNode putUnsafeNode,
+                            @Cached PutNode putNode) {
+                EconomicMapStorage result = dynamicObjectStorageToEconomicMap(inliningTarget, self, dylib, hashNode, putUnsafeNode);
                 putNode.execute(frame, inliningTarget, result.map, key, hashNode.execute(frame, inliningTarget, key), value);
                 return result;
             }
@@ -1365,7 +1353,7 @@ public class HashingStorageNodes {
 
         @Specialization
         static ResultAndOther doGeneric(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ResultAndOther acc,
-                        @Cached ObjectHashMap.PutNode putResultNode,
+                        @Cached PutNode putResultNode,
                         @Cached HashingStorageGetItemWithHash getFromOther,
                         @Cached HashingStorageIteratorKey iterKey,
                         @Cached HashingStorageIteratorValue iterValue,
@@ -1417,7 +1405,7 @@ public class HashingStorageNodes {
 
         @Specialization
         static ResultAndOther doGeneric(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ResultAndOther acc,
-                        @Cached ObjectHashMap.PutNode putResultNode,
+                        @Cached PutNode putResultNode,
                         @Cached HashingStorageGetItemWithHash getFromOther,
                         @Cached HashingStorageIteratorKey iterKey,
                         @Cached HashingStorageIteratorKeyHash iterHash) {
@@ -1463,7 +1451,7 @@ public class HashingStorageNodes {
 
         @Specialization
         static ResultAndOther doGeneric(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ResultAndOther acc,
-                        @Cached ObjectHashMap.PutNode putResultNode,
+                        @Cached PutNode putResultNode,
                         @Cached HashingStorageGetItemWithHash getFromOther,
                         @Cached HashingStorageIteratorKey iterKey,
                         @Cached HashingStorageIteratorKeyHash iterHash,

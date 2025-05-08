@@ -47,6 +47,7 @@ import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -59,11 +60,12 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false) // used in BCI root node
+@OperationProxy.Proxyable
 public abstract class CopyDictWithoutKeysNode extends PNodeWithContext {
     public abstract PDict execute(Frame frame, Object subject, Object[] keys);
 
     @Specialization(guards = {"keys.length == keysLength", "keysLength <= 32"}, limit = "1")
-    static PDict copy(VirtualFrame frame, Object subject, @NeverDefault @SuppressWarnings("unused") Object[] keys,
+    public static PDict copy(VirtualFrame frame, Object subject, @NeverDefault @SuppressWarnings("unused") Object[] keys,
                     @Bind("this") Node inliningTarget,
                     @Cached("keys.length") int keysLength,
                     @Bind PythonLanguage language,
@@ -84,7 +86,7 @@ public abstract class CopyDictWithoutKeysNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "keys.length > 32")
-    static PDict copy(VirtualFrame frame, Object subject, Object[] keys,
+    public static PDict copy(VirtualFrame frame, Object subject, Object[] keys,
                     @Bind("this") Node inliningTarget,
                     @Bind PythonLanguage language,
                     @Shared @Cached DictNodes.UpdateNode updateNode,

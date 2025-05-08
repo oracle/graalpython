@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -180,6 +180,9 @@ class AstTest(unittest.TestCase):
         vars = {}
         exec(compile(tree, '<string>', 'exec'), vars)
         self.assertEqual("u'abc'", vars['f'].__annotations__['x'])
+
+    def test_parse_unicode(self):
+        self.assertEqual(ast.parse("𝕦𝕟𝕚𝕔𝕠𝕕𝕖").body[0].value.id, 'unicode')
 
 
 if __name__ == '__main__':

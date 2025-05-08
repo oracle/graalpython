@@ -60,7 +60,9 @@ import mx_gate
 import mx_native
 import mx_unittest
 import mx_sdk
+import mx_sdk_vm_ng
 import mx_subst
+import mx_truffle
 import mx_graalpython_bisect
 import mx_graalpython_import
 import mx_graalpython_python_benchmarks
@@ -73,6 +75,9 @@ from mx_graalpython_gradleproject import GradlePluginProject #pylint: disable=un
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO
 
+
+# re-export custom mx project classes, so they can be used from suite.py
+from mx_sdk_vm_ng import StandaloneLicenses, ThinLauncherProject, LanguageLibraryProject, DynamicPOMDistribution, DeliverableStandaloneArchive  # pylint: disable=unused-import
 
 if not sys.modules.get("__main__"):
     # workaround for pdb++
@@ -93,6 +98,13 @@ GRAAL_VERSION = SUITE.suiteDict['version']
 GRAAL_VERSION_MAJ_MIN = ".".join(GRAAL_VERSION.split(".")[:2])
 PYTHON_VERSION = SUITE.suiteDict[f'{SUITE.name}:pythonVersion']
 PYTHON_VERSION_MAJ_MIN = ".".join(PYTHON_VERSION.split('.')[:2])
+
+LATEST_JAVA_HOME = {"JAVA_HOME": os.environ.get("LATEST_JAVA_HOME", mx.get_jdk().home)}
+RUNNING_ON_LATEST_JAVA = os.environ.get("LATEST_JAVA_HOME", os.environ.get("JAVA_HOME")) == mx.get_jdk().home
+
+if not SUITE._output_root_includes_config():
+    # Workaround bug in mx_sdk_vm_ng.JavaHomeDependency not being a project yet relying on the underlying get_output_root implementation
+    mx_sdk_vm_ng.JavaHomeDependency.get_output_root = lambda s: os.path.join(s.get_output_base(), s.name)
 
 # this environment variable is used by some of our maven projects and jbang integration to build against the unreleased master version during development
 os.environ["GRAALPY_VERSION"] = GRAAL_VERSION
@@ -234,6 +246,13 @@ def get_jdk():
     return mx.get_jdk()
 
 
+# Called from suite.py
+def graalpy_standalone_deps():
+    include_truffle_runtime = not os.environ.get("EXCLUDE_TRUFFLE_RUNTIME")
+    deps = mx_truffle.resolve_truffle_dist_names(use_optimized_runtime=include_truffle_runtime)
+    return deps
+
+
 def full_python(args, env=None):
     """Run python from standalone build (unless kwargs are given). Does not build GraalPython sources automatically."""
 
@@ -269,7 +288,7 @@ def full_python(args, env=None):
                  "To build it: mx python-jvm\n" +
                  "Alternatively use: mx python --hosted")
 
-    mx.run([graalpy_path] + args, env=env)
+    run([graalpy_path] + args, env=env)
 
 
 def handle_debug_arg(args):
@@ -576,6 +595,7 @@ def _graalpy_launcher():
     return f"{name}.exe" if WIN32 else name
 
 
+# dev means Default TruffleRuntime and "build the minimum possible"
 def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=True):
     assert standalone_type in ['native', 'jvm']
     assert not (enterprise and dev), "EE dev standalones are not implemented yet"
@@ -583,7 +603,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
     # Check if GRAALPY_HOME points to some compatible pre-built GraalPy standalone
     python_home = os.environ.get("GRAALPY_HOME", None)
-    if python_home and "*" in python_home:
+    if python_home:
         python_home = os.path.abspath(glob.glob(python_home)[0])
         mx.log("Using GraalPy standalone from GRAALPY_HOME: " + python_home)
         # Try to verify that we're getting what we expect:
@@ -605,11 +625,6 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
         launcher = os.path.join(python_home, 'bin', _graalpy_launcher())
         out = mx.OutputCapture()
-        import_ee_status = mx.run([launcher, "-c", "import sys; assert 'Oracle GraalVM' in sys.version"], nonZeroIsFatal=False, out=out, err=out)
-        if enterprise != (import_ee_status == 0):
-            mx.abort(f"GRAALPY_HOME is not compatible with requested distribution kind ({import_ee_status=}, {enterprise=}, {out=}).")
-
-        out = mx.OutputCapture()
         mx.run([launcher, "-c", "print(__graalpython__.is_bytecode_dsl_interpreter)"], nonZeroIsFatal=False, out=out, err=out)
         is_bytecode_dsl_interpreter = out.data.strip() == "True"
         if is_bytecode_dsl_interpreter != BYTECODE_DSL_INTERPRETER:
@@ -619,49 +634,40 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
         return python_home
 
-    env_file = 'ce-python'
-    vm_suite_path = os.path.join(mx.suite('truffle').dir, '..', 'vm')
-    svm_component = '_SVM'
-    if enterprise:
-        env_file = 'ee-python'
-        enterprise_suite = mx.suite('graal-enterprise', fatalIfMissing=False)
-        enterprise_suite_dir = enterprise_suite.dir if enterprise_suite else os.path.join(SUITE.dir, '..', 'graal-enterprise', 'graal-enterprise')
-        vm_suite_path = os.path.join(enterprise_suite_dir, '..', 'vm-enterprise')
-        svm_component = '_SVM_SVMEE'
-    if dev:
-        if standalone_type == 'jvm':
-            svm_component = ''
-            mx_args = ['--dy', '/vm']
+    # Build
+    if standalone_type == 'jvm':
+        if dev:
+            env_file = 'jvm'
         else:
-            dev_env_file = os.path.join(os.path.abspath(SUITE.dir), 'mx.graalpython/graalpython-svm-standalone')
-            mx_args = ['-p', vm_suite_path, '--env', dev_env_file]
+            env_file = 'jvm-ee-libgraal' if enterprise else 'jvm-ce-libgraal'
+        standalone_dist = 'GRAALPY_JVM_STANDALONE'
+        if "GraalVM" in subprocess.check_output([get_jdk().java, '-version'], stderr=subprocess.STDOUT, universal_newlines=True):
+            env_file = ""
     else:
-        mx_args = ['-p', vm_suite_path, '--env', env_file]
+        env_file = 'native-ee' if enterprise else 'native-ce'
+        standalone_dist = 'GRAALPY_NATIVE_STANDALONE'
+        if "GraalVM" in subprocess.check_output([get_jdk().java, '-version'], stderr=subprocess.STDOUT, universal_newlines=True):
+            assert False, "Cannot build a GraalPy native standalone with a Graal JDK, we only support latest for building the native images"
 
+    mx_args = ['-p', SUITE.dir, *(['--env', env_file] if env_file else [])]
     mx_args.append("--extra-image-builder-argument=-g")
-
     if BUILD_NATIVE_IMAGE_WITH_ASSERTIONS:
         mx_args.append("--extra-image-builder-argument=-ea")
 
     if mx_gate.get_jacoco_agent_args() or (build and not DISABLE_REBUILD):
-        dep_type = 'JAVA' if standalone_type == 'jvm' else 'NATIVE'
         mx_build_args = mx_args
         if BYTECODE_DSL_INTERPRETER:
             mx_build_args = mx_args + ["--extra-image-builder-argument=-Dpython.EnableBytecodeDSLInterpreter=true"]
+        # This build is purposefully done without the LATEST_JAVA_HOME in the
+        # environment, so we can build JVM standalones on an older Graal JDK
+        run_mx(mx_build_args + ["build", "--target", standalone_dist])
 
-        # Example of a string we're building here: PYTHON_JAVA_STANDALONE_SVM_SVMEE_JAVA21
-        mx.run_mx(mx_build_args + ["build", "--dep", f"PYTHON_{dep_type}_STANDALONE{svm_component}_JAVA{jdk_version.parts[0]}"])
+    python_home = os.path.join(SUITE.dir, 'mxbuild', f"{mx.get_os()}-{mx.get_arch()}", standalone_dist)
 
-    out = mx.OutputCapture()
-    # note: 'quiet=True' is important otherwise if the outer MX runs verbose,
-    # this might fail because of additional output
-    mx.run_mx(mx_args + ["standalone-home", "--type", standalone_type, "python"], out=out, quiet=True)
-    python_home = out.data.splitlines()[-1].strip()
     if dev and standalone_type == 'native':
-        path = Path(python_home)
-        debuginfo = path / '../../libpythonvm.so.image/libpythonvm.so.debug'
-        if debuginfo.exists():
-            shutil.copy(debuginfo, path / 'lib')
+        debuginfo = os.path.join(SUITE.dir, 'mxbuild', f"{mx.get_os()}-{mx.get_arch()}", "libpythonvm", "libpythonvm.so.debug")
+        if os.path.exists(debuginfo):
+            shutil.copy(debuginfo, os.path.join(python_home, 'lib'))
     return python_home
 
 
@@ -695,11 +701,11 @@ def graalvm_jdk():
 
     # Check if GRAAL_JDK_HOME points to some compatible pre-built gvm
     graal_jdk_home = os.environ.get("GRAAL_JDK_HOME", None)
-    if graal_jdk_home and "*" in graal_jdk_home:
+    if graal_jdk_home:
         graal_jdk_home = os.path.abspath(glob.glob(graal_jdk_home)[0])
         if sys.platform == "darwin":
             graal_jdk_home = os.path.join(graal_jdk_home, 'Contents', 'Home')
-        mx.log("Using GraalPy standalone from GRAAL_JDK_HOME: " + graal_jdk_home)
+        mx.log("Using Graal from GRAAL_JDK_HOME: " + graal_jdk_home)
 
         # Try to verify that we're getting what we expect:
         has_java = os.path.exists(os.path.join(graal_jdk_home, 'bin', mx.exe_suffix('java')))
@@ -711,14 +717,11 @@ def graalvm_jdk():
             mx.abort(f"No 'release' file in GRAAL_JDK_HOME.")
 
         java_version = None
-        implementor = None
         with open(release, 'r') as f:
-            while not (java_version and implementor):
+            while not java_version:
                 line = f.readline()
                 if 'JAVA_VERSION=' in line:
                     java_version = line
-                if 'IMPLEMENTOR=' in line:
-                    implementor = line
 
         if not java_version:
             mx.abort(f"Could not check Java version in GRAAL_JDK_HOME 'release' file.")
@@ -727,18 +730,14 @@ def graalvm_jdk():
             mx.abort(f"GRAAL_JDK_HOME is not compatible with the requested JDK version.\n"
              f"actual version: '{actual_jdk_version}', version string: {java_version}, requested version: {jdk_version}.")
 
-        if not implementor:
-            mx.abort(f"Could not check implementor in GRAAL_JDK_HOME 'release' file.")
-        if 'GraalVM' not in implementor:
-            mx.abort(f"GRAAL_JDK_HOME 'releases' has an unexpected implementor: '{implementor}'.")
         return graal_jdk_home
 
     jdk_major_version = mx.get_jdk().version.parts[0]
     mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce']
     if not DISABLE_REBUILD:
-        mx.run_mx(mx_args + ["build", "--dep", f"GRAALVM_COMMUNITY_JAVA{jdk_major_version}"])
+        run_mx(mx_args + ["build", "--dep", f"GRAALVM_COMMUNITY_JAVA{jdk_major_version}"], env={**os.environ, **LATEST_JAVA_HOME})
     out = mx.OutputCapture()
-    mx.run_mx(mx_args + ["graalvm-home"], out=out)
+    run_mx(mx_args + ["graalvm-home"], out=out)
     return out.data.splitlines()[-1].strip()
 
 def get_maven_cache():
@@ -756,15 +755,23 @@ def deploy_local_maven_repo():
         env['MAVEN_OPTS'] = maven_opts
         mx.log(f'Added {mvn_repo_local} to MAVEN_OPTS={maven_opts}')
 
+    run_mx_args = [
+        '-p',
+        os.path.join(mx.suite('truffle').dir, '..', 'vm'),
+        '--dy',
+        'graalpython',
+    ]
+
     if not DISABLE_REBUILD:
         # build GraalPy and all the necessary dependencies, so that we can deploy them
-        mx.run_mx(["-p", os.path.join(mx.suite('truffle').dir, '..', 'vm'), "--dy", "graalpython", "build"], env=env)
+        run_mx(run_mx_args + ["build"], env={**env, **LATEST_JAVA_HOME})
 
     # deploy maven artifacts
     version = GRAAL_VERSION
     path = os.path.join(SUITE.get_mx_output_dir(), 'public-maven-repo')
     licenses = ['EPL-2.0', 'PSF-License', 'GPLv2-CPE', 'ICU,GPLv2', 'BSD-simplified', 'BSD-new', 'UPL', 'MIT']
-    deploy_args = [
+    deploy_args = run_mx_args + [
+        'maven-deploy',
         '--tags=public',
         '--all-suites',
         '--all-distribution-types',
@@ -779,11 +786,7 @@ def deploy_local_maven_repo():
     if not DISABLE_REBUILD:
         mx.rmtree(path, ignore_errors=True)
         os.mkdir(path)
-        if m2_cache:
-            with set_env(MAVEN_OPTS = maven_opts):
-                mx.maven_deploy(deploy_args)
-        else:
-            mx.maven_deploy(deploy_args)
+        run_mx(deploy_args, env={**env, **LATEST_JAVA_HOME})
     return path, version, env
 
 
@@ -854,22 +857,6 @@ def python_svm(_=None):
     return launcher
 
 
-def native_image(args):
-    mx.run_mx([
-        "-p", os.path.join(mx.suite("truffle").dir, "..", "substratevm"),
-        "--dy", "graalpython",
-        "--native-images=",
-        "build",
-    ])
-    mx.run_mx([
-        "-p", os.path.join(mx.suite("truffle").dir, "..", "substratevm"),
-        "--dy", "graalpython",
-        "--native-images=",
-        "native-image",
-        *args
-    ])
-
-
 def _python_test_runner():
     return os.path.join(SUITE.dir, "graalpython", "com.oracle.graal.python.test", "src", "runner.py")
 
@@ -921,7 +908,7 @@ def graalpytest(args):
         env['PYTHONPATH'] = os.pathsep.join(pythonpath)
     if python_binary:
         try:
-            result = mx.run([python_binary, *cmd_args], nonZeroIsFatal=True, env=env)
+            result = run([python_binary, *cmd_args], nonZeroIsFatal=True, env=env)
             print(f"back from mx.run, returning {result}")
             return result
         except BaseException as e:
@@ -1021,7 +1008,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     mx.logv(shlex.join([python_binary] + args))
     if lock:
         lock.release()
-    result = mx.run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
+    result = run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
     if lock:
         lock.acquire()
 
@@ -1140,6 +1127,7 @@ def graalpython_gate_runner(args, tasks):
     # JUnit tests
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
+            run_mx(["build"], env={**os.environ, **LATEST_JAVA_HOME})
             if WIN32:
                 punittest(
                     [
@@ -1214,7 +1202,7 @@ def graalpython_gate_runner(args, tasks):
         if task:
             env = extend_os_env(PYTHONHASHSEED='0')
             test_args = [get_cpython(), _python_test_runner(), "run", "-n", "6", "graalpython/com.oracle.graal.python.test/src/tests"]
-            mx.run(test_args, nonZeroIsFatal=True, env=env)
+            run(test_args, nonZeroIsFatal=True, env=env)
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
@@ -1253,7 +1241,10 @@ def graalpython_gate_runner(args, tasks):
             standalone_home = graalpy_standalone_home('jvm')
             mvn_repo_path, version, env = deploy_local_maven_repo()
 
-            env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
+            if RUNNING_ON_LATEST_JAVA:
+                # our standalone python binary is meant for standalone graalpy
+                # releases which are only for latest
+                env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
             env['ENABLE_JBANG_INTEGRATION_UNITTESTS'] ='true'
             env['JAVA_HOME'] = gvm_jdk
             env['PYTHON_STANDALONE_HOME'] = standalone_home
@@ -1345,6 +1336,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython VFSUtils long running tests', tasks, tags=[GraalPythonTags.junit_vfsutils]) as task:
         if task:
+            run_mx(["build"], env={**os.environ, **LATEST_JAVA_HOME})
             args =['--verbose']
             vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false']
             mx_unittest.unittest(vm_args + ['org.graalvm.python.embedding.vfs.test'] + args + ["--use-graalvm"])
@@ -1373,7 +1365,7 @@ def graalpython_gate_runner(args, tasks):
                 svm_image = python_svm()
                 benchmark = os.path.join(PATH_MESO, "image-magix.py")
                 out = mx.OutputCapture()
-                mx.run([svm_image, "-S", "--log.python.level=FINE", benchmark], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
+                run([svm_image, "-S", "--log.python.level=FINE", benchmark], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
             success = "\n".join([
                 "[0, 0, 0, 0, 0, 0, 10, 10, 10, 0, 0, 10, 3, 10, 0, 0, 10, 10, 10, 0, 0, 0, 0, 0, 0]",
             ])
@@ -1384,13 +1376,13 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('Python SVM Truffle TCK', tasks, tags=[GraalPythonTags.language_checker], report=True) as task:
         if task:
-            mx.run_mx([
+            run_mx([
                 "--dy", "graalpython,/substratevm",
                 "-p", os.path.join(mx.suite("truffle"), "..", "vm"),
                 "--native-images=",
                 "build",
-            ])
-            mx.run_mx([
+            ], env={**os.environ, **LATEST_JAVA_HOME})
+            run_mx([
                 "--dy", "graalpython,/substratevm",
                 "-p", os.path.join(mx.suite("truffle"), "..", "vm"),
                 "--native-images=",
@@ -1404,109 +1396,6 @@ def graalpython_gate_runner(args, tasks):
             except:
                 mx.log("TIP: run 'mx help tox-example' to learn more about reproducing this test locally")
                 raise
-
-
-    with Task('Python exclusion of security relevant classes', tasks, tags=[GraalPythonTags.exclusions_checker]) as task:
-        if task:
-            native_image([
-                "--language:python",
-                "-Dpython.WithoutSSL=true",
-                "-Dpython.WithoutPlatformAccess=true",
-                "-Dpython.WithoutCompressionLibraries=true",
-                "-Dpython.WithoutNativePosix=true",
-                "-Dpython.WithoutJavaInet=true",
-                "-Dimage-build-time.PreinitializeContexts=",
-                "-Dtruffle.TruffleRuntime=com.oracle.truffle.api.impl.DefaultTruffleRuntime",
-                "-H:+ReportExceptionStackTraces",
-                *map(
-                    lambda s: f"-H:ReportAnalysisForbiddenType={s}",
-                    """
-                    com.sun.security.auth.UnixNumericGroupPrincipal
-                    com.sun.security.auth.module.UnixSystem
-                    java.security.KeyManagementException
-                    java.security.KeyStore
-                    java.security.KeyStoreException
-                    java.security.SignatureException
-                    java.security.UnrecoverableEntryException
-                    java.security.UnrecoverableKeyException
-                    java.security.cert.CRL
-                    java.security.cert.CRLException
-                    java.security.cert.CertPathBuilder
-                    java.security.cert.CertPathBuilderSpi
-                    java.security.cert.CertPathChecker
-                    java.security.cert.CertPathParameters
-                    java.security.cert.CertSelector
-                    java.security.cert.CertStore
-                    java.security.cert.CertStoreParameters
-                    java.security.cert.CertStoreSpi
-                    java.security.cert.CertificateEncodingException
-                    java.security.cert.CertificateParsingException
-                    java.security.cert.CollectionCertStoreParameters
-                    java.security.cert.Extension
-                    java.security.cert.PKIXBuilderParameters
-                    java.security.cert.PKIXCertPathChecker
-                    java.security.cert.PKIXParameters
-                    java.security.cert.PKIXRevocationChecker
-                    java.security.cert.PKIXRevocationChecker$Option
-                    java.security.cert.TrustAnchor
-                    java.security.cert.X509CRL
-                    java.security.cert.X509CertSelector
-                    java.security.cert.X509Certificate
-                    java.security.cert.X509Extension
-                    sun.security.x509.AVA
-                    sun.security.x509.AVAComparator
-                    sun.security.x509.AVAKeyword
-                    sun.security.x509.AuthorityInfoAccessExtension
-                    sun.security.x509.AuthorityKeyIdentifierExtension
-                    sun.security.x509.BasicConstraintsExtension
-                    sun.security.x509.CRLDistributionPointsExtension
-                    sun.security.x509.CertAttrSet
-                    sun.security.x509.CertificatePoliciesExtension
-                    sun.security.x509.CertificatePolicySet
-                    sun.security.x509.DNSName
-                    sun.security.x509.EDIPartyName
-                    sun.security.x509.ExtendedKeyUsageExtension
-                    sun.security.x509.Extension
-                    sun.security.x509.GeneralName
-                    sun.security.x509.GeneralNameInterface
-                    sun.security.x509.GeneralSubtree
-                    sun.security.x509.GeneralSubtrees
-                    sun.security.x509.IPAddressName
-                    sun.security.x509.IssuerAlternativeNameExtension
-                    sun.security.x509.KeyUsageExtension
-                    sun.security.x509.NameConstraintsExtension
-                    sun.security.x509.NetscapeCertTypeExtension
-                    sun.security.x509.OIDMap
-                    sun.security.x509.OIDMap$OIDInfo
-                    sun.security.x509.OIDName
-                    sun.security.x509.OtherName
-                    sun.security.x509.PKIXExtensions
-                    sun.security.x509.PrivateKeyUsageExtension
-                    sun.security.x509.RDN
-                    sun.security.x509.RFC822Name
-                    sun.security.x509.SubjectAlternativeNameExtension
-                    sun.security.x509.SubjectKeyIdentifierExtension
-                    sun.security.x509.URIName
-                    sun.security.x509.X400Address
-                    sun.security.x509.X500Name
-
-                    com.oracle.graal.python.runtime.NFIPosixSupport
-
-                    java.util.zip.Adler32
-
-                    org.graalvm.shadowed.org.tukaani.xz.XZ
-                    org.graalvm.shadowed.org.tukaani.xz.XZOutputStream
-                    org.graalvm.shadowed.org.tukaani.xz.LZMA2Options
-                    org.graalvm.shadowed.org.tukaani.xz.FilterOptions
-
-                    java.util.zip.ZipInputStream
-
-                    java.nio.channels.ServerSocketChannel
-                    """.split()
-                ),
-                "-cp", mx.dependency("com.oracle.graal.python.test").classpath_repr(),
-                "com.oracle.graal.python.test.advanced.ExclusionsTest"
-            ])
 
     if WIN32 and is_collecting_coverage():
         mx.log("Ask for shutdown of any remaining graalpy.exe processes")
@@ -1975,7 +1864,7 @@ def update_import_cmd(args):
         join(overlaydir, "python", "graal", "ci"),
         dirs_exist_ok=True)
 
-    mx.run_mx(['--dynamicimports', '/graal-enterprise', 'checkout-downstream', 'compiler', 'graal-enterprise'])
+    run_mx(['--dynamicimports', '/graal-enterprise', 'checkout-downstream', 'compiler', 'graal-enterprise'])
     enterprisedir = join(SUITE.dir, "..", "graal-enterprise")
     shutil.copy(
         join(enterprisedir, "common.json"),
@@ -1992,9 +1881,9 @@ def update_import_cmd(args):
     for repo in repos:
         basename = os.path.basename(repo)
         cmdname = "%s-update-import" % basename
-        is_mx_command = mx.run_mx(["-p", repo, "help", cmdname], out=output, err=output, nonZeroIsFatal=False, quiet=True) == 0
+        is_mx_command = run_mx(["-p", repo, "help", cmdname], out=output, err=output, nonZeroIsFatal=False, quiet=True) == 0
         if is_mx_command:
-            mx.run_mx(["-p", repo, cmdname, "--overlaydir=%s" % overlaydir], suite=repo, nonZeroIsFatal=True)
+            run_mx(["-p", repo, cmdname, "--overlaydir=%s" % overlaydir], suite=repo, nonZeroIsFatal=True)
         else:
             print(mx.colorize('%s command for %s.. skipped!' % (cmdname, basename), color='magenta', bright=True, stream=sys.stdout))
 
@@ -2277,8 +2166,9 @@ def python_coverage(args):
     truffle_parser.set_defaults(mode='truffle')
     args = parser.parse_args(args)
 
-    # do not endlessly rebuild tests
-    mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
+    # do not endlessly rebuild tests, build once for all
+    run_mx(["build"], env={**os.environ, **LATEST_JAVA_HOME})
+    run_mx(["build", "--dep", "com.oracle.graal.python.test"], env={**os.environ, **LATEST_JAVA_HOME})
     env = extend_os_env(
         GRAALPYTHON_MX_DISABLE_REBUILD="True",
         GRAALPYTEST_FAIL_FAST="False",
@@ -2295,14 +2185,14 @@ def python_coverage(args):
             '--jacocout', 'coverage',
             '--jacoco-format', 'lcov',
         ]
-        mx.run_mx([
+        run_mx([
             '--strict-compliance',
             '--primary', 'gate',
             '-B=--force-deprecation-as-warning-for-dependencies',
             '--strict-mode',
             '--tags', args.tags,
         ] + jacoco_args, env=env)
-        mx.run_mx([
+        run_mx([
             '--strict-compliance',
             '--kill-with-sigquit',
             'jacocoreport',
@@ -2630,6 +2520,43 @@ def no_return(fn):
     def inner(*args, **kwargs):
         fn(*args, **kwargs)
     return inner
+
+
+def run(args, *splat, **kwargs):
+    if not mx.get_opts().quiet:
+        msg = "Running: "
+        env = kwargs.get("env")
+        if env:
+            extra_env = shlex.join([f"{k}={v}" for k, v in env.items() if os.environ.get(k) != v])
+            msg += f'{extra_env} '
+        msg += shlex.join(args)
+        mx.log(mx.colorize(msg, color="green"))
+    return mx.run(args, *splat, **kwargs)
+
+
+def run_mx(args, *splat, **kwargs):
+    env = kwargs.get("env", os.environ)
+    extra_env = {k: v for k, v in env.items() if os.environ.get(k) != v}
+
+    # Sigh. mx.run_mx forcibly overrides the environment JAVA_HOME by passing
+    # --java-home to the subprocess...
+    if jh := extra_env.get("JAVA_HOME"):
+        args = [f"--java-home={jh}"] + args
+
+    if "-p" not in args and "--dy" not in args and "--dynamicimports" not in args:
+        if dy := mx.get_dynamic_imports():
+            args = [
+                "--dy",
+                ",".join(f"{'/' if subdir else ''}{name}" for name, subdir in dy)
+            ] + args
+
+    msg = "Running: "
+    if extra_env:
+        msg += shlex.join([f"{k}={v}" for k, v in extra_env.items()])
+    msg += f" mx {shlex.join(args)}"
+    if not mx.get_opts().quiet:
+        mx.log(mx.colorize(msg, color="green"))
+    return mx.run_mx(args, *splat, **kwargs)
 
 
 def host_inlining_log_extract_method(args_in):

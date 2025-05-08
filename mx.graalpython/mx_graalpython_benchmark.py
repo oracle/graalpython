@@ -345,9 +345,6 @@ class GraalPythonVmBase(GuestVm):
     def launcher_class(self):
         raise NotImplementedError()
 
-    def run_in_graalvm(self, cwd, args, extra_polyglot_args, host_vm):
-        raise NotImplementedError()
-
     def get_extra_polyglot_args(self):
         raise NotImplementedError()
 
@@ -374,8 +371,6 @@ class GraalPythonVmBase(GuestVm):
         extra_polyglot_args = self.get_extra_polyglot_args()
 
         host_vm = self.host_vm()
-        if hasattr(host_vm, 'run_lang'): # this is a full GraalVM build
-            return self.run_in_graalvm(cwd, args, extra_polyglot_args, host_vm)
 
         # Otherwise, we're running from the source tree
         args = self._remove_vm_prefix_for_all(args)
@@ -415,9 +410,12 @@ class GraalPythonVmBase(GuestVm):
             return self._validate_output(*host_vm.run(cwd, cmd))
 
     def is_bytecode_dsl_config(self):
-        return self._extra_vm_args and '--vm.Dpython.EnableBytecodeDSLInterpreter=true' in self._extra_vm_args
+        return bool(self._extra_vm_args and '--vm.Dpython.EnableBytecodeDSLInterpreter=true' in self._extra_vm_args)
 
     def _validate_output(self, code, out, dims):
+        if "using bytecode DSL interpreter:" not in out:
+            print(f"BENCHMARK WARNING: could not verify whether running on bytecode DSL or not (expected for heap benchmarks)")
+            return code, out, dims
         is_bytecode_dsl_config = self.is_bytecode_dsl_config()
         if code == 0 and not f"using bytecode DSL interpreter: {is_bytecode_dsl_config}" in out:
             print(f"ERROR: host VM config does not match what the the harness reported. "
@@ -457,14 +455,6 @@ class GraalPythonVm(GraalPythonVmBase):
             sys.exit(1)
         return super().run(cwd, args)
 
-    def run_in_graalvm(self, cwd, args, extra_polyglot_args, host_vm):
-        with environ(self._env or {}):
-            cp = self.get_classpath()
-            if len(cp) > 0:
-                extra_polyglot_args.append("--vm.classpath=" + ":".join(cp))
-            launcher_name = 'graalpy'
-            return self._validate_output(*host_vm.run_launcher(launcher_name, extra_polyglot_args + args, cwd))
-
     def get_extra_polyglot_args(self):
         return ["--experimental-options", "-snapshot-startup", "--python.MaxNativeMemory=%s" % (2**34)] + self._extra_polyglot_args
 
@@ -480,10 +470,9 @@ class GraalPythonJavaDriverVm(GraalPythonVmBase):
     def launcher_class(self):
         return 'com.oracle.graal.python.benchmarks.JavaBenchmarkDriver'
 
-    def run_in_graalvm(self, cwd, args, extra_polyglot_args, host_vm):
-        # In GraalVM we run the Java benchmarks driver like one would run any other Java application
-        # that embeds GraalPython on GraalVM. We need to add the dependencies on class path, and since
-        # we use run_java, we need to do some output postprocessing that normally run_launcher would do
+    def run(self, cwd, args):
+        extra_polyglot_args = self.get_extra_polyglot_args()
+        host_vm = self.host_vm()
         with environ(self._env or {}):
             cp = self.get_classpath()
             jhm = mx.dependency("mx:JMH_1_21")
@@ -715,14 +704,11 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         ret_code, out, dims = super(PythonBaseBenchmarkSuite, self).runAndReturnStdOut(benchmarks, bmSuiteArgs)
 
         # host-vm rewrite rules
-        def _replace_host_vm(key):
-            host_vm = dims.get("host-vm")
-            if host_vm and host_vm.startswith(key):
-                dims['host-vm'] = key
-                mx.logv("[DEBUG] replace 'host-vm': '{key}-python' -> '{key}'".format(key=key))
+        if mx.suite('graal-enterprise', fatalIfMissing=False):
+            dims['host-vm'] = 'graalvm-ee'
+        else:
+            dims['host-vm'] = 'graalvm-ce'
 
-        _replace_host_vm('graalvm-ce')
-        _replace_host_vm('graalvm-ee')
         self.post_run_graph(benchmarks[0], dims['host-vm-config'], dims['guest-vm-config'])
 
         if self._checkup:

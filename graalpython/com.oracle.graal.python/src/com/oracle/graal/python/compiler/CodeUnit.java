@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.compiler;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -166,5 +168,47 @@ public abstract class CodeUnit {
                         varArgsIndex,
                         parameterNames,
                         kwOnlyNames);
+    }
+
+    @Override
+    public String toString() {
+        return toString(false);
+    }
+
+    protected abstract void dumpBytecode(StringBuilder sb, boolean optimized);
+
+    /**
+     * @param optimized Whether to print the initial state of the bytecode or current state, if
+     *            available, where some instructions may be transformed, e.g., quickened.
+     */
+    public String toString(boolean optimized) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("Disassembly of ").append(qualname).append(":\n");
+
+        List<String> flagNames = new ArrayList<>();
+        if (isGenerator()) {
+            flagNames.add("CO_GENERATOR");
+        }
+        if (isCoroutine()) {
+            flagNames.add("CO_COROUTINE");
+        }
+        if (isAsyncGenerator()) {
+            flagNames.add("CO_ASYNC_GENERATOR");
+        }
+        if (!flagNames.isEmpty()) {
+            sb.append("Flags: ").append(String.join(" | ", flagNames)).append("\n");
+        }
+
+        dumpBytecode(sb, optimized);
+
+        for (Object c : constants) {
+            if (c instanceof CodeUnit cd) {
+                sb.append('\n');
+                sb.append(cd.toString(optimized));
+            }
+        }
+
+        return sb.toString();
     }
 }

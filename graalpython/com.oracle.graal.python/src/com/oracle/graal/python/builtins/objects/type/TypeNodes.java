@@ -817,19 +817,9 @@ public abstract class TypeNodes {
             long hash = ObjectBuiltins.HashNode.hash(subclass);
             PDict dict = executeUncached(base);
             HashingStorage storage = dict.getDictStorage();
-            // Booting order problem: special method slot for object.__eq__ is not initialized yet
-            // In the unlikely event of hash collision __eq__ would fail
-            if (HashingStorageLen.executeUncached(storage) == 0) {
-                // This should not call __eq__
-                HashingStorageSetItemWithHash setItem = HashingStorageSetItemWithHashNodeGen.getUncached();
-                storage = setItem.execute(null, null, storage, subclass, hash, subclass);
-                dict.setDictStorage(storage);
-            } else {
-                // the storage must be EconomicMap, because keys should not be Strings so there is
-                // no other option left
-                EconomicMapStorage mapStorage = (EconomicMapStorage) storage;
-                mapStorage.putUncachedWithJavaEq(subclass, hash, subclass);
-            }
+            HashingStorageSetItemWithHash setItem = HashingStorageSetItemWithHashNodeGen.getUncached();
+            storage = setItem.execute(null, null, storage, subclass, hash, subclass);
+            dict.setDictStorage(storage);
         }
 
         protected static void unsafeRemoveSubclass(Object base, Object subclass) {

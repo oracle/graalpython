@@ -235,7 +235,7 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
                                             metaObject,
                                             foundClasses.toArray(),
                                             inliningTarget,
-                                            ObjectHashMapFactory.PutNodeGen.getUncached());
+                                            ObjectHashMap.PutNode.getUncached());
         } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }

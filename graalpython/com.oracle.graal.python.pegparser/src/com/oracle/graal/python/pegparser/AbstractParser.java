@@ -53,6 +53,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.graalvm.shadowed.com.ibm.icu.text.Normalizer2;
+
 import com.oracle.graal.python.pegparser.ParserCallbacks.ErrorType;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.CmpOpTy;
@@ -373,7 +375,7 @@ public abstract class AbstractParser {
     public ExprTy.Name name_token() {
         Token t = expect(Token.Kind.NAME);
         if (t != null) {
-            return factory.createVariable(getText(t), t.sourceRange);
+            return name_from_token(t);
         } else {
             return null;
         }
@@ -526,6 +528,13 @@ public abstract class AbstractParser {
             return null;
         }
         String id = getText(t);
+        for (int i = 0; i < id.length(); i++) {
+            if (id.charAt(i) > 0xff) {
+                // If the identifier is not ASCII, normalize it according to PEP 3131
+                id = Normalizer2.getNFKCInstance().normalize(id);
+                break;
+            }
+        }
         return factory.createVariable(id, t.sourceRange);
     }
 

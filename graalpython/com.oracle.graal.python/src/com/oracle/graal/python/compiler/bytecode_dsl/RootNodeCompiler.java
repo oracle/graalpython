@@ -49,8 +49,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -69,6 +71,7 @@ import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.compiler.Unparser;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerContext;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerResult;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
@@ -1823,7 +1826,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     b.endMakeTuple();
                     break;
                 case FROZENSET:
-                    b.beginMakeFrozenSet(value.getFrozensetElements().length);
+                    b.beginMakeFrozenSet();
                     for (ConstantValue cv : value.getFrozensetElements()) {
                         createConstant(cv);
                     }
@@ -2109,8 +2112,14 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
          * @param args the sequence of expressions to unstar
          */
         private void emitUnstar(Runnable initialElementsProducer, ExprTy[] args) {
-            if (len(args) == 0 && initialElementsProducer == null) {
+            if (initialElementsProducer == null && len(args) == 0) {
                 b.emitLoadConstant(PythonUtils.EMPTY_OBJECT_ARRAY);
+            } else if (initialElementsProducer == null && len(args) == 1 && args[0] instanceof ExprTy.Starred) {
+                // Optimization for single starred argument: we can just upack it. For generic
+                // algorithm see the next branch
+                b.beginUnpackStarred();
+                ((ExprTy.Starred) args[0]).value.accept(this);
+                b.endUnpackStarred();
             } else if (anyIsStarred(args)) {
                 /**
                  * We emit one or more arrays and concatenate them using Unstar. Each array
@@ -3626,6 +3635,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
                 emitPatternCondition(c, pc);
                 visitStatements(c.body);
+                pc.bindVariables.clear();
                 visitMatchCaseRecursively(cases, index + 1, pc);
                 b.endIfThenElse();
             } else {
@@ -3697,7 +3707,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.endBlock();
             }
             if (guard != null) {
-                guard.accept(this);
+                visitCondition(guard);
             }
             b.endPrimitiveBoolAnd();
         }
@@ -3721,9 +3731,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             if (pattern instanceof PatternTy.MatchAs matchAs) {
                 doVisitPattern(matchAs, pc);
             } else if (pattern instanceof PatternTy.MatchClass matchClass) {
-                doVisitPattern(matchClass);
+                doVisitPattern(matchClass, pc);
             } else if (pattern instanceof PatternTy.MatchMapping matchMapping) {
-                doVisitPattern(matchMapping);
+                doVisitPattern(matchMapping, pc);
             } else if (pattern instanceof PatternTy.MatchOr matchOr) {
                 doVisitPattern(matchOr, pc);
             } else if (pattern instanceof PatternTy.MatchSequence matchSequence) {
@@ -3779,22 +3789,490 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.endBlock();
         }
 
-        private void doVisitPattern(PatternTy.MatchClass node) {
-            emitPatternNotImplemented("class");
+        /**
+         * Saves subject of the pattern context into BytecodeLocal variable, to be restored
+         * eventually.
+         * 
+         * @param pc Pattern context, which subject needs to be saved.
+         * @return Subject saved in local variable.
+         */
+        private BytecodeLocal patternContextSubjectSave(PatternContext pc) {
+            BytecodeLocal pcSave = b.createLocal();
+            b.beginStoreLocal(pcSave);
+            b.emitLoadLocal(pc.subject);
+            b.endStoreLocal();
+            return pcSave;
         }
 
-        private void doVisitPattern(PatternTy.MatchMapping node) {
-            emitPatternNotImplemented("mapping");
+        /**
+         * Loads pattern context subject back into pattern context.
+         * 
+         * @param pcSave Variable to restore pattern context subject from.
+         * @param pc Pattern context into which the subject should be restored.
+         */
+        private void patternContextSubjectLoad(BytecodeLocal pcSave, PatternContext pc) {
+            b.beginStoreLocal(pc.subject);
+            b.emitLoadLocal(pcSave);
+            b.endStoreLocal();
+        }
+
+        /**
+         * Check if attribute and keyword attribute lengths match, or if there isn't too much
+         * patterns or attributes. Throws error on fail.
+         * 
+         * @param patLen Patterns count
+         * @param attrsLen Attributes count
+         * @param kwdPatLen Keyword attributes count
+         * @param node MatchClass node for errors
+         */
+        private void classMatchLengthChecks(int patLen, int attrsLen, int kwdPatLen, PatternTy.MatchClass node) {
+            if (attrsLen != kwdPatLen) {
+                ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "kwd_attrs (%d) / kwd_patterns (%d) length mismatch in class pattern", attrsLen, kwdPatLen);
+            }
+            if (Integer.MAX_VALUE < patLen + attrsLen - 1) {
+                String id = node.cls instanceof ExprTy.Name ? ((ExprTy.Name) node.cls).id : node.cls.toString();
+                ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "too many sub-patterns in class pattern %s", id);
+            }
+
+        }
+
+        /**
+         * Visits sub-patterns for class pattern matching. Regular, positional patterns are handled
+         * first, then the keyword patterns (e.g. the "class.attribute = [keyword] pattern").
+         * Generates boolean value based on results of the subpatterns; values are evaluated using
+         * the AND operator.
+         * 
+         * @param patterns Patterns to check as subpatterns.
+         * @param kwdPatterns Keyword patterns to check as subpatterns.
+         * @param attrsValueUnpacked Values to use as `pc.subject` in sub-pattern check.
+         * @param pc Pattern context (subject is saved then restored).
+         * @param patLen Number of patterns.
+         * @param attrsLen Number of attributes (also keyword patterns).
+         */
+        private void classMatchVisitSubpatterns(PatternTy[] patterns, PatternTy[] kwdPatterns, BytecodeLocal attrsValueUnpacked, PatternContext pc, int patLen, int attrsLen) {
+            BytecodeLocal pcSave = patternContextSubjectSave(pc);
+
+            if (patLen + attrsLen == 0) {
+                b.emitLoadConstant(true);
+            } else {
+                BytecodeLocal temp = b.createLocal();
+                b.beginStoreLocal(temp);
+                b.beginPrimitiveBoolAnd();
+                for (int i = 0; i < patLen; i++) {
+                    b.beginBlock();
+                    b.beginStoreLocal(pc.subject);
+                    b.beginArrayIndex(i);
+                    b.emitLoadLocal(attrsValueUnpacked);
+                    b.endArrayIndex();
+                    b.endStoreLocal();
+
+                    visitSubpattern(patterns[i], pc);
+                    b.endBlock();
+                }
+
+                for (int i = 0, j = patLen; i < attrsLen; i++, j++) {
+                    b.beginBlock();
+                    b.beginStoreLocal(pc.subject);
+                    b.beginArrayIndex(j);
+                    b.emitLoadLocal(attrsValueUnpacked);
+                    b.endArrayIndex();
+                    b.endStoreLocal();
+
+                    visitSubpattern(kwdPatterns[i], pc);
+                    b.endBlock();
+                }
+                b.endPrimitiveBoolAnd();
+                b.endStoreLocal();
+
+                patternContextSubjectLoad(pcSave, pc);
+
+                b.emitLoadLocal(temp);
+            }
+        }
+
+        private void doVisitPattern(PatternTy.MatchClass node, PatternContext pc) {
+            /**
+             * Class pattern matching consists of subject and pattern. Pattern is split into:
+             * <ul>
+             * <li> patterns: These are positional and match the {@code __match_args__} arguments of the class, and are
+             * evaluated as sub-patterns with respective positional class attributes as subjects.
+             * <li> keyword attributes (kwdAttrs): These are non-positional, named class attributes that need to match
+             * the accompanying keyword patterns.
+             * <li> keyword patterns (kwdPatterns): Patterns that accompany keyword attributes, these are evaluated as
+             * sub-patterns with provided class attributes as subjects. Note that the number of keyword attributes
+             * and keyword patterns do need to match.
+             * </ul>
+             *
+             * Example:
+             * @formatter:off
+             *     x = <some class>
+             *     match x:
+             *         case <class>(x, 42 as y, a = ("test1" | "test2") as z):
+             *             ...
+             * @formatter:on
+             * Here, {@code x} and {@code 42 as y} are "patterns" (positional), {@code a} is "keyword attribute" and
+             * {@code ... as z} is its accompanying "keyword pattern".
+             */
+
+            b.beginBlock();
+
+            PatternTy[] patterns = node.patterns;
+            String[] kwdAttrs = node.kwdAttrs;
+            PatternTy[] kwdPatterns = node.kwdPatterns;
+            int patLen = lengthOrZero(patterns);
+            int attrsLen = lengthOrZero(kwdAttrs);
+            int kwdPatLen = lengthOrZero(kwdPatterns);
+
+            classMatchLengthChecks(patLen, attrsLen, kwdPatLen, node);
+            if (attrsLen > 0) {
+                validateKwdAttrs(kwdAttrs, kwdPatterns);
+            }
+
+            //@formatter:off
+            // attributes needs to be converted into truffle strings
+            TruffleString[] tsAttrs = new TruffleString[attrsLen];
+            for (int i = 0; i < attrsLen; i++) {
+                tsAttrs[i] = toTruffleStringUncached(kwdAttrs[i]);
+            }
+
+            b.beginPrimitiveBoolAnd();
+                BytecodeLocal attrsValue = b.createLocal();
+                // match class that's in the subject
+                b.beginMatchClass(attrsValue);
+                    b.emitLoadLocal(pc.subject);
+                    node.cls.accept(this); // get class type
+                    b.emitLoadConstant(patLen);
+                    b.emitLoadConstant(tsAttrs);
+                b.endMatchClass();
+
+                b.beginBlock();
+                    // attributes from match class needs to be unpacked first
+                    BytecodeLocal attrsValueUnpacked = b.createLocal();
+                    b.beginStoreLocal(attrsValueUnpacked);
+                        b.beginUnpackSequence(patLen + attrsLen);
+                            b.emitLoadLocal(attrsValue);
+                        b.endUnpackSequence();
+                    b.endStoreLocal();
+
+                    classMatchVisitSubpatterns(patterns, kwdPatterns, attrsValueUnpacked, pc, patLen, attrsLen);
+                b.endBlock();
+            b.endPrimitiveBoolAnd();
+
+            b.endBlock();
+            //@formatter:on
+        }
+
+        /**
+         * Checks if keyword argument names aren't the same or if their name isn't forbidden. Raises
+         * error at fail.
+         * 
+         * @param attrs Attributes to check.
+         * @param patterns Patterns for error source range.
+         */
+        private void validateKwdAttrs(String[] attrs, PatternTy[] patterns) {
+            // Any errors will point to the pattern rather than the arg name as the
+            // parser is only supplying identifiers rather than Name or keyword nodes
+            int attrsLen = lengthOrZero(attrs);
+            for (int i = 0; i < attrsLen; i++) {
+                String attr = attrs[i];
+                checkForbiddenName(attr, NameOperation.BeginWrite, patterns[i].getSourceRange());
+                for (int j = i + 1; j < attrsLen; j++) {
+                    String other = attrs[j];
+                    if (attr.equals(other)) {
+                        ctx.errorCallback.onError(ErrorType.Syntax, patterns[j].getSourceRange(), "attribute name repeated in class pattern: `%s`", attr);
+                    }
+                }
+            }
+        }
+
+        private static int lengthOrZero(Object[] p) {
+            return p == null ? 0 : p.length;
+        }
+
+        /**
+         * Checks if keys in pattern are, if present, longer than keys in subject. If yes, pattern
+         * should fail, otherwise, we should continue with evaluation.
+         *
+         * Generates result of the comparison (boolean).
+         *
+         * @param keyLen Number of keys in pattern.
+         * @param pc Pattern context.
+         */
+        private void checkPatternKeysLength(int keyLen, PatternContext pc) {
+            b.beginGe();
+            b.beginGetLen();
+            b.emitLoadLocal(pc.subject);
+            b.endGetLen();
+            b.emitLoadConstant(keyLen);
+            b.endGe();
+        }
+
+        /**
+         * Will process pattern keys: Attributes evaluation and constant folding. Checks for
+         * duplicate keys and that only literals and attributes lookups are being matched.
+         *
+         * Generates array.
+         *
+         * @param keys Pattern keys.
+         * @param keyLen Length of pattern keys.
+         * @param node Pattern matching node, for source range in errors.
+         */
+        private void processPatternKeys(ExprTy[] keys, int keyLen, PatternTy.MatchMapping node) {
+            b.beginCollectToObjectArray(); // keys (from pattern)
+            List<Object> seen = new ArrayList<>();
+            for (int i = 0; i < keyLen; i++) {
+                ExprTy key = keys[i];
+                if (key instanceof ExprTy.Attribute) {
+                    key.accept(this);
+                } else {
+                    ConstantValue constantValue = null;
+                    if (key instanceof ExprTy.UnaryOp || key instanceof ExprTy.BinOp) {
+                        constantValue = foldConstantOp(key);
+                    } else if (key instanceof ExprTy.Constant) {
+                        constantValue = ((ExprTy.Constant) key).value;
+                    } else {
+                        ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "mapping pattern keys may only match literals and attribute lookups");
+                    }
+                    assert constantValue != null;
+                    Object pythonValue = PythonUtils.pythonObjectFromConstantValue(constantValue);
+                    for (Object o : seen) {
+                        // need python like equal - e.g. 1 equals True
+                        if (PyObjectRichCompareBool.executeEqUncached(o, pythonValue)) {
+                            ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "mapping pattern checks duplicate key (%s)", pythonValue);
+                        }
+                    }
+                    seen.add(pythonValue);
+                    createConstant(constantValue);
+                }
+            }
+            b.endCollectToObjectArray();
+        }
+
+        /**
+         * Visit all sub-patterns for mapping in pattern (not subject).
+         *
+         * Generates boolean value (AND of result of all sub-patterns).
+         *
+         * @param patterns Sub-patterns to iterate through.
+         * @param values Patterns from subject to set as subject for evaluated sub-patterns.
+         * @param pc Pattern context.
+         */
+        private void mappingVisitSubpatterns(PatternTy[] patterns, BytecodeLocal values, PatternContext pc) {
+            int patLen = patterns.length;
+
+            b.beginBlock();
+            // unpack values from pc.subject
+            BytecodeLocal valuesUnpacked = b.createLocal();
+            b.beginStoreLocal(valuesUnpacked);
+            b.beginUnpackSequence(patLen);
+            b.emitLoadLocal(values);
+            b.endUnpackSequence();
+            b.endStoreLocal();
+
+            // backup pc.subject, it will get replaced for sub-patterns
+            BytecodeLocal pcSave = patternContextSubjectSave(pc);
+
+            BytecodeLocal temp = b.createLocal();
+            b.beginStoreLocal(temp);
+            b.beginPrimitiveBoolAnd();
+            boolean hadNonWildcardPattern = false;
+            for (int i = 0; i < patLen; i++) {
+                if (wildcardCheck(patterns[i])) {
+                    continue;
+                }
+                hadNonWildcardPattern = true;
+                b.beginBlock();
+                b.beginStoreLocal(pc.subject);
+                b.beginArrayIndex(i);
+                b.emitLoadLocal(valuesUnpacked);
+                b.endArrayIndex();
+                b.endStoreLocal();
+
+                visitSubpattern(patterns[i], pc);
+                b.endBlock();
+            }
+            if (!hadNonWildcardPattern) {
+                b.emitLoadConstant(true);
+            }
+            b.endPrimitiveBoolAnd();
+            b.endStoreLocal();
+
+            patternContextSubjectLoad(pcSave, pc);
+
+            b.emitLoadLocal(temp);
+            b.endBlock();
+        }
+
+        private void doVisitPattern(PatternTy.MatchMapping node, PatternContext pc) {
+            /**
+             * Mapping pattern match will take the keys and check, whether the keys in the pattern
+             * are present in the subject. This is good enough, since the pattern needs only to be a
+             * subset of the subject. Keys aren't evaluated as subpatterns.
+             *
+             * After the key check, the values of the pattern are patterns as well and are evaluated
+             * as sub-patterns with values in the subject used as separate respective subjects.
+             */
+            ExprTy[] keys = node.keys;
+            PatternTy[] patterns = node.patterns;
+
+            int keyLen = lengthOrZero(keys);
+            int patLen = lengthOrZero(patterns);
+
+            if (keyLen != patLen) {
+                ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "keys (%d) / patterns (%d) length mismatch in mapping pattern", keyLen, patLen);
+            }
+            // @formatter:off
+
+            b.beginPrimitiveBoolAnd(); // AND for type, trivial and key length matching
+                // check that type matches
+                b.beginCheckTypeFlags(TypeFlags.MAPPING);
+                    b.emitLoadLocal(pc.subject);
+                b.endCheckTypeFlags();
+
+                String starTarget = node.rest;
+                if (keyLen == 0 && starTarget == null) {
+                    b.emitLoadConstant(true);
+                    b.endPrimitiveBoolAnd();
+                    return;
+                }
+                if (Integer.MAX_VALUE < keyLen - 1) {
+                    ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "too many sub-patterns in mapping pattern");
+                }
+
+                // If the pattern has any keys in it, perform a length check:
+                if (keyLen > 0) {
+                    checkPatternKeysLength(keyLen, pc);
+                }
+
+                b.beginBlock();
+                    BytecodeLocal subjectPatterns = b.createLocal();
+                    BytecodeLocal temp = b.createLocal();
+                    BytecodeLocal keysChecked = b.createLocal();
+
+                    b.beginStoreLocal(temp);
+                        b.beginPrimitiveBoolAnd(); // AND process keys and sub-patterns
+                            b.beginBlock();
+                                b.beginStoreLocal(keysChecked);
+                                    processPatternKeys(keys, keyLen, node);
+                                b.endStoreLocal();
+
+                                // save match result together with values
+                                b.beginMatchKeys(subjectPatterns);
+                                    b.emitLoadLocal(pc.subject);
+                                    b.emitLoadLocal(keysChecked);
+                                b.endMatchKeys();
+                            b.endBlock();
+
+                            if (patLen > 0) {
+                                mappingVisitSubpatterns(patterns, subjectPatterns, pc);
+                            }
+                        b.endPrimitiveBoolAnd(); // AND process keys and sub-patterns
+                    b.endStoreLocal(); // temp
+
+                    if (starTarget != null) {
+                        BytecodeLocal starVariable = pc.allocateBindVariable(starTarget);
+                        b.beginStoreLocal(starVariable);
+                            b.beginCopyDictWithoutKeys();
+                                b.emitLoadLocal(pc.subject);
+                                b.emitLoadLocal(keysChecked);
+                            b.endCopyDictWithoutKeys();
+                        b.endStoreLocal();
+                    }
+
+                    b.emitLoadLocal(temp);
+                b.endBlock();
+            b.endPrimitiveBoolAnd(); // AND for key length matching
+
+            // @formatter:on
+        }
+
+        private void checkAlternativePatternDifferentNames(Set<String> control, Map<String, BytecodeLocal> bindVariables) {
+            if (!control.equals(bindVariables.keySet())) {
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "alternative patterns bind different names");
+            }
+        }
+
+        private void fromPatternContextToLocal(PatternContext pc, BytecodeLocal local_temp) {
+            b.beginIfThen();
+
+            // condition
+            b.emitLoadLocal(local_temp);
+
+            // if-then
+            b.beginBlock();
+
+            if (!pc.bindVariables.isEmpty()) {
+                for (Map.Entry<String, BytecodeLocal> entry : pc.bindVariables.entrySet()) {
+                    beginStoreLocal(entry.getKey(), b);
+                    b.emitLoadLocal(entry.getValue());
+                    endStoreLocal(entry.getKey(), b);
+                }
+            }
+
+            b.endBlock();
+            b.endIfThen();
+        }
+
+        private void visitMatchOrRecursively(PatternTy[] patterns, int index, PatternContext pc, Set<String> control, boolean allowIrrefutable) {
+            /**
+             * Case patterns joined by OR operator are chained as a sequence of binary OR operators, as in:
+             *
+             * @formatter:off
+             * case pattern1 | (pattern2 | (pattern3 | ... (patternN-1 | patternN))):
+             *  ...
+             * @formatter:on
+             */
+            b.beginBoolOr();
+            b.beginBlock();
+
+            pc = new PatternContext(pc.subject);
+
+            // store the (boolean) result of the sub-pattern
+            BytecodeLocal local_temp = b.createLocal();
+            b.beginStoreLocal(local_temp);
+            visitPattern(patterns[index], pc);
+            b.endStoreLocal();
+
+            if (index == 0) {
+                control = new HashSet<>(pc.bindVariables.keySet());
+            }
+            checkAlternativePatternDifferentNames(control, pc.bindVariables);
+            fromPatternContextToLocal(pc, local_temp);
+
+            b.emitLoadLocal(local_temp);
+            b.endBlock();
+
+            if (index + 2 < patterns.length) {
+                visitMatchOrRecursively(patterns, index + 1, pc, control, allowIrrefutable);
+                b.endBoolOr();
+            } else {
+                // Only last sub-pattern can be irrefutable -- if it was allowed in the first place
+                pc = new PatternContext(pc.subject);
+                pc.allowIrrefutable = allowIrrefutable;
+
+                b.beginBlock();
+
+                // store the (boolean) result of the sub-pattern
+                local_temp = b.createLocal();
+                b.beginStoreLocal(local_temp);
+                visitPattern(patterns[index + 1], pc);
+                b.endStoreLocal();
+
+                checkAlternativePatternDifferentNames(control, pc.bindVariables);
+                fromPatternContextToLocal(pc, local_temp);
+
+                b.emitLoadLocal(local_temp);
+                b.endBlock();
+                b.endBoolOr();
+            }
         }
 
         private void doVisitPattern(PatternTy.MatchOr node, PatternContext pc) {
-            if (node.patterns.length > 2) {
-                emitPatternNotImplemented("OR with more than 2 elements");
-            }
-            b.beginBoolOr();
-            visitPattern(node.patterns[0], pc);
-            visitPattern(node.patterns[1], pc);
-            b.endBoolOr();
+            boolean saveIrrefutable = pc.allowIrrefutable;
+            // sub-patterns are not irrefutable by default, only last one is
+            // this needs to be restored before last sub-pattern is visited
+            pc.allowIrrefutable = false;
+            visitMatchOrRecursively(node.patterns, 0, pc, null, saveIrrefutable);
         }
 
         private void patternHelperSequenceUnpack(PatternTy[] patterns, PatternContext pc) {
@@ -3808,7 +4286,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             patternUnpackHelper(patterns, pc);
             b.endStoreLocal();
 
+            b.beginPrimitiveBoolAnd();
             for (int i = 0; i < n; i++) {
+                b.beginBlock();
                 b.beginStoreLocal(pc.subject);
                 b.beginArrayIndex(i);
                 b.emitLoadLocal(unpacked);
@@ -3816,7 +4296,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.endStoreLocal();
 
                 visitSubpattern(patterns[i], pc);
+                b.endBlock();
             }
+
+            b.endPrimitiveBoolAnd();
             b.endBlock();
         }
 
@@ -3924,6 +4407,17 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 onlyWildcard &= wildcardCheck(pattern);
             }
 
+            b.beginBlock();
+            BytecodeLocal resultOfAnd = b.createLocal();
+
+            // oldSubject <- pc.subject
+            // store pc.subject for eventual return from sub-pattern
+            BytecodeLocal oldSubject = b.createLocal();
+            b.beginStoreLocal(oldSubject);
+            b.emitLoadLocal(pc.subject);
+            b.endStoreLocal();
+
+            b.beginStoreLocal(resultOfAnd);
             b.beginPrimitiveBoolAnd();
 
             b.beginCheckTypeFlags(TypeFlags.SEQUENCE);
@@ -3968,6 +4462,17 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
 
             b.endPrimitiveBoolAnd();
+            b.endStoreLocal();
+
+            // pc.subject <- oldSubject
+            // load old subject when returning from sub-pattern
+            b.beginStoreLocal(pc.subject);
+            b.emitLoadLocal(oldSubject);
+            b.endStoreLocal();
+
+            b.emitLoadLocal(resultOfAnd);
+            b.endBlock();
+
         }
 
         private void doVisitPattern(PatternTy.MatchSingleton node, PatternContext pc) {

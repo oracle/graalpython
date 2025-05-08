@@ -49,13 +49,11 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -88,7 +86,6 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     }
 
     private static final class LocalData {
-        private final HashMap<String, String> bindings = new HashMap<>();
         private final List<TruffleString> history = new ArrayList<>();
         protected Object completer = null;
         protected boolean autoHistory = true;
@@ -130,16 +127,9 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ParseAndBindNode extends PythonBinaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        PNone setCompleter(PythonModule self, TruffleString tspec) {
-            String spec = tspec.toJavaStringUncached();
-            if (spec.startsWith("tab:")) {
-                LocalData data = self.getModuleState(LocalData.class);
-                data.bindings.put("tab", spec.split(":")[1].trim());
-                return PNone.NONE;
-            } else {
-                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("any other binding than 'tab'"));
-            }
+        static PNone parseAndBind(@SuppressWarnings("unused") PythonModule self, @SuppressWarnings("unused") TruffleString tspec) {
+            // TODO implement
+            return PNone.NONE;
         }
     }
 

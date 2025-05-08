@@ -1,6 +1,0 @@
-# The lightest configuration that allows building PYTHON_NATIVE_STANDALONE_SVM_JAVA21.
-# For example: mx --dy /vm build --dep PYTHON_NATIVE_STANDALONE_SVM_JAVA21
-DYNAMIC_IMPORTS=/compiler,/regex,/sdk,/substratevm,/tools,/truffle,graalpython
-COMPONENTS=cmp,cov,dap,dis,gu,gvm,icu4j,xz,ins,insight,insightheap,lg,lsp,nfi-libffi,pbm,pmh,pro,pyn,pynl,rgx,sdk,sdkl,tfl,tfla,tflc,tflm,truffle-json
-NATIVE_IMAGES=lib:pythonvm
-DISABLE_INSTALLABLES=False

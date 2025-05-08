@@ -125,34 +125,11 @@ public final class BytecodeCodeUnit extends CodeUnit {
     }
 
     @Override
-    public String toString() {
-        return toString(false);
-    }
-
-    public String toString(boolean quickened) {
-        StringBuilder sb = new StringBuilder();
-
-        HashMap<Integer, String[]> lines = new HashMap<>();
-
-        sb.append("Disassembly of ").append(qualname).append(":\n");
-
-        List<String> flagNames = new ArrayList<>();
-        if (isGenerator()) {
-            flagNames.add("CO_GENERATOR");
-        }
-        if (isCoroutine()) {
-            flagNames.add("CO_COROUTINE");
-        }
-        if (isAsyncGenerator()) {
-            flagNames.add("CO_ASYNC_GENERATOR");
-        }
-        if (!flagNames.isEmpty()) {
-            sb.append("Flags: ").append(String.join(" | ", flagNames)).append("\n");
-        }
-
+    protected void dumpBytecode(StringBuilder sb, boolean quickened) {
         int bci = 0;
         int oparg = 0;
         SourceMap map = getSourceMap();
+        HashMap<Integer, String[]> lines = new HashMap<>();
         while (bci < code.length) {
             int bcBCI = bci;
             OpCodes opcode = OpCodes.fromOpCode(code[bci++]);
@@ -398,15 +375,6 @@ public final class BytecodeCodeUnit extends CodeUnit {
                 sb.append('\n');
             }
         }
-
-        for (Object c : constants) {
-            if (c instanceof CodeUnit) {
-                sb.append('\n');
-                sb.append(c);
-            }
-        }
-
-        return sb.toString();
     }
 
     private static String collectionKindToString(int oparg) {

@@ -52,7 +52,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode.CreateAndCheckArgumentsNode;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
@@ -201,7 +201,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         Object execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CreateAndCheckArgumentsNode createArgsNode,
+                        @Cached CreateArgumentsNode createArgsNode,
                         @Cached CallDispatchers.CallTargetCachedInvokeNode invokeNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -259,7 +259,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                         @Bind("$node") Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallDispatchers.CallTargetCachedInvokeNode invokeNode,
-                        @Cached CreateAndCheckArgumentsNode createArgsNode,
+                        @Cached CreateArgumentsNode createArgsNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
@@ -327,7 +327,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                         @Bind("$node") Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached ExecutePositionalStarargsNode posStarargsNode,
-                        @Cached CreateAndCheckArgumentsNode createArgsNode,
+                        @Cached CreateArgumentsNode createArgsNode,
                         @Cached CallDispatchers.CallTargetCachedInvokeNode invokeNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -390,7 +390,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                         @Bind("$node") Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached ExecutePositionalStarargsNode posStarargsNode,
-                        @Cached CreateAndCheckArgumentsNode createArgsNode,
+                        @Cached CreateArgumentsNode createArgsNode,
                         @Cached CallDispatchers.CallTargetCachedInvokeNode invokeNode,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode,
                         @Cached NativeToPythonNode toJavaNode,

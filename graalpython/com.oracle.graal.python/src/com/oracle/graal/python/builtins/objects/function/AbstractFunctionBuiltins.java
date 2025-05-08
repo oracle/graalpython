@@ -68,7 +68,6 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
@@ -113,17 +112,15 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
         @Specialization
         Object doIt(VirtualFrame frame, PFunction self, Object[] arguments, PKeyword[] keywords,
                         @Bind Node inliningTarget,
-                        @Shared @Cached CreateArgumentsNode createArgs,
-                        @Cached CallDispatchers.FunctionCachedInvokeNode invoke) {
-            return invoke.execute(frame, inliningTarget, self, createArgs.execute(self, arguments, keywords));
+                        @Cached CallDispatchers.FunctionCachedCallNode callNode) {
+            return callNode.execute(frame, inliningTarget, self, arguments, keywords);
         }
 
         @Specialization
         Object doIt(VirtualFrame frame, PBuiltinFunction self, Object[] arguments, PKeyword[] keywords,
                         @Bind Node inliningTarget,
-                        @Shared @Cached CreateArgumentsNode createArgs,
-                        @Cached CallDispatchers.BuiltinFunctionCachedInvokeNode invoke) {
-            return invoke.execute(frame, inliningTarget, self, createArgs.execute(self, arguments, keywords));
+                        @Cached CallDispatchers.BuiltinFunctionCachedCallNode callNode) {
+            return callNode.execute(frame, inliningTarget, self, arguments, keywords);
         }
     }
 

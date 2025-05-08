@@ -162,7 +162,7 @@ public final class PythonCextCEvalBuiltins {
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached CodeNodes.GetCodeSignatureNode getSignatureNode,
                         @Cached CodeNodes.GetCodeCallTargetNode getCallTargetNode,
-                        @Cached CreateArgumentsNode.CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
+                        @Cached CreateArgumentsNode createArgumentsNode,
                         @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
             Object[] defaults = readNode.readPyObjectArray(defaultValueArrayPtr, defaultValueCount);
             if (!PGuards.isPNone(kwdefaultsWrapper) && !PGuards.isDict(kwdefaultsWrapper)) {
@@ -185,7 +185,7 @@ public final class PythonCextCEvalBuiltins {
             // prepare Python frame arguments
             Object[] userArguments = readNode.readPyObjectArray(argumentArrayPtr, argumentCount);
             Signature signature = getSignatureNode.execute(inliningTarget, code);
-            Object[] pArguments = createAndCheckArgumentsNode.execute(inliningTarget, code, userArguments, keywords, signature, null, null, defaults, kwdefaults, false);
+            Object[] pArguments = createArgumentsNode.execute(inliningTarget, code, userArguments, keywords, signature, null, null, defaults, kwdefaults, false);
 
             // set custom locals
             if (!(locals instanceof PNone)) {

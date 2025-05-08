@@ -188,7 +188,7 @@ public class ParserCallbacksImpl implements ParserCallbacks {
         // Not very nice. This counts on the implementation in traceback.py where if the value of
         // text attribute is NONE, then the line is not printed
         Object text = PNone.NONE;
-        if (sourceRange.startLine <= source.getLineCount()) {
+        if (source.hasCharacters() && sourceRange.startLine <= source.getLineCount()) {
             String lineText = source.getCharacters(sourceRange.startLine).toString();
             if (lineText.startsWith("\uFEFF")) {
                 lineText = lineText.substring(1);
