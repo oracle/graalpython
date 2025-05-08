@@ -841,6 +841,7 @@ suite = {
                 "-H:-CopyLanguageResources",
                 "-Dpolyglot.python.PosixModuleBackend=native",
                 "-Dpolyglot.python.Sha3ModuleBackend=native",
+                "<bytecode_dsl_build_args>",
             ],
         },
     },
