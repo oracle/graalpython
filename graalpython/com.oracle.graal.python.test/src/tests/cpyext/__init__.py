@@ -91,6 +91,12 @@ class CPyExtTestCase(unittest.TestCase):
 
 compiled_registry = set()
 
+def find_rootdir():
+    # graalpython/com.oracle.graal.python.test/src/tests/cpyext/__init__.py
+    cur_dir = Path(__file__).parent
+    while cur_dir.name != 'graalpython':
+        cur_dir = cur_dir.parent
+    return cur_dir.parent
 
 def get_setuptools(setuptools='setuptools==67.6.1'):
     """
@@ -99,9 +105,9 @@ def get_setuptools(setuptools='setuptools==67.6.1'):
     and build the c extension tests.
     """
     import site    
-    py_site = Path(site.getsitepackages()[0]).parent / 'site-package-for-tests'
+    setuptools_path = find_rootdir() / ('%s-setuptools-venv' % sys.implementation.name)
 
-    if not os.path.isdir(py_site / 'setuptools'):
+    if not os.path.isdir(setuptools_path / 'setuptools'):
         import subprocess
         import tempfile
         import venv
@@ -111,11 +117,11 @@ def get_setuptools(setuptools='setuptools==67.6.1'):
             py_executable = temp_env / 'Scripts' / 'python.exe'
         else:
             py_executable = temp_env / 'bin' / 'python3'
-        subprocess.run([py_executable, "-m", "pip", "install", "--target", str(py_site), setuptools], check=True)
-        print('setuptools is installed in %s' % py_site)
+        subprocess.run([py_executable, "-m", "pip", "install", "--target", str(setuptools_path), setuptools], check=True)
+        print('setuptools is installed in %s' % setuptools_path)
         shutil.rmtree(temp_env)
     
-    pyvenv_site = str(py_site)
+    pyvenv_site = str(setuptools_path)
     if pyvenv_site not in site.getsitepackages():
         site.addsitedir(pyvenv_site)
 
