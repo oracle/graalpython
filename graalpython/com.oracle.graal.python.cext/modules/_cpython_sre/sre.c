@@ -1111,18 +1111,6 @@ error:
 
 }
 
-static void *_memchr(const void *s, int c, Py_ssize_t n) {
-    unsigned char *p = (unsigned char*)s;
-    while(n--) {
-        if(*p != (unsigned char)c) {
-            p++;
-        } else {
-            return p;
-        }
-    }
-    return 0;
-}
-
 static PyObject *
 compile_template(_sremodulestate *module_state,
                  PatternObject *pattern, PyObject *template)
