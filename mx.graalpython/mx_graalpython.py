@@ -1447,17 +1447,17 @@ def tox_example(args=None):
 
     mx.log("Setting up CPython venv to run tox itself")
     libs = [
-        "distlib==0.3.4",
-        "filelock==3.6.0",
-        "packaging==21.3",
-        "platformdirs==2.5.1",
-        "pluggy==1.0.0",
+        "distlib==0.3.9",
+        "filelock==3.18.0",
+        "packaging==25.0",
+        "platformdirs==4.3.8",
+        "pluggy==1.5.0",
         "py==1.11.0",
-        "pyparsing==3.0.7",
-        "six==1.16.0",
+        "pyparsing==3.2.3",
+        "six==1.17.0",
         "toml==0.10.2",
-        "tox==3.24.5",
-        "virtualenv==20.13.4",
+        "tox==4.25.0",
+        "virtualenv==20.31.2",
         os.path.join(os.path.dirname(graalpy), "..", "graalpy_virtualenv_seeder"),
     ]
 
@@ -1521,7 +1521,7 @@ def tox_example(args=None):
     output = mx.LinesOutputCapture()
     mx.log("Running {} -m tox -e graalpy".format(python3))
     mx.run([python3, "-m", "tox"], env=new_env, cwd=wd, out=mx.TeeOutputCapture(output), err=subprocess.STDOUT)
-    check_output(["4 passed", "graalpy: commands succeeded"], output.lines)
+    check_output(["4 passed", "graalpy: OK"], output.lines)
 
     # Failing tests:
     mx.log("Running {} -m tox -e graalpy with intentionally failing tests".format(python3))
