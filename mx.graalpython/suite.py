@@ -1079,7 +1079,8 @@ suite = {
                 "sdk:NATIVEIMAGE",
                 "sdk:COLLECTIONS",
                 "truffle:TRUFFLE_NFI",
-                "truffle:TRUFFLE_NFI_LIBFFI", # runtime dependency for convenience
+                "truffle:TRUFFLE_NFI_LIBFFI", # runtime dependency
+                "truffle:TRUFFLE_NFI_PANAMA", # runtime dependency
                 "truffle:TRUFFLE_ICU4J",
                 "truffle:TRUFFLE_XZ",
             ],
