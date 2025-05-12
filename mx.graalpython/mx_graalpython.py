@@ -646,8 +646,6 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     else:
         env_file = 'native-ee' if enterprise else 'native-ce'
         standalone_dist = 'GRAALPY_NATIVE_STANDALONE'
-        if "GraalVM" in subprocess.check_output([get_jdk().java, '-version'], stderr=subprocess.STDOUT, universal_newlines=True):
-            assert False, "Cannot build a GraalPy native standalone with a Graal JDK, we only support latest for building the native images"
 
     mx_args = ['-p', SUITE.dir, *(['--env', env_file] if env_file else [])]
     mx_args.append("--extra-image-builder-argument=-g")
