@@ -46,10 +46,9 @@ import math
 import os
 import re
 import shutil
-import subprocess
 import sys
 
-from os.path import join, abspath, exists
+from os.path import join, abspath
 
 
 SUITE = None
@@ -372,121 +371,6 @@ class PyPyJsonRule(mx_benchmark.Rule, mx_benchmark.AveragingBenchmarkMixin):
         return r
 
 
-class GraalPyVm(mx_benchmark.GuestVm):
-    def __init__(self, config_name, options, host_vm=None):
-        super(GraalPyVm, self).__init__(host_vm=host_vm)
-        self._config_name = config_name
-        self._options = options
-
-    def name(self):
-        return "graalpython"
-
-    def config_name(self):
-        return self._config_name
-
-    def hosting_registry(self):
-        return mx_benchmark.java_vm_registry
-
-    def with_host_vm(self, host_vm):
-        return self.__class__(self.config_name(), self._options, host_vm)
-
-    def run(self, cwd, args):
-        for arg in args:
-            if "--vm.Xmx" in arg:
-                mx.log(f"Setting Xmx from {arg}")
-                break
-        else:
-            xmxArg = "--vm.Xmx8G"
-            mx.log(f"Setting Xmx as {xmxArg}")
-            args.insert(0, xmxArg)
-        try:
-            old_gp_arg = os.environ.get("GRAAL_PYTHON_ARGS")
-            if old_gp_arg:
-                os.environ["GRAAL_PYTHON_ARGS"] = old_gp_arg + " " + xmxArg
-            else:
-                os.environ["GRAAL_PYTHON_ARGS"] = xmxArg
-            old_java_opts = os.environ.get("JAVA_OPTS")
-            if old_java_opts:
-                os.environ["JAVA_OPTS"] = old_java_opts + " " + xmxArg.replace("--vm", "-")
-            else:
-                os.environ["JAVA_OPTS"] = xmxArg.replace("--vm.", "-")
-            mx.log("Running with `JAVA_OPTS={JAVA_OPTS}` and `GRAAL_PYTHON_ARGS={GRAAL_PYTHON_ARGS}`".format(**os.environ))
-            return self.host_vm().run_launcher("graalpy", self._options + args, cwd)
-        finally:
-            if old_java_opts:
-                os.environ["JAVA_OPTS"] = old_java_opts
-            else:
-                del os.environ["JAVA_OPTS"]
-            if old_gp_arg:
-                os.environ["GRAAL_PYTHON_ARGS"] = old_gp_arg
-            else:
-                del os.environ["GRAAL_PYTHON_ARGS"]
-
-
-class PyPyVm(mx_benchmark.Vm):
-    def config_name(self):
-        return "launcher"
-
-    def name(self):
-        return "pypy"
-
-    def interpreter(self):
-        home = mx.get_env("PYPY_HOME")
-        if not home:
-            try:
-                return (
-                    subprocess.check_output("which pypy3", shell=True).decode().strip()
-                )
-            except OSError:
-                mx.abort("{} is not set!".format("PYPY_HOME"))
-        return join(home, "bin", "pypy3")
-
-    def run(self, cwd, args):
-        env = os.environ.copy()
-        xmxArg = re.compile("--vm.Xmx([0-9]+)([kKgGmM])")
-        pypyGcMax = "8GB"
-        for idx, arg in enumerate(args):
-            if m := xmxArg.search(arg):
-                args = args[:idx] + args[idx + 1 :]
-                pypyGcMax = f"{m.group(1)}{m.group(2).upper()}B"
-                mx.log(f"Setting PYPY_GC_MAX={pypyGcMax} via {arg}")
-                break
-        else:
-            mx.log(
-                f"Setting PYPY_GC_MAX={pypyGcMax}, use --vm.Xmx argument to override it"
-            )
-        env["PYPY_GC_MAX"] = pypyGcMax
-        return mx.run([self.interpreter()] + args, cwd=cwd, env=env)
-
-
-class Python3Vm(mx_benchmark.Vm):
-    def config_name(self):
-        return "launcher"
-
-    def name(self):
-        return "cpython"
-
-    def interpreter(self):
-        home = mx.get_env("PYTHON3_HOME")
-        if not home:
-            return sys.executable
-        if exists(exe := join(home, "bin", "python3")):
-            return exe
-        elif exists(exe := join(home, "python3")):
-            return exe
-        elif exists(exe := join(home, "python")):
-            return exe
-        return join(home, "bin", "python")
-
-    def run(self, cwd, args):
-        for idx, arg in enumerate(args):
-            if "--vm.Xmx" in arg:
-                mx.warn(f"Ignoring {arg}, cannot restrict memory on CPython.")
-                args = args[:idx] + args[idx + 1 :]
-                break
-        return mx.run([self.interpreter()] + args, cwd=cwd)
-
-
 class WildcardList:
     """It is not easy to track for external suites which benchmarks are
     available, so we just return a wildcard list and assume the caller knows
@@ -509,19 +393,7 @@ class WildcardList:
 
 
 class PySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite):
-    def runAndReturnStdOut(self, benchmarks, bmSuiteArgs):
-        ret_code, out, dims = super().runAndReturnStdOut(benchmarks, bmSuiteArgs)
-
-        def _replace_host_vm(old, new):
-            host_vm = dims.get("host-vm")
-            if host_vm and old in host_vm:
-                dims['host-vm'] = host_vm.replace(old, new)
-                mx.logv(f"[DEBUG] replace 'host-vm': '{host_vm}' -> '{dims['host-vm']}'")
-
-        _replace_host_vm('graalvm-ce-python', 'graalvm-ce')
-        _replace_host_vm('graalvm-ee-python', 'graalvm-ee')
-
-        return ret_code, out, dims
+    pass
 
 
 class PyPerformanceSuite(PySuite):
@@ -551,6 +423,7 @@ class PyPerformanceSuite(PySuite):
     def _vmRun(self, vm, workdir, command, benchmarks, bmSuiteArgs):
         workdir = abspath(workdir)
         vm_venv = f"{self.name()}-{vm.name()}-{vm.config_name()}"
+        _, _, vm_dims = vm.run(workdir, ["--version"])
 
         if not hasattr(self, "prepared"):
             self.prepared = True
@@ -603,7 +476,7 @@ class PyPerformanceSuite(PySuite):
         mx.log(f"Return code of benchmark harness: {retcode}")
         shutil.copy(join(workdir, json_file), join(SUITE.dir, "raw_results.json"))
         shutil.copy(join(workdir, json_file_memory), join(SUITE.dir, "raw_results_memory.json"))
-        return retcode, ",".join([join(workdir, json_file), join(workdir, json_file_memory)])
+        return retcode, ",".join([join(workdir, json_file), join(workdir, json_file_memory)]), vm_dims
 
 
 class PyPySuite(PySuite):
@@ -633,6 +506,7 @@ class PyPySuite(PySuite):
     def _vmRun(self, vm, workdir, command, benchmarks, bmSuiteArgs):
         workdir = abspath(workdir)
         vm_venv = f"{self.name()}-{vm.name()}-{vm.config_name()}"
+        _, _, vm_dims = vm.run(workdir, ["--version"])
 
         if not hasattr(self, "prepared"):
             self.prepared = True
@@ -684,7 +558,7 @@ class PyPySuite(PySuite):
         )
         shutil.copy(join(workdir, json_file), join(SUITE.dir, "raw_results.json"))
         mx.log(f"Return code of benchmark harness: {retcode}")
-        return retcode, join(workdir, json_file)
+        return retcode, join(workdir, json_file), vm_dims
 
 
 class NumPySuite(PySuite):
@@ -726,6 +600,7 @@ class NumPySuite(PySuite):
         workdir = abspath(workdir)
         benchdir = join(workdir, "numpy", "benchmarks")
         vm_venv = f"{self.name()}-{vm.name()}-{vm.config_name()}"
+        _, _, vm_dims = vm.run(workdir, ["--version"])
 
         if not hasattr(self, "prepared"):
             self.prepared = True
@@ -786,9 +661,9 @@ class NumPySuite(PySuite):
         if json_file:
             json_file = json_file[0]
             shutil.copy(json_file, join(SUITE.dir, "raw_results.json"))
-            return retcode, json_file
+            return retcode, json_file, vm_dims
         else:
-            return -1, ""
+            return -1, "", vm_dims
 
 
 class PandasSuite(PySuite):
@@ -835,6 +710,7 @@ class PandasSuite(PySuite):
         workdir = abspath(workdir)
         benchdir = join(workdir, "pandas", "asv_bench")
         vm_venv = f"{self.name()}-{vm.name()}-{vm.config_name()}"
+        _, _, vm_dims = vm.run(workdir, ["--version"])
 
         if not hasattr(self, "prepared"):
             self.prepared = True
@@ -913,9 +789,9 @@ class PandasSuite(PySuite):
         if json_file:
             json_file = json_file[0]
             shutil.copy(json_file, join(SUITE.dir, "raw_results.json"))
-            return retcode, json_file
+            return retcode, json_file, vm_dims
         else:
-            return -1, ""
+            return -1, "", vm_dims
 
 
 def register_python_benchmarks():
@@ -924,15 +800,7 @@ def register_python_benchmarks():
     from mx_graalpython_benchmark import python_vm_registry as vm_registry
 
     python_vm_registry = vm_registry
-
     SUITE = mx.suite("graalpython")
-
-    python_vm_registry.add_vm(PyPyVm())
-    python_vm_registry.add_vm(Python3Vm())
-    for config_name, options, priority in [
-        ("launcher", [], 5),
-    ]:
-        python_vm_registry.add_vm(GraalPyVm(config_name, options), SUITE, priority)
 
     mx_benchmark.add_bm_suite(PyPerformanceSuite())
     mx_benchmark.add_bm_suite(PyPySuite())
