@@ -706,7 +706,7 @@ def graalvm_jdk():
         if sys.platform == "darwin":
             jdk_home_subdir = os.path.join(graal_jdk_home, 'Contents', 'Home')
             if os.path.exists(jdk_home_subdir):
-               graal_jdk_home = jdk_home_subdir
+                graal_jdk_home = jdk_home_subdir
         mx.log("Using Graal from GRAAL_JDK_HOME: " + graal_jdk_home)
 
         # Try to verify that we're getting what we expect:

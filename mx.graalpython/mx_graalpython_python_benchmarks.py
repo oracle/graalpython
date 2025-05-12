@@ -46,10 +46,9 @@ import math
 import os
 import re
 import shutil
-import subprocess
 import sys
 
-from os.path import join, abspath, exists
+from os.path import join, abspath
 
 
 SUITE = None
