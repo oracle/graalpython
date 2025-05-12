@@ -72,6 +72,7 @@ public enum CStructs {
     PyTupleObject,
     PyFloatObject,
     GraalPyFloatObject,
+    _PyLongValue,
     PyLongObject,
     PyModuleDef_Base,
     Py_complex,

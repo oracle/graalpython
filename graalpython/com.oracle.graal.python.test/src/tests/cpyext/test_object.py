@@ -45,6 +45,17 @@ from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compar
 
 is_windows = sys.platform == "win32"
 
+def to_lv_tag(x):
+    SIGN_ZERO = 1
+    SIGN_NEGATIVE = 2
+    NON_SIZE_BITS = 3
+    sign = 0
+    if x == 0:
+        return SIGN_ZERO
+    if x < 0:
+        sign = SIGN_NEGATIVE
+        x = -x
+    return x << NON_SIZE_BITS | sign
 
 def _reference_bytes(args):
     obj = args[0]
@@ -1518,31 +1529,39 @@ class TestObjectFunctions(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    test_Py_SIZE = CPyExtFunction(
+    test_lv_tag = CPyExtFunction(
         lambda args: args[1],
         lambda: (
-            (0, 0),
-            (1, 1),
-            (False, 0),
-            (True, 1),
-            (-1, -1),
-            (1, 1),
-            (1<<29, 1),
-            ((1<<30) - 1, 1),
-            (1<<30, 2),
-            (-1073741824, -2),
-            ((1<<60) - 1, 2),
-            (1<<60, 3),
-            (-1152921504606846976, -3)
+            (0, to_lv_tag(0)),
+            (1, to_lv_tag(1)),
+            (False, to_lv_tag(0)),
+            (True, to_lv_tag(1)),
+            (-1,  to_lv_tag(-1)),
+            (1, to_lv_tag(1)),
+            (1<<29, to_lv_tag(1)),
+            ((1<<30) - 1, to_lv_tag(1)),
+            (1<<30, to_lv_tag(2)),
+            (-1073741824,  to_lv_tag(-2)),
+            ((1<<60) - 1, to_lv_tag(2)),
+            (1<<60, to_lv_tag(3)),
+            (-1152921504606846976, to_lv_tag(-3))
         ),
-        code='''static Py_ssize_t wrap_Py_SIZE(PyObject* object, PyObject* unused) {
-            return Py_SIZE(object);
+        code='''
+        #ifdef GRAALVM_PYTHON
+            uintptr_t PyTruffleLong_lv_tag(const PyLongObject *op);
+            #define GET_LV_TAG(val) PyTruffleLong_lv_tag((PyLongObject*)val)
+        #else
+            #define GET_LV_TAG(val) ((PyLongObject*)val)->long_value.lv_tag
+        #endif
+
+        static Py_ssize_t wrap_lv_tag(PyObject* object, PyObject* unused) {
+            return GET_LV_TAG(object);
         }
         ''',
         arguments=["PyObject* object", "PyObject* unused"],
         resultspec="n",
         argspec="OO",
-        callfunction="wrap_Py_SIZE",
+        callfunction="wrap_lv_tag",
         cmpfunc=unhandled_error_compare
     )
 

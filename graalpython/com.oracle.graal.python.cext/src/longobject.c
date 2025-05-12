@@ -81,13 +81,6 @@ is_medium_int(stwodigits x)
 }
 #endif // GraalPy change
 
-static inline Py_ssize_t
-_PyLong_DigitCount(const PyLongObject *op)
-{
-    assert(PyLong_Check(op));
-    // GraalPy change: use our managed check
-    return GraalPyTruffleLong_DigitCount(op);
-}
 
 static PyObject *
 get_small_int(sdigit ival)
@@ -6051,3 +6044,9 @@ PyUnstable_Long_CompactValue(const PyLongObject* op) {
 }
 
 #endif // GraalPy change
+
+
+// GraalPy additions
+uintptr_t PyTruffleLong_lv_tag(const PyLongObject *op) {
+    return GET_SLOT_SPECIAL(op, PyLongObject, long_value_lv_tag, long_value.lv_tag);
+}

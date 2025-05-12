@@ -54,6 +54,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyGetSetDef;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyInstanceMethodObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyListObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyLongObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDef;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDescrObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodObject;
@@ -71,6 +72,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyUnicodeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyVarObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINTPTR_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_INT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.destructor;
@@ -104,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyMethodDefHelper;
@@ -754,8 +757,23 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         static long get(Object object,
                         @Bind("this") Node inliningTarget,
+                        @Cached GetClassNode getClassNode,
+                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
                         @Cached ObSizeNode obSizeNode) {
+            assert !isSameTypeNode.execute(inliningTarget, getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PInt);
+            assert !isSameTypeNode.execute(inliningTarget, getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.Boolean);
             return obSizeNode.execute(inliningTarget, object);
+        }
+    }
+
+    @CApiBuiltin(ret = UINTPTR_T, args = {PyLongObject}, call = Ignored)
+    abstract static class Py_get_PyLongObject_long_value_lv_tag extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static long getLvTag(Object n,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CExtNodes.LvTagNode lvTagNode) {
+            return lvTagNode.execute(inliningTarget, n);
         }
     }
 

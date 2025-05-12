@@ -243,6 +243,8 @@ PyAPI_DATA(PyTypeObject) PyBool_Type;
 // bpo-39573: The Py_SET_SIZE() function must be used to set an object size.
 PyAPI_FUNC(Py_ssize_t) PyTruffle_SIZE(PyObject *ob);
 static inline Py_ssize_t Py_SIZE(PyObject *ob) {
+    assert(Py_TYPE(ob) != &PyLong_Type);
+    assert(Py_TYPE(ob) != &PyBool_Type);
     return PyTruffle_SIZE(ob);
 }
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000

@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Double;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT_LIST;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_C_FUNCTION;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
@@ -297,6 +298,10 @@ public enum CFields {
 
     PyListObject__ob_item(PyObjectPtr),
     PyListObject__allocated(Py_ssize_t),
+
+    _PyLongValue__lv_tag(UINTPTR_T),
+    _PyLongValue__ob_digit(INT_LIST),
+    PyLongObject__long_value__lv_tag(UINTPTR_T),
 
     PyTupleObject__ob_item(PyObjectPtr),
 

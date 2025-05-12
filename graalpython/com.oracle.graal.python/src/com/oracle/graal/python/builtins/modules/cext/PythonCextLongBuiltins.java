@@ -62,7 +62,6 @@ import java.math.BigInteger;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.MathModuleBuiltins.Log10Node;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -70,6 +69,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuat
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
@@ -202,29 +202,11 @@ public final class PythonCextLongBuiltins {
     @CApiBuiltin(ret = Py_ssize_t, args = {PyLongObject}, call = Ignored)
     abstract static class PyTruffleLong_DigitCount extends CApiUnaryBuiltinNode {
 
-        static int getDigitCount(long n) {
-            return (int) Math.floor(Math.log10(n) + 1);
-        }
-
         @Specialization
-        static int i(int n) {
-            return getDigitCount(n);
-        }
-
-        @Specialization
-        static int l(long n) {
-            return getDigitCount(n);
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        static int b(boolean b) {
-            return 1;
-        }
-
-        @Specialization
-        static int p(PInt n) {
-            return Log10Node.getDigitCount(n.getValue());
+        static long getDC(Object n,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CExtNodes.LvTagNode lvTagNode) {
+            return lvTagNode.getDigitCount(inliningTarget, n);
         }
     }
 
