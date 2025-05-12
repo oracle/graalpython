@@ -273,7 +273,7 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
         out_version = subprocess.check_output([self.interpreter, '--version'], universal_newlines=True)
         # The benchmark data goes back a ways, we modify the reported dims for
         # continuity with the historical queries
-        graalvm_version_match = re.search(r"\(([^\)]+ ((?:\d+\.?)+))\)", out_version)
+        graalvm_version_match = re.search(r"\(([^\)]+ ((?:\d+\.?)+)).*\)", out_version)
         if not graalvm_version_match:
             mx.log(f"Using {out_version} as platform version string input")
             graalvm_version_match = [out_version, out_version, out_version]
