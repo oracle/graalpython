@@ -145,19 +145,19 @@ class TestSlots(unittest.TestCase):
         
         class A: __slots__ = ["__weakref__"]
         class B: __slots__ = ["__weakref__"]
-        with self.assertRaisesRegex(TypeError, '__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0'):
+        with self.assertRaisesRegex(TypeError, '__weakref__ slot disallowed: we already got one'):
             class C(A, B): __slots__ = ["__weakref__"]
 
         class A: pass
         class B: __slots__ = ["__weakref__"]        
-        with self.assertRaisesRegex(TypeError, '__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0'):
+        with self.assertRaisesRegex(TypeError, '__weakref__ slot disallowed: we already got one'):
             class C(A, B): __slots__ = ["__weakref__"]                
         
         class A: pass
         class B: pass
         with self.assertRaisesRegex(TypeError, '__dict__ slot disallowed: we already got one'):
             class C(A, B): __slots__ = ["__dict__", "__dict__"]
-        with self.assertRaisesRegex(TypeError, '__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0'):
+        with self.assertRaisesRegex(TypeError, '__weakref__ slot disallowed: we already got one'):
             class C(A, B): __slots__ = ["__weakref__", "__weakref__"]
             
     def test_itemsize_and_non_empty_slots(self):

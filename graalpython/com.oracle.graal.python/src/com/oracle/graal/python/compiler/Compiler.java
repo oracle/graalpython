@@ -4324,10 +4324,13 @@ public class Compiler implements SSTreeVisitor<Void> {
         warn(e, "%s indices must be integers or slices, not %s; perhaps you missed a comma?", inferType(e).getName(), indexType.getName());
     }
 
-    public static Parser createParser(String src, ParserCallbacks errorCb, InputType inputType, boolean interactiveTerminal) {
+    public static Parser createParser(String src, ParserCallbacks errorCb, InputType inputType, boolean interactiveTerminal, boolean allowIncompleteInput) {
         EnumSet<AbstractParser.Flags> flags = EnumSet.noneOf(AbstractParser.Flags.class);
         if (interactiveTerminal) {
             flags.add(AbstractParser.Flags.INTERACTIVE_TERMINAL);
+        }
+        if (allowIncompleteInput) {
+            flags.add(AbstractParser.Flags.ALLOW_INCOMPLETE_INPUT);
         }
         return createParser(src, errorCb, inputType, flags, PythonLanguage.MINOR);
     }

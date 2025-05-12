@@ -105,7 +105,10 @@ class ListTest(list_tests.CommonTest):
         del lst[1:]
         self.assertEqual(len(lst), 1)
 
-        size = sys.maxsize
+        # Begin Truffle change
+        # sys.maxsize is valid length of an array on SVM
+        size = 2 * sys.maxsize
+        # End Truffle change
         with self.assertRaises((MemoryError, OverflowError)):
             lst * size
         with self.assertRaises((MemoryError, OverflowError)):

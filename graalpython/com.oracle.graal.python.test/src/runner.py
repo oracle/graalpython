@@ -1395,6 +1395,10 @@ def main():
         help="Interpreter arguments to pass for subprocess invocation (when using -n)",
     )
     run_parser.add_argument(
+        '--append-path',
+        help="Append the path to sys.path",
+    )
+    run_parser.add_argument(
         'tests', nargs='+', type=TestSpecifier.from_str,
         help=dedent(
             """\
@@ -1429,6 +1433,8 @@ def main():
 
 
 def main_run(args):
+    if args.append_path:
+        sys.path.append(args.append_path)
     if args.retag_mode:
         args.all = True
         args.tagged = True

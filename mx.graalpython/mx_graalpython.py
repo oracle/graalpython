@@ -900,12 +900,10 @@ def graalpytest(args):
         python_args.insert(0, "--vm.Dpython.EnableBytecodeDSLInterpreter=true")
 
     runner_args.append(f'--subprocess-args={shlex.join(python_args)}')
+    if is_graalpy:
+        runner_args.append(f'--append-path={os.path.join(_dev_pythonhome(), "lib-python", "3")}')
     cmd_args = [*python_args, _python_test_runner(), 'run', *runner_args]
     delete_bad_env_keys(env)
-    if is_graalpy:
-        pythonpath = [os.path.join(_dev_pythonhome(), 'lib-python', '3')]
-        pythonpath += [p for p in env.get('PYTHONPATH', '').split(os.pathsep) if p]
-        env['PYTHONPATH'] = os.pathsep.join(pythonpath)
     if python_binary:
         try:
             result = run([python_binary, *cmd_args], nonZeroIsFatal=True, env=env)
@@ -1039,16 +1037,14 @@ def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, t
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True, checkIfWithGraalPythonEE=False,
                          report=False, parallel=8, exclude=None, paths=()):
-    sub_env = dict(env or os.environ)
-    sub_env['PYTHONPATH'] = os.path.join(_dev_pythonhome(), 'lib-python', '3')
 
     if checkIfWithGraalPythonEE:
         mx.run([python_binary, "-c", "import sys; print(sys.version)"])
     run_python_unittests(
         python_binary,
-        runner_args=['--tagged'],
+        runner_args=[f'--append-path={os.path.join(_dev_pythonhome(), "lib-python", "3")}', '--tagged'],
         paths=paths or [os.path.relpath(os.path.join(_get_stdlib_home(), 'test'))],
-        env=sub_env,
+        env=env,
         cwd=cwd,
         nonZeroIsFatal=nonZeroIsFatal,
         report=report,

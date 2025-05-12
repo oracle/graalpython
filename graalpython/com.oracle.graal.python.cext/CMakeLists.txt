@@ -79,14 +79,17 @@ if (MSVC)
     /wd4464 # relative include path contains '..'
     /wd4710 # 'fprintf': function not inlined
     /wd4706 # assignment within conditional expression
+    /wd4774 # 'sprintf': format string expected in argument 2 is not a string literal
 
     # Some that I'm not so happy about
     /wd4232 # sre: nonstandard extension used: 'ml_meth': address of dllimport 'Py_GenericAlias' is not static, identity not guaranteed
     /wd4191 # sre and sqlite: 'type cast': like unsafe conversion from 'PyObject *(__cdecl *)(MatchObject *,PyObject *const *,Py_ssize_t)' to 'void (__cdecl *)(void)'
     /wd4918 # sre: invalid character in pragma optimization list
     /wd4701 # cpython_unicodedata: potentially uninitialized local variable 'rc' used
+    /wd4703 # unicodeobject.c:potentially uninitialized local pointer variable used
     /wd4574 # sqlite: 'SQLITE_ATOMIC_INTRINSICS' is defined to be '0': did you mean to use '#if SQLITE_ATOMIC_INTRINSICS'?
     /wd4310 # xmlparse: cast truncates constant value
+    /wd4777 # format string '%zd' requires an argument of type 'unsigned __int64'
   )
 else()
   set(CFLAGS_WARNINGS -Wall -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable
@@ -105,6 +108,7 @@ endif()
 # preprocessor defines for all platforms
 add_compile_definitions(
     NDEBUG
+    WITH_FREELISTS=1
 )
 
 

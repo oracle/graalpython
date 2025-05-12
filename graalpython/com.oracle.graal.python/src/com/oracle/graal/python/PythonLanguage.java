@@ -629,14 +629,18 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    public RootCallTarget parse(PythonContext context, Source source, InputType type, boolean topLevel, int optimize, boolean interactiveTerminal, List<String> argumentNames,
-                    EnumSet<FutureFeature> futureFeatures) {
+    public RootCallTarget parse(PythonContext context, Source source, InputType type, boolean topLevel, int optimize, boolean interactiveTerminal, List<String> argumentNames, EnumSet<FutureFeature> futureFeatures) {
+        return parse(context, source, type, topLevel, optimize, interactiveTerminal, false, argumentNames, futureFeatures);
+    }
+
+    public RootCallTarget parse(PythonContext context, Source source, InputType type, boolean topLevel, int optimize, boolean interactiveTerminal, boolean allowIncompleteInput,
+                    List<String> argumentNames, EnumSet<FutureFeature> futureFeatures) {
         ParserCallbacksImpl errorCb = new ParserCallbacksImpl(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
         try {
             if (context.getEnv().getOptions().get(PythonOptions.ParserLogFiles)) {
                 LOGGER.log(Level.FINE, () -> "parse '" + source.getName() + "'");
             }
-            Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal);
+            Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal, allowIncompleteInput);
             ModTy mod = (ModTy) parser.parse();
             assert mod != null;
             return compileModule(context, mod, source, topLevel, optimize, argumentNames, errorCb, futureFeatures);

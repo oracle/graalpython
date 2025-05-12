@@ -75,6 +75,7 @@ import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer.Flag;
+import com.oracle.graal.python.pegparser.tokenizer.Tokenizer.StatusCode;
 
 /**
  * From this class is extended the generated parser. It allow access to the tokenizer. The methods
@@ -110,7 +111,8 @@ public abstract class AbstractParser {
          * Corresponds to fp_interactive and prompt != NULL in struct tok_state.
          */
         INTERACTIVE_TERMINAL,
-        ASYNC_HACKS
+        ASYNC_HACKS,
+        ALLOW_INCOMPLETE_INPUT,
     }
 
     private static final String BARRY_AS_BDFL = "with Barry as BDFL, use '<>' instead of '!='";
@@ -176,6 +178,10 @@ public abstract class AbstractParser {
     public SSTNode parse() {
         SSTNode res = runParser(startRule);
         if (res == null) {
+            if (flags.contains(Flags.ALLOW_INCOMPLETE_INPUT) &&
+                    (tokenizer.getDone() == StatusCode.EOF || tokenizer.getDone() == StatusCode.EOF_IN_SINGLE_QUOTED_STRING || tokenizer.getDone() == StatusCode.EOF_IN_TRIPLE_QUOTED_STRING)) {
+                throw raiseSyntaxError("incomplete input");
+            }
             Token lastToken = getFill() > 0 ? peekToken(getFill() - 1) : null;
             resetParserState();
             runParser(startRule);

@@ -321,18 +321,18 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "b2a_base64", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"data"}, keywordOnlyNames = {"newline"})
     @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
-    @ArgumentClinic(name = "newline", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "1", useDefaultForNone = true)
+    @ArgumentClinic(name = "newline", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class B2aBase64Node extends PythonClinicBuiltinNode {
         @TruffleBoundary
-        private PBytes b2a(byte[] data, int lenght, int newline, PythonLanguage language) {
+        private PBytes b2a(byte[] data, int lenght, boolean newline, PythonLanguage language) {
             ByteBuffer encoded;
             try {
                 encoded = Base64.getEncoder().encode(ByteBuffer.wrap(data, 0, lenght));
             } catch (IllegalArgumentException e) {
                 throw PRaiseNode.raiseStatic(this, BinasciiError, e);
             }
-            if (newline != 0) {
+            if (newline) {
                 byte[] encodedWithNL = Arrays.copyOf(encoded.array(), encoded.limit() + 1);
                 encodedWithNL[encodedWithNL.length - 1] = '\n';
                 return PFactory.createBytes(language, encodedWithNL);
@@ -341,7 +341,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "3")
-        PBytes b2aBuffer(VirtualFrame frame, Object buffer, int newline,
+        PBytes b2aBuffer(VirtualFrame frame, Object buffer, boolean newline,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonLanguage language) {

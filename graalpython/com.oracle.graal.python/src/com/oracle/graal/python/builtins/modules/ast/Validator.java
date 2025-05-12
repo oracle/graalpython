@@ -86,7 +86,6 @@ import com.oracle.graal.python.pegparser.sst.ConstantValue.Kind;
 import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
-import com.oracle.graal.python.pegparser.sst.ExprTy.NamedExpr;
 import com.oracle.graal.python.pegparser.sst.ExprTy.UnaryOp;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
@@ -679,7 +678,7 @@ final class Validator implements SSTreeVisitor<Void> {
     @Override
     public Void visit(ExprTy.NamedExpr node) {
         checkContext();
-        if (!(node.target instanceof NamedExpr)) {
+        if (!(node.target instanceof ExprTy.Name)) {
             throw raiseTypeError(NAMEDEXPR_TARGET_MUST_BE_A_NAME);
         }
         validateExpr(node.value, Load);

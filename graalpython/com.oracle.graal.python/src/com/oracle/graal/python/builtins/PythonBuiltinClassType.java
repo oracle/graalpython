@@ -825,7 +825,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     """)),
 
     // io
-    PIOBase("_IOBase", PythonObject, newBuilder().publishInModule("_io").basetype().addDict().slots(IOBaseBuiltins.SLOTS)),
+    PIOBase("_IOBase", PythonObject, newBuilder().publishInModule("_io").basetype().heaptype().addDict().slots(IOBaseBuiltins.SLOTS)),
     PRawIOBase("_RawIOBase", PIOBase, newBuilder().publishInModule("_io").basetype().slots(IOBaseBuiltins.SLOTS)),
     PTextIOBase("_TextIOBase", PIOBase, newBuilder().publishInModule("_io").basetype().slots(IOBaseBuiltins.SLOTS)),
     PBufferedIOBase("_BufferedIOBase", PIOBase, newBuilder().publishInModule("_io").basetype().slots(IOBaseBuiltins.SLOTS)),
@@ -1402,6 +1402,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         private String publishInModule;
         private String moduleName;
         private boolean basetype;
+        private boolean heaptype;
         private boolean addDict;
         private boolean disallowInstantiation;
         private TpSlots slots;
@@ -1422,6 +1423,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
         public TypeBuilder basetype() {
             this.basetype = true;
+            return this;
+        }
+
+        public TypeBuilder heaptype() {
+            this.heaptype = true;
             return this;
         }
 
@@ -1499,7 +1505,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         boolean disallowInstantiation = builder.disallowInstantiation;
         // logic from type_ready_set_new
         // base.base == null is a roundabout way to check for base == object
-        if (declaredSlots.tp_new() == null && base.base == null) {
+        if (declaredSlots.tp_new() == null && base.base == null && !builder.heaptype) {
             disallowInstantiation = true;
         }
         if (base == null) {

@@ -43,7 +43,7 @@ import gc
 import os
 import shutil
 import sys
-import time
+import sysconfig
 import unittest
 from copy import deepcopy
 from io import StringIO
@@ -128,11 +128,9 @@ def get_setuptools(setuptools='setuptools==67.6.1'):
 
 def ccompile(self, name, check_duplicate_name=True):
     get_setuptools()
-    import _distutils_hack # from setuptools to make distutils available
-    from distutils.core import setup, Extension
-    from distutils.sysconfig import get_config_var
+    from setuptools import setup, Extension
     from hashlib import sha256
-    EXT_SUFFIX = get_config_var("EXT_SUFFIX")
+    EXT_SUFFIX = sysconfig.get_config_var("EXT_SUFFIX")
 
     source_file = DIR / f'{name}.c'
     file_not_empty(source_file)
@@ -179,7 +177,7 @@ def ccompile(self, name, check_duplicate_name=True):
             module = Extension(name, sources=[source_file.name])
             args = [
                 '--verbose' if sys.flags.verbose else '--quiet',
-                'build',
+                'build', '--build-temp=t', '--build-base=b', '--build-purelib=l', '--build-platlib=l',
                 'install_lib', '-f', '--install-dir=.',
             ]
             setup(
