@@ -95,6 +95,7 @@ SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 
 GRAAL_VERSION = SUITE.suiteDict['version']
+IS_RELEASE = SUITE.suiteDict['release']
 GRAAL_VERSION_MAJ_MIN = ".".join(GRAAL_VERSION.split(".")[:2])
 PYTHON_VERSION = SUITE.suiteDict[f'{SUITE.name}:pythonVersion']
 PYTHON_VERSION_MAJ_MIN = ".".join(PYTHON_VERSION.split('.')[:2])
@@ -1088,6 +1089,9 @@ def setup_graalpy_plugin_tests():
 
     env['JAVA_HOME'] = gvm_jdk
     env['PYTHON_STANDALONE_HOME'] = standalone_home
+    env['GRAAL_VERSION'] = GRAAL_VERSION
+    if not IS_RELEASE:
+        env['GRAAL_VERSION'] += '-dev'
 
     # setup maven downloader overrides
     env['MAVEN_REPO_OVERRIDE'] = ",".join([
