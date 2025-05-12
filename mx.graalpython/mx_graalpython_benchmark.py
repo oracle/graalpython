@@ -374,11 +374,13 @@ class GraalPythonJavaDriverVm(GuestVm):
         host_vm = self.host_vm()
         cp = self.get_classpath()
         jhm = mx.dependency("mx:JMH_1_21")
-        cp_deps = [
+        cp_deps = mx.classpath_entries(filter(None, [
             mx.distribution('GRAALPYTHON_BENCH', fatalIfMissing=True),
+            mx.distribution('TRUFFLE_RUNTIME', fatalIfMissing=True),
+            mx.distribution('TRUFFLE_ENTERPRISE', fatalIfMissing=False),
             jhm,
             mx.dependency("sdk:LAUNCHER_COMMON")
-        ] + jhm.deps
+        ] + jhm.deps))
         cp += [x.classpath_repr() for x in cp_deps]
         java_args = ['-cp', ':'.join(cp)] + [self.launcher_class()]
         out = mx.TeeOutputCapture(mx.OutputCapture())
