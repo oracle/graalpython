@@ -23,6 +23,7 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import print_function
 
+import itertools
 import functools
 import statistics
 import sys
@@ -54,14 +55,7 @@ DIR = Path(__file__).parent.resolve()
 # constants
 #
 # ----------------------------------------------------------------------------------------------------------------------
-ENV_PYPY_HOME = "PYPY_HOME"
-ENV_PYTHON3_HOME = "PYTHON3_HOME"
-ENV_VIRTUAL_ENV = "VIRTUAL_ENV"
-ENV_JYTHON_JAR = "JYTHON_JAR"
 VM_NAME_GRAALPYTHON = "graalpython"
-VM_NAME_CPYTHON = "cpython"
-VM_NAME_PYPY = "pypy"
-VM_NAME_JYTHON = "jython"
 VM_NAME_GRAALPYTHON_SVM = "graalpython-svm"
 GROUP_GRAAL = "Graal"
 SUBGROUP_GRAAL_PYTHON = "graalpython"
@@ -129,12 +123,11 @@ def environ(env):
 #
 # ----------------------------------------------------------------------------------------------------------------------
 class AbstractPythonVm(OutputCapturingVm, ABC):
-    def __init__(self, name, config_name, options=None, env=None):
+    def __init__(self, name, config_name, options=None):
         super().__init__()
         self._name = name
         self._config_name = config_name
         self._options = options
-        self._env = env
 
     @property
     def options(self):
@@ -153,7 +146,7 @@ class AbstractPythonVm(OutputCapturingVm, ABC):
     def post_process_command_line_args(self, args):
         return args
 
-    def run_vm(self, args, out=None, err=None, cwd=None, nonZeroIsFatal=False):
+    def run_vm(self, args, out=None, err=None, cwd=None, nonZeroIsFatal=False, env=None):
         mx.logv(shlex.join([self.interpreter] + args))
         return mx.run(
             [self.interpreter] + args,
@@ -161,13 +154,13 @@ class AbstractPythonVm(OutputCapturingVm, ABC):
             err=err,
             cwd=cwd,
             nonZeroIsFatal=nonZeroIsFatal,
-            env=self._env
+            env=env,
         )
 
 
 class AbstractPythonIterationsControlVm(AbstractPythonVm):
-    def __init__(self, name, config_name, options=None, env=None, iterations=None):
-        super().__init__(name, config_name, options=options, env=env)
+    def __init__(self, name, config_name, options=None, iterations=None):
+        super().__init__(name, config_name, options=options)
         try:
             self._iterations = int(iterations)
         except:
@@ -194,10 +187,8 @@ class AbstractPythonIterationsControlVm(AbstractPythonVm):
 
 
 class CPythonVm(AbstractPythonIterationsControlVm):
-    PYTHON_INTERPRETER = "python3"
-
-    def __init__(self, config_name, options=None, env=None, virtualenv=None, iterations=0):
-        super().__init__(VM_NAME_CPYTHON, config_name, options=options, env=env, iterations=iterations)
+    def __init__(self, config_name, options=None, virtualenv=None, iterations=0):
+        super().__init__("cpython", config_name, options=options, iterations=iterations)
         self._virtualenv = virtualenv
 
     def override_iterations(self, requested_iterations):
@@ -206,22 +197,36 @@ class CPythonVm(AbstractPythonIterationsControlVm):
 
     @property
     def interpreter(self):
-        venv = self._virtualenv if self._virtualenv else mx.get_env(ENV_VIRTUAL_ENV)
-        if venv:
-            mx.log(f"CPythonVM virtualenv={venv}")
-            return os.path.join(venv, 'bin', CPythonVm.PYTHON_INTERPRETER)
-        home = mx.get_env(ENV_PYTHON3_HOME)
-        if home:
-            mx.log(f"CPythonVM python3 home={home}")
-            return os.path.join(home, CPythonVm.PYTHON_INTERPRETER)
-        return CPythonVm.PYTHON_INTERPRETER
+        candidates_pre = [
+            self._virtualenv,
+            mx.get_env("VIRTUAL_ENV"),
+            mx.get_env("PYTHON3_HOME"),
+        ]
+        candidates_suf = [
+            join("bin", "python3"),
+            join("bin", "python"),
+            "python3",
+            "python",
+            sys.executable,
+        ]
+        for p, s in itertools.product(candidates_pre, candidates_suf):
+            if os.path.exists(exe := os.path.join(p or "", s)):
+                mx.log(f"CPython VM {exe=}")
+                return exe
+        assert False, "sys.executable should really exist"
+
+    def run_vm(self, args, *splat, **kwargs):
+        for idx, arg in enumerate(args):
+            if "--vm.Xmx" in arg:
+                mx.warn(f"Ignoring {arg}, cannot restrict memory on CPython.")
+                args = args[:idx] + args[idx + 1 :]
+                break
+        return super().run_vm(args, *splat, **kwargs)
 
 
 class PyPyVm(AbstractPythonIterationsControlVm):
-    PYPY_INTERPRETER = "pypy3"
-
-    def __init__(self, config_name, options=None, env=None, virtualenv=None, iterations=0):
-        super().__init__(VM_NAME_PYPY, config_name, options=options, env=env, iterations=iterations)
+    def __init__(self, config_name, options=None, virtualenv=None, iterations=0):
+        super().__init__("pypy", config_name, options=options, iterations=iterations)
 
     def override_iterations(self, requested_iterations):
         # PyPy warms up much faster, half should be enough
@@ -229,18 +234,37 @@ class PyPyVm(AbstractPythonIterationsControlVm):
 
     @property
     def interpreter(self):
-        home = mx.get_env(ENV_PYPY_HOME)
-        if not home:
+        if home := mx.get_env("PYPY_HOME"):
+            exe = join(home, "bin", "pypy3")
+        else:
             try:
-                return subprocess.check_output("which %s" % PyPyVm.PYPY_INTERPRETER, shell=True).decode().strip()
+                exe = subprocess.check_output("which pypy3", shell=True).decode().strip()
             except OSError:
-                mx.abort("{} is not set!".format(ENV_PYPY_HOME))
-        return join(home, 'bin', PyPyVm.PYPY_INTERPRETER)
+                mx.abort("PYPY_HOME is not set!")
+        mx.log(f"PyPy {exe=}")
+        return exe
+
+    def run_vm(self, args, *splat, env=None, **kwargs):
+        env = env or os.environ.copy()
+        xmxArg = re.compile("--vm.Xmx([0-9]+)([kKgGmM])")
+        pypyGcMax = "8GB"
+        for idx, arg in enumerate(args):
+            if m := xmxArg.search(arg):
+                args = args[:idx] + args[idx + 1 :]
+                pypyGcMax = f"{m.group(1)}{m.group(2).upper()}B"
+                mx.log(f"Setting PYPY_GC_MAX={pypyGcMax} via {arg}")
+                break
+        else:
+            mx.log(
+                f"Setting PYPY_GC_MAX={pypyGcMax}, use --vm.Xmx argument to override it"
+            )
+        env["PYPY_GC_MAX"] = pypyGcMax
+        return super().run_vm(args, *splat, env=env, **kwargs)
 
 
 class GraalPythonVm(AbstractPythonIterationsControlVm):
-    def __init__(self, config_name, options=None, env=None, virtualenv=None, iterations=None, extra_polyglot_args=None):
-        super().__init__(VM_NAME_GRAALPYTHON, config_name, options=options, env=env, iterations=iterations)
+    def __init__(self, config_name, options=None, virtualenv=None, iterations=None, extra_polyglot_args=None):
+        super().__init__(VM_NAME_GRAALPYTHON, config_name, options=options, iterations=iterations)
         self._extra_polyglot_args = extra_polyglot_args or []
 
     @property
@@ -311,7 +335,7 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
 
 class GraalPythonJavaDriverVm(GuestVm):
     def __init__(self, config_name=CONFIGURATION_DEFAULT, cp_suffix=None, distributions=None, cp_prefix=None,
-                 host_vm=None, extra_vm_args=None, extra_polyglot_args=None, env=None):
+                 host_vm=None, extra_vm_args=None, extra_polyglot_args=None):
         super().__init__(host_vm=host_vm)
         self._config_name = config_name
         self._distributions = distributions or ['GRAALPYTHON_BENCH']
@@ -319,7 +343,6 @@ class GraalPythonJavaDriverVm(GuestVm):
         self._cp_prefix = cp_prefix
         self._extra_vm_args = extra_vm_args
         self._extra_polyglot_args = extra_polyglot_args if isinstance(extra_polyglot_args, list) else []
-        self._env = env
 
     def name(self):
         return VM_NAME_GRAALPYTHON
@@ -341,8 +364,7 @@ class GraalPythonJavaDriverVm(GuestVm):
     def with_host_vm(self, host_vm):
         return self.__class__(config_name=self._config_name, distributions=self._distributions,
                               cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix, host_vm=host_vm,
-                              extra_vm_args=self._extra_vm_args, extra_polyglot_args=self._extra_polyglot_args,
-                              env=self._env)
+                              extra_vm_args=self._extra_vm_args, extra_polyglot_args=self._extra_polyglot_args)
 
     def launcher_class(self):
         return 'com.oracle.graal.python.benchmarks.JavaBenchmarkDriver'
@@ -350,21 +372,20 @@ class GraalPythonJavaDriverVm(GuestVm):
     def run(self, cwd, args):
         extra_polyglot_args = self.get_extra_polyglot_args()
         host_vm = self.host_vm()
-        with environ(self._env or {}):
-            cp = self.get_classpath()
-            jhm = mx.dependency("mx:JMH_1_21")
-            cp_deps = [
-                mx.distribution('GRAALPYTHON_BENCH', fatalIfMissing=True),
-                jhm,
-                mx.dependency("sdk:LAUNCHER_COMMON")
-            ] + jhm.deps
-            cp += [x.classpath_repr() for x in cp_deps]
-            java_args = ['-cp', ':'.join(cp)] + [self.launcher_class()]
-            out = mx.TeeOutputCapture(mx.OutputCapture())
-            code = host_vm.run_java(java_args + extra_polyglot_args + args, cwd=cwd, out=out, err=out)
-            out = out.underlying.data
-            dims = host_vm.dimensions(cwd, args, code, out)
-            return code, out, dims
+        cp = self.get_classpath()
+        jhm = mx.dependency("mx:JMH_1_21")
+        cp_deps = [
+            mx.distribution('GRAALPYTHON_BENCH', fatalIfMissing=True),
+            jhm,
+            mx.dependency("sdk:LAUNCHER_COMMON")
+        ] + jhm.deps
+        cp += [x.classpath_repr() for x in cp_deps]
+        java_args = ['-cp', ':'.join(cp)] + [self.launcher_class()]
+        out = mx.TeeOutputCapture(mx.OutputCapture())
+        code = host_vm.run_java(java_args + extra_polyglot_args + args, cwd=cwd, out=out, err=out)
+        out = out.underlying.data
+        dims = host_vm.dimensions(cwd, args, code, out)
+        return code, out, dims
 
     def get_extra_polyglot_args(self):
         return ["--experimental-options", "--python.MaxNativeMemory=%s" % (2**34), *self._extra_polyglot_args]
@@ -1001,6 +1022,9 @@ def register_vms(suite, sandboxed_options):
     # Other Python VMs:
     python_vm_registry.add_vm(CPythonVm(config_name=CONFIGURATION_DEFAULT), suite)
     python_vm_registry.add_vm(PyPyVm(config_name=CONFIGURATION_DEFAULT), suite)
+    # For continuity with old datapoints, provide CPython and PyPy with launcher config_name
+    python_vm_registry.add_vm(CPythonVm(config_name="launcher"), suite)
+    python_vm_registry.add_vm(PyPyVm(config_name="launcher"), suite)
 
     graalpy_vms = []
 

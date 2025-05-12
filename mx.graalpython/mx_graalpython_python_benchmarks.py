@@ -372,121 +372,6 @@ class PyPyJsonRule(mx_benchmark.Rule, mx_benchmark.AveragingBenchmarkMixin):
         return r
 
 
-class GraalPyVm(mx_benchmark.GuestVm):
-    def __init__(self, config_name, options, host_vm=None):
-        super(GraalPyVm, self).__init__(host_vm=host_vm)
-        self._config_name = config_name
-        self._options = options
-
-    def name(self):
-        return "graalpython"
-
-    def config_name(self):
-        return self._config_name
-
-    def hosting_registry(self):
-        return mx_benchmark.java_vm_registry
-
-    def with_host_vm(self, host_vm):
-        return self.__class__(self.config_name(), self._options, host_vm)
-
-    def run(self, cwd, args):
-        for arg in args:
-            if "--vm.Xmx" in arg:
-                mx.log(f"Setting Xmx from {arg}")
-                break
-        else:
-            xmxArg = "--vm.Xmx8G"
-            mx.log(f"Setting Xmx as {xmxArg}")
-            args.insert(0, xmxArg)
-        try:
-            old_gp_arg = os.environ.get("GRAAL_PYTHON_ARGS")
-            if old_gp_arg:
-                os.environ["GRAAL_PYTHON_ARGS"] = old_gp_arg + " " + xmxArg
-            else:
-                os.environ["GRAAL_PYTHON_ARGS"] = xmxArg
-            old_java_opts = os.environ.get("JAVA_OPTS")
-            if old_java_opts:
-                os.environ["JAVA_OPTS"] = old_java_opts + " " + xmxArg.replace("--vm", "-")
-            else:
-                os.environ["JAVA_OPTS"] = xmxArg.replace("--vm.", "-")
-            mx.log("Running with `JAVA_OPTS={JAVA_OPTS}` and `GRAAL_PYTHON_ARGS={GRAAL_PYTHON_ARGS}`".format(**os.environ))
-            return self.host_vm().run_launcher("graalpy", self._options + args, cwd)
-        finally:
-            if old_java_opts:
-                os.environ["JAVA_OPTS"] = old_java_opts
-            else:
-                del os.environ["JAVA_OPTS"]
-            if old_gp_arg:
-                os.environ["GRAAL_PYTHON_ARGS"] = old_gp_arg
-            else:
-                del os.environ["GRAAL_PYTHON_ARGS"]
-
-
-class PyPyVm(mx_benchmark.Vm):
-    def config_name(self):
-        return "launcher"
-
-    def name(self):
-        return "pypy"
-
-    def interpreter(self):
-        home = mx.get_env("PYPY_HOME")
-        if not home:
-            try:
-                return (
-                    subprocess.check_output("which pypy3", shell=True).decode().strip()
-                )
-            except OSError:
-                mx.abort("{} is not set!".format("PYPY_HOME"))
-        return join(home, "bin", "pypy3")
-
-    def run(self, cwd, args):
-        env = os.environ.copy()
-        xmxArg = re.compile("--vm.Xmx([0-9]+)([kKgGmM])")
-        pypyGcMax = "8GB"
-        for idx, arg in enumerate(args):
-            if m := xmxArg.search(arg):
-                args = args[:idx] + args[idx + 1 :]
-                pypyGcMax = f"{m.group(1)}{m.group(2).upper()}B"
-                mx.log(f"Setting PYPY_GC_MAX={pypyGcMax} via {arg}")
-                break
-        else:
-            mx.log(
-                f"Setting PYPY_GC_MAX={pypyGcMax}, use --vm.Xmx argument to override it"
-            )
-        env["PYPY_GC_MAX"] = pypyGcMax
-        return mx.run([self.interpreter()] + args, cwd=cwd, env=env)
-
-
-class Python3Vm(mx_benchmark.Vm):
-    def config_name(self):
-        return "launcher"
-
-    def name(self):
-        return "cpython"
-
-    def interpreter(self):
-        home = mx.get_env("PYTHON3_HOME")
-        if not home:
-            return sys.executable
-        if exists(exe := join(home, "bin", "python3")):
-            return exe
-        elif exists(exe := join(home, "python3")):
-            return exe
-        elif exists(exe := join(home, "python")):
-            return exe
-        return join(home, "bin", "python")
-
-    def run(self, cwd, args):
-        for idx, arg in enumerate(args):
-            if "--vm.Xmx" in arg:
-                mx.warn(f"Ignoring {arg}, cannot restrict memory on CPython.")
-                args = args[:idx] + args[idx + 1 :]
-                break
-        return mx.run([self.interpreter()] + args, cwd=cwd)
-
-
 class WildcardList:
     """It is not easy to track for external suites which benchmarks are
     available, so we just return a wildcard list and assume the caller knows
@@ -924,15 +809,7 @@ def register_python_benchmarks():
     from mx_graalpython_benchmark import python_vm_registry as vm_registry
 
     python_vm_registry = vm_registry
-
     SUITE = mx.suite("graalpython")
-
-    python_vm_registry.add_vm(PyPyVm())
-    python_vm_registry.add_vm(Python3Vm())
-    for config_name, options, priority in [
-        ("launcher", [], 5),
-    ]:
-        python_vm_registry.add_vm(GraalPyVm(config_name, options), SUITE, priority)
 
     mx_benchmark.add_bm_suite(PyPerformanceSuite())
     mx_benchmark.add_bm_suite(PyPySuite())
