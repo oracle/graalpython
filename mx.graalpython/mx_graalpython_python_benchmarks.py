@@ -394,19 +394,7 @@ class WildcardList:
 
 
 class PySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite):
-    def runAndReturnStdOut(self, benchmarks, bmSuiteArgs):
-        ret_code, out, dims = super().runAndReturnStdOut(benchmarks, bmSuiteArgs)
-
-        def _replace_host_vm(old, new):
-            host_vm = dims.get("host-vm")
-            if host_vm and old in host_vm:
-                dims['host-vm'] = host_vm.replace(old, new)
-                mx.logv(f"[DEBUG] replace 'host-vm': '{host_vm}' -> '{dims['host-vm']}'")
-
-        _replace_host_vm('graalvm-ce-python', 'graalvm-ce')
-        _replace_host_vm('graalvm-ee-python', 'graalvm-ee')
-
-        return ret_code, out, dims
+    pass
 
 
 class PyPerformanceSuite(PySuite):
@@ -436,6 +424,7 @@ class PyPerformanceSuite(PySuite):
     def _vmRun(self, vm, workdir, command, benchmarks, bmSuiteArgs):
         workdir = abspath(workdir)
         vm_venv = f"{self.name()}-{vm.name()}-{vm.config_name()}"
+        _, _, vm_dims = vm.run(workdir, ["--version"])
 
         if not hasattr(self, "prepared"):
             self.prepared = True
@@ -488,7 +477,7 @@ class PyPerformanceSuite(PySuite):
         mx.log(f"Return code of benchmark harness: {retcode}")
         shutil.copy(join(workdir, json_file), join(SUITE.dir, "raw_results.json"))
         shutil.copy(join(workdir, json_file_memory), join(SUITE.dir, "raw_results_memory.json"))
-        return retcode, ",".join([join(workdir, json_file), join(workdir, json_file_memory)])
+        return retcode, ",".join([join(workdir, json_file), join(workdir, json_file_memory)]), vm_dims
 
 
 class PyPySuite(PySuite):
@@ -518,6 +507,7 @@ class PyPySuite(PySuite):
     def _vmRun(self, vm, workdir, command, benchmarks, bmSuiteArgs):
         workdir = abspath(workdir)
         vm_venv = f"{self.name()}-{vm.name()}-{vm.config_name()}"
+        _, _, vm_dims = vm.run(workdir, ["--version"])
 
         if not hasattr(self, "prepared"):
             self.prepared = True
@@ -569,7 +559,7 @@ class PyPySuite(PySuite):
         )
         shutil.copy(join(workdir, json_file), join(SUITE.dir, "raw_results.json"))
         mx.log(f"Return code of benchmark harness: {retcode}")
-        return retcode, join(workdir, json_file)
+        return retcode, join(workdir, json_file), vm_dims
 
 
 class NumPySuite(PySuite):
@@ -611,6 +601,7 @@ class NumPySuite(PySuite):
         workdir = abspath(workdir)
         benchdir = join(workdir, "numpy", "benchmarks")
         vm_venv = f"{self.name()}-{vm.name()}-{vm.config_name()}"
+        _, _, vm_dims = vm.run(workdir, ["--version"])
 
         if not hasattr(self, "prepared"):
             self.prepared = True
@@ -671,9 +662,9 @@ class NumPySuite(PySuite):
         if json_file:
             json_file = json_file[0]
             shutil.copy(json_file, join(SUITE.dir, "raw_results.json"))
-            return retcode, json_file
+            return retcode, json_file, vm_dims
         else:
-            return -1, ""
+            return -1, "", vm_dims
 
 
 class PandasSuite(PySuite):
@@ -720,6 +711,7 @@ class PandasSuite(PySuite):
         workdir = abspath(workdir)
         benchdir = join(workdir, "pandas", "asv_bench")
         vm_venv = f"{self.name()}-{vm.name()}-{vm.config_name()}"
+        _, _, vm_dims = vm.run(workdir, ["--version"])
 
         if not hasattr(self, "prepared"):
             self.prepared = True
@@ -798,9 +790,9 @@ class PandasSuite(PySuite):
         if json_file:
             json_file = json_file[0]
             shutil.copy(json_file, join(SUITE.dir, "raw_results.json"))
-            return retcode, json_file
+            return retcode, json_file, vm_dims
         else:
-            return -1, ""
+            return -1, "", vm_dims
 
 
 def register_python_benchmarks():

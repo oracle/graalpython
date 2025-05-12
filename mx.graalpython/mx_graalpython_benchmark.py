@@ -402,7 +402,7 @@ python_java_embedding_vm_registry = mx_benchmark.VmRegistry(PYTHON_JAVA_EMBEDDIN
 
 class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     def __init__(self, name, benchmarks):
-        super(PythonBaseBenchmarkSuite, self).__init__()
+        super().__init__()
         self._checkup = 'GRAALPYTHON_BENCHMARKS_CHECKUP' in os.environ
         self._name = name
         self._benchmarks = benchmarks
@@ -599,14 +599,7 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         ]
 
     def runAndReturnStdOut(self, benchmarks, bmSuiteArgs):
-        ret_code, out, dims = super(PythonBaseBenchmarkSuite, self).runAndReturnStdOut(benchmarks, bmSuiteArgs)
-
-        # host-vm rewrite rules
-        if dims['host-vm'] not in ('graalvm-ce', 'graalvm-ee'):
-            if mx.suite('graal-enterprise', fatalIfMissing=False):
-                dims['host-vm'] = 'graalvm-ee'
-            else:
-                dims['host-vm'] = 'graalvm-ce'
+        ret_code, out, dims = super().runAndReturnStdOut(benchmarks, bmSuiteArgs)
 
         self.post_run_graph(benchmarks[0], dims['host-vm-config'], dims['guest-vm-config'])
 
@@ -619,7 +612,7 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         if '--checkup' in bm_suite_args:
             self._checkup = True
             bm_suite_args.remove('--checkup')
-        results = super(PythonBaseBenchmarkSuite, self).run(benchmarks, bm_suite_args)
+        results = super().run(benchmarks, bm_suite_args)
         self.addAverageAcrossLatestResults(results)
         return results
 
@@ -731,7 +724,7 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
 class PythonBenchmarkSuite(PythonBaseBenchmarkSuite):
     def __init__(self, name, bench_path, benchmarks, python_path=None):
-        super(PythonBenchmarkSuite, self).__init__(name, benchmarks)
+        super().__init__(name, benchmarks)
         self._python_path = python_path
         self._harness_path = HARNESS_PATH
         self._harness_path = join(SUITE.dir, self._harness_path)
@@ -799,7 +792,7 @@ class PythonBenchmarkSuite(PythonBaseBenchmarkSuite):
 
 class PythonJavaEmbeddingBenchmarkSuite(PythonBaseBenchmarkSuite):
     def __init__(self, name, bench_path, benchmarks):
-        super(PythonJavaEmbeddingBenchmarkSuite, self).__init__(name, benchmarks)
+        super().__init__(name, benchmarks)
         self._bench_path = bench_path
 
     def get_vm_registry(self):
