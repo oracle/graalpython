@@ -47,8 +47,15 @@ from tests.cpyext import CPyExtType
 CPyExtType(
     'TypeWithNativeDestructor',
     r'''
+    PyThreadState* _PyThreadState_GetCurrent(void);
+
     PyObject* globalObject;
     void __attribute__((destructor)) finalize() {
+        if (!_PyThreadState_GetCurrent()) {
+            // at this point the interpeter has exited and no longer
+            // available to perform any routines, such as subtype_dealloc.
+            return;
+        }
         Py_DECREF(globalObject);
     }
     ''',
