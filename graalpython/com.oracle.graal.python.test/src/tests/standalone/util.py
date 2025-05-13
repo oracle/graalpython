@@ -258,7 +258,8 @@ def print_missing_graalpy_msg(graalpy_home=None):
             sep="\n")
 
 def get_graalvm_version():
-    graalvmVersion, _ = run_cmd([get_gp(), "-c", "print(__graalpython__.get_graalvm_version(), end='')"], os.environ.copy())
+    if not (graalvmVersion := os.environ.get("GRAAL_VERSION")):
+        graalvmVersion, _ = run_cmd([get_gp(), "-c", "print(__graalpython__.get_graalvm_version(), end='')"], os.environ.copy())
     # when JLine is cannot detect a terminal, it prints logging info
     graalvmVersion = graalvmVersion.split("\n")[-1]
     # we never test -dev versions here, we always pretend to use release versions
