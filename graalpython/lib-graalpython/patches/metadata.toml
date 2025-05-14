@@ -236,13 +236,38 @@ patch = 'llvmlite.patch'
 license = 'BSD-2-Clause'
 
 [[lxml.rules]]
-version = '== 5.3.0'
+version = '>= 5.3.2, <= 5.4.0'
+patch = 'lxml-5.4.0.patch'
+license = 'BSD-3-Clause'
+
+[[lxml.rules]]
+version = '>= 5.3.0, < 5.3.2'
 patch = 'lxml-5.3.0.patch'
 license = 'BSD-3-Clause'
 
 [[lxml.rules]]
-version = '== 4.9.1'
-patch = 'lxml-4.9.1.patch'
+version = '== 5.2.*'
+patch = 'lxml-5.2.patch'
+license = 'BSD-3-Clause'
+
+[[lxml.rules]]
+version = '== 5.1.1'
+patch = 'lxml-5.1.1.patch'
+license = 'BSD-3-Clause'
+
+[[lxml.rules]]
+version = '== 5.1.0'
+patch = 'lxml-5.1.0.patch'
+license = 'BSD-3-Clause'
+
+[[lxml.rules]]
+version = '== 5.0.*'
+patch = 'lxml-5.0.patch'
+license = 'BSD-3-Clause'
+
+[[lxml.rules]]
+version = '>= 4.9, < 5'
+patch = 'lxml-4.9.patch'
 license = 'BSD-3-Clause'
 
 # Patch already upstreamed, keeping it around for older versions
