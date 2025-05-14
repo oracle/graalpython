@@ -915,6 +915,13 @@ license = 'MIT'
 subdir = 'src'
 install-priority = 0
 
+[[xmlschema.rules]]
+version = '>= 4.0.0, <= 4.0.1'
+# Submitted upstream, optimistically assuming it'll get merged before the next release
+install-priority = 0
+patch = 'xmlschema.patch'
+license = 'MIT'
+
 [[zstandard.rules]]
 patch = 'zstandard.patch'
 license = 'BSD-3-Clause'
