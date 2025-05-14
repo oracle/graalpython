@@ -1733,7 +1733,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             if (keysAndValues.length != entries * 2) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
-            ObjectHashMap map = new ObjectHashMap(keysAndValues.length / 2, false);
+            ObjectHashMap map = new ObjectHashMap(keysAndValues.length / 2);
             PDict dict = PFactory.createDict(rootNode.getLanguage(), new EconomicMapStorage(map, false));
             for (int i = 0; i < entries; i++) {
                 Object key = keysAndValues[i * 2];
