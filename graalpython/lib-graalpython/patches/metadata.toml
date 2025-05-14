@@ -320,13 +320,6 @@ license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
 [[numpy.rules]]
-version = '== 2.2.3'
-patch = 'numpy-2.2.3.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-install-priority = 0
-
-[[numpy.rules]]
 version = '== 1.26.4'
 patch = 'numpy-1.26.4.patch'
 license = 'BSD-3-Clause'
