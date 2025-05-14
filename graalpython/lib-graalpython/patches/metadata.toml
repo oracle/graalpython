@@ -731,21 +731,19 @@ url = 'https://github.com/tensorflow/io/archive/refs/tags/v0.34.0.tar.gz'
 
 [[tiktoken.rules]]
 version = '== 0.7.0'
+install-priority = 0
 patch = 'tiktoken-0.7.0.patch'
 license = 'MIT'
 
 [[tokenizers.rules]]
-version = '>= 0.19'
-patch = 'tokenizers-0.19-plus.patch'
-license = 'Apache-2.0'
-
-[[tokenizers.rules]]
 version = '== 0.13.3'
+install-priority = 0
 patch = 'tokenizers-0.13.3.patch'
 license = 'Apache-2.0'
 
 [[tokenizers.rules]]
 version = '== 0.15.0'
+install-priority = 0
 patch = 'tokenizers-0.15.0.patch'
 license = 'Apache-2.0'
 
@@ -796,10 +794,6 @@ license = 'BSD-3-Clause'
 [[torchvision.add-sources]]
 version = '0.17.1'
 url = 'https://github.com/pytorch/vision/archive/refs/tags/v0.17.1.tar.gz'
-
-[[transformers.rules]]
-# transformers tends to depend on a specific version of tokenizers. Pin it to avoid pulling unpatched tokenizers
-version = '== 4.33.3'
 
 [[trio.rules]]
 patch = 'trio.patch'
