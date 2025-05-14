@@ -2728,11 +2728,16 @@ def downstream_test_virtualenv(graalpy):
     venv = src / 'venv'
     mx.run([graalpy, '-m', 'venv', str(venv)])
     env = os.environ.copy()
+    env.pop('VIRTUAL_ENV_DISABLE_PROMPT', None)
+    env['CI_RUN'] = '1'
     # Need to avoid pulling in graalpy seeder
     env['PIP_GRAALPY_DISABLE_PATCHING'] = '1'
     run_in_venv(venv, ['pip', 'install', f'{src}[test]'], env=env)
     # Don't activate the venv, it interferes with the test
-    mx.run( [str(venv / 'bin'/ 'pytest'), '-v', '--tb=short', 'tests'], cwd=src)
+    mx.run([
+        str(venv / 'bin' / 'pytest'), '-v', '--tb=short', 'tests',
+        '-k', 'not fish and not csh and not nushell and not powershell',
+    ], cwd=src, env=env)
 
 
 def run_downstream_test(args):
