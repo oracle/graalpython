@@ -48,9 +48,6 @@ version = '== 2.2.1'
 patch = 'cloudpickle-2.2.1.patch'
 license = 'BSD-3-Clause'
 
-[[cppy.rules]]
-version = '==1.2.1'
-
 [[cramjam.rules]]
 version = '== 2.7.0'
 patch = 'cramjam-2.7.0.patch'
@@ -285,10 +282,6 @@ install-priority = 0
 patch = 'meson-python.patch'
 license = 'MIT'
 
-[[ml_dtypes.rules]]
-# 0.4.0 requires numpy==2.0rc1
-version = "< 0.4.0"
-
 [[mlx.rules]]
 patch = 'mlx.patch'
 license = 'MIT'
@@ -427,7 +420,6 @@ version = '== 3.0.0'
 patch = 'pendulum-3.0.0.patch'
 license = 'MIT'
 
-
 [[pip.rules]]
 version = '== 23.2.1'
 patch = 'pip-23.2.1.patch'
@@ -507,32 +499,33 @@ version = '>= 2.10.1, < 2.11.0'
 patch = 'pybind11-2.10.1.patch'
 license = 'BSD-3-Clause'
 
-[[pydantic.rules]]
-# Pin to match our pinned pydantic-core
-version = '== 2.10.3'
-
 [[pydantic-core.rules]]
 version = '== 2.10.1'
+install-priority = 0
 patch = 'pydantic-core-2.10.1.patch'
 license = 'MIT'
 
 [[pydantic-core.rules]]
 version = '== 2.23.4'
+install-priority = 0
 patch = 'pydantic-core-2.23.4.patch'
 license = 'MIT'
 
 [[pydantic-core.rules]]
 version = '== 2.27.1'
+install-priority = 0
 patch = 'pydantic-core-2.27.1.patch'
 license = 'MIT'
 
 [[pydantic-core.rules]]
 version = '== 2.27.2'
+install-priority = 0
 patch = 'pydantic-core-2.27.1.patch'
 license = 'MIT'
 
 [[pydantic-core.rules]]
 version = '== 2.26.0'
+install-priority = 0
 patch = 'pydantic-core-2.26.0.patch'
 license = 'MIT'
 
@@ -564,25 +557,17 @@ patch = "pymupdf.patch"
 # of the AGPL'd codebase
 license = 'UPL'
 
-[[pyOpenSSL.rules]]
-# Pin this version to avoid pulling newer cryptography than we have patch for
-version = "== 23.2.0"
-
-[[pyparsing.rules]]
-version = '== 3.0.8'
-
 [[pyperf.rules]]
 version = '== 2.3.0'
+install-priority = 0
 patch = 'pyperf-2.3.0.patch'
 license = 'MIT'
 
 [[pyperf.rules]]
 version = '== 2.3.1'
+install-priority = 0
 patch = 'pyperf-2.3.1.patch'
 license = 'MIT'
-
-[[pyperf.rules]]
-version = '== 2.5.0'
 
 [[pyperformance.rules]]
 version = '== 1.0.5'
@@ -616,8 +601,8 @@ patch = 'pythran-0.16.patch'
 license = 'BSD-3-Clause'
 
 [[pyzmq.rules]]
-# 26+ needs Cython 3
 version = '< 26'
+install-priority = 0
 # The patch just makes it re-cythonize to pick up our cython changes
 patch = 'pyzmq.patch'
 license = 'BSD-3-Clause'
@@ -659,10 +644,6 @@ license = 'Apache-2.0'
 version = '2.9.1'
 url = 'https://github.com/ray-project/ray/archive/refs/tags/ray-2.9.1.tar.gz'
 
-[[readme-renderer.rules]]
-# Newer version depends nh3 which is built with maturin, which is currently broken
-version = '< 42'
-
 [[rpds_py.rules]]
 # Patch not needed anymore in recent version since pyo3 changes have been upstreamed
 install-priority = 0
@@ -701,10 +682,8 @@ license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
 [[scipy.rules]]
-version = '== 1.13.1'
-
-[[scipy.rules]]
 version = '== 1.10.1'
+install-priority = 0
 patch = 'scipy-1.10.1.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
@@ -713,10 +692,6 @@ dist-type = 'sdist'
 version = '>= 1.2.2'
 patch = 'setproctitle-1.2.2.patch'
 license = 'BSD-3-Clause'
-
-[[statsmodels.rules]]
-# Pin older versions for now, the new ones require numpy-2rc1 and cython 3
-version = '<= 0.14.1'
 
 [[tensorflow.rules]]
 version = '== 2.15.0'
@@ -821,9 +796,6 @@ license = 'BSD-3-Clause'
 [[torchvision.add-sources]]
 version = '0.17.1'
 url = 'https://github.com/pytorch/vision/archive/refs/tags/v0.17.1.tar.gz'
-
-[[tox.rules]]
-version = '== 3.*'
 
 [[transformers.rules]]
 # transformers tends to depend on a specific version of tokenizers. Pin it to avoid pulling unpatched tokenizers
