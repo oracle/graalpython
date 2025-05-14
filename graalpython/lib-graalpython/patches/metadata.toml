@@ -520,6 +520,11 @@ version = '== 2.*'
 patch = 'pygame-2.patch'
 license = 'LGPL-2.0-or-later'
 
+[[pygobject.rules]]
+version = '== 3.52.3'
+patch = 'pygobject-3.52.3.patch'
+license = 'LGPL-2.0-or-later'
+
 [[pymongo.rules]]
 version = "< 4.8.0"
 patch = 'pymongo.patch'

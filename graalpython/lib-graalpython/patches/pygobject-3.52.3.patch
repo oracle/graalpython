@@ -1,0 +1,282 @@
+diff --git a/gi/pygenum.c b/gi/pygenum.c
+index d8ab0e25..f9881110 100644
+--- a/gi/pygenum.c
++++ b/gi/pygenum.c
+@@ -90,13 +90,28 @@ add_value (PyObject *dict, const char *value_nick, int value)
+     }
+ 
+     /* skip if the name already exists in the dictionary */
++#if !defined(GRAALPY_VERSION_NUM) || GRAALPY_VERSION_NUM >= 0x190000a0
+     if (PyMapping_HasKeyString (dict, upper)) {
+         g_free (upper);
+         return;
+     }
+ 
+     v = PyLong_FromLong (value);
+     PyMapping_SetItemString (dict, upper, v);
++#else
++    PyObject *key = PyUnicode_FromString(upper);
++    PyObject *keyValue = PyObject_GetItem (dict, key);
++    if (keyValue != NULL) {
++        Py_DECREF(keyValue);
++        Py_DECREF(key);
++        g_free (upper);
++        return;
++    }
++    PyErr_Clear();
++    v = PyLong_FromLong (value);
++    PyObject_SetItem (dict, key, v);
++    Py_DECREF(key);
++#endif
+     Py_DECREF (v);
+     g_free (upper);
+ }
+@@ -179,13 +184,21 @@ pyg_enum_add_full (PyObject   *module,
+     if (module) {
+ 	PyObject *module_name = PyModule_GetNameObject (module);
+ 
++#if !defined(GRAALPY_VERSION_NUM) || GRAALPY_VERSION_NUM >= 0x190000a0
+ 	PyMapping_SetItemString (values, "__module__", module_name);
++#else
++	PyDict_SetItemString (values, "__module__", module_name);
++#endif
+ 	Py_DECREF (module_name);
+     }
+     if (gtype != G_TYPE_NONE) {
+ 	PyObject *o = pyg_type_wrapper_new (gtype);
+ 
++#if !defined(GRAALPY_VERSION_NUM) || GRAALPY_VERSION_NUM >= 0x190000a0
+ 	PyMapping_SetItemString(values, "__gtype__", o);
++#else
++	PyDict_SetItemString(values, "__gtype__", o);
++#endif
+ 	Py_DECREF (o);
+     }
+ 
+diff --git a/gi/pygflags.c b/gi/pygflags.c
+index f0047a13..7717f175 100644
+--- a/gi/pygflags.c
++++ b/gi/pygflags.c
+@@ -89,6 +89,7 @@ add_value (PyObject *dict, const char *value_nick, unsigned int value)
+     }
+
+     /* skip if the name already exists in the dictionary */
++#if !defined(GRAALPY_VERSION_NUM) || GRAALPY_VERSION_NUM >= 0x190000a0
+     if (PyMapping_HasKeyString (dict, upper)) {
+         g_free (upper);
+         return;
+@@ -96,6 +97,20 @@ add_value (PyObject *dict, const char *value_nick, unsigned int value)
+
+     v = PyLong_FromUnsignedLong (value);
+     PyMapping_SetItemString (dict, upper, v);
++#else
++    PyObject *key = PyUnicode_FromString(upper);
++    PyObject *keyValue = PyObject_GetItem (dict, key);
++    if (keyValue != NULL) {
++        Py_DECREF(keyValue);
++        Py_DECREF(key);
++        g_free (upper);
++        return;
++    }
++    PyErr_Clear();
++    v = PyLong_FromUnsignedLong (value);
++    PyObject_SetItem (dict, key, v);
++    Py_DECREF(key);
++#endif
+     Py_DECREF (v);
+     g_free (upper);
+ }
+@@ -178,13 +183,21 @@ pyg_flags_add_full (PyObject    *module,
+     if (module) {
+ 	PyObject *module_name = PyModule_GetNameObject (module);
+ 
++#if !defined(GRAALPY_VERSION_NUM) || GRAALPY_VERSION_NUM >= 0x190000a0
+ 	PyMapping_SetItemString (values, "__module__", module_name);
++#else
++	PyDict_SetItemString (values, "__module__", module_name);
++#endif
+ 	Py_DECREF (module_name);
+     }
+     if (gtype != G_TYPE_NONE) {
+ 	PyObject *o = pyg_type_wrapper_new (gtype);
+ 
++#if !defined(GRAALPY_VERSION_NUM) || GRAALPY_VERSION_NUM >= 0x190000a0
+ 	PyMapping_SetItemString(values, "__gtype__", o);
++#else
++	PyDict_SetItemString(values, "__gtype__", o);
++#endif
+ 	Py_DECREF (o);
+     }
+ 
+diff --git a/gi/gimodule.c b/gi/gimodule.c
+index ace6fa5b..57bfa63a 100644
+--- a/gi/gimodule.c
++++ b/gi/gimodule.c
+@@ -2120,7 +2120,7 @@ _wrap_pyig_pyos_getsig (PyObject *self, PyObject *args)
+     if (!PyArg_ParseTuple (args, "i:pyos_getsig", &sig_num))
+         return NULL;
+ 
+-    return PyLong_FromVoidPtr ((void *)(PyOS_getsig (sig_num)));
++    return PyLong_FromVoidPtr ((void *)(SIG_IGN));
+ }
+ 
+ static PyObject *
+diff --git a/gi/gimodule.c b/gi/gimodule.c
+index 57bfa63a..8f32734d 100644
+--- a/gi/gimodule.c
++++ b/gi/gimodule.c
+@@ -2402,7 +2402,7 @@ _gi_exec (PyObject *module)
+     PyObject *module_dict = PyModule_GetDict (module);
+     int ret;
+ 
+-#if PY_VERSION_HEX < 0x03090000 || defined(PYPY_VERSION)
++#if PY_VERSION_HEX < 0x03090000 || defined(PYPY_VERSION) || defined(GRAALPY_VERSION)
+     /* Deprecated since 3.9 */
+     /* Except in PyPy it's still not a no-op: https://foss.heptapod.net/pypy/pypy/-/issues/3691 */
+ 
+diff --git a/gi/pygi-async.c b/gi/pygi-async.c
+index 248e1fb6..00d2d377 100644
+--- a/gi/pygi-async.c
++++ b/gi/pygi-async.c
+@@ -32,7 +32,7 @@
+ 
+ static PyObject *asyncio_InvalidStateError;
+ static PyObject *asyncio_get_running_loop;
+-#if defined(PYPY_VERSION)
++#if defined(PYPY_VERSION) || defined(GRAALPY_VERSION)
+ static PyObject *contextvars_copy_context;
+ #endif
+ static PyObject *cancellable_info;
+@@ -155,7 +155,7 @@ async_add_done_callback (PyGIAsync *self, PyObject *args, PyObject *kwargs)
+ 
+     Py_INCREF(callback.func);
+     if (callback.context == NULL)
+-#ifndef PYPY_VERSION
++#if !defined(PYPY_VERSION) && !defined(GRAALPY_VERSION)
+         callback.context = PyContext_CopyCurrent ();
+ #else
+         callback.context = PyObject_CallObject (contextvars_copy_context, NULL);
+@@ -411,7 +411,7 @@ finally:
+ static void
+ async_dealloc(PyGIAsync *self)
+ {
+-#ifndef PYPY_VERSION
++#if !defined(PYPY_VERSION) && !defined(GRAALPY_VERSION)
+     /* The finalizer might resurrect the object */
+     if (PyObject_CallFinalizerFromDealloc((PyObject *)self) < 0)
+         return;
+@@ -587,11 +587,11 @@ static struct PyMemberDef async_members[] = {
+  */
+ int pygi_async_register_types(PyObject *module) {
+     PyObject *asyncio = NULL;
+-#ifdef PYPY_VERSION
++#if defined(PYPY_VERSION) || defined(GRAALPY_VERSION)
+     PyObject *contextvars = NULL;
+ #endif
+ 
+-#ifndef PYPY_VERSION
++#if !defined(PYPY_VERSION) && !defined(GRAALPY_VERSION)
+     PyGIAsync_Type.tp_finalize = (destructor)async_finalize;
+ #else
+     PyGIAsync_Type.tp_del = (destructor)async_finalize;
+@@ -629,7 +629,7 @@ int pygi_async_register_types(PyObject *module) {
+     if (asyncio_get_running_loop == NULL)
+         goto fail;
+ 
+-#if defined(PYPY_VERSION)
++#if defined(PYPY_VERSION) || defined(GRAALPY_VERSION)
+     contextvars = PyImport_ImportModule("contextvars");
+     if (contextvars == NULL) {
+         goto fail;
+diff --git a/gi/pygi-resulttuple.c b/gi/pygi-resulttuple.c
+index c1281d20..4a7a9beb 100644
+--- a/gi/pygi-resulttuple.c
++++ b/gi/pygi-resulttuple.c
+@@ -28,7 +28,7 @@ static char tuple_indices_key[] = "__tuple_indices";
+ 
+ #define PYGI_USE_FREELIST
+ 
+-#ifdef PYPY_VERSION
++#if defined(PYPY_VERSION) || defined(GRAALPY_VERSION)
+ #undef PYGI_USE_FREELIST
+ #endif
+ 
+diff --git a/gi/pygobject-object.c b/gi/pygobject-object.c
+index b7ade53b..edf98caa 100644
+--- a/gi/pygobject-object.c
++++ b/gi/pygobject-object.c
+@@ -54,7 +54,7 @@ GQuark pygobject_has_updated_constructor_key;
+ GQuark pygobject_instance_data_key;
+ 
+ /* PyPy doesn't support tp_dictoffset, so we have to work around it */
+-#ifndef PYPY_VERSION
++#if !defined(PYPY_VERSION) && !defined(GRAALPY_VERSION)
+ #define PYGI_OBJECT_USE_CUSTOM_DICT
+ #endif
+ 
+diff --git a/gi/pygi-resulttuple.c b/gi/pygi-resulttuple.c
+index 4a7a9beb..55226da2 100644
+--- a/gi/pygi-resulttuple.c
++++ b/gi/pygi-resulttuple.c
+@@ -257,6 +257,11 @@ pygi_resulttuple_new_type(PyObject *tuple_names) {
+         /* disallow subclassing as that would break the free list caching
+          * since we assume that all subclasses use PyTupleObject */
+         new_type->tp_flags &= ~Py_TPFLAGS_BASETYPE;
++#ifdef GRAALPY_VERSION
++        /* GraalPy has a custom tp_alloc for tuples, but the managed
++         * type we have created here has PyType_GenericAlloc */
++        new_type->tp_alloc = (&PyTuple_Type)->tp_alloc;
++#endif
+     }
+ 
+     return new_type;
+diff --git a/gi/pygi-closure.c b/gi/pygi-closure.c
+index 37f570c9..383c8524 100644
+--- a/gi/pygi-closure.c
++++ b/gi/pygi-closure.c
+@@ -375,8 +375,21 @@ _pygi_closure_convert_arguments (PyGIInvokeState *state,
+                     }
+
+                     user_data_len = PyTuple_Size (py_user_data);
++#if !defined(GRAALPY_VERSION_NUM) || GRAALPY_VERSION_NUM >= 0x190000a0
+                     _PyTuple_Resize (&state->py_in_args,
+                                      state->n_py_in_args + user_data_len - 1);
++#else
++                    {
++                        Py_ssize_t newSize = state->n_py_in_args + user_data_len - 1;
++                        Py_ssize_t oldSize = Py_SIZE(state->py_in_args);
++                        PyObject *newTuple = PyTuple_New(newSize);
++                        for (int idx = 0; idx < newSize && idx < oldSize; ++idx) {
++                            PyTuple_SetItem(newTuple, idx, PySequence_GetItem(state->py_in_args, idx));
++                        }
++                        Py_DECREF(state->py_in_args);
++                        state->py_in_args = newTuple;
++                    }
++#endif
+
+                     for (j = 0; j < user_data_len; j++, n_in_args++) {
+                         value = PyTuple_GetItem (py_user_data, j);
+@@ -413,8 +426,20 @@ _pygi_closure_convert_arguments (PyGIInvokeState *state,
+         }
+     }
+
++#if !defined(GRAALPY_VERSION_NUM) || GRAALPY_VERSION_NUM >= 0x190000a0
+     if (_PyTuple_Resize (&state->py_in_args, n_in_args) == -1)
+         return FALSE;
++#else
++    {
++        PyObject *newTuple = PyTuple_New(n_in_args);
++        Py_ssize_t oldSize = Py_SIZE(state->py_in_args);
++        for (int idx = 0; idx < n_in_args && idx < oldSize; ++idx) {
++            PyTuple_SetItem(newTuple, idx, PySequence_GetItem(state->py_in_args, idx));
++        }
++        Py_DECREF(state->py_in_args);
++        state->py_in_args = newTuple;
++    }
++#endif
+
+     return TRUE;
+ }
+-- 
+2.43.0
+
