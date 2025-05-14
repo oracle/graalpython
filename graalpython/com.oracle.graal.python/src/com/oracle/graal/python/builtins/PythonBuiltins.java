@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.ExecBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -46,6 +47,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.BiConsumer;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -114,6 +116,11 @@ public abstract class PythonBuiltins {
     /**
      * Run any actions that can only be run in the post-initialization step, that is, if we're
      * actually going to start running rather than just pre-initializing.
+     * <p>
+     * See {@link Python3Core#postInitialize(Env)} as postInitialize() is only run under some
+     * conditions. See also {@link ExecBuiltin}, tough that does not get called if the built-in
+     * module is actually shadowed by a frozen one, or if the built-in module is actually added to
+     * sys.modules during context initialization before the importlib exists, etc.
      */
     public void postInitialize(@SuppressWarnings("unused") Python3Core core) {
         // nothing to do by default
@@ -156,10 +163,18 @@ public abstract class PythonBuiltins {
         return maxNumPosArgs - builtin.minNumOfPositionalArgs();
     }
 
+    /**
+     * May only be used in {@link #initialize} or before. Use {@link PythonObject#setAttribute}
+     * instead in {@link #postInitialize}.
+     */
     protected final void addBuiltinConstant(String name, Object value) {
         addBuiltinConstant(toTruffleStringUncached(name), value);
     }
 
+    /**
+     * May only be used in {@link #initialize} or before. Use {@link PythonObject#setAttribute}
+     * instead in {@link #postInitialize}.
+     */
     protected final void addBuiltinConstant(TruffleString name, Object value) {
         builtinConstants.put(name, ensureNoJavaString(value));
     }
