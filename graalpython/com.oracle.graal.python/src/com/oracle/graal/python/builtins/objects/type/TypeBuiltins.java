@@ -71,6 +71,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Attribut
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.Arrays;
 import java.util.List;
@@ -96,11 +97,9 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectAr
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.AttributeErrorBuiltins;
-import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -108,7 +107,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.TypeNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
@@ -118,14 +117,12 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsAr
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.TypeNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpInitNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpNewNode;
 import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes;
@@ -138,7 +135,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -1350,22 +1346,86 @@ public final class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = J___TEXT_SIGNATURE__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class TextSignatureNode extends PythonUnaryBuiltinNode {
+        private static final String SIGNATURE_END_MARKER = ")\n--\n\n";
+        private static final int SIGNATURE_END_MARKER_LENGTH = 6;
+
         @Specialization
-        @TruffleBoundary
-        static Object signature(Object type) {
-            if (!(type instanceof PythonBuiltinClassType || type instanceof PythonBuiltinClass)) {
+        static Object signature(PythonBuiltinClass type) {
+            return signature(type.getType());
+        }
+
+        @Specialization
+        static Object signature(PythonBuiltinClassType type) {
+            if (type.getDoc() == null) {
                 return PNone.NONE;
             }
-            TpSlots slots = GetTpSlotsNode.executeUncached(type);
-            /* Best effort at getting at least something */
-            if (slots.tp_new() instanceof TpSlotVarargs.TpSlotVarargsBuiltin<?> builtin && builtin != ObjectBuiltins.SLOTS.tp_new()) {
-                return AbstractFunctionBuiltins.TextSignatureNode.signatureToText(builtin.getSignature(), true);
-            }
-            if (slots.tp_init() instanceof TpSlotVarargs.TpSlotVarargsBuiltin<?> builtin && builtin != ObjectBuiltins.SLOTS.tp_init()) {
-                return AbstractFunctionBuiltins.TextSignatureNode.signatureToText(builtin.getSignature(), true);
-            }
-            // object() signature
-            return StringLiterals.T_EMPTY_PARENS;
+            return signature(type.getName(), type.getDoc());
         }
+
+        @Fallback
+        static Object noDocs(@SuppressWarnings("unused") Object type) {
+            return PNone.NONE;
+        }
+
+        @TruffleBoundary
+        static Object signature(TruffleString name, TruffleString internalDoc) {
+            String n = name.toJavaStringUncached();
+            String doc = internalDoc.toJavaStringUncached();
+            int start = findSignature(n, doc);
+            if (start < 0) {
+                return PNone.NONE;
+            }
+
+            int end = -1;
+            if (start > 0)
+                end = skipSignature(doc, start);
+
+            if (end <= 0) {
+                return PNone.NONE;
+            }
+
+            /* back "end" up until it points just past the final ')' */
+            end -= SIGNATURE_END_MARKER_LENGTH - 1;
+            assert ((end - start) >= 2); /* should be "()" at least */
+            assert (doc.charAt(end - 1) == ')');
+            assert (doc.charAt(end) == '\n');
+            return toTruffleStringUncached(doc.substring(start, end));
+
+        }
+
+        /*
+         * finds the beginning of the docstring's introspection signature. if present, returns a
+         * pointer pointing to the first '('. otherwise returns NULL.
+         *
+         * doesn't guarantee that the signature is valid, only that it has a valid prefix. (the
+         * signature must also pass skip_signature.)
+         */
+        @TruffleBoundary
+        static int findSignature(String n, String doc) {
+            String name = n;
+            /* for dotted names like classes, only use the last component */
+            int dot = n.indexOf('.');
+            if (dot != -1)
+                name = name.substring(dot + 1);
+
+            int length = name.length();
+            if (!doc.startsWith(name))
+                return -1;
+
+            if (doc.charAt(length) != '(')
+                return -1;
+            return length;
+        }
+
+        /*
+         * skips past the end of the docstring's introspection signature. (assumes doc starts with a
+         * valid signature prefix.)
+         */
+        @TruffleBoundary
+        static int skipSignature(String doc, int start) {
+            int end = doc.indexOf(SIGNATURE_END_MARKER, start);
+            return end == -1 ? end : (end + SIGNATURE_END_MARKER_LENGTH);
+        }
+
     }
 }
