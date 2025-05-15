@@ -1,0 +1,13 @@
+diff --git a/xmlschema/validators/builders.py b/xmlschema/validators/builders.py
+index 1ac8b8e..f39ada8 100644
+--- a/xmlschema/validators/builders.py
++++ b/xmlschema/validators/builders.py
+@@ -8,7 +8,7 @@
+ # @author Davide Brunato <brunato@sissa.it>
+ #
+ import copy
+-from _operator import itemgetter
++from operator import itemgetter
+ from abc import abstractmethod
+ from collections import Counter
+ from collections.abc import Callable, ItemsView, Iterator, Mapping, ValuesView, Iterable
