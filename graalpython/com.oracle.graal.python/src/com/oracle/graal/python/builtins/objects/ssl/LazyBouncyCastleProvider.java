@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,48 +38,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python;
+package com.oracle.graal.python.builtins.objects.ssl;
 
+import java.security.Provider;
 import java.security.Security;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.graalvm.nativeimage.hosted.Feature;
-import org.graalvm.nativeimage.hosted.RuntimeReflection;
 
-import com.oracle.graal.python.runtime.PythonImageBuildOptions;
+public final class LazyBouncyCastleProvider {
+    private static Provider securityProvider;
 
-public class BouncyCastleFeature implements Feature {
-    @Override
-    public void afterRegistration(AfterRegistrationAccess access) {
-        if (!PythonImageBuildOptions.WITHOUT_SSL) {
-            Security.addProvider(Security.getProvider("SunJCE"));
-            Security.addProvider(new BouncyCastleProvider());
-
-            // SSLBasicKeyDerivation looks up the classes below reflectively since jdk-25+23
-            // See https://github.com/openjdk/jdk/pull/24393
-            String[] reflectiveClasses = new String[]{
-                            "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA256",
-                            "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA384",
-                            "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA512",
-                            "sun.security.pkcs11.P11HKDF",
-            };
-            for (String name : reflectiveClasses) {
-                try {
-                    Class.forName(name);
-                } catch (SecurityException | ClassNotFoundException e) {
-                    return;
-                }
-            }
-            // For backwards compatibility with older JDKs, we only do this if we found
-            // all those classes
-            for (String name : reflectiveClasses) {
-                try {
-                    RuntimeReflection.register(Class.forName(name));
-                    RuntimeReflection.register(Class.forName(name).getConstructors());
-                } catch (SecurityException | ClassNotFoundException e) {
-                    throw new RuntimeException("Could not register " + name + " for reflective access!", e);
-                }
-            }
+    public static synchronized Provider initProvider() {
+        if (securityProvider == null) {
+            securityProvider = new BouncyCastleProvider();
+            Security.addProvider(securityProvider);
         }
+        return securityProvider;
     }
 }

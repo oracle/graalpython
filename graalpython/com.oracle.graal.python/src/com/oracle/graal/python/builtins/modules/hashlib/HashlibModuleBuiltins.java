@@ -85,7 +85,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
+import com.oracle.graal.python.builtins.objects.ssl.LazyBouncyCastleProvider;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -139,7 +139,6 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                     "shake_128", "SHAKE128",
                     "shake_256", "SHAKE256");
 
-    public static final String J_CONSTRUCTORS = "_constructors";
     private static final String[] DIGEST_ALIASES = new String[]{
                     "md5", "_md5",
                     "sha1", "_sha1",
@@ -154,34 +153,6 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                     "shake_128", J_SHA3,
                     "shake_256", J_SHA3
     };
-    private static final String[] DIGEST_ALGORITHMS;
-    static {
-        Security.addProvider(CertUtils.BOUNCYCASTLE_PROVIDER);
-        ArrayList<String> digests = new ArrayList<>();
-        for (var provider : Security.getProviders()) {
-            for (var service : provider.getServices()) {
-                if (service.getType().equalsIgnoreCase(MessageDigest.class.getSimpleName())) {
-                    digests.add(service.getAlgorithm());
-                }
-            }
-        }
-        DIGEST_ALGORITHMS = digests.toArray(new String[digests.size()]);
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        EconomicMapStorage algos = EconomicMapStorage.create(DIGEST_ALGORITHMS.length);
-        for (var digest : DIGEST_ALGORITHMS) {
-            algos.putUncached(digest, PNone.NONE);
-        }
-        PythonLanguage language = core.getLanguage();
-        addBuiltinConstant("openssl_md_meth_names", PFactory.createFrozenSet(language, algos));
-
-        EconomicMapStorage storage = EconomicMapStorage.create();
-        addBuiltinConstant(J_CONSTRUCTORS, PFactory.createMappingproxy(language, PFactory.createDict(language, storage)));
-        core.lookupBuiltinModule(T_HASHLIB).setModuleState(storage);
-        super.initialize(core);
-    }
 
     private void addDigestAlias(PythonModule self, PythonModule mod, ReadAttributeFromPythonObjectNode readNode, EconomicMapStorage storage, String digest) {
         TruffleString tsDigest = toTruffleStringUncached(digest);
@@ -195,15 +166,32 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
+        PythonLanguage language = core.getLanguage();
         PythonModule self = core.lookupBuiltinModule(T_HASHLIB);
+        EconomicMapStorage storage = EconomicMapStorage.create();
+        LazyBouncyCastleProvider.initProvider();
+        ArrayList<String> digests = new ArrayList<>();
+        for (var provider : Security.getProviders()) {
+            for (var service : provider.getServices()) {
+                if (service.getType().equalsIgnoreCase(MessageDigest.class.getSimpleName())) {
+                    digests.add(service.getAlgorithm());
+                }
+            }
+        }
+        EconomicMapStorage algos = EconomicMapStorage.create(digests.size());
+        for (var digest : digests) {
+            algos.putUncached(digest, PNone.NONE);
+        }
+        self.setAttribute(tsLiteral("openssl_md_meth_names"), PFactory.createFrozenSet(language, algos));
+        self.setAttribute(tsLiteral("_constructors"), PFactory.createMappingproxy(language, PFactory.createDict(language, storage)));
         ReadAttributeFromPythonObjectNode readNode = ReadAttributeFromPythonObjectNode.getUncached();
-        EconomicMapStorage storage = self.getModuleState(EconomicMapStorage.class);
         PythonModule sha3module = AbstractImportNode.importModule(T_SHA3);
         for (int i = 0; i < DIGEST_ALIASES.length; i += 2) {
             String module = DIGEST_ALIASES[i + 1];
             PythonModule mod = module.equals(J_SHA3) ? sha3module : core.lookupBuiltinModule(toTruffleStringUncached(module));
             addDigestAlias(self, mod, readNode, storage, DIGEST_ALIASES[i]);
         }
+        self.setModuleState(storage);
     }
 
     @Builtin(name = "compare_digest", parameterNames = {"a", "b"})
