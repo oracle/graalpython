@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 
@@ -59,10 +60,12 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.EnsureCapacityNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemScalarNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetLenNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
@@ -71,6 +74,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -204,6 +208,25 @@ public final class PythonCextTupleBuiltins {
 
         private static Object doGetSlice(SequenceStorage storage, Node inliningTarget, Object iLow, Object iHigh, GetItemNode getItemNode, PySliceNew sliceNode) {
             return getItemNode.execute(null, storage, sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE));
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectPtr, args = {PyObject, Py_ssize_t, PyObjectPtr}, call = Ignored)
+    abstract static class PyTruffleTuple_Resize extends CApiTernaryBuiltinNode {
+        @Specialization
+        public static Object size(PTuple tuple, long size, Object obItemsPtr,
+                        @Bind("this") Node inliningTarget,
+                        @Cached EnsureCapacityNode ensureCapacityNode,
+                        @Cached SetLenNode setLenNode) {
+            SequenceStorage store = tuple.getSequenceStorage();
+            int newLength = (int) Math.min(size, Integer.MAX_VALUE);
+            ensureCapacityNode.execute(inliningTarget, store, newLength);
+            setLenNode.execute(inliningTarget, store, newLength);
+            if (store instanceof NativeSequenceStorage nativeStore) {
+                return nativeStore.getPtr();
+            } else {
+                return obItemsPtr;
+            }
         }
     }
 }

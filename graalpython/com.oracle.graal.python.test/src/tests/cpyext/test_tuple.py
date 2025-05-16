@@ -67,6 +67,13 @@ def _reference_setitem(args):
     return tuple(t)
 
 
+def _reference_resize(args):
+    original = args[0]
+    newsize = args[1]
+    return original[:newsize] + (None,) * (newsize - len(original))
+    return tuple(result)
+
+
 class MyStr(str):
 
     def __init__(self, s):
@@ -257,6 +264,35 @@ class TestPyTuple(CPyExtTestCase):
         argspec='O',
         arguments=["PyObject* o"],
         cmpfunc=unhandled_error_compare
+    )
+
+    # _PyTuple_Resize
+    test_PyTuple_Resize = CPyExtFunction(
+        _reference_resize,
+        lambda: (
+            ((1, 2, 3), 1),
+            ((), 1),
+            ((1, 2, 3), 5),
+        ),
+        code="""
+        PyObject* wrap_PyTuple_Resize(PyObject* original, int newsize) {
+            int size = PyTuple_Size(original);
+            PyObject *freshTuple = PyTuple_New(size);
+            for (int i = 0; i < size; ++i) {
+                PyTuple_SET_ITEM(freshTuple, i, Py_NewRef(PyTuple_GetItem(original, i)));
+            }
+            _PyTuple_Resize(&freshTuple, newsize);
+            for (int i = size; i < newsize; i++) {
+                PyTuple_SET_ITEM(freshTuple, i, Py_NewRef(Py_None));
+            }
+            return freshTuple;
+        }
+        """,
+        resultspec="O",
+        argspec='Oi',
+        arguments=["PyObject* original", "Py_ssize_t newsize"],
+        callfunction="wrap_PyTuple_Resize",
+        cmpfunc=unhandled_error_compare,
     )
 
 

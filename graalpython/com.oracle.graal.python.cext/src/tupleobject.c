@@ -959,7 +959,6 @@ PyTypeObject PyTuple_Type = {
 };
 
 
-#if 0 // GraalPy change
 /* The following function breaks the notion that tuples are immutable:
    it changes the size of a tuple.  We get away with this only if there
    is only one module referencing the object.  You can also think of it
@@ -977,7 +976,8 @@ _PyTuple_Resize(PyObject **pv, Py_ssize_t newsize)
 
     v = (PyTupleObject *) *pv;
     if (v == NULL || !Py_IS_TYPE(v, &PyTuple_Type) ||
-        (Py_SIZE(v) != 0 && Py_REFCNT(v) != 1)) {
+        // GraalPy change: ignore refcnt
+        /* (Py_SIZE(v) != 0 && Py_REFCNT(v) != 1) */ 0) {
         *pv = 0;
         Py_XDECREF(v);
         PyErr_BadInternalCall();
@@ -990,7 +990,9 @@ _PyTuple_Resize(PyObject **pv, Py_ssize_t newsize)
     }
     if (newsize == 0) {
         Py_DECREF(v);
-        *pv = tuple_get_empty();
+        // GraalPy change: no empty tuple singleton
+        // *pv = tuple_get_empty();
+        *pv = PyTuple_New(0);
         return 0;
     }
     if (oldsize == 0) {
@@ -1004,6 +1006,19 @@ _PyTuple_Resize(PyObject **pv, Py_ssize_t newsize)
         return *pv == NULL ? -1 : 0;
     }
 
+    // Begin GraalPy change
+    if (points_to_py_handle_space(v)) {
+        GraalPyVarObject *o = (GraalPyVarObject *)pointer_to_stub(v);
+        PyObject** new_items = GraalPyTruffleTuple_Resize((PyObject *)v, newsize, o->ob_item);
+        if (new_items == NULL && o->ob_item != NULL) {
+            *pv = NULL;
+            return -1;
+        }
+        o->ob_size = newsize;
+        o->ob_item = new_items;
+        return 0;
+    }
+    // End GraalPy change
     /* XXX UNREF/NEWREF interface should be more symmetrical */
 #ifdef Py_REF_DEBUG
     _Py_RefTotal--;
@@ -1034,6 +1049,7 @@ _PyTuple_Resize(PyObject **pv, Py_ssize_t newsize)
     return 0;
 }
 
+#if 0 // GraalPy change
 
 PyStatus
 _PyTuple_InitTypes(PyInterpreterState *interp)
