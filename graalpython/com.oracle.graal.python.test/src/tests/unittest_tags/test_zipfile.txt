@@ -156,6 +156,7 @@ test.test_zipfile.OtherTests.test_unsupported_version @ darwin-arm64,darwin-x86_
 test.test_zipfile.OtherTests.test_write_unicode_filenames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_zipfile.OtherTests.test_writestr_extended_local_header_issue1202 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_zipfile.OtherTests.test_zipfile_with_short_extra_field @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zipfile.PyZipFileTests.test_write_filtered_python_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_zipfile.PyZipFileTests.test_write_non_pyfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_zipfile.PyZipFileTests.test_write_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_zipfile.PyZipFileTests.test_write_pyfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

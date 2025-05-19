@@ -27,13 +27,13 @@ test.test_hashlib.HashLibTestCase.test_case_sha384_1 @ darwin-arm64,darwin-x86_6
 test.test_hashlib.HashLibTestCase.test_case_sha384_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hashlib.HashLibTestCase.test_case_sha384_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hashlib.HashLibTestCase.test_case_sha3_224_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_hashlib.HashLibTestCase.test_case_sha3_224_vector @ darwin-arm64,darwin-x86_64,linux-x86_64,win32-AMD64
+test.test_hashlib.HashLibTestCase.test_case_sha3_224_vector @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hashlib.HashLibTestCase.test_case_sha3_256_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_hashlib.HashLibTestCase.test_case_sha3_256_vector @ darwin-arm64,darwin-x86_64,linux-x86_64,win32-AMD64
+test.test_hashlib.HashLibTestCase.test_case_sha3_256_vector @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hashlib.HashLibTestCase.test_case_sha3_384_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_hashlib.HashLibTestCase.test_case_sha3_384_vector @ darwin-arm64,darwin-x86_64,linux-x86_64,win32-AMD64
+test.test_hashlib.HashLibTestCase.test_case_sha3_384_vector @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hashlib.HashLibTestCase.test_case_sha3_512_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_hashlib.HashLibTestCase.test_case_sha3_512_vector @ darwin-arm64,darwin-x86_64,linux-x86_64,win32-AMD64
+test.test_hashlib.HashLibTestCase.test_case_sha3_512_vector @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hashlib.HashLibTestCase.test_case_sha512_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hashlib.HashLibTestCase.test_case_sha512_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hashlib.HashLibTestCase.test_case_sha512_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
