@@ -510,6 +510,8 @@ unittest.test.testmock.testasync.AsyncMockAssert.test_awaits_asserts_with_spec_a
 unittest.test.testmock.testasync.AsyncMockTest.test_future_isfuture @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.test.testmock.testasync.AsyncMockTest.test_isawaitable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.test.testmock.testasync.AsyncMockTest.test_iscoroutinefunction_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+unittest.test.testmock.testasync.AsyncMockTest.test_iscoroutinefunction_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+unittest.test.testmock.testasync.AsyncMockTest.test_iscoroutinefunction_normal_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 unittest.test.testmock.testasync.AsyncPatchCMTest.test_async_def_cm @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.test.testmock.testasync.AsyncPatchCMTest.test_is_AsyncMock_cm @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 unittest.test.testmock.testasync.AsyncPatchCMTest.test_is_async_cm @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -589,6 +591,7 @@ unittest.test.testmock.testhelpers.SpecSignatureTest.test_create_autospec_keywor
 unittest.test.testmock.testhelpers.SpecSignatureTest.test_create_autospec_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 unittest.test.testmock.testhelpers.SpecSignatureTest.test_create_autospec_return_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 unittest.test.testmock.testhelpers.SpecSignatureTest.test_descriptors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+unittest.test.testmock.testhelpers.SpecSignatureTest.test_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 unittest.test.testmock.testhelpers.SpecSignatureTest.test_function_as_instance_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 unittest.test.testmock.testhelpers.SpecSignatureTest.test_inherit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 unittest.test.testmock.testhelpers.SpecSignatureTest.test_magic_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -801,6 +804,7 @@ unittest.test.testmock.testpatch.PatchTest.test_autospec_name @ darwin-arm64,dar
 unittest.test.testmock.testpatch.PatchTest.test_autospec_staticmethod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 unittest.test.testmock.testpatch.PatchTest.test_autospec_staticmethod_signature @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 unittest.test.testmock.testpatch.PatchTest.test_autospec_with_new @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+unittest.test.testmock.testpatch.PatchTest.test_autospec_with_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 unittest.test.testmock.testpatch.PatchTest.test_callable_spec_as_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 unittest.test.testmock.testpatch.PatchTest.test_cant_set_kwargs_when_passing_a_mock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 unittest.test.testmock.testpatch.PatchTest.test_create_and_specs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
