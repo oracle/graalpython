@@ -1214,7 +1214,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyUnicode_WideCharString_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_PyUnicode_WideCharString_Opt_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_PyUnicode_XStrip", ret = PyObject, args = {PyObject, Int, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyWeakref_ClearRef", ret = Void, args = {PYWEAKREFERENCE_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_PyWeakref_GetWeakrefCount", ret = Py_ssize_t, args = {PYWEAKREFERENCE_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_CoerceLegacyLocale", ret = Int, args = {Int}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_DisplaySourceLine", ret = Int, args = {PyObject, PyObject, Int, Int, INT_LIST, PyObjectPtr}, call = NotImplemented)

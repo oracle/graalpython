@@ -279,7 +279,7 @@ public enum ArgDescriptor {
     PYPRECONFIG_PTR("PyPreConfig*"),
     PYSTATUS("PyStatus"),
     PYUNICODE_KIND("enum PyUnicode_Kind"),
-    PYWEAKREFERENCE_PTR("PyWeakReference*"),
+    PYWEAKREFERENCE_PTR(ArgBehavior.PyObject, "PyWeakReference*"),
     PYWIDESTRINGLIST_PTR("PyWideStringList*"),
     SIZE_T(ArgBehavior.Int64, "size_t"),
     SIZE_T_PTR("size_t*"),
