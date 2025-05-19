@@ -147,9 +147,11 @@ class AbstractPythonVm(OutputCapturingVm, ABC):
         return args
 
     def run_vm(self, args, out=None, err=None, cwd=None, nonZeroIsFatal=False, env=None):
-        mx.logv(shlex.join([self.interpreter] + args))
+        cmd = [self.interpreter] + args
+        cmd = mx.apply_command_mapper_hooks(cmd, self.command_mapper_hooks)
+        mx.logv(shlex.join(cmd))
         return mx.run(
-            [self.interpreter] + args,
+            cmd,
             out=out,
             err=err,
             cwd=cwd,
