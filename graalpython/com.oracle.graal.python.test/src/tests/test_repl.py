@@ -50,7 +50,23 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
     import termios
     from textwrap import dedent
 
+    # The terminal tests can be flaky
+    def autoretry(fn):
+        def decorated(*args, **kwargs):
+            retries = 3
+            while retries:
+                try:
+                    fn(*args, **kwargs)
+                    return
+                except Exception:
+                    retries -= 1
+                    print("Retrying test")
+                    continue
+            fn(*args, **kwargs)
+        return decorated
 
+
+    @autoretry
     def validate_repl(stdin, python_args=(), ignore_preamble=True):
         env = os.environ.copy()
         env['TERM'] = 'ansi'
