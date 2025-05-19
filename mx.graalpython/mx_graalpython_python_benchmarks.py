@@ -562,7 +562,7 @@ class PyPySuite(PySuite):
 
 
 class NumPySuite(PySuite):
-    VERSION = "v1.26.4"
+    VERSION = "1.26.4"
 
     BENCHMARK_REQ = [
         "asv==0.5.1",
@@ -617,7 +617,7 @@ class NumPySuite(PySuite):
                         "1",
                         "https://github.com/numpy/numpy.git",
                         "--branch",
-                        self.VERSION,
+                        f"v{self.VERSION}",
                         "--single-branch",
                     ],
                     cwd=workdir,
@@ -649,7 +649,7 @@ class NumPySuite(PySuite):
                 "-e",
                 "--python=same",
                 "--set-commit-hash",
-                self.VERSION,
+                f"v{self.VERSION}",
                 "-b", create_asv_benchmark_selection(benchmarks, skipped=SKIPPED_NUMPY_BENCHMARKS),
             ],
             cwd=benchdir,
