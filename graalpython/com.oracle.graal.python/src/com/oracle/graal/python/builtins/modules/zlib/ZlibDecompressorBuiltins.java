@@ -75,6 +75,7 @@ import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -188,6 +189,18 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
                 }
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
+
+                PBytes tail = self.getUnconsumedTail();
+                int tailLen = tail == null ? 0 : bufferLib.getBufferLength(tail);
+                if (tailLen > 0) {
+                    byte[] tailBytes = bufferLib.getInternalOrCopiedByteArray(self.getUnconsumedTail());
+                    byte[] tmp = new byte[tailLen + len];
+                    PythonUtils.arraycopy(tailBytes, 0, tmp, 0, tailLen);
+                    PythonUtils.arraycopy(bytes, 0, tmp, tailLen, len);
+                    bytes = tmp;
+                    len += tailLen;
+                }
+
                 return PFactory.createBytes(language, innerNode.execute(frame, inliningTarget, self, bytes, len, maxLength));
             } finally {
                 bufferLib.release(buffer, frame, indirectCallData);

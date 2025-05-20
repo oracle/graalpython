@@ -168,8 +168,8 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         }
         ArrayList<String> unrecognized = new ArrayList<>();
         List<String> defaultEnvironmentArgs = getDefaultEnvironmentArgs();
-        ArrayList<String> inputArgs = new ArrayList<>(defaultEnvironmentArgs);
-        inputArgs.addAll(givenArgs);
+        ArrayList<String> inputArgs = new ArrayList<>(givenArgs);
+        inputArgs.addAll(defaultEnvironmentArgs);
         givenArguments = new ArrayList<>(inputArgs);
         List<String> arguments = new ArrayList<>(inputArgs);
         List<String> subprocessArgs = new ArrayList<>();
@@ -1481,7 +1481,11 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                 if (i == 0 && x == '\013') {
                     s = State.VTAB_DELIMITED;
                 } else if (s == State.VTAB_DELIMITED && x == '\013') {
-                    addArgument(pid, uuid, envArgs, sb);
+                    if (sb.isEmpty()) {
+                        envArgs.add("");
+                    } else {
+                        addArgument(pid, uuid, envArgs, sb);
+                    }
                 } else if (s == State.VTAB_DELIMITED && x != '\013') {
                     sb.append(x);
                 } else if (s == State.NORMAL && Character.isWhitespace(x)) {
