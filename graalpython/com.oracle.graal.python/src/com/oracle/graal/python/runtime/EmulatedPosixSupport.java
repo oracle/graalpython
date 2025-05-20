@@ -998,6 +998,36 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    @TruffleBoundary
+    public long sysconf(int name) throws PosixException {
+        // Constants derived from POSIX specs or common kernel configs
+        if (name == PosixConstants._SC_ARG_MAX.value) {
+            return 4096;
+        } else if (name == PosixConstants._SC_CHILD_MAX.value) {
+            return 25;
+        } else if (name == PosixConstants._SC_LOGIN_NAME_MAX.value) {
+            return 255;
+        } else if (name == PosixConstants._SC_CLK_TCK.value) {
+            return 100;
+        } else if (name == PosixConstants._SC_OPEN_MAX.value) {
+            return 20;
+        } else if (name == PosixConstants._SC_PAGESIZE.value) {
+            return 4096;
+        } else if (name == PosixConstants._SC_PAGE_SIZE.value) {
+            return 4096;
+        } else if (name == PosixConstants._SC_SEM_NSEMS_MAX.value) {
+            return 32;
+        } else if (name == PosixConstants._SC_PHYS_PAGES.value) {
+            return Runtime.getRuntime().totalMemory() / 4096;
+        } else if (name == PosixConstants._SC_NPROCESSORS_CONF.value) {
+            return Runtime.getRuntime().availableProcessors();
+        } else if (name == PosixConstants._SC_NPROCESSORS_ONLN.value) {
+            return Runtime.getRuntime().availableProcessors();
+        }
+        throw posixException(OSErrorEnum.EINVAL);
+    }
+
+    @ExportMessage
     public long[] fstatat(int dirFd, Object path, boolean followSymlinks,
                     @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached InlinedBranchProfile errorBranch,

@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -121,6 +121,7 @@ type_defs = {
 #   `x` - int, appearing in hexadecimal in the generated source
 #   `b` - boolean, will be true if the plaform is Linux (WTF?)
 # Column #3 - the name of the constant
+# Comments can come after that starting with "//"
 constant_defs = '''
   b HAVE_FUTIMENS
   b HAVE_UTIMENSAT
@@ -429,6 +430,41 @@ u x S_IFCHR
 * i IPV6_RECVPATHMTU
 * i IPV6_TCLASS
 * i IPV6_USE_MIN_MTU
+
+[sysconfigNames] // These names use some sensible overlapping default values for windows
+0 i _SC_ARG_MAX  // I made those required which are on both Mac and Linux
+1 i _SC_CHILD_MAX
+* i _SC_HOST_NAME_MAX
+2 i _SC_LOGIN_NAME_MAX
+* i _SC_NGROUPS_MAX
+3 i _SC_CLK_TCK
+4 i _SC_OPEN_MAX
+5 i _SC_PAGESIZE
+5 i _SC_PAGE_SIZE
+* i _SC_RE_DUP_MAX
+* i _SC_STREAM_MAX
+* i _SC_SYMLOOP_MAX
+* i _SC_TTY_NAME_MAX
+* i _SC_TZNAME_MAX
+* i _SC_VERSION
+* i _SC_BC_BASE_MAX
+* i _SC_BC_DIM_MAX
+* i _SC_BC_SCALE_MAX
+* i _SC_BC_STRING_MAX
+* i _SC_COLL_WEIGHTS_MAX
+* i _SC_EXPR_NEST_MAX
+* i _SC_LINE_MAX
+* i _SC_2_VERSION
+* i _SC_2_C_DEV
+* i _SC_2_FORT_DEV
+* i _SC_2_FORT_RUN
+* i _SC_2_LOCALEDEF
+* i _SC_2_SW_DEV
+7 i _SC_SEM_NSEMS_MAX
+8 i _SC_PHYS_PAGES
+* i _SC_AVPHYS_PAGES
+9 i _SC_NPROCESSORS_CONF
+9 i _SC_NPROCESSORS_ONLN
 '''
 
 layout_defs = '''
@@ -461,7 +497,7 @@ layout_defs = '''
 '''
 
 java_copyright = '''/*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -524,7 +560,7 @@ c_executable_file = 'gen_native_cfg'
 
 
 def parse_defs():
-    regex = re.compile(r'\[(\w+)\]|(\*|u|\d?)\s*(\w+)\s+(\w+)')
+    regex = re.compile(r'(?:\[(\w+)\]|(\*|u|\d?)\s*(\w+)\s+(\w+))( *\/\/.*)?')
     current_group = []
     groups = {}
     constants = []
@@ -678,7 +714,7 @@ def generate_posix_constants(constants, groups):
     defs = []
 
     def add_constant(opt, typ, name):
-        prefix = 'Optional' if opt == "*" else 'Mandatory'
+        prefix = 'Optional' if opt else 'Mandatory'
         decls.append(f'    public static final {prefix}{typ}Constant {name};\n')
         defs.append(f'        {name} = reg.create{prefix}{typ}("{name}");\n')
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -124,6 +124,8 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract void setBlocking(Object receiver, int fd, boolean blocking) throws PosixException;
 
     public abstract int[] getTerminalSize(Object receiver, int fd) throws PosixException;
+
+    public abstract long sysconf(Object receiver, int name) throws PosixException;
 
     // see stat_struct_to_longs in posix.c for the layout of the array
     public abstract long[] fstatat(Object receiver, int dirFd, Object pathname, boolean followSymlinks) throws PosixException;

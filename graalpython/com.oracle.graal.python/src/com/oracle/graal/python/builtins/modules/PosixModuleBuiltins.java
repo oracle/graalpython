@@ -45,6 +45,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -68,8 +69,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
@@ -92,6 +91,8 @@ import com.oracle.graal.python.lib.PyNumberDivmodNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyOSFSPathNode;
 import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -101,6 +102,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
@@ -252,7 +254,21 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         PythonLanguage language = core.getLanguage();
         addBuiltinConstant("_have_functions", PFactory.createList(language, haveFunctions.toArray()));
         addBuiltinConstant("environ", PFactory.createDict(language));
-        addBuiltinConstant("sysconf_names", PFactory.createDict(language));
+
+        LinkedHashMap<String, Object> sysconfigNames = new LinkedHashMap<>();
+        for (IntConstant name : PosixConstants.sysconfigNames) {
+            if (name.defined) {
+                // add the constant without the leading underscore
+                String pythonName;
+                if (name.name.startsWith("_")) {
+                    pythonName = name.name.substring(1);
+                } else {
+                    pythonName = name.name;
+                }
+                sysconfigNames.put(pythonName, name.getValueIfDefined());
+            }
+        }
+        addBuiltinConstant("sysconf_names", PFactory.createDictFromMap(language, sysconfigNames));
 
         StructSequence.initType(core, STAT_RESULT_DESC);
         StructSequence.initType(core, STATVFS_RESULT_DESC);
@@ -345,9 +361,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
         Object environAttr = posix.getAttribute(tsLiteral("environ"));
         ((PDict) environAttr).setDictStorage(environ.getDictStorage());
-
-        PDict sysconfNamesAttr = (PDict) posix.getAttribute(tsLiteral("sysconf_names"));
-        sysconfNamesAttr.setDictStorage(HashingStorageNodes.HashingStorageCopy.executeUncached(SysconfNode.SYSCONF_NAMES));
 
         if (posixLib.getBackend(posixSupport).toJavaStringUncached().equals("java")) {
             posix.setAttribute(toTruffleStringUncached("statvfs"), PNone.NO_VALUE);
@@ -2863,50 +2876,43 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "sysconf", minNumOfPositionalArgs = 1, parameterNames = {"name"})
+    @Builtin(name = "sysconf", minNumOfPositionalArgs = 2, parameterNames = {"$self", "name"}, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    abstract static class SysconfNode extends PythonUnaryBuiltinNode {
+    abstract static class SysconfNode extends PythonBinaryBuiltinNode {
 
-        public static final TruffleString T_SC_CLK_TCK = tsLiteral("SC_CLK_TCK");
-        public static final TruffleString T_SC_NPROCESSORS_ONLN = tsLiteral("SC_NPROCESSORS_ONLN");
-        public static final int SC_CLK_TCK = 2;
-        public static final int SC_NPROCESSORS_ONLN = 84;
-        public static final EconomicMapStorage SYSCONF_NAMES = EconomicMapStorage.create();
-        static {
-            // TODO populate from constants
-            SYSCONF_NAMES.putUncached(T_SC_CLK_TCK, SC_CLK_TCK);
-            SYSCONF_NAMES.putUncached(T_SC_NPROCESSORS_ONLN, SC_NPROCESSORS_ONLN);
-        }
+        private static final TruffleString T_SYSCONF_NAMES = tsLiteral("sysconf_names");
 
         @Specialization
-        static int sysconf(VirtualFrame frame, Object arg,
+        static long sysconf(VirtualFrame frame, PythonModule self, Object arg,
                         @Bind("this") Node inliningTarget,
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
-                        @Cached HashingStorageNodes.HashingStorageGetItem getItem,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached PyObjectGetItem getItem,
                         @Cached PRaiseNode raiseNode,
+                        @Bind PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             int id;
             if (longCheckNode.execute(inliningTarget, arg)) {
                 id = asIntNode.execute(frame, inliningTarget, arg);
             } else if (unicodeCheckNode.execute(inliningTarget, arg)) {
-                Object idObj = getItem.execute(frame, inliningTarget, SYSCONF_NAMES, arg);
-                if (idObj instanceof Integer idInt) {
-                    id = idInt;
-                } else {
+                try {
+                    Object sysconfigNamesObject = getAttr.execute(frame, inliningTarget, self, T_SYSCONF_NAMES);
+                    Object idObj = getItem.execute(frame, inliningTarget, sysconfigNamesObject, arg);
+                    id = asIntNode.execute(frame, inliningTarget, idObj);
+                } catch (PException e) {
                     throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.UNRECOGNIZED_CONF_NAME);
                 }
             } else {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CONFIGURATION_NAMES_MUST_BE_STRINGS_OR_INTEGERS);
             }
-            if (id == SC_CLK_TCK) {
-                return 100; // it's 100 on most default kernel configs. TODO: use real value through
-                            // NFI
-            } else if (id == SC_NPROCESSORS_ONLN) {
-                return CpuCountNode.getCpuCount();
+            try {
+                return posixLib.sysconf(context.getPosixSupport(), id);
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
-            throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EINVAL);
         }
     }
 
