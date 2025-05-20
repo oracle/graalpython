@@ -119,7 +119,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            HashingStorage storage = getHashingStorageNode.doNoValue(frame, inliningTarget, iterable);
+            HashingStorage storage = getHashingStorageNode.getForSets(frame, inliningTarget, iterable);
             return PFactory.createFrozenSet(language, cls, getInstanceShape.execute(cls), storage);
         }
     }

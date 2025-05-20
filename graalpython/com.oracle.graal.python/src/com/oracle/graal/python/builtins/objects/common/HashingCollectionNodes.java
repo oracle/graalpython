@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutUnsafeNo
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
+import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -150,42 +151,62 @@ public abstract class HashingCollectionNodes {
     }
 
     /**
-     * Gets clone of the keys of the storage with all values either set to given value or with no
-     * guarantees about the values if {@link PNone#NO_VALUE} is passed as {@code value}.
+     * Gets clone of the keys of the storage with all values set to given value or (when used to
+     * create a set or frozenset) to NO_VALUE.
      */
     @GenerateInline(inlineByDefault = true)
     public abstract static class GetClonedHashingStorageNode extends PNodeWithContext {
-        public abstract HashingStorage execute(VirtualFrame frame, Node inliningTarget, Object iterator, Object value);
+        protected abstract HashingStorage execute(VirtualFrame frame, Node inliningTarget, Object iterator, Object value);
 
-        public final HashingStorage doNoValue(VirtualFrame frame, Node inliningTarget, Object iterator) {
+        /**
+         * Gets clone of the keys of the storage with all values either set to given value or, if
+         * that is PNone.NO_VALUE, all values set to PNone.NONE. Use this method to clone into a
+         * dict or other object where the values may be accessible from Python to avoid a)
+         * PNone.NO_VALUE leaking to Python.
+         */
+        public final HashingStorage getForDictionaries(VirtualFrame frame, Node inliningTarget, Object iterator, Object value) {
+            return execute(frame, inliningTarget, iterator, value == PNone.NO_VALUE ? PNone.NONE : value);
+        }
+
+        /**
+         * Gets a clone of the keys of the storage with all values set to NO_VALUE. This must be
+         * used *only* to create new storages for use in sets and frozensets where the values cannot
+         * be accessed from user code.
+         */
+        public final HashingStorage getForSets(VirtualFrame frame, Node inliningTarget, Object iterator) {
             return execute(frame, inliningTarget, iterator, PNone.NO_VALUE);
         }
 
-        public final HashingStorage doNoValueCached(VirtualFrame frame, Object iterator) {
+        /**
+         * IMPORTANT: Only for sets and frozensets.
+         *
+         * @see #getForSets(VirtualFrame, Node, Object)
+         */
+        public final HashingStorage getForSetsCached(VirtualFrame frame, Object iterator) {
             return execute(frame, null, iterator, PNone.NO_VALUE);
         }
 
-        @Specialization(guards = "isNoValue(value)")
-        static HashingStorage doHashingCollectionNoValue(Node inliningTarget, PHashingCollection other, @SuppressWarnings("unused") Object value,
-                        @Shared("copyNode") @Cached HashingStorageCopy copyNode) {
+        // This for cloning sets (we come here from doNoValue or doNoValueCached). If we clone from
+        // some other PHashingCollection, we would hold on to keys in the sets, and if we were to
+        // clone for some other PHashingCollection (not PBaseSet), we might leak NO_VALUE into user
+        // code.
+        @Specialization(guards = "isNoValue(givenValue)")
+        static HashingStorage doSet(Node inliningTarget, PBaseSet other, @SuppressWarnings("unused") Object givenValue,
+                        @Cached HashingStorageCopy copyNode) {
             return copyNode.execute(inliningTarget, other.getDictStorage());
         }
 
-        @Specialization(guards = "isNoValue(value)")
-        static HashingStorage doPDictKeyViewNoValue(Node inliningTarget, PDictView.PDictKeysView other, Object value,
-                        @Shared("copyNode") @Cached HashingStorageCopy copyNode) {
-            return copyNode.execute(inliningTarget, other.getWrappedStorage());
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        static HashingStorage doHashingCollection(VirtualFrame frame, PHashingCollection other, Object value,
+        @Specialization(replaces = "doSet")
+        static HashingStorage doHashingCollection(VirtualFrame frame, PHashingCollection other, Object givenValue,
                         @Shared @Cached(inline = false) GetClonedHashingCollectionNode hashingCollectionNode) {
+            Object value = givenValue == PNone.NO_VALUE ? PNone.NONE : givenValue;
             return hashingCollectionNode.execute(frame, other.getDictStorage(), value);
         }
 
-        @Specialization(guards = "!isNoValue(value)")
-        static HashingStorage doPDictView(VirtualFrame frame, PDictView.PDictKeysView other, Object value,
+        @Specialization
+        static HashingStorage doPDictView(VirtualFrame frame, PDictView.PDictKeysView other, Object givenValue,
                         @Shared @Cached(inline = false) GetClonedHashingCollectionNode hashingCollectionNode) {
+            Object value = givenValue == PNone.NO_VALUE ? PNone.NONE : givenValue;
             return hashingCollectionNode.execute(frame, other.getWrappedStorage(), value);
         }
 
@@ -282,7 +303,7 @@ public abstract class HashingCollectionNodes {
         @InliningCutoff
         static HashingStorage doGeneric(VirtualFrame frame, Node inliningTarget, Object other,
                         @Cached GetClonedHashingStorageNode getHashingStorageNode) {
-            return getHashingStorageNode.doNoValue(frame, inliningTarget, other);
+            return getHashingStorageNode.getForSets(frame, inliningTarget, other);
         }
     }
 }
