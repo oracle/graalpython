@@ -1,0 +1,774 @@
+diff --git a/functorch/csrc/dim/dim.cpp b/functorch/csrc/dim/dim.cpp
+index 23179ad0e..ad9dbdbf7 100644
+--- a/functorch/csrc/dim/dim.cpp
++++ b/functorch/csrc/dim/dim.cpp
+@@ -22,7 +22,9 @@ PyObject* Dim_init() {
+ 
+ #include "minpybind.h"
+ #include <frameobject.h>
++#if 0 // GraalPy change
+ #include <opcode.h>
++#endif // GraalPy change
+ #include <utility>
+ #include <new>
+ #include <iostream>
+@@ -40,7 +42,9 @@ PyObject* Dim_init() {
+ #if IS_PYTHON_3_11_PLUS
+ 
+ #define Py_BUILD_CORE
++#if 0 // GraalPy change
+ #include "internal/pycore_opcode.h"
++#endif // GraalPy change
+ #undef Py_BUILD_CORE
+ #endif
+ 
+@@ -1458,6 +1462,7 @@ PyTypeObject Tensor::Type = {
+ 
+ // dim() --------------------
+ 
++#if 0 // GraalPy change
+ static bool relevant_op(_Py_CODEUNIT c) {
+     switch(c) {
+         case STORE_NAME:
+@@ -1469,6 +1474,7 @@ static bool relevant_op(_Py_CODEUNIT c) {
+             return false;
+     }
+ }
++#endif // GraalPy change
+ 
+ static mpy::object create_dim(mpy::object name, mpy::handle size) {
+     auto d = Dim::create(std::move(name));
+@@ -1502,6 +1508,7 @@ static mpy::object create_dimlist(mpy::object name, mpy::handle size) {
+ #endif
+ 
+ namespace{
++#if 0 // GraalPy change
+ struct PyInstDecoder {
+     PyInstDecoder(PyCodeObject* code_object, int lasti)
+     : code_object_(code_object), code_(_PyCode_CODE(code_object)), offset_(lasti / sizeof(_Py_CODEUNIT))  {}
+@@ -1547,6 +1554,7 @@ private:
+     _Py_CODEUNIT* code_;
+     int offset_;
+ };
++#endif // GraalPy change
+ 
+ template<mpy::object (*create_object)(mpy::object, mpy::handle)>
+ static PyObject* _dims(PyObject *self,
+@@ -1572,6 +1580,7 @@ static PyObject* _dims(PyObject *self,
+         }
+     }
+ 
++#if 0 // GraalPy change
+     PyThreadState* state = PyThreadState_GET();
+     auto f = mpy::obj<PyFrameObject>::steal(PyThreadState_GetFrame(state));
+     auto c = mpy::obj<PyCodeObject>::steal(PyFrame_GetCode(f.ptr()));
+@@ -1592,10 +1601,12 @@ static PyObject* _dims(PyObject *self,
+         found_ndims = decoder.oparg();
+         decoder.next();
+     }
++#endif // GraalPy change
+ 
+     if (specified_ndims == -1) {
+         if (found_ndims == 0) {
+-            mpy::raise_error(PyExc_SyntaxError, "dims() must be assigned to a sequence of variable names or have argument n specified");
++            // GraalPy change
++            mpy::raise_error(PyExc_SyntaxError, "dims() without arguments doesn't work on GraalPy, use the explicit dims(number) form");
+         }
+         specified_ndims = found_ndims;
+     }
+@@ -1605,14 +1616,18 @@ static PyObject* _dims(PyObject *self,
+ 
+     auto genobject = [&](int i) -> mpy::object {
+         mpy::object name;
++#if 0 // GraalPy change
+         if (i < found_ndims) {
+             name = decoder.name();
+         }
++#endif // GraalPy change
+         if (!name.ptr()) {
+             name = mpy::unicode_from_format("d%d", i);
+             found_ndims = 0; // once we fail at finding a name, we can find any more
+         } else {
++#if 0 // GraalPy change
+             decoder.next();
++#endif // GraalPy change
+         }
+         return create_object(std::move(name), sizes != -1 ? mpy::sequence_view(py_sizes)[i] : mpy::handle(Py_None));
+     };
+@@ -2059,12 +2074,12 @@ struct IndexingInfo {
+ IndexingInfo getsetitem_flat(Arena& A, TensorInfo self_info, Slice<mpy::handle> input, Slice<DimEntry> keys, Slice<mpy::handle> values, bool has_dimpacks_or_none);
+ namespace{
+ Slice<mpy::handle> as_slice(mpy::tuple_view tv) {
+-    PyObject** begin = &PyTuple_GET_ITEM(tv.ptr(),0);
++    PyObject** begin = PySequence_Fast_ITEMS(tv.ptr());
+     return Slice<mpy::handle>((mpy::handle*)begin, (mpy::handle*) (begin + tv.size()));
+ }
+ 
+ Slice<mpy::handle> as_slice(mpy::list_view tv) {
+-    PyObject** begin = &PyList_GET_ITEM(tv.ptr(),0);
++    PyObject** begin = PySequence_Fast_ITEMS(tv.ptr());
+     return Slice<mpy::handle>((mpy::handle*)begin, (mpy::handle*) (begin + tv.size()));
+ }
+ 
+diff --git a/pyproject.toml b/pyproject.toml
+index e84d980ff..649a53a0a 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -4,9 +4,11 @@ requires = [
+     "wheel",
+     "astunparse",
+     "numpy",
+-    "ninja",
++    # GraalPy change: require ninja on the system, the wheel wrapper goes through python, making the build very slow
++    # "ninja",
+     "pyyaml",
+-    "cmake",
++    # GraalPy change: same as ninja
++    # "cmake",
+     "typing-extensions>=4.10.0",
+     "requests",
+ ]
+diff --git a/test/test_overrides.py b/test/test_overrides.py
+index cc7c904a1..1249f9cce 100644
+--- a/test/test_overrides.py
++++ b/test/test_overrides.py
+@@ -1561,12 +1561,9 @@ class TestTorchFunctionMode(TestCase):
+             pass
+ 
+         x = A(torch.randn(5))
+-        with torch._C.DisableTorchFunctionSubclass():
+-            g = torch._C._EnableTorchFunction()
+-            try:
++        with torch._C.DisableTorchFunctionSubclass(), \
++            torch._C._EnableTorchFunction():
+                 self.assertIsInstance(torch.sum(x), A)
+-            finally:
+-                del g
+ 
+     def test_disable_enable_torch_function_ctx(self):
+         class A(torch.Tensor):
+diff --git a/test/test_python_dispatch.py b/test/test_python_dispatch.py
+index 2e6bbd406..0c77b21f7 100644
+--- a/test/test_python_dispatch.py
++++ b/test/test_python_dispatch.py
+@@ -2470,16 +2470,16 @@ def forward(self, x_1):
+ class TestPythonDispatcher(TestCase):
+     def test_basic(self):
+         x = torch.randn(2, requires_grad=True)
+-        r = torch._C._EnablePythonDispatcher()
+-        torch.add(x, x)
++        with torch._C._EnablePythonDispatcher():
++            torch.add(x, x)
+ 
+     def test_lstsq(self):
+         a = torch.randn(4, 3)
+         b = torch.rand(4, 3)
+         expected_shape = torch.linalg.lstsq(a, b).solution.shape
+-        r = torch._C._EnablePythonDispatcher()
+-        python_disp_shape = torch.linalg.lstsq(a, b).solution.shape
+-        self.assertEqual(expected_shape, python_disp_shape)
++        with torch._C._EnablePythonDispatcher():
++            python_disp_shape = torch.linalg.lstsq(a, b).solution.shape
++            self.assertEqual(expected_shape, python_disp_shape)
+ 
+ 
+ class TestWrapperSubclassAliasing(TestCase):
+diff --git a/third_party/fbgemm/CMakeLists.txt b/third_party/fbgemm/CMakeLists.txt
+index 134523e7d..a00538e3c 100644
+--- a/third_party/fbgemm/CMakeLists.txt
++++ b/third_party/fbgemm/CMakeLists.txt
+@@ -10,6 +10,8 @@
+ 
+ cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
+ 
++add_compile_options(-Wno-error=maybe-uninitialized -Wno-error=uninitialized -Wno-error=restrict)
++
+ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+ 
+ # Define function to extract filelists from defs.bzl file
+diff --git a/third_party/pybind11/include/pybind11/detail/common.h b/third_party/pybind11/include/pybind11/detail/common.h
+index c51d1d60b..3976dd32b 100644
+--- a/third_party/pybind11/include/pybind11/detail/common.h
++++ b/third_party/pybind11/include/pybind11/detail/common.h
+@@ -299,7 +299,7 @@ PYBIND11_WARNING_DISABLE_MSVC(4505)
+ #    define PYBIND11_INTERNAL_NUMPY_1_ONLY_DETECTED
+ #endif
+ 
+-#if defined(PYPY_VERSION) && !defined(PYBIND11_SIMPLE_GIL_MANAGEMENT)
++#if (defined(PYPY_VERSION) || defined(GRAALVM_PYTHON)) && !defined(PYBIND11_SIMPLE_GIL_MANAGEMENT)
+ #    define PYBIND11_SIMPLE_GIL_MANAGEMENT
+ #endif
+ 
+diff --git a/third_party/pybind11/include/pybind11/detail/internals.h b/third_party/pybind11/include/pybind11/detail/internals.h
+index 232bc32d8..acde741f2 100644
+--- a/third_party/pybind11/include/pybind11/detail/internals.h
++++ b/third_party/pybind11/include/pybind11/detail/internals.h
+@@ -449,7 +449,7 @@ inline void translate_local_exception(std::exception_ptr p) {
+ 
+ inline object get_python_state_dict() {
+     object state_dict;
+-#if PYBIND11_INTERNALS_VERSION <= 4 || PY_VERSION_HEX < 0x03080000 || defined(PYPY_VERSION)
++#if PYBIND11_INTERNALS_VERSION <= 4 || PY_VERSION_HEX < 0x03080000 || defined(PYPY_VERSION) || defined(GRAALVM_PYTHON)
+     state_dict = reinterpret_borrow<object>(PyEval_GetBuiltins());
+ #else
+ #    if PY_VERSION_HEX < 0x03090000
+diff --git a/third_party/pybind11/include/pybind11/detail/type_caster_base.h b/third_party/pybind11/include/pybind11/detail/type_caster_base.h
+index e40e44ba6..e7b94aff2 100644
+--- a/third_party/pybind11/include/pybind11/detail/type_caster_base.h
++++ b/third_party/pybind11/include/pybind11/detail/type_caster_base.h
+@@ -459,7 +459,7 @@ PYBIND11_NOINLINE handle get_object_handle(const void *ptr, const detail::type_i
+ }
+ 
+ inline PyThreadState *get_thread_state_unchecked() {
+-#if defined(PYPY_VERSION)
++#if defined(PYPY_VERSION) || defined(GRAALVM_PYTHON)
+     return PyThreadState_GET();
+ #elif PY_VERSION_HEX < 0x030D0000
+     return _PyThreadState_UncheckedGet();
+diff --git a/third_party/pybind11/include/pybind11/eval.h b/third_party/pybind11/include/pybind11/eval.h
+index bd5f981f5..ee271672d 100644
+--- a/third_party/pybind11/include/pybind11/eval.h
++++ b/third_party/pybind11/include/pybind11/eval.h
+@@ -94,18 +94,18 @@ void exec(const char (&s)[N], object global = globals(), object local = object()
+     eval<eval_statements>(s, std::move(global), std::move(local));
+ }
+ 
+-#if defined(PYPY_VERSION)
++#if defined(PYPY_VERSION) || defined(GRAALVM_PYTHON)
+ template <eval_mode mode = eval_statements>
+ object eval_file(str, object, object) {
+-    pybind11_fail("eval_file not supported in PyPy3. Use eval");
++    pybind11_fail("eval_file not supported in PyPy3 or GraalPy. Use eval");
+ }
+ template <eval_mode mode = eval_statements>
+ object eval_file(str, object) {
+-    pybind11_fail("eval_file not supported in PyPy3. Use eval");
++    pybind11_fail("eval_file not supported in PyPy3 or GraalPy. Use eval");
+ }
+ template <eval_mode mode = eval_statements>
+ object eval_file(str) {
+-    pybind11_fail("eval_file not supported in PyPy3. Use eval");
++    pybind11_fail("eval_file not supported in PyPy3 or GraalPy. Use eval");
+ }
+ #else
+ template <eval_mode mode = eval_statements>
+diff --git a/third_party/pybind11/include/pybind11/pybind11.h b/third_party/pybind11/include/pybind11/pybind11.h
+index 949bc9bb4..6e17baa03 100644
+--- a/third_party/pybind11/include/pybind11/pybind11.h
++++ b/third_party/pybind11/include/pybind11/pybind11.h
+@@ -573,8 +573,7 @@ protected:
+                 // chain.
+                 chain_start = rec;
+                 rec->next = chain;
+-                auto rec_capsule
+-                    = reinterpret_borrow<capsule>(((PyCFunctionObject *) m_ptr)->m_self);
++                auto rec_capsule = reinterpret_borrow<capsule>(PyCFunction_GET_SELF(m_ptr));
+                 rec_capsule.set_pointer(unique_rec.release());
+                 guarded_strdup.release();
+             } else {
+@@ -636,9 +635,15 @@ protected:
+ 
+         /* Install docstring */
+         auto *func = (PyCFunctionObject *) m_ptr;
++#if !defined(GRAALVM_PYTHON)
+         //std::free(const_cast<char *>(GraalPyCFunction_GetDoc((PyObject*)(func))));
+         // Install docstring if it's non-empty (when at least one option is enabled)
+         GraalPyCFunction_SetDoc((PyObject*)(func), signatures.empty() ? nullptr : PYBIND11_COMPAT_STRDUP(signatures.c_str()));
++#else
++        std::free(const_cast<char *>(GraalPyCFunction_GetDoc(m_ptr)));
++        GraalPyCFunction_SetDoc(
++            m_ptr, signatures.empty() ? nullptr : PYBIND11_COMPAT_STRDUP(signatures.c_str()));
++#endif
+ 
+         if (rec->is_method) {
+             m_ptr = PYBIND11_INSTANCE_METHOD_NEW(m_ptr, rec->scope.ptr());
+@@ -2766,8 +2771,8 @@ get_type_override(const void *this_ptr, const type_info *this_type, const char *
+     }
+ 
+     /* Don't call dispatch code if invoked from overridden function.
+-       Unfortunately this doesn't work on PyPy. */
+-#if !defined(PYPY_VERSION)
++       Unfortunately this doesn't work on PyPy and GraalPy. */
++#if !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
+ #    if PY_VERSION_HEX >= 0x03090000
+     PyFrameObject *frame = PyThreadState_GetFrame(PyThreadState_Get());
+     if (frame != nullptr) {
+diff --git a/third_party/pybind11/include/pybind11/pytypes.h b/third_party/pybind11/include/pybind11/pytypes.h
+index 8052f2ed0..7aafab6dc 100644
+--- a/third_party/pybind11/include/pybind11/pytypes.h
++++ b/third_party/pybind11/include/pybind11/pytypes.h
+@@ -643,7 +643,7 @@ struct error_fetch_and_normalize {
+ 
+         bool have_trace = false;
+         if (m_trace) {
+-#if !defined(PYPY_VERSION)
++#if !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
+             auto *tb = reinterpret_cast<PyTracebackObject *>(m_trace.ptr());
+ 
+             // Get the deepest trace possible.
+diff --git a/tools/build_pytorch_libs.py b/tools/build_pytorch_libs.py
+index 5dd5a2219..357bf15d8 100644
+--- a/tools/build_pytorch_libs.py
++++ b/tools/build_pytorch_libs.py
+@@ -86,6 +86,7 @@ def _create_build_env() -> dict[str, str]:
+ 
+ 
+ def read_nccl_pin() -> str:
++    return 'v2.26.5-1'
+     nccl_file = "nccl-cu12.txt"
+     if os.getenv("DESIRED_CUDA", "").startswith("11") or os.getenv(
+         "CUDA_VERSION", ""
+@@ -120,7 +121,7 @@ def build_pytorch(
+ ) -> None:
+     my_env = _create_build_env()
+     checkout_nccl()
+-    build_test = not check_negative_env_flag("BUILD_TEST")
++    build_test = not check_negative_env_flag("BUILD_TEST", "OFF")
+     cmake.generate(
+         version, cmake_python_library, build_python, build_test, my_env, rerun_cmake
+     )
+diff --git a/tools/generate_torch_version.py b/tools/generate_torch_version.py
+index a33ea171e..400ae922f 100644
+--- a/tools/generate_torch_version.py
++++ b/tools/generate_torch_version.py
+@@ -50,6 +50,8 @@ def get_tag(pytorch_root: str | Path) -> str:
+ def get_torch_version(sha: str | None = None) -> str:
+     pytorch_root = Path(__file__).absolute().parent.parent
+     version = open(pytorch_root / "version.txt").read().strip()
++    # GraalPy change
++    return re.sub(r'a.*', '', version)
+ 
+     if os.getenv("PYTORCH_BUILD_VERSION"):
+         assert os.getenv("PYTORCH_BUILD_NUMBER") is not None
+diff --git a/torch/_dynamo/decorators.py b/torch/_dynamo/decorators.py
+index b9009f729..52e851d7e 100644
+--- a/torch/_dynamo/decorators.py
++++ b/torch/_dynamo/decorators.py
+@@ -94,7 +94,8 @@ def skip(fn=None):
+         return skip
+     fn = innermost_fn(fn)
+     assert callable(fn)
+-    skip_code(fn.__code__)
++    # GraalPy change
++    # skip_code(fn.__code__)
+     fn._torchdynamo_disable = True
+     return fn
+ 
+@@ -396,15 +397,16 @@ def substitute_in_graph(
+ 
+                 wildcard_sig = inspect.signature(lambda *args, **kwargs: None)
+ 
+-                if (
+-                    sig_ident(original_sig) != sig_ident(traceable_sig)
+-                    and sig_ident(original_sig) != sig_ident(wildcard_sig)
+-                    and sig_ident(traceable_sig) != sig_ident(wildcard_sig)
+-                ):
+-                    raise TypeError(
+-                        f"Signature mismatch between {original_fn} and {traceable_fn}: "
+-                        f"{original_sig} != {traceable_sig}"
+-                    )
++                # GraalPy change
++                # if (
++                #     sig_ident(original_sig) != sig_ident(traceable_sig)
++                #     and sig_ident(original_sig) != sig_ident(wildcard_sig)
++                #     and sig_ident(traceable_sig) != sig_ident(wildcard_sig)
++                # ):
++                #     raise TypeError(
++                #         f"Signature mismatch between {original_fn} and {traceable_fn}: "
++                #         f"{original_sig} != {traceable_sig}"
++                #     )
+ 
+         from torch._dynamo.guards import GuardBuilder
+         from torch._dynamo.trace_rules import (
+diff --git a/torch/_tensor_str.py b/torch/_tensor_str.py
+index b13daaeba..0124d81b2 100644
+--- a/torch/_tensor_str.py
++++ b/torch/_tensor_str.py
+@@ -705,6 +705,6 @@ def _functorch_wrapper_str_intern(tensor, *, tensor_contents=None):
+ 
+ 
+ def _str(self, *, tensor_contents=None):
+-    with torch.no_grad(), torch.utils._python_dispatch._disable_current_modes():
+-        guard = torch._C._DisableFuncTorch()  # noqa: F841
++    with torch.no_grad(), torch.utils._python_dispatch._disable_current_modes(), \
++            torch._C._DisableFuncTorch():
+         return _str_intern(self, tensor_contents=tensor_contents)
+diff --git a/torch/csrc/Generator.cpp b/torch/csrc/Generator.cpp
+index ce2b4789e..74da13115 100644
+--- a/torch/csrc/Generator.cpp
++++ b/torch/csrc/Generator.cpp
+@@ -266,7 +266,7 @@ static PyObject* THPGenerator_reduce(PyObject* _self, PyObject* noargs) {
+ static PyObject* THPGenerator_pickleSetState(PyObject* _self, PyObject* state) {
+   HANDLE_TH_ERRORS
+   THPGenerator_manualSeed(_self, PyTuple_GET_ITEM(state, 0));
+-  auto& offset = PyTuple_GET_ITEM(state, 1);
++  PyObject* offset = PyTuple_GET_ITEM(state, 1);
+   if (offset != Py_None) {
+     THPGenerator_setOffset(_self, offset);
+   }
+diff --git a/torch/csrc/Module.cpp b/torch/csrc/Module.cpp
+index 1ac30fecf..53c5a8c32 100644
+--- a/torch/csrc/Module.cpp
++++ b/torch/csrc/Module.cpp
+@@ -436,46 +436,16 @@ static PyObject* THPModule_addDocStr(PyObject* _unused, PyObject* args) {
+     doc_str = all_docs.back().c_str();
+   }
+ 
+-  if (Py_TYPE(obj) == &PyCFunction_Type) {
+-    PyCFunctionObject* f = (PyCFunctionObject*)obj;
+-    if (GraalPyCFunction_GetDoc((PyObject*)(f))) {
+-      return PyErr_Format(
+-          PyExc_RuntimeError,
+-          "function '%s' already has a docstring",
+-          _PyCFunction_GetMethodDef((PyObject*)(f))->ml_name);
+-    }
+-    GraalPyCFunction_SetDoc((PyObject*)(f), doc_str);
+-  } else if (strcmp(Py_TYPE(obj)->tp_name, "method_descriptor") == 0) {
+-    PyMethodDescrObject* m = (PyMethodDescrObject*)obj;
+-    if (m->d_method->ml_doc) {
+-      return PyErr_Format(
+-          PyExc_RuntimeError,
+-          "method '%s' already has a docstring",
+-          m->d_method->ml_name);
+-    }
+-    m->d_method->ml_doc = doc_str;
+-  } else if (strcmp(Py_TYPE(obj)->tp_name, "getset_descriptor") == 0) {
+-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
+-    PyGetSetDescrObject* m = (PyGetSetDescrObject*)obj;
+-    if (m->d_getset->doc) {
+-      return PyErr_Format(
+-          PyExc_RuntimeError,
+-          "attribute '%s' already has a docstring",
+-          m->d_getset->name);
+-    }
+-    m->d_getset->doc = doc_str;
+-  } else if (Py_TYPE(obj) == &PyType_Type) {
+-    PyTypeObject* t = (PyTypeObject*)obj;
+-    if (t->tp_doc) {
+-      return PyErr_Format(
+-          PyExc_RuntimeError, "Type '%s' already has a docstring", t->tp_name);
+-    }
+-    t->tp_doc = doc_str;
+-  } else {
++  // GraalPy change
++  if (PyObject_GetDoc(obj)) {
+     return PyErr_Format(
+-        PyExc_TypeError,
+-        "don't know how to add docstring to type '%s'",
+-        Py_TYPE(obj)->tp_name);
++        PyExc_RuntimeError,
++        "object '%100R' already has a docstring",
++        obj);
++  }
++  // GraalPy change
++  if (PyObject_SetDoc(obj, doc_str) < 0) {
++      return NULL;
+   }
+ 
+   Py_INCREF(obj);
+diff --git a/torch/csrc/autograd/python_variable_indexing.cpp b/torch/csrc/autograd/python_variable_indexing.cpp
+index ae1780e66..018c0e03f 100644
+--- a/torch/csrc/autograd/python_variable_indexing.cpp
++++ b/torch/csrc/autograd/python_variable_indexing.cpp
+@@ -140,25 +140,28 @@ inline Variable valueToTensor(
+ 
+ static void recordSliceTrace(PyObject* obj) {
+   PySliceObject* sliceobj = (PySliceObject*)obj;
+-  if (THPVariable_Check(sliceobj->start)) {
++  PyObject* slicestart = PySlice_Start(sliceobj);
++  if (THPVariable_Check(slicestart)) {
+     torch::jit::tracer::ArgumentStash::stashValue(
+         std::string("start"),
+         1,
+-        THPVariable_Unpack(sliceobj->start),
++        THPVariable_Unpack(slicestart),
+         torch::jit::IntType::get());
+   }
+-  if (THPVariable_Check(sliceobj->stop)) {
++  PyObject* slicestop = PySlice_Stop(sliceobj);
++  if (THPVariable_Check(slicestop)) {
+     torch::jit::tracer::ArgumentStash::stashValue(
+         std::string("end"),
+         1,
+-        THPVariable_Unpack(sliceobj->stop),
++        THPVariable_Unpack(slicestop),
+         torch::jit::IntType::get());
+   }
+-  if (THPVariable_Check(sliceobj->step)) {
++  PyObject* slicestep = PySlice_Step(sliceobj);
++  if (THPVariable_Check(slicestep)) {
+     torch::jit::tracer::ArgumentStash::stashValue(
+         std::string("step"),
+         1,
+-        THPVariable_Unpack(sliceobj->step),
++        THPVariable_Unpack(slicestep),
+         torch::jit::IntType::get());
+   }
+ }
+diff --git a/torch/csrc/autograd/python_variable_indexing.h b/torch/csrc/autograd/python_variable_indexing.h
+index 7efab1dcf..67b3cf44e 100644
+--- a/torch/csrc/autograd/python_variable_indexing.h
++++ b/torch/csrc/autograd/python_variable_indexing.h
+@@ -37,14 +37,15 @@ inline UnpackedSlice __PySlice_Unpack(PyObject* _r) {
+     return val;
+   };
+ 
+-  if (r->step == Py_None) {
++  PyObject* stepObj = PySlice_Step(r);
++  if (stepObj == Py_None) {
+     step_sym = c10::SymInt(1);
+   } else {
+-    if (torch::is_symint(r->step)) {
+-      step_sym = py::handle(r->step).cast<c10::SymInt>();
++    if (torch::is_symint(stepObj)) {
++      step_sym = py::handle(stepObj).cast<c10::SymInt>();
+     } else {
+       Py_ssize_t step = 0;
+-      if (!_PyEval_SliceIndex(r->step, &step)) {
++      if (!_PyEval_SliceIndex(stepObj, &step)) {
+         throw python_error();
+       }
+       if (step == 0) {
+@@ -56,27 +57,29 @@ inline UnpackedSlice __PySlice_Unpack(PyObject* _r) {
+     }
+   }
+ 
+-  if (torch::is_symint(r->start)) {
+-    start_sym = py::handle(r->start).cast<c10::SymInt>();
+-  } else if (r->start == Py_None) {
++  PyObject* startObj = PySlice_Start(r);
++  if (torch::is_symint(startObj)) {
++    start_sym = py::handle(startObj).cast<c10::SymInt>();
++  } else if (startObj == Py_None) {
+     start_sym = c10::SymInt(step_sym < 0 ? PY_SSIZE_T_MAX : 0);
+   } else {
+     Py_ssize_t start = 0;
+-    if (!_PyEval_SliceIndex(r->start, &start)) {
++    if (!_PyEval_SliceIndex(startObj, &start)) {
+       throw python_error();
+     }
+     start = clip_val(start);
+     start_sym = c10::SymInt(start);
+   }
+ 
+-  if (torch::is_symint(r->stop)) {
+-    stop_sym = py::handle(r->stop).cast<c10::SymInt>();
+-  } else if (r->stop == Py_None) {
++  PyObject* stopObj = PySlice_Stop(r);
++  if (torch::is_symint(stopObj)) {
++    stop_sym = py::handle(stopObj).cast<c10::SymInt>();
++  } else if (stopObj == Py_None) {
+     stop_sym = c10::SymInt(
+         step_sym < 0 ? c10::SymInt::min_representable_int() : PY_SSIZE_T_MAX);
+   } else {
+     Py_ssize_t stop = 0;
+-    if (!_PyEval_SliceIndex(r->stop, &stop)) {
++    if (!_PyEval_SliceIndex(stopObj, &stop)) {
+       throw python_error();
+     }
+     stop = clip_val(stop);
+diff --git a/torch/csrc/dynamo/cpython_defs.c b/torch/csrc/dynamo/cpython_defs.c
+index b68ef894a..0837d95be 100644
+--- a/torch/csrc/dynamo/cpython_defs.c
++++ b/torch/csrc/dynamo/cpython_defs.c
+@@ -2,6 +2,7 @@
+ #include <torch/csrc/dynamo/cpython_includes.h>
+ #include <torch/csrc/dynamo/debug_macros.h>
+ 
++#if 0 // GraalPy change
+ #if IS_PYTHON_3_11_PLUS
+ 
+ #define Py_BUILD_CORE
+@@ -349,7 +350,8 @@ THP_PyThreadState_PopFrame(PyThreadState *tstate, _PyInterpreterFrame * frame)
+ 
+ #endif
+ 
+-#if IS_PYTHON_3_11_PLUS
++// GraalPy change
++// #if IS_PYTHON_3_11_PLUS
+ 
+ const uint8_t* THP_PyOpcode_Caches = _PyOpcode_Caches;
+ const int THP_PyOpcode_Caches_size = sizeof(_PyOpcode_Caches) / sizeof(uint8_t);
+diff --git a/torch/csrc/dynamo/eval_frame.c b/torch/csrc/dynamo/eval_frame.c
+index 048bb4e2c..51a302293 100644
+--- a/torch/csrc/dynamo/eval_frame.c
++++ b/torch/csrc/dynamo/eval_frame.c
+@@ -1,5 +1,7 @@
+ #define PY_SSIZE_T_CLEAN
++#if 0 // GraalPy change
+ #include <opcode.h>
++#endif // GraalPy change
+ #include <signal.h>
+ #include <torch/csrc/dynamo/cache_entry.h>
+ #include <torch/csrc/dynamo/cpp_shim.h>
+@@ -34,7 +36,8 @@ void eval_frame_callback_set(PyObject* obj) {
+ }
+ 
+ // 3.14 Not supported at all. See cpython_defs.c for hints
+-#if !(IS_PYTHON_3_14_PLUS)
++// GraalPy change
++#if 0
+ 
+ #define DECLARE_PYOBJ_ATTR(name)                        \
+   static PyObject* THPPyInterpreterFrame_##name(        \
+@@ -543,9 +546,15 @@ static PyObject* set_eval_frame(
+   Py_INCREF(old_callback);
+ 
+   if (old_callback != Py_None && new_callback == Py_None) {
+-    decrement_working_threads(tstate, module);
++    // GraalPy change
++    PyErr_SetString(PyExc_NotImplementedError, "dynamo compilation is not supported on GraalPy");
++    return NULL;
++    // decrement_working_threads(tstate, module);
+   } else if (old_callback == Py_None && new_callback != Py_None) {
+-    increment_working_threads(tstate, module);
++    // GraalPy change
++    PyErr_SetString(PyExc_NotImplementedError, "dynamo compilation is not supported on GraalPy");
++    return NULL;
++    // increment_working_threads(tstate, module);
+   }
+ 
+   Py_INCREF(new_callback);
+@@ -600,7 +609,8 @@ static PyObject* reset_code(PyObject* dummy, PyObject* code) {
+   }
+ 
+   // set_extra_state destroys the existing object on extra scratch space.
+-  set_extra_state((PyCodeObject*)code, NULL);
++  // GraalPy change
++  // set_extra_state((PyCodeObject*)code, NULL);
+   Py_RETURN_NONE;
+ }
+ 
+@@ -679,12 +689,14 @@ static struct PyModuleDef _module = {
+ #endif
+ 
+ PyObject* torch_c_dynamo_eval_frame_init(void) {
++#if 0 // GraalPy change
+   extra_index = _PyEval_RequestCodeExtraIndex(destroy_extra_state);
+   if (extra_index < 0) {
+     PyErr_SetString(
+         PyExc_RuntimeError, "dynamo: unable to register extra index");
+     return NULL;
+   }
++#endif
+ 
+   int result = PyThread_tss_create(&eval_frame_callback_key);
+   CHECK(result == 0);
+diff --git a/torch/csrc/dynamo/eval_frame_cpp.cpp b/torch/csrc/dynamo/eval_frame_cpp.cpp
+index f029fec22..0104c1812 100644
+--- a/torch/csrc/dynamo/eval_frame_cpp.cpp
++++ b/torch/csrc/dynamo/eval_frame_cpp.cpp
+@@ -9,6 +9,7 @@
+ 
+ const char* cache_lookup_profiler_str = "TorchDynamo Cache Lookup";
+ 
++#if 0 // GraalPy change
+ // Remember to update the type signature for DynamoCallbackFn.__call__ in
+ // torch/_dynamo/types.py if this function's signature changes.
+ static py::object dynamo_call_callback(
+@@ -290,8 +291,10 @@ PyObject* dynamo__custom_eval_frame(
+   }
+   return eval_result;
+ }
++#endif // GraalPy change
+ 
+ PyObject* set_code_exec_strategy(PyObject* dummy, PyObject* args) {
++#if 0 // GraalPy change
+   PyObject* code_obj = nullptr;
+   PyObject* strategy_obj = nullptr;
+   if (!PyArg_ParseTuple(args, "OO", &code_obj, &strategy_obj)) {
+@@ -313,4 +316,8 @@ PyObject* set_code_exec_strategy(PyObject* dummy, PyObject* args) {
+ 
+   extra_state_set_exec_strategy(extra, strategy);
+   Py_RETURN_NONE;
++#endif // GraalPy change
++  // GraalPy change
++  PyErr_SetString(PyExc_NotImplementedError, "dynamo compilation is not supported on GraalPy");
++  return NULL;
+ }
+diff --git a/torch/csrc/dynamo/extra_state.cpp b/torch/csrc/dynamo/extra_state.cpp
+index 2e60816aa..a06c0c830 100644
+--- a/torch/csrc/dynamo/extra_state.cpp
++++ b/torch/csrc/dynamo/extra_state.cpp
+@@ -101,9 +101,7 @@ void destroy_extra_state(void* obj) {
+ }
+ 
+ void set_extra_state(PyCodeObject* code, ExtraState* extra_state) {
+-  ExtraState* old_extra_state = get_extra_state(code);
+-  CHECK(extra_state == nullptr || old_extra_state != extra_state);
+-  _PyCode_SetExtra((PyObject*)code, extra_index, extra_state);
++    // GraalPy change: removed
+ }
+ 
+ ExtraState* init_and_set_extra_state(PyCodeObject* code) {
+diff --git a/torch/csrc/dynamo/framelocals_mapping.cpp b/torch/csrc/dynamo/framelocals_mapping.cpp
+index b839fb26f..b7853029f 100644
+--- a/torch/csrc/dynamo/framelocals_mapping.cpp
++++ b/torch/csrc/dynamo/framelocals_mapping.cpp
+@@ -4,7 +4,9 @@
+ #include <torch/csrc/dynamo/cpython_includes.h>
+ #include <torch/csrc/dynamo/debug_macros.h>
+ 
++#if 0 // GraalPy change
+ #include <internal/pycore_code.h>
++#endif // GraalPy change
+ 
+ #if IS_PYTHON_3_11_PLUS
+ 
+@@ -26,6 +28,7 @@ FrameLocalsMapping::FrameLocalsMapping(FrameLocalsFrameType* frame)
+   PyCodeObject* co = F_CODE(frame);
+   _framelocals.resize(co->co_nlocalsplus, nullptr);
+ 
++#if 0 // GraalPy change
+   if (!frame->stacktop) {
+     return;
+   }
+@@ -65,9 +68,11 @@ FrameLocalsMapping::FrameLocalsMapping(FrameLocalsFrameType* frame)
+   // NOTE no need to move the instruction pointer to after COPY_FREE_VARS
+   // since we don't actually copy free vars from the closure to the frame
+   // localsplus.
++#endif // GraalPy change
+ }
+ 
+ void FrameLocalsMapping::_realize_dict() {
++#if 0 // GraalPy change
+   _dict = py::dict();
+   py::tuple framelocals_names = code_framelocals_names(_code_obj);
+ 
+@@ -78,11 +83,13 @@ void FrameLocalsMapping::_realize_dict() {
+       _dict[framelocals_names[i]] = _framelocals[i];
+     }
+   }
++#endif // GraalPy change
+ }
+ 
+ py::tuple code_framelocals_names(py::handle code) {
+   CHECK(PyCode_Check(code.ptr()));
+-  return py::cast<py::tuple>(((PyCodeObject*)code.ptr())->co_localsplusnames);
++  // GraalPy change
++  return code.attr("co_varnames") + code.attr("co_cellvars") + code.attr("co_freevars");
+ }
+ 
+ #else
+diff --git a/torch/csrc/jit/python/python_tracer.cpp b/torch/csrc/jit/python/python_tracer.cpp
+index 876186743..041348257 100644
+--- a/torch/csrc/jit/python/python_tracer.cpp
++++ b/torch/csrc/jit/python/python_tracer.cpp
+@@ -31,11 +31,15 @@ std::vector<StackEntry> _pythonCallstack() {
+   while (nullptr != frame) {
+     auto code = THPCodeObjectPtr(PyFrame_GetCode(frame));
+     size_t line = PyCode_Addr2Line(code.get(), PyFrame_GetLasti(frame));
+-    std::string filename = THPUtils_unpackString(code->co_filename);
+-    std::string funcname = THPUtils_unpackString(code->co_name);
++    PyObject* filenameObj = PyCode_GetFileName(code);
++    std::string filename = THPUtils_unpackString(filenameObj);
++    PyObject* funcnameObj = PyCode_GetName(code);
++    std::string funcname = THPUtils_unpackString(funcnameObj);
+     auto source = std::make_shared<Source>(funcname, filename, line);
+     entries.emplace_back(
+         StackEntry{funcname, SourceRange(source, 0, funcname.size())});
++    Py_DECREF(funcnameObj);
++    Py_DECREF(filenameObj);
+     auto new_frame = PyFrame_GetBack(frame);
+     Py_DECREF(frame);
+     frame = new_frame;

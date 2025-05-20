@@ -763,6 +763,12 @@ patch = 'torch-2.4.1.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
+[[torch.rules]]
+version = '== 2.7.0'
+patch = 'torch-2.7.0.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
 [[torch.add-sources]]
 version = '1.13.1'
 url = 'https://github.com/pytorch/pytorch/releases/download/v1.13.1/pytorch-v1.13.1.tar.gz'
@@ -774,6 +780,10 @@ url = 'https://github.com/pytorch/pytorch/releases/download/v2.2.1/pytorch-v2.2.
 [[torch.add-sources]]
 version = '2.4.1'
 url = 'https://github.com/pytorch/pytorch/releases/download/v2.4.1/pytorch-v2.4.1.tar.gz'
+
+[[torch.add-sources]]
+version = '2.7.0'
+url = 'https://github.com/pytorch/pytorch/releases/download/v2.7.0/pytorch-v2.7.0.tar.gz'
 
 [[torchvision.rules]]
 version = '== 0.19.1'
