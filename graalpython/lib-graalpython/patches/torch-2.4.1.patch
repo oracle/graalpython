@@ -178,6 +178,19 @@ index f5fdbf155..d76176cb6 100644
  
  
  class TestWrapperSubclassAliasing(TestCase):
+diff --git a/third_party/fbgemm/CMakeLists.txt b/third_party/fbgemm/CMakeLists.txt
+index 134523e7d..a00538e3c 100644
+--- a/third_party/fbgemm/CMakeLists.txt
++++ b/third_party/fbgemm/CMakeLists.txt
+@@ -10,6 +10,8 @@
+ 
+ cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
+ 
++add_compile_options(-Wno-error=maybe-uninitialized -Wno-error=uninitialized -Wno-error=restrict)
++
+ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+ 
+ # Define function to extract filelists from defs.bzl file
 diff --git a/third_party/pybind11/include/pybind11/detail/common.h b/third_party/pybind11/include/pybind11/detail/common.h
 index 454e6061b..7feafc7d7 100644
 --- a/third_party/pybind11/include/pybind11/detail/common.h
@@ -537,20 +550,6 @@ index c301da982..a2668be20 100644
 +const int THP_PyOpcode_Caches_size = 0;
 +
 +#endif // GraalPy change
-diff --git a/torch/csrc/dynamo/extra_state.c b/torch/csrc/dynamo/extra_state.c
-index cbe9ab37a..18740a0d8 100644
---- a/torch/csrc/dynamo/extra_state.c
-+++ b/torch/csrc/dynamo/extra_state.c
-@@ -100,9 +100,6 @@ void destroy_extra_state(void* obj) {
- }
- 
- void set_extra_state(PyCodeObject* code, ExtraState* extra_state) {
--  ExtraState* old_extra_state = get_extra_state(code);
--  CHECK(extra_state == nullptr || old_extra_state != extra_state);
--  _PyCode_SetExtra((PyObject*)code, extra_index, extra_state);
- }
- 
- ExtraState* init_and_set_extra_state(PyCodeObject* code) {
 diff --git a/torch/csrc/dynamo/eval_frame.c b/torch/csrc/dynamo/eval_frame.c
 index cbe9ab37a..18740a0d8 100644
 --- a/torch/csrc/dynamo/eval_frame.c
@@ -628,6 +627,24 @@ index cbe9ab37a..18740a0d8 100644
  
    return module;
  }
+diff --git a/torch/csrc/dynamo/extra_state.cpp b/torch/csrc/dynamo/extra_state.cpp
+index 7c9b4be00..b8edbcfda 100644
+--- a/torch/csrc/dynamo/extra_state.cpp
++++ b/torch/csrc/dynamo/extra_state.cpp
+@@ -65,11 +65,13 @@ void destroy_extra_state(void* obj) {
+ }
+ 
+ void set_extra_state(PyCodeObject* code, ExtraState* extra_state) {
++#if 0 // GraalPy change
+   ExtraState* old_extra_state = get_extra_state(code);
+   CHECK(
+       old_extra_state == nullptr || old_extra_state == SKIP_CODE ||
+       old_extra_state != extra_state);
+   _PyCode_SetExtra((PyObject*)code, extra_index, extra_state);
++#endif // GraalPy change
+ }
+ 
+ ExtraState* init_and_set_extra_state(PyCodeObject* code) {
 diff --git a/torch/csrc/jit/python/python_tracer.cpp b/torch/csrc/jit/python/python_tracer.cpp
 index 92e6e2d3a..4d2ec0bfe 100644
 --- a/torch/csrc/jit/python/python_tracer.cpp
