@@ -152,6 +152,14 @@ version = '>= 1.64.0'
 patch = 'grpcio-1.66.1.patch'
 license = 'Apache-2.0'
 
+[[grpcio.rules]]
+# Force re-cythonize + other fixes
+# The rc version won't get matched by the version range above
+version = '== 1.72.0rc1'
+install-priority = 0
+patch = 'grpcio-1.66.1.patch'
+license = 'Apache-2.0'
+
 [[h2o.rules]]
 patch = 'h2o.patch'
 license = 'Apache-2.0'
