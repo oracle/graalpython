@@ -157,12 +157,16 @@ import static com.oracle.graal.python.compiler.OpCodes.UNPACK_EX;
 import static com.oracle.graal.python.compiler.OpCodes.UNPACK_SEQUENCE;
 import static com.oracle.graal.python.compiler.OpCodes.UNWRAP_EXC;
 import static com.oracle.graal.python.compiler.OpCodes.YIELD_VALUE;
+import static com.oracle.graal.python.compiler.SSTUtils.checkCaller;
+import static com.oracle.graal.python.compiler.SSTUtils.checkCompare;
+import static com.oracle.graal.python.compiler.SSTUtils.checkForbiddenArgs;
+import static com.oracle.graal.python.compiler.SSTUtils.checkIndex;
+import static com.oracle.graal.python.compiler.SSTUtils.checkSubscripter;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TYPE_PARAMS__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.arrayCopyOf;
 import static com.oracle.graal.python.util.PythonUtils.codePointsToTruffleString;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -172,7 +176,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.compiler.OpCodes.MakeTypeParamKind;
@@ -197,7 +200,6 @@ import com.oracle.graal.python.pegparser.sst.ConstantValue.Kind;
 import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
-import com.oracle.graal.python.pegparser.sst.ExprTy.Constant;
 import com.oracle.graal.python.pegparser.sst.ExprTy.Tuple;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
@@ -492,16 +494,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     protected final void checkForbiddenName(String id, ExprContextTy context) {
-        if (context == ExprContextTy.Store) {
-            if (id.equals("__debug__")) {
-                throw parserCallbacks.onError(ErrorType.Syntax, unit.currentLocation, "cannot assign to __debug__");
-            }
-        }
-        if (context == ExprContextTy.Del) {
-            if (id.equals("__debug__")) {
-                throw parserCallbacks.onError(ErrorType.Syntax, unit.currentLocation, "cannot delete __debug__");
-            }
-        }
+        SSTUtils.checkForbiddenName(parserCallbacks, unit.currentLocation, id, context);
     }
 
     private boolean containsAnnotations(StmtTy[] stmts) {
@@ -1286,7 +1279,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(ExprTy.Call node) {
         SourceRange savedLocation = setLocation(node);
-        checkCaller(node.func);
+        checkCaller(parserCallbacks, node.func);
         try {
             // n.b.: we do things completely different from python for calls
             OpCodes op = CALL_FUNCTION_VARARGS;
@@ -1386,7 +1379,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(ExprTy.Compare node) {
         SourceRange savedLocation = setLocation(node);
-        checkCompare(node);
+        checkCompare(parserCallbacks, node);
         try {
             node.left.accept(this);
             if (node.comparators.length == 1) {
@@ -1568,7 +1561,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.Lambda node) {
         SourceRange savedLocation = setLocation(node);
         try {
-            checkForbiddenArgs(node.args);
+            checkForbiddenArgs(parserCallbacks, unit.currentLocation, node.args);
             int makeFunctionFlags = collectDefaults(node.args);
             enterScope("<lambda>", CompilationScope.Lambda, node, node.args, node.getSourceRange());
             /* Make None the first constant, so the lambda can't have a docstring. */
@@ -1862,8 +1855,8 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.Subscript node) {
         SourceRange savedLocation = setLocation(node);
         if (node.context == ExprContextTy.Load) {
-            checkSubscripter(node.value);
-            checkIndex(node.value, node.slice);
+            checkSubscripter(parserCallbacks, node.value);
+            checkIndex(parserCallbacks, node.value, node.slice);
         }
         try {
             node.value.accept(this);
@@ -2660,7 +2653,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     private Void visitFunctionDef(StmtTy node, String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, TypeParamTy[] typeParams, boolean isAsync) {
         setLocation(node);
-        checkForbiddenArgs(args);
+        checkForbiddenArgs(parserCallbacks, unit.currentLocation, args);
 
         // visit decorators
         visitSequence(decoratorList);
@@ -2831,32 +2824,6 @@ public class Compiler implements SSTreeVisitor<Void> {
         return makeFunctionFlags;
     }
 
-    private void checkForbiddenArgs(ArgumentsTy args) {
-        if (args != null) {
-            if (args.posOnlyArgs != null) {
-                for (ArgTy arg : args.posOnlyArgs) {
-                    checkForbiddenName(arg.arg, ExprContextTy.Store);
-                }
-            }
-            if (args.args != null) {
-                for (ArgTy arg : args.args) {
-                    checkForbiddenName(arg.arg, ExprContextTy.Store);
-                }
-            }
-            if (args.kwOnlyArgs != null) {
-                for (ArgTy arg : args.kwOnlyArgs) {
-                    checkForbiddenName(arg.arg, ExprContextTy.Store);
-                }
-            }
-            if (args.varArg != null) {
-                checkForbiddenName(args.varArg.arg, ExprContextTy.Store);
-            }
-            if (args.kwArg != null) {
-                checkForbiddenName(args.kwArg.arg, ExprContextTy.Store);
-            }
-        }
-    }
-
     @Override
     public Void visit(StmtTy.Global node) {
         setLocation(node);
@@ -2885,7 +2852,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         // TODO Optimize for various test types, such as short-circuit operators
         // See compiler_jump_if in CPython
         if (test instanceof ExprTy.Compare) {
-            checkCompare((ExprTy.Compare) test);
+            checkCompare(parserCallbacks, (ExprTy.Compare) test);
         }
         test.accept(this);
         if (jumpIfTrue) {
@@ -4195,133 +4162,6 @@ public class Compiler implements SSTreeVisitor<Void> {
     // Equivalent of compiler_warn()
     private void warn(SSTNode node, String message, Object... arguments) {
         parserCallbacks.onWarning(WarningType.Syntax, node.getSourceRange(), message, arguments);
-    }
-
-    private void checkCompare(ExprTy.Compare node) {
-        ExprTy leftExpr = node.left;
-        boolean left = checkIsArg(leftExpr);
-        int n = node.ops == null ? 0 : node.ops.length;
-        for (int i = 0; i < n; ++i) {
-            CmpOpTy op = node.ops[i];
-            ExprTy rightExpr = node.comparators[i];
-            boolean right = checkIsArg(rightExpr);
-            if (op == CmpOpTy.Is || op == CmpOpTy.IsNot) {
-                if (!right || !left) {
-                    ExprTy literal = !left ? leftExpr : rightExpr;
-                    warn(node, op == CmpOpTy.Is ? "\"is\" with '%s' literal. Did you mean \"==\"?" : "\"is not\" with '%s' literal. Did you mean \"!=\"?", inferType(literal).getName());
-                }
-            }
-            left = right;
-            leftExpr = rightExpr;
-        }
-    }
-
-    private static boolean checkIsArg(ExprTy e) {
-        if (e instanceof ExprTy.Constant) {
-            ConstantValue.Kind kind = ((Constant) e).value.kind;
-            return kind == Kind.NONE || kind == Kind.BOOLEAN || kind == Kind.ELLIPSIS;
-        }
-        return true;
-    }
-
-    private static PythonBuiltinClassType inferType(ExprTy e) {
-        if (e instanceof ExprTy.Tuple) {
-            return PythonBuiltinClassType.PTuple;
-        }
-        if (e instanceof ExprTy.List || e instanceof ExprTy.ListComp) {
-            return PythonBuiltinClassType.PList;
-        }
-        if (e instanceof ExprTy.Dict || e instanceof ExprTy.DictComp) {
-            return PythonBuiltinClassType.PDict;
-        }
-        if (e instanceof ExprTy.Set || e instanceof ExprTy.SetComp) {
-            return PythonBuiltinClassType.PSet;
-        }
-        if (e instanceof ExprTy.GeneratorExp) {
-            return PythonBuiltinClassType.PGenerator;
-        }
-        if (e instanceof ExprTy.Lambda) {
-            return PythonBuiltinClassType.PFunction;
-        }
-        if (e instanceof ExprTy.JoinedStr || e instanceof ExprTy.FormattedValue) {
-            return PythonBuiltinClassType.PString;
-        }
-        if (e instanceof ExprTy.Constant) {
-            switch (((ExprTy.Constant) e).value.kind) {
-                case NONE:
-                    return PythonBuiltinClassType.PNone;
-                case ELLIPSIS:
-                    return PythonBuiltinClassType.PEllipsis;
-                case BOOLEAN:
-                    return PythonBuiltinClassType.Boolean;
-                case DOUBLE:
-                    return PythonBuiltinClassType.PFloat;
-                case COMPLEX:
-                    return PythonBuiltinClassType.PComplex;
-                case LONG:
-                case BIGINTEGER:
-                    return PythonBuiltinClassType.PInt;
-                case CODEPOINTS:
-                    return PythonBuiltinClassType.PString;
-                case BYTES:
-                    return PythonBuiltinClassType.PBytes;
-                case TUPLE:
-                    return PythonBuiltinClassType.PTuple;
-                case FROZENSET:
-                    return PythonBuiltinClassType.PFrozenSet;
-                default:
-                    throw shouldNotReachHere("Invalid ConstantValue kind: " + ((ExprTy.Constant) e).value.kind);
-            }
-        }
-        return null;
-    }
-
-    private void checkCaller(ExprTy e) {
-        if (e instanceof ExprTy.Constant || e instanceof ExprTy.Tuple || e instanceof ExprTy.List || e instanceof ExprTy.ListComp || e instanceof ExprTy.Dict || e instanceof ExprTy.DictComp ||
-                        e instanceof ExprTy.Set || e instanceof ExprTy.SetComp || e instanceof ExprTy.GeneratorExp || e instanceof ExprTy.JoinedStr || e instanceof ExprTy.FormattedValue) {
-            warn(e, "'%s' object is not callable; perhaps you missed a comma?", inferType(e).getName());
-        }
-    }
-
-    private void checkSubscripter(ExprTy e) {
-        if (e instanceof ExprTy.Constant) {
-            switch (((ExprTy.Constant) e).value.kind) {
-                case NONE:
-                case ELLIPSIS:
-                case BOOLEAN:
-                case LONG:
-                case BIGINTEGER:
-                case DOUBLE:
-                case COMPLEX:
-                case FROZENSET:
-                    break;
-                default:
-                    return;
-            }
-        } else if (!(e instanceof ExprTy.Set || e instanceof ExprTy.SetComp || e instanceof ExprTy.GeneratorExp || e instanceof ExprTy.Lambda)) {
-            return;
-        }
-        warn(e, "'%s' object is not subscriptable; perhaps you missed a comma?", inferType(e).getName());
-    }
-
-    private void checkIndex(ExprTy e, ExprTy s) {
-        PythonBuiltinClassType indexType = inferType(s);
-        if (indexType == null || indexType == PythonBuiltinClassType.Boolean || indexType == PythonBuiltinClassType.PInt || indexType == PythonBuiltinClassType.PSlice) {
-            return;
-        }
-        if (e instanceof ExprTy.Constant) {
-            switch (((ExprTy.Constant) e).value.kind) {
-                case CODEPOINTS:
-                case BYTES:
-                case TUPLE:
-                    break;
-                default:
-                    return;
-            }
-        } else if (!(e instanceof ExprTy.Tuple || e instanceof ExprTy.List || e instanceof ExprTy.ListComp || e instanceof ExprTy.JoinedStr || e instanceof ExprTy.FormattedValue)) {
-            return;
-        }
-        warn(e, "%s indices must be integers or slices, not %s; perhaps you missed a comma?", inferType(e).getName(), indexType.getName());
     }
 
     public static Parser createParser(String src, ParserCallbacks errorCb, InputType inputType, boolean interactiveTerminal, boolean allowIncompleteInput) {

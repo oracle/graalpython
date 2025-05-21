@@ -41,14 +41,20 @@
 package com.oracle.graal.python.compiler.bytecode_dsl;
 
 import static com.oracle.graal.python.compiler.CompilationScope.Class;
-import static com.oracle.graal.python.compiler.bytecode_dsl.CompilerUtils.NO_ARGS;
-import static com.oracle.graal.python.compiler.bytecode_dsl.CompilerUtils.TYPE_PARAMS_DEFAULTS;
-import static com.oracle.graal.python.compiler.bytecode_dsl.CompilerUtils.TYPE_PARAMS_DEFAULTS_KWDEFAULTS;
-import static com.oracle.graal.python.compiler.bytecode_dsl.CompilerUtils.TYPE_PARAMS_KWDEFAULTS;
-import static com.oracle.graal.python.compiler.bytecode_dsl.CompilerUtils.addObject;
-import static com.oracle.graal.python.compiler.bytecode_dsl.CompilerUtils.hasDefaultArgs;
-import static com.oracle.graal.python.compiler.bytecode_dsl.CompilerUtils.hasDefaultKwargs;
-import static com.oracle.graal.python.compiler.bytecode_dsl.CompilerUtils.len;
+import static com.oracle.graal.python.compiler.SSTUtils.checkCaller;
+import static com.oracle.graal.python.compiler.SSTUtils.checkCompare;
+import static com.oracle.graal.python.compiler.SSTUtils.checkForbiddenArgs;
+import static com.oracle.graal.python.compiler.SSTUtils.checkIndex;
+import static com.oracle.graal.python.compiler.SSTUtils.checkSubscripter;
+import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.COMPREHENSION_ARGS;
+import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.NO_ARGS;
+import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.TYPE_PARAMS_DEFAULTS;
+import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.TYPE_PARAMS_DEFAULTS_KWDEFAULTS;
+import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.TYPE_PARAMS_KWDEFAULTS;
+import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.addObject;
+import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.hasDefaultArgs;
+import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.hasDefaultKwargs;
+import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.len;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TYPE_PARAMS__;
 import static com.oracle.graal.python.util.PythonUtils.codePointsToTruffleString;
@@ -78,6 +84,7 @@ import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.Compiler.ConstantCollection;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.compiler.OpCodes.MakeTypeParamKind;
+import com.oracle.graal.python.compiler.SSTUtils;
 import com.oracle.graal.python.compiler.Unparser;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerContext;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerResult;
@@ -103,7 +110,6 @@ import com.oracle.graal.python.pegparser.sst.ConstantValue.Kind;
 import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
-import com.oracle.graal.python.pegparser.sst.ExprTy.Constant;
 import com.oracle.graal.python.pegparser.sst.ExprTy.DictComp;
 import com.oracle.graal.python.pegparser.sst.ExprTy.GeneratorExp;
 import com.oracle.graal.python.pegparser.sst.ExprTy.Lambda;
@@ -415,42 +421,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     }
 
     private void checkForbiddenName(String id, NameOperation context, SourceRange location) {
-        if (context == NameOperation.BeginWrite) {
-            if (id.equals("__debug__")) {
-                ctx.errorCallback.onError(ErrorType.Syntax, location, "cannot assign to __debug__");
-            }
-        }
-        if (context == NameOperation.Delete) {
-            if (id.equals("__debug__")) {
-                ctx.errorCallback.onError(ErrorType.Syntax, location, "cannot delete __debug__");
-            }
-        }
-    }
-
-    private void checkForbiddenArgs(ArgumentsTy args, SourceRange location) {
-        if (args != null) {
-            if (args.posOnlyArgs != null) {
-                for (ArgTy arg : args.posOnlyArgs) {
-                    checkForbiddenName(arg.arg, NameOperation.BeginWrite, location);
-                }
-            }
-            if (args.args != null) {
-                for (ArgTy arg : args.args) {
-                    checkForbiddenName(arg.arg, NameOperation.BeginWrite, location);
-                }
-            }
-            if (args.kwOnlyArgs != null) {
-                for (ArgTy arg : args.kwOnlyArgs) {
-                    checkForbiddenName(arg.arg, NameOperation.BeginWrite, location);
-                }
-            }
-            if (args.varArg != null) {
-                checkForbiddenName(args.varArg.arg, NameOperation.BeginWrite, location);
-            }
-            if (args.kwArg != null) {
-                checkForbiddenName(args.kwArg.arg, NameOperation.BeginWrite, location);
-            }
-        }
+        ExprContextTy exprContext = switch (context) {
+            case BeginWrite, EndWrite -> ExprContextTy.Store;
+            case Read -> ExprContextTy.Load;
+            case Delete -> ExprContextTy.Del;
+        };
+        SSTUtils.checkForbiddenName(ctx.errorCallback, location, id, exprContext);
     }
 
     private boolean containsAnnotations(StmtTy[] stmts) {
@@ -547,7 +523,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         b.beginRoot();
 
-        checkForbiddenArgs(args, node.getSourceRange());
+        checkForbiddenArgs(ctx.errorCallback, node.getSourceRange(), args);
         setUpFrame(args, b);
 
         b.emitTraceOrProfileCall();
@@ -672,7 +648,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     @Override
     public BytecodeDSLCompilerResult visit(ModTy.Interactive node) {
-        return compileRootNode("<interactive>", ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
+        return compileRootNode("<module>", ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
             beginRootNode(node, null, b);
             visitModuleBody(node.body, b);
             endRootNode(b);
@@ -1838,6 +1814,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         @Override
         public Void visit(ExprTy.Call node) {
             boolean newStatement = beginSourceSection(node, b);
+            checkCaller(ctx.errorCallback, node.func);
             emitCall(node.func, node.args, node.keywords);
             endSourceSection(b, newStatement);
             return null;
@@ -1924,7 +1901,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         @Override
         public Void visit(ExprTy.Compare node) {
             boolean newStatement = beginSourceSection(node, b);
-            checkCompare(node);
+            checkCompare(ctx.errorCallback, node);
 
             boolean multipleComparisons = node.comparators.length > 1;
 
@@ -1964,32 +1941,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         private void warn(SSTNode node, String message, Object... arguments) {
             ctx.errorCallback.onWarning(WarningType.Syntax, node.getSourceRange(), message, arguments);
-        }
-
-        private void checkCompare(ExprTy node) {
-            if (!(node instanceof ExprTy.Compare compare)) {
-                return;
-            }
-            boolean left = checkIsArg(compare.left);
-            int n = compare.ops == null ? 0 : compare.ops.length;
-            for (int i = 0; i < n; ++i) {
-                CmpOpTy op = compare.ops[i];
-                boolean right = checkIsArg(compare.comparators[i]);
-                if (op == CmpOpTy.Is || op == CmpOpTy.IsNot) {
-                    if (!right || !left) {
-                        warn(compare, op == CmpOpTy.Is ? "\"is\" with a literal. Did you mean \"==\"?" : "\"is not\" with a literal. Did you mean \"!=\"?");
-                    }
-                }
-                left = right;
-            }
-        }
-
-        private static boolean checkIsArg(ExprTy e) {
-            if (e instanceof ExprTy.Constant) {
-                ConstantValue.Kind kind = ((Constant) e).value.kind;
-                return kind == Kind.NONE || kind == Kind.BOOLEAN || kind == Kind.ELLIPSIS;
-            }
-            return true;
         }
 
         private void createConstant(ConstantValue value) {
@@ -2098,7 +2049,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             boolean newStatement = beginSourceSection(node, b);
 
             b.beginCallUnaryMethod();
-            emitMakeFunction(node, "<dictcomp>", CompilerUtils.COMPREHENSION_ARGS);
+            emitMakeFunction(node, "<dictcomp>", COMPREHENSION_ARGS);
             node.generators[0].iter.accept(this);
             b.endCallUnaryMethod();
 
@@ -2150,7 +2101,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             boolean newStatement = beginSourceSection(node, b);
 
             b.beginCallUnaryMethod();
-            emitMakeFunction(node, "<generator>", CompilerUtils.COMPREHENSION_ARGS);
+            emitMakeFunction(node, "<generator>", COMPREHENSION_ARGS);
             node.generators[0].iter.accept(this);
             b.endCallUnaryMethod();
 
@@ -2218,7 +2169,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             boolean newStatement = beginSourceSection(node, b);
 
             b.beginCallUnaryMethod();
-            emitMakeFunction(node, "<listcomp>", CompilerUtils.COMPREHENSION_ARGS);
+            emitMakeFunction(node, "<listcomp>", COMPREHENSION_ARGS);
             node.generators[0].iter.accept(this);
             b.endCallUnaryMethod();
 
@@ -2429,7 +2380,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             boolean newStatement = beginSourceSection(node, b);
 
             b.beginCallUnaryMethod();
-            emitMakeFunction(node, "<setcomp>", CompilerUtils.COMPREHENSION_ARGS);
+            emitMakeFunction(node, "<setcomp>", COMPREHENSION_ARGS);
             node.generators[0].iter.accept(this);
             b.endCallUnaryMethod();
 
@@ -2469,6 +2420,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         @Override
         public Void visit(ExprTy.Subscript node) {
             boolean newStatement = beginSourceSection(node, b);
+            if (node.context == ExprContextTy.Load) {
+                checkSubscripter(ctx.errorCallback, node.value);
+                checkIndex(ctx.errorCallback, node.value, node.slice);
+            }
             b.beginBinarySubscript();
             node.value.accept(this);
             node.slice.accept(this);
@@ -2540,10 +2495,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.Yield node) {
+            boolean newStatement = beginSourceSection(node, b);
             if (!scope.isFunction()) {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'yield' outside function");
             }
-            boolean newStatement = beginSourceSection(node, b);
             emitYield((statementCompiler) -> {
                 if (node.value != null) {
                     node.value.accept(this);
@@ -2559,7 +2514,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         @Override
         public Void visit(ExprTy.YieldFrom node) {
             if (!scope.isFunction()) {
-                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'yield' outside function");
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'yield from' outside function");
             }
             if (scopeType == CompilationScope.AsyncFunction) {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'yield from' inside async function");
@@ -2718,11 +2673,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 /* If we have a simple name in a module or class, store annotation. */
                 if (node.isSimple &&
                                 (scopeType == CompilationScope.Module || scopeType == CompilationScope.Class)) {
-                    b.beginSetDictItem();
-                    emitNameOperation("__annotations__", NameOperation.Read, b);
-
-                    String mangled = maybeMangle(name);
-                    emitPythonConstant(toTruffleStringUncached(mangled), b);
+                    b.beginSetItem();
 
                     if (futureFeatures.contains(FutureFeature.ANNOTATIONS)) {
                         emitPythonConstant(Unparser.unparse(node.annotation), b);
@@ -2730,7 +2681,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         node.annotation.accept(this);
                     }
 
-                    b.endSetDictItem();
+                    emitNameOperation("__annotations__", NameOperation.Read, b);
+
+                    String mangled = maybeMangle(name);
+                    emitPythonConstant(toTruffleStringUncached(mangled), b);
+
+                    b.endSetItem();
                 }
             } else if (node.target instanceof ExprTy.Attribute) {
                 if (node.value == null) {

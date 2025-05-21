@@ -45,7 +45,7 @@ import java.util.HashMap;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 
-class CompilerUtils {
+class BytecodeDSLCompilerUtils {
     public static final ArgumentsTy NO_ARGS = new ArgumentsTy(new ArgTy[0], null, null, null, null, null, null, null);
     public static final ArgumentsTy TYPE_PARAMS_DEFAULTS = createSimpleArgs(".defaults", null);
     public static final ArgumentsTy TYPE_PARAMS_KWDEFAULTS = createSimpleArgs(".kwdefaults", null);

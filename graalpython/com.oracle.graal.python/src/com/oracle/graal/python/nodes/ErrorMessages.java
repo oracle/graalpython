@@ -577,7 +577,6 @@ public abstract class ErrorMessages {
     public static final TruffleString NEW_TAKES_ONE_ARG = tsLiteral("object.__new__() takes exactly one argument (the type to instantiate)");
     public static final TruffleString NEW_TAKES_NO_ARGS = tsLiteral("%N() takes no arguments");
     public static final TruffleString NO_ACTIVE_EX_TO_RERAISE = tsLiteral("No active exception to reraise");
-    public static final TruffleString NO_ARGS = tsLiteral("%s: no arguments");
     public static final TruffleString NO_CURRENT_FRAME = tsLiteral("%s: no current frame");
     public static final TruffleString NO_FUNCTION_FOUND = tsLiteral("no function %s%s found in %s");
     public static final TruffleString NO_LOCALS_FOUND = tsLiteral("no locals found");

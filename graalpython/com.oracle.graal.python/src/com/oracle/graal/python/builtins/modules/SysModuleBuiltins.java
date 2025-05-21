@@ -611,8 +611,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         }
         sys.setAttribute(tsLiteral("dont_write_bytecode"), context.getOption(PythonOptions.DontWriteBytecodeFlag));
         TruffleString pycachePrefix = context.getOption(PythonOptions.PyCachePrefix);
-        if (pycachePrefix.isEmpty() && PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && System.getenv("CI") == null) {
-            pycachePrefix = PythonUtils.toTruffleStringUncached("__bci_dsl_pycache__");
+        if (pycachePrefix.isEmpty() && PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && System.getenv("GRAALPY_BYTECODE_DSL_PYTHONPYCACHEPREFIX") != null) {
+            pycachePrefix = PythonUtils.toTruffleStringUncached(System.getenv("GRAALPY_BYTECODE_DSL_PYTHONPYCACHEPREFIX"));
         }
         sys.setAttribute(tsLiteral("pycache_prefix"), pycachePrefix.isEmpty() ? PNone.NONE : pycachePrefix);
         sys.setAttribute(tsLiteral("_stdlib_dir"), stdlibHome);

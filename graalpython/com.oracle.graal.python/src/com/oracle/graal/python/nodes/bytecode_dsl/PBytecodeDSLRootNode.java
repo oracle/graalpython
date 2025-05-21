@@ -938,6 +938,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return (PCell) getBytecodeNode().getLocalValue(0, frame, classcellIndex);
     }
 
+    public boolean hasSelf() {
+        return selfIndex >= 0;
+    }
+
     public Object readSelf(Frame frame) {
         if (selfIndex < 0) {
             return null;
