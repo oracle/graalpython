@@ -39,6 +39,7 @@
 import ctypes
 import os.path
 import struct
+import sys
 
 from tests.cpyext import CPyExtTestCase, CPyExtType
 
@@ -225,3 +226,27 @@ def ignore_test_custom_libs():
             assert result.num7 == 42
         finally:
             os.chdir(original_cwd)
+
+
+def test_void_p():
+    assert ctypes.c_void_p(True).value == ctypes.c_void_p(1).value
+    assert ctypes.c_void_p(False).value == ctypes.c_void_p(0).value
+    assert ctypes.c_void_p(2**128 - 1).value == ctypes.c_void_p(2**64 - 1).value
+    try:
+        ctypes.c_void_p(2**128 - 1)
+    except TypeError as e:
+        assert "cannot be converted to pointer" in str(e)
+
+
+def test_meson_windows_detect_native_arch() -> str:
+    if sys.platform != 'win32':
+        return
+    process_arch = ctypes.c_ushort()
+    native_arch = ctypes.c_ushort()
+    kernel32 = ctypes.windll.kernel32
+    process = ctypes.c_void_p(kernel32.GetCurrentProcess())
+    try:
+        if kernel32.IsWow64Process2(process, ctypes.byref(process_arch), ctypes.byref(native_arch)):
+            assert native_arch.value == 0x8664, "only amd64 supported by GraalPy on Windows"
+    except AttributeError as e:
+        assert "Unknown identifier: IsWow64Process2" in str(e)
