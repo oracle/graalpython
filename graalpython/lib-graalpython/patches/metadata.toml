@@ -786,8 +786,17 @@ version = '2.7.0'
 url = 'https://github.com/pytorch/pytorch/releases/download/v2.7.0/pytorch-v2.7.0.tar.gz'
 
 [[torchvision.rules]]
+version = '== 0.22.0'
+patch = 'torchvision-0.22.0.patch'
+license = 'BSD-3-Clause'
+
+[[torchvision.add-sources]]
+version = '0.19.1'
+url = 'https://github.com/pytorch/vision/archive/refs/tags/v0.22.0.tar.gz'
+
+[[torchvision.rules]]
 version = '== 0.19.1'
-patch = 'torchvision-1.19.1.patch'
+patch = 'torchvision-0.19.1.patch'
 license = 'BSD-3-Clause'
 
 [[torchvision.add-sources]]
@@ -796,7 +805,7 @@ url = 'https://github.com/pytorch/vision/archive/refs/tags/v0.19.1.tar.gz'
 
 [[torchvision.rules]]
 version = '== 0.17.1'
-patch = 'torchvision-1.17.1.patch'
+patch = 'torchvision-0.17.1.patch'
 license = 'BSD-3-Clause'
 
 [[torchvision.add-sources]]
