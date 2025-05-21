@@ -433,10 +433,19 @@ patch = 'prompt_toolkit.patch'
 license = 'BSD-3-Clause'
 
 [[protobuf.rules]]
+patch = 'protobuf.patch'
+license = 'BSD-3-Clause'
+# There are 'none-any' wheels on pypi, this is only needed on sdists
+dist-type = 'sdist'
+install-priority = 0
+
+[[protobuf.rules]]
+# msimacek: This version doesn't exist, but the patch file is referenced from the tensorflow patch which I'm afraid to touch
 version = '== 3.21.9'
-# Also referenced outside of pip from tensorflow patches
 patch = 'protobuf-3.21.9.patch'
 license = 'BSD-3-Clause'
+dist-type = 'sdist'
+install-priority = 0
 
 [[psycopg2.rules]]
 version = '<= 2.9.9'
