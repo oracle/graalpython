@@ -232,6 +232,8 @@ dist-type = 'sdist'
 [[libcst.rules]]
 version = '== 1.0.1'
 patch = 'libcst-1.0.1.patch'
+# Not needed in newer versions
+install-priority = 0
 license = 'MIT'
 
 [[lightfm.rules]]
@@ -839,6 +841,7 @@ patch = 'trio.patch'
 license = 'Apache-2.0 OR MIT'
 
 [[typing_extensions.rules]]
+# Note: this won't be needed once we update to 3.13
 patch = 'typing_extensions.patch'
 license = 'PSF-2.0'
 subdir = 'src'
