@@ -16,8 +16,11 @@ patch = 'bcrypt-4.0.1.patch'
 license = 'Apache-2.0'
 
 [[blosc2.rules]]
+version = '< 3'
 patch = 'blosc2.patch'
-license = 'Apache-2.0'
+# Not needed in newer versions
+install-priority = 0
+license = 'BSD-3-Clause'
 
 [[catboost.rules]]
 version = '== 1.2.3'
