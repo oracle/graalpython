@@ -419,6 +419,8 @@ dist-type = 'sdist'
 [[pendulum.rules]]
 version = '== 3.0.0'
 patch = 'pendulum-3.0.0.patch'
+# Not needed since 3.1
+install-priority = 0
 license = 'MIT'
 
 [[pip.rules]]
