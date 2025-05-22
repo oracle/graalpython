@@ -542,7 +542,10 @@ patch = 'pydantic-core-2.26.0.patch'
 license = 'MIT'
 
 [[PyDriller.rules]]
+version = '< 2.4'
 patch = 'PyDriller.patch'
+# Upstreamed
+install-priority = 0
 license = 'Apache-2.0'
 
 [[pygame.rules]]
