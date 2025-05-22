@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -2507,7 +2507,12 @@ Py_XNewRef(PyObject *obj)
 // for the stable ABI.
 int Py_Is(PyObject *x, PyObject *y)
 {
+#if 0 // GraalPy change
     return (x == y);
+#else
+    return (x == y) ||
+        (points_to_py_handle_space(x) && points_to_py_handle_space(y) && GraalPyTruffle_Is(x, y));
+#endif
 }
 
 int Py_IsNone(PyObject *x)
