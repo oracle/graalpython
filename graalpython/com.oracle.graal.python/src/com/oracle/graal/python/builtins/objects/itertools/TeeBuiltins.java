@@ -80,7 +80,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -149,25 +148,20 @@ public final class TeeBuiltins extends PythonBuiltins {
     @ImportStatic(TeeDataObjectBuiltins.class)
     @GenerateNodeFactory
     public abstract static class NextNode extends TpIterNextBuiltin {
-        @Specialization(guards = "self.getIndex() < LINKCELLS")
-        static Object next(VirtualFrame frame, PTee self,
+        @Specialization
+        static Object doIt(VirtualFrame frame, PTee self,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyIterNextNode nextNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Cached InlinedConditionProfile indexConditionProfile,
+                        @Cached PyIterNextNode nextNode,
+                        @Cached PRaiseNode raiseNode) {
+            if (indexConditionProfile.profile(inliningTarget, self.getIndex() >= LINKCELLS)) {
+                self.setDataObj(self.getDataobj().jumplink(language));
+                self.setIndex(0);
+            }
             Object value = self.getDataobj().getItem(frame, inliningTarget, self.getIndex(), nextNode, raiseNode);
             self.setIndex(self.getIndex() + 1);
             return value;
-        }
-
-        @Specialization(guards = "self.getIndex() >= LINKCELLS")
-        static Object nextNext(VirtualFrame frame, PTee self,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyIterNextNode nextNode,
-                        @Bind PythonLanguage language,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            self.setDataObj(self.getDataobj().jumplink(language));
-            self.setIndex(1);
-            return self.getDataobj().getItem(frame, inliningTarget, 0, nextNode, raiseNode);
         }
     }
 
