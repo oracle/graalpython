@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,6 +62,7 @@ public class BouncyCastleFeature implements Feature {
 
             // Register runtime reflection here, not in a config, so it can be easily disabled
             String[] reflectiveClasses = new String[]{
+                            // BouncyCastle looks up the classes below
                             "org.bouncycastle.jcajce.provider.asymmetric.COMPOSITE$Mappings",
                             "org.bouncycastle.jcajce.provider.asymmetric.DH$Mappings",
                             "org.bouncycastle.jcajce.provider.asymmetric.DSA$Mappings",
@@ -160,9 +161,37 @@ public class BouncyCastleFeature implements Feature {
 
             for (String name : reflectiveClasses) {
                 try {
-                    RuntimeReflection.register(Class.forName(name).getConstructor());
-                } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
-                    throw new RuntimeException("Could not register " + name + " constructor for reflective access!", e);
+                    RuntimeReflection.register(Class.forName(name));
+                    RuntimeReflection.register(Class.forName(name).getConstructors());
+                } catch (SecurityException | ClassNotFoundException e) {
+                    throw new RuntimeException("Could not register " + name + " for reflective access!", e);
+                }
+            }
+
+            // SSLBasicKeyDerivation looks up the classes below reflectively since jdk-25+23
+            // See https://github.com/openjdk/jdk/pull/24393
+            reflectiveClasses = new String[]{
+                            "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA256",
+                            "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA384",
+                            "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA512",
+                            "sun.security.pkcs11.P11HKDF",
+            };
+            for (String name : reflectiveClasses) {
+                try {
+                    Class.forName(name);
+                } catch (SecurityException | ClassNotFoundException e) {
+                    return;
+                }
+            }
+            // For backwards compatibility with older JDKs, we only do this if we found
+            // all those classes
+            Security.addProvider(Security.getProvider("SunJCE"));
+            for (String name : reflectiveClasses) {
+                try {
+                    RuntimeReflection.register(Class.forName(name));
+                    RuntimeReflection.register(Class.forName(name).getConstructors());
+                } catch (SecurityException | ClassNotFoundException e) {
+                    throw new RuntimeException("Could not register " + name + " for reflective access!", e);
                 }
             }
         }
