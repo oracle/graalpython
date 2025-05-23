@@ -152,6 +152,14 @@ version = '>= 1.64.0'
 patch = 'grpcio-1.66.1.patch'
 license = 'Apache-2.0'
 
+[[grpcio.rules]]
+# Force re-cythonize + other fixes
+# The rc version won't get matched by the version range above
+version = '== 1.72.0rc1'
+install-priority = 0
+patch = 'grpcio-1.66.1.patch'
+license = 'Apache-2.0'
+
 [[h2o.rules]]
 patch = 'h2o.patch'
 license = 'Apache-2.0'
@@ -425,10 +433,19 @@ patch = 'prompt_toolkit.patch'
 license = 'BSD-3-Clause'
 
 [[protobuf.rules]]
+patch = 'protobuf.patch'
+license = 'BSD-3-Clause'
+# There are 'none-any' wheels on pypi, this is only needed on sdists
+dist-type = 'sdist'
+install-priority = 0
+
+[[protobuf.rules]]
+# msimacek: This version doesn't exist, but the patch file is referenced from the tensorflow patch which I'm afraid to touch
 version = '== 3.21.9'
-# Also referenced outside of pip from tensorflow patches
 patch = 'protobuf-3.21.9.patch'
 license = 'BSD-3-Clause'
+dist-type = 'sdist'
+install-priority = 0
 
 [[psycopg2.rules]]
 version = '<= 2.9.9'
@@ -763,6 +780,12 @@ patch = 'torch-2.4.1.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
+[[torch.rules]]
+version = '== 2.7.0'
+patch = 'torch-2.7.0.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
 [[torch.add-sources]]
 version = '1.13.1'
 url = 'https://github.com/pytorch/pytorch/releases/download/v1.13.1/pytorch-v1.13.1.tar.gz'
@@ -775,9 +798,22 @@ url = 'https://github.com/pytorch/pytorch/releases/download/v2.2.1/pytorch-v2.2.
 version = '2.4.1'
 url = 'https://github.com/pytorch/pytorch/releases/download/v2.4.1/pytorch-v2.4.1.tar.gz'
 
+[[torch.add-sources]]
+version = '2.7.0'
+url = 'https://github.com/pytorch/pytorch/releases/download/v2.7.0/pytorch-v2.7.0.tar.gz'
+
+[[torchvision.rules]]
+version = '== 0.22.0'
+patch = 'torchvision-0.22.0.patch'
+license = 'BSD-3-Clause'
+
+[[torchvision.add-sources]]
+version = '0.19.1'
+url = 'https://github.com/pytorch/vision/archive/refs/tags/v0.22.0.tar.gz'
+
 [[torchvision.rules]]
 version = '== 0.19.1'
-patch = 'torchvision-1.19.1.patch'
+patch = 'torchvision-0.19.1.patch'
 license = 'BSD-3-Clause'
 
 [[torchvision.add-sources]]
@@ -786,7 +822,7 @@ url = 'https://github.com/pytorch/vision/archive/refs/tags/v0.19.1.tar.gz'
 
 [[torchvision.rules]]
 version = '== 0.17.1'
-patch = 'torchvision-1.17.1.patch'
+patch = 'torchvision-0.17.1.patch'
 license = 'BSD-3-Clause'
 
 [[torchvision.add-sources]]
