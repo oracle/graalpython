@@ -60,18 +60,8 @@ public class BouncyCastleFeature implements Feature {
             support.initializeAtRunTime("org.bouncycastle.jcajce.provider.drbg.DRBG$NonceAndIV", "RNG");
             Security.addProvider(CertUtils.BOUNCYCASTLE_PROVIDER);
 
-            // This is needed since jdk-25+23, see https://github.com/openjdk/jdk/pull/24393
-            Security.addProvider(Security.getProvider("SunJCE"));
-
             // Register runtime reflection here, not in a config, so it can be easily disabled
             String[] reflectiveClasses = new String[]{
-                            // SSLBasicKeyDerivation looks up the classes below reflectively since
-                            // jdk-25+23
-                            // See https://github.com/openjdk/jdk/pull/24393
-                            "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA256",
-                            "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA384",
-                            "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA512",
-                            "sun.security.pkcs11.P11HKDF",
                             // BouncyCastle looks up the classes below
                             "org.bouncycastle.jcajce.provider.asymmetric.COMPOSITE$Mappings",
                             "org.bouncycastle.jcajce.provider.asymmetric.DH$Mappings",
@@ -169,6 +159,33 @@ public class BouncyCastleFeature implements Feature {
                             "org.bouncycastle.jcajce.provider.symmetric.Zuc$Mappings"
             };
 
+            for (String name : reflectiveClasses) {
+                try {
+                    RuntimeReflection.register(Class.forName(name));
+                    RuntimeReflection.register(Class.forName(name).getConstructors());
+                } catch (SecurityException | ClassNotFoundException e) {
+                    throw new RuntimeException("Could not register " + name + " for reflective access!", e);
+                }
+            }
+
+            // SSLBasicKeyDerivation looks up the classes below reflectively since jdk-25+23
+            // See https://github.com/openjdk/jdk/pull/24393
+            reflectiveClasses = new String[]{
+                            "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA256",
+                            "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA384",
+                            "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA512",
+                            "sun.security.pkcs11.P11HKDF",
+            };
+            for (String name : reflectiveClasses) {
+                try {
+                    Class.forName(name);
+                } catch (SecurityException | ClassNotFoundException e) {
+                    return;
+                }
+            }
+            // For backwards compatibility with older JDKs, we only do this if we found
+            // all those classes
+            Security.addProvider(Security.getProvider("SunJCE"));
             for (String name : reflectiveClasses) {
                 try {
                     RuntimeReflection.register(Class.forName(name));
