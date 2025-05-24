@@ -45,6 +45,10 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_HASHLIB;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA3;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_HASHLIB;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
+import static com.oracle.graal.python.nodes.ErrorMessages.ITERATION_VALUE_IS_TOO_GREAT;
+import static com.oracle.graal.python.nodes.ErrorMessages.ITERATION_VALUE_MUST_BE_GREATER_THAN_ZERO;
+import static com.oracle.graal.python.nodes.ErrorMessages.KEY_LENGTH_MUST_BE_GREATER_THAN_ZERO;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNSUPPORTED_HASH_TYPE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -60,6 +64,12 @@ import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.bouncycastle.crypto.CipherParameters;
+import org.bouncycastle.crypto.Digest;
+import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
+import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.jcajce.provider.util.DigestFactory;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
@@ -68,6 +78,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltinsClinicProviders.NewNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltinsClinicProviders.Pbkdf2HmacNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
@@ -75,7 +86,9 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -89,6 +102,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -103,6 +117,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
@@ -449,6 +464,79 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         @Specialization
         static int getFips() {
             return 0;
+        }
+    }
+
+    @Builtin(name = "pbkdf2_hmac", minNumOfPositionalArgs = 4, parameterNames = {"hash_name", "password", "salt", "iterations", "dklen"})
+    @GenerateNodeFactory
+    @ArgumentClinic(name = "hash_name", conversion = ArgumentClinic.ClinicConversion.TString)
+    @ArgumentClinic(name = "password", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
+    @ArgumentClinic(name = "salt", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
+    @ArgumentClinic(name = "iterations", conversion = ArgumentClinic.ClinicConversion.Long)
+    abstract static class Pbkdf2HmacNode extends PythonClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return Pbkdf2HmacNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization(limit = "3")
+        static Object pbkdf2(VirtualFrame frame, TruffleString hashName, Object password, Object salt, long iterations, Object dklenObj,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @CachedLibrary("password") PythonBufferAccessLibrary passwordLib,
+                        @CachedLibrary("salt") PythonBufferAccessLibrary saltLib,
+                        @Cached PyLongAsLongNode asLongNode,
+                        @Cached InlinedConditionProfile noDklenProfile,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                Digest digest = getDigest(toJavaStringNode.execute(hashName));
+                if (digest == null) {
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.UnsupportedDigestmodError, UNSUPPORTED_HASH_TYPE, hashName);
+                }
+                if (iterations < 1) {
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ITERATION_VALUE_MUST_BE_GREATER_THAN_ZERO);
+                }
+                if (iterations > Integer.MAX_VALUE) {
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError, ITERATION_VALUE_IS_TOO_GREAT);
+                }
+                long dklen;
+                if (noDklenProfile.profile(inliningTarget, PGuards.isPNone(dklenObj))) {
+                    dklen = digest.getDigestSize();
+                } else {
+                    dklen = asLongNode.execute(frame, inliningTarget, dklenObj);
+                }
+                dklen *= Byte.SIZE;
+                if (dklen < 1) {
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, KEY_LENGTH_MUST_BE_GREATER_THAN_ZERO);
+                }
+                if (dklen > Integer.MAX_VALUE) {
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError, ITERATION_VALUE_IS_TOO_GREAT);
+                }
+                byte[] passwordBytes = passwordLib.getInternalOrCopiedExactByteArray(password);
+                byte[] saltBytes = saltLib.getInternalOrCopiedExactByteArray(salt);
+                return PFactory.createBytes(language, generate(digest, passwordBytes, saltBytes, (int) iterations, (int) dklen));
+            } finally {
+                passwordLib.release(password);
+                saltLib.release(salt);
+            }
+        }
+
+        @TruffleBoundary
+        private static Digest getDigest(String name) {
+            name = name.toLowerCase();
+            return DigestFactory.getDigest(NAME_MAPPINGS.getOrDefault(name, name));
+        }
+
+        @TruffleBoundary
+        private static byte[] generate(Digest digest, byte[] password, byte[] salt, int iterations, int dklen) {
+            PKCS5S2ParametersGenerator generator = new PKCS5S2ParametersGenerator(digest);
+            generator.init(password, salt, iterations);
+            CipherParameters cipherParameters = generator.generateDerivedParameters(dklen);
+            if (!(cipherParameters instanceof KeyParameter keyParameter)) {
+                throw CompilerDirectives.shouldNotReachHere("unexpected cipher parameters");
+            }
+            return keyParameter.getKey();
         }
     }
 }
