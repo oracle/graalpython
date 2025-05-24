@@ -769,7 +769,7 @@ public class PUnpickler extends PythonBuiltinObject {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getHashingStorageNode = insert(HashingCollectionNodes.GetClonedHashingStorageNode.create());
             }
-            return getHashingStorageNode.doNoValueCached(frame, obj);
+            return getHashingStorageNode.getForSetsCached(frame, obj);
         }
 
         private void setItem(VirtualFrame frame, Object object, Object key, Object value) {

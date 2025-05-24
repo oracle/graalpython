@@ -155,7 +155,7 @@ public final class SetBuiltins extends PythonBuiltins {
         static PNone doGeneric(VirtualFrame frame, PSet self, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode) {
-            HashingStorage storage = getHashingStorageNode.doNoValue(frame, inliningTarget, iterable);
+            HashingStorage storage = getHashingStorageNode.getForSets(frame, inliningTarget, iterable);
             self.setDictStorage(storage);
             return PNone.NONE;
         }

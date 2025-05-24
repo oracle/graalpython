@@ -41,8 +41,11 @@
 package com.oracle.graal.python.builtins.modules.ctypes.memory;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_SIZE;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
+
+import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.LongPointerStorage;
@@ -58,14 +61,15 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -790,11 +794,36 @@ public abstract class PointerNodes {
             return Pointer.nativeMemory(pointerObject);
         }
 
-        @Fallback
-        static Pointer doLong(Node inliningTarget, Object value,
-                        @Cached CastToJavaUnsignedLongNode cast) {
-            long pointer = cast.execute(inliningTarget, value);
-            return Pointer.nativeMemory(pointer);
+        @Specialization
+        static Pointer doBool(Node inliningTarget, boolean value) {
+            return Pointer.nativeMemory(value ? 1 : 0);
+        }
+
+        @Specialization
+        static Pointer doLong(Node inliningTarget, long value) {
+            return Pointer.nativeMemory(value);
+        }
+
+        @Specialization
+        static Pointer doPInt(Node inliningTarget, PInt value) {
+            return Pointer.nativeMemory(value.longValue());
+        }
+
+        @Specialization
+        @TruffleBoundary
+        @InliningCutoff
+        static Pointer doGeneric(Node inliningTarget, Object value,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            if (lib.fitsInBigInteger(value)) {
+                BigInteger bi;
+                try {
+                    bi = lib.asBigInteger(value);
+                    return doLong(inliningTarget, bi.longValue());
+                } catch (UnsupportedMessageException e) {
+                    // fall through to error
+                }
+            }
+            throw PRaiseNode.raiseStatic(inliningTarget, OverflowError, ErrorMessages.CANNOT_BE_CONVERTED_TO_POINTER);
         }
     }
 

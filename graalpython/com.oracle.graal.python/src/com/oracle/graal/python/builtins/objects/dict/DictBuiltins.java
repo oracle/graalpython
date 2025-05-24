@@ -606,7 +606,7 @@ public final class DictBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached IsSameTypeNode isSameTypeNode,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
                         @Bind PythonLanguage language) {
-            HashingStorage s = getHashingStorageNode.execute(frame, inliningTarget, iterable, value);
+            HashingStorage s = getHashingStorageNode.getForDictionaries(frame, inliningTarget, iterable, value);
             return PFactory.createDict(language, s);
         }
 

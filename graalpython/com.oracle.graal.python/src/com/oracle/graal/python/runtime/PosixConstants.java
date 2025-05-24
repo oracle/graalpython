@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -332,6 +332,39 @@ public final class PosixConstants {
     public static final OptionalIntConstant IPV6_RECVPATHMTU;
     public static final OptionalIntConstant IPV6_TCLASS;
     public static final OptionalIntConstant IPV6_USE_MIN_MTU;
+    public static final MandatoryIntConstant _SC_ARG_MAX;
+    public static final MandatoryIntConstant _SC_CHILD_MAX;
+    public static final OptionalIntConstant _SC_HOST_NAME_MAX;
+    public static final MandatoryIntConstant _SC_LOGIN_NAME_MAX;
+    public static final OptionalIntConstant _SC_NGROUPS_MAX;
+    public static final MandatoryIntConstant _SC_CLK_TCK;
+    public static final MandatoryIntConstant _SC_OPEN_MAX;
+    public static final MandatoryIntConstant _SC_PAGESIZE;
+    public static final MandatoryIntConstant _SC_PAGE_SIZE;
+    public static final OptionalIntConstant _SC_RE_DUP_MAX;
+    public static final OptionalIntConstant _SC_STREAM_MAX;
+    public static final OptionalIntConstant _SC_SYMLOOP_MAX;
+    public static final OptionalIntConstant _SC_TTY_NAME_MAX;
+    public static final OptionalIntConstant _SC_TZNAME_MAX;
+    public static final OptionalIntConstant _SC_VERSION;
+    public static final OptionalIntConstant _SC_BC_BASE_MAX;
+    public static final OptionalIntConstant _SC_BC_DIM_MAX;
+    public static final OptionalIntConstant _SC_BC_SCALE_MAX;
+    public static final OptionalIntConstant _SC_BC_STRING_MAX;
+    public static final OptionalIntConstant _SC_COLL_WEIGHTS_MAX;
+    public static final OptionalIntConstant _SC_EXPR_NEST_MAX;
+    public static final OptionalIntConstant _SC_LINE_MAX;
+    public static final OptionalIntConstant _SC_2_VERSION;
+    public static final OptionalIntConstant _SC_2_C_DEV;
+    public static final OptionalIntConstant _SC_2_FORT_DEV;
+    public static final OptionalIntConstant _SC_2_FORT_RUN;
+    public static final OptionalIntConstant _SC_2_LOCALEDEF;
+    public static final OptionalIntConstant _SC_2_SW_DEV;
+    public static final MandatoryIntConstant _SC_SEM_NSEMS_MAX;
+    public static final MandatoryIntConstant _SC_PHYS_PAGES;
+    public static final OptionalIntConstant _SC_AVPHYS_PAGES;
+    public static final MandatoryIntConstant _SC_NPROCESSORS_CONF;
+    public static final MandatoryIntConstant _SC_NPROCESSORS_ONLN;
 
     public static final IntConstant[] openFlags;
     public static final IntConstant[] fileType;
@@ -355,6 +388,7 @@ public final class PosixConstants {
     public static final IntConstant[] socketOptions;
     public static final IntConstant[] tcpOptions;
     public static final IntConstant[] ipv6Options;
+    public static final IntConstant[] sysconfigNames;
 
     static {
         Registry reg = Registry.create();
@@ -614,6 +648,39 @@ public final class PosixConstants {
         IPV6_RECVPATHMTU = reg.createOptionalInt("IPV6_RECVPATHMTU");
         IPV6_TCLASS = reg.createOptionalInt("IPV6_TCLASS");
         IPV6_USE_MIN_MTU = reg.createOptionalInt("IPV6_USE_MIN_MTU");
+        _SC_ARG_MAX = reg.createMandatoryInt("_SC_ARG_MAX");
+        _SC_CHILD_MAX = reg.createMandatoryInt("_SC_CHILD_MAX");
+        _SC_HOST_NAME_MAX = reg.createOptionalInt("_SC_HOST_NAME_MAX");
+        _SC_LOGIN_NAME_MAX = reg.createMandatoryInt("_SC_LOGIN_NAME_MAX");
+        _SC_NGROUPS_MAX = reg.createOptionalInt("_SC_NGROUPS_MAX");
+        _SC_CLK_TCK = reg.createMandatoryInt("_SC_CLK_TCK");
+        _SC_OPEN_MAX = reg.createMandatoryInt("_SC_OPEN_MAX");
+        _SC_PAGESIZE = reg.createMandatoryInt("_SC_PAGESIZE");
+        _SC_PAGE_SIZE = reg.createMandatoryInt("_SC_PAGE_SIZE");
+        _SC_RE_DUP_MAX = reg.createOptionalInt("_SC_RE_DUP_MAX");
+        _SC_STREAM_MAX = reg.createOptionalInt("_SC_STREAM_MAX");
+        _SC_SYMLOOP_MAX = reg.createOptionalInt("_SC_SYMLOOP_MAX");
+        _SC_TTY_NAME_MAX = reg.createOptionalInt("_SC_TTY_NAME_MAX");
+        _SC_TZNAME_MAX = reg.createOptionalInt("_SC_TZNAME_MAX");
+        _SC_VERSION = reg.createOptionalInt("_SC_VERSION");
+        _SC_BC_BASE_MAX = reg.createOptionalInt("_SC_BC_BASE_MAX");
+        _SC_BC_DIM_MAX = reg.createOptionalInt("_SC_BC_DIM_MAX");
+        _SC_BC_SCALE_MAX = reg.createOptionalInt("_SC_BC_SCALE_MAX");
+        _SC_BC_STRING_MAX = reg.createOptionalInt("_SC_BC_STRING_MAX");
+        _SC_COLL_WEIGHTS_MAX = reg.createOptionalInt("_SC_COLL_WEIGHTS_MAX");
+        _SC_EXPR_NEST_MAX = reg.createOptionalInt("_SC_EXPR_NEST_MAX");
+        _SC_LINE_MAX = reg.createOptionalInt("_SC_LINE_MAX");
+        _SC_2_VERSION = reg.createOptionalInt("_SC_2_VERSION");
+        _SC_2_C_DEV = reg.createOptionalInt("_SC_2_C_DEV");
+        _SC_2_FORT_DEV = reg.createOptionalInt("_SC_2_FORT_DEV");
+        _SC_2_FORT_RUN = reg.createOptionalInt("_SC_2_FORT_RUN");
+        _SC_2_LOCALEDEF = reg.createOptionalInt("_SC_2_LOCALEDEF");
+        _SC_2_SW_DEV = reg.createOptionalInt("_SC_2_SW_DEV");
+        _SC_SEM_NSEMS_MAX = reg.createMandatoryInt("_SC_SEM_NSEMS_MAX");
+        _SC_PHYS_PAGES = reg.createMandatoryInt("_SC_PHYS_PAGES");
+        _SC_AVPHYS_PAGES = reg.createOptionalInt("_SC_AVPHYS_PAGES");
+        _SC_NPROCESSORS_CONF = reg.createMandatoryInt("_SC_NPROCESSORS_CONF");
+        _SC_NPROCESSORS_ONLN = reg.createMandatoryInt("_SC_NPROCESSORS_ONLN");
 
         openFlags = new IntConstant[]{O_ACCMODE, O_RDONLY, O_WRONLY, O_RDWR, O_CREAT, O_EXCL, O_TRUNC, O_APPEND, O_NONBLOCK, O_NOCTTY, O_NDELAY, O_DSYNC, O_CLOEXEC, O_SYNC, O_DIRECT, O_RSYNC,
                         O_TMPFILE, O_TEMPORARY, O_DIRECTORY, O_BINARY, O_TEXT, O_XATTR, O_LARGEFILE, O_SHLOCK, O_EXLOCK, O_EXEC, O_SEARCH, O_PATH, O_TTY_INIT};
@@ -646,6 +713,10 @@ public final class PosixConstants {
         ipv6Options = new IntConstant[]{IPV6_JOIN_GROUP, IPV6_LEAVE_GROUP, IPV6_MULTICAST_HOPS, IPV6_MULTICAST_IF, IPV6_MULTICAST_LOOP, IPV6_UNICAST_HOPS, IPV6_V6ONLY, IPV6_CHECKSUM, IPV6_DONTFRAG,
                         IPV6_DSTOPTS, IPV6_HOPLIMIT, IPV6_HOPOPTS, IPV6_NEXTHOP, IPV6_PATHMTU, IPV6_PKTINFO, IPV6_RECVDSTOPTS, IPV6_RECVHOPLIMIT, IPV6_RECVHOPOPTS, IPV6_RECVPKTINFO, IPV6_RECVRTHDR,
                         IPV6_RECVTCLASS, IPV6_RTHDR, IPV6_RTHDRDSTOPTS, IPV6_RTHDR_TYPE_0, IPV6_RECVPATHMTU, IPV6_TCLASS, IPV6_USE_MIN_MTU};
+        sysconfigNames = new IntConstant[]{_SC_ARG_MAX, _SC_CHILD_MAX, _SC_HOST_NAME_MAX, _SC_LOGIN_NAME_MAX, _SC_NGROUPS_MAX, _SC_CLK_TCK, _SC_OPEN_MAX, _SC_PAGESIZE, _SC_PAGE_SIZE, _SC_RE_DUP_MAX,
+                        _SC_STREAM_MAX, _SC_SYMLOOP_MAX, _SC_TTY_NAME_MAX, _SC_TZNAME_MAX, _SC_VERSION, _SC_BC_BASE_MAX, _SC_BC_DIM_MAX, _SC_BC_SCALE_MAX, _SC_BC_STRING_MAX, _SC_COLL_WEIGHTS_MAX,
+                        _SC_EXPR_NEST_MAX, _SC_LINE_MAX, _SC_2_VERSION, _SC_2_C_DEV, _SC_2_FORT_DEV, _SC_2_FORT_RUN, _SC_2_LOCALEDEF, _SC_2_SW_DEV, _SC_SEM_NSEMS_MAX, _SC_PHYS_PAGES, _SC_AVPHYS_PAGES,
+                        _SC_NPROCESSORS_CONF, _SC_NPROCESSORS_ONLN};
     }
     // end generated by gen_native_cfg.py
     // @formatter:on

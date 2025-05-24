@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -358,6 +358,17 @@ public class LoggingPosixSupport extends PosixSupport {
             return logExit("getTerminalSize", "%s", lib.getTerminalSize(delegate, fd));
         } catch (PosixException e) {
             throw logException("getTerminalSize", e);
+        }
+    }
+
+    @ExportMessage
+    final long sysconf(int name,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("sysconf", "%d", name);
+        try {
+            return logExit("sysconf", "%s", lib.sysconf(delegate, name));
+        } catch (PosixException e) {
+            throw logException("sysconf", e);
         }
     }
 

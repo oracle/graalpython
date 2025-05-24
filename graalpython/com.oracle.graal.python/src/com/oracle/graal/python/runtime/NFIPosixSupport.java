@@ -304,6 +304,8 @@ public final class NFIPosixSupport extends PosixSupport {
         call_ioctl_bytes("(sint32, uint64, [sint8]):sint32"),
         call_ioctl_int("(sint32, uint64, sint32):sint32"),
 
+        call_sysconf("(sint32):sint64"),
+
         crypt("([sint8], [sint8]):sint64");
 
         private final String signature;
@@ -747,6 +749,19 @@ public final class NFIPosixSupport extends PosixSupport {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         return size;
+    }
+
+    @ExportMessage
+    public long sysconf(int name,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        long result = invokeNode.callLong(this, PosixNativeFunction.call_sysconf, name);
+        if (result == -1) {
+            int errno = getErrno(invokeNode);
+            if (errno != 0) {
+                throw newPosixException(invokeNode, errno);
+            }
+        }
+        return result;
     }
 
     @ExportMessage

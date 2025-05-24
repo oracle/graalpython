@@ -172,6 +172,11 @@ def test_fromkeys():
 
     assert foo(a=5, b=6) == {'a': 1, 'b': 1}
 
+    d = dict.fromkeys({'a': 1, 'b': 2, 'c': 3})
+    assert len(d) == 3
+    assert set(d.keys()) == {'a', 'b', 'c'}
+    assert set(d.values()) == {None}
+
 
 def test_init():
     d = dict(a=1, b=2, c=3)
