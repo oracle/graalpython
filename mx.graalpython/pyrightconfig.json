@@ -1,5 +1,7 @@
 {
     "extraPaths": [
-        "../../mx/src/"
+        "../../mx/src/",
+        "../../graal/truffle/mx.truffle/",
+        "../../graal/sdk/mx.sdk/",
     ]
 }
