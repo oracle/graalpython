@@ -563,11 +563,14 @@ license = 'LGPL-2.0-or-later'
 [[pymongo.rules]]
 version = "< 4.8.0"
 patch = 'pymongo.patch'
+install-priority = 0
 license = 'Apache-2.0'
 
 [[pymongo.rules]]
-version = ">= 4.8.0"
+version = ">= 4.8.0, <= 4.13.0"
 patch = 'pymongo-4.8.0.patch'
+# Upstreamed
+install-priority = 0
 license = 'Apache-2.0'
 
 [[PyMuPDF.rules]]
