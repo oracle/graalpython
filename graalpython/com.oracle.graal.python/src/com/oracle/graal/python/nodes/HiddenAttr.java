@@ -49,7 +49,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___FLAGS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___VECTORCALLOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___WEAKLISTOFFSET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ALLOC__;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -76,7 +75,7 @@ public final class HiddenAttr {
     public static final HiddenAttr WEAKLISTOFFSET = new HiddenAttr(J___WEAKLISTOFFSET__);
     public static final HiddenAttr ITEMSIZE = new HiddenAttr(J___ITEMSIZE__);
     public static final HiddenAttr BASICSIZE = new HiddenAttr(J___BASICSIZE__);
-    public static final HiddenAttr ALLOC = new HiddenAttr(J___ALLOC__);
+    public static final HiddenAttr ALLOC = new HiddenAttr("__alloc__");
     public static final HiddenAttr DEALLOC = new HiddenAttr("__dealloc__");
     public static final HiddenAttr DEL = new HiddenAttr("__del__");
     public static final HiddenAttr FREE = new HiddenAttr("__free__");

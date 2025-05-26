@@ -70,10 +70,6 @@ _Py_IDENTIFIER(__module__);
 _Py_IDENTIFIER(__eq__);
 _Py_IDENTIFIER(__hash__);
 
-// GraalPy change: forward delcarations of our helpers
-static void add_slot(PyTypeObject* cls, char* name, void* meth, int flags, int signature, char* doc);
-static int type_ready_graalpy_slot_conv(PyTypeObject* cls);
-
 
 static PyObject *
 slot_tp_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
@@ -4114,6 +4110,7 @@ type_setattro(PyTypeObject *type, PyObject *name, PyObject *value)
 extern void
 _PyDictKeys_DecRef(PyDictKeysObject *keys);
 
+
 static void
 type_dealloc_common(PyTypeObject *type)
 {
@@ -4539,6 +4536,7 @@ PyTypeObject PyType_Type = {
     .tp_vectorcall = type_vectorcall,
 #endif // GraalPy change
 };
+
 
 #if 0 // GraalPy change
 /* The base type of all types (eventually)... except itself. */
@@ -6250,11 +6248,9 @@ static int
 type_ready_fill_dict(PyTypeObject *type)
 {
     /* Add type-specific descriptors to tp_dict */
-#if 0 // GraalPy change
     if (add_operators(type) < 0) {
         return -1;
     }
-#endif // GraalPy change
     if (type_add_methods(type) < 0) {
         return -1;
     }
@@ -6439,10 +6435,7 @@ type_ready_set_new(PyTypeObject *type)
 
     if (!(type->tp_flags & Py_TPFLAGS_DISALLOW_INSTANTIATION)) {
         if (type->tp_new != NULL) {
-            // If "__new__" key does not exists in the type dictionary,
-            // set it to tp_new_wrapper().
-            // GraalPy change
-            add_slot(type, "__new__", type->tp_new, METH_KEYWORDS | METH_VARARGS, JWRAPPER_NEW, NULL);
+            // GraalPy change: the wrapper is created in add_operators with the rest of slots
         }
         else {
             // tp_new is NULL: inherit tp_new from base
@@ -6497,10 +6490,8 @@ type_ready_post_checks(PyTypeObject *type)
     }
     return 0;
 }
-#endif // GraalPy change
 
-// GraalPy-specific
-static int type_ready_graalpy_slot_conv(PyTypeObject* cls);
+#endif // GraalPy change
 
 static int
 type_ready(PyTypeObject *type)
@@ -6534,10 +6525,6 @@ type_ready(PyTypeObject *type)
         return -1;
     }
     if (type_ready_fill_dict(type) < 0) {
-        return -1;
-    }
-    // GraalPy change
-    if (type_ready_graalpy_slot_conv(type) < 0) {
         return -1;
     }
     if (type_ready_inherit(type) < 0) {
@@ -8785,6 +8772,7 @@ recurse_down_subclasses(PyTypeObject *type, PyObject *attr_name,
     }
     return 0;
 }
+#endif // GraalPy change
 
 /* This function is called by PyType_Ready() to populate the type's
    dictionary with method descriptors for function slots.  For each
@@ -8819,46 +8807,12 @@ recurse_down_subclasses(PyTypeObject *type, PyObject *attr_name,
 static int
 add_operators(PyTypeObject *type)
 {
-    PyObject *dict = type->tp_dict;
-    slotdef *p;
-    PyObject *descr;
-    void **ptr;
-
-    assert(slotdefs_initialized);
-    for (p = slotdefs; p->name; p++) {
-        if (p->wrapper == NULL)
-            continue;
-        ptr = slotptr(type, p->offset);
-        if (!ptr || !*ptr)
-            continue;
-        int r = PyDict_Contains(dict, p->name_strobj);
-        if (r > 0)
-            continue;
-        if (r < 0) {
-            return -1;
-        }
-        if (*ptr == (void *)PyObject_HashNotImplemented) {
-            /* Classes may prevent the inheritance of the tp_hash
-               slot by storing PyObject_HashNotImplemented in it. Make it
-               visible as a None value for the __hash__ attribute. */
-            if (PyDict_SetItem(dict, p->name_strobj, Py_None) < 0)
-                return -1;
-        }
-        else {
-            descr = PyDescr_NewWrapper(type, p, *ptr);
-            if (descr == NULL)
-                return -1;
-            if (PyDict_SetItem(dict, p->name_strobj, descr) < 0) {
-                Py_DECREF(descr);
-                return -1;
-            }
-            Py_DECREF(descr);
-        }
-    }
-    return 0;
+    // GraalPy change: different implementation
+    return GraalPyTruffleType_AddOperators(type);
 }
 
 
+#if 0 // GraalPy change
 /* Cooperative 'super' */
 
 typedef struct {
@@ -9310,165 +9264,3 @@ PyTypeObject PySuper_Type = {
     .tp_vectorcall = (vectorcallfunc)super_vectorcall,
 };
 #endif // GraalPy change
-
-
-// GraalPy additions
-
-static void add_slot(PyTypeObject* type, char* name, void* meth, int flags, int signature, char* doc) {
-    if (meth) {
-        GraalPyTruffleType_AddSlot(type,
-                type->tp_dict,
-                name,
-                meth,
-                flags,
-                (signature != 0 ? signature : get_method_flags_wrapper(flags)),
-                doc);
-    }
-}
-
-static int type_ready_graalpy_slot_conv(PyTypeObject* cls) {
-#define ADD_SLOT_CONV(__name__, __meth__, __flags__, __signature__) add_slot(cls, (__name__), (__meth__), (__flags__), (__signature__), NULL)
-
-    // TODO: once all slots are converted, we can do one upcall to managed implementation
-    // of add_operators that will use TpSlots#SLOTDEFS and the same algorithm as CPython
-
-    /*
-     * NOTE: ADD_SLOT_CONV won't overwrite existing attributes, so the order is crucial and must
-     * reflect CPython's 'slotdefs' array.
-     */
-
-    // add special methods defined directly on the type structs
-    ADD_SLOT_CONV("__dealloc__", cls->tp_dealloc, -1, JWRAPPER_DIRECT);
-    // https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_getattr
-    // tp_getattr and tp_setattr are deprecated, and should be the same as
-    // tp_getattro and tp_setattro
-
-    // NOTE: The slots may be called from managed code, i.e., we need to wrap the functions
-    // and convert arguments that should be C primitives.
-    // ADD_SLOT_CONV("__getattribute__", cls->tp_getattr, -2, JWRAPPER_GETATTR); tp_getattr does not have wrapper set in slotdefs and hence is ignored in add_operators
-    // ADD_SLOT_CONV("__setattr__", cls->tp_setattr, -3, JWRAPPER_SETATTR); dtto for tp_setattr
-    ADD_SLOT_CONV("__repr__", cls->tp_repr, -1, JWRAPPER_REPR);
-    ADD_SLOT_CONV("__hash__", cls->tp_hash, -1, JWRAPPER_HASHFUNC);
-    ADD_SLOT_CONV("__call__", cls->tp_call, METH_KEYWORDS | METH_VARARGS, JWRAPPER_CALL);
-    ADD_SLOT_CONV("__str__", cls->tp_str, -1, JWRAPPER_STR);
-    ADD_SLOT_CONV("__getattribute__", cls->tp_getattro, -2, JWRAPPER_BINARYFUNC);
-    ADD_SLOT_CONV("__setattr__", cls->tp_setattro, -3, JWRAPPER_SETATTRO);
-    ADD_SLOT_CONV("__delattr__", cls->tp_setattro, -3, JWRAPPER_DELATTRO);
-    ADD_SLOT_CONV("__clear__", cls->tp_clear, -1, JWRAPPER_INQUIRY);
-
-    richcmpfunc richcompare = cls->tp_richcompare;
-    if (richcompare) {
-        ADD_SLOT_CONV("__lt__", richcompare, -2, JWRAPPER_LT);
-        ADD_SLOT_CONV("__le__", richcompare, -2, JWRAPPER_LE);
-        ADD_SLOT_CONV("__eq__", richcompare, -2, JWRAPPER_EQ);
-        ADD_SLOT_CONV("__ne__", richcompare, -2, JWRAPPER_NE);
-        ADD_SLOT_CONV("__gt__", richcompare, -2, JWRAPPER_GT);
-        ADD_SLOT_CONV("__ge__", richcompare, -2, JWRAPPER_GE);
-    }
-    ADD_SLOT_CONV("__iter__", cls->tp_iter, -1, JWRAPPER_UNARYFUNC);
-    ADD_SLOT_CONV("__next__", cls->tp_iternext, -1, JWRAPPER_ITERNEXT);
-    ADD_SLOT_CONV("__get__", cls->tp_descr_get, -3, JWRAPPER_DESCR_GET);
-    ADD_SLOT_CONV("__set__", cls->tp_descr_set, -3, JWRAPPER_DESCR_SET);
-    ADD_SLOT_CONV("__delete__", cls->tp_descr_set, -2, JWRAPPER_DESCR_DELETE);
-    ADD_SLOT_CONV("__init__", cls->tp_init, METH_KEYWORDS | METH_VARARGS, JWRAPPER_INITPROC);
-    ADD_SLOT_CONV("__alloc__", cls->tp_alloc, -2, JWRAPPER_ALLOC);
-    /* Note: '__new__' was added here previously but we don't do it similar to CPython.
-       They also skip it because the appropriate 'slotdef' doesn't have a wrapper.
-       Adding '__new__' is done by function 'type_ready_set_new'. */
-    ADD_SLOT_CONV("__free__", cls->tp_free, -1, JWRAPPER_DIRECT);
-    ADD_SLOT_CONV("__del__", cls->tp_del, -1, JWRAPPER_DIRECT);
-    ADD_SLOT_CONV("__finalize__", cls->tp_finalize, -1, JWRAPPER_DIRECT);
-
-    // 'tp_as_number' takes precedence over 'tp_as_mapping' and 'tp_as_sequence' !
-    PyNumberMethods* numbers = cls->tp_as_number;
-    if (numbers) {
-        ADD_SLOT_CONV("__add__", numbers->nb_add, -2, JWRAPPER_BINARYFUNC_L);
-        ADD_SLOT_CONV("__radd__", numbers->nb_add, -2, JWRAPPER_BINARYFUNC_R);
-        ADD_SLOT_CONV("__sub__", numbers->nb_subtract, -2, JWRAPPER_BINARYFUNC_L);
-        ADD_SLOT_CONV("__rsub__", numbers->nb_subtract, -2, JWRAPPER_BINARYFUNC_R);
-        ADD_SLOT_CONV("__mul__", numbers->nb_multiply, -2, JWRAPPER_BINARYFUNC_L);
-        ADD_SLOT_CONV("__rmul__", numbers->nb_multiply, -2, JWRAPPER_BINARYFUNC_R);
-        ADD_SLOT_CONV("__mod__", numbers->nb_remainder, -2, JWRAPPER_BINARYFUNC_L);
-        ADD_SLOT_CONV("__rmod__", numbers->nb_remainder, -2, JWRAPPER_BINARYFUNC_R);
-        ADD_SLOT_CONV("__divmod__", numbers->nb_divmod, -2, JWRAPPER_BINARYFUNC_L);
-        ADD_SLOT_CONV("__rdivmod__", numbers->nb_divmod, -2, JWRAPPER_BINARYFUNC_R);
-        ADD_SLOT_CONV("__pow__", numbers->nb_power, -3, JWRAPPER_TERNARYFUNC);
-        ADD_SLOT_CONV("__rpow__", numbers->nb_power, -3, JWRAPPER_TERNARYFUNC_R);
-        ADD_SLOT_CONV("__neg__", numbers->nb_negative, -1, JWRAPPER_UNARYFUNC);
-        ADD_SLOT_CONV("__pos__", numbers->nb_positive, -1, JWRAPPER_UNARYFUNC);
-        ADD_SLOT_CONV("__abs__", numbers->nb_absolute, -1, JWRAPPER_UNARYFUNC);
-        ADD_SLOT_CONV("__bool__", numbers->nb_bool, -1, JWRAPPER_INQUIRY);
-        ADD_SLOT_CONV("__invert__", numbers->nb_invert, -1, JWRAPPER_UNARYFUNC);
-        ADD_SLOT_CONV("__lshift__", numbers->nb_lshift, -2, JWRAPPER_BINARYFUNC_L);
-        ADD_SLOT_CONV("__rlshift__", numbers->nb_lshift, -2, JWRAPPER_BINARYFUNC_R);
-        ADD_SLOT_CONV("__rshift__", numbers->nb_rshift, -2, JWRAPPER_BINARYFUNC_L);
-        ADD_SLOT_CONV("__rrshift__", numbers->nb_rshift, -2, JWRAPPER_BINARYFUNC_R);
-        ADD_SLOT_CONV("__and__", numbers->nb_and, -2, JWRAPPER_BINARYFUNC_L);
-        ADD_SLOT_CONV("__rand__", numbers->nb_and, -2, JWRAPPER_BINARYFUNC_R);
-        ADD_SLOT_CONV("__xor__", numbers->nb_xor, -2, JWRAPPER_BINARYFUNC_L);
-        ADD_SLOT_CONV("__rxor__", numbers->nb_xor, -2, JWRAPPER_BINARYFUNC_R);
-        ADD_SLOT_CONV("__or__", numbers->nb_or, -2, JWRAPPER_BINARYFUNC_L);
-        ADD_SLOT_CONV("__ror__", numbers->nb_or, -2, JWRAPPER_BINARYFUNC_R);
-        ADD_SLOT_CONV("__int__", numbers->nb_int, -1, JWRAPPER_UNARYFUNC);
-        ADD_SLOT_CONV("__float__", numbers->nb_float, -1, JWRAPPER_UNARYFUNC);
-        ADD_SLOT_CONV("__iadd__", numbers->nb_inplace_add, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__isub__", numbers->nb_inplace_subtract, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__imul__", numbers->nb_inplace_multiply, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__imod__", numbers->nb_inplace_remainder, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__ipow__", numbers->nb_inplace_power, -3, JWRAPPER_TERNARYFUNC);
-        ADD_SLOT_CONV("__ilshift__", numbers->nb_inplace_lshift, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__irshift__", numbers->nb_inplace_rshift, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__iand__", numbers->nb_inplace_and, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__ixor__", numbers->nb_inplace_xor, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__ior__", numbers->nb_inplace_or, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__floordiv__", numbers->nb_floor_divide, -2, JWRAPPER_BINARYFUNC_L);
-        ADD_SLOT_CONV("__rfloordiv__", numbers->nb_floor_divide, -2, JWRAPPER_BINARYFUNC_R);
-        ADD_SLOT_CONV("__truediv__", numbers->nb_true_divide, -2, JWRAPPER_BINARYFUNC_L);
-        ADD_SLOT_CONV("__rtruediv__", numbers->nb_true_divide, -2, JWRAPPER_BINARYFUNC_R);
-        ADD_SLOT_CONV("__ifloordiv__", numbers->nb_inplace_floor_divide, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__itruediv__", numbers->nb_inplace_true_divide, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__index__", numbers->nb_index, -1, JWRAPPER_UNARYFUNC);
-        ADD_SLOT_CONV("__matmul__", numbers->nb_matrix_multiply, -2, JWRAPPER_BINARYFUNC_L);
-        ADD_SLOT_CONV("__rmatmul__", numbers->nb_matrix_multiply, -2, JWRAPPER_BINARYFUNC_R);
-        ADD_SLOT_CONV("__imatmul__", numbers->nb_inplace_matrix_multiply, -2, JWRAPPER_BINARYFUNC_L);
-    }
-
-    // 'tp_as_mapping' takes precedence over 'tp_as_sequence' !
-    PyMappingMethods* mappings = cls->tp_as_mapping;
-    if (mappings) {
-        ADD_SLOT_CONV("__len__", mappings->mp_length, -1, JWRAPPER_LENFUNC);
-        ADD_SLOT_CONV("__getitem__", mappings->mp_subscript, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__setitem__", mappings->mp_ass_subscript, -3, JWRAPPER_OBJOBJARGPROC);
-        ADD_SLOT_CONV("__delitem__", mappings->mp_ass_subscript, -3, JWRAPPER_MP_DELITEM);
-    }
-
-    PySequenceMethods* sequences = cls->tp_as_sequence;
-    if (sequences) {
-        // sequence functions first, so that the number functions take precendence
-        ADD_SLOT_CONV("__len__", sequences->sq_length, -1, JWRAPPER_LENFUNC);
-        ADD_SLOT_CONV("__add__", sequences->sq_concat, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__mul__", sequences->sq_repeat, -2, JWRAPPER_SSIZE_ARG);
-        ADD_SLOT_CONV("__rmul__", sequences->sq_repeat, -2, JWRAPPER_SSIZE_ARG);
-        ADD_SLOT_CONV("__getitem__", sequences->sq_item, -2, JWRAPPER_GETITEM);
-        ADD_SLOT_CONV("__setitem__", sequences->sq_ass_item, -3, JWRAPPER_SETITEM);
-        ADD_SLOT_CONV("__delitem__", sequences->sq_ass_item, -3, JWRAPPER_DELITEM);
-        ADD_SLOT_CONV("__contains__", sequences->sq_contains, -2, JWRAPPER_OBJOBJPROC);
-        ADD_SLOT_CONV("__iadd__", sequences->sq_inplace_concat, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__imul__", sequences->sq_inplace_repeat, -2, JWRAPPER_SSIZE_ARG);
-    }
-
-    PyAsyncMethods* async = cls->tp_as_async;
-    if (async) {
-        ADD_SLOT_CONV("__await__", async->am_await, -1, JWRAPPER_UNARYFUNC);
-        ADD_SLOT_CONV("__aiter__", async->am_aiter, -1, JWRAPPER_UNARYFUNC);
-        ADD_SLOT_CONV("__anext__", async->am_anext, -1, JWRAPPER_UNARYFUNC);
-    }
-
-    PyBufferProcs* buffers = cls->tp_as_buffer;
-    if (buffers) {
-        // TODO ...
-    }
-
-#undef ADD_SLOT_CONV
-    return 0;
-}
