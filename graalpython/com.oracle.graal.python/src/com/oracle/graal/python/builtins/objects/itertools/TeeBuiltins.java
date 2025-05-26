@@ -163,19 +163,6 @@ public final class TeeBuiltins extends PythonBuiltins {
             self.setIndex(self.getIndex() + 1);
             return value;
         }
-
-        @Specialization(guards = "self.getIndex() >= LINKCELLS")
-        static Object nextNext(VirtualFrame frame, PTee self,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyIterNextNode nextNode,
-                        @Bind PythonLanguage language,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            self.setDataObj(self.getDataobj().jumplink(language));
-            self.setIndex(0);
-            Object ret = self.getDataobj().getItem(frame, inliningTarget, 0, nextNode, raiseNode);
-            self.setIndex(1);
-            return ret;
-        }
     }
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
