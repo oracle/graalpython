@@ -56,7 +56,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi9BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateFunctionNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.HiddenAttr;
@@ -83,19 +83,18 @@ public final class PythonCextMethodBuiltins {
     @GenerateCached(false)
     abstract static class CFunctionNewExMethodNode extends Node {
 
-        abstract Object execute(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, Object flags, int wrapper, Object self, Object module, Object cls, Object doc);
+        abstract Object execute(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object self, Object module, Object cls, Object doc);
 
-        final Object execute(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, Object flags, int wrapper, Object self, Object module, Object doc) {
+        final Object execute(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object self, Object module, Object doc) {
             return execute(inliningTarget, methodDefPtr, name, methObj, flags, wrapper, self, module, PNone.NO_VALUE, doc);
         }
 
         @Specialization
-        static Object doNativeCallable(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, Object flags, int wrapper, Object self, Object module, Object cls, Object doc,
+        static Object doNativeCallable(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object self, Object module, Object cls, Object doc,
                         @Bind PythonLanguage language,
-                        @Cached CreateFunctionNode createFunctionNode,
                         @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                         @Cached(inline = false) WriteAttributeToPythonObjectNode writeAttrNode) {
-            Object f = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, PNone.NO_VALUE, flags);
+            Object f = ExternalFunctionNodes.PExternalFunctionWrapper.createWrapperFunction(name, methObj, PNone.NO_VALUE, flags, wrapper, language);
             assert f instanceof PBuiltinFunction;
             PBuiltinFunction func = (PBuiltinFunction) f;
             writeHiddenAttrNode.execute(inliningTarget, func, METHOD_DEF_PTR, methodDefPtr);

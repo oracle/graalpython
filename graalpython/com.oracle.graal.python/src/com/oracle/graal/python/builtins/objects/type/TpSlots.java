@@ -1390,7 +1390,7 @@ public record TpSlots(TpSlot nb_bool, //
                 } else if (value instanceof TpSlotBuiltin<?> builtinSlot) {
                     wrapperDescriptor = builtinSlot.createBuiltin(context, type, tpSlotDef.name, tpSlotDef.wrapper);
                 } else if (value instanceof TpSlotNative nativeSlot) {
-                    wrapperDescriptor = PExternalFunctionWrapper.createWrapperFunction(tpSlotDef.name, nativeSlot.getCallable(), type, 0, tpSlotDef.wrapper, language, true);
+                    wrapperDescriptor = PExternalFunctionWrapper.createWrapperFunction(tpSlotDef.name, nativeSlot.getCallable(), type, 0, tpSlotDef.wrapper, language);
                 } else if (value instanceof TpSlotPython) {
                     // There should already be a python method somewhere in the MRO or this doesn't
                     // make sense

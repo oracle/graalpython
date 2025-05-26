@@ -72,7 +72,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.ReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.WriteMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.GetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -262,9 +261,8 @@ public final class PythonCextTypeBuiltins {
         static Object classOrStatic(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
-                        @Cached(inline = false) WriteAttributeToPythonObjectNode writeAttrNode,
-                        @Exclusive @Cached CreateFunctionNode createFunctionNode) {
-            PythonAbstractObject func = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, type, flags);
+                        @Cached(inline = false) WriteAttributeToPythonObjectNode writeAttrNode) {
+            PythonAbstractObject func = PExternalFunctionWrapper.createWrapperFunction(name, methObj, type, flags, wrapper, language);
             writeHiddenAttrNode.execute(inliningTarget, func, METHOD_DEF_PTR, methodDefPtr);
             PythonObject function;
             if ((flags & METH_CLASS) != 0) {
@@ -279,10 +277,10 @@ public final class PythonCextTypeBuiltins {
 
         @Specialization(guards = "!isClassOrStaticMethod(flags)")
         static Object doNativeCallable(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
+                        @Bind PythonLanguage language,
                         @Cached PyObjectSetAttrNode setattr,
-                        @Exclusive @Cached HiddenAttr.WriteNode writeNode,
-                        @Exclusive @Cached CreateFunctionNode createFunctionNode) {
-            PythonAbstractObject func = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, type, flags);
+                        @Exclusive @Cached HiddenAttr.WriteNode writeNode) {
+            PythonAbstractObject func = PExternalFunctionWrapper.createWrapperFunction(name, methObj, type, flags, wrapper, language);
             setattr.execute(inliningTarget, func, T___NAME__, name);
             setattr.execute(inliningTarget, func, T___DOC__, doc);
             writeNode.execute(inliningTarget, func, METHOD_DEF_PTR, methodDefPtr);
