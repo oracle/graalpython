@@ -166,8 +166,10 @@ public final class TeeBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language,
                         @Shared @Cached PRaiseNode raiseNode) {
             self.setDataObj(self.getDataobj().jumplink(language));
+            self.setIndex(0);
+            Object ret = self.getDataobj().getItem(frame, inliningTarget, 0, nextNode, raiseNode);
             self.setIndex(1);
-            return self.getDataobj().getItem(frame, inliningTarget, 0, nextNode, raiseNode);
+            return ret;
         }
     }
 
