@@ -462,6 +462,10 @@ public abstract class ErrorMessages {
     public static final TruffleString ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_TYPE = tsLiteral("isinstance() arg 2 must be a type or tuple of types (was: %s)");
     public static final TruffleString ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE = tsLiteral("issubclass() arg 2 must be a class or tuple of classes");
     public static final TruffleString ITER_V_MUST_BE_CALLABLE = tsLiteral("iter(v, w): v must be callable");
+    public static final TruffleString ITERATION_VALUE_MUST_BE_GREATER_THAN_ZERO = tsLiteral("iteration value must be greater than 0.");
+    public static final TruffleString ITERATION_VALUE_IS_TOO_GREAT = tsLiteral("iteration value is too great.");
+    public static final TruffleString KEY_LENGTH_MUST_BE_GREATER_THAN_ZERO = tsLiteral("key length must be greater than 0.");
+    public static final TruffleString KEY_LENGTH_IS_TOO_GREAT = tsLiteral("key length is too great.");
     public static final TruffleString KEYWORD_NAMES_MUST_BE_STR_GOT_P = tsLiteral("keyword names must be str, get %p");
     public static final TruffleString KEYWORDS_S_MUST_BE_STRINGS = tsLiteral("keywords must be strings");
     public static final TruffleString KLASS_ARG_IS_NOT_HOST_OBJ = tsLiteral("klass argument '%p' is not a host object");
@@ -801,6 +805,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNSIGNED_BYTE_INT_GREATER_THAN_MAX = tsLiteral("unsigned byte integer is greater than maximum");
     public static final TruffleString UNSIGNED_BYTE_INT_LESS_THAN_MIN = tsLiteral("unsigned byte integer is less than minimum");
     public static final TruffleString UNSUPPORTED_FORMAT_CHAR_AT_INDEX = tsLiteral("unsupported format character '%c' (0x%x) at index %d");
+    public static final TruffleString UNSUPPORTED_HASH_TYPE = tsLiteral("unsupported hash type %s");
     public static final TruffleString UNSUPPORTED_INSTANCEOF = tsLiteral("unsupported instanceof(%p, %p)");
     public static final TruffleString UNSUPPORTED_LOCALE_SETTING = tsLiteral("unsupported locale setting");
     public static final TruffleString UNSUPPORTED_OBJ_IN = tsLiteral("unsupported object in '%s'");

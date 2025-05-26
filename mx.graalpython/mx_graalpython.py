@@ -60,7 +60,6 @@ import mx_gate
 import mx_native
 import mx_unittest
 import mx_sdk
-import mx_sdk_vm_ng
 import mx_subst
 import mx_truffle
 import mx_graalpython_bisect
@@ -95,6 +94,7 @@ SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 
 GRAAL_VERSION = SUITE.suiteDict['version']
+IS_RELEASE = SUITE.suiteDict['release']
 GRAAL_VERSION_MAJ_MIN = ".".join(GRAAL_VERSION.split(".")[:2])
 PYTHON_VERSION = SUITE.suiteDict[f'{SUITE.name}:pythonVersion']
 PYTHON_VERSION_MAJ_MIN = ".".join(PYTHON_VERSION.split('.')[:2])
@@ -102,9 +102,6 @@ PYTHON_VERSION_MAJ_MIN = ".".join(PYTHON_VERSION.split('.')[:2])
 LATEST_JAVA_HOME = {"JAVA_HOME": os.environ.get("LATEST_JAVA_HOME", mx.get_jdk().home)}
 RUNNING_ON_LATEST_JAVA = os.environ.get("LATEST_JAVA_HOME", os.environ.get("JAVA_HOME")) == mx.get_jdk().home
 
-if not SUITE._output_root_includes_config():
-    # Workaround bug in mx_sdk_vm_ng.JavaHomeDependency not being a project yet relying on the underlying get_output_root implementation
-    mx_sdk_vm_ng.JavaHomeDependency.get_output_root = lambda s: os.path.join(s.get_output_base(), s.name)
 
 # this environment variable is used by some of our maven projects and jbang integration to build against the unreleased master version during development
 os.environ["GRAALPY_VERSION"] = GRAAL_VERSION
@@ -646,8 +643,6 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     else:
         env_file = 'native-ee' if enterprise else 'native-ce'
         standalone_dist = 'GRAALPY_NATIVE_STANDALONE'
-        if "GraalVM" in subprocess.check_output([get_jdk().java, '-version'], stderr=subprocess.STDOUT, universal_newlines=True):
-            assert False, "Cannot build a GraalPy native standalone with a Graal JDK, we only support latest for building the native images"
 
     mx_args = ['-p', SUITE.dir, *(['--env', env_file] if env_file else [])]
     mx_args.append("--extra-image-builder-argument=-g")
@@ -704,7 +699,9 @@ def graalvm_jdk():
     if graal_jdk_home:
         graal_jdk_home = os.path.abspath(glob.glob(graal_jdk_home)[0])
         if sys.platform == "darwin":
-            graal_jdk_home = os.path.join(graal_jdk_home, 'Contents', 'Home')
+            jdk_home_subdir = os.path.join(graal_jdk_home, 'Contents', 'Home')
+            if os.path.exists(jdk_home_subdir):
+                graal_jdk_home = jdk_home_subdir
         mx.log("Using Graal from GRAAL_JDK_HOME: " + graal_jdk_home)
 
         # Try to verify that we're getting what we expect:
@@ -1082,6 +1079,9 @@ def setup_graalpy_plugin_tests():
 
     env['JAVA_HOME'] = gvm_jdk
     env['PYTHON_STANDALONE_HOME'] = standalone_home
+    env['GRAAL_VERSION'] = GRAAL_VERSION
+    if not IS_RELEASE:
+        env['GRAAL_VERSION'] += '-dev'
 
     # setup maven downloader overrides
     env['MAVEN_REPO_OVERRIDE'] = ",".join([
@@ -2007,6 +2007,11 @@ standalone_dependencies_common = {
 def bytecode_dsl_build_args():
     return ['-Dpython.EnableBytecodeDSLInterpreter=true'] if BYTECODE_DSL_INTERPRETER else []
 
+mx_subst.results_substitutions.register_no_arg(
+    'bytecode_dsl_build_args',
+    lambda: f'-Dpython.EnableBytecodeDSLInterpreter={repr(BYTECODE_DSL_INTERPRETER).lower()}'
+)
+
 mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,
     name='GraalVM Python',
@@ -2719,11 +2724,16 @@ def downstream_test_virtualenv(graalpy):
     venv = src / 'venv'
     mx.run([graalpy, '-m', 'venv', str(venv)])
     env = os.environ.copy()
+    env.pop('VIRTUAL_ENV_DISABLE_PROMPT', None)
+    env['CI_RUN'] = '1'
     # Need to avoid pulling in graalpy seeder
     env['PIP_GRAALPY_DISABLE_PATCHING'] = '1'
     run_in_venv(venv, ['pip', 'install', f'{src}[test]'], env=env)
     # Don't activate the venv, it interferes with the test
-    mx.run( [str(venv / 'bin'/ 'pytest'), '-v', '--tb=short', 'tests'], cwd=src)
+    mx.run([
+        str(venv / 'bin' / 'pytest'), '-v', '--tb=short', 'tests',
+        '-k', 'not fish and not csh and not nushell and not powershell',
+    ], cwd=src, env=env)
 
 
 def run_downstream_test(args):

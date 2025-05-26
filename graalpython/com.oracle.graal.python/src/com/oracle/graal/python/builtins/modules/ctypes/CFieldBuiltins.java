@@ -725,19 +725,14 @@ public final class CFieldBuiltins extends PythonBuiltins {
         @Specialization(guards = "setfunc == P_set")
         static Object P_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PyLongCheckNode longCheckNode,
                         @Exclusive @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
-                        @Exclusive @Cached PointerNodes.WritePointerNode writePointerNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PointerNodes.WritePointerNode writePointerNode) {
             Pointer valuePtr;
             if (value == PNone.NONE) {
                 valuePtr = Pointer.NULL;
-            } else if (longCheckNode.execute(inliningTarget, value)) {
-                valuePtr = pointerFromLongNode.execute(inliningTarget, value);
             } else {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_BE_CONVERTED_TO_POINTER);
+                valuePtr = pointerFromLongNode.execute(inliningTarget, value);
             }
-
             writePointerNode.execute(inliningTarget, ptr, valuePtr);
             return PNone.NONE;
         }

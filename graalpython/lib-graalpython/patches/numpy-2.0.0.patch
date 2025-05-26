@@ -105,15 +105,3 @@ index 1c59bf3..519fabc 100644
          volatile char NPY_UNUSED(c) = *(char *)param;
      }
  
-diff --git a/vendored-meson/meson/mesonbuild/utils/universal.py b/vendored-meson/meson/mesonbuild/utils/universal.py
-index 1694912..a555fe3 100644
---- a/vendored-meson/meson/mesonbuild/utils/universal.py
-+++ b/vendored-meson/meson/mesonbuild/utils/universal.py
-@@ -727,6 +727,7 @@ def windows_detect_native_arch() -> str:
-     """
-     if sys.platform != 'win32':
-         return ''
-+    return 'amd64'  # Workaround for GraalPy bug on Windows with kernel32.GetCurrentProcess()
-     try:
-         import ctypes
-         process_arch = ctypes.c_ushort()

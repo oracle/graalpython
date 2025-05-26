@@ -160,6 +160,7 @@ test.test_inspect.test_inspect.TestPredicates.test_get_slot_members @ darwin-arm
 test.test_inspect.test_inspect.TestPredicates.test_isabstract @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestPredicates.test_isabstract_during_init_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestPredicates.test_isclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_inspect.test_inspect.TestPredicates.test_iscoroutine @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestPredicates.test_isroutine @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestReload.test_getsource_reload @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestRetrievingSourceCode.test_cleandoc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

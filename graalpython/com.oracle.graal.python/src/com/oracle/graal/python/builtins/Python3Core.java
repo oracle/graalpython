@@ -32,15 +32,20 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_MODULES;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_UNICODEDATA;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ZIPIMPORT;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__SRE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__SYSCONFIG;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___IMPORT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PACKAGE__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_GRAALPYTHON;
+import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REF;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -430,12 +435,12 @@ public abstract class Python3Core {
     private static TruffleString[] initializeCoreFiles() {
         // Order matters!
         List<TruffleString> coreFiles = List.of(
-                        toTruffleStringUncached("__graalpython__"),
-                        toTruffleStringUncached("_weakref"),
-                        toTruffleStringUncached("unicodedata"),
-                        toTruffleStringUncached("_sre"),
-                        toTruffleStringUncached("_sysconfig"),
-                        toTruffleStringUncached("java"),
+                        T___GRAALPYTHON__,
+                        T__WEAKREF,
+                        T_UNICODEDATA,
+                        T__SRE,
+                        T__SYSCONFIG,
+                        T_JAVA,
                         toTruffleStringUncached("pip_hook"));
         if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             coreFiles = new ArrayList<>(coreFiles);

@@ -320,6 +320,13 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long sysconf(int name,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInPreInitialization();
+        return nativeLib.sysconf(nativePosixSupport, name);
+    }
+
+    @ExportMessage
     final long[] fstatat(int dirFd, Object pathname, boolean followSymlinks,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         if (inPreInitialization) {

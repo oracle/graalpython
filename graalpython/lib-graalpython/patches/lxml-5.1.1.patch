@@ -1,0 +1,24 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index e7f6bb6..230f261 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -1,5 +1,6 @@
+ [build-system]
+ requires = ["Cython>=3.0.9", "setuptools", "wheel"]
++build-backend = "setuptools.build_meta:__legacy__"
+ 
+ [tool.cibuildwheel]
+ build-verbosity = 2
+diff --git a/setupinfo.py b/setupinfo.py
+index 43e283f..d415905 100644
+--- a/setupinfo.py
++++ b/setupinfo.py
+@@ -564,7 +564,7 @@ OPTION_WITH_UNICODE_STRINGS = has_option('with-unicode-strings')
+ OPTION_WITHOUT_ASSERT = has_option('without-assert')
+ OPTION_WITHOUT_THREADING = has_option('without-threading')
+ OPTION_WITHOUT_CYTHON = has_option('without-cython')
+-OPTION_WITH_CYTHON = has_option('with-cython')
++OPTION_WITH_CYTHON = True
+ OPTION_WITH_CYTHON_GDB = has_option('cython-gdb')
+ OPTION_WITH_REFNANNY = has_option('with-refnanny')
+ OPTION_WITH_COVERAGE = has_option('with-coverage')

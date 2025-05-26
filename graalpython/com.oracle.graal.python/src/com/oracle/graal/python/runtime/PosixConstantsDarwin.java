@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -242,5 +242,22 @@ class PosixConstantsDarwin {
         constants.put("IPV6_RECVTCLASS", 35);
         constants.put("IPV6_RTHDR_TYPE_0", 0);
         constants.put("IPV6_TCLASS", 36);
+        constants.put("_SC_ARG_MAX", 1);
+        constants.put("_SC_CHILD_MAX", 2);
+        constants.put("_SC_LOGIN_NAME_MAX", 73);
+        constants.put("_SC_NGROUPS_MAX", 4);
+        constants.put("_SC_CLK_TCK", 3);
+        constants.put("_SC_OPEN_MAX", 5);
+        constants.put("_SC_PAGESIZE", 29);
+        constants.put("_SC_PAGE_SIZE", 29);
+        constants.put("_SC_RE_DUP_MAX", 16);
+        constants.put("_SC_STREAM_MAX", 26);
+        constants.put("_SC_TTY_NAME_MAX", 101);
+        constants.put("_SC_TZNAME_MAX", 27);
+        constants.put("_SC_VERSION", 8);
+        constants.put("_SC_SEM_NSEMS_MAX", 49);
+        constants.put("_SC_PHYS_PAGES", 200);
+        constants.put("_SC_NPROCESSORS_CONF", 83);
+        constants.put("_SC_NPROCESSORS_ONLN", 84);
     }
 }

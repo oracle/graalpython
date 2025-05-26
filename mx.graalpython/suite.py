@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "293a883d3e1e9b482cb66b187682a90138ae9ba6",
+                "version": "69f10d3d658a6aeca3d5ce59c64af6a18336f14c",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "293a883d3e1e9b482cb66b187682a90138ae9ba6",
+                "version": "69f10d3d658a6aeca3d5ce59c64af6a18336f14c",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -840,9 +840,9 @@ suite = {
                 "-Dorg.graalvm.launcher.class=com.oracle.graal.python.shell.GraalPythonMain",
                 # GraalPy standalone specific flags
                 "-J-Xms14g", # GR-46399: libpythonvm needs more than the default minimum of 8 GB to be built
-                "-H:-CopyLanguageResources",
                 "-Dpolyglot.python.PosixModuleBackend=native",
                 "-Dpolyglot.python.Sha3ModuleBackend=native",
+                "<bytecode_dsl_build_args>",
             ],
         },
     },

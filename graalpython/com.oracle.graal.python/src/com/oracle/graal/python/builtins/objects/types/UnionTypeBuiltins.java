@@ -180,7 +180,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                         @Cached PyObjectHashNode hashNode,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
                         @Bind PythonLanguage language) {
-            PFrozenSet argSet = PFactory.createFrozenSet(language, getHashingStorageNode.doNoValue(frame, inliningTarget, self.getArgs()));
+            PFrozenSet argSet = PFactory.createFrozenSet(language, getHashingStorageNode.getForSets(frame, inliningTarget, self.getArgs()));
             return hashNode.execute(frame, inliningTarget, argSet);
         }
     }
@@ -273,8 +273,8 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
                         @Cached PyObjectRichCompareBool eqNode,
                         @Bind PythonLanguage language) {
-            PFrozenSet argSet1 = PFactory.createFrozenSet(language, getHashingStorageNode.doNoValue(frame, inliningTarget, self.getArgs()));
-            PFrozenSet argSet2 = PFactory.createFrozenSet(language, getHashingStorageNode.doNoValue(frame, inliningTarget, other.getArgs()));
+            PFrozenSet argSet1 = PFactory.createFrozenSet(language, getHashingStorageNode.getForSets(frame, inliningTarget, self.getArgs()));
+            PFrozenSet argSet2 = PFactory.createFrozenSet(language, getHashingStorageNode.getForSets(frame, inliningTarget, other.getArgs()));
             return eqNode.execute(frame, inliningTarget, argSet1, argSet2, op);
         }
 

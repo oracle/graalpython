@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,7 @@ import com.oracle.truffle.api.object.Shape;
 
 public class PReferenceType extends PythonBuiltinObject {
     public static class WeakRefStorage extends WeakReference<Object> {
-        private final Object callback;
+        private Object callback;
         private final PReferenceType ref;
         private final long pointer;
 
@@ -72,7 +72,7 @@ public class PReferenceType extends PythonBuiltinObject {
 
         /**
          * get the native pointer of the referent.
-         * 
+         *
          * @return the native pointer if referent is a native reference, otherwise, 0.
          */
         public long getPointer() {
@@ -80,7 +80,7 @@ public class PReferenceType extends PythonBuiltinObject {
         }
     }
 
-    private final WeakRefStorage store;
+    private WeakRefStorage store;
     private long hash = -1;
 
     @TruffleBoundary
@@ -89,16 +89,40 @@ public class PReferenceType extends PythonBuiltinObject {
         this.store = new WeakRefStorage(this, pythonObject, callback, queue);
     }
 
+    /**
+     * In CPython, this functions clears the reference without calling the callback. This is not
+     * exactly what we can do here since the WeakRefStorage is already enqueued. We clear the
+     * callback so that when the Java WeakReference is enqueued because the Object was collected,
+     * there is no callback to run anymore, and we also drop the store reference here entirely so
+     * that the object is not longer reachable through this weakref.
+     */
+    public void clearRef() {
+        WeakRefStorage s = this.store;
+        if (s != null) {
+            s.callback = null;
+            this.store = null;
+        }
+    }
+
     public Object getCallback() {
-        if (this.store.callback == null) {
+        Object callback = null;
+        WeakRefStorage s = this.store;
+        if (s != null) {
+            callback = s.callback;
+        }
+        if (callback == null) {
             return PNone.NONE;
         }
-        return this.store.callback;
+        return callback;
     }
 
     @TruffleBoundary
     public Object getObject() {
-        return this.store.get();
+        WeakRefStorage s = this.store;
+        if (s != null) {
+            return s.get();
+        }
+        return null;
     }
 
     public Object getPyObject() {

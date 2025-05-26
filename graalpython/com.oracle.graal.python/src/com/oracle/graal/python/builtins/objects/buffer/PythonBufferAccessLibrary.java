@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -275,6 +275,21 @@ public abstract class PythonBufferAccessLibrary extends Library {
         } else {
             return getCopiedByteArray(receiver);
         }
+    }
+
+    /**
+     * Get a byte array representing the buffer contents. Unlike
+     * {@link #getInternalOrCopiedByteArray(Object)}, always returns a byte array with length equal
+     * to the buffer size, making a copy if necessary. Do not write into the byte array.
+     */
+    public final byte[] getInternalOrCopiedExactByteArray(Object receiver) {
+        if (hasInternalByteArray(receiver)) {
+            byte[] r = getInternalByteArray(receiver);
+            if (r.length == getBufferLength(receiver)) {
+                return r;
+            }
+        }
+        return getCopiedByteArray(receiver);
     }
 
     /**

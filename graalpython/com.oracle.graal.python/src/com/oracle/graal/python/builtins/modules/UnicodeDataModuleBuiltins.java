@@ -40,11 +40,15 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_UNICODEDATA;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_UNICODEDATA;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
 
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
 import org.graalvm.shadowed.com.ibm.icu.text.Normalizer2;
@@ -73,14 +77,15 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = "unicodedata")
+@CoreFunctions(defineModule = J_UNICODEDATA, isEager = true)
 public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return UnicodeDataModuleBuiltinsFactory.getFactories();
     }
 
-    public static String getUnicodeVersion() {
+    // Must not be used at image build time because ICU is --initialize-at-run-time
+    private static String getUnicodeVersion() {
         VersionInfo version = UCharacter.getUnicodeVersion();
         return Integer.toString(version.getMajor()) + '.' +
                         version.getMinor() + '.' +
@@ -104,9 +109,10 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-        addBuiltinConstant("unidata_version", getUnicodeVersion());
+    public void postInitialize(Python3Core core) {
+        super.postInitialize(core);
+        PythonModule self = core.lookupBuiltinModule(T_UNICODEDATA);
+        self.setAttribute(toTruffleStringUncached("unidata_version"), toTruffleStringUncached(getUnicodeVersion()));
     }
 
     static final int NORMALIZER_FORM_COUNT = 4;

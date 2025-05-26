@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYWEAKREFERENCE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -86,6 +87,17 @@ public final class PythonCextWeakrefBuiltins {
             /*
              * This weak reference has died in the managed side due to its referent being collected.
              */
+            return PNone.NONE;
+        }
+    }
+
+    @CApiBuiltin(name = "_PyWeakref_ClearRef", ret = Void, args = {PYWEAKREFERENCE_PTR}, call = Direct)
+    abstract static class PyWeakref_ClearRef extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object call(Object reference) {
+            if (reference instanceof PReferenceType ref) {
+                ref.clearRef();
+            }
             return PNone.NONE;
         }
     }

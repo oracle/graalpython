@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1078,6 +1078,11 @@ int32_t call_ioctl_bytes(int32_t fd, uint64_t request, char* buffer) {
 
 int32_t call_ioctl_int(int32_t fd, uint64_t request, int32_t arg) {
     return ioctl(fd, request, (int)arg);
+}
+
+int64_t call_sysconf(int32_t name) {
+    errno = 0;
+    return sysconf(name);
 }
 
 int32_t get_errno() {

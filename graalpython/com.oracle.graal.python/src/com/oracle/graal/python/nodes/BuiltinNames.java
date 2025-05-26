@@ -500,4 +500,7 @@ public abstract class BuiltinNames {
 
     public static final String J_EXCEPTION_GROUP = "ExceptionGroup";
     public static final TruffleString T_EXCEPTION_GROUP = tsLiteral(J_EXCEPTION_GROUP);
+
+    public static final String J_UNICODEDATA = "unicodedata";
+    public static final TruffleString T_UNICODEDATA = tsLiteral(J_UNICODEDATA);
 }

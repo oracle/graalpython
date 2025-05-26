@@ -23,13 +23,15 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import print_function
 
+import itertools
+import functools
 import statistics
 import sys
-
 import os
 import re
+import shlex
 import subprocess
-from abc import ABCMeta, abstractproperty, abstractmethod
+from abc import ABC, abstractproperty
 from contextlib import contextmanager
 from os.path import join
 from datetime import datetime
@@ -37,7 +39,7 @@ from pathlib import Path
 
 import mx
 import mx_benchmark
-from mx_benchmark import StdOutRule, java_vm_registry, Vm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin
+from mx_benchmark import StdOutRule, java_vm_registry, OutputCapturingVm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin
 from mx_graalpython_bench_param import HARNESS_PATH
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -53,31 +55,20 @@ DIR = Path(__file__).parent.resolve()
 # constants
 #
 # ----------------------------------------------------------------------------------------------------------------------
-ENV_PYPY_HOME = "PYPY_HOME"
-ENV_PYTHON3_HOME = "PYTHON3_HOME"
-ENV_VIRTUAL_ENV = "VIRTUAL_ENV"
-ENV_JYTHON_JAR = "JYTHON_JAR"
 VM_NAME_GRAALPYTHON = "graalpython"
-VM_NAME_CPYTHON = "cpython"
-VM_NAME_PYPY = "pypy"
-VM_NAME_JYTHON = "jython"
 VM_NAME_GRAALPYTHON_SVM = "graalpython-svm"
 GROUP_GRAAL = "Graal"
 SUBGROUP_GRAAL_PYTHON = "graalpython"
 
 PYTHON_VM_REGISTRY_NAME = "Python"
 CONFIGURATION_DEFAULT = "default"
-CONFIGURATION_DEFAULT_BC_DSL = "default-bc-dsl"
 CONFIGURATION_INTERPRETER = "interpreter"
-CONFIGURATION_INTERPRETER_BC_DSL = "interpreter-bc-dsl"
 CONFIGURATION_NATIVE_INTERPRETER = "native-interpreter"
-CONFIGURATION_NATIVE_INTERPRETER_BC_DSL = "native-interpreter-bc-dsl"
 CONFIGURATION_DEFAULT_MULTI = "default-multi"
 CONFIGURATION_INTERPRETER_MULTI = "interpreter-multi"
 CONFIGURATION_NATIVE_INTERPRETER_MULTI = "native-interpreter-multi"
 CONFIGURATION_DEFAULT_MULTI_TIER = "default-multi-tier"
 CONFIGURATION_NATIVE = "native"
-CONFIGURATION_NATIVE_BC_DSL = "native-bc-dsl"
 CONFIGURATION_NATIVE_MULTI = "native-multi"
 CONFIGURATION_NATIVE_MULTI_TIER = "native-multi-tier"
 CONFIGURATION_SANDBOXED = "sandboxed"
@@ -102,25 +93,6 @@ BENCH_BGV = 'benchmarks-bgv'
 
 def is_sandboxed_configuration(conf):
     return conf in (CONFIGURATION_SANDBOXED, CONFIGURATION_SANDBOXED_MULTI)
-
-
-# from six
-def add_metaclass(metaclass):
-    """Class decorator for creating a class with a metaclass."""
-    def wrapper(cls):
-        orig_vars = cls.__dict__.copy()
-        slots = orig_vars.get('__slots__')
-        if slots is not None:
-            if isinstance(slots, str):
-                slots = [slots]
-            for slots_var in slots:
-                orig_vars.pop(slots_var)
-        orig_vars.pop('__dict__', None)
-        orig_vars.pop('__weakref__', None)
-        if hasattr(cls, '__qualname__'):
-            orig_vars['__qualname__'] = cls.__qualname__
-        return metaclass(cls.__name__, cls.__bases__, orig_vars)
-    return wrapper
 
 
 @contextmanager
@@ -150,58 +122,47 @@ def environ(env):
 # the vm definitions
 #
 # ----------------------------------------------------------------------------------------------------------------------
-@add_metaclass(ABCMeta)
-class AbstractPythonVm(Vm):
-    def __init__(self, config_name, options=None, env=None):
-        super(AbstractPythonVm, self).__init__()
+class AbstractPythonVm(OutputCapturingVm, ABC):
+    def __init__(self, name, config_name, options=None):
+        super().__init__()
+        self._name = name
         self._config_name = config_name
         self._options = options
-        self._env = env
 
     @property
     def options(self):
         return self._options
 
-    def config_name(self):
-        """
-        The configuration name
-
-        :return: the configuration name
-        :rtype: str or unicode
-        """
-        return self._config_name
-
-    @abstractmethod
     def name(self):
-        """
-        The VM name
+        return self._name
 
-        :return: the vm name
-        :rtype: str or unicode
-        """
-        return None
+    def config_name(self):
+        return self._config_name
 
     @abstractproperty
     def interpreter(self):
-        """
-        the python like interpreter
-
-        :return: the interpreter
-        :rtype: str or unicode
-        """
         return None
 
-    def run(self, cwd, args):
-        out = mx.OutputCapture()
-        stdout_capture = mx.TeeOutputCapture(out)
-        ret_code = mx.run([self.interpreter] + args, out=stdout_capture, err=stdout_capture, env=self._env)
-        return ret_code, out.data
+    def post_process_command_line_args(self, args):
+        return args
+
+    def run_vm(self, args, out=None, err=None, cwd=None, nonZeroIsFatal=False, env=None):
+        cmd = [self.interpreter] + args
+        cmd = mx.apply_command_mapper_hooks(cmd, self.command_mapper_hooks)
+        mx.logv(shlex.join(cmd))
+        return mx.run(
+            cmd,
+            out=out,
+            err=err,
+            cwd=cwd,
+            nonZeroIsFatal=nonZeroIsFatal,
+            env=env,
+        )
 
 
-@add_metaclass(ABCMeta)
 class AbstractPythonIterationsControlVm(AbstractPythonVm):
-    def __init__(self, config_name, options=None, env=None, iterations=None):
-        super(AbstractPythonIterationsControlVm, self).__init__(config_name, options=options, env=env)
+    def __init__(self, name, config_name, options=None, iterations=None):
+        super().__init__(name, config_name, options=options)
         try:
             self._iterations = int(iterations)
         except:
@@ -222,39 +183,52 @@ class AbstractPythonIterationsControlVm(AbstractPythonVm):
             i += 1
         return _args
 
-    def run(self, cwd, args):
+    def run_vm(self, args, *splat, **kwargs):
         args = self._override_iterations_args(args)
-        return super(AbstractPythonIterationsControlVm, self).run(cwd, args)
+        return super().run_vm(args, *splat, **kwargs)
 
 
 class CPythonVm(AbstractPythonIterationsControlVm):
-    PYTHON_INTERPRETER = "python3"
-
-    def __init__(self, config_name, options=None, env=None, virtualenv=None, iterations=0):
-        super(CPythonVm, self).__init__(config_name, options=options, env=env, iterations=iterations)
+    def __init__(self, config_name, options=None, virtualenv=None, iterations=0):
+        super().__init__("cpython", config_name, options=options, iterations=iterations)
         self._virtualenv = virtualenv
+
+    def override_iterations(self, requested_iterations):
+        # CPython has no JIT right now, just a quickening interpreter
+        return min(requested_iterations, 3)
 
     @property
     def interpreter(self):
-        venv = self._virtualenv if self._virtualenv else mx.get_env(ENV_VIRTUAL_ENV)
-        if venv:
-            mx.log(f"CPythonVM virtualenv={venv}")
-            return os.path.join(venv, 'bin', CPythonVm.PYTHON_INTERPRETER)
-        home = mx.get_env(ENV_PYTHON3_HOME)
-        if home:
-            mx.log(f"CPythonVM python3 home={home}")
-            return os.path.join(home, CPythonVm.PYTHON_INTERPRETER)
-        return CPythonVm.PYTHON_INTERPRETER
+        candidates_pre = [
+            self._virtualenv,
+            mx.get_env("VIRTUAL_ENV"),
+            mx.get_env("PYTHON3_HOME"),
+        ]
+        candidates_suf = [
+            join("bin", "python3"),
+            join("bin", "python"),
+            "python3",
+            "python",
+            sys.executable,
+        ]
+        for p, s in itertools.product(candidates_pre, candidates_suf):
+            if os.path.exists(exe := os.path.join(p or "", s)):
+                mx.log(f"CPython VM {exe=}")
+                return exe
+        assert False, "sys.executable should really exist"
 
-    def name(self):
-        return VM_NAME_CPYTHON
+    def run_vm(self, args, *splat, **kwargs):
+        for idx, arg in enumerate(args):
+            if "--vm.Xmx" in arg:
+                mx.warn(f"Ignoring {arg}, cannot restrict memory on CPython.")
+                args = args[:idx] + args[idx + 1 :]
+                break
+        return super().run_vm(args, *splat, **kwargs)
 
 
 class PyPyVm(AbstractPythonIterationsControlVm):
-    PYPY_INTERPRETER = "pypy3"
-
-    def __init__(self, config_name, options=None, env=None, iterations=None):
-        super(PyPyVm, self).__init__(config_name, options=options, env=env, iterations=iterations)
+    def __init__(self, config_name, options=None, virtualenv=None, iterations=0):
+        super().__init__("pypy", config_name, options=options, iterations=iterations)
 
     def override_iterations(self, requested_iterations):
         # PyPy warms up much faster, half should be enough
@@ -262,91 +236,124 @@ class PyPyVm(AbstractPythonIterationsControlVm):
 
     @property
     def interpreter(self):
-        home = mx.get_env(ENV_PYPY_HOME)
-        if not home:
+        if home := mx.get_env("PYPY_HOME"):
+            exe = join(home, "bin", "pypy3")
+        else:
             try:
-                return subprocess.check_output("which %s" % PyPyVm.PYPY_INTERPRETER, shell=True).decode().strip()
+                exe = subprocess.check_output("which pypy3", shell=True).decode().strip()
             except OSError:
-                mx.abort("{} is not set!".format(ENV_PYPY_HOME))
-        return join(home, 'bin', PyPyVm.PYPY_INTERPRETER)
+                mx.abort("PYPY_HOME is not set!")
+        mx.log(f"PyPy {exe=}")
+        return exe
 
-    def name(self):
-        return VM_NAME_PYPY
+    def run_vm(self, args, *splat, env=None, **kwargs):
+        env = env or os.environ.copy()
+        xmxArg = re.compile("--vm.Xmx([0-9]+)([kKgGmM])")
+        pypyGcMax = "8GB"
+        for idx, arg in enumerate(args):
+            if m := xmxArg.search(arg):
+                args = args[:idx] + args[idx + 1 :]
+                pypyGcMax = f"{m.group(1)}{m.group(2).upper()}B"
+                mx.log(f"Setting PYPY_GC_MAX={pypyGcMax} via {arg}")
+                break
+        else:
+            mx.log(
+                f"Setting PYPY_GC_MAX={pypyGcMax}, use --vm.Xmx argument to override it"
+            )
+        env["PYPY_GC_MAX"] = pypyGcMax
+        return super().run_vm(args, *splat, env=env, **kwargs)
 
 
-class JythonVm(AbstractPythonIterationsControlVm, GuestVm):
-    JYTHON_INTERPRETER = "jython"
-
-    def __init__(self, config_name, options=None, env=None, iterations=None, host_vm=None):
-        AbstractPythonIterationsControlVm.__init__(self, config_name, options=options, env=env, iterations=iterations)
-        GuestVm.__init__(self, host_vm=host_vm)
-
-    def override_iterations(self, requested_iterations):
-        return 3
-
-    def hosting_registry(self):
-        return java_vm_registry
+class GraalPythonVm(AbstractPythonIterationsControlVm):
+    def __init__(self, config_name, options=None, virtualenv=None, iterations=None, extra_polyglot_args=None):
+        super().__init__(VM_NAME_GRAALPYTHON, config_name, options=options, iterations=iterations)
+        self._extra_polyglot_args = extra_polyglot_args or []
 
     @property
-    def interpreter(self):
-        try:
-            return subprocess.check_output("which %s" % JythonVm.JYTHON_INTERPRETER, shell=True).decode().strip()
-        except Exception as e: # pylint: disable=broad-except
-            mx.log_error(e)
-            mx.abort("`jython` is neither on the path, nor is {} set!\n".format(ENV_JYTHON_JAR))
-
-    def run(self, cwd, args):
-        jar = mx.get_env(ENV_JYTHON_JAR)
-        if jar:
-            host_vm = self.host_vm()
-
-            vm_args = mx.get_runtime_jvm_args([])
-            vm_args += ["-jar", jar]
-            for a in args[:]:
-                if a.startswith("-D") or a.startswith("-XX"):
-                    vm_args.insert(0, a)
-                    args.remove(a)
-            args = self._override_iterations_args(args)
-            cmd = vm_args + args
-
-            if not self._env:
-                self._env = dict()
-            with environ(self._env):
-                return host_vm.run(cwd, cmd)
+    @functools.lru_cache
+    def launcher_type(self):
+        if mx.dependency("GRAALPY_NATIVE_STANDALONE", fatalIfMissing=False):
+            return "native"
         else:
-            return AbstractPythonIterationsControlVm.run(self, cwd, args)
+            return "jvm"
 
-    def config_name(self):
-        return self._config_name
+    @property
+    @functools.lru_cache
+    def interpreter(self):
+        from mx_graalpython import graalpy_standalone
+        launcher = graalpy_standalone(self.launcher_type, build=False)
+        mx.log(f"Using {launcher} based on enabled/excluded GraalPy standalone build targets.")
+        return launcher
 
-    def with_host_vm(self, host_vm):
-        return self.__class__(config_name=self._config_name, options=self._options, env=self._env,
-                              iterations=self._iterations, host_vm=host_vm)
+    def post_process_command_line_args(self, args):
+        if os.environ.get('BYTECODE_DSL_INTERPRETER', '').lower() == 'true' and not self.is_bytecode_dsl_config():
+            print("Found environment variable BYTECODE_DSL_INTERPRETER, but the guest vm config is not Bytecode DSL config.")
+            print("Did you want to use, e.g., `mx benchmark ... -- --host-vm-config=default-bc-dsl`?")
+            sys.exit(1)
+        return self.get_extra_polyglot_args() + args
 
-    def name(self):
-        return VM_NAME_JYTHON
+    def is_bytecode_dsl_config(self):
+        return '--vm.Dpython.EnableBytecodeDSLInterpreter=true' in self.get_extra_polyglot_args()
+
+    def extract_vm_info(self, args=None):
+        out_version = subprocess.check_output([self.interpreter, '--version'], universal_newlines=True)
+        # The benchmark data goes back a ways, we modify the reported dims for
+        # continuity with the historical queries
+        graalvm_version_match = re.search(r"\(([^\)]+ ((?:\d+\.?)+)).*\)", out_version)
+        if not graalvm_version_match:
+            mx.log(f"Using {out_version} as platform version string input")
+            graalvm_version_match = [out_version, out_version, out_version]
+        dims = {
+            'guest-vm': self.name(),
+            'guest-vm-config': self.config_name(),
+            'host-vm': 'graalvm-' + ('ee' if 'Oracle GraalVM' in out_version else 'ce'),
+            'host-vm-config': self.launcher_type,
+            "platform.graalvm-edition": 'EE' if 'Oracle GraalVM' in out_version else 'CE',
+            "platform.graalvm-version": graalvm_version_match[2],
+            "platform.graalvm-version-string": graalvm_version_match[1],
+        }
+        if dims['guest-vm-config'].endswith('-3-compiler-threads'):
+            dims['guest-vm-config'] = dims['guest-vm-config'].replace('-3-compiler-threads', '')
+            dims['host-vm-config'] += '-3-compiler-threads'
+        self._dims = dims
+
+    def run(self, *args, **kwargs):
+        code, out, dims = super().run(*args, **kwargs)
+        dims.update(self._dims)
+
+        is_bytecode_dsl_config = self.is_bytecode_dsl_config()
+        if "using bytecode DSL interpreter:" not in out:
+            # Let's be lenient unless in CI
+            print(f"BENCHMARK WARNING: could not verify whether running on bytecode DSL or not")
+        elif code == 0 and not f"using bytecode DSL interpreter: {is_bytecode_dsl_config}" in out:
+            print(f"ERROR: host VM config does not match what the the harness reported. "
+                  f"Expected Bytecode DSL interpreter = {is_bytecode_dsl_config}. Harness output:\n{out}", file=sys.stderr)
+            return 1, out, dims
+        return code, out, dims
+
+    def get_extra_polyglot_args(self):
+        return ["--experimental-options", "-snapshot-startup", "--python.MaxNativeMemory=%s" % (2**34), *self._extra_polyglot_args]
 
 
-class GraalPythonVmBase(GuestVm):
-    def __init__(self, config_name=CONFIGURATION_DEFAULT, distributions=None, cp_suffix=None, cp_prefix=None,
-                 host_vm=None, extra_vm_args=None, extra_polyglot_args=None, env=None):
-        super(GraalPythonVmBase, self).__init__(host_vm=host_vm)
+class GraalPythonJavaDriverVm(GuestVm):
+    def __init__(self, config_name=CONFIGURATION_DEFAULT, cp_suffix=None, distributions=None, cp_prefix=None,
+                 host_vm=None, extra_vm_args=None, extra_polyglot_args=None):
+        super().__init__(host_vm=host_vm)
         self._config_name = config_name
-        self._distributions = distributions
+        self._distributions = distributions or ['GRAALPYTHON_BENCH']
         self._cp_suffix = cp_suffix
         self._cp_prefix = cp_prefix
         self._extra_vm_args = extra_vm_args
         self._extra_polyglot_args = extra_polyglot_args if isinstance(extra_polyglot_args, list) else []
-        self._env = env
+
+    def name(self):
+        return VM_NAME_GRAALPYTHON
+
+    def config_name(self):
+        return self._config_name
 
     def hosting_registry(self):
         return java_vm_registry
-
-    def launcher_class(self):
-        raise NotImplementedError()
-
-    def get_extra_polyglot_args(self):
-        raise NotImplementedError()
 
     def get_classpath(self):
         cp = []
@@ -356,116 +363,10 @@ class GraalPythonVmBase(GuestVm):
             cp.append(self._cp_suffix)
         return cp
 
-    @staticmethod
-    def _remove_vm_prefix(argument):
-        if argument.startswith('--vm.'):
-            return '-' + argument.strip('--vm.')
-        else:
-            return argument
-
-    @staticmethod
-    def _remove_vm_prefix_for_all(arguments):
-        return [GraalPythonVmBase._remove_vm_prefix(x) for x in arguments]
-
-    def run(self, cwd, args):
-        extra_polyglot_args = self.get_extra_polyglot_args()
-
-        host_vm = self.host_vm()
-
-        # Otherwise, we're running from the source tree
-        args = self._remove_vm_prefix_for_all(args)
-        truffle_options = [
-            # "-Dpolyglot.engine.CompilationExceptionsAreFatal=true"
-        ]
-
-        dists = ["GRAALPYTHON", "TRUFFLE_NFI", "GRAALPYTHON-LAUNCHER"]
-        # add configuration specified distributions
-        if self._distributions:
-            assert isinstance(self._distributions, list), "distributions must be either None or a list"
-            dists += self._distributions
-
-        if mx.suite("tools", fatalIfMissing=False):
-            dists.extend(('CHROMEINSPECTOR', 'TRUFFLE_PROFILER'))
-
-        extra_polyglot_args += [
-            "--python.CAPI=%s" % SUITE.extensions._get_capi_home(),
-        ]
-
-        vm_args = mx.get_runtime_jvm_args(dists, cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix)
-        if isinstance(self._extra_vm_args, list):
-            vm_args += self._remove_vm_prefix_for_all(self._extra_vm_args)
-        vm_args += [
-            "-Dorg.graalvm.language.python.home=%s" % mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output(),
-            self.launcher_class(),
-        ]
-        for a in args[:]:
-            if a.startswith("-D") or a.startswith("-XX"):
-                vm_args.insert(0, a)
-                args.remove(a)
-        cmd = truffle_options + vm_args + extra_polyglot_args + args
-
-        if not self._env:
-            self._env = dict()
-        with environ(self._env):
-            return self._validate_output(*host_vm.run(cwd, cmd))
-
-    def is_bytecode_dsl_config(self):
-        return bool(self._extra_vm_args and '--vm.Dpython.EnableBytecodeDSLInterpreter=true' in self._extra_vm_args)
-
-    def _validate_output(self, code, out, dims):
-        if "using bytecode DSL interpreter:" not in out:
-            print(f"BENCHMARK WARNING: could not verify whether running on bytecode DSL or not (expected for heap benchmarks)")
-            return code, out, dims
-        is_bytecode_dsl_config = self.is_bytecode_dsl_config()
-        if code == 0 and not f"using bytecode DSL interpreter: {is_bytecode_dsl_config}" in out:
-            print(f"ERROR: host VM config does not match what the the harness reported. "
-                  f"Expected Bytecode DSL interpreter = {is_bytecode_dsl_config}. Harness output:\n{out}", file=sys.stderr)
-            return 1, out, dims
-        return code, out, dims
-
-    def name(self):
-        return VM_NAME_GRAALPYTHON
-
-    def config_name(self):
-        return self._config_name
-
     def with_host_vm(self, host_vm):
         return self.__class__(config_name=self._config_name, distributions=self._distributions,
                               cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix, host_vm=host_vm,
-                              extra_vm_args=self._extra_vm_args, extra_polyglot_args=self._extra_polyglot_args,
-                              env=self._env)
-
-
-class GraalPythonVm(GraalPythonVmBase):
-    def __init__(self, config_name=CONFIGURATION_DEFAULT, distributions=None, cp_suffix=None, cp_prefix=None,
-                 host_vm=None, extra_vm_args=None, extra_polyglot_args=None, env=None):
-        super(GraalPythonVm, self).__init__(config_name=config_name, cp_suffix=cp_suffix, distributions=distributions,
-                                            cp_prefix=cp_prefix, host_vm=host_vm, extra_vm_args=extra_vm_args,
-                                            extra_polyglot_args=extra_polyglot_args, env=env)
-
-    def launcher_class(self):
-        # We need to do it lazily because 'mx_graalpython' is importing this module
-        from mx_graalpython import GRAALPYTHON_MAIN_CLASS
-        return GRAALPYTHON_MAIN_CLASS
-
-    def run(self, cwd, args):
-        if os.environ.get('BYTECODE_DSL_INTERPRETER', '').lower() == 'true' and not self.is_bytecode_dsl_config():
-            print("Found environment variable BYTECODE_DSL_INTERPRETER, but the guest vm config is not Bytecode DSL config.")
-            print("Did you want to use, e.g., `mx benchmark ... -- --host-vm-config=default-bc-dsl`?")
-            sys.exit(1)
-        return super().run(cwd, args)
-
-    def get_extra_polyglot_args(self):
-        return ["--experimental-options", "-snapshot-startup", "--python.MaxNativeMemory=%s" % (2**34)] + self._extra_polyglot_args
-
-
-class GraalPythonJavaDriverVm(GraalPythonVmBase):
-    def __init__(self, config_name=CONFIGURATION_DEFAULT, cp_suffix=None, distributions=None, cp_prefix=None,
-                 host_vm=None, extra_vm_args=None, extra_polyglot_args=None, env=None):
-        super(GraalPythonJavaDriverVm, self).__init__(config_name=config_name, cp_suffix=cp_suffix,
-                                                      distributions=['GRAALPYTHON_BENCH'] if not distributions else distributions,
-                                                      cp_prefix=cp_prefix, host_vm=host_vm, extra_vm_args=extra_vm_args,
-                                                      extra_polyglot_args=extra_polyglot_args, env=env)
+                              extra_vm_args=self._extra_vm_args, extra_polyglot_args=self._extra_polyglot_args)
 
     def launcher_class(self):
         return 'com.oracle.graal.python.benchmarks.JavaBenchmarkDriver'
@@ -473,24 +374,25 @@ class GraalPythonJavaDriverVm(GraalPythonVmBase):
     def run(self, cwd, args):
         extra_polyglot_args = self.get_extra_polyglot_args()
         host_vm = self.host_vm()
-        with environ(self._env or {}):
-            cp = self.get_classpath()
-            jhm = mx.dependency("mx:JMH_1_21")
-            cp_deps = [
-                mx.distribution('GRAALPYTHON_BENCH', fatalIfMissing=True),
-                jhm,
-                mx.dependency("sdk:LAUNCHER_COMMON")
-            ] + jhm.deps
-            cp += [x.classpath_repr() for x in cp_deps]
-            java_args = ['-cp', ':'.join(cp)] + [self.launcher_class()]
-            out = mx.TeeOutputCapture(mx.OutputCapture())
-            code = host_vm.run_java(java_args + extra_polyglot_args + args, cwd=cwd, out=out, err=out)
-            out = out.underlying.data
-            dims = host_vm.dimensions(cwd, args, code, out)
-            return code, out, dims
+        cp = self.get_classpath()
+        jhm = mx.dependency("mx:JMH_1_21")
+        cp_deps = mx.classpath_entries(filter(None, [
+            mx.distribution('GRAALPYTHON_BENCH', fatalIfMissing=True),
+            mx.distribution('TRUFFLE_RUNTIME', fatalIfMissing=True),
+            mx.distribution('TRUFFLE_ENTERPRISE', fatalIfMissing=False),
+            jhm,
+            mx.dependency("sdk:LAUNCHER_COMMON")
+        ] + jhm.deps))
+        cp += [x.classpath_repr() for x in cp_deps]
+        java_args = ['-cp', ':'.join(cp)] + [self.launcher_class()]
+        out = mx.TeeOutputCapture(mx.OutputCapture())
+        code = host_vm.run_java(java_args + extra_polyglot_args + args, cwd=cwd, out=out, err=out)
+        out = out.underlying.data
+        dims = host_vm.dimensions(cwd, args, code, out)
+        return code, out, dims
 
     def get_extra_polyglot_args(self):
-        return ["--experimental-options", "--python.MaxNativeMemory=%s" % (2**34)] + self._extra_polyglot_args
+        return ["--experimental-options", "--python.MaxNativeMemory=%s" % (2**34), *self._extra_polyglot_args]
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -504,7 +406,7 @@ python_java_embedding_vm_registry = mx_benchmark.VmRegistry(PYTHON_JAVA_EMBEDDIN
 
 class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     def __init__(self, name, benchmarks):
-        super(PythonBaseBenchmarkSuite, self).__init__()
+        super().__init__()
         self._checkup = 'GRAALPYTHON_BENCHMARKS_CHECKUP' in os.environ
         self._name = name
         self._benchmarks = benchmarks
@@ -701,13 +603,7 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         ]
 
     def runAndReturnStdOut(self, benchmarks, bmSuiteArgs):
-        ret_code, out, dims = super(PythonBaseBenchmarkSuite, self).runAndReturnStdOut(benchmarks, bmSuiteArgs)
-
-        # host-vm rewrite rules
-        if mx.suite('graal-enterprise', fatalIfMissing=False):
-            dims['host-vm'] = 'graalvm-ee'
-        else:
-            dims['host-vm'] = 'graalvm-ce'
+        ret_code, out, dims = super().runAndReturnStdOut(benchmarks, bmSuiteArgs)
 
         self.post_run_graph(benchmarks[0], dims['host-vm-config'], dims['guest-vm-config'])
 
@@ -720,7 +616,7 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         if '--checkup' in bm_suite_args:
             self._checkup = True
             bm_suite_args.remove('--checkup')
-        results = super(PythonBaseBenchmarkSuite, self).run(benchmarks, bm_suite_args)
+        results = super().run(benchmarks, bm_suite_args)
         self.addAverageAcrossLatestResults(results)
         return results
 
@@ -832,7 +728,7 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
 class PythonBenchmarkSuite(PythonBaseBenchmarkSuite):
     def __init__(self, name, bench_path, benchmarks, python_path=None):
-        super(PythonBenchmarkSuite, self).__init__(name, benchmarks)
+        super().__init__(name, benchmarks)
         self._python_path = python_path
         self._harness_path = HARNESS_PATH
         self._harness_path = join(SUITE.dir, self._harness_path)
@@ -900,7 +796,7 @@ class PythonBenchmarkSuite(PythonBaseBenchmarkSuite):
 
 class PythonJavaEmbeddingBenchmarkSuite(PythonBaseBenchmarkSuite):
     def __init__(self, name, bench_path, benchmarks):
-        super(PythonJavaEmbeddingBenchmarkSuite, self).__init__(name, benchmarks)
+        super().__init__(name, benchmarks)
         self._bench_path = bench_path
 
     def get_vm_registry(self):
@@ -1123,33 +1019,39 @@ def register_vms(suite, sandboxed_options):
     # Other Python VMs:
     python_vm_registry.add_vm(CPythonVm(config_name=CONFIGURATION_DEFAULT), suite)
     python_vm_registry.add_vm(PyPyVm(config_name=CONFIGURATION_DEFAULT), suite)
-    python_vm_registry.add_vm(JythonVm(config_name=CONFIGURATION_DEFAULT), suite)
+    # For continuity with old datapoints, provide CPython and PyPy with launcher config_name
+    python_vm_registry.add_vm(CPythonVm(config_name="launcher"), suite)
+    python_vm_registry.add_vm(PyPyVm(config_name="launcher"), suite)
 
-    def add_graalpy_vm(name, *extra_polyglot_args, extra_vm_args=None):
-        python_vm_registry.add_vm(GraalPythonVm(config_name=name, extra_vm_args=extra_vm_args, extra_polyglot_args=extra_polyglot_args), suite, 10)
+    graalpy_vms = []
 
-    def add_graalpy_bc_dsl_vm(name, *extra_polyglot_args):
-        assert 'bc-dsl' in name
-        add_graalpy_vm(name, extra_vm_args=['--vm.Dpython.EnableBytecodeDSLInterpreter=true'], *extra_polyglot_args)
+    def add_graalpy_vm(name, *extra_polyglot_args):
+        graalpy_vms.append((name, extra_polyglot_args))
+        python_vm_registry.add_vm(GraalPythonVm(config_name=name, extra_polyglot_args=extra_polyglot_args), suite, 10)
 
     # GraalPy VMs:
     add_graalpy_vm(CONFIGURATION_DEFAULT)
-    add_graalpy_bc_dsl_vm(CONFIGURATION_DEFAULT_BC_DSL)
     add_graalpy_vm(CONFIGURATION_INTERPRETER, '--experimental-options', '--engine.Compilation=false')
-    add_graalpy_bc_dsl_vm(CONFIGURATION_INTERPRETER_BC_DSL, '--experimental-options', '--engine.Compilation=false')
     add_graalpy_vm(CONFIGURATION_DEFAULT_MULTI, '--experimental-options', '-multi-context')
     add_graalpy_vm(CONFIGURATION_INTERPRETER_MULTI, '--experimental-options', '-multi-context', '--engine.Compilation=false')
     add_graalpy_vm(CONFIGURATION_DEFAULT_MULTI_TIER, '--experimental-options', '--engine.MultiTier=true')
     add_graalpy_vm(CONFIGURATION_SANDBOXED, *sandboxed_options)
     add_graalpy_vm(CONFIGURATION_NATIVE)
-    add_graalpy_bc_dsl_vm(CONFIGURATION_NATIVE_BC_DSL)
     add_graalpy_vm(CONFIGURATION_NATIVE_INTERPRETER, '--experimental-options', '--engine.Compilation=false')
-    add_graalpy_bc_dsl_vm(CONFIGURATION_NATIVE_INTERPRETER_BC_DSL, '--experimental-options', '--engine.Compilation=false')
     add_graalpy_vm(CONFIGURATION_SANDBOXED_MULTI, '--experimental-options', '-multi-context', *sandboxed_options)
     add_graalpy_vm(CONFIGURATION_NATIVE_MULTI, '--experimental-options', '-multi-context')
     add_graalpy_vm(CONFIGURATION_NATIVE_INTERPRETER_MULTI, '--experimental-options', '-multi-context', '--engine.Compilation=false')
     add_graalpy_vm(CONFIGURATION_NATIVE_MULTI_TIER, '--experimental-options', '--engine.MultiTier=true')
     add_graalpy_vm(CONFIGURATION_PANAMA, '--experimental-options', '--python.UsePanama=true')
+
+    # all of the graalpy vms, but with bc dsl
+    for name, extra_polyglot_args in graalpy_vms[:]:
+        add_graalpy_vm(f'{name}-bc-dsl', *['--vm.Dpython.EnableBytecodeDSLInterpreter=true', *extra_polyglot_args])
+
+    # all of the graalpy vms, but with different numbers of compiler threads
+    for name, extra_polyglot_args in graalpy_vms[:]:
+        add_graalpy_vm(f'{name}-1-compiler-threads', *['--engine.CompilerThreads=1', *extra_polyglot_args])
+        add_graalpy_vm(f'{name}-3-compiler-threads', *['--engine.CompilerThreads=3', *extra_polyglot_args])
 
     # java embedding driver
     python_java_embedding_vm_registry.add_vm(

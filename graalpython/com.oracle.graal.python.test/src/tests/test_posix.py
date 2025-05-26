@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -876,7 +876,6 @@ class SysconfTests(unittest.TestCase):
         self.assertIn('SC_CLK_TCK', os.sysconf_names)
 
     def test_sysconf(self):
-        self.assertGreaterEqual(os.sysconf('SC_CLK_TCK'), 0)
         with self.assertRaisesRegex(TypeError, 'strings or integers'):
             os.sysconf(object())
         with self.assertRaisesRegex(ValueError, 'unrecognized'):
@@ -888,6 +887,17 @@ class SysconfTests(unittest.TestCase):
             assert e.args == (errno.EINVAL, "Invalid argument")
         else:
             assert False
+
+        # constants taken from POSIX where defined
+        self.assertGreaterEqual(os.sysconf('SC_ARG_MAX'), 4096)
+        self.assertGreaterEqual(os.sysconf('SC_CHILD_MAX'), 25)
+        self.assertGreaterEqual(os.sysconf('SC_LOGIN_NAME_MAX'), 9)
+        self.assertGreaterEqual(os.sysconf('SC_CLK_TCK'), 0)
+        self.assertGreaterEqual(os.sysconf('SC_OPEN_MAX'), 20)
+        self.assertGreaterEqual(os.sysconf('SC_PAGESIZE'), 1)
+        os.sysconf('SC_SEM_NSEMS_MAX') # returns -1 on my linux box, just check it's there
+        self.assertGreaterEqual(os.sysconf('SC_PHYS_PAGES'), 1)
+        self.assertGreaterEqual(os.sysconf('SC_NPROCESSORS_CONF'), 1)
 
 
 if __name__ == '__main__':

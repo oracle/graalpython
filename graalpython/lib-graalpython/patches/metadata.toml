@@ -48,9 +48,6 @@ version = '== 2.2.1'
 patch = 'cloudpickle-2.2.1.patch'
 license = 'BSD-3-Clause'
 
-[[cppy.rules]]
-version = '==1.2.1'
-
 [[cramjam.rules]]
 version = '== 2.7.0'
 patch = 'cramjam-2.7.0.patch'
@@ -155,6 +152,14 @@ version = '>= 1.64.0'
 patch = 'grpcio-1.66.1.patch'
 license = 'Apache-2.0'
 
+[[grpcio.rules]]
+# Force re-cythonize + other fixes
+# The rc version won't get matched by the version range above
+version = '== 1.72.0rc1'
+install-priority = 0
+patch = 'grpcio-1.66.1.patch'
+license = 'Apache-2.0'
+
 [[h2o.rules]]
 patch = 'h2o.patch'
 license = 'Apache-2.0'
@@ -236,13 +241,38 @@ patch = 'llvmlite.patch'
 license = 'BSD-2-Clause'
 
 [[lxml.rules]]
-version = '== 5.3.0'
+version = '>= 5.3.2, <= 5.4.0'
+patch = 'lxml-5.4.0.patch'
+license = 'BSD-3-Clause'
+
+[[lxml.rules]]
+version = '>= 5.3.0, < 5.3.2'
 patch = 'lxml-5.3.0.patch'
 license = 'BSD-3-Clause'
 
 [[lxml.rules]]
-version = '== 4.9.1'
-patch = 'lxml-4.9.1.patch'
+version = '== 5.2.*'
+patch = 'lxml-5.2.patch'
+license = 'BSD-3-Clause'
+
+[[lxml.rules]]
+version = '== 5.1.1'
+patch = 'lxml-5.1.1.patch'
+license = 'BSD-3-Clause'
+
+[[lxml.rules]]
+version = '== 5.1.0'
+patch = 'lxml-5.1.0.patch'
+license = 'BSD-3-Clause'
+
+[[lxml.rules]]
+version = '== 5.0.*'
+patch = 'lxml-5.0.patch'
+license = 'BSD-3-Clause'
+
+[[lxml.rules]]
+version = '>= 4.9, < 5'
+patch = 'lxml-4.9.patch'
 license = 'BSD-3-Clause'
 
 # Patch already upstreamed, keeping it around for older versions
@@ -259,10 +289,6 @@ version = '<= 0.16.0'
 install-priority = 0
 patch = 'meson-python.patch'
 license = 'MIT'
-
-[[ml_dtypes.rules]]
-# 0.4.0 requires numpy==2.0rc1
-version = "< 0.4.0"
 
 [[mlx.rules]]
 patch = 'mlx.patch'
@@ -300,13 +326,6 @@ version = '>= 2.0.0rc1, < 2.3'
 patch = 'numpy-2.0.0.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
-
-[[numpy.rules]]
-version = '== 2.2.3'
-patch = 'numpy-2.2.3.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-install-priority = 0
 
 [[numpy.rules]]
 version = '== 1.26.4'
@@ -402,7 +421,6 @@ version = '== 3.0.0'
 patch = 'pendulum-3.0.0.patch'
 license = 'MIT'
 
-
 [[pip.rules]]
 version = '== 23.2.1'
 patch = 'pip-23.2.1.patch'
@@ -415,10 +433,19 @@ patch = 'prompt_toolkit.patch'
 license = 'BSD-3-Clause'
 
 [[protobuf.rules]]
+patch = 'protobuf.patch'
+license = 'BSD-3-Clause'
+# There are 'none-any' wheels on pypi, this is only needed on sdists
+dist-type = 'sdist'
+install-priority = 0
+
+[[protobuf.rules]]
+# msimacek: This version doesn't exist, but the patch file is referenced from the tensorflow patch which I'm afraid to touch
 version = '== 3.21.9'
-# Also referenced outside of pip from tensorflow patches
 patch = 'protobuf-3.21.9.patch'
 license = 'BSD-3-Clause'
+dist-type = 'sdist'
+install-priority = 0
 
 [[psycopg2.rules]]
 version = '<= 2.9.9'
@@ -482,32 +509,33 @@ version = '>= 2.10.1, < 2.11.0'
 patch = 'pybind11-2.10.1.patch'
 license = 'BSD-3-Clause'
 
-[[pydantic.rules]]
-# Pin to match our pinned pydantic-core
-version = '== 2.10.3'
-
 [[pydantic-core.rules]]
 version = '== 2.10.1'
+install-priority = 0
 patch = 'pydantic-core-2.10.1.patch'
 license = 'MIT'
 
 [[pydantic-core.rules]]
 version = '== 2.23.4'
+install-priority = 0
 patch = 'pydantic-core-2.23.4.patch'
 license = 'MIT'
 
 [[pydantic-core.rules]]
 version = '== 2.27.1'
+install-priority = 0
 patch = 'pydantic-core-2.27.1.patch'
 license = 'MIT'
 
 [[pydantic-core.rules]]
 version = '== 2.27.2'
+install-priority = 0
 patch = 'pydantic-core-2.27.1.patch'
 license = 'MIT'
 
 [[pydantic-core.rules]]
 version = '== 2.26.0'
+install-priority = 0
 patch = 'pydantic-core-2.26.0.patch'
 license = 'MIT'
 
@@ -518,6 +546,11 @@ license = 'Apache-2.0'
 [[pygame.rules]]
 version = '== 2.*'
 patch = 'pygame-2.patch'
+license = 'LGPL-2.0-or-later'
+
+[[pygobject.rules]]
+version = '== 3.52.3'
+patch = 'pygobject-3.52.3.patch'
 license = 'LGPL-2.0-or-later'
 
 [[pymongo.rules]]
@@ -539,25 +572,17 @@ patch = "pymupdf.patch"
 # of the AGPL'd codebase
 license = 'UPL'
 
-[[pyOpenSSL.rules]]
-# Pin this version to avoid pulling newer cryptography than we have patch for
-version = "== 23.2.0"
-
-[[pyparsing.rules]]
-version = '== 3.0.8'
-
 [[pyperf.rules]]
 version = '== 2.3.0'
+install-priority = 0
 patch = 'pyperf-2.3.0.patch'
 license = 'MIT'
 
 [[pyperf.rules]]
 version = '== 2.3.1'
+install-priority = 0
 patch = 'pyperf-2.3.1.patch'
 license = 'MIT'
-
-[[pyperf.rules]]
-version = '== 2.5.0'
 
 [[pyperformance.rules]]
 version = '== 1.0.5'
@@ -591,8 +616,8 @@ patch = 'pythran-0.16.patch'
 license = 'BSD-3-Clause'
 
 [[pyzmq.rules]]
-# 26+ needs Cython 3
 version = '< 26'
+install-priority = 0
 # The patch just makes it re-cythonize to pick up our cython changes
 patch = 'pyzmq.patch'
 license = 'BSD-3-Clause'
@@ -634,10 +659,6 @@ license = 'Apache-2.0'
 version = '2.9.1'
 url = 'https://github.com/ray-project/ray/archive/refs/tags/ray-2.9.1.tar.gz'
 
-[[readme-renderer.rules]]
-# Newer version depends nh3 which is built with maturin, which is currently broken
-version = '< 42'
-
 [[rpds_py.rules]]
 # Patch not needed anymore in recent version since pyo3 changes have been upstreamed
 install-priority = 0
@@ -676,10 +697,8 @@ license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
 [[scipy.rules]]
-version = '== 1.13.1'
-
-[[scipy.rules]]
 version = '== 1.10.1'
+install-priority = 0
 patch = 'scipy-1.10.1.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
@@ -688,10 +707,6 @@ dist-type = 'sdist'
 version = '>= 1.2.2'
 patch = 'setproctitle-1.2.2.patch'
 license = 'BSD-3-Clause'
-
-[[statsmodels.rules]]
-# Pin older versions for now, the new ones require numpy-2rc1 and cython 3
-version = '<= 0.14.1'
 
 [[tensorflow.rules]]
 version = '== 2.15.0'
@@ -731,21 +746,19 @@ url = 'https://github.com/tensorflow/io/archive/refs/tags/v0.34.0.tar.gz'
 
 [[tiktoken.rules]]
 version = '== 0.7.0'
+install-priority = 0
 patch = 'tiktoken-0.7.0.patch'
 license = 'MIT'
 
 [[tokenizers.rules]]
-version = '>= 0.19'
-patch = 'tokenizers-0.19-plus.patch'
-license = 'Apache-2.0'
-
-[[tokenizers.rules]]
 version = '== 0.13.3'
+install-priority = 0
 patch = 'tokenizers-0.13.3.patch'
 license = 'Apache-2.0'
 
 [[tokenizers.rules]]
 version = '== 0.15.0'
+install-priority = 0
 patch = 'tokenizers-0.15.0.patch'
 license = 'Apache-2.0'
 
@@ -767,6 +780,12 @@ patch = 'torch-2.4.1.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
+[[torch.rules]]
+version = '== 2.7.0'
+patch = 'torch-2.7.0.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
 [[torch.add-sources]]
 version = '1.13.1'
 url = 'https://github.com/pytorch/pytorch/releases/download/v1.13.1/pytorch-v1.13.1.tar.gz'
@@ -779,9 +798,22 @@ url = 'https://github.com/pytorch/pytorch/releases/download/v2.2.1/pytorch-v2.2.
 version = '2.4.1'
 url = 'https://github.com/pytorch/pytorch/releases/download/v2.4.1/pytorch-v2.4.1.tar.gz'
 
+[[torch.add-sources]]
+version = '2.7.0'
+url = 'https://github.com/pytorch/pytorch/releases/download/v2.7.0/pytorch-v2.7.0.tar.gz'
+
+[[torchvision.rules]]
+version = '== 0.22.0'
+patch = 'torchvision-0.22.0.patch'
+license = 'BSD-3-Clause'
+
+[[torchvision.add-sources]]
+version = '0.19.1'
+url = 'https://github.com/pytorch/vision/archive/refs/tags/v0.22.0.tar.gz'
+
 [[torchvision.rules]]
 version = '== 0.19.1'
-patch = 'torchvision-1.19.1.patch'
+patch = 'torchvision-0.19.1.patch'
 license = 'BSD-3-Clause'
 
 [[torchvision.add-sources]]
@@ -790,19 +822,12 @@ url = 'https://github.com/pytorch/vision/archive/refs/tags/v0.19.1.tar.gz'
 
 [[torchvision.rules]]
 version = '== 0.17.1'
-patch = 'torchvision-1.17.1.patch'
+patch = 'torchvision-0.17.1.patch'
 license = 'BSD-3-Clause'
 
 [[torchvision.add-sources]]
 version = '0.17.1'
 url = 'https://github.com/pytorch/vision/archive/refs/tags/v0.17.1.tar.gz'
-
-[[tox.rules]]
-version = '== 3.*'
-
-[[transformers.rules]]
-# transformers tends to depend on a specific version of tokenizers. Pin it to avoid pulling unpatched tokenizers
-version = '== 4.33.3'
 
 [[trio.rules]]
 patch = 'trio.patch'
@@ -889,6 +914,13 @@ patch = 'wheel-pre-0.35.patch'
 license = 'MIT'
 subdir = 'src'
 install-priority = 0
+
+[[xmlschema.rules]]
+version = '>= 4.0.0, <= 4.0.1'
+# Submitted upstream, optimistically assuming it'll get merged before the next release
+install-priority = 0
+patch = 'xmlschema.patch'
+license = 'MIT'
 
 [[zstandard.rules]]
 patch = 'zstandard.patch'
