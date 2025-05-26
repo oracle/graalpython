@@ -3117,7 +3117,6 @@ PyType_GetFlags(PyTypeObject *type)
 }
 
 
-#if 0 // GraalPy change
 int
 PyType_SUPPORTS_WEAKREFS(PyTypeObject *type)
 {
@@ -3161,6 +3160,7 @@ _PyType_CalculateMetaclass(PyTypeObject *metatype, PyObject *bases)
     return winner;
 }
 
+#if 0 // GraalPy change
 
 // Forward declaration
 static PyObject *
@@ -4279,7 +4279,7 @@ _PyType_FromMetaclass_impl(
         goto finally;
     }
 
-#if 0 // GraalPy change [GR-61997]
+#if 0 // GraalPy change
     /* If this is an immutable type, check if all bases are also immutable,
      * and (for now) fire a deprecation warning if not.
      * (This isn't necessary for static types: those can't have heap bases,
@@ -4305,6 +4305,7 @@ _PyType_FromMetaclass_impl(
             }
         }
     }
+#endif // GraalPy change
 
     /* Calculate the metaclass */
 
@@ -4338,9 +4339,6 @@ _PyType_FromMetaclass_impl(
             goto finally;
         }
     }
-#else // GraalPy change
-        metaclass = &PyType_Type;
-#endif // GraalPy change
 
     /* Calculate best base, and check that all bases are type objects */
     PyTypeObject *base = best_base(bases);  // borrowed ref

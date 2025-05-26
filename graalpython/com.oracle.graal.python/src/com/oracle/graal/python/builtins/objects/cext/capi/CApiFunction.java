@@ -166,6 +166,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor._PyFrameEvalFunction;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor._PyInterpreterFrame;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.destructor;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.freefunc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.func_intvoidptr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.func_objcharsizevoidptr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.func_objint;
@@ -760,6 +761,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyEval_ReleaseThread", ret = Void, args = {PyThreadState}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_SetProfile", ret = Void, args = {PY_TRACEFUNC, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_SetTrace", ret = Void, args = {PY_TRACEFUNC, PyObject}, call = NotImplemented)
+    @CApiBuiltin(name = "PyUnstable_Eval_RequestCodeExtraIndex", ret = Py_ssize_t, args = {freefunc}, call = NotImplemented)
     @CApiBuiltin(name = "PyExceptionClass_Name", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyFile_FromFd", ret = PyObject, args = {Int, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString,
                     ConstCharPtrAsTruffleString, Int}, call = NotImplemented)
@@ -916,7 +918,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyTruffleFrame_New", ret = PyFrameObjectTransfer, args = {PyThreadState, PyCodeObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyTruffle_SeqIter_New", ret = PyObjectTransfer, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyType_ClearCache", ret = UNSIGNED_INT, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "PyType_SUPPORTS_WEAKREFS", ret = Int, args = {PyTypeObject}, call = NotImplemented)
+    @CApiBuiltin(name = "PyType_SUPPORTS_WEAKREFS", ret = Int, args = {PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyUnicodeDecodeError_GetEncoding", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicodeDecodeError_GetEnd", ret = Int, args = {PyObject, PY_SSIZE_T_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicodeDecodeError_GetObject", ret = PyObject, args = {PyObject}, call = NotImplemented)
@@ -1162,7 +1164,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyTraceMalloc_GetTraceback", ret = PyObject, args = {UNSIGNED_INT, UINTPTR_T}, call = NotImplemented)
     @CApiBuiltin(name = "_PyTuple_DebugMallocStats", ret = Void, args = {FILE_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_PyTuple_Resize", ret = Int, args = {PyObjectPtr, Py_ssize_t}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyType_CalculateMetaclass", ret = PyTypeObject, args = {PyTypeObject, PyObject}, call = NotImplemented)
+    @CApiBuiltin(name = "_PyType_CalculateMetaclass", ret = PyTypeObject, args = {PyTypeObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyType_GetDocFromInternalDoc", ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "_PyType_GetTextSignatureFromInternalDoc", ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "_PyType_LookupId", ret = PyObject, args = {PyTypeObject, PY_IDENTIFIER}, call = NotImplemented)

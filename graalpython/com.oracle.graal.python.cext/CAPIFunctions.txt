@@ -962,6 +962,7 @@ _PyEval_SetSwitchInterval;void;unsigned long
 _PyEval_SetTrace;int;PyThreadState*|Py_tracefunc|PyObject*
 _PyEval_SliceIndex;int;PyObject*|Py_ssize_t*
 _PyEval_SliceIndexNotNone;int;PyObject*|Py_ssize_t*
+PyUnstable_Eval_RequestCodeExtraIndex;Py_ssize_t;freefunc
 _PyFrame_IsEntryFrame;int;PyFrameObject*
 _PyFunction_Vectorcall;PyObject*;PyObject*|PyObject*const*|size_t|PyObject*
 _PyGILState_GetInterpreterStateUnsafe;PyInterpreterState*;void
