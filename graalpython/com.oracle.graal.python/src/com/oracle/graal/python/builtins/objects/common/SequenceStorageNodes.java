@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemDynamicNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -3932,6 +3933,10 @@ public abstract class SequenceStorageNodes {
     @GenerateCached(false)
     public abstract static class ToArrayNode extends Node {
         public abstract Object[] execute(Node inliningTarget, SequenceStorage s);
+
+        public static Object[] executeUncached(SequenceStorage s) {
+            return ToArrayNodeGen.getUncached().execute(null, s);
+        }
 
         @Specialization
         static Object[] doObjectSequenceStorage(Node inliningTarget, ObjectSequenceStorage s,
