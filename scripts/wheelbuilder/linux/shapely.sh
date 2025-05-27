@@ -38,5 +38,5 @@
 # SOFTWARE.
 
 if [ -n "$GITHUB_RUN_ID" ]; then
-    dnf install -y libgeos-devel
+    dnf install -y geos-devel
 fi
