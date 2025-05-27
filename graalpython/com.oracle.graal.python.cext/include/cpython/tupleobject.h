@@ -39,7 +39,12 @@ PyAPI_FUNC(PyObject **) PyTruffleTuple_GetItems(PyObject *op);
 
 // GraalPy change: Export PyTuple_SET_ITEM as regular API function to use in PyO3 and others
 PyAPI_FUNC(void) PyTuple_SET_ITEM(PyObject*, Py_ssize_t, PyObject*);
+
+/* Inline function to be used in the PyTuple_SET_ITEM macro. */
+static inline void graalpy_tuple_set_item(PyObject *op, Py_ssize_t index, PyObject *value) {
+    PyTruffleTuple_GetItems(op)[index] = value;
+}
 #define PyTuple_SET_ITEM(op, index, value) \
-    PyTuple_SET_ITEM(_PyObject_CAST(op), (index), _PyObject_CAST(value))
+    graalpy_tuple_set_item(_PyObject_CAST(op), (index), _PyObject_CAST(value))
 
 PyAPI_FUNC(void) _PyTuple_DebugMallocStats(FILE *out);

@@ -1401,5 +1401,5 @@ _PyTuple_GET_ITEM(PyObject* a, Py_ssize_t b) {
 #undef PyTuple_SET_ITEM
 // Export PyTuple_SET_ITEM as regular API function to use in PyO3 and others
 void PyTuple_SET_ITEM(PyObject* op, Py_ssize_t index, PyObject* value) {
-    PyTruffleTuple_GetItems(op)[index] = value;
+    graalpy_tuple_set_item(op, index, value);
 }

@@ -627,7 +627,7 @@ class NumPySuite(PySuite):
             mx.run(["git", "config", "user.email", "you@example.com"], cwd=npdir)
             mx.run(["git", "config", "user.name", "YourName"], cwd=npdir)
             mx.run(["git", "commit", "--allow-empty", "-m", "init"], cwd=npdir)
-            mx.run(["git", "branch", self.VERSION], cwd=npdir)
+            mx.run(["git", "branch", f"v{self.VERSION}"], cwd=npdir)
             mx.run(["git", "branch", "main"], cwd=npdir, nonZeroIsFatal=False)
             mx.run(["git", "branch", "master"], cwd=npdir, nonZeroIsFatal=False)
 
