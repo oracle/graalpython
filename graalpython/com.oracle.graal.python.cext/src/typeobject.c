@@ -10206,7 +10206,6 @@ recurse_down_subclasses(PyTypeObject *type, PyObject *attr_name,
     }
     return 0;
 }
-#endif // GraalPy change
 
 static int
 expect_manually_inherited(PyTypeObject *type, void **slot)
@@ -10285,6 +10284,7 @@ expect_manually_inherited(PyTypeObject *type, void **slot)
     /* It must be inherited (see type_ready_inherit()).. */
     return 0;
 }
+#endif // GraalPy change
 
 /* This function is called by PyType_Ready() to populate the type's
    dictionary with method descriptors for function slots.  For each
