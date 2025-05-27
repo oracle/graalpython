@@ -107,7 +107,6 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.TypeNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
@@ -117,6 +116,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsAr
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.TypeNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
@@ -1206,6 +1206,7 @@ public final class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static PList dir(VirtualFrame frame, Object klass,
+                        @Bind("this") Node inliningTarget,
                         @Cached ConstructListNode constructListNode,
                         @Cached("createFor(this)") IndirectCallData indirectCallData) {
             PSet names = PFactory.createSet(PythonLanguage.get(inliningTarget));
@@ -1215,7 +1216,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             } finally {
                 IndirectCallContext.exit(frame, indirectCallData, state);
             }
-            return return constructListNode.execute(frame, names);
+            return constructListNode.execute(frame, names);
         }
 
         @TruffleBoundary
