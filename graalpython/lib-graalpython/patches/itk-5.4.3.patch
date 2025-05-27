@@ -9,7 +9,8 @@ index 63d85c8718..0f94646710 100644
 -        set_target_properties(${lib} PROPERTIES SUFFIX .so)
 +	find_package(Python)
 +	if(PYTHON_FOUND)
-+	  set_target_properties(${lib} PROPERTIES SUFFIX ${Python_SOABI}.so)
++	# Graalpy Patch  
++	set_target_properties(${lib} PROPERTIES SUFFIX ${Python_SOABI}.so)
 +	else()
 +	  set_target_properties(${lib} PROPERTIES SUFFIX .so)
 +	endif()
