@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PYOBJECT_HASH_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
@@ -56,7 +55,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -74,7 +72,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.ReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.WriteMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.GetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -86,7 +83,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
@@ -265,9 +261,8 @@ public final class PythonCextTypeBuiltins {
         static Object classOrStatic(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
-                        @Cached(inline = false) WriteAttributeToPythonObjectNode writeAttrNode,
-                        @Exclusive @Cached CreateFunctionNode createFunctionNode) {
-            PythonAbstractObject func = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, type, flags);
+                        @Cached(inline = false) WriteAttributeToPythonObjectNode writeAttrNode) {
+            PythonAbstractObject func = PExternalFunctionWrapper.createWrapperFunction(name, methObj, type, flags, wrapper, language);
             writeHiddenAttrNode.execute(inliningTarget, func, METHOD_DEF_PTR, methodDefPtr);
             PythonObject function;
             if ((flags & METH_CLASS) != 0) {
@@ -282,10 +277,10 @@ public final class PythonCextTypeBuiltins {
 
         @Specialization(guards = "!isClassOrStaticMethod(flags)")
         static Object doNativeCallable(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
+                        @Bind PythonLanguage language,
                         @Cached PyObjectSetAttrNode setattr,
-                        @Exclusive @Cached HiddenAttr.WriteNode writeNode,
-                        @Exclusive @Cached CreateFunctionNode createFunctionNode) {
-            PythonAbstractObject func = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, type, flags);
+                        @Exclusive @Cached HiddenAttr.WriteNode writeNode) {
+            PythonAbstractObject func = PExternalFunctionWrapper.createWrapperFunction(name, methObj, type, flags, wrapper, language);
             setattr.execute(inliningTarget, func, T___NAME__, name);
             setattr.execute(inliningTarget, func, T___DOC__, doc);
             writeNode.execute(inliningTarget, func, METHOD_DEF_PTR, methodDefPtr);
@@ -307,37 +302,13 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    /**
-     * Signature: {@code (primary, tpDict, name", cfunc, flags, wrapper, doc)}
-     */
-    @CApiBuiltin(ret = Int, args = {PyTypeObject, PyObject, ConstCharPtrAsTruffleString, Pointer, Int, Int, ConstCharPtrAsTruffleString}, call = Ignored)
-    abstract static class PyTruffleType_AddSlot extends CApi7BuiltinNode {
+    @CApiBuiltin(ret = Int, args = {PyTypeObject}, call = Ignored)
+    abstract static class PyTruffleType_AddOperators extends CApiUnaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
-        static int addSlot(Object clazz, PDict tpDict, TruffleString memberName, Object cfunc, int flags, int wrapper, Object memberDoc) {
-            // TruffleType_AddSlot is called from type_ready_graalpy_slot_conv, which is called
-            // before type_ready_inherit, so the only slots that we should see here are native
-            // slots declared on the PyTypeObject. However, one could maybe "steal" a manged slot
-            // and stash it into a native type, so we play it safe a check both eventualities in
-            // CreateFunctionNode
-            if (memberName.equalsUncached(T___HASH__, PythonUtils.TS_ENCODING)) {
-                if (CApiContext.isIdenticalToSymbol(cfunc, FUN_PYOBJECT_HASH_NOT_IMPLEMENTED)) {
-                    PyDictSetDefault.executeUncached(tpDict, T___HASH__, PNone.NONE);
-                    return 0;
-                }
-            }
-            if (HashingStorageGetItem.hasKeyUncached(tpDict.getDictStorage(), memberName)) {
-                // Following typeobject.c:add_operators we skip a slot if we already create a
-                // function for it from another slot that was earlier or if the dict already
-                // contained the key
-                return 0;
-            }
-            PythonObject wrapperDescriptor = CreateFunctionNode.executeUncached(memberName, cfunc, wrapper, clazz, flags);
-            WriteAttributeToPythonObjectNode.getUncached().execute(wrapperDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
-
-            // add wrapper descriptor to tp_dict
-            PyDictSetDefault.executeUncached(tpDict, memberName, wrapperDescriptor);
+        static int addOperators(PythonAbstractNativeObject type) {
+            TpSlots.addOperatorsToNative(type);
             return 0;
         }
     }

@@ -49,9 +49,6 @@ public abstract class SpecialMethodNames {
     public static final String J___NEW__ = "__new__";
     public static final TruffleString T___NEW__ = tsLiteral(J___NEW__);
 
-    public static final String J___ALLOC__ = "__alloc__";
-    public static final TruffleString T___ALLOC__ = tsLiteral(J___ALLOC__);
-
     public static final String J___INIT__ = "__init__";
     public static final TruffleString T___INIT__ = tsLiteral(J___INIT__);
 
@@ -63,9 +60,6 @@ public abstract class SpecialMethodNames {
 
     public static final String J___DEEPCOPY__ = "__deepcopy__";
     public static final TruffleString T___DEEPCOPY__ = tsLiteral(J___DEEPCOPY__);
-
-    public static final String J___DEALLOC__ = "__dealloc__";
-    public static final TruffleString T___DEALLOC__ = tsLiteral(J___DEALLOC__);
 
     public static final String J___DEL__ = "__del__";
     public static final TruffleString T___DEL__ = tsLiteral(J___DEL__);
@@ -84,9 +78,6 @@ public abstract class SpecialMethodNames {
 
     public static final String J___FORMAT__ = "__format__";
     public static final TruffleString T___FORMAT__ = tsLiteral(J___FORMAT__);
-
-    public static final String J___FREE__ = "__free__";
-    public static final TruffleString T___FREE__ = tsLiteral(J___FREE__);
 
     public static final String J___LT__ = "__lt__";
     public static final TruffleString T___LT__ = tsLiteral(J___LT__);

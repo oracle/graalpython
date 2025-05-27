@@ -16,8 +16,11 @@ patch = 'bcrypt-4.0.1.patch'
 license = 'Apache-2.0'
 
 [[blosc2.rules]]
+version = '< 3'
 patch = 'blosc2.patch'
-license = 'Apache-2.0'
+# Not needed in newer versions
+install-priority = 0
+license = 'BSD-3-Clause'
 
 [[catboost.rules]]
 version = '== 1.2.3'
@@ -51,6 +54,8 @@ license = 'BSD-3-Clause'
 [[cramjam.rules]]
 version = '== 2.7.0'
 patch = 'cramjam-2.7.0.patch'
+# Versions since 2.10 don't need a patch
+install-priority = 0
 license = 'MIT'
 
 [[cryptography.rules]]
@@ -227,6 +232,8 @@ dist-type = 'sdist'
 [[libcst.rules]]
 version = '== 1.0.1'
 patch = 'libcst-1.0.1.patch'
+# Not needed in newer versions
+install-priority = 0
 license = 'MIT'
 
 [[lightfm.rules]]
@@ -305,11 +312,6 @@ url = 'https://github.com/ml-explore/mlx/archive/refs/tags/v0.16.2.tar.gz'
 [[mlx.add-sources]]
 version = '0.16.1'
 url = 'https://github.com/ml-explore/mlx/archive/refs/tags/v0.16.1.tar.gz'
-
-[[msgpack.rules]]
-version = '== 1.0.8'
-patch = 'msgpack-1.0.8.patch'
-license = 'Apache-2.0'
 
 [[nanobind.rules]]
 patch = 'nanobind.patch'
@@ -419,6 +421,8 @@ dist-type = 'sdist'
 [[pendulum.rules]]
 version = '== 3.0.0'
 patch = 'pendulum-3.0.0.patch'
+# Not needed since 3.1
+install-priority = 0
 license = 'MIT'
 
 [[pip.rules]]
@@ -540,7 +544,10 @@ patch = 'pydantic-core-2.26.0.patch'
 license = 'MIT'
 
 [[PyDriller.rules]]
+version = '< 2.4'
 patch = 'PyDriller.patch'
+# Upstreamed
+install-priority = 0
 license = 'Apache-2.0'
 
 [[pygame.rules]]
@@ -556,11 +563,14 @@ license = 'LGPL-2.0-or-later'
 [[pymongo.rules]]
 version = "< 4.8.0"
 patch = 'pymongo.patch'
+install-priority = 0
 license = 'Apache-2.0'
 
 [[pymongo.rules]]
-version = ">= 4.8.0"
+version = ">= 4.8.0, <= 4.13.0"
 patch = 'pymongo-4.8.0.patch'
+# Upstreamed
+install-priority = 0
 license = 'Apache-2.0'
 
 [[PyMuPDF.rules]]
@@ -808,7 +818,7 @@ patch = 'torchvision-0.22.0.patch'
 license = 'BSD-3-Clause'
 
 [[torchvision.add-sources]]
-version = '0.19.1'
+version = '0.22.0'
 url = 'https://github.com/pytorch/vision/archive/refs/tags/v0.22.0.tar.gz'
 
 [[torchvision.rules]]
@@ -834,6 +844,7 @@ patch = 'trio.patch'
 license = 'Apache-2.0 OR MIT'
 
 [[typing_extensions.rules]]
+# Note: this won't be needed once we update to 3.13
 patch = 'typing_extensions.patch'
 license = 'PSF-2.0'
 subdir = 'src'
@@ -855,6 +866,8 @@ license = 'MIT'
 [[watchfiles.rules]]
 version = '== 0.21.0'
 patch = 'watchfiles-0.21.0.patch'
+# Not needed in newer versions
+install-priority = 0
 license = 'MIT'
 
 [[wheel.rules]]
