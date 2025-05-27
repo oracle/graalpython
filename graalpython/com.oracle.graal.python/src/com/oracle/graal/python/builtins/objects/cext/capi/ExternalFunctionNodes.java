@@ -61,7 +61,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
@@ -112,8 +111,6 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
-import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -446,14 +443,14 @@ public abstract class ExternalFunctionNodes {
         }
 
         @TruffleBoundary
-        static RootCallTarget getOrCreateCallTarget(PExternalFunctionWrapper sig, PythonLanguage language, TruffleString name, boolean doArgAndResultConversion, boolean isStatic) {
+        static RootCallTarget getOrCreateCallTarget(PExternalFunctionWrapper sig, PythonLanguage language, TruffleString name, boolean isStatic) {
             Class<? extends PRootNode> nodeKlass;
             Function<PythonLanguage, RootNode> rootNodeFunction;
             switch (sig) {
                 case ALLOC:
                 case SSIZE_ARG:
                     nodeKlass = AllocFuncRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new AllocFuncRootNode(l, name, sig) : l -> new AllocFuncRootNode(l, name);
+                    rootNodeFunction = (l -> new AllocFuncRootNode(l, name, sig));
                     break;
                 case DIRECT:
                 case DESCR_SET:
@@ -467,108 +464,91 @@ public abstract class ExternalFunctionNodes {
                 case BINARYFUNC_L:
                 case TP_STR:
                 case TP_REPR:
-                    /*
-                     * If no conversion is requested, this means we directly call a managed function
-                     * (without argument conversion). Null indicates this
-                     */
-                    if (!doArgAndResultConversion) {
-                        return null;
-                    }
                     nodeKlass = MethDirectRoot.class;
                     rootNodeFunction = l -> MethDirectRoot.create(language, name, sig);
                     break;
                 case CALL:
                 case INITPROC:
                 case KEYWORDS:
-                    /*
-                     * If no conversion is requested, this means we directly call a managed function
-                     * (without argument conversion). Null indicates this
-                     */
-                    if (!doArgAndResultConversion) {
-                        return null;
-                    }
                     nodeKlass = MethKeywordsRoot.class;
                     rootNodeFunction = l -> new MethKeywordsRoot(l, name, isStatic, sig);
                     break;
                 case NEW:
-                    if (!doArgAndResultConversion) {
-                        return null;
-                    }
                     nodeKlass = MethNewRoot.class;
                     rootNodeFunction = l -> new MethNewRoot(l, name, isStatic, sig);
                     break;
                 case VARARGS:
                     nodeKlass = MethVarargsRoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethVarargsRoot(l, name, isStatic, sig) : l -> new MethVarargsRoot(l, name, isStatic);
+                    rootNodeFunction = (l -> new MethVarargsRoot(l, name, isStatic, sig));
                     break;
                 case INQUIRY:
                     nodeKlass = MethInquiryRoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethInquiryRoot(l, name, isStatic, sig) : l -> new MethInquiryRoot(l, name, isStatic);
+                    rootNodeFunction = (l -> new MethInquiryRoot(l, name, isStatic, sig));
                     break;
                 case NOARGS:
                     nodeKlass = MethNoargsRoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethNoargsRoot(l, name, isStatic, sig) : l -> new MethNoargsRoot(l, name, isStatic);
+                    rootNodeFunction = (l -> new MethNoargsRoot(l, name, isStatic, sig));
                     break;
                 case O:
                     nodeKlass = MethORoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethORoot(l, name, isStatic, sig) : l -> new MethORoot(l, name, isStatic);
+                    rootNodeFunction = (l -> new MethORoot(l, name, isStatic, sig));
                     break;
                 case FASTCALL:
                     nodeKlass = MethFastcallRoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethFastcallRoot(l, name, isStatic, sig) : l -> new MethFastcallRoot(l, name, isStatic);
+                    rootNodeFunction = (l -> new MethFastcallRoot(l, name, isStatic, sig));
                     break;
                 case FASTCALL_WITH_KEYWORDS:
                     nodeKlass = MethFastcallWithKeywordsRoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethFastcallWithKeywordsRoot(l, name, isStatic, sig) : l -> new MethFastcallWithKeywordsRoot(l, name, isStatic);
+                    rootNodeFunction = (l -> new MethFastcallWithKeywordsRoot(l, name, isStatic, sig));
                     break;
                 case METHOD:
                     nodeKlass = MethMethodRoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethMethodRoot(l, name, isStatic, sig) : l -> new MethMethodRoot(l, name, isStatic);
+                    rootNodeFunction = (l -> new MethMethodRoot(l, name, isStatic, sig));
                     break;
                 case GETATTR:
                     nodeKlass = GetAttrFuncRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new GetAttrFuncRootNode(l, name, sig) : l -> new GetAttrFuncRootNode(l, name);
+                    rootNodeFunction = (l -> new GetAttrFuncRootNode(l, name, sig));
                     break;
                 case SETATTR:
                     nodeKlass = SetAttrFuncRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new SetAttrFuncRootNode(l, name, sig) : l -> new SetAttrFuncRootNode(l, name);
+                    rootNodeFunction = (l -> new SetAttrFuncRootNode(l, name, sig));
                     break;
                 case DESCR_GET:
                     nodeKlass = DescrGetRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new DescrGetRootNode(l, name, sig) : l -> new DescrGetRootNode(l, name);
+                    rootNodeFunction = (l -> new DescrGetRootNode(l, name, sig));
                     break;
                 case DESCR_DELETE:
                     nodeKlass = DescrGetRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new DescrDeleteRootNode(l, name, sig) : l -> new DescrDeleteRootNode(l, name);
+                    rootNodeFunction = (l -> new DescrDeleteRootNode(l, name, sig));
                     break;
                 case DELATTRO:
                     nodeKlass = DelAttrRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new DelAttrRootNode(l, name, sig) : l -> new DelAttrRootNode(l, name);
+                    rootNodeFunction = (l -> new DelAttrRootNode(l, name, sig));
                     break;
                 case RICHCMP:
                     nodeKlass = RichCmpFuncRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new RichCmpFuncRootNode(l, name, sig) : l -> new RichCmpFuncRootNode(l, name);
+                    rootNodeFunction = (l -> new RichCmpFuncRootNode(l, name, sig));
                     break;
                 case SETITEM:
                 case DELITEM:
                     nodeKlass = SetItemRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new SetItemRootNode(l, name, sig) : l -> new SetItemRootNode(l, name);
+                    rootNodeFunction = (l -> new SetItemRootNode(l, name, sig));
                     break;
                 case GETITEM:
                     nodeKlass = GetItemRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new GetItemRootNode(l, name, sig) : l -> new GetItemRootNode(l, name);
+                    rootNodeFunction = (l -> new GetItemRootNode(l, name, sig));
                     break;
                 case BINARYFUNC_R:
                     nodeKlass = MethReverseRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethReverseRootNode(l, name, sig) : l -> new MethReverseRootNode(l, name);
+                    rootNodeFunction = (l -> new MethReverseRootNode(l, name, sig));
                     break;
                 case TERNARYFUNC:
                     nodeKlass = MethPowRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethPowRootNode(l, name, sig) : l -> new MethPowRootNode(l, name);
+                    rootNodeFunction = (l -> new MethPowRootNode(l, name, sig));
                     break;
                 case TERNARYFUNC_R:
                     nodeKlass = MethRPowRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethRPowRootNode(l, name, sig) : l -> new MethRPowRootNode(l, name);
+                    rootNodeFunction = (l -> new MethRPowRootNode(l, name, sig));
                     break;
                 case GT:
                 case GE:
@@ -578,48 +558,33 @@ public abstract class ExternalFunctionNodes {
                 case NE:
                     nodeKlass = MethRichcmpOpRootNode.class;
                     int op = getCompareOpCode(sig);
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethRichcmpOpRootNode(l, name, sig, op) : l -> new MethRichcmpOpRootNode(l, name, op);
+                    rootNodeFunction = (l -> new MethRichcmpOpRootNode(l, name, sig, op));
                     break;
                 case ITERNEXT:
                     nodeKlass = IterNextFuncRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new IterNextFuncRootNode(l, name, sig) : l -> new IterNextFuncRootNode(l, name);
+                    rootNodeFunction = (l -> new IterNextFuncRootNode(l, name, sig));
                     break;
                 case GETTER:
-                    /*
-                     * If no conversion is requested, this means we directly call a managed function
-                     * (without argument conversion). Null indicates this
-                     */
-                    if (!doArgAndResultConversion) {
-                        return null;
-                    }
                     nodeKlass = GetterRoot.class;
                     rootNodeFunction = l -> new GetterRoot(l, name, sig);
                     break;
                 case SETTER:
-                    /*
-                     * If no conversion is requested, this means we directly call a managed function
-                     * (without argument conversion). Null indicates this
-                     */
-                    if (!doArgAndResultConversion) {
-                        return null;
-                    }
                     nodeKlass = SetterRoot.class;
                     rootNodeFunction = l -> new SetterRoot(l, name, sig);
                     break;
                 case MP_DELITEM:
                     nodeKlass = MpDelItemRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MpDelItemRootNode(l, name, sig) : l -> new MpDelItemRootNode(l, name);
+                    rootNodeFunction = (l -> new MpDelItemRootNode(l, name, sig));
                     break;
                 default:
                     throw CompilerDirectives.shouldNotReachHere();
             }
-            return language.createCachedExternalFunWrapperCallTarget(rootNodeFunction, nodeKlass, sig, name, doArgAndResultConversion, isStatic);
+            return language.createCachedExternalFunWrapperCallTarget(rootNodeFunction, nodeKlass, sig, name, true, isStatic);
         }
 
         public static PythonObject createWrapperFunction(TruffleString name, Object callable, Object enclosingType, int flags, int sig,
-                        PythonLanguage language, boolean doArgAndResultConversion) {
-            return createWrapperFunction(name, callable, enclosingType, flags, PExternalFunctionWrapper.fromValue(sig),
-                            language, doArgAndResultConversion);
+                        PythonLanguage language) {
+            return createWrapperFunction(name, callable, enclosingType, flags, PExternalFunctionWrapper.fromValue(sig), language);
         }
 
         /**
@@ -638,81 +603,28 @@ public abstract class ExternalFunctionNodes {
          *         wrapper.
          */
         @TruffleBoundary
-        public static PythonObject createWrapperFunction(TruffleString name, Object callable, Object enclosingType, int flags, PExternalFunctionWrapper sig, PythonLanguage language,
-                        boolean doArgAndResultConversion) {
+        public static PythonObject createWrapperFunction(TruffleString name, Object callable, Object enclosingType, int flags, PExternalFunctionWrapper sig, PythonLanguage language) {
             LOGGER.finer(() -> PythonUtils.formatJString("ExternalFunctions.createWrapperFunction(%s, %s)", name, callable));
-            assert !isClosurePointer(PythonContext.get(null), callable, InteropLibrary.getUncached(callable));
             if (flags < 0) {
                 flags = 0;
             }
-            int numDefaults = -1;
-            PKeyword[] kwDefaults;
-            RootCallTarget callTarget;
-            TpSlot slot = null;
-            if (callable instanceof RootCallTarget) {
-                callTarget = (RootCallTarget) callable;
-                /*
-                 * Special case for built-in functions:
-                 *
-                 * Built-in functions may appear as {@link CExtContext#METH_VARARGS} but we
-                 * implement them as nodes where the specializations have a fixed arity and then
-                 * sometimes allow optional arguments (specified with {@link
-                 * Builtin#minNumOfPositionalArgs()}, {@link Builtin#maxNumOfPositionalArgs()}, and
-                 * similar). This is usually not a problem because if the built-in function is
-                 * called via the function object, this will provide the correct number of default
-                 * values. In this case, the call target of the built-in function will be called
-                 * directly. So, we need to manually provide the number of default values (which is
-                 * {@link PNone#NO_VALUE} to indicate that the argument is missing).
-                 */
-                if (callTarget.getRootNode() instanceof BuiltinFunctionRootNode builtinFunctionRootNode) {
-                    numDefaults = PythonBuiltins.numDefaults(builtinFunctionRootNode.getBuiltin());
-                }
-                kwDefaults = PKeyword.EMPTY_KEYWORDS;
-            } else {
-                callTarget = getOrCreateCallTarget(sig, language, name, doArgAndResultConversion, CExtContext.isMethStatic(flags));
-                if (callTarget == null) {
-                    return null;
-                }
+            RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name, CExtContext.isMethStatic(flags));
 
-                // ensure that 'callable' is executable via InteropLibrary
-                Object boundCallable = EnsureExecutableNode.executeUncached(callable, sig);
-                kwDefaults = ExternalFunctionNodes.createKwDefaults(boundCallable);
-                slot = TpSlotNative.createCExtSlot(boundCallable);
-            }
+            // ensure that 'callable' is executable via InteropLibrary
+            Object boundCallable = EnsureExecutableNode.executeUncached(callable, sig);
+            PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(boundCallable);
+            TpSlot slot = TpSlotNative.createCExtSlot(boundCallable);
 
             // generate default values for positional args (if necessary)
-            if (numDefaults == -1) {
-                numDefaults = sig.numDefaults;
-            }
-            Object[] defaults = PBuiltinFunction.generateDefaults(numDefaults);
+            Object[] defaults = PBuiltinFunction.generateDefaults(sig.numDefaults);
 
             Object type = enclosingType == PNone.NO_VALUE ? null : enclosingType;
-            // TODO(fa): this should eventually go away
-            switch (sig) {
-                case NOARGS:
-                case O:
-                case VARARGS:
-                case KEYWORDS:
-                case FASTCALL:
-                case FASTCALL_WITH_KEYWORDS:
-                case METHOD:
-                    return PFactory.createBuiltinFunction(language, name, type, defaults, kwDefaults, flags, callTarget);
-                case NEW:
-                    return PFactory.createNewWrapper(language, type, defaults, kwDefaults, callTarget, slot);
-            }
-            return PFactory.createWrapperDescriptor(language, name, type, defaults, kwDefaults, flags, callTarget, slot, sig);
-        }
-
-        private static boolean isClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {
-            if (lib.isPointer(callable)) {
-                try {
-                    Object delegate = context.getCApiContext().getClosureDelegate(lib.asPointer(callable));
-                    return delegate instanceof PBuiltinFunction;
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
-            return false;
+            return switch (sig) {
+                case NOARGS, O, VARARGS, KEYWORDS, FASTCALL, FASTCALL_WITH_KEYWORDS, METHOD ->
+                    PFactory.createBuiltinFunction(language, name, type, defaults, kwDefaults, flags, callTarget);
+                case NEW -> PFactory.createNewWrapper(language, type, defaults, kwDefaults, callTarget, slot);
+                default -> PFactory.createWrapperDescriptor(language, name, type, defaults, kwDefaults, flags, callTarget, slot, sig);
+            };
         }
 
         private static int getCompareOpCode(PExternalFunctionWrapper sig) {
@@ -934,7 +846,6 @@ public abstract class ExternalFunctionNodes {
         private final PExternalFunctionWrapper provider;
         private final CApiTiming timing;
         @Child private CalleeContext calleeContext = CalleeContext.create();
-        @Child private CallNode invokeNode;
         @Child private ExternalFunctionWrapperInvokeNode externalInvokeNode;
         @Child private ReadIndexedArgumentNode readSelfNode;
         @Child private ReadIndexedArgumentNode readCallableNode;
@@ -943,23 +854,14 @@ public abstract class ExternalFunctionNodes {
 
         private final TruffleString name;
 
-        MethodDescriptorRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
-            this(language, name, isStatic, null);
-        }
-
         MethodDescriptorRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language);
             CompilerAsserts.neverPartOfCompilation();
             this.name = name;
             this.timing = CApiTiming.create(true, name);
             this.provider = provider;
-            if (provider != null) {
-                this.externalInvokeNode = ExternalFunctionWrapperInvokeNode.create();
-                this.convertArgs = provider.createConvertArgNodes();
-            } else {
-                this.invokeNode = CallNode.create();
-                this.convertArgs = null;
-            }
+            this.externalInvokeNode = ExternalFunctionWrapperInvokeNode.create();
+            this.convertArgs = provider.createConvertArgNodes();
             if (!isStatic) {
                 readSelfNode = ReadIndexedArgumentNode.create(0);
             }
@@ -979,17 +881,13 @@ public abstract class ExternalFunctionNodes {
             calleeContext.enter(frame);
             try {
                 Object callable = ensureReadCallableNode().execute(frame);
-                if (externalInvokeNode != null) {
-                    Object[] cArguments = prepareCArguments(frame);
-                    prepareArguments(cArguments);
-                    try {
-                        assert this.provider != null : "the provider cannot be null";
-                        return externalInvokeNode.execute(frame, provider, timing, name, callable, cArguments);
-                    } finally {
-                        postprocessCArguments(frame, cArguments);
-                    }
-                } else {
-                    return invokeNode.execute(frame, callable, preparePArguments(frame), PArguments.getKeywordArguments(frame));
+                Object[] cArguments = prepareCArguments(frame);
+                prepareArguments(cArguments);
+                try {
+                    assert this.provider != null : "the provider cannot be null";
+                    return externalInvokeNode.execute(frame, provider, timing, name, callable, cArguments);
+                } finally {
+                    postprocessCArguments(frame, cArguments);
                 }
             } finally {
                 calleeContext.exit(frame, this);
@@ -1006,25 +904,6 @@ public abstract class ExternalFunctionNodes {
         @SuppressWarnings("unused")
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             // default: do nothing
-        }
-
-        protected Object[] preparePArguments(VirtualFrame frame) {
-            Object[] variableArguments = PArguments.getVariableArguments(frame);
-
-            int variableArgumentsLength = variableArguments != null ? variableArguments.length : 0;
-            // we need to subtract 1 due to the hidden default param that carries the callable
-            int userArgumentLength = PArguments.getUserArgumentLength(frame) - 1;
-            int argumentsLength = userArgumentLength + variableArgumentsLength;
-            Object[] arguments = new Object[argumentsLength];
-
-            // first, copy positional arguments
-            PythonUtils.arraycopy(frame.getArguments(), PArguments.USER_ARGUMENTS_OFFSET, arguments, 0, userArgumentLength);
-
-            // now, copy variable arguments
-            if (variableArguments != null) {
-                PythonUtils.arraycopy(variableArguments, 0, arguments, userArgumentLength, variableArgumentsLength);
-            }
-            return arguments;
         }
 
         private ReadIndexedArgumentNode ensureReadCallableNode() {
@@ -1134,10 +1013,6 @@ public abstract class ExternalFunctionNodes {
 
         private boolean seenNativeArgsTupleStorage;
 
-        public MethVarargsRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
-            super(language, name, isStatic);
-        }
-
         public MethVarargsRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
             this.readVarargsNode = ReadVarArgsNode.create(true);
@@ -1240,10 +1115,6 @@ public abstract class ExternalFunctionNodes {
     public static final class MethInquiryRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self"), true, false);
 
-        public MethInquiryRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
-            super(language, name, isStatic);
-        }
-
         public MethInquiryRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
         }
@@ -1266,10 +1137,6 @@ public abstract class ExternalFunctionNodes {
 
     public static final class MethNoargsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self"), true, true);
-
-        public MethNoargsRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
-            super(language, name, isStatic);
-        }
 
         public MethNoargsRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
@@ -1294,10 +1161,6 @@ public abstract class ExternalFunctionNodes {
     public static final class MethORoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "arg"), true, true);
         @Child private ReadIndexedArgumentNode readArgNode;
-
-        public MethORoot(PythonLanguage language, TruffleString name, boolean isStatic) {
-            super(language, name, isStatic);
-        }
 
         public MethORoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
@@ -1328,10 +1191,6 @@ public abstract class ExternalFunctionNodes {
         private static final Signature SIGNATURE = createSignature(true, 1, tsArray("self"), true, true);
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
-
-        public MethFastcallWithKeywordsRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
-            super(language, name, isStatic);
-        }
 
         public MethFastcallWithKeywordsRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
@@ -1380,10 +1239,6 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
 
-        public MethMethodRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
-            super(language, name, isStatic);
-        }
-
         public MethMethodRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
             this.readClsNode = ReadIndexedArgumentNode.create(1);
@@ -1427,10 +1282,6 @@ public abstract class ExternalFunctionNodes {
         private static final Signature SIGNATURE = createSignature(false, 1, tsArray("self"), true, true);
         @Child private ReadVarArgsNode readVarargsNode;
 
-        public MethFastcallRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
-            super(language, name, isStatic);
-        }
-
         public MethFastcallRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
             this.readVarargsNode = ReadVarArgsNode.create(true);
@@ -1464,10 +1315,6 @@ public abstract class ExternalFunctionNodes {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "nitems"), true, false);
         @Child private ReadIndexedArgumentNode readArgNode;
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
-
-        AllocFuncRootNode(PythonLanguage language, TruffleString name) {
-            super(language, name, false);
-        }
 
         AllocFuncRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
@@ -1506,10 +1353,6 @@ public abstract class ExternalFunctionNodes {
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
         @Child private CStructAccess.FreeNode free;
 
-        GetAttrFuncRootNode(PythonLanguage language, TruffleString name) {
-            super(language, name, false);
-        }
-
         GetAttrFuncRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
@@ -1547,10 +1390,6 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
         @Child private CStructAccess.FreeNode free;
-
-        SetAttrFuncRootNode(PythonLanguage language, TruffleString name) {
-            super(language, name, false);
-        }
 
         SetAttrFuncRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
@@ -1593,10 +1432,6 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
 
-        RichCmpFuncRootNode(PythonLanguage language, TruffleString name) {
-            super(language, name, false);
-        }
-
         RichCmpFuncRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
@@ -1638,10 +1473,6 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private GetIndexNode getIndexNode;
 
-        GetItemRootNode(PythonLanguage language, TruffleString name) {
-            super(language, name, false);
-        }
-
         GetItemRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
@@ -1674,10 +1505,6 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private GetIndexNode getIndexNode;
-
-        SetItemRootNode(PythonLanguage language, TruffleString name) {
-            super(language, name, false);
-        }
 
         SetItemRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
@@ -1715,10 +1542,6 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readObj;
         @Child private ReadIndexedArgumentNode readType;
 
-        public DescrGetRootNode(PythonLanguage language, TruffleString name) {
-            super(language, name, false);
-        }
-
         public DescrGetRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
             this.readObj = ReadIndexedArgumentNode.create(1);
@@ -1754,10 +1577,6 @@ public abstract class ExternalFunctionNodes {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "obj"), true, false);
         @Child private ReadIndexedArgumentNode readObj;
 
-        public DescrDeleteRootNode(PythonLanguage language, TruffleString name) {
-            super(language, name, false);
-        }
-
         public DescrDeleteRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
             this.readObj = ReadIndexedArgumentNode.create(1);
@@ -1789,10 +1608,6 @@ public abstract class ExternalFunctionNodes {
     public static final class DelAttrRootNode extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "obj"), true, false);
         @Child private ReadIndexedArgumentNode readObj;
-
-        public DelAttrRootNode(PythonLanguage language, TruffleString name) {
-            super(language, name, false);
-        }
 
         public DelAttrRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
@@ -1828,10 +1643,6 @@ public abstract class ExternalFunctionNodes {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "i"), true, false);
         @Child private ReadIndexedArgumentNode readArg1Node;
 
-        MpDelItemRootNode(PythonLanguage language, TruffleString name) {
-            super(language, name, false);
-        }
-
         MpDelItemRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
@@ -1866,12 +1677,6 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readArg0Node;
         @Child private ReadIndexedArgumentNode readArg1Node;
 
-        MethReverseRootNode(PythonLanguage language, TruffleString name) {
-            super(language, name, false);
-            this.readArg0Node = ReadIndexedArgumentNode.create(0);
-            this.readArg1Node = ReadIndexedArgumentNode.create(1);
-        }
-
         MethReverseRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
             this.readArg0Node = ReadIndexedArgumentNode.create(0);
@@ -1880,13 +1685,6 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object arg0 = readArg0Node.execute(frame);
-            Object arg1 = readArg1Node.execute(frame);
-            return new Object[]{arg1, arg0};
-        }
-
-        @Override
-        protected Object[] preparePArguments(VirtualFrame frame) {
             Object arg0 = readArg0Node.execute(frame);
             Object arg1 = readArg1Node.execute(frame);
             return new Object[]{arg1, arg0};
@@ -1914,11 +1712,6 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadVarArgsNode readVarargsNode;
 
         private final ConditionProfile profile;
-
-        MethPowRootNode(PythonLanguage language, TruffleString name) {
-            super(language, name, false);
-            this.profile = null;
-        }
 
         MethPowRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
@@ -1958,10 +1751,6 @@ public abstract class ExternalFunctionNodes {
      */
     static final class MethRPowRootNode extends MethPowRootNode {
 
-        MethRPowRootNode(PythonLanguage language, TruffleString name) {
-            super(language, name);
-        }
-
         MethRPowRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
         }
@@ -1981,12 +1770,6 @@ public abstract class ExternalFunctionNodes {
 
         private final int op;
 
-        MethRichcmpOpRootNode(PythonLanguage language, TruffleString name, int op) {
-            super(language, name, false);
-            this.readArgNode = ReadIndexedArgumentNode.create(1);
-            this.op = op;
-        }
-
         MethRichcmpOpRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider, int op) {
             super(language, name, false, provider);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
@@ -1995,13 +1778,6 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object self = readSelf(frame);
-            Object arg = readArgNode.execute(frame);
-            return new Object[]{self, arg, op};
-        }
-
-        @Override
-        protected Object[] preparePArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
             Object arg = readArgNode.execute(frame);
             return new Object[]{self, arg, op};
@@ -2024,10 +1800,6 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for C function type {@code iternextfunc}.
      */
     static class IterNextFuncRootNode extends MethodDescriptorRoot {
-
-        IterNextFuncRootNode(PythonLanguage language, TruffleString name) {
-            super(language, name, false);
-        }
 
         IterNextFuncRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);

@@ -34,6 +34,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -185,7 +186,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         if (builtin.isStaticmethod()) {
             flags |= CExtContext.METH_STATIC;
         }
-        if (!signature.takesKeywordArgs() && !signature.takesVarArgs()) {
+        if (!signature.takesKeywordArgs() && !signature.takesVarArgs() && PythonBuiltins.numDefaults(builtin) == 0) {
             int params = signature.getParameterIds().length;
             if (params == 1) {
                 // only 'self'
