@@ -63,7 +63,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSCHECK
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSHOOK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_MRO;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T_UPDATE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MRO_ENTRIES__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
@@ -101,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.set.SetBuiltins.UpdateSingleNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -151,6 +151,8 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -1205,32 +1207,33 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization
         static PSet dir(VirtualFrame frame, Object klass,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached com.oracle.graal.python.nodes.call.CallNode callNode,
-                        @Cached ToArrayNode toArrayNode,
-                        @Cached("createGetAttrNode()") GetFixedAttributeNode getBasesNode) {
-            return dir(frame, inliningTarget, klass, lookupAttrNode, callNode, getBasesNode, toArrayNode);
+                        @Cached("createFor(this)") IndirectCallData indirectCallData) {
+            PSet names = PFactory.createSet(PythonLanguage.get(inliningTarget));
+            Object state = IndirectCallContext.enter(frame, indirectCallData);
+            try {
+                dir(names, klass);
+            } finally {
+                IndirectCallContext.exit(frame, indirectCallData, state);
+            }
+            return names;
         }
 
-        private static PSet dir(VirtualFrame frame, Node inliningTarget, Object klass, PyObjectLookupAttr lookupAttrNode, com.oracle.graal.python.nodes.call.CallNode callNode,
-                        GetFixedAttributeNode getBasesNode, ToArrayNode toArrayNode) {
-            PSet names = PFactory.createSet(PythonLanguage.get(inliningTarget));
-            Object updateCallable = lookupAttrNode.execute(frame, inliningTarget, names, T_UPDATE);
-            Object ns = lookupAttrNode.execute(frame, inliningTarget, klass, T___DICT__);
+        @TruffleBoundary
+        public static void dir(PSet names, Object klass) {
+            Object ns = PyObjectLookupAttr.executeUncached(klass, T___DICT__);
+            UpdateSingleNode updateSingleNode = UpdateSingleNode.getUncached();
             if (ns != NO_VALUE) {
-                callNode.execute(frame, updateCallable, ns);
+                updateSingleNode.execute(null, names, ns);
             }
-            Object basesAttr = getBasesNode.execute(frame, klass);
+            Object basesAttr = PyObjectLookupAttr.executeUncached(klass, T___BASES__);
             if (basesAttr instanceof PTuple) {
-                Object[] bases = toArrayNode.execute(inliningTarget, ((PTuple) basesAttr).getSequenceStorage());
+                Object[] bases = ToArrayNode.executeUncached(((PTuple) basesAttr).getSequenceStorage());
                 for (Object cls : bases) {
                     // Note that since we are only interested in the keys, the order
                     // we merge classes is unimportant
-                    Object baseNames = dir(frame, inliningTarget, cls, lookupAttrNode, callNode, getBasesNode, toArrayNode);
-                    callNode.execute(frame, updateCallable, baseNames);
+                    dir(names, cls);
                 }
             }
-            return names;
         }
 
         @NeverDefault

@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SIZEOF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSHOOK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_JOIN;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_SORT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T_UPDATE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REDUCE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
@@ -89,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProvi
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
 import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -141,6 +141,8 @@ import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -888,21 +890,25 @@ public final class ObjectBuiltins extends PythonBuiltins {
         @Specialization
         static Object dir(VirtualFrame frame, Object obj,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached SetBuiltins.UpdateSingleNode updateSetNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached CallNode callNode,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached com.oracle.graal.python.builtins.objects.type.TypeBuiltins.DirNode dirNode,
                         @Bind PythonLanguage language) {
             PSet names = PFactory.createSet(language);
-            Object updateCallable = lookupAttrNode.execute(frame, inliningTarget, names, T_UPDATE);
             Object ns = lookupAttrNode.execute(frame, inliningTarget, obj, T___DICT__);
             if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, ns), PythonBuiltinClassType.PDict)) {
-                callNode.execute(frame, updateCallable, ns);
+                updateSetNode.execute(frame, names, ns);
             }
             Object klass = lookupAttrNode.execute(frame, inliningTarget, obj, T___CLASS__);
             if (klass != PNone.NO_VALUE) {
-                callNode.execute(frame, updateCallable, dirNode.execute(frame, klass));
+                Object state = IndirectCallContext.enter(frame, indirectCallData);
+                try {
+                    com.oracle.graal.python.builtins.objects.type.TypeBuiltins.DirNode.dir(names, klass);
+                } finally {
+                    IndirectCallContext.exit(frame, indirectCallData, state);
+                }
             }
             return names;
         }
