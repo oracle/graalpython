@@ -1313,7 +1313,7 @@ class ThreadJoinOnShutdown(BaseTestCase):
             main()
             """
         # GraalPy change: propagate PYTHONPATH to be able to import the test module
-        rc, out, err = assert_python_ok('-c', script, PYTHONPATH=os.environ.get('PYTHONPATH', ''))
+        rc, out, err = assert_python_ok('-c', script, PYTHONPATH=os.pathsep.join(sys.path))
         self.assertFalse(err)
 
     def test_thread_from_thread(self):
