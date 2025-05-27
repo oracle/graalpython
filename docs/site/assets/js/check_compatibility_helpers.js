@@ -13,11 +13,44 @@ class ModuleListing {
 }
 
 class DBEntry {
-    constructor([library_name, library_version, test_status, pass_percentage]) {
+    constructor(library_name, library_version, test_status, notes) {
         this.name = library_name;
         this.version = Utilities.normalize_version(library_version);
         this.test_status = parseInt(test_status);
-        this.pass_percentage = pass_percentage;
+        this._notes = notes;
+    }
+
+    is_test_percentage() {
+        return !!this._notes.match(/^\d+\.\d+$/)
+    }
+
+    has_no_test_results() {
+        return !!this._notes.match(/^0+\.0+$/)
+    }
+
+    set notes(value) {
+        this._notes = value;
+    }
+
+    get notes() {
+        let notes = this._notes;
+        if (this.is_test_percentage()) {
+            if (this.has_no_test_results()) {
+                if (this.test_status < 2) {
+                    notes = "The package installs, but the test suite was not set up for GraalPy.";
+                } else if (this.test_status == 2) {
+                    notes = "The package fails to build or install.";
+                } else {
+                    notes = "The package is unsupported.";
+                }
+            } else {
+                notes = notes + "% of the tests are passing on GraalPy.";
+            }
+        }
+        if (!notes.endsWith(".")) {
+            notes += ".";
+        }
+        return notes;
     }
 }
 
@@ -29,14 +62,28 @@ class DB {
         const lines = db_contents.split('\n');
 
         for (let l in lines) {
-            const entry = new DBEntry(lines[l].split(','));
+            if (!lines[l]) {
+                continue;
+            }
+            let [name, version, test_status, ...notes] = lines[l].split(',');
+            const entry = new DBEntry(name, version, test_status, notes.join(','));
 
             if (!(entry.name in this.db)) {
                 this.db[entry.name] = {};
             }
 
-            this.db[entry.name][entry.version] = entry;
-            this.db[entry.name][Utilities.approximate_recommendation(entry.version)] = entry;
+            for (const v of [entry.version, Utilities.approximate_recommendation(entry.version)]) {
+                let previous_entry = this.db[entry.name][v];
+                if (previous_entry && !previous_entry.notes.includes(entry.notes)) {
+                    if (previous_entry.is_test_percentage() && previous_entry.has_no_test_results()) {
+                        previous_entry.notes = entry.notes;
+                    } else {
+                        previous_entry.notes = entry.notes + " " + previous_entry.notes;
+                    }
+                } else {
+                    this.db[entry.name][v] = entry;
+                }
+            }
         }
     }
 
@@ -49,18 +96,18 @@ class DB {
                 for (let version in versions) {
                     if (!version.startsWith('~')) {
                         const entry = versions[version];
-                        ret.push([entry.name, version, entry.test_status, entry.pass_percentage]);
+                        ret.push([entry.name, version, entry.test_status, entry.notes]);
                     }
                 }
             } else {
                 if (requested_version in this.db[requested_name]) {
                     const entry = this.db[requested_name][requested_version];
-                    ret.push([entry.name, entry.version, entry.test_status, entry.pass_percentage]);
+                    ret.push([entry.name, entry.version, entry.test_status, entry.notes]);
                 } else {
                     const semver_match = Utilities.approximate_recommendation(requested_version);
                     if (semver_match in this.db[requested_name]) {
                         const entry = this.db[requested_name][semver_match];
-                        ret.push([entry.name, entry.version, entry.test_status, entry.pass_percentage]);
+                        ret.push([entry.name, entry.version, entry.test_status, entry.notes]);
                     } else {
                         ret.push([requested_name, requested_version, 'unknown', undefined]);
                     }
@@ -87,20 +134,11 @@ class DB {
 }
 
 class Utilities {
-    static pretty_name(language) {
-        switch(language) {
-            case 'js': return 'GraalVM JavaScript';
-            case 'r': return 'GraalVM R';
-            case 'ruby': return 'GraalVM Ruby';
-            case 'python': return 'GraalVM Python';
-        }
-    }
-
     static normalize_version(version) {
         if (version === undefined) {
             return undefined;
         } else {
-            return version.replace(/^v(\d.*)/, '$1');
+            return version.replace(/^v(\d.*)/, '$1').replace(/ and /g, ", ");
         }
     }
 

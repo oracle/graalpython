@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "set"
+
 # Plugin that generates a Python repository index for GraalPy wheels at
 # /python/wheels. The input is the graalpy_wheels.txt file next to this file.
 # The wheels themselves are hosted in GDS.
@@ -49,6 +51,38 @@ module WheelRepoPlugin
         package_page = Jekyll::PageWithoutAFile.new(site, "", "/wheels/#{name}", "index.html")
         package_page.content = render package_links
         site.pages << package_page
+      end
+
+      graalpy_versions = all_wheels.group_by do |wheel|
+        wheel.filename =~ /graalpy(\d\d\d?)_/
+        $1
+      end
+      graalpy_versions.each do |version, wheels|
+        package_csv = Jekyll::PageWithoutAFile.new(site, "", "/wheels/", "v#{version}.csv")
+        package_csv.content = wheels.group_by(&:name).map do |name, wheels|
+          wheels.group_by { |w| w.filename.split("-")[1] }.map do |version, wheels|
+            comment = "The GraalPy team provides binary wheels of this package for "
+            platforms = wheels.map do |wheel|
+              parts = wheel.filename.split("-")
+              if parts.any? { |p| p.include? "linux" }
+                "Linux"
+              elsif parts.any? { |p| p.include? "win" }
+                "Windows"
+              elsif parts.any? { |p| p.include? "macos" }
+                "macOS"
+              end
+            end.sort.compact
+            if platforms.length == 1
+              comment += "#{platforms.first}."
+            elsif platforms.length == 2
+              comment += "#{platforms.first} and #{platforms.last}."
+            else
+              comment += "#{platforms[0]}, #{platforms[1]}, and #{platforms[2]}."
+            end
+            "#{name},#{version},0,#{comment}"
+          end
+        end.flatten.join("\n")
+        site.pages << package_csv
       end
     end
 
