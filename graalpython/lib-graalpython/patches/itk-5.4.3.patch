@@ -1,0 +1,18 @@
+diff --git a/Wrapping/macro_files/itk_end_wrap_module.cmake b/Wrapping/macro_files/itk_end_wrap_module.cmake
+index 63d85c8718..0f94646710 100644
+--- a/Wrapping/macro_files/itk_end_wrap_module.cmake
++++ b/Wrapping/macro_files/itk_end_wrap_module.cmake
+@@ -422,7 +422,12 @@ ${DO_NOT_WAIT_FOR_THREADS_CALLS}
+       if (ITK_USE_PYTHON_LIMITED_API)
+         set_target_properties(${lib} PROPERTIES SUFFIX .abi3.so)
+       else()
+-        set_target_properties(${lib} PROPERTIES SUFFIX .so)
++	find_package(Python)
++	if(PYTHON_FOUND)
++	  set_target_properties(${lib} PROPERTIES SUFFIX ${Python_SOABI}.so)
++	else()
++	  set_target_properties(${lib} PROPERTIES SUFFIX .so)
++	endif()
+       endif()
+     endif()
+     if(NOT MSVC)
