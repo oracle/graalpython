@@ -1996,7 +1996,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         static boolean int_path(VirtualFrame frame, Node inliningTarget, Object p_i, Object q_i, long[] int_total,
                         PyLongCheckExactNode pyLongCheckExactNode,
                         PyLongAsLongAndOverflowNode pyLongAsLongAndOverflowNode) {
-            if (pyLongCheckExactNode.execute(inliningTarget, p_i) & pyLongCheckExactNode.execute(inliningTarget, q_i)) {
+            if (pyLongCheckExactNode.execute(inliningTarget, p_i) && pyLongCheckExactNode.execute(inliningTarget, q_i)) {
                 try {
                     long int_p = pyLongAsLongAndOverflowNode.execute(frame, inliningTarget, p_i);
                     long int_q = pyLongAsLongAndOverflowNode.execute(frame, inliningTarget, q_i);

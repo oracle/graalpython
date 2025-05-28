@@ -330,16 +330,18 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             // best effort to find our if we are executing venv launcher
             Path executablePath = Path.of(context.getOption(PythonOptions.Executable).toJavaStringUncached()).toAbsolutePath();
             Path path = Path.of(new String(bytes));
-            while (Files.isSymbolicLink(path)) {
+            Path parent = path.getParent();
+            while (Files.isSymbolicLink(path) && parent != null) {
                 try {
                     Path symlink = Files.readSymbolicLink(path);
-                    path = path.getParent().resolve(symlink).toAbsolutePath();
+                    path = parent.resolve(symlink).toAbsolutePath();
                 } catch (IOException ignore) {
                     return false;
                 }
                 if (path.equals(executablePath)) {
                     return true;
                 }
+                parent = path.getParent();
             }
             return false;
         }
