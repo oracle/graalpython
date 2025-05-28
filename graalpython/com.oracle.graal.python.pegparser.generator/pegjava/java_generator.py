@@ -10,6 +10,7 @@ ways, we add comments."""
 import ast
 import os
 import re
+import datetime
 from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
@@ -403,7 +404,7 @@ ACTION_MAPPINGS_RE = {
 }
 
 LICENSE = '''/*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, {year}, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -442,7 +443,7 @@ LICENSE = '''/*
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-'''
+'''.format(year=datetime.datetime.now().strftime('%Y'))
 
 IMPORTS = '''
 import com.oracle.graal.python.pegparser.sst.*;
