@@ -107,6 +107,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.TypeNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
@@ -116,7 +117,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsAr
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.TypeNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
@@ -1380,8 +1380,9 @@ public final class TypeBuiltins extends PythonBuiltins {
             }
 
             int end = -1;
-            if (start > 0)
+            if (start > 0) {
                 end = skipSignature(doc, start);
+            }
 
             if (end <= 0) {
                 return PNone.NONE;
@@ -1408,15 +1409,18 @@ public final class TypeBuiltins extends PythonBuiltins {
             String name = n;
             /* for dotted names like classes, only use the last component */
             int dot = n.indexOf('.');
-            if (dot != -1)
+            if (dot != -1) {
                 name = name.substring(dot + 1);
+            }
 
             int length = name.length();
-            if (!doc.startsWith(name))
+            if (!doc.startsWith(name)) {
                 return -1;
+            }
 
-            if (doc.charAt(length) != '(')
+            if (doc.charAt(length) != '(') {
                 return -1;
+            }
             return length;
         }
 

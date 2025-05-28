@@ -1,3 +1,8 @@
+/* Copyright (c) 2025, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2022 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 /* SHA3 module
  *
  * This module provides an interface to the SHA3 algorithm

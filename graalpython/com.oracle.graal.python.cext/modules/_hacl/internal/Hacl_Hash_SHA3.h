@@ -1,5 +1,6 @@
 /* MIT License
  *
+ * Copyright (c) 2025 Oracle and/or its affiliates.
  * Copyright (c) 2016-2022 INRIA, CMU and Microsoft Corporation
  * Copyright (c) 2022-2023 HACL* Contributors
  *

@@ -431,6 +431,12 @@ patch = 'pip-23.2.1.patch'
 license = 'MIT'
 subdir = 'src'
 
+[[pip.rules]]
+version = '== 24.3.1'
+patch = 'pip-24.3.1.patch'
+license = 'MIT'
+subdir = 'src'
+
 [[prompt_toolkit.rules]]
 # Avoid PyOS_getsig calls. Not upstreamable
 patch = 'prompt_toolkit.patch'
