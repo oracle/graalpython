@@ -207,7 +207,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
 
     }
 
-    protected static abstract class JoinAppendData extends Node {
+    protected abstract static class JoinAppendData extends Node {
 
         abstract boolean execute(Node inliningTarget, TruffleStringBuilder sb, CSVDialect dialect, TruffleString field, boolean quoted, boolean copyPhase,
                         PRaiseNode raiseNode,

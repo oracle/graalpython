@@ -465,9 +465,11 @@ public final class PythonCextUnicodeBuiltins {
                  * Need to convert all lower case letters to upper case. and need to convert 0x to
                  * 0X (and -0x to -0X).
                  */
-                for (int i = bufi; i < len; i++)
-                    if (buf[i] >= 'a' && buf[i] <= 'x')
+                for (int i = bufi; i < len; i++) {
+                    if (buf[i] >= 'a' && buf[i] <= 'x') {
                         buf[i] -= 'a' - 'A';
+                    }
+                }
             }
             return fromCharArrayNode.execute(buf);
         }
