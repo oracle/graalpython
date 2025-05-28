@@ -43,17 +43,31 @@ package com.oracle.graal.python;
 import java.security.Security;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
+import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
 
+import com.oracle.graal.python.builtins.objects.ssl.LazyBouncyCastleProvider;
 import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 
 public class BouncyCastleFeature implements Feature {
     @Override
     public void afterRegistration(AfterRegistrationAccess access) {
         if (!PythonImageBuildOptions.WITHOUT_SSL) {
-            Security.addProvider(Security.getProvider("SunJCE"));
-            Security.addProvider(new BouncyCastleProvider());
+            RuntimeClassInitializationSupport support = ImageSingletons.lookup(RuntimeClassInitializationSupport.class);
+
+            if (Runtime.version().feature() >= 25) {
+                // In current native image, security providers need to get verified at build time,
+                // but then are reinitialized at runtime
+                support.initializeAtRunTime("org.bouncycastle", "security provider");
+                Security.addProvider(new BouncyCastleProvider());
+            } else {
+                support.initializeAtBuildTime("org.bouncycastle", "security provider");
+                support.initializeAtRunTime("org.bouncycastle.jcajce.provider.drbg.DRBG$Default", "RNG");
+                support.initializeAtRunTime("org.bouncycastle.jcajce.provider.drbg.DRBG$NonceAndIV", "RNG");
+                LazyBouncyCastleProvider.initProvider();
+            }
 
             // SSLBasicKeyDerivation looks up the classes below reflectively since jdk-25+23
             // See https://github.com/openjdk/jdk/pull/24393
@@ -72,6 +86,7 @@ public class BouncyCastleFeature implements Feature {
             }
             // For backwards compatibility with older JDKs, we only do this if we found
             // all those classes
+            Security.addProvider(Security.getProvider("SunJCE"));
             for (String name : reflectiveClasses) {
                 try {
                     RuntimeReflection.register(Class.forName(name));
