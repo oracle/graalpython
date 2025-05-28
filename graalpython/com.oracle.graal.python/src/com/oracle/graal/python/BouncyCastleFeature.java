@@ -52,14 +52,22 @@ import com.oracle.graal.python.builtins.objects.ssl.LazyBouncyCastleProvider;
 import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 
 public class BouncyCastleFeature implements Feature {
+
+    /*
+     * Will soon be default in native image. We'll still need the old way to support older
+     * native-image in JDK 21. I guess then it would be something like:
+     *
+     * INITIALIZE_AT_RUNTIME = Runtime.version().feature() >= 26;
+     */
+    private static final boolean INITIALIZE_AT_RUNTIME = false;
+
     @Override
     public void afterRegistration(AfterRegistrationAccess access) {
         if (!PythonImageBuildOptions.WITHOUT_SSL) {
             RuntimeClassInitializationSupport support = ImageSingletons.lookup(RuntimeClassInitializationSupport.class);
 
-            if (Runtime.version().feature() >= 25) {
-                // In current native image, security providers need to get verified at build time,
-                // but then are reinitialized at runtime
+            if (INITIALIZE_AT_RUNTIME) {
+                // Verify at build time, but reinitialize at runtime
                 support.initializeAtRunTime("org.bouncycastle", "security provider");
                 Security.addProvider(new BouncyCastleProvider());
             } else {
