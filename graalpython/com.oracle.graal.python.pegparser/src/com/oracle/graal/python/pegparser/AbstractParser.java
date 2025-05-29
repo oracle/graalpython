@@ -179,7 +179,7 @@ public abstract class AbstractParser {
         SSTNode res = runParser(startRule);
         if (res == null) {
             if (flags.contains(Flags.ALLOW_INCOMPLETE_INPUT) &&
-                    (tokenizer.getDone() == StatusCode.EOF || tokenizer.getDone() == StatusCode.EOF_IN_SINGLE_QUOTED_STRING || tokenizer.getDone() == StatusCode.EOF_IN_TRIPLE_QUOTED_STRING)) {
+                            (tokenizer.getDone() == StatusCode.EOF || tokenizer.getDone() == StatusCode.EOF_IN_SINGLE_QUOTED_STRING || tokenizer.getDone() == StatusCode.EOF_IN_TRIPLE_QUOTED_STRING)) {
                 throw raiseSyntaxError("incomplete input");
             }
             Token lastToken = getFill() > 0 ? peekToken(getFill() - 1) : null;
