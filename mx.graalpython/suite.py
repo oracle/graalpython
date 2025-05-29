@@ -1356,8 +1356,13 @@ suite = {
                                 "dependency:GRAALPYTHON_INCLUDE_RESOURCES/META-INF/resources/include/*",
                             ],
                             "./": [
-                                "dependency:GRAALPYTHON_NI_RESOURCES/META-INF/resources/*",
-                                "dependency:GRAALPYTHON_NATIVE_RESOURCES/META-INF/resources/<os>/<arch>/*",
+                                "dependency:GRAALPYTHON_NI_RESOURCES/META-INF/resources/native-image.properties",
+                                {
+                                    "source_type": "dependency",
+                                    "dependency": "GRAALPYTHON_NATIVE_RESOURCES",
+                                    "path": "META-INF/resources/<os>/<arch>/*",
+                                    "exclude": ["META-INF/resources/<os>/<arch>/native.sha256", "META-INF/resources/<os>/<arch>/native.files"],
+                                },
                             ],
                         },
                     },
@@ -1375,8 +1380,13 @@ suite = {
                                 "dependency:GRAALPYTHON_INCLUDE_RESOURCES/META-INF/resources/include/*",
                             ],
                             "./": [
-                                "dependency:GRAALPYTHON_NI_RESOURCES/META-INF/resources/*",
-                                "dependency:GRAALPYTHON_NATIVE_RESOURCES/META-INF/resources/<os>/<arch>/*",
+                                "dependency:GRAALPYTHON_NI_RESOURCES/META-INF/resources/native-image.properties",
+                                {
+                                    "source_type": "dependency",
+                                    "dependency": "GRAALPYTHON_NATIVE_RESOURCES",
+                                    "path": "META-INF/resources/<os>/<arch>/*",
+                                    "exclude": ["META-INF/resources/<os>/<arch>/native.sha256", "META-INF/resources/<os>/<arch>/native.files"],
+                                },
                             ],
                         },
                     },
@@ -1506,6 +1516,7 @@ suite = {
             "standalone_dist": "GRAALPY_NATIVE_STANDALONE",
             "community_archive_name": "graalpy-community",
             "enterprise_archive_name": "graalpy",
+            "language_id": "python",
         },
 
         "GRAALPY_JVM_STANDALONE_RELEASE_ARCHIVE": {
@@ -1514,6 +1525,7 @@ suite = {
             "standalone_dist": "GRAALPY_JVM_STANDALONE",
             "community_archive_name": "graalpy-community-jvm",
             "enterprise_archive_name": "graalpy-jvm",
+            "language_id": "python",
         },
 
         "graalpy-archetype-polyglot-app": {

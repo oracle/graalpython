@@ -245,7 +245,7 @@ def get_jdk():
 
 # Called from suite.py
 def graalpy_standalone_deps():
-    include_truffle_runtime = not os.environ.get("EXCLUDE_TRUFFLE_RUNTIME")
+    include_truffle_runtime = not mx.env_var_to_bool("EXCLUDE_TRUFFLE_RUNTIME")
     deps = mx_truffle.resolve_truffle_dist_names(use_optimized_runtime=include_truffle_runtime)
     return deps
 
@@ -2004,11 +2004,6 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
 ))
 
 
-standalone_dependencies_common = {
-    "Truffle NFI": "truffle:TRUFFLE_NFI",
-    "Truffle NFI LIBFFI": "truffle:TRUFFLE_NFI_LIBFFI",
-}
-
 def bytecode_dsl_build_args():
     return ['-Dpython.EnableBytecodeDSLInterpreter=true'] if BYTECODE_DSL_INTERPRETER else []
 
@@ -2021,10 +2016,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,
     name='GraalVM Python',
     short_name='pyn',
-    installable_id='python',
     dir_name='python',
-    standalone_dir_name='graalpy-community-<version>-<graalvm_os>-<arch>',
-    standalone_dir_name_enterprise='graalpy-<version>-<graalvm_os>-<arch>',
     license_files=[],
     third_party_license_files=[],
     dependencies=[
@@ -2034,13 +2026,6 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
         'ICU4J',
         'XZ',
     ],
-    standalone_dependencies={**standalone_dependencies_common, **{
-        'GraalVM Python license files': ('', []),
-    }},
-    standalone_dependencies_enterprise={**standalone_dependencies_common, **{
-        'GraalVM Python license files EE': ('', []),
-        'GraalVM enterprise license files': ('', ['LICENSE.txt', 'GRAALVM-README.md']),
-    }},
     truffle_jars=[
         'graalpython:GRAALPYTHON',
         'graalpython:BOUNCYCASTLE-PROVIDER',
