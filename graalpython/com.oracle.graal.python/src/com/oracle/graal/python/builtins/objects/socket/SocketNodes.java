@@ -99,7 +99,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatu
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -555,7 +554,7 @@ public abstract class SocketNodes {
         static long parse(VirtualFrame frame, Node inliningTarget, Object seconds,
                         @Cached PyTimeFromObjectNode timeFromObjectNode,
                         @Cached PRaiseNode raiseNode) {
-            long timeout = timeFromObjectNode.execute(frame, inliningTarget, seconds, RoundType.TIMEOUT, TimeUtils.SEC_TO_NS);
+            long timeout = timeFromObjectNode.fromSeconds(frame, inliningTarget, seconds, RoundType.TIMEOUT);
             if (timeout < 0) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.TIMEOUT_VALUE_OUT_OF_RANGE);
             }

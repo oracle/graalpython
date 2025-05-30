@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -80,10 +81,14 @@ public abstract class PyTimeFromObjectNode extends PNodeWithContext {
 
     public abstract long execute(VirtualFrame frame, Node inliningTarget, Object obj, RoundType round, long unitToNs);
 
+    // Like _PyTime_FromSecondsObject
+    public final long fromSeconds(VirtualFrame frame, Node inliningTarget, Object obj, RoundType round) {
+        return execute(frame, inliningTarget, obj, round, TimeUtils.SEC_TO_NS);
+    }
+
     @Specialization
     static long doDouble(Node inliningTarget, double d, RoundType round, long unitToNs,
                     @Shared @Cached PRaiseNode raiseNode) {
-        // Implements _PyTime_FromDouble, rounding mode (HALF_UP) is hard-coded for now
         if (Double.isNaN(d)) {
             throw raiseNode.raise(inliningTarget, ValueError, INVALID_VALUE_NAN);
         }

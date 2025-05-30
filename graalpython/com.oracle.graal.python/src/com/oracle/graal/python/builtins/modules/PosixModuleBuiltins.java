@@ -2559,8 +2559,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class ExitNode extends PythonUnaryClinicBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object exit(int status) {
-            PythonContext context = getContext();
+        public static Object exit(int status,
+                        @Bind Node node) {
+            PythonContext context = PythonContext.get(node);
             if (context.getOption(PythonOptions.RunViaLauncher)) {
                 Runtime.getRuntime().halt(status);
             }
@@ -2574,12 +2575,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 }
             });
             if (Thread.currentThread() == context.getMainThread()) {
-                throw new PythonExitException(this, status);
+                throw new PythonExitException(node, status);
             } else {
                 context.getEnv().submitThreadLocal(new Thread[]{context.getMainThread()}, new ThreadLocalAction(true, false) {
                     @Override
                     protected void perform(Access access) {
-                        throw new PythonExitException(ExitNode.this, status);
+                        throw new PythonExitException(node, status);
                     }
                 });
             }
