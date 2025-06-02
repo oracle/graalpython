@@ -41,16 +41,13 @@
 package com.oracle.graal.python.builtins.objects.exception;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETSTATE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.annotations.Slot;
-import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -61,7 +58,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -70,7 +66,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -84,8 +80,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.AttributeError)
 public final class AttributeErrorBuiltins extends PythonBuiltins {
 
-    public static final TpSlots SLOTS = AttributeErrorBuiltinsSlotsGen.SLOTS;
-
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return AttributeErrorBuiltinsFactory.getFactories();
@@ -98,10 +92,9 @@ public final class AttributeErrorBuiltins extends PythonBuiltins {
     private static final TruffleString T_NAME = tsLiteral("name");
     private static final TruffleString T_OBJ = tsLiteral("obj");
 
-    private static final BaseExceptionAttrNode.StorageFactory ATTR_FACTORY = (args) -> new Object[NUM_ATTRS];
+    private static final BaseExceptionAttrNode.StorageFactory ATTR_FACTORY = (args, factory) -> new Object[NUM_ATTRS];
 
-    @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class InitNode extends PythonVarargsBuiltinNode {
 
@@ -124,7 +117,7 @@ public final class AttributeErrorBuiltins extends PythonBuiltins {
                 } else if (equalObjNode.execute(kwName, T_OBJ, TS_ENCODING)) {
                     attrs[IDX_OBJ] = kw.getValue();
                 } else {
-                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.S_IS_AN_INVALID_ARG_FOR_S, kw.getName(), "AttributeError");
+                    throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_IS_AN_INVALID_ARG_FOR_S, kw.getName(), "AttributeError");
                 }
             }
             self.setExceptionAttributes(attrs);
@@ -163,7 +156,7 @@ public final class AttributeErrorBuiltins extends PythonBuiltins {
                         @Cached GetDictIfExistsNode getDictIfExistsNode,
                         @Cached HashingStorageNodes.HashingStorageSetItem setHashingStorageItem,
                         @Cached HashingStorageNodes.HashingStorageCopy copyStorageNode,
-                        @Bind PythonLanguage language) {
+                        @Cached PythonObjectFactory factory) {
             PDict dict = getDictIfExistsNode.execute(self);
             /*
              * Note from CPython: We specifically are not pickling the obj attribute since there are
@@ -173,7 +166,7 @@ public final class AttributeErrorBuiltins extends PythonBuiltins {
             if (name != null) {
                 HashingStorage storage = (dict != null) ? copyStorageNode.execute(inliningTarget, dict.getDictStorage()) : EmptyStorage.INSTANCE;
                 storage = setHashingStorageItem.execute(inliningTarget, storage, T_NAME, name);
-                return PFactory.createDict(language, storage);
+                return factory.createDict(storage);
             } else if (dict != null) {
                 return dict;
             } else {
@@ -192,11 +185,11 @@ public final class AttributeErrorBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached ExceptionNodes.GetArgsNode getArgsNode,
                         @Cached GetStateNode getStateNode,
-                        @Bind PythonLanguage language) {
+                        @Cached PythonObjectFactory factory) {
             Object clazz = getClassNode.execute(inliningTarget, self);
             Object args = getArgsNode.execute(inliningTarget, self);
             Object state = getStateNode.execute(frame, self);
-            return PFactory.createTuple(language, new Object[]{clazz, args, state});
+            return factory.createTuple(new Object[]{clazz, args, state});
         }
     }
 }
