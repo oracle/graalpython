@@ -1204,3 +1204,9 @@ def test_str_from_mmap():
         mm.write(b"GraalPy")
         mm.seek(0)
         assert str(mm, encoding='utf-8') == 'GraalPy'
+
+
+def test_raw_unicode_escape_does_not_alter_encoded_string():
+    original = "[\\xA0]"
+    decoded = bytes(original, encoding="raw-unicode-escape").decode("raw-unicode-escape")
+    assert original == decoded
