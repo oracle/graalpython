@@ -1785,15 +1785,16 @@ def update_import_cmd(args):
     parser.add_argument('--no-pull', action='store_true')
     parser.add_argument('--no-push', action='store_true')
     parser.add_argument('--allow-dirty', action='store_true')
+    parser.add_argument('--no-master-check', action='store_true', help="do not check if repos are on master branch (e.g., when detached)")
     args = parser.parse_args(args)
 
     join = os.path.join
     vc = SUITE.vc
 
-    current_branch = vc.active_branch(SUITE.dir)
+    current_branch = vc.active_branch(SUITE.dir, abortOnError=not args.no_master_check)
     if vc.isDirty(SUITE.dir) and not args.allow_dirty:
-        mx.abort("updating imports should be done on a clean branch")
-    if current_branch == "master":
+        mx.abort(f"updating imports should be done on a clean branch, not clean: {SUITE.dir}")
+    if current_branch == "master" or args.no_master_check:
         vc.git_command(SUITE.dir, ["checkout", "-b", f"update/GR-21590/{datetime.datetime.now().strftime('%d%m%y')}"])
         current_branch = vc.active_branch(SUITE.dir)
 
@@ -1807,10 +1808,10 @@ def update_import_cmd(args):
     for d in repos:
         if vc.isDirty(d) and not args.allow_dirty:
             mx.abort("repo %s is not clean" % d)
-        d_branch = vc.active_branch(d)
+        d_branch = vc.active_branch(d, abortOnError=not args.no_master_check)
         if d_branch == current_branch:
             pass
-        elif d_branch == "master":
+        elif args.no_master_check or d_branch == "master":
             vc.set_branch(d, current_branch, with_remote=False)
             vc.git_command(d, ["checkout", current_branch], abortOnError=True)
         else:
@@ -1820,11 +1821,11 @@ def update_import_cmd(args):
     overlaydir = join(SUITE.dir, "..", "ci-overlays")
     if not os.path.exists(overlaydir):
         mx.abort("Overlays repo must be next to graalpython repo")
-        vc = mx.VC.get_vc(overlaydir)
+    vc = mx.VC.get_vc(overlaydir)
     if vc.isDirty(overlaydir) and not args.allow_dirty:
         mx.abort("overlays repo must be clean")
-    overlaybranch = vc.active_branch(overlaydir)
-    if overlaybranch == "master":
+    overlaybranch = vc.active_branch(overlaydir, abortOnError=not args.no_master_check)
+    if args.no_master_check or overlaybranch == "master":
         if not args.no_pull:
             vc.pull(overlaydir)
         vc.set_branch(overlaydir, current_branch, with_remote=False)
