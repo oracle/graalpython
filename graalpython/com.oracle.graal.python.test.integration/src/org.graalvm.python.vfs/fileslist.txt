@@ -5,7 +5,6 @@
 /org.graalvm.python.vfs/emptydir/
 /org.graalvm.python.vfs/file1
 /org.graalvm.python.vfs/extractme
-/org.graalvm.python.vfs/fileslist.txt
 /org.graalvm.python.vfs/SomeFile
 /org.graalvm.python.vfs/site-packages/
 /org.graalvm.python.vfs/site-packages/testpkg/

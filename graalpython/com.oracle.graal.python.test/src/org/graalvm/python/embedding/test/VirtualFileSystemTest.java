@@ -41,12 +41,15 @@
 
 package org.graalvm.python.embedding.test;
 
-import org.graalvm.polyglot.io.FileSystem;
-import org.graalvm.python.embedding.VirtualFileSystem;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import static com.oracle.graal.python.test.integration.Utils.IS_WINDOWS;
+import static org.graalvm.python.embedding.VirtualFileSystem.HostIO.NONE;
+import static org.graalvm.python.embedding.VirtualFileSystem.HostIO.READ;
+import static org.graalvm.python.embedding.VirtualFileSystem.HostIO.READ_WRITE;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -82,15 +85,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import static com.oracle.graal.python.test.integration.Utils.IS_WINDOWS;
-import static org.graalvm.python.embedding.VirtualFileSystem.HostIO.NONE;
-import static org.graalvm.python.embedding.VirtualFileSystem.HostIO.READ;
-import static org.graalvm.python.embedding.VirtualFileSystem.HostIO.READ_WRITE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.graalvm.polyglot.io.FileSystem;
+import org.graalvm.python.embedding.VirtualFileSystem;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 public class VirtualFileSystemTest {
 
@@ -740,7 +740,7 @@ public class VirtualFileSystemTest {
                         extractFilter(null).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build()) {
             FileSystem fs = getDelegatingFS(vfs);
-            assertEquals(23, checkNotExtracted(fs, VFS_ROOT_PATH));
+            assertEquals(22, checkNotExtracted(fs, VFS_ROOT_PATH));
         }
     }
 
@@ -1128,6 +1128,29 @@ public class VirtualFileSystemTest {
             newByteChannelRealFS(rwHostIOVFS, realFSTarget, "text1");
         }
 
+    }
+
+    @Test
+    public void testIsReadOnly() throws Exception {
+        for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            assertTrue(fs.isFileStoreReadOnly(VFS_ROOT_PATH.resolve("file1")));
+            Assert.assertThrows(NoSuchFileException.class, () -> fs.isFileStoreReadOnly(VFS_ROOT_PATH.resolve("bogus")));
+        }
+    }
+
+    @Test
+    public void testGetFileStoreSpace() throws Exception {
+        for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            long expectedSize = IS_WINDOWS ? 1162 : 1158; // this is because of different newlines
+            assertEquals(expectedSize, fs.getFileStoreTotalSpace(VFS_ROOT_PATH.resolve("file1")));
+            assertEquals(0, fs.getFileStoreUnallocatedSpace(VFS_ROOT_PATH.resolve("file1")));
+            assertEquals(0, fs.getFileStoreUsableSpace(VFS_ROOT_PATH.resolve("file1")));
+            assertEquals(4096, fs.getFileStoreBlockSize(VFS_ROOT_PATH.resolve("file1")));
+            Assert.assertThrows(NoSuchFileException.class, () -> fs.isFileStoreReadOnly(VFS_ROOT_PATH.resolve("bogus")));
+            Assert.assertThrows(NoSuchFileException.class, () -> fs.getFileStoreUnallocatedSpace(VFS_ROOT_PATH.resolve("bogus")));
+            Assert.assertThrows(NoSuchFileException.class, () -> fs.getFileStoreUsableSpace(VFS_ROOT_PATH.resolve("bogus")));
+            Assert.assertThrows(NoSuchFileException.class, () -> fs.getFileStoreBlockSize(VFS_ROOT_PATH.resolve("bogus")));
+        }
     }
 
     @Test
