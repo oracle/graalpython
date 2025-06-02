@@ -246,7 +246,7 @@ test.test_zipfile.TestPath.test_open_extant_directory @ darwin-arm64,darwin-x86_
 test.test_zipfile.TestPath.test_open_missing_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_zipfile.TestPath.test_open_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_zipfile.TestPath.test_parent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_zipfile.TestPath.test_pathlike_construction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_pathlike_construction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_zipfile.TestPath.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_zipfile.TestPath.test_read_does_not_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_zipfile.TestPath.test_root_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
