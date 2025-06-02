@@ -1,4 +1,5 @@
-/* Copyright (c) INRIA and Microsoft Corporation. All rights reserved.
+/* Copyright (c) 2025, Oracle and/or its affiliates.
+   Copyright (c) INRIA and Microsoft Corporation. All rights reserved.
    Licensed under the Apache 2.0 License. */
 
 #ifndef __KRML_TARGET_H
