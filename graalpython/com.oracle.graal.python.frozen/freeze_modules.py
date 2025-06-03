@@ -607,6 +607,7 @@ def write_frozen_module_file(file, modules):
         stat_result = os.stat(file)
         atime, mtime = stat_result.st_atime, stat_result.st_mtime
     else:
+        linesep = os.linesep
         content = None
     os.makedirs(os.path.dirname(file), exist_ok=True)
     with open(file, "w", encoding="utf-8", newline=linesep) as out_file:
