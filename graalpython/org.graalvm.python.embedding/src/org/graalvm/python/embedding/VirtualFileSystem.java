@@ -229,9 +229,9 @@ public final class VirtualFileSystem implements AutoCloseable {
         /**
          * This filter applied to files in the virtual filesystem treats them as symlinks to real
          * files in the host filesystem. This is useful, for example, if files in the virtual
-         * filesystem need to be accessed outside the Truffle sandbox. They will be extracted to the
-         * Java temporary directory on demand. The default filter matches any DLLs, dynamic
-         * libraries, shared objects, and Python C extension files, because these need to be
+         * filesystem need to be accessed outside the Truffle IO virtualization. They will be
+         * extracted to the Java temporary directory on demand. The default filter matches any DLLs,
+         * dynamic libraries, shared objects, and Python C extension files, because these need to be
          * accessed by the operating system loader. Setting this filter to <code>null</code> denies
          * any extraction. Any other filter is combined with the default filter.
          *
