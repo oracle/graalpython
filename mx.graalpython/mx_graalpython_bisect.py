@@ -265,9 +265,6 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         parser.add_argument('--no-clean', action='store_true', help="Do not run 'mx clean' between runs")
         args = parser.parse_args(argv)
 
-    def checkout_enterprise():
-        mx.run_mx(['checkout-downstream', 'vm', 'vm-enterprise', '--no-fetch'], suite=str(VM_ENTERPRISE_DIR))
-
     def checkout(repo_path: Path, commit):
         GIT.update_to_branch(repo_path, commit)
         suite_dir = SUITE_MAPPING.get(repo_path, repo_path)
@@ -275,7 +272,8 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         mx.run_mx(['--env', 'ce', 'sforceimports'], suite=str(VM_DIR))
         if args.enterprise:
             if repo_path.name != 'graal-enterprise':
-                checkout_enterprise()
+                mx.run_mx(['--quiet', 'checkout-downstream', 'vm', 'vm-enterprise', '--no-fetch'],
+                          suite=str(VM_ENTERPRISE_DIR))
             mx.run_mx(['--env', 'ee', 'sforceimports'], suite=str(VM_ENTERPRISE_DIR))
         GIT.update_to_branch(repo_path, commit)
         mx.run_mx(['sforceimports'], suite=str(suite_dir))
@@ -284,8 +282,32 @@ def _bisect_benchmark(argv, bisect_id, email_to):
             debug_str += f" graal-enterprise={get_commit(GRAAL_ENTERPRISE_DIR)}"
         print(debug_str)
 
+    def fetch_jdk():
+        import mx_fetchjdk
+        if args.enterprise:
+            fetch_args = [
+                '--configuration', str(GRAAL_ENTERPRISE_DIR / 'common.json'),
+                '--jdk-binaries', str(GRAAL_ENTERPRISE_DIR / 'ci' / 'jdk-binaries.json'),
+                'labsjdk-ee-latest',
+            ]
+        else:
+            fetch_args = [
+                '--configuration', str(GRAAL_DIR / 'common.json'),
+                'labsjdk-ce-latest',
+            ]
+        # Awkward way to suppress the confirmation prompt
+        ci = 'CI' in os.environ
+        if not ci:
+            os.environ['CI'] = '1'
+        try:
+            return mx_fetchjdk.fetch_jdk(fetch_args)
+        finally:
+            if not ci:
+                del os.environ['CI']
+
     def checkout_and_build(repo_path, commit):
         checkout(repo_path, commit)
+        os.environ['JAVA_HOME'] = fetch_jdk()
         build_command = shlex.split(args.build_command)
         if not args.no_clean:
             try:
