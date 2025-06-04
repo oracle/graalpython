@@ -711,6 +711,9 @@ public abstract class ErrorMessages {
     public static final TruffleString SIZE_SHOULD_NOT_BE_NEGATIVE = tsLiteral("size should not be negative");
     public static final TruffleString STRING_INDEX_OUT_OF_RANGE = tsLiteral("IndexError: string index out of range");
     public static final TruffleString STRING_INDICES_MUST_BE_INTEGERS_NOT_P = tsLiteral("string indices must be integers, not '%p'");
+    public static final TruffleString SYS_STDERR_IS_NONE = tsLiteral("sys.stderr is None");
+    public static final TruffleString FILE_IS_NOT_A_VALID_FILE_DESCRIPTOR = tsLiteral("file is not a valid file descriptor");
+    public static final TruffleString FILE_FILENO_IS_NOT_A_VALID_FILE_DESCRIPTOR = tsLiteral("file.fileno() is not a valid file descriptor");
     public static final TruffleString SUBSTRING_NOT_FOUND = tsLiteral("substring not found");
     public static final TruffleString SUBSECTION_NOT_FOUND = tsLiteral("subsection not found");
     public static final TruffleString SUB_VIEWS_NOT_IMPLEMENTED = tsLiteral("sub-views are not implemented");

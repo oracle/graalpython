@@ -68,8 +68,8 @@ import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -77,8 +77,8 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
-import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
@@ -171,17 +171,7 @@ public final class ExceptionUtils {
 
     @TruffleBoundary
     public static void printPythonLikeStackTrace(PrintWriter p, Throwable e) {
-        List<TruffleStackTraceElement> stackTrace = TruffleStackTrace.getStackTrace(e);
-        if (stackTrace != null) {
-            ArrayList<String> stack = new ArrayList<>();
-            for (TruffleStackTraceElement frame : stackTrace) {
-                Node location = frame.getLocation();
-                RootNode rootNode = frame.getTarget().getRootNode();
-                int lineno = getLineno(frame.getFrame(), location, null);
-                appendStackLine(stack, location, rootNode, false, lineno);
-            }
-            printStack(p, stack);
-        }
+        printPythonLikeStackTraceNoMessage(p, e);
         InteropLibrary lib = InteropLibrary.getUncached();
         if (lib.isException(e) && lib.hasExceptionMessage(lib)) {
             try {
@@ -192,6 +182,21 @@ public final class ExceptionUtils {
         } else {
             String message = e.getMessage();
             p.println(message == null ? e.getClass().getSimpleName() : message);
+        }
+    }
+
+    @TruffleBoundary
+    public static void printPythonLikeStackTraceNoMessage(PrintWriter p, Throwable e) {
+        List<TruffleStackTraceElement> stackTrace = TruffleStackTrace.getStackTrace(e);
+        if (stackTrace != null) {
+            ArrayList<String> stack = new ArrayList<>();
+            for (TruffleStackTraceElement frame : stackTrace) {
+                Node location = frame.getLocation();
+                RootNode rootNode = frame.getTarget().getRootNode();
+                int lineno = getLineno(frame.getFrame(), location, null);
+                appendStackLine(stack, location, rootNode, false, lineno);
+            }
+            printStack(p, stack);
         }
     }
 

@@ -1,4 +1,3 @@
 test.test_faulthandler.FaultHandlerTests.test_cancel_later_without_dump_traceback_later @ linux-x86_64
 test.test_faulthandler.FaultHandlerTests.test_disable @ linux-x86_64
 test.test_faulthandler.FaultHandlerTests.test_is_enabled @ linux-x86_64
-test.test_faulthandler.FaultHandlerTests.test_sys_xoptions @ linux-x86_64
