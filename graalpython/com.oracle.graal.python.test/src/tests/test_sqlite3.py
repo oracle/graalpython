@@ -52,12 +52,18 @@ def test_basic_functionality():
 
 
 def test_fts5_works():
+    # we explicitly enable those features below, but on CPython they might not
+    # be available if using some system libsqlite that doesn't have them
     import sqlite3
     conn = sqlite3.connect(':memory:')
-    conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS your_table USING fts5(column1, column2)")
-    conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS your_table USING fts4(column1, column2)")
-    conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS your_table USING fts3(column1, column2)")
-    conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS your_table USING rtree(column1, column2)")
-    sqpi = next(conn.execute("SELECT pi()"))[0]
-    assert 3.14 == float(f'{sqpi:.2f}'), sqpi
+    try:
+        conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS your_table USING fts5(column1, column2)")
+        conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS your_table USING fts4(column1, column2)")
+        conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS your_table USING fts3(column1, column2)")
+        conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS your_table USING rtree(column1, column2)")
+        sqpi = next(conn.execute("SELECT pi()"))[0]
+        assert 3.14 == float(f'{sqpi:.2f}'), sqpi
+    except sqlite3.OperationalError:
+        import sys
+        assert sys.implementation.name != "graalpy"
     conn.close()
