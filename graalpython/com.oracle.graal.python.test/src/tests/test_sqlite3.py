@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -48,4 +48,16 @@ def test_basic_functionality():
     conn = sqlite3.connect(':memory:')
     rows = conn.execute("select sqlite_version()")
     assert len(next(rows)[0]) >= 5
+    conn.close()
+
+
+def test_fts5_works():
+    import sqlite3
+    conn = sqlite3.connect(':memory:')
+    conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS your_table USING fts5(column1, column2)")
+    conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS your_table USING fts4(column1, column2)")
+    conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS your_table USING fts3(column1, column2)")
+    conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS your_table USING rtree(column1, column2)")
+    sqpi = next(conn.execute("SELECT pi()"))[0]
+    assert 3.14 == float(f'{sqpi:.2f}'), sqpi
     conn.close()

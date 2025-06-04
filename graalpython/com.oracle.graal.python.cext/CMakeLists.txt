@@ -240,7 +240,19 @@ set(SQLITE3_SRC
     "${SRC_DIR}/modules/_sqlite/util.c"
 )
 native_module("_sqlite3" TRUE "${SQLITE3_SRC}")
+# This combines the flags CPython uses on macOS and Windows, on Linux systems
+# it usually links against the system sqlite3 so we do not really know. See
+# https://github.com/python/cpython/issues/88017 for some reasons
 target_include_directories("_sqlite3" PUBLIC "${SRC_DIR}/modules/_sqlite/sqlite")
+target_compile_definitions("_sqlite3" PRIVATE
+    SQLITE_ENABLE_MATH_FUNCTIONS
+    SQLITE_ENABLE_FTS5
+    SQLITE_ENABLE_FTS4
+    SQLITE_ENABLE_FTS3_PARENTHESIS
+    SQLITE_ENABLE_RTREE
+    SQLITE_OMIT_AUTOINIT
+    SQLITE_TCL=0
+)
 
 set(LIBHACL_HEADERS
     # "${SRC_DIR}/modules/_hacl/include/krml/FStar_UInt128_Verified.h"
