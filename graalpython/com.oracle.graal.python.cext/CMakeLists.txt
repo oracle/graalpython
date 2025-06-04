@@ -80,14 +80,13 @@ if (MSVC)
     /wd4710 # 'fprintf': function not inlined
     /wd4706 # assignment within conditional expression
     /wd4774 # 'sprintf': format string expected in argument 2 is not a string literal
+    /wd4191 # unsafe conversion from 'PyObject *(__cdecl *)(MatchObject *,PyObject *const *,Py_ssize_t)' to 'void (__cdecl *)(void)'
+    /wd4574 # sqlite, expat: 'SQLITE_ATOMIC_INTRINSICS' is defined to be '0': did you mean to use '#if SQLITE_ATOMIC_INTRINSICS'?
 
     # Some that I'm not so happy about
     /wd4232 # sre: nonstandard extension used: 'ml_meth': address of dllimport 'Py_GenericAlias' is not static, identity not guaranteed
-    /wd4191 # sre and sqlite: 'type cast': like unsafe conversion from 'PyObject *(__cdecl *)(MatchObject *,PyObject *const *,Py_ssize_t)' to 'void (__cdecl *)(void)'
     /wd4918 # sre: invalid character in pragma optimization list
-    /wd4701 # cpython_unicodedata: potentially uninitialized local variable 'rc' used
     /wd4703 # unicodeobject.c:potentially uninitialized local pointer variable used
-    /wd4574 # sqlite: 'SQLITE_ATOMIC_INTRINSICS' is defined to be '0': did you mean to use '#if SQLITE_ATOMIC_INTRINSICS'?
     /wd4310 # xmlparse: cast truncates constant value
     /wd4777 # format string '%zd' requires an argument of type 'unsigned __int64'
   )
@@ -222,6 +221,9 @@ endfunction()
 add_library(${TARGET_LIBPYTHON} SHARED)
 native_module("_cpython_sre" TRUE "${SRC_DIR}/modules/_cpython_sre/sre.c")
 simple_native_module("_cpython_unicodedata")
+if(WIN32)
+    target_compile_options("_cpython_unicodedata" PRIVATE /wd4701)
+endif()
 if(NOT WIN32)
     simple_native_module("termios")
 endif()
@@ -299,13 +301,19 @@ set(TESTCAPI_SRC
     "${SRC_DIR}/modules/_testcapi.c"
 )
 
-if(NOT WIN32)
-    native_module("_testcapi" FALSE "${TESTCAPI_SRC}")
-    simple_native_module("_testbuffer")
-    simple_native_module("_testmultiphase")
-    simple_native_module("_testsinglephase")
-    simple_native_module("_ctypes_test")
+native_module("_testcapi" FALSE "${TESTCAPI_SRC}")
+if(WIN32)
+    target_compile_options("_testcapi" PRIVATE /wd4296)
+endif()
+simple_native_module("_testbuffer")
+if(WIN32)
+    target_compile_options("_testbuffer" PRIVATE /wd4090)
+endif()
+simple_native_module("_testmultiphase")
+simple_native_module("_testsinglephase")
+simple_native_module("_ctypes_test")
 
+if(NOT WIN32)
     ###################### BZIP2 ########################
     if(DEFINED LIBBZ2_BUILD_FILE)
         include("${LIBBZ2_BUILD_FILE}")
