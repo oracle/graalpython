@@ -1,0 +1,70 @@
+diff --git a/hypothesis/core.py b/hypothesis/core.py
+index 98305ce..82fec12 100644
+--- a/hypothesis/core.py
++++ b/hypothesis/core.py
+@@ -72,6 +72,7 @@ from hypothesis.errors import (
+ from hypothesis.internal import observability
+ from hypothesis.internal.compat import (
+     PYPY,
++    GRAALPY,
+     BaseExceptionGroup,
+     EllipsisType,
+     add_note,
+@@ -1411,7 +1412,7 @@ class StateForActualGivenExecution:
+         # we'd expect to do so reliably, i.e. on CPython>=3.12)
+         if (
+             sys.version_info[:2] >= (3, 12)
+-            and not PYPY
++            and not PYPY and not GRAALPY
+             and self._should_trace()
+             and not Tracer.can_trace()
+         ):  # pragma: no cover
+diff --git a/hypothesis/internal/scrutineer.py b/hypothesis/internal/scrutineer.py
+index 65612e8..2b91963 100644
+--- a/hypothesis/internal/scrutineer.py
++++ b/hypothesis/internal/scrutineer.py
+@@ -24,7 +24,7 @@ from pathlib import Path
+ from typing import TYPE_CHECKING, Optional
+ 
+ from hypothesis._settings import Phase, Verbosity
+-from hypothesis.internal.compat import PYPY
++from hypothesis.internal.compat import PYPY, GRAALPY
+ from hypothesis.internal.escalation import is_hypothesis_file
+ 
+ if TYPE_CHECKING:
+@@ -47,7 +47,7 @@ def should_trace_file(fname: str) -> bool:
+ # tool_id = 1 is designated for coverage, but we intentionally choose a
+ # non-reserved tool id so we can co-exist with coverage tools.
+ MONITORING_TOOL_ID = 3
+-if sys.version_info[:2] >= (3, 12):
++if sys.version_info[:2] >= (3, 12) and not GRAALPY:
+     MONITORING_EVENTS = {sys.monitoring.events.LINE: "trace_line"}
+ 
+ 
+@@ -66,7 +66,7 @@ class Tracer:
+         return (
+             (sys.version_info[:2] < (3, 12) and sys.gettrace() is None)
+             or (
+-                sys.version_info[:2] >= (3, 12)
++                sys.version_info[:2] >= (3, 12) and not GRAALPY
+                 and sys.monitoring.get_tool(MONITORING_TOOL_ID) is None
+             )
+         ) and not PYPY
+@@ -99,7 +99,7 @@ class Tracer:
+         if not self._should_trace:
+             return self
+ 
+-        if sys.version_info[:2] < (3, 12):
++        if sys.version_info[:2] < (3, 12) or GRAALPY:
+             sys.settrace(self.trace)
+             return self
+ 
+@@ -115,7 +115,7 @@ class Tracer:
+         if not self._should_trace:
+             return
+ 
+-        if sys.version_info[:2] < (3, 12):
++        if sys.version_info[:2] < (3, 12) or GRAALPY:
+             sys.settrace(None)
+             return
+ 
