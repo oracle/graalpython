@@ -3,6 +3,22 @@ layout: base
 title: Compatibility
 permalink: compatibility/
 ---
+
+<style>
+img.pylogo {
+  // background-color: #8ec9e6;
+  // padding: 15px;
+  // border-radius: 10px;
+  width: 80px;
+  height: 80px;
+}
+
+.langbenefits__icon_pylogo {
+  width: 80px;
+}
+</style>
+
+
 <script src="{{ '/assets/js/check_compatibility_helpers.js' | relative_url }}"></script>
 <script>
     const default_version = 'v242';
@@ -362,7 +378,11 @@ permalink: compatibility/
     <div class="wrapper">
         <div>
             <div class="container">
-                    <h3 class="truffle__subtitle">GraalPy: Package Compatibility</h3>
+                <h3 class="truffle__subtitle">GraalPy: Package Compatibility</h3>
+
+                GraalPy is compatible with many packages for Data Science and Machine Learning, including the popular PyTorch, NumPy, and Huggingface Transformers.
+                To try a package, pick any version and only if you run into problems, consult our table below to see if there is a version that may work better.
+
                 <div class="compatibility_page-filter">
                     <div class="compatibility__row">
                         <p class="compatibility_page-item compatibility_page-module compatibility_page-active" data-filter="v242">GraalPy 24.2</p>
@@ -390,14 +410,91 @@ You can extend it with Python code or leverage packages from the Python ecosyste
     </div>
   </div>
 </section> -->
+<!-- Benefits -->
+
+<section class="content-section">
+  <div class="wrapper">
+    <div class="langbenefits">
+      <div class="container">
+        <h3 class="langpage__title-02"></h3>
+        <div class="langbenefits__row">
+          <div class="langbenefits__card">
+            <div class="langbenefits__icon langbenefits__icon_pylogo">
+              <img class="pylogo" src='{{ "/assets/img/python/numpy.svg" | relative_url }}' alt="numpy icon">
+            </div>
+            <div class="langbenefits__title">
+              <h4>Numeric Computing</h4>
+            </div>
+            <div class="langpage__benefits-text">
+              <h5>We test <a href="https://numpy.org/">NumPy</a> across multiple versions and know of multiple deployments where it brings numeric computing to Java.</h5>
+            </div>
+          </div>
+          <div class="langbenefits__card">
+            <div class="langbenefits__icon langbenefits__icon_pylogo">
+              <img class="pylogo" src='{{ "/assets/img/python/scipy.svg" | relative_url }}' alt="scipy icon">
+            </div>
+            <div class="langbenefits__title">
+              <h4>Scientific Computing</h4>
+            </div>
+            <div class="langpage__benefits-text">
+              <h5><a href="https://scipy.org/">SciPy</a>'s rich library for scientific computing is just a package download away.</h5>
+            </div>
+          </div>
+          <div class="langbenefits__card">
+            <div class="langbenefits__icon langbenefits__icon_pylogo">
+              <img class="pylogo" src='{{ "/assets/img/python/pandas.svg" | relative_url }}' alt="pandas icon">
+            </div>
+            <div class="langbenefits__title">
+              <h4>Data Processing</h4>
+            </div>
+            <div class="langpage__benefits-text">
+              <h5>Thanks to Arrow, <a href="https://pandas.pydata.org/">Pandas</a> on GraalPy can run multi-threaded while avoiding unneccessary data copies.</h5>
+            </div>
+          </div>
+        </div>
+        <div class="langbenefits__row">
+          <div class="langbenefits__card">
+            <div class="langbenefits__icon langbenefits__icon_pylogo">
+              <img class="pylogo" src='{{ "/assets/img/python/huggingface.svg" | relative_url }}' alt="huggingface icon">
+            </div>
+            <div class="langbenefits__title">
+              <h4>Models for any Task</h4>
+            </div>
+            <div class="langpage__benefits-text">
+              <h5>The <a href="https://huggingface.co/">Huggingface</a> transformers library works on GraalPy with its huge library of language, vision, and audio models.</h5>
+            </div>
+          </div>
+          <div class="langbenefits__card">
+            <div class="langbenefits__icon langbenefits__icon_pylogo">
+              <img class="pylogo" src='{{ "/assets/img/python/pytorch.svg" | relative_url }}' alt="pytorch icon">
+            </div>
+            <div class="langbenefits__title">
+              <h4>Training and Inference</h4>
+            </div>
+            <div class="langpage__benefits-text">
+              <h5>Train models and run inference on GraalPy with <a href="https://pytorch.org/">PyTorch</a>, taking full advantage of the latest techniques and accellerator hardware.</h5>
+            </div>
+          </div>
+          <div class="langbenefits__card">
+            <div class="langbenefits__icon langbenefits__icon_pylogo">
+              <img class="pylogo" src='{{ "/assets/img/python/autogen.svg" | relative_url }}' alt="pyautogen icon">
+            </div>
+            <div class="langbenefits__title">
+              <h4>Agentic Workflows</h4>
+            </div>
+            <div class="langpage__benefits-text">
+              <h5>With <a href="https://microsoft.github.io/autogen/stable/">Autogen</a> and GraalPy you can write agentic workflows and use Java code to create tools for AI Agents.</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 <section class="content-section">
     <div class="wrapper">
         <div class="compatibility">
             <div class="container">
-                <h5 class="compatibility-text">Python PackagesGraalPy is compatible with many packages, including packages like
-                    PyTorch, NumPy, Huggingface Transformers and many more that are used for Data Science and
-                    Machine Learning. If you want to try a package, first just pick any version and only if you
-                    run into problems, consult the table below to see if there is a version that may work better.</h5>
                 <h5 class="compatibility-text">To ensure GraalPy is compatible with common Python packages,
                     the GraalPy team conducts compatibility testing and creates scripts to build and patch many
                     of the top packages on PyPI plus some more that are of special interest to us, including
