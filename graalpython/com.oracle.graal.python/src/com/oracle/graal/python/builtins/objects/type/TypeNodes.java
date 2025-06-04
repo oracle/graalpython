@@ -2591,13 +2591,11 @@ public abstract class TypeNodes {
             // @formatter:off
             return switch (cls) {
                 case PBytes -> 1;
-                case PInt -> 4;
-                case PFrame, PMemoryView, PTuple, PStatResult, PTerminalSize, PUnameResult, PStructTime, PProfilerEntry,
-                        PProfilerSubentry, PStructPasswd, PStructRusage, PVersionInfo, PFlags, PFloatInfo,
-                        PIntInfo, PHashInfo, PThreadInfo, PUnraisableHookArgs, PIOBase, PFileIO, PBufferedIOBase,
-                        PBufferedReader, PBufferedWriter, PBufferedRWPair, PBufferedRandom, PIncrementalNewlineDecoder,
-                        PTextIOWrapper, CArgObject, CThunkObject, StgDict, Structure, Union, PyCPointer, PyCArray,
-                        PWindowsVersion, PyCData, SimpleCData, PyCFuncPtr, CField, DictRemover, StructParam -> 8;
+                case PCode -> 2;
+                case PInt, Boolean -> 4;
+                case PAsyncGenerator, PFlags, PHashInfo, PTuple, PCoroutine, PGenerator, PThreadInfo, PMemoryView,
+                     PStatResult, PUnameResult, PStructTime, PFloatInfo, PStatvfsResult, PIntInfo, PFrame,
+                     PTerminalSize, PUnraisableHookArgs -> 8;
                 case PythonClass -> 40;
                 default -> 0;
             };
