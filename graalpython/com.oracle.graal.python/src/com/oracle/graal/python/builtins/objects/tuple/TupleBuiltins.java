@@ -508,7 +508,7 @@ public final class TupleBuiltins extends PythonBuiltins {
 
             hash += 97531;
 
-            if (hash == Long.MAX_VALUE) {
+            if (hash == -1) {
                 hash = -2;
             }
             return hash;

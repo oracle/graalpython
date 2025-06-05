@@ -496,10 +496,13 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                     }
                     c = 0;
                     for (int i = 0; i < 4; i++) {
-                        int digit = Character.digit(string.charAt(idx++), 16);
-                        if (digit == -1) {
-                            throw decodeError(raisingNode, string, idx - 1, ErrorMessages.INVALID_UXXXX_ESCAPE);
-                        }
+                        char d = string.charAt(idx++);
+                        int digit = switch (d) {
+                            case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> d - '0';
+                            case 'a', 'b', 'c', 'd', 'e', 'f' -> d - 'a' + 10;
+                            case 'A', 'B', 'C', 'D', 'E', 'F' -> d - 'A' + 10;
+                            default -> throw decodeError(raisingNode, string, idx - 1, ErrorMessages.INVALID_UXXXX_ESCAPE);
+                        };
                         c = (char) ((c << 4) + digit);
                     }
                 } else {

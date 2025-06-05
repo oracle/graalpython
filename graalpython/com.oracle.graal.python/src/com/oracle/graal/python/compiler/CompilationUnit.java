@@ -40,10 +40,7 @@
  */
 package com.oracle.graal.python.compiler;
 
-import static com.oracle.graal.python.compiler.CompilationScope.AsyncFunction;
 import static com.oracle.graal.python.compiler.CompilationScope.Class;
-import static com.oracle.graal.python.compiler.CompilationScope.Function;
-import static com.oracle.graal.python.compiler.CompilationScope.Lambda;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.io.ByteArrayOutputStream;
@@ -63,7 +60,6 @@ import java.util.TreeSet;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.scope.Scope;
-import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -87,7 +83,7 @@ public final class CompilationUnit {
     final Block startBlock = new Block();
     final Scope scope;
     final CompilationScope scopeType;
-    final String privateName;
+    String privateName;
     BlockInfo blockInfo;
     int conditionProfileCount;
 
@@ -99,7 +95,7 @@ public final class CompilationUnit {
 
     final EnumSet<FutureFeature> futureFeatures;
 
-    CompilationUnit(CompilationScope scopeType, Scope scope, String name, CompilationUnit parent, int scopeDepth, int argCount, int positionalOnlyArgCount, int kwOnlyArgCount, boolean takesVarArgs,
+    CompilationUnit(CompilationScope scopeType, Scope scope, String name, String qualName, CompilationUnit parent, int argCount, int positionalOnlyArgCount, int kwOnlyArgCount, boolean takesVarArgs,
                     boolean takesVarKeywordArgs, SourceRange startLocation, EnumSet<FutureFeature> futureFeatures) {
         this.scopeType = scopeType;
         this.scope = scope;
@@ -120,19 +116,7 @@ public final class CompilationUnit {
         } else {
             privateName = null;
         }
-        if (scopeDepth > 1 && parent != null) {
-            if (!(EnumSet.of(Function, AsyncFunction, Class).contains(scopeType) &&
-                            parent.scope.getUseOfName(ScopeEnvironment.mangle(parent.privateName, name)).contains(Scope.DefUse.GlobalExplicit))) {
-                String base;
-                if (EnumSet.of(Function, AsyncFunction, Lambda).contains(parent.scopeType)) {
-                    base = parent.qualName + ".<locals>";
-                } else {
-                    base = parent.qualName;
-                }
-                name = base + "." + name;
-            }
-        }
-        qualName = name;
+        this.qualName = qualName;
 
         // derive variable names
         for (int i = 0; i < scope.getVarnames().size(); i++) {
@@ -143,6 +127,10 @@ public final class CompilationUnit {
             assert scopeType == Class;
             assert cellvars.isEmpty();
             cellvars.put("__class__", 0);
+        }
+        if (scope.needsClassDict()) {
+            assert scopeType == Class;
+            cellvars.put("__classdict__", cellvars.size());
         }
 
         int[] cell2argValue = new int[cellvars.size()];

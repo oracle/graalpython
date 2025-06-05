@@ -259,6 +259,8 @@ public abstract class BuiltinNames {
 
     public static final String J_TYPES = "types";
 
+    public static final String J__TYPING = "_typing";
+
     public static final String J_TYPING = "typing";
     public static final TruffleString T_TYPING = tsLiteral(J_TYPING);
 
@@ -424,6 +426,24 @@ public abstract class BuiltinNames {
 
     public static final String J_TYPE_VAR = "TypeVar";
     public static final TruffleString T_TYPE_VAR = tsLiteral(J_TYPE_VAR);
+
+    public static final String J_TYPE_VAR_TUPLE = "TypeVarTuple";
+    public static final TruffleString T_TYPE_VAR_TUPLE = tsLiteral(J_TYPE_VAR_TUPLE);
+
+    public static final String J_PARAM_SPEC = "ParamSpec";
+    public static final TruffleString T_PARAM_SPEC = tsLiteral(J_PARAM_SPEC);
+
+    public static final String J_PARAM_SPEC_ARGS = "ParamSpecArgs";
+    public static final TruffleString T_PARAM_SPEC_ARGS = tsLiteral(J_PARAM_SPEC_ARGS);
+
+    public static final String J_PARAM_SPEC_KWARGS = "ParamSpecKwargs";
+    public static final TruffleString T_PARAM_SPEC_KWARGS = tsLiteral(J_PARAM_SPEC_KWARGS);
+
+    public static final String J_TYPE_ALIAS_TYPE = "TypeAliasType";
+    public static final TruffleString T_TYPE_ALIAS_TYPE = tsLiteral(J_TYPE_ALIAS_TYPE);
+
+    public static final String J_GENERIC = "Generic";
+    public static final TruffleString T_GENERIC = tsLiteral(J_GENERIC);
 
     public static final String J__SRE = "_sre";
     public static final TruffleString T__SRE = tsLiteral(J__SRE);

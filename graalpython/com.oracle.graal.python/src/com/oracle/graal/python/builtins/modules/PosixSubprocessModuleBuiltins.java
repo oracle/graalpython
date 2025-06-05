@@ -44,8 +44,13 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeE
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+
+import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
@@ -281,7 +286,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             Object[] executables = new Object[length];
             for (int i = 0; i < length; ++i) {
                 byte[] bytes = toBytesNode.execute(frame, getItem.execute(frame, inliningTarget, executableList, i));
-                if (Arrays.equals(bytes, sysExecutable)) {
+                if (Arrays.equals(bytes, sysExecutable) || isBytecodeDSLJvmVenvLauncher(context, bytes)) {
                     TruffleString[] additionalArgs = PythonOptions.getExecutableList(context);
                     if (length != 1 && additionalArgs.length != 1) {
                         throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.UNSUPPORTED_USE_OF_SYS_EXECUTABLE);
@@ -313,6 +318,32 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
+        }
+
+        // On Bytecode DSL in JVM mode it is important to forward the Bytecode DSL flag
+        // Otherwise we do not forward flags for venv launchers and on Native Image the Bytecode DSL
+        // flag is baked into the image already
+        private static boolean isBytecodeDSLJvmVenvLauncher(PythonContext context, byte[] bytes) {
+            if (!PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || ImageInfo.inImageRuntimeCode()) {
+                return false;
+            }
+            // best effort to find our if we are executing venv launcher
+            Path executablePath = Path.of(context.getOption(PythonOptions.Executable).toJavaStringUncached()).toAbsolutePath();
+            Path path = Path.of(new String(bytes));
+            Path parent = path.getParent();
+            while (Files.isSymbolicLink(path) && parent != null) {
+                try {
+                    Path symlink = Files.readSymbolicLink(path);
+                    path = parent.resolve(symlink).toAbsolutePath();
+                } catch (IOException ignore) {
+                    return false;
+                }
+                if (path.equals(executablePath)) {
+                    return true;
+                }
+                parent = path.getParent();
+            }
+            return false;
         }
 
         /**

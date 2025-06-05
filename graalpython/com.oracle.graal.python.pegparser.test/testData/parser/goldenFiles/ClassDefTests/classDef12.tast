@@ -29,7 +29,7 @@ Module[1:0-14:26]
             ---- Function body of get_nested_class ----
             Assign[3:8-3:30]
                 LHS: Name[3:8-3:22] Value: "method_and_var" Store
-                RHS: RAW[3:25-3:30] Value: "var"
+                RHS: CODEPOINTS[3:25-3:30] Value: "var"
             ClassDef[4:8-12:32] Test
                 Bases:
                     Name[4:19-4:25] Value: "object"
@@ -40,7 +40,7 @@ Module[1:0-14:26]
                         Args:
                             ArgTy[5:31-5:35] self
                     ---- Function body of method_and_var ----
-                    Return[6:16-6:31] RAW[6:23-6:31] Value: "method"
+                    Return[6:16-6:31] CODEPOINTS[6:23-6:31] Value: "method"
                     ---- End of method_and_var function ----
                 FunctionDef[7:12-8:37]
                     Name:test
@@ -60,7 +60,7 @@ Module[1:0-14:26]
                         Call[10:23-10:36]
                             Target: Name[10:23-10:26] Value: "str"
                             Args:
-                                RAW[10:27-10:35] Value: "global"
+                                CODEPOINTS[10:27-10:35] Value: "global"
                     ---- End of actual_global function ----
                 FunctionDef[11:12-12:32]
                     Name:str

@@ -79,14 +79,17 @@ if (MSVC)
     /wd4464 # relative include path contains '..'
     /wd4710 # 'fprintf': function not inlined
     /wd4706 # assignment within conditional expression
+    /wd4774 # 'sprintf': format string expected in argument 2 is not a string literal
 
     # Some that I'm not so happy about
     /wd4232 # sre: nonstandard extension used: 'ml_meth': address of dllimport 'Py_GenericAlias' is not static, identity not guaranteed
     /wd4191 # sre and sqlite: 'type cast': like unsafe conversion from 'PyObject *(__cdecl *)(MatchObject *,PyObject *const *,Py_ssize_t)' to 'void (__cdecl *)(void)'
     /wd4918 # sre: invalid character in pragma optimization list
     /wd4701 # cpython_unicodedata: potentially uninitialized local variable 'rc' used
+    /wd4703 # unicodeobject.c:potentially uninitialized local pointer variable used
     /wd4574 # sqlite: 'SQLITE_ATOMIC_INTRINSICS' is defined to be '0': did you mean to use '#if SQLITE_ATOMIC_INTRINSICS'?
     /wd4310 # xmlparse: cast truncates constant value
+    /wd4777 # format string '%zd' requires an argument of type 'unsigned __int64'
   )
 else()
   set(CFLAGS_WARNINGS -Wall -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable
@@ -105,6 +108,7 @@ endif()
 # preprocessor defines for all platforms
 add_compile_definitions(
     NDEBUG
+    WITH_FREELISTS=1
 )
 
 
@@ -113,7 +117,7 @@ if(WIN32)
         MS_WINDOWS
         Py_ENABLE_SHARED
         HAVE_DECLSPEC_DLL
-        
+        NTDDI_VERSION=NTDDI_WINBLUE
     )
 endif()
 
@@ -235,12 +239,71 @@ set(SQLITE3_SRC
 )
 native_module("_sqlite3" TRUE "${SQLITE3_SRC}")
 target_include_directories("_sqlite3" PUBLIC "${SRC_DIR}/modules/_sqlite/sqlite")
-native_module("_sha3" TRUE "${SRC_DIR}/modules/_sha3/sha3module.c")
+
+set(LIBHACL_HEADERS
+    # "${SRC_DIR}/modules/_hacl/include/krml/FStar_UInt128_Verified.h"
+    # "${SRC_DIR}/modules/_hacl/include/krml/FStar_UInt_8_16_32_64.h"
+    # "${SRC_DIR}/modules/_hacl/include/krml/fstar_uint128_struct_endianness.h"
+    # "${SRC_DIR}/modules/_hacl/include/krml/internal/target.h"
+    # "${SRC_DIR}/modules/_hacl/include/krml/lowstar_endianness.h"
+    # "${SRC_DIR}/modules/_hacl/include/krml/types.h"
+    # "${SRC_DIR}/modules/_hacl/Hacl_Streaming_Types.h"
+    # "${SRC_DIR}/modules/_hacl/python_hacl_namespaces.h"
+    "${SRC_DIR}/modules/_hacl/include"
+    "${SRC_DIR}/modules/_hacl"
+)
+set(SHA3_SRC
+    "${SRC_DIR}/modules/sha3module.c"
+    "${SRC_DIR}/modules/_hacl/Hacl_Hash_SHA3.c"
+)
+native_module("_sha3" TRUE "${SHA3_SRC}")
+target_include_directories("_sha3" PUBLIC "${LIBHACL_HEADERS}")
+
+set(TESTCAPI_SRC
+    "${SRC_DIR}/modules/_testcapi/abstract.c"
+    "${SRC_DIR}/modules/_testcapi/buffer.c"
+    "${SRC_DIR}/modules/_testcapi/bytearray.c"
+    "${SRC_DIR}/modules/_testcapi/bytes.c"
+    # "${SRC_DIR}/modules/_testcapi/code.c"
+    "${SRC_DIR}/modules/_testcapi/codec.c"
+    "${SRC_DIR}/modules/_testcapi/complex.c"
+    "${SRC_DIR}/modules/_testcapi/datetime.c"
+    "${SRC_DIR}/modules/_testcapi/dict.c"
+    "${SRC_DIR}/modules/_testcapi/docstring.c"
+    "${SRC_DIR}/modules/_testcapi/exceptions.c"
+    "${SRC_DIR}/modules/_testcapi/file.c"
+    "${SRC_DIR}/modules/_testcapi/float.c"
+    "${SRC_DIR}/modules/_testcapi/gc.c"
+    "${SRC_DIR}/modules/_testcapi/getargs.c"
+    "${SRC_DIR}/modules/_testcapi/heaptype.c"
+    # "${SRC_DIR}/modules/_testcapi/heaptype_relative.c"
+    "${SRC_DIR}/modules/_testcapi/immortal.c"
+    "${SRC_DIR}/modules/_testcapi/list.c"
+    "${SRC_DIR}/modules/_testcapi/long.c"
+    "${SRC_DIR}/modules/_testcapi/mem.c"
+    "${SRC_DIR}/modules/_testcapi/numbers.c"
+    "${SRC_DIR}/modules/_testcapi/parts.h"
+    "${SRC_DIR}/modules/_testcapi/pyos.c"
+    "${SRC_DIR}/modules/_testcapi/pytime.c"
+    "${SRC_DIR}/modules/_testcapi/run.c"
+    "${SRC_DIR}/modules/_testcapi/set.c"
+    "${SRC_DIR}/modules/_testcapi/structmember.c"
+    "${SRC_DIR}/modules/_testcapi/sys.c"
+    "${SRC_DIR}/modules/_testcapi/testcapi_long.h"
+    "${SRC_DIR}/modules/_testcapi/tuple.c"
+    "${SRC_DIR}/modules/_testcapi/unicode.c"
+    "${SRC_DIR}/modules/_testcapi/util.h"
+    # "${SRC_DIR}/modules/_testcapi/vectorcall.c"
+    # "${SRC_DIR}/modules/_testcapi/vectorcall_limited.c"
+    # "${SRC_DIR}/modules/_testcapi/watchers.c"
+    "${SRC_DIR}/modules/_testcapi.c"
+)
 
 if(NOT WIN32)
-    native_module("_testcapi" FALSE "${SRC_DIR}/modules/_testcapi.c")
+    native_module("_testcapi" FALSE "${TESTCAPI_SRC}")
     simple_native_module("_testbuffer")
     simple_native_module("_testmultiphase")
+    simple_native_module("_testsinglephase")
     simple_native_module("_ctypes_test")
 
     ###################### BZIP2 ########################

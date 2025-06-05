@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -15,9 +15,6 @@ extern "C" {
 #define Py_file_input 257
 #define Py_eval_input 258
 #define Py_func_type_input 345
-
-/* This doesn't need to match anything */
-#define Py_fstring_input 800
 
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_COMPILE_H

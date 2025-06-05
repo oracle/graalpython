@@ -7,5 +7,5 @@ Output:
 Module[1:0-1:11]
     BinOp[1:0-1:11]
         Op: Add
-        LHS: RAW[1:0-1:6] Value: "ahoj"
+        LHS: CODEPOINTS[1:0-1:6] Value: "ahoj"
         RHS: LONG[1:9-1:11] Value: 10

@@ -1334,19 +1334,37 @@ public abstract class CExtNodes {
     }
 
     /**
-     * Depending on the object's type, the size may need to be computed in very different ways. E.g.
-     * any PyVarObject usually returns the number of contained elements.
+     * Calculate the lv_tag of PyLongObject.
      */
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
-    public abstract static class ObSizeNode extends PNodeWithContext {
+    public abstract static class LvTagNode extends PNodeWithContext {
+
+        private static final int SIGN_ZERO = 1;
+        private static final int SIGN_NEGATIVE = 2;
+        private static final int NON_SIZE_BITS = 3;
 
         public abstract long execute(Node inliningTarget, Object object);
 
+        public long getDigitCount(Node inliningTarget, Object object) {
+            return execute(inliningTarget, object) >> NON_SIZE_BITS;
+        }
+
+        static long toLvTag(long x, boolean isNegative) {
+            int sign = 0;
+            if (x == 0) {
+                return SIGN_ZERO;
+            }
+            if (isNegative) {
+                sign = SIGN_NEGATIVE;
+            }
+            return x << NON_SIZE_BITS | sign;
+        }
+
         @Specialization
         static long doBoolean(boolean object) {
-            return object ? 1 : 0;
+            return toLvTag(object ? 1 : 0, false);
         }
 
         @Specialization
@@ -1357,21 +1375,33 @@ public abstract class CExtNodes {
         @Specialization
         static long doLong(long object) {
             long t = PInt.abs(object);
-            int sign = object < 0 ? -1 : 1;
+            boolean sign = object < 0;
             int size = 0;
             while (t != 0) {
                 ++size;
                 t >>>= PYLONG_BITS_IN_DIGIT.intValue();
             }
-            return size * sign;
+            return toLvTag(size, sign);
         }
 
         @Specialization
         static long doPInt(PInt object) {
             int bw = PYLONG_BITS_IN_DIGIT.intValue();
             int len = (PInt.bitLength(object.abs()) + bw - 1) / bw;
-            return object.isNegative() ? -len : len;
+            return toLvTag(len, object.isNegative());
         }
+    }
+
+    /**
+     * Depending on the object's type, the size may need to be computed in very different ways. E.g.
+     * any PyVarObject usually returns the number of contained elements.
+     */
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class ObSizeNode extends PNodeWithContext {
+
+        public abstract long execute(Node inliningTarget, Object object);
 
         @Specialization
         static long doPythonNativeVoidPtr(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
@@ -1671,6 +1701,7 @@ public abstract class CExtNodes {
         // according to definitions in 'moduleobject.h'
         static final int SLOT_PY_MOD_CREATE = 1;
         static final int SLOT_PY_MOD_EXEC = 2;
+        static final int SLOT_PY_MOD_MULTIPLE_INTERPRETERS = 3;
 
     }
 
@@ -1762,6 +1793,10 @@ public abstract class CExtNodes {
                             break;
                         case SLOT_PY_MOD_EXEC:
                             hasExecutionSlots = true;
+                            break;
+                        case SLOT_PY_MOD_MULTIPLE_INTERPRETERS:
+                            // ignored
+                            // (mq) TODO: handle multiple interpreter cases
                             break;
                         default:
                             throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.MODULE_USES_UNKNOW_SLOT_ID, mName, slotId);
@@ -1910,6 +1945,10 @@ public abstract class CExtNodes {
                             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
                             transformExceptionFromNativeNode.execute(inliningTarget, threadState, mName, iResult != 0, true, ErrorMessages.EXECUTION_FAILED_WITHOUT_EXCEPTION,
                                             ErrorMessages.EXECUTION_RAISED_EXCEPTION);
+                            break;
+                        case SLOT_PY_MOD_MULTIPLE_INTERPRETERS:
+                            // ignored
+                            // (mq) TODO: handle multiple interpreter cases
                             break;
                         default:
                             throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.MODULE_INITIALIZED_WITH_UNKNOWN_SLOT, mName, slotId);

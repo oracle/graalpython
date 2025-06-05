@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,6 +62,7 @@ public enum BufferFormat {
     INT_32(4, 2, "i"),
     UINT_64(8, 3, "L"),
     INT_64(8, 3, "l"),
+    HALF_FLOAT(2, 1, "e"),
     FLOAT(4, 2, "f"),
     DOUBLE(8, 3, "d"),
     // Unicode is array-only and deprecated
@@ -144,6 +145,8 @@ public enum BufferFormat {
             case 'l':
             case 'q':
                 return INT_64;
+            case 'e':
+                return HALF_FLOAT;
             case 'f':
                 return FLOAT;
             case 'd':
@@ -153,7 +156,7 @@ public enum BufferFormat {
     }
 
     public static boolean isFloatingPoint(BufferFormat format) {
-        return format == FLOAT || format == DOUBLE;
+        return format == HALF_FLOAT || format == FLOAT || format == DOUBLE;
     }
 
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -36,11 +36,26 @@ typedef struct {
 #define _PyCompilerFlags_INIT \
     (PyCompilerFlags){.cf_flags = 0, .cf_feature_version = PY_MINOR_VERSION}
 
+/* source location information */
+typedef struct {
+    int lineno;
+    int end_lineno;
+    int col_offset;
+    int end_col_offset;
+} _PyCompilerSrcLocation;
+
+#define SRC_LOCATION_FROM_AST(n) \
+    (_PyCompilerSrcLocation){ \
+               .lineno = (n)->lineno, \
+               .end_lineno = (n)->end_lineno, \
+               .col_offset = (n)->col_offset, \
+               .end_col_offset = (n)->end_col_offset }
+
 /* Future feature support */
 
 typedef struct {
-    int ff_features;      /* flags set by future statements */
-    int ff_lineno;        /* line number of last future statement */
+    int ff_features;                    /* flags set by future statements */
+    _PyCompilerSrcLocation ff_location; /* location of last future statement */
 } PyFutureFeatures;
 
 #define FUTURE_NESTED_SCOPES "nested_scopes"

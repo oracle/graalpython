@@ -323,6 +323,12 @@ public final class StructNodes {
                     if (n > 255) {
                         n = 255;
                     }
+                    if (buffer.length == 0) {
+                        // (mq): CPython always allocates _PyBytesWriter.small_buffer[512] which
+                        // avoids this additional check. In our case we can do the check and avoid
+                        // such allocation.
+                        return;
+                    }
                     buffer[offset] = (byte) n;
             }
         }
@@ -468,6 +474,13 @@ public final class StructNodes {
                     break;
                 case FMT_PASCAL_STRING:
                 default:
+                    if (buffer.length == 0) {
+                        // (mq): CPython always allocates _PyBytesWriter.small_buffer[512] which
+                        // avoids this additional check. In our case we can do the check and avoid
+                        // such allocation.
+                        bytes = buffer;
+                        break;
+                    }
                     int n = buffer[offset] & 0xFF;
                     if (n >= formatCode.size) {
                         n = formatCode.size - 1;

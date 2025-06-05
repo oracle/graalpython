@@ -65,6 +65,11 @@ import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_ITEMS;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_NAMES;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_TARGETS;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_T_MATCH_CASE;
+import static com.oracle.graal.python.nodes.ErrorMessages.AST_NODE_COLUMN_RANGE_FOR_LINE_RANGE_IS_NOT_VALID;
+import static com.oracle.graal.python.nodes.ErrorMessages.AST_NODE_LINE_RANGE_IS_NOT_VALID;
+import static com.oracle.graal.python.nodes.ErrorMessages.LINE_COLUMN_IS_NOT_A_VALID_RANGE;
+import static com.oracle.graal.python.nodes.ErrorMessages.NAMEDEXPR_TARGET_MUST_BE_A_NAME;
+import static com.oracle.graal.python.nodes.ErrorMessages.TYPEALIAS_WITH_NON_NAME_NAME;
 import static com.oracle.graal.python.pegparser.sst.ExprContextTy.Del;
 import static com.oracle.graal.python.pegparser.sst.ExprContextTy.Load;
 import static com.oracle.graal.python.pegparser.sst.ExprContextTy.Store;
@@ -87,11 +92,18 @@ import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.OperatorTy;
 import com.oracle.graal.python.pegparser.sst.PatternTy;
+import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.sst.StmtTy.TypeAlias;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.ParamSpec;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVar;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVarTuple;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -147,6 +159,7 @@ final class Validator implements SSTreeVisitor<Void> {
 
     // Equivalent of validate_stmt
     private void validateStmt(StmtTy stmt) {
+        validatePositions(stmt);
         // TODO recursion checks
         stmt.accept(this);
     }
@@ -154,6 +167,7 @@ final class Validator implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.FunctionDef node) {
         validateBody(node.body, T_C_FUNCTIONDEF);
+        validateTypeParams(node.typeParams);
         visit(node.args);
         validateExprs(node.decoratorList, Load, false);
         if (node.returns != null) {
@@ -165,6 +179,7 @@ final class Validator implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.ClassDef node) {
         validateBody(node.body, T_C_CLASSDEF);
+        validateTypeParams(node.typeParams);
         validateExprs(node.bases, Load, false);
         validateKeywords(node.keywords);
         validateExprs(node.decoratorList, Load, false);
@@ -300,6 +315,7 @@ final class Validator implements SSTreeVisitor<Void> {
         }
         if (node.handlers != null) {
             for (ExceptHandlerTy handler : node.handlers) {
+                validatePositions(handler);
                 handler.accept(this);
             }
         }
@@ -380,6 +396,7 @@ final class Validator implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.AsyncFunctionDef node) {
         validateBody(node.body, T_C_ASYNCFUNCTIONDEF);
+        validateTypeParams(node.typeParams);
         visit(node.args);
         validateExprs(node.decoratorList, Load, false);
         if (node.returns != null) {
@@ -411,6 +428,7 @@ final class Validator implements SSTreeVisitor<Void> {
     private void validateExpr(ExprTy expr, ExprContextTy context) {
         assert context != null;
 
+        validatePositions(expr);
         // TODO recursion checks
 
         // CPython uses two switch(exp->kind) statements. We combine them in a single visitor, but
@@ -660,6 +678,9 @@ final class Validator implements SSTreeVisitor<Void> {
     @Override
     public Void visit(ExprTy.NamedExpr node) {
         checkContext();
+        if (!(node.target instanceof ExprTy.Name)) {
+            throw raiseTypeError(NAMEDEXPR_TARGET_MUST_BE_A_NAME);
+        }
         validateExpr(node.value, Load);
         return null;
     }
@@ -679,6 +700,7 @@ final class Validator implements SSTreeVisitor<Void> {
 
     // Equivalent of validate_pattern
     private void validatePattern(PatternTy pattern, boolean starOk) {
+        validatePositions(pattern);
         boolean prevStarOk = isStarPatternOk;
         isStarPatternOk = starOk;
         pattern.accept(this);
@@ -734,7 +756,7 @@ final class Validator implements SSTreeVisitor<Void> {
                 case DOUBLE:
                 case BYTES:
                 case COMPLEX:
-                case RAW:
+                case CODEPOINTS:
                     return;
             }
             throw raiseValueError(ErrorMessages.UNEXPECTED_CONSTANT_INSIDE_OF_A_LITERAL_PATTERN);
@@ -952,9 +974,41 @@ final class Validator implements SSTreeVisitor<Void> {
         return null;
     }
 
-    /*-
-    // Validation of sequences
-    */
+    @Override
+    public Void visit(TypeAlias node) {
+        if (!(node.name instanceof ExprTy.Name)) {
+            raiseTypeError(TYPEALIAS_WITH_NON_NAME_NAME);
+        }
+        validateExpr(node.name, Store);
+        validateTypeParams(node.typeParams);
+        validateExpr(node.value, Load);
+        return null;
+    }
+
+    @Override
+    public Void visit(TypeVar node) {
+        validateName(node.name);
+        if (node.bound != null) {
+            validateExpr(node.bound, Load);
+        }
+        return null;
+    }
+
+    @Override
+    public Void visit(ParamSpec node) {
+        validateName(node.name);
+        return null;
+    }
+
+    @Override
+    public Void visit(TypeVarTuple node) {
+        validateName(node.name);
+        return null;
+    }
+
+/*-
+// Validation of sequences
+*/
 
     // Equivalent of validate_stmts
     private void validateStmts(StmtTy[] stmts) {
@@ -990,6 +1044,7 @@ final class Validator implements SSTreeVisitor<Void> {
             return;
         }
         for (ArgTy arg : args) {
+            validatePositions(arg);
             visit(arg);
         }
     }
@@ -1043,6 +1098,17 @@ final class Validator implements SSTreeVisitor<Void> {
         }
     }
 
+    // Equivalent of validate_type_params
+    private void validateTypeParams(TypeParamTy[] typeParams) {
+        if (typeParams == null) {
+            return;
+        }
+        for (TypeParamTy typeParam : typeParams) {
+            validatePositions(typeParam);
+            typeParam.accept(this);
+        }
+    }
+
     /*-
     // Helpers
     */
@@ -1050,6 +1116,20 @@ final class Validator implements SSTreeVisitor<Void> {
     // Equivalent of asdl_seq_LEN
     private static int seqLen(Object[] seq) {
         return seq == null ? 0 : seq.length;
+    }
+
+    // Equivalent of VALIDATE_POSITIONS
+    private void validatePositions(SSTNode node) {
+        SourceRange sr = node.getSourceRange();
+        if (sr.startLine > sr.endLine) {
+            throw raiseValueError(AST_NODE_LINE_RANGE_IS_NOT_VALID, sr.startLine, sr.endLine);
+        }
+        if ((sr.startLine < 0 && sr.endLine != sr.startLine) || (sr.startColumn < 0 && sr.endColumn != sr.startColumn)) {
+            throw raiseValueError(AST_NODE_COLUMN_RANGE_FOR_LINE_RANGE_IS_NOT_VALID, sr.startColumn, sr.endColumn, sr.startLine, sr.endLine);
+        }
+        if (sr.startLine == sr.endLine && sr.startColumn > sr.endColumn) {
+            throw raiseValueError(LINE_COLUMN_IS_NOT_A_VALID_RANGE, sr.startLine, sr.startColumn, sr.endColumn);
+        }
     }
 
     // Equivalent of validate_name

@@ -25,9 +25,10 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.ErrorMessages.PICKLE_ITERTOOLS_IN_PYTHON_3_14;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_S;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COPY__;
 
 import java.util.List;
 
@@ -36,18 +37,16 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IterNode;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
-import com.oracle.graal.python.lib.PyCallableCheckNode;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.builtins.objects.itertools.PTee;
+import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -55,7 +54,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(defineModule = "itertools")
 public final class ItertoolsModuleBuiltins extends PythonBuiltins {
@@ -63,6 +62,11 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ItertoolsModuleBuiltinsFactory.getFactories();
+    }
+
+    @TruffleBoundary
+    public static void warnPickleDeprecated() {
+        WarningsModuleBuiltins.WarnNode.getUncached().warnEx(null, DeprecationWarning, PICKLE_ITERTOOLS_IN_PYTHON_3_14, 1);
     }
 
     @Builtin(name = "tee", minNumOfPositionalArgs = 1, parameterNames = {"iterable", "n"})
@@ -91,30 +95,23 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "n > 0")
         static Object tee(VirtualFrame frame, Object iterable, int n,
                         @Bind("this") Node inliningTarget,
-                        @Cached IterNode iterNode,
-                        @Cached PyObjectLookupAttr getAttrNode,
-                        @Cached PyCallableCheckNode callableCheckNode,
-                        @Cached CallNode callNode,
-                        @Cached InlinedBranchProfile notCallableProfile,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached InlinedConditionProfile isTeeInstanceProfile,
                         @Bind PythonLanguage language) {
-            Object it = iterNode.execute(frame, iterable, PNone.NO_VALUE);
-            Object copyCallable = getAttrNode.execute(frame, inliningTarget, it, T___COPY__);
-            if (!callableCheckNode.execute(inliningTarget, copyCallable)) {
-                notCallableProfile.enter(inliningTarget);
-                // as in Tee.__NEW__()
-                PTeeDataObject dataObj = PFactory.createTeeDataObject(language, it);
-                it = PFactory.createTee(language, dataObj, 0);
-            }
+            Object it = getIter.execute(frame, inliningTarget, iterable);
 
             // return tuple([it] + [it.__copy__() for i in range(1, n)])
             Object[] tupleObjs = new Object[n];
-            tupleObjs[0] = it;
+            PTee to = TeeBuiltins.NewNode.teeFromIterable(frame, null, it,
+                            inliningTarget, getIter, isTeeInstanceProfile, language);
 
-            copyCallable = getAttrNode.execute(frame, inliningTarget, it, T___COPY__);
+            tupleObjs[0] = to;
+
             for (int i = 1; i < n; i++) {
-                tupleObjs[i] = callNode.execute(frame, copyCallable);
+                tupleObjs[i] = TeeBuiltins.CopyNode.copy(to, language);
             }
             return PFactory.createTuple(language, tupleObjs);
         }
     }
+
 }

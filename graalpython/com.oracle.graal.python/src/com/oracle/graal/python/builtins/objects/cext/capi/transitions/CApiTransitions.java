@@ -433,8 +433,8 @@ public abstract class CApiTransitions {
                     threadState.clearCurrentException();
                     Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
                     if (nativeThreadState != null) {
-                        savedNativeException = CStructAccess.ReadPointerNode.readUncached(nativeThreadState, CFields.PyThreadState__curexc_type);
-                        CStructAccess.WritePointerNode.writeUncached(nativeThreadState, CFields.PyThreadState__curexc_type, 0L);
+                        savedNativeException = CStructAccess.ReadPointerNode.readUncached(nativeThreadState, CFields.PyThreadState__current_exception);
+                        CStructAccess.WritePointerNode.writeUncached(nativeThreadState, CFields.PyThreadState__current_exception, 0L);
                     }
                 }
                 try {
@@ -522,7 +522,7 @@ public abstract class CApiTransitions {
                         threadState.setCurrentException(savedException, savedTraceback);
                         Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
                         if (nativeThreadState != null) {
-                            CStructAccess.WritePointerNode.writeUncached(nativeThreadState, CFields.PyThreadState__curexc_type, savedNativeException);
+                            CStructAccess.WritePointerNode.writeUncached(nativeThreadState, CFields.PyThreadState__current_exception, savedNativeException);
                         }
                     }
                 }
@@ -1787,6 +1787,9 @@ public abstract class CApiTransitions {
         if (ignoreIfDead && refCount == 0) {
             return 0;
         }
+        if (refCount == IMMORTAL_REFCNT) {
+            return IMMORTAL_REFCNT;
+        }
         assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
         assert (refCount + refCntDelta) > 0 : String.format("refcnt reached zero during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
 
@@ -1800,6 +1803,9 @@ public abstract class CApiTransitions {
         assert PythonContext.get(null).isNativeAccessAllowed();
         assert PythonContext.get(null).ownsGil();
         long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
+        if (refCount == IMMORTAL_REFCNT) {
+            return IMMORTAL_REFCNT;
+        }
         assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value during managed adjustment for %016x (%d %016x - %d)\n", pointer, refCount, refCount, refCntDelta);
         assert (refCount - refCntDelta) >= 0 : String.format("refcnt below zero during managed adjustment for %016x (%d %016x - %d)\n", pointer, refCount, refCount, refCntDelta);
 

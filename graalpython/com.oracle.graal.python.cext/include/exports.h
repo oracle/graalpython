@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -7,9 +7,15 @@
 #define Py_EXPORTS_H
 
 #if defined(_WIN32) || defined(__CYGWIN__)
-    #define Py_IMPORTED_SYMBOL __declspec(dllimport)
-    #define Py_EXPORTED_SYMBOL __declspec(dllexport)
-    #define Py_LOCAL_SYMBOL
+    #if defined(Py_ENABLE_SHARED)
+        #define Py_IMPORTED_SYMBOL __declspec(dllimport)
+        #define Py_EXPORTED_SYMBOL __declspec(dllexport)
+        #define Py_LOCAL_SYMBOL
+    #else
+        #define Py_IMPORTED_SYMBOL
+        #define Py_EXPORTED_SYMBOL
+        #define Py_LOCAL_SYMBOL
+    #endif
 #else
 /*
  * If we only ever used gcc >= 5, we could use __has_attribute(visibility)

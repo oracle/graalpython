@@ -318,7 +318,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         private PNone initFromLocalFrame(VirtualFrame frame, Node inliningTarget, SuperObject self, PBytecodeRootNode rootNode, Frame localFrame, CellBuiltins.GetRefNode getRefNode,
                         PRaiseNode raiseNode) {
             PCell classCell = rootNode.readClassCell(localFrame);
-            if (classCell == null) {
+            if (!rootNode.hasSelf() || classCell == null) {
                 throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_NO_CLASS);
             }
             Object cls = getRefNode.execute(inliningTarget, classCell);
@@ -328,7 +328,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             }
             Object obj = rootNode.readSelf(localFrame);
             if (obj == null) {
-                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.NO_ARGS, "super()");
+                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_ARG0_DELETED);
             }
             return init(frame, self, cls, obj, inliningTarget, raiseNode);
         }
@@ -336,7 +336,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         private PNone initFromLocalFrame(VirtualFrame frame, Node inliningTarget, SuperObject self, PBytecodeDSLRootNode rootNode, Frame localFrame, CellBuiltins.GetRefNode getRefNode,
                         PRaiseNode raiseNode) {
             PCell classCell = rootNode.readClassCell(localFrame);
-            if (classCell == null) {
+            if (!rootNode.hasSelf() || classCell == null) {
                 throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_NO_CLASS);
             }
             Object cls = getRefNode.execute(inliningTarget, classCell);
@@ -346,7 +346,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             }
             Object obj = rootNode.readSelf(localFrame);
             if (obj == null) {
-                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.NO_ARGS, "super()");
+                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_ARG0_DELETED);
             }
             return init(frame, self, cls, obj, inliningTarget, raiseNode);
         }

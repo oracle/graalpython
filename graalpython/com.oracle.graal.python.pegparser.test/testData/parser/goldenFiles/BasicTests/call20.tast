@@ -14,7 +14,7 @@ Module[1:0-1:36]
         Call[1:14-1:36]
             Target: 
                 Attribute[1:14-1:25] 
-                    Receiver: RAW[1:14-1:18] Value: "in"
+                    Receiver: CODEPOINTS[1:14-1:18] Value: "in"
                     Attr: format
             KWArgs:
                 KeywordTy[1:26-1:35]

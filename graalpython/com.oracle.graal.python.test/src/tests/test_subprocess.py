@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -186,3 +186,9 @@ class TestSubprocess(unittest.TestCase):
             env = {"GRAAL_PYTHON_ARGS": """\v-c\vimport os\nprint(os.environ.get("GRAAL_PYTHON_ARGS"))\v"""}
             result = subprocess.check_output([sys.executable], env=env, text=True)
             self.assertEqual('None\n', result)
+
+            # check that the subprocess receives an empty arg
+            args = """\v-c\vimport sys\nprint(repr(sys.argv))\va1\v\va3"""
+            env = {"GRAAL_PYTHON_ARGS": args}
+            result = subprocess.check_output([sys.executable], env=env, text=True)
+            self.assertEqual("['-c', 'a1', '', 'a3']\n", result)

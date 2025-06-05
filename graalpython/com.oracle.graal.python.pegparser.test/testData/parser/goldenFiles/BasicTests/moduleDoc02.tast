@@ -11,7 +11,7 @@ a = 10
 Output:
 -------
 Module[1:0-5:6]
-    RAW[1:0-4:3] Value: "\nThi is doc\nyes\n"
+    CODEPOINTS[1:0-4:3] Value: "\nThi is doc\nyes\n"
     Assign[5:0-5:6]
         LHS: Name[5:0-5:1] Value: "a" Store
         RHS: LONG[5:4-5:6] Value: 10

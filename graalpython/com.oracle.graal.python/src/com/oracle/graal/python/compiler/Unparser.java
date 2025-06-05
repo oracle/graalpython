@@ -41,6 +41,7 @@
 package com.oracle.graal.python.compiler;
 
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.codePointsToTruffleString;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -65,7 +66,11 @@ import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.sst.StmtTy.TypeAlias;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.ParamSpec;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVar;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVarTuple;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.runtime.formatting.ComplexFormatter;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
@@ -155,8 +160,8 @@ public class Unparser implements SSTreeVisitor<Void> {
     }
 
     private void appendFStringElement(ExprTy e, boolean isFormatSpec) {
-        if (e instanceof ExprTy.Constant) {
-            appendFString(((ExprTy.Constant) e).value.getRaw(TruffleString.class));
+        if (e instanceof ExprTy.Constant c) {
+            appendFString(codePointsToTruffleString(c.value.getCodePoints()));
         } else if (e instanceof ExprTy.JoinedStr) {
             appendJoinedStr((ExprTy.JoinedStr) e, isFormatSpec);
         } else if (e instanceof ExprTy.FormattedValue) {
@@ -536,8 +541,8 @@ public class Unparser implements SSTreeVisitor<Void> {
             case BOOLEAN:
                 appendStr(value.getBoolean() ? "True" : "False");
                 break;
-            case RAW:
-                appendStr(StringNodes.StringReprNode.getUncached().execute(value.getRaw(TruffleString.class)));
+            case CODEPOINTS:
+                appendStr(StringNodes.StringReprNode.getUncached().execute(codePointsToTruffleString(value.getCodePoints())));
                 break;
             case BIGINTEGER:
                 appendStr(value.getBigInteger().toString());
@@ -1094,5 +1099,25 @@ public class Unparser implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Pass aThis) {
         throw new IllegalStateException("unknown expression kind");
+    }
+
+    @Override
+    public Void visit(TypeAlias node) {
+        throw new IllegalStateException("unknown AST node");
+    }
+
+    @Override
+    public Void visit(TypeVar node) {
+        throw new IllegalStateException("unknown AST node");
+    }
+
+    @Override
+    public Void visit(ParamSpec node) {
+        throw new IllegalStateException("unknown AST node");
+    }
+
+    @Override
+    public Void visit(TypeVarTuple node) {
+        throw new IllegalStateException("unknown AST node");
     }
 }

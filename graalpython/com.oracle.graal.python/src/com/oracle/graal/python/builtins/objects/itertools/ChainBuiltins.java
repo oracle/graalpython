@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENTS_MUST_BE_ITERATORS;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
@@ -202,6 +203,7 @@ public final class ChainBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile hasSourceProfile,
                         @Cached InlinedConditionProfile hasActiveProfile,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object type = getClass.execute(inliningTarget, self);
             PTuple empty = PFactory.createEmptyTuple(language);
             if (hasSourceProfile.profile(inliningTarget, self.getSource() != PNone.NONE)) {
@@ -229,6 +231,7 @@ public final class ChainBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile len2Profile,
                         @Cached PyIterCheckNode iterCheckNode,
                         @Cached PRaiseNode raiseNode) {
+            warnPickleDeprecated();
             if (!(state instanceof PTuple)) {
                 throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }

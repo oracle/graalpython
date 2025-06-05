@@ -39,9 +39,13 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_REVERSE_KEYITERA
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_REVERSE_VALUEITERATOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUEITERATOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUES;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_GENERIC;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_LRU_CACHE_WRAPPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ORDERED_DICT;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_PARAM_SPEC;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_PARAM_SPEC_ARGS;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_PARAM_SPEC_KWARGS;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PARTIAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_POLYGLOT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_POSIX;
@@ -49,6 +53,10 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_PROPERTY;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SIMPLE_QUEUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TUPLE_GETTER;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPES;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPE_ALIAS_TYPE;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPE_VAR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPE_VAR_TUPLE;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPING;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_WRAPPER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CONTEXTVARS;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CTYPES;
@@ -56,6 +64,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J__SOCKET;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__SSL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__STRUCT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__TYPING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.lang.reflect.Field;
@@ -126,6 +135,7 @@ import com.oracle.graal.python.builtins.modules.pickle.PicklerBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.PicklerMemoProxyBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.UnpicklerBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.UnpicklerMemoProxyBuiltins;
+import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressorBuiltins;
 import com.oracle.graal.python.builtins.objects.NoneBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
@@ -189,6 +199,7 @@ import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.ZipBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.AccumulateBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.BatchedBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ChainBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CombinationsBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CombinationsWithReplacementBuiltins;
@@ -213,6 +224,7 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinFunctionOrMethodBuiltins;
@@ -266,6 +278,12 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.types.UnionTypeBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.ParamSpecArgsBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.ParamSpecBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.ParamSpecKwargsBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.TypeAliasTypeBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.TypeVarBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.TypeVarTupleBuiltins;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -284,6 +302,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 public enum PythonBuiltinClassType implements TruffleObject {
 
     PythonObject("object", null, newBuilder().publishInModule(J_BUILTINS).basetype().slots(ObjectBuiltins.SLOTS).doc("""
+                    object()
+                    --
+
                     The base class of the class hierarchy.
 
                     When called, it accepts no arguments and returns a new featureless
@@ -365,7 +386,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     cache_info_type:    namedtuple class with the fields:
                                            hits misses currsize maxsize
                     """)),
-    PDeque(J_DEQUE, PythonObject, newBuilder().publishInModule("_collections").basetype().slots(DequeBuiltins.SLOTS)),
+    PDeque(J_DEQUE, PythonObject, newBuilder().publishInModule("_collections").moduleName("collections").basetype().slots(DequeBuiltins.SLOTS)),
     PTupleGetter(J_TUPLE_GETTER, PythonObject, newBuilder().publishInModule("_collections").basetype().slots(TupleGetterBuiltins.SLOTS)),
     PDequeIter(J_DEQUE_ITER, PythonObject, newBuilder().publishInModule("_collections").slots(DequeIterCommonBuiltins.SLOTS, DequeIterBuiltins.SLOTS)),
     PDequeRevIter(J_DEQUE_REV_ITER, PythonObject, newBuilder().publishInModule("_collections").slots(DequeIterCommonBuiltins.SLOTS, DequeRevIterBuiltins.SLOTS)),
@@ -465,6 +486,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     PythonObject,
                     newBuilder().publishInModule(J_BUILTINS).slots(MemoryViewBuiltins.SLOTS).doc("""
                                     Create a new memoryview object which references the given object.""")),
+    PMemoryViewIterator("memory_iterator", PythonObject, newBuilder().slots(MemoryViewIteratorBuiltins.SLOTS)),
     PAsyncGenASend("async_generator_asend", PythonObject, newBuilder().slots(AsyncGenSendBuiltins.SLOTS)),
     PAsyncGenAThrow("async_generator_athrow", PythonObject, newBuilder().slots(AsyncGenThrowBuiltins.SLOTS)),
     PAsyncGenAWrappedValue("async_generator_wrapped_value", PythonObject, newBuilder()),
@@ -651,7 +673,40 @@ public enum PythonBuiltinClassType implements TruffleObject {
     LsprofProfiler("Profiler", PythonObject, newBuilder().publishInModule("_lsprof").basetype().slots(ProfilerBuiltins.SLOTS)),
     PStruct("Struct", PythonObject, newBuilder().publishInModule(J__STRUCT).basetype().slots(StructBuiltins.SLOTS)),
     PStructUnpackIterator("unpack_iterator", PythonObject, newBuilder().publishInModule(J__STRUCT).basetype().slots(StructUnpackIteratorBuiltins.SLOTS)),
-    Pickler("Pickler", PythonObject, newBuilder().publishInModule("_pickle").basetype().slots(PicklerBuiltins.SLOTS)),
+    Pickler("Pickler", PythonObject, newBuilder().publishInModule("_pickle").basetype().slots(PicklerBuiltins.SLOTS).doc("""
+                    Pickler(file, protocol=None, fix_imports=True, buffer_callback=None)
+                    --
+
+                    This takes a binary file for writing a pickle data stream.
+
+                    The optional *protocol* argument tells the pickler to use the given
+                    protocol; supported protocols are 0, 1, 2, 3, 4 and 5.  The default
+                    protocol is 4. It was introduced in Python 3.4, and is incompatible
+                    with previous versions.
+
+                    Specifying a negative protocol version selects the highest protocol
+                    version supported.  The higher the protocol used, the more recent the
+                    version of Python needed to read the pickle produced.
+
+                    The *file* argument must have a write() method that accepts a single
+                    bytes argument. It can thus be a file object opened for binary
+                    writing, an io.BytesIO instance, or any other custom object that meets
+                    this interface.
+
+                    If *fix_imports* is True and protocol is less than 3, pickle will try
+                    to map the new Python 3 names to the old module names used in Python
+                    2, so that the pickle data stream is readable with Python 2.
+
+                    If *buffer_callback* is None (the default), buffer views are
+                    serialized into *file* as part of the pickle stream.
+
+                    If *buffer_callback* is not None, then it can be called any number
+                    of times with a buffer view.  If the callback returns a false value
+                    (such as None), the given buffer is out-of-band; otherwise the
+                    buffer is serialized in-band, i.e. inside the pickle stream.
+
+                    It is an error if *buffer_callback* is not None and *protocol*
+                    is None or smaller than 5.""")),
     PicklerMemoProxy("PicklerMemoProxy", PythonObject, newBuilder().publishInModule("_pickle").basetype().slots(PicklerMemoProxyBuiltins.SLOTS)),
     UnpicklerMemoProxy("UnpicklerMemoProxy", PythonObject, newBuilder().publishInModule("_pickle").basetype().slots(UnpicklerMemoProxyBuiltins.SLOTS)),
     Unpickler("Unpickler", PythonObject, newBuilder().publishInModule("_pickle").basetype().slots(UnpicklerBuiltins.SLOTS)),
@@ -788,9 +843,25 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // zlib
     ZlibCompress("Compress", PythonObject, newBuilder().publishInModule("zlib").disallowInstantiation()),
     ZlibDecompress("Decompress", PythonObject, newBuilder().publishInModule("zlib").disallowInstantiation()),
+    ZlibDecompressor("_ZlibDecompressor", PythonObject, newBuilder().publishInModule("zlib").basetype().addDict().slots(ZlibDecompressorBuiltins.SLOTS).doc("""
+                    _ZlibDecompressor(wbits=15, zdict=b'')
+                    --
+
+                    Create a decompressor object for decompressing data incrementally.
+
+                      wbits = 15
+                      zdict
+                         The predefined compression dictionary. This is a sequence of bytes
+                         (such as a bytes object) containing subsequences that are expected
+                         to occur frequently in the data that is to be compressed. Those
+                         subsequences that are expected to be most common should come at the
+                         end of the dictionary. This must be the same dictionary as used by the
+                         compressor that produced the input data.
+
+                    """)),
 
     // io
-    PIOBase("_IOBase", PythonObject, newBuilder().publishInModule("_io").basetype().addDict().slots(IOBaseBuiltins.SLOTS)),
+    PIOBase("_IOBase", PythonObject, newBuilder().publishInModule("_io").basetype().heaptype().addDict().slots(IOBaseBuiltins.SLOTS)),
     PRawIOBase("_RawIOBase", PIOBase, newBuilder().publishInModule("_io").basetype().slots(IOBaseBuiltins.SLOTS)),
     PTextIOBase("_TextIOBase", PIOBase, newBuilder().publishInModule("_io").basetype().slots(IOBaseBuiltins.SLOTS)),
     PBufferedIOBase("_BufferedIOBase", PIOBase, newBuilder().publishInModule("_io").basetype().slots(IOBaseBuiltins.SLOTS)),
@@ -1062,6 +1133,23 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     is exhausted and then it raises StopIteration.  When the shorter iterables
                     are exhausted, the fillvalue is substituted in their place.  The fillvalue
                     defaults to None or can be specified by a keyword argument.""")),
+    PBatched("batched", PythonObject, newBuilder().publishInModule("itertools").basetype().slots(BatchedBuiltins.SLOTS).doc("""
+                    batched(iterable, n)
+                    --
+
+                    Batch data into tuples of length n. The last batch may be shorter than n.
+
+                    Loops over the input iterable and accumulates data into tuples
+                    up to size n.  The input is consumed lazily, just enough to
+                    fill a batch.  The result is yielded as soon as a batch is full
+                    or when the input iterable is exhausted.
+
+                    \t>>> for batch in batched('ABCDEFG', 3):
+                    \t...     print(batch)
+                    \t...
+                    \t('A', 'B', 'C')
+                    \t('D', 'E', 'F')
+                    \t('G',)""")),
 
     // json
     JSONScanner(
@@ -1165,7 +1253,182 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     Capsule("PyCapsule", PythonObject, newBuilder().basetype()),
 
-    PTokenizerIter("TokenizerIter", PythonObject, newBuilder().publishInModule("_tokenize").basetype().slots(TokenizerIterBuiltins.SLOTS));
+    PTokenizerIter("TokenizerIter", PythonObject, newBuilder().publishInModule("_tokenize").basetype().slots(TokenizerIterBuiltins.SLOTS)),
+
+    PTypeVar(J_TYPE_VAR, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(TypeVarBuiltins.SLOTS).doc("""
+                    Type variable.
+
+                    The preferred way to construct a type variable is via the dedicated
+                    syntax for generic functions, classes, and type aliases::
+
+                        class Sequence[T]:  # T is a TypeVar
+                            ...
+
+                    This syntax can also be used to create bound and constrained type
+                    variables::
+
+                        # S is a TypeVar bound to str
+                        class StrSequence[S: str]:
+                            ...
+
+                        # A is a TypeVar constrained to str or bytes
+                        class StrOrBytesSequence[A: (str, bytes)]:
+                            ...
+
+                    However, if desired, reusable type variables can also be constructed
+                    manually, like so::
+
+                       T = TypeVar('T')  # Can be anything
+                       S = TypeVar('S', bound=str)  # Can be any subtype of str
+                       A = TypeVar('A', str, bytes)  # Must be exactly str or bytes
+
+                    Type variables exist primarily for the benefit of static type
+                    checkers.  They serve as the parameters for generic types as well
+                    as for generic function and type alias definitions.
+
+                    The variance of type variables is inferred by type checkers when they
+                    are created through the type parameter syntax and when
+                    ``infer_variance=True`` is passed. Manually created type variables may
+                    be explicitly marked covariant or contravariant by passing
+                    ``covariant=True`` or ``contravariant=True``. By default, manually
+                    created type variables are invariant. See PEP 484 and PEP 695 for more
+                    details.
+                    """)),
+    PTypeVarTuple(J_TYPE_VAR_TUPLE, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(TypeVarTupleBuiltins.SLOTS).doc("""
+                    Type variable tuple. A specialized form of type variable that enables
+                    variadic generics.
+
+                    The preferred way to construct a type variable tuple is via the
+                    dedicated syntax for generic functions, classes, and type aliases,
+                    where a single '*' indicates a type variable tuple::
+
+                        def move_first_element_to_last[T, *Ts](tup: tuple[T, *Ts]) -> tuple[*Ts, T]:
+                            return (*tup[1:], tup[0])
+
+                    For compatibility with Python 3.11 and earlier, TypeVarTuple objects
+                    can also be created as follows::
+
+                        Ts = TypeVarTuple('Ts')  # Can be given any name
+
+                    Just as a TypeVar (type variable) is a placeholder for a single type,
+                    a TypeVarTuple is a placeholder for an *arbitrary* number of types. For
+                    example, if we define a generic class using a TypeVarTuple::
+
+                        class C[*Ts]: ...
+
+                    Then we can parameterize that class with an arbitrary number of type
+                    arguments::
+
+                        C[int]       # Fine
+                        C[int, str]  # Also fine
+                        C[()]        # Even this is fine
+
+                    For more details, see PEP 646.
+
+                    Note that only TypeVarTuples defined in the global scope can be
+                    pickled.
+                    """)),
+    PParamSpec(J_PARAM_SPEC, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(ParamSpecBuiltins.SLOTS).doc("""
+                    Parameter specification variable.
+
+                    The preferred way to construct a parameter specification is via the
+                    dedicated syntax for generic functions, classes, and type aliases,
+                    where the use of '**' creates a parameter specification::
+
+                        type IntFunc[**P] = Callable[P, int]
+
+                    For compatibility with Python 3.11 and earlier, ParamSpec objects
+                    can also be created as follows::
+
+                        P = ParamSpec('P')
+
+                    Parameter specification variables exist primarily for the benefit of
+                    static type checkers.  They are used to forward the parameter types of
+                    one callable to another callable, a pattern commonly found in
+                    higher-order functions and decorators.  They are only valid when used
+                    in ``Concatenate``, or as the first argument to ``Callable``, or as
+                    parameters for user-defined Generics. See class Generic for more
+                    information on generic types.
+
+                    An example for annotating a decorator::
+
+                        def add_logging[**P, T](f: Callable[P, T]) -> Callable[P, T]:
+                            '''A type-safe decorator to add logging to a function.'''
+                            def inner(*args: P.args, **kwargs: P.kwargs) -> T:
+                                logging.info(f'{f.__name__} was called')
+                                return f(*args, **kwargs)
+                            return inner
+
+                        @add_logging
+                        def add_two(x: float, y: float) -> float:
+                            '''Add two numbers together.'''
+                            return x + y
+
+                    Parameter specification variables can be introspected. e.g.::
+
+                        >>> P = ParamSpec("P")
+                        >>> P.__name__
+                        'P'
+
+                    Note that only parameter specification variables defined in the global
+                    scope can be pickled.
+                    """)),
+    PParamSpecArgs(J_PARAM_SPEC_ARGS, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(ParamSpecArgsBuiltins.SLOTS).doc("""
+                    The args for a ParamSpec object.
+
+                    Given a ParamSpec object P, P.args is an instance of ParamSpecArgs.
+
+                    ParamSpecArgs objects have a reference back to their ParamSpec::
+
+                        >>> P = ParamSpec("P")
+                        >>> P.args.__origin__ is P
+                        True
+
+                    This type is meant for runtime introspection and has no special meaning
+                    to static type checkers.
+                    """)),
+    PParamSpecKwargs(J_PARAM_SPEC_KWARGS, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(ParamSpecKwargsBuiltins.SLOTS).doc("""
+                    The kwargs for a ParamSpec object.
+
+                    Given a ParamSpec object P, P.kwargs is an instance of ParamSpecKwargs.
+
+                    ParamSpecKwargs objects have a reference back to their ParamSpec::
+
+                        >>> P = ParamSpec("P")
+                        >>> P.kwargs.__origin__ is P
+                        True
+
+                    This type is meant for runtime introspection and has no special meaning
+                    to static type checkers.
+                    """)),
+    PTypeAliasType(
+                    J_TYPE_ALIAS_TYPE,
+                    PythonObject,
+                    newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).addDict().slots(TypeAliasTypeBuiltins.SLOTS).doc("""
+                                    Type alias.
+
+                                    Type aliases are created through the type statement::
+
+                                        type Alias = int
+
+                                    In this example, Alias and int will be treated equivalently by static
+                                    type checkers.
+
+                                    At runtime, Alias is an instance of TypeAliasType. The __name__
+                                    attribute holds the name of the type alias. The value of the type alias
+                                    is stored in the __value__ attribute. It is evaluated lazily, so the
+                                    value is computed only if the attribute is accessed.
+
+                                    Type aliases can also be generic::
+
+                                        type ListOrSet[T] = list[T] | set[T]
+
+                                    In this case, the type parameters of the alias are stored in the
+                                    __type_params__ attribute.
+
+                                    See PEP 695 for more information.
+                                    """)),
+    PGeneric(J_GENERIC, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).basetype().addDict());
 
     private static TypeBuilder newBuilder() {
         return new TypeBuilder();
@@ -1175,6 +1438,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         private String publishInModule;
         private String moduleName;
         private boolean basetype;
+        private boolean heaptype;
         private boolean addDict;
         private boolean disallowInstantiation;
         private TpSlots slots;
@@ -1195,6 +1459,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
         public TypeBuilder basetype() {
             this.basetype = true;
+            return this;
+        }
+
+        public TypeBuilder heaptype() {
+            this.heaptype = true;
             return this;
         }
 
@@ -1272,7 +1541,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         boolean disallowInstantiation = builder.disallowInstantiation;
         // logic from type_ready_set_new
         // base.base == null is a roundabout way to check for base == object
-        if (declaredSlots.tp_new() == null && base.base == null) {
+        if (declaredSlots.tp_new() == null && base.base == null && !builder.heaptype) {
             disallowInstantiation = true;
         }
         if (base == null) {

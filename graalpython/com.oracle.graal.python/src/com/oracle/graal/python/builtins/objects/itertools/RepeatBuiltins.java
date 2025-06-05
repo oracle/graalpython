@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.LEN_OF_UNSIZED_OBJECT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
@@ -170,6 +171,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile negativeCountProfile,
                         @Cached GetClassNode getClass,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object type = getClass.execute(inliningTarget, self);
             Object[] tupleElements;
             if (negativeCountProfile.profile(inliningTarget, self.getCnt() < 0)) {

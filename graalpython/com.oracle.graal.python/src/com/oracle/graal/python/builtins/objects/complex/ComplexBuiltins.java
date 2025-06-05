@@ -305,8 +305,31 @@ public final class ComplexBuiltins extends PythonBuiltins {
             return createComplexNode.execute(inliningTarget, cls, real, 0);
         }
 
+        @Specialization(guards = "isNoValue(real)")
+        static Object complexFromDoubleImag(Object cls, @SuppressWarnings("unused") PNone real, double imag,
+                        @Bind("this") Node inliningTarget,
+                        @Cached.Shared @Cached CreateComplexNode createComplexNode) {
+            return createComplexNode.execute(inliningTarget, cls, 0, imag);
+        }
+
         @Specialization(guards = "isNoValue(imag)")
         Object complexFromDouble(VirtualFrame frame, Object cls, PFloat real, @SuppressWarnings("unused") PNone imag,
+                        @Bind("this") Node inliningTarget,
+                        @Cached.Shared @Cached CreateComplexNode createComplexNode,
+                        @Cached.Shared @Cached CanBeDoubleNode canBeDoubleNode,
+                        @Cached.Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Cached.Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Cached.Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Cached.Shared("isPrimitive") @Cached BuiltinClassProfiles.IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Cached.Shared("isBuiltinObj") @Cached PyComplexCheckExactNode isBuiltinObjectProfile,
+                        @Cached.Shared @Cached PRaiseNode raiseNode) {
+            return complexFromObject(frame, cls, real, imag, inliningTarget, createComplexNode, canBeDoubleNode, asDoubleNode, isComplexType, isResultComplexType, isPrimitiveProfile,
+                            isBuiltinObjectProfile,
+                            raiseNode);
+        }
+
+        @Specialization(guards = "isNoValue(real)")
+        Object complexFromDouble(VirtualFrame frame, Object cls, @SuppressWarnings("unused") PNone real, PFloat imag,
                         @Bind("this") Node inliningTarget,
                         @Cached.Shared @Cached CreateComplexNode createComplexNode,
                         @Cached.Shared @Cached CanBeDoubleNode canBeDoubleNode,
@@ -328,6 +351,13 @@ public final class ComplexBuiltins extends PythonBuiltins {
             return createComplexNode.execute(inliningTarget, cls, real, 0);
         }
 
+        @Specialization(guards = "isNoValue(real)")
+        static Object complexFromIntImag(Object cls, @SuppressWarnings("unused") PNone real, int imag,
+                        @Bind("this") Node inliningTarget,
+                        @Cached.Shared @Cached CreateComplexNode createComplexNode) {
+            return createComplexNode.execute(inliningTarget, cls, 0, imag);
+        }
+
         @Specialization(guards = "isNoValue(imag)")
         static Object complexFromLong(Object cls, long real, @SuppressWarnings("unused") PNone imag,
                         @Bind("this") Node inliningTarget,
@@ -335,8 +365,30 @@ public final class ComplexBuiltins extends PythonBuiltins {
             return createComplexNode.execute(inliningTarget, cls, real, 0);
         }
 
+        @Specialization(guards = "isNoValue(real)")
+        static Object complexFromLongImag(Object cls, @SuppressWarnings("unused") PNone real, long imag,
+                        @Bind("this") Node inliningTarget,
+                        @Cached.Shared @Cached CreateComplexNode createComplexNode) {
+            return createComplexNode.execute(inliningTarget, cls, 0, imag);
+        }
+
         @Specialization(guards = "isNoValue(imag)")
         Object complexFromLong(VirtualFrame frame, Object cls, PInt real, @SuppressWarnings("unused") PNone imag,
+                        @Bind("this") Node inliningTarget,
+                        @Cached.Shared @Cached CreateComplexNode createComplexNode,
+                        @Cached.Shared @Cached CanBeDoubleNode canBeDoubleNode,
+                        @Cached.Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Cached.Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Cached.Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Cached.Shared("isPrimitive") @Cached BuiltinClassProfiles.IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Cached.Shared("isBuiltinObj") @Cached PyComplexCheckExactNode complexCheck,
+                        @Cached.Shared @Cached PRaiseNode raiseNode) {
+            return complexFromObject(frame, cls, real, imag, inliningTarget, createComplexNode, canBeDoubleNode, asDoubleNode, isComplexType, isResultComplexType, isPrimitiveProfile, complexCheck,
+                            raiseNode);
+        }
+
+        @Specialization(guards = "isNoValue(real)")
+        Object complexFromLong(VirtualFrame frame, Object cls, @SuppressWarnings("unused") PNone real, PInt imag,
                         @Bind("this") Node inliningTarget,
                         @Cached.Shared @Cached CreateComplexNode createComplexNode,
                         @Cached.Shared @Cached CanBeDoubleNode canBeDoubleNode,
@@ -378,6 +430,31 @@ public final class ComplexBuiltins extends PythonBuiltins {
             return createComplexNode.execute(inliningTarget, cls, value.getReal(), value.getImag());
         }
 
+        @Specialization(guards = {"!isNoValue(imag)", "isNoValue(number)"})
+        Object complexFromObject(VirtualFrame frame, Object cls, @SuppressWarnings("unused") PNone number, Object imag,
+                        @Bind("this") Node inliningTarget,
+                        @Cached.Shared @Cached CreateComplexNode createComplexNode,
+                        @Cached.Shared @Cached CanBeDoubleNode canBeDoubleNode,
+                        @Cached.Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Cached.Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
+                        @Cached.Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Cached.Shared("isPrimitive") @Cached BuiltinClassProfiles.IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Cached.Shared("isBuiltinObj") @Cached PyComplexCheckExactNode complexCheck,
+                        @Cached.Shared @Cached PRaiseNode raiseNode) {
+            PComplex value = getComplexNumberFromObject(frame, imag, inliningTarget, isComplexType, isResultComplexType, raiseNode);
+            if (value == null) {
+                if (canBeDoubleNode.execute(inliningTarget, imag)) {
+                    return createComplexNode.execute(inliningTarget, cls, 0.0, asDoubleNode.execute(frame, inliningTarget, imag));
+                } else {
+                    throw raiseSecondArgError(imag, inliningTarget, raiseNode);
+                }
+            }
+            if (isPrimitiveProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PComplex)) {
+                return PFactory.createComplex(PythonLanguage.get(inliningTarget), -value.getImag(), 0.0);
+            }
+            return createComplexNode.execute(inliningTarget, cls, -value.getImag(), 0.0);
+        }
+
         @Specialization
         static Object complexFromLongComplex(Object cls, long one, PComplex two,
                         @Bind("this") Node inliningTarget,
@@ -399,7 +476,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
             return createComplexNode.execute(inliningTarget, cls, one - two.getImag(), two.getReal());
         }
 
-        @Specialization(guards = "!isString(one)")
+        @Specialization(guards = {"!isString(one)", "!isNoValue(one)"})
         Object complexFromComplexLong(VirtualFrame frame, Object cls, Object one, long two,
                         @Bind("this") Node inliningTarget,
                         @Cached.Shared @Cached CreateComplexNode createComplexNode,
@@ -419,7 +496,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
             return createComplexNode.execute(inliningTarget, cls, value.getReal(), value.getImag() + two);
         }
 
-        @Specialization(guards = "!isString(one)")
+        @Specialization(guards = {"!isString(one)", "!isNoValue(one)"})
         Object complexFromComplexDouble(VirtualFrame frame, Object cls, Object one, double two,
                         @Bind("this") Node inliningTarget,
                         @Cached.Shared @Cached CreateComplexNode createComplexNode,
@@ -439,7 +516,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
             return createComplexNode.execute(inliningTarget, cls, value.getReal(), value.getImag() + two);
         }
 
-        @Specialization(guards = "!isString(one)")
+        @Specialization(guards = {"!isString(one)", "!isNoValue(one)"})
         Object complexFromComplexPInt(VirtualFrame frame, Object cls, Object one, PInt two,
                         @Bind("this") Node inliningTarget,
                         @Cached.Shared @Cached CreateComplexNode createComplexNode,
@@ -459,7 +536,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
             return createComplexNode.execute(inliningTarget, cls, value.getReal(), value.getImag() + two.doubleValueWithOverflow(this));
         }
 
-        @Specialization(guards = "!isString(one)")
+        @Specialization(guards = {"!isString(one)", "!isNoValue(one)"})
         Object complexFromComplexComplex(VirtualFrame frame, Object cls, Object one, PComplex two,
                         @Bind("this") Node inliningTarget,
                         @Cached.Shared @Cached CreateComplexNode createComplexNode,
@@ -479,7 +556,14 @@ public final class ComplexBuiltins extends PythonBuiltins {
             return createComplexNode.execute(inliningTarget, cls, value.getReal() - two.getImag(), value.getImag() + two.getReal());
         }
 
-        @Specialization(guards = {"!isString(one)", "!isNoValue(two)", "!isPComplex(two)"})
+        @Specialization(guards = {"isString(two)"})
+        Object secondArgString(VirtualFrame frame, Object cls, Object one, Object two,
+                        @Bind("this") Node inliningTarget,
+                        @Cached.Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.COMPLEX_SECOND_ARG_CANT_BE_STRING);
+        }
+
+        @Specialization(guards = {"!isString(one)", "!isNoValue(two)", "!isPComplex(two)", "!isString(two)"})
         @SuppressWarnings("truffle-static-method")
         Object complexFromComplexObject(VirtualFrame frame, Object cls, Object one, Object two,
                         @Bind("this") Node inliningTarget,
@@ -493,7 +577,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
             if (canBeDoubleNode.execute(inliningTarget, two)) {
                 double twoValue = asDoubleNode.execute(frame, inliningTarget, two);
                 if (oneValue == null) {
-                    if (canBeDoubleNode.execute(inliningTarget, one)) {
+                    if (one == PNone.NO_VALUE) {
+                        return createComplexNode.execute(inliningTarget, cls, 0, twoValue);
+                    } else if (canBeDoubleNode.execute(inliningTarget, one)) {
                         return createComplexNode.execute(inliningTarget, cls, asDoubleNode.execute(frame, inliningTarget, one), twoValue);
                     } else {
                         throw raiseFirstArgError(one, inliningTarget, raiseNode);
@@ -1331,7 +1417,8 @@ public final class ComplexBuiltins extends PythonBuiltins {
             // just like CPython
             long realHash = PyObjectHashNode.hash(c.getReal());
             long imagHash = PyObjectHashNode.hash(c.getImag());
-            return realHash + SysModuleBuiltins.HASH_IMAG * imagHash;
+            long combined = realHash + SysModuleBuiltins.HASH_IMAG * imagHash;
+            return combined == -1L ? -2L : combined;
         }
 
     }

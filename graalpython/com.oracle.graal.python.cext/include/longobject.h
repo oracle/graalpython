@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -12,11 +12,11 @@ extern "C" {
 
 /* Long (arbitrary precision) integer object interface */
 
-PyAPI_DATA(PyTypeObject) PyLong_Type;
+// PyLong_Type is declared by object.h
 
 #define PyLong_Check(op) \
         PyType_FastSubclass(Py_TYPE(op), Py_TPFLAGS_LONG_SUBCLASS)
-#define PyLong_CheckExact(op) Py_IS_TYPE(op, &PyLong_Type)
+#define PyLong_CheckExact(op) Py_IS_TYPE((op), &PyLong_Type)
 
 PyAPI_FUNC(PyObject *) PyLong_FromLong(long);
 PyAPI_FUNC(PyObject *) PyLong_FromUnsignedLong(unsigned long);
@@ -39,7 +39,24 @@ PyAPI_FUNC(PyObject *) PyLong_GetInfo(void);
 #if !defined(SIZEOF_PID_T) || SIZEOF_PID_T == SIZEOF_INT
 #define _Py_PARSE_PID "i"
 #define PyLong_FromPid PyLong_FromLong
-#define PyLong_AsPid PyLong_AsLong
+# ifndef Py_LIMITED_API
+#   define PyLong_AsPid _PyLong_AsInt
+# elif SIZEOF_INT == SIZEOF_LONG
+#   define PyLong_AsPid PyLong_AsLong
+# else
+static inline int
+PyLong_AsPid(PyObject *obj)
+{
+    int overflow;
+    long result = PyLong_AsLongAndOverflow(obj, &overflow);
+    if (overflow || result > INT_MAX || result < INT_MIN) {
+        PyErr_SetString(PyExc_OverflowError,
+                        "Python int too large to convert to C int");
+        return -1;
+    }
+    return (int)result;
+}
+# endif
 #elif SIZEOF_PID_T == SIZEOF_LONG
 #define _Py_PARSE_PID "l"
 #define PyLong_FromPid PyLong_FromLong

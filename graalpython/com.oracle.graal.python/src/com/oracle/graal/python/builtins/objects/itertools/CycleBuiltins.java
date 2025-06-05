@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
 import static com.oracle.graal.python.nodes.ErrorMessages.STATE_ARGUMENT_D_MUST_BE_A_S;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
@@ -210,6 +211,7 @@ public final class CycleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached GetClassNode getClass,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object type = getClass.execute(inliningTarget, self);
             PTuple iterableTuple = PFactory.createTuple(language, new Object[]{self.getIterable()});
             PTuple tuple = PFactory.createTuple(language, new Object[]{getSavedList(self, language), self.isFirstpass()});
@@ -264,6 +266,7 @@ public final class CycleBuiltins extends PythonBuiltins {
                         @Cached ToArrayNode toArrayNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PRaiseNode raiseNode) {
+            warnPickleDeprecated();
             if (!((state instanceof PTuple) && ((int) lenNode.execute(frame, state) == 2))) {
                 throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "2-tuple");
             }

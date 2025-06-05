@@ -386,6 +386,24 @@ public abstract class PythonBufferAccessLibrary extends Library {
     }
 
     /**
+     * Read a half float from the buffer. Bounds checks are responsibility of the caller.
+     *
+     * @param byteOffset offset in bytes
+     */
+    public float readFloat16(Object receiver, int byteOffset) {
+        return readFloat16ByteOrder(receiver, byteOffset, ByteOrder.nativeOrder());
+    }
+
+    /**
+     * Read a half float from the buffer. Bounds checks are responsibility of the caller.
+     *
+     * @param byteOffset offset in bytes
+     */
+    public float readFloat16ByteOrder(Object receiver, int byteOffset, ByteOrder byteOrder) {
+        return Float.float16ToFloat(readShortByteOrder(receiver, byteOffset, byteOrder));
+    }
+
+    /**
      * Read a single float from the buffer. Bounds checks are responsibility of the caller.
      *
      * @param byteOffset offset in bytes
@@ -532,6 +550,24 @@ public abstract class PythonBufferAccessLibrary extends Library {
             writeByte(receiver, byteOffset + 6, b7);
             writeByte(receiver, byteOffset + 7, b8);
         }
+    }
+
+    /**
+     * Write a half float to the buffer. Bounds checks are responsibility of the caller.
+     *
+     * @param byteOffset offset in bytes
+     */
+    public void writeFloat16(Object receiver, int byteOffset, float value) {
+        writeFloat16ByteOrder(receiver, byteOffset, value, ByteOrder.nativeOrder());
+    }
+
+    /**
+     * Write a half float to the buffer. Bounds checks are responsibility of the caller.
+     *
+     * @param byteOffset offset in bytes
+     */
+    public void writeFloat16ByteOrder(Object receiver, int byteOffset, float value, ByteOrder byteOrder) {
+        writeShortByteOrder(receiver, byteOffset, Float.floatToFloat16(value), byteOrder);
     }
 
     /**

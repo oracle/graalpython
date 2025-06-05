@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,10 +60,10 @@ import org.junit.rules.TestName;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
-import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
+import com.oracle.graal.python.pegparser.ParserCallbacks;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -1062,7 +1062,7 @@ public class CompilerTests extends PythonTests {
     public void testYieldOutsideFunction() {
         checkSyntaxErrorMessage("yield", "'yield' outside function");
         checkSyntaxErrorMessage("class foo:yield 1", "'yield' outside function");
-        checkSyntaxErrorMessage("class foo:yield from ()", "'yield' outside function");
+        checkSyntaxErrorMessage("class foo:yield from ()", "'yield from' outside function");
         checkSyntaxErrorMessage("def g(a:(yield)): pass", "'yield' outside function");
         checkSyntaxErrorMessage("yield x", "'yield' outside function");
         checkSyntaxErrorMessage("class C: yield 1", "'yield' outside function");
@@ -1099,16 +1099,16 @@ public class CompilerTests extends PythonTests {
             assemble(src, InputType.FILE);
             fail("Expected SyntaxError: " + msg);
         } catch (SyntaxError e) {
-            Assert.assertEquals(ErrorCallback.ErrorType.Syntax, e.errorType);
+            Assert.assertEquals(ParserCallbacks.ErrorType.Syntax, e.errorType);
             MatcherAssert.assertThat(e.message, CoreMatchers.containsString(msg));
         }
     }
 
     private static CodeUnit assemble(String src, InputType type) {
-        ErrorCallback errorCallback = new TestErrorCallbackImpl();
-        Parser parser = Compiler.createParser(src, errorCallback, type, false);
+        ParserCallbacks parserCallbacks = new TestParserCallbacksImpl();
+        Parser parser = Compiler.createParser(src, parserCallbacks, type, false, false);
         ModTy result = (ModTy) parser.parse();
-        Compiler compiler = new Compiler(errorCallback);
+        Compiler compiler = new Compiler(parserCallbacks);
         CompilationUnit cu = compiler.compile(result, EnumSet.noneOf(Compiler.Flags.class), 2, EnumSet.noneOf(FutureFeature.class));
         return cu.assemble();
     }
@@ -1131,14 +1131,19 @@ public class CompilerTests extends PythonTests {
         }
     }
 
-    static class TestErrorCallbackImpl implements ErrorCallback {
+    static class TestParserCallbacksImpl implements ParserCallbacks {
         @Override
-        public void reportIncompleteSource(int line) {
-            fail("Unexpected call to reportIncompleteSource");
+        public void safePointPoll() {
         }
 
         @Override
-        public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
+        public RuntimeException reportIncompleteSource(int line) {
+            fail("Unexpected call to reportIncompleteSource");
+            throw new IllegalStateException("unreachable");
+        }
+
+        @Override
+        public RuntimeException onError(ErrorType errorType, SourceRange sourceRange, String message) {
             throw new SyntaxError(errorType, message);
         }
 
@@ -1151,10 +1156,10 @@ public class CompilerTests extends PythonTests {
     private static final class SyntaxError extends RuntimeException {
         private static final long serialVersionUID = 6182610312044069775L;
 
-        final ErrorCallback.ErrorType errorType;
+        final ParserCallbacks.ErrorType errorType;
         final String message;
 
-        SyntaxError(ErrorCallback.ErrorType errorType, String message) {
+        SyntaxError(ParserCallbacks.ErrorType errorType, String message) {
             this.errorType = errorType;
             this.message = message;
         }

@@ -78,7 +78,7 @@ import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
-import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
+import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerResult;
 import com.oracle.graal.python.nodes.HiddenAttr;
@@ -97,6 +97,7 @@ import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
@@ -180,8 +181,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String NAME = "Python";
     public static final String IMPLEMENTATION_NAME = "GraalPy";
     public static final int MAJOR = 3;
-    public static final int MINOR = 11;
-    public static final int MICRO = 7;
+    public static final int MINOR = 12;
+    public static final int MICRO = 8;
     public static final int RELEASE_LEVEL_ALPHA = 0xA;
     public static final int RELEASE_LEVEL_BETA = 0xB;
     public static final int RELEASE_LEVEL_CANDIDATE = 0xC;
@@ -630,12 +631,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public RootCallTarget parse(PythonContext context, Source source, InputType type, boolean topLevel, int optimize, boolean interactiveTerminal, List<String> argumentNames,
                     EnumSet<FutureFeature> futureFeatures) {
-        RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
+        return parse(context, source, type, topLevel, optimize, interactiveTerminal, false, argumentNames, futureFeatures);
+    }
+
+    public RootCallTarget parse(PythonContext context, Source source, InputType type, boolean topLevel, int optimize, boolean interactiveTerminal, boolean allowIncompleteInput,
+                    List<String> argumentNames, EnumSet<FutureFeature> futureFeatures) {
+        ParserCallbacksImpl errorCb = new ParserCallbacksImpl(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
         try {
             if (context.getEnv().getOptions().get(PythonOptions.ParserLogFiles)) {
                 LOGGER.log(Level.FINE, () -> "parse '" + source.getName() + "'");
             }
-            Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal);
+            Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal, allowIncompleteInput);
             ModTy mod = (ModTy) parser.parse();
             assert mod != null;
             return compileModule(context, mod, source, topLevel, optimize, argumentNames, errorCb, futureFeatures);
@@ -649,16 +655,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @TruffleBoundary
     public RootCallTarget compileModule(PythonContext context, ModTy modIn, Source source, boolean topLevel, int optimize, List<String> argumentNames,
-                    RaisePythonExceptionErrorCallback errorCallback, int flags) {
+                    ParserCallbacksImpl errorCallback, int flags) {
         return compileModule(context, modIn, source, topLevel, optimize, argumentNames, errorCallback, FutureFeature.fromFlags(flags));
     }
 
     @TruffleBoundary
     public RootCallTarget compileModule(PythonContext context, ModTy modIn, Source source, boolean topLevel, int optimize, List<String> argumentNames,
-                    RaisePythonExceptionErrorCallback errorCallback, EnumSet<FutureFeature> futureFeatures) {
-        RaisePythonExceptionErrorCallback errorCb = errorCallback;
+                    ParserCallbacksImpl errorCallback, EnumSet<FutureFeature> futureFeatures) {
+        ParserCallbacksImpl errorCb = errorCallback;
         if (errorCb == null) {
-            errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
+            errorCb = new ParserCallbacksImpl(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
         }
         try {
             boolean hasArguments = argumentNames != null && !argumentNames.isEmpty();
@@ -700,16 +706,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private RootNode compileForBytecodeInterpreter(ModTy mod, Source source, int optimize, RaisePythonExceptionErrorCallback errorCallback, EnumSet<FutureFeature> futureFeatures) {
-        Compiler compiler = new Compiler(errorCallback);
+    private RootNode compileForBytecodeInterpreter(ModTy mod, Source source, int optimize, ParserCallbacksImpl parserCallbacks, EnumSet<FutureFeature> futureFeatures) {
+        Compiler compiler = new Compiler(parserCallbacks);
         CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize, futureFeatures);
         BytecodeCodeUnit co = cu.assemble();
-        return PBytecodeRootNode.create(this, co, source, errorCallback);
+        return PBytecodeRootNode.create(this, co, source, parserCallbacks);
     }
 
     private RootNode compileForBytecodeDSLInterpreter(PythonContext context, ModTy mod, Source source, int optimize,
-                    RaisePythonExceptionErrorCallback errorCallback, EnumSet<FutureFeature> futureFeatures) {
-        BytecodeDSLCompilerResult result = BytecodeDSLCompiler.compile(this, context, mod, source, optimize, errorCallback, futureFeatures);
+                    ParserCallbacksImpl parserCallbacks, EnumSet<FutureFeature> futureFeatures) {
+        BytecodeDSLCompilerResult result = BytecodeDSLCompiler.compile(this, context, mod, source, optimize, parserCallbacks, futureFeatures);
         return result.rootNode();
     }
 
@@ -729,7 +735,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
         }
         String fnName = "execute";
-        StmtTy astFunction = nodeFactory.createFunctionDef(fnName, astArgs, body, null, null, SourceRange.ARTIFICIAL_RANGE);
+        StmtTy astFunction = nodeFactory.createFunctionDef(fnName, astArgs, body, null, null, new TypeParamTy[0], SourceRange.ARTIFICIAL_RANGE);
         /*
          * We cannot use a return in a module, but we piggy-back on the fact that we return the last
          * expression in a module (see Compiler)

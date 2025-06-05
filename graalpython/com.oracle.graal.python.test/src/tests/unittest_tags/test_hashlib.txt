@@ -59,5 +59,3 @@ test.test_hashlib.HashLibTestCase.test_usedforsecurity_false @ darwin-arm64,darw
 test.test_hashlib.HashLibTestCase.test_usedforsecurity_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hashlib.KDFTests.test_file_digest @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hashlib.KDFTests.test_normalized_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_hashlib.KDFTests.test_pbkdf2_hmac_c @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_hashlib.KDFTests.test_pbkdf2_hmac_py @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

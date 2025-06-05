@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2023, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2023 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -36,6 +36,9 @@ typedef struct {
     Py_ssize_t *suboffsets;
     void *internal;
 } Py_buffer;
+
+typedef int (*getbufferproc)(PyObject *, Py_buffer *, int);
+typedef void (*releasebufferproc)(PyObject *, Py_buffer *);
 
 /* Return 1 if the getbuffer function is available, otherwise return 0. */
 PyAPI_FUNC(int) PyObject_CheckBuffer(PyObject *obj);
@@ -106,7 +109,7 @@ PyAPI_FUNC(void) PyBuffer_Release(Py_buffer *view);
 /* Maximum number of dimensions */
 #define PyBUF_MAX_NDIM 64
 
-/* Flags for getting buffers */
+/* Flags for getting buffers. Keep these in sync with inspect.BufferFlags. */
 #define PyBUF_SIMPLE 0
 #define PyBUF_WRITABLE 0x0001
 

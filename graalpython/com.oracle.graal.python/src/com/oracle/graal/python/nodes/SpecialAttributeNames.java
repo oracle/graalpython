@@ -61,6 +61,9 @@ public abstract class SpecialAttributeNames {
     public static final String J___CLASSCELL__ = "__classcell__";
     public static final TruffleString T___CLASSCELL__ = tsLiteral(J___CLASSCELL__);
 
+    public static final String J___CLASSDICTCELL__ = "__classdictcell__";
+    public static final TruffleString T___CLASSDICTCELL__ = tsLiteral(J___CLASSDICTCELL__);
+
     public static final String J___CLOSURE__ = "__closure__";
 
     public static final String J___ANNOTATIONS__ = "__annotations__";
@@ -185,4 +188,7 @@ public abstract class SpecialAttributeNames {
 
     public static final String J___VECTORCALLOFFSET__ = "__vectorcalloffset__";
     public static final TruffleString T___VECTORCALLOFFSET__ = tsLiteral(J___VECTORCALLOFFSET__);
+
+    public static final String J___TYPE_PARAMS__ = "__type_params__";
+    public static final TruffleString T___TYPE_PARAMS__ = tsLiteral(J___TYPE_PARAMS__);
 }

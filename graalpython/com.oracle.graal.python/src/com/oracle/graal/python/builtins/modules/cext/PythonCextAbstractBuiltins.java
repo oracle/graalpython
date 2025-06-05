@@ -193,9 +193,9 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int}, call = Direct)
-    abstract static class PyNumber_ToBase extends CApiBinaryBuiltinNode {
+    protected abstract static class PyNumber_ToBase extends CApiBinaryBuiltinNode {
         @Specialization(guards = "base == 2")
-        static Object toBase(Object n, @SuppressWarnings("unused") int base,
+        static Object toBase2(Object n, @SuppressWarnings("unused") int base,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyNumberIndexNode indexNode,
                         @Cached BinNode binNode) {
@@ -204,13 +204,13 @@ public final class PythonCextAbstractBuiltins {
         }
 
         @Specialization(guards = "base == 8")
-        static Object toBase(Object n, @SuppressWarnings("unused") int base,
+        static Object toBase8(Object n, @SuppressWarnings("unused") int base,
                         @Cached OctNode octNode) {
             return octNode.execute(null, n);
         }
 
         @Specialization(guards = "base == 10")
-        static Object toBase(Object n, @SuppressWarnings("unused") int base,
+        static Object toBase10(Object n, @SuppressWarnings("unused") int base,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyNumberIndexNode indexNode,
                         @Cached StringBuiltins.StrNewNode strNode) {
@@ -222,10 +222,11 @@ public final class PythonCextAbstractBuiltins {
         }
 
         @Specialization(guards = "base == 16")
-        static Object toBase(Object n, @SuppressWarnings("unused") int base,
-                        @Cached PyNumber_Index indexNode,
+        static Object toBase16(Object n, @SuppressWarnings("unused") int base,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyNumberIndexNode indexNode,
                         @Cached HexNode hexNode) {
-            Object i = indexNode.execute(n);
+            Object i = indexNode.execute(null, inliningTarget, n);
             return hexNode.execute(null, i);
         }
 

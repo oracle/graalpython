@@ -77,6 +77,6 @@ Module[1:0-9:12]
                                 KwdAttrs: a1
                                 KwdPatterns:
                                     MatchValue[8:31-8:36]
-                                        Value: RAW[8:31-8:36] Value: "abc"
+                                        Value: CODEPOINTS[8:31-8:36] Value: "abc"
                 Body:
                     Pass[9:8-9:12]

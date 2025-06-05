@@ -259,6 +259,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         int rtldLocal = RTLD_LOCAL.getValueIfDefined();
         ctypesModule.setAttribute(tsLiteral("RTLD_LOCAL"), rtldLocal);
         ctypesModule.setAttribute(tsLiteral("RTLD_GLOBAL"), RTLD_GLOBAL.getValueIfDefined());
+        ctypesModule.setAttribute(tsLiteral("SIZEOF_TIME_T"), Long.BYTES);
 
         PythonContext context = core.getContext();
 

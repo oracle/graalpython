@@ -108,6 +108,9 @@ class SSTNodeGenerator(Generator):
                     if not f.is_nullable and f.type.java not in ('int', 'boolean'):
                         emitter.println(f'assert {f.name.java} != null;')
                     emitter.println(f'this.{f.name.java} = {f.name.java};')
+            if 'typeParams' in [f.name.java for f in c.fields]:
+                with emitter.define('public boolean isGeneric()'):
+                    emitter.println('return typeParams != null && typeParams.length > 0;')
             # accept() method
             with emitter.define('public <T> T accept(SSTreeVisitor<T> visitor)', '@Override'):
                 emitter.println('return visitor.visit(this);')
@@ -326,6 +329,12 @@ class Obj2Sst2Generator(Generator):
     PACKAGE = AST_PACKAGE
     CLASS_NAME = 'Obj2Sst'
 
+
+    attribute_special_defaults = {
+        "end_lineno": "lineNo",
+        "end_col_offset": "colOffset",
+    }
+
     def visit_module(self, module: model.Module):
         with self.create_emitter() as emitter:
             self.emit_imports(module, emitter)
@@ -406,8 +415,10 @@ class Obj2Sst2Generator(Generator):
             arguments.append(f'{f.type.java}::new')
             suffix = 'Sequence'
         elif f.type.java in ('int', 'boolean'):
-            arguments.append('false' if f.is_optional else 'true')
             suffix = f.type.java.capitalize()
+            if f.is_optional:
+                suffix += "Opt"
+                arguments.append(Obj2Sst2Generator.attribute_special_defaults.get(f.name.python, "0"))
         else:
             arguments.append(f'this::{f.convertor}')
             arguments.append('false' if f.is_optional else 'true')

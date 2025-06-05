@@ -54,7 +54,7 @@ import com.oracle.graal.python.test.integration.PythonTests;
 public class SharedEngineMultithreadingBenchmarkTest extends SharedEngineMultithreadingTestBase {
     @BeforeClass
     public static void setUpClass() {
-        Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("mac"));
+        Assume.assumeFalse(isMacOS() || isAArch64());
     }
 
     @Test

@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,9 @@ class AnotherBaseWithSlots:
 
 class EmptyBase:
     pass
+
+class EmptyBaseWithEmptySlots:
+    __slots__ = ()
 
 # This is used to increase tp_basicsize in CPyExtHeapType which needs to be grater that the basic size of the
 # base class. We do not use the C struct in any way - in fact in CPython, the `space` member declared here
@@ -111,8 +114,10 @@ class TestIndexedSlots(CPyExtTestCase):
             self.assertEqual((12, 13, 14, 15), (x.a, x.b, x.c, x.d))
 
     def test_multi_bases(self):
-        N1 = CPyExtHeapType('Ne1', bases=(BaseWithSlots, EmptyBase), cmembers=cmembers(6))
-        N2 = CPyExtHeapType('Ne2', bases=(EmptyBase, BaseWithSlots), cmembers=cmembers(6))
+        # We are using `EmptyBaseWithEmptySlots`` instead of `EmptyBase` to avoid setting
+        # `type->tp_dictoffset`, which will fail some assertions or sigfaults otherwise.
+        N1 = CPyExtHeapType('Ne1', bases=(BaseWithSlots, EmptyBaseWithEmptySlots), cmembers=cmembers(6))
+        N2 = CPyExtHeapType('Ne2', bases=(EmptyBaseWithEmptySlots, BaseWithSlots), cmembers=cmembers(6))
 
         class M1(N1):
             pass

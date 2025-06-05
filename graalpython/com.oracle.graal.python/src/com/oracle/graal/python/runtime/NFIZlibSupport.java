@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -244,7 +244,9 @@ public class NFIZlibSupport {
           nfi_function: name('decompressObjCopy') map('zlib_stream*', 'POINTER')
           int zlib_Decompress_copy(zlib_stream *zst, zlib_stream *new_copy)
         */
-        zlib_Decompress_copy("(POINTER, POINTER): SINT32");
+        zlib_Decompress_copy("(POINTER, POINTER): SINT32"),
+
+        zlib_decompress("(POINTER, [UINT8], SINT64, SINT64): SINT32");
 
         private final String signature;
 
@@ -664,4 +666,18 @@ public class NFIZlibSupport {
         return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_Decompress_copy, zst, new_copy);
     }
 
+    /**
+     * returns needs_input flag if the value isn't less than 0, otherwise it returns the zlib error
+     * code.
+     * 
+     * @param zst zlib_stream *zst
+     * @param data Byte *data
+     * @param len size_t len
+     * @param max_length ssize_t max_length
+     * @return int
+     */
+    public int decompressor(Object zst, Object data, long len, long max_length,
+                    NativeLibrary.InvokeNativeFunction invokeNode) {
+        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_decompress, zst, data, len, max_length);
+    }
 }

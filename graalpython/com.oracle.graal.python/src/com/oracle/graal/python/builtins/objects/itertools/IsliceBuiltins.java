@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.itertools;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.ISLICE_WRONG_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.STEP_FOR_ISLICE_MUST_BE;
@@ -275,6 +276,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             // return type(self), (iter([]), 0), 0
             Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple = PFactory.createTuple(language, new Object[]{getIter.execute(frame, inliningTarget, PFactory.createList(language)), 0});
@@ -301,6 +303,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaIntLossyNode castInt,
                         @Cached PRaiseNode raiseNode) {
+            warnPickleDeprecated();
             try {
                 self.setCnt(castInt.execute(inliningTarget, state));
             } catch (CannotCastException e) {

@@ -9,4 +9,4 @@ good bye
 Output:
 -------
 Module[1:0-5:3]
-    RAW[1:0-5:3] Value: "\nahoj\nhello\ngood bye\n"
+    CODEPOINTS[1:0-5:3] Value: "\nahoj\nhello\ngood bye\n"

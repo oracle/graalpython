@@ -46,5 +46,6 @@ public enum CompilationScope {
     Function,
     AsyncFunction,
     Lambda,
-    Comprehension;
+    Comprehension,
+    TypeParams;
 }

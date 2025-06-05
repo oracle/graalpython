@@ -31,7 +31,7 @@ Module[1:0-9:20]
         Call[6:4-6:29]
             Target: Name[6:4-6:9] Value: "print"
             Args:
-                RAW[6:10-6:25] Value: "Inside add():"
+                CODEPOINTS[6:10-6:25] Value: "Inside add():"
                 Name[6:27-6:28] Value: "c"
         ---- End of add function ----
     Call[8:0-8:5]
@@ -39,5 +39,5 @@ Module[1:0-9:20]
     Call[9:0-9:20]
         Target: Name[9:0-9:5] Value: "print"
         Args:
-            RAW[9:6-9:16] Value: "In main:"
+            CODEPOINTS[9:6-9:16] Value: "In main:"
             Name[9:18-9:19] Value: "c"

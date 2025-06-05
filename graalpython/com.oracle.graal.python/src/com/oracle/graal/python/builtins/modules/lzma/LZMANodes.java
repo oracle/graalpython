@@ -1385,7 +1385,11 @@ public class LZMANodes {
                 case LZMA_FILTER_ARM:
                 case LZMA_FILTER_ARMTHUMB:
                 case LZMA_FILTER_SPARC:
-                    addField(frame, inliningTarget, setItem, dict, BCJOption.start_offset.OptName(), opts[BCJOption.start_offset.ordinal()]);
+                    // reusing unused array field for checking if options is null
+                    int isOptionNil = BCJOption.start_offset.ordinal() + 1;
+                    if (opts[isOptionNil] == 0) {
+                        addField(frame, inliningTarget, setItem, dict, BCJOption.start_offset.OptName(), opts[BCJOption.start_offset.ordinal()]);
+                    }
                     break;
             }
         }

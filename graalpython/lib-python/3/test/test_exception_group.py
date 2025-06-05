@@ -1,9 +1,9 @@
 import collections.abc
-import traceback
 import types
 import unittest
-from test.support import impl_detail
+from test.support import impl_detail # GraalPy Change
 
+from test.support import C_RECURSION_LIMIT
 
 class TestExceptionGroupTypeHierarchy(unittest.TestCase):
     def test_exception_group_types(self):
@@ -436,7 +436,7 @@ class ExceptionGroupSplitTests(ExceptionGroupTestBase):
 class DeepRecursionInSplitAndSubgroup(unittest.TestCase):
     def make_deep_eg(self):
         e = TypeError(1)
-        for i in range(2000):
+        for i in range(C_RECURSION_LIMIT + 1):
             e = ExceptionGroup('eg', [e])
         return e
 
@@ -790,6 +790,18 @@ class NestedExceptionGroupSplitTest(ExceptionGroupSplitTestBase):
         match, rest = eg.split(TypeError)
         self.assertFalse(hasattr(match, '__notes__'))
         self.assertFalse(hasattr(rest, '__notes__'))
+
+    def test_drive_invalid_return_value(self):
+        class MyEg(ExceptionGroup):
+            def derive(self, excs):
+                return 42
+
+        eg = MyEg('eg', [TypeError(1), ValueError(2)])
+        msg = "derive must return an instance of BaseExceptionGroup"
+        with self.assertRaisesRegex(TypeError, msg):
+            eg.split(TypeError)
+        with self.assertRaisesRegex(TypeError, msg):
+            eg.subgroup(TypeError)
 
 
 class NestedExceptionGroupSubclassSplitTest(ExceptionGroupSplitTestBase):

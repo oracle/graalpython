@@ -176,7 +176,14 @@ license = 'BSD-3-Clause'
 
 [[hypothesis.rules]]
 install-priority = 1
-version = '>= 6.69.0'
+# can be removed once [GR-65570] is done
+patch = 'hypothesis-6.135.0.patch'
+version = '>= 6.120.0'
+license = 'MPL-2.0'
+
+[[hypothesis.rules]]
+install-priority = 0
+version = '>= 6.69.0, < 6.120.0'
 
 [[hypothesis.rules]]
 install-priority = 0
@@ -428,6 +435,12 @@ license = 'MIT'
 [[pip.rules]]
 version = '== 23.2.1'
 patch = 'pip-23.2.1.patch'
+license = 'MIT'
+subdir = 'src'
+
+[[pip.rules]]
+version = '== 24.3.1'
+patch = 'pip-24.3.1.patch'
 license = 'MIT'
 subdir = 'src'
 

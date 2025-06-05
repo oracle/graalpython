@@ -18,7 +18,7 @@ Module[1:0-8:28]
         ---- Function body of fn ----
         Assign[2:4-2:31]
             LHS: Name[2:4-2:15] Value: "a_local_var" Store
-            RHS: RAW[2:18-2:31] Value: "a local var"
+            RHS: CODEPOINTS[2:18-2:31] Value: "a local var"
         FunctionDef[4:4-8:28]
             Name:f
             ArgumentsTy[1:0-1:0]

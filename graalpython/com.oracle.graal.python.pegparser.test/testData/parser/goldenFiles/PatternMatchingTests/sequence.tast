@@ -27,7 +27,7 @@ Module[1:0-14:29]
                     MatchSequence[2:9-2:18]
                         Patterns:
                             MatchValue[2:9-2:14]
-                                Value: RAW[2:9-2:14] Value: "abc"
+                                Value: CODEPOINTS[2:9-2:14] Value: "abc"
                             MatchStar[2:16-2:18]
                 Body:
                     Pass[2:20-2:24]
@@ -36,7 +36,7 @@ Module[1:0-14:29]
                     MatchSequence[3:9-3:18]
                         Patterns:
                             MatchValue[3:9-3:14]
-                                Value: RAW[3:9-3:14] Value: "def"
+                                Value: CODEPOINTS[3:9-3:14] Value: "def"
                             MatchStar[3:16-3:18]: x
                 Body:
                     Pass[3:20-3:24]
@@ -89,7 +89,7 @@ Module[1:0-14:29]
                     MatchSequence[12:9-12:16]
                         Patterns:
                             MatchValue[12:10-12:15]
-                                Value: RAW[12:10-12:15] Value: "abc"
+                                Value: CODEPOINTS[12:10-12:15] Value: "abc"
                 Body:
                     Pass[12:18-12:22]
             MatchCaseTy[13:4-13:23]
@@ -97,7 +97,7 @@ Module[1:0-14:29]
                     MatchSequence[13:9-13:17]
                         Patterns:
                             MatchValue[13:10-13:15]
-                                Value: RAW[13:10-13:15] Value: "def"
+                                Value: CODEPOINTS[13:10-13:15] Value: "def"
                 Body:
                     Pass[13:19-13:23]
             MatchCaseTy[14:4-14:29]
@@ -105,7 +105,7 @@ Module[1:0-14:29]
                     MatchSequence[14:9-14:23]
                         Patterns:
                             MatchValue[14:10-14:15]
-                                Value: RAW[14:10-14:15] Value: "ghi"
+                                Value: CODEPOINTS[14:10-14:15] Value: "ghi"
                             MatchSequence[14:17-14:22]
                                 Patterns:
                                     MatchStar[14:18-14:20]: a

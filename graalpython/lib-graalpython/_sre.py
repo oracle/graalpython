@@ -99,7 +99,7 @@ def setup(sre_compiler, error_class, flags_table):
 
 CODESIZE = 4
 
-MAGIC = 20220615
+MAGIC = 20221023
 MAXREPEAT = 4294967295
 MAXGROUPS = 2147483647
 FLAG_TEMPLATE = 1
@@ -198,7 +198,8 @@ class Match():
 
     def expand(self, template):
         import re
-        return re._expand(self.__re, self, template)
+        filter = re._compile_template(self.__re, template)
+        return expand_template(filter, self)
 
     @property
     def regs(self):
@@ -414,6 +415,7 @@ class Pattern():
         result = []
         pos = 0
         literal = False
+        template = False
         must_advance = False
         if not callable(repl):
             self.__check_input_type(repl)
@@ -423,9 +425,8 @@ class Pattern():
                 literal = b'\\' not in repl
             if not literal:
                 import re
-                repl = re._subx(self, repl)
-                if not callable(repl):
-                    literal = True
+                repl = re._compile_template(self, repl)
+                template = True
 
         while (count == 0 or n < count) and pos <= len(string):
             compiled_regex = tregex_compile(self, _METHOD_SEARCH, must_advance)
@@ -440,9 +441,15 @@ class Pattern():
                 result.append(repl)
             else:
                 _srematch = Match(self, pos, -1, match_result, string, self.__indexgroup)
-                _repl = repl(_srematch)
+                if template:
+                    _repl = expand_template(repl, _srematch)
+                else:
+                    _repl = repl(_srematch)
                 if _repl is not None:
-                    result.append(_repl)
+                    if self.__binary:
+                        result.append(bytes(_repl))
+                    else:
+                        result.append(str(_repl))
             pos = end
             must_advance = start == end
         result.append(string[pos:])
@@ -520,6 +527,38 @@ class SREScanner(object):
     def search(self):
         return self.__match_search(_METHOD_SEARCH)
 
+class SRETemplate(object):
+    def __init__(self, chunks, literal):
+        self.chunks = chunks
+        self.literal = literal
+        self.items = []
+
+def expand_template(template, match):
+    result = template.literal
+    for index, literal in template.items:
+        g = match.group(index)
+        if g is not None:
+            result += g
+        if literal:
+            result += literal
+    return result
+
+def template(pattern, _template):
+    n = len(_template)
+    if (n & 1) == 0 or n < 1:
+        raise TypeError("invalid template")
+    n //= 2
+    tpl = SRETemplate(1 + 2 * n, _template[0])
+    for i in range(n):
+        index = int(_template[2 * i + 1])
+        if index < 0:
+            raise TypeError("invalid template")
+        literal = _template[2 * i + 2]
+        if len(literal) == 0:
+            literal = None
+            tpl.chunks -= 1
+        tpl.items.append((index, literal))
+    return tpl
 
 _t_compile = Pattern
 

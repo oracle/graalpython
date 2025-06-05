@@ -83,6 +83,7 @@ import static com.oracle.graal.python.nodes.HiddenAttr.DICTOFFSET;
 import static com.oracle.graal.python.nodes.HiddenAttr.ITEMSIZE;
 import static com.oracle.graal.python.nodes.HiddenAttr.WEAKLISTOFFSET;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSCELL__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSDICTCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
@@ -140,6 +141,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -459,6 +461,9 @@ public abstract class TypeNodes {
                 case PString:
                 case PBytes:
                     result = DEFAULT | BASETYPE | MATCH_SELF;
+                    break;
+                case PIOBase:
+                    result = DEFAULT | BASETYPE | HEAPTYPE;
                     break;
                 default:
                     // default case; this includes: PythonObject, PCode, PInstancemethod, PNone,
@@ -1403,8 +1408,7 @@ public abstract class TypeNodes {
             }
             typeIsNotBase.enter(inliningTarget);
 
-            Object typeSlots = getSlotsFromType(type, readAttr);
-            if (extraivars(type, base, typeSlots)) {
+            if (shapeDiffers(type, base, readAttr)) {
                 return type;
             } else {
                 return base;
@@ -1412,37 +1416,19 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private static boolean extraivars(Object type, Object base, Object typeSlots) {
+        static boolean shapeDiffers(Object type, Object base, ReadAttributeFromObjectNode readAttr) {
             if (NeedsNativeAllocationNode.executeUncached(type) || NeedsNativeAllocationNode.executeUncached(base)) {
-                // https://github.com/python/cpython/blob/v3.10.8/Objects/typeobject.c#L2218
                 long tSize = GetBasicSizeNode.executeUncached(type);
                 long bSize = GetBasicSizeNode.executeUncached(base);
+                if (tSize != bSize) {
+                    return true;
+                }
                 long tItemSize = GetItemSizeNode.executeUncached(type);
                 long bItemSize = GetItemSizeNode.executeUncached(base);
-
-                if (tItemSize != 0 || bItemSize != 0) {
-                    return tSize != bSize || tItemSize != bItemSize;
-                }
-
-                long flags = GetTypeFlagsNode.executeUncached(type);
-                long tDictOffset = GetDictOffsetNode.executeUncached(type);
-                long bDictOffset = GetDictOffsetNode.executeUncached(base);
-                long tWeakListOffset = GetWeakListOffsetNode.executeUncached(type);
-                long bWeakListOffset = GetWeakListOffsetNode.executeUncached(base);
-                if (tWeakListOffset != 0 && bWeakListOffset == 0 && tWeakListOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
-                    tSize -= SIZEOF_PY_OBJECT_PTR;
-                }
-                if ((flags & MANAGED_DICT) == 0 && tDictOffset != 0 && bDictOffset == 0 && tDictOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
-                    tSize -= SIZEOF_PY_OBJECT_PTR;
-                }
-                // Check weaklist again in case it precedes dict
-                if (tWeakListOffset != 0 && bWeakListOffset == 0 && tWeakListOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
-                    tSize -= SIZEOF_PY_OBJECT_PTR;
-                }
-
-                return tSize != bSize;
+                return tItemSize != bItemSize;
             }
 
+            Object typeSlots = getSlotsFromType(type, readAttr);
             if (typeSlots != null && length(typeSlots) != 0) {
                 return true;
             }
@@ -1958,7 +1944,9 @@ public abstract class TypeNodes {
                         @Cached GetMroStorageNode getMroStorageNode,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raise,
-                        @Cached AllocateTypeWithMetaclassNode typeMetaclass) {
+                        @Cached ExceptionNodes.FormatNoteNode formatNoteNode,
+                        @Cached AllocateTypeWithMetaclassNode typeMetaclass,
+                        @Cached GetOrCreateDictNode getOrCreateDictNode) {
             PDict namespace = PFactory.createDict(language);
             namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
             PythonClass newType = typeMetaclass.execute(frame, name, bases, namespace, metaclass);
@@ -1998,6 +1986,17 @@ public abstract class TypeNodes {
                     throw raise.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_A_CELL, "__classcell__");
                 }
                 delItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__, namespace);
+            }
+
+            // set __classdict__ cell contents
+            Object classdictcell = getItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSDICTCELL__);
+            if (classdictcell != null) {
+                if (classdictcell instanceof PCell cell) {
+                    cell.setRef(getOrCreateDictNode.execute(inliningTarget, newType));
+                } else {
+                    throw raise.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_A_CELL, "__classdictcell__");
+                }
+                delItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSDICTCELL__, namespace);
             }
 
             // Initialization of the type slots:
@@ -2048,7 +2047,8 @@ public abstract class TypeNodes {
                     try {
                         callSetNameNode.execute(frame, setName, value, newType, key);
                     } catch (PException e) {
-                        throw raise.raiseWithCause(inliningTarget, PythonBuiltinClassType.RuntimeError, e, ErrorMessages.ERROR_CALLING_SET_NAME, value, key, newType);
+                        formatNoteNode.execute(frame, inliningTarget, e, ErrorMessages.ERROR_CALLING_SET_NAME, value, key, newType);
+                        throw e;
                     }
                 }
             }
@@ -2106,7 +2106,6 @@ public abstract class TypeNodes {
         static PythonClass typeMetaclass(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespace, Object metaclass,
                         @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @Cached HashingStorageGetItem getHashingStorageItem,
                         @Cached HashingStorageSetItemWithHash setHashingStorageItem,
                         @Cached GetOrCreateDictNode getOrCreateDictNode,
                         @Cached HashingStorageGetIterator getHashingStorageIterator,
@@ -2115,7 +2114,7 @@ public abstract class TypeNodes {
                         @Cached HashingStorageIteratorKeyHash hashingStorageItKeyHash,
                         @Cached HashingStorageIteratorValue hashingStorageItValue,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Cached InstancesOfTypeHaveDictNode hasDictNode,
+                        @Cached GetDictOffsetNode dictOffsetNode,
                         @Cached InstancesOfTypeHaveWeakrefsNode hasWeakrefsNode,
                         @Cached GetBestBaseClassNode getBestBaseNode,
                         @Cached GetIndexedSlotsCountNode getIndexedSlotsCountNode,
@@ -2182,8 +2181,9 @@ public abstract class TypeNodes {
             // 3.) invoke metaclass mro() method
             pythonClass.invokeMro(inliningTarget);
 
+            // see cpython://Objects/typeobject.c#type_new_slots
             // may_add_dict = base->tp_dictoffset == 0
-            ctx.mayAddDict = !hasDictNode.execute(base);
+            ctx.mayAddDict = dictOffsetNode.execute(inliningTarget, base) == 0;
             // may_add_weak = base->tp_weaklistoffset == 0 && base->tp_itemsize == 0
             boolean hasItemSize = getItemSize.execute(inliningTarget, base) != 0;
             ctx.mayAddWeak = !hasWeakrefsNode.execute(inliningTarget, base) && !hasItemSize;
@@ -2196,6 +2196,7 @@ public abstract class TypeNodes {
                     ctx.addWeak = true;
                 }
             } else {
+                // see cpython://Objects/typeobject.c#type_new_slots_impl
                 // have slots
                 // Make it into a list
                 SequenceStorage slotsStorage;
@@ -2383,24 +2384,15 @@ public abstract class TypeNodes {
             long dictOffset = GetDictOffsetNode.executeUncached(base);
             long weakListOffset = GetWeakListOffsetNode.executeUncached(base);
             long itemSize = GetItemSizeNode.executeUncached(base);
-            if (ctx.addDict && itemSize != 0) {
-                dictOffset = -SIZEOF_PY_OBJECT_PTR;
-                slotOffset += SIZEOF_PY_OBJECT_PTR;
+            if (ctx.addDict) {
+                long flags = GetTypeFlagsNode.executeUncached(pythonClass);
+                SetTypeFlagsNode.executeUncached(pythonClass, flags | MANAGED_DICT);
+                dictOffset = -1;
             }
             if (ctx.addWeak) {
                 weakListOffset = slotOffset;
-                slotOffset += SIZEOF_PY_OBJECT_PTR;
             }
-            if (ctx.addDict && itemSize == 0) {
-                long flags = GetTypeFlagsNode.executeUncached(pythonClass) | MANAGED_DICT;
-                SetTypeFlagsNode.executeUncached(pythonClass, flags);
-                /*
-                 * Negative offsets are computed from the end of the structure. Our managed dict is
-                 * right before the start of the object. CPython has 3 fields there, so our formula
-                 * differs.
-                 */
-                dictOffset = -slotOffset - SIZEOF_PY_OBJECT_PTR;
-            }
+
             SetDictOffsetNode.executeUncached(pythonClass, dictOffset);
             SetBasicSizeNode.executeUncached(pythonClass, slotOffset);
             SetItemSizeNode.executeUncached(pythonClass, itemSize);
@@ -2527,9 +2519,9 @@ public abstract class TypeNodes {
                 newSlots[j] = slotName;
                 // Passing 'null' frame is fine because the caller already transfers the exception
                 // state to the context.
-                if (!T___CLASSCELL__.equalsUncached(slotName, TS_ENCODING) && !T___QUALNAME__.equalsUncached(slotName, TS_ENCODING) &&
+                if (!T___CLASSCELL__.equalsUncached(slotName, TS_ENCODING) && !T___CLASSDICTCELL__.equalsUncached(slotName, TS_ENCODING) && !T___QUALNAME__.equalsUncached(slotName, TS_ENCODING) &&
                                 HashingStorageGetItem.hasKeyUncached(namespace.getDictStorage(), slotName)) {
-                    // __qualname__ and __classcell__ will be deleted later
+                    // __qualname__, __classcell__ and __classdictcell__ will be deleted later
                     throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.S_S_CONFLICTS_WITH_CLASS_VARIABLE, slotName, "__slots__");
                 }
                 j++;
@@ -2659,8 +2651,10 @@ public abstract class TypeNodes {
             }
             // TODO there are more builtins with dict
             return switch (cls) {
-                case PBaseException, PythonModule -> 16;
+                case PBaseException, PythonModule, PSimpleNamespace -> 16;
                 case PythonClass -> 264;
+                case PStaticmethod, PClassmethod -> 24;
+                case POrderedDict -> 96;
                 default -> cls.getBase() != null ? getBuiltinDictoffset(cls.getBase()) : 0;
             };
         }

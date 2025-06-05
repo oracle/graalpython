@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -88,7 +88,7 @@ if sys.implementation.name == "graalpy":
             cls.venv_dir = Path(tempfile.mkdtemp()).resolve()
             subprocess.check_output([sys.executable, "-m", "venv", str(cls.venv_dir)])
             cls.venv_python = str(cls.venv_dir / 'bin' / 'python')
-            subprocess.check_output([cls.venv_python, '-m', 'pip', 'install', 'wheel'])
+            subprocess.check_output([cls.venv_python, '-m', 'pip', 'install', 'wheel', 'setuptools'])
             cls.venv_template_dir = f'{cls.venv_dir}.template'
             cls.venv_dir.rename(cls.venv_template_dir)
             cls.build_dir = Path(tempfile.mkdtemp()).resolve()

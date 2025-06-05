@@ -897,12 +897,10 @@ def graalpytest(args):
         python_args.insert(0, "--vm.Dpython.EnableBytecodeDSLInterpreter=true")
 
     runner_args.append(f'--subprocess-args={shlex.join(python_args)}')
+    if is_graalpy:
+        runner_args.append(f'--append-path={os.path.join(_dev_pythonhome(), "lib-python", "3")}')
     cmd_args = [*python_args, _python_test_runner(), 'run', *runner_args]
     delete_bad_env_keys(env)
-    if is_graalpy:
-        pythonpath = [os.path.join(_dev_pythonhome(), 'lib-python', '3')]
-        pythonpath += [p for p in env.get('PYTHONPATH', '').split(os.pathsep) if p]
-        env['PYTHONPATH'] = os.pathsep.join(pythonpath)
     if python_binary:
         try:
             result = run([python_binary, *cmd_args], nonZeroIsFatal=True, env=env)
@@ -1036,16 +1034,14 @@ def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, t
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True, checkIfWithGraalPythonEE=False,
                          report=False, parallel=8, exclude=None, paths=()):
-    sub_env = dict(env or os.environ)
-    sub_env['PYTHONPATH'] = os.path.join(_dev_pythonhome(), 'lib-python', '3')
 
     if checkIfWithGraalPythonEE:
         mx.run([python_binary, "-c", "import sys; print(sys.version)"])
     run_python_unittests(
         python_binary,
-        runner_args=['--tagged'],
+        runner_args=[f'--append-path={os.path.join(_dev_pythonhome(), "lib-python", "3")}', '--tagged'],
         paths=paths or [os.path.relpath(os.path.join(_get_stdlib_home(), 'test'))],
-        env=sub_env,
+        env=env,
         cwd=cwd,
         nonZeroIsFatal=nonZeroIsFatal,
         report=report,
@@ -1451,17 +1447,17 @@ def tox_example(args=None):
 
     mx.log("Setting up CPython venv to run tox itself")
     libs = [
-        "distlib==0.3.4",
-        "filelock==3.6.0",
-        "packaging==21.3",
-        "platformdirs==2.5.1",
-        "pluggy==1.0.0",
+        "distlib==0.3.9",
+        "filelock==3.18.0",
+        "packaging==25.0",
+        "platformdirs==4.3.8",
+        "pluggy==1.5.0",
         "py==1.11.0",
-        "pyparsing==3.0.7",
-        "six==1.16.0",
+        "pyparsing==3.2.3",
+        "six==1.17.0",
         "toml==0.10.2",
-        "tox==3.24.5",
-        "virtualenv==20.13.4",
+        "tox==4.25.0",
+        "virtualenv==20.31.2",
         os.path.join(os.path.dirname(graalpy), "..", "graalpy_virtualenv_seeder"),
     ]
 
@@ -1525,7 +1521,7 @@ def tox_example(args=None):
     output = mx.LinesOutputCapture()
     mx.log("Running {} -m tox -e graalpy".format(python3))
     mx.run([python3, "-m", "tox"], env=new_env, cwd=wd, out=mx.TeeOutputCapture(output), err=subprocess.STDOUT)
-    check_output(["4 passed", "graalpy: commands succeeded"], output.lines)
+    check_output(["4 passed", "graalpy: OK"], output.lines)
 
     # Failing tests:
     mx.log("Running {} -m tox -e graalpy with intentionally failing tests".format(python3))

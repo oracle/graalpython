@@ -75,7 +75,6 @@ import java.util.zip.Inflater;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -84,9 +83,7 @@ import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -191,6 +188,28 @@ public class ZlibNodes {
             return getBuffer.getOutputBuffer(inliningTarget, self.getZst(), context);
         }
 
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class ZlibNativeDecompressor extends PNodeWithContext {
+
+        public abstract byte[] execute(Node inliningTarget, ZlibDecompressorObject self, PythonContext context, byte[] bytes, int len, int maxLength);
+
+        @Specialization
+        static byte[] nativeDecompressBuf(Node inliningTarget, ZlibDecompressorObject self, PythonContext context, byte[] bytes, int len, int maxLength,
+                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction decompressor,
+                        @Cached GetNativeBufferNode getBuffer,
+                        @Cached ZlibNativeErrorHandling errorHandling) {
+            NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
+            Object in = context.getEnv().asGuestValue(bytes);
+            int ret = zlibSupport.decompressor(self.getZst(), in, len, maxLength, decompressor);
+            if (ret < 0) {
+                errorHandling.execute(inliningTarget, self.getZst(), ret, zlibSupport, false);
+            }
+            self.setNeedsInput(ret == 1);
+            return getBuffer.getOutputBuffer(inliningTarget, self.getZst(), context);
+        }
     }
 
     @GenerateInline
@@ -643,15 +662,6 @@ public class ZlibNodes {
         @TruffleBoundary
         public static int getRemaining(Inflater inflater) {
             return inflater.getRemaining();
-        }
-
-        @TruffleBoundary
-        public static int getBytesRead(Inflater inflater) {
-            try {
-                return PInt.intValueExact(inflater.getBytesRead());
-            } catch (OverflowException e) {
-                throw CompilerDirectives.shouldNotReachHere("input size is larger than an int!");
-            }
         }
 
         @TruffleBoundary

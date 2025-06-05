@@ -8,6 +8,6 @@ Module[1:0-1:15]
     Compare[1:0-1:15]
         LHS: LONG[1:0-1:1] Value: 1
         Op: Lt
-        RHS: RAW[1:4-1:8] Value: "10"
+        RHS: CODEPOINTS[1:4-1:8] Value: "10"
         Op: Gt
         RHS: BOOLEAN[1:11-1:15] Value: true

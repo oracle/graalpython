@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -58,3 +58,54 @@ def test_simple_decorator():
     assert global_log[-1] == ["myfunc", (10, 20), {}]
     assert myfunc(10, 20, x=1, y=2) == (10, 20, {'x': 1, 'y': 2})
     assert global_log[-1] == ["myfunc", (10, 20), {'x': 1, 'y': 2}]
+
+
+def test_eval_order():
+    MyBase = None
+
+    def create_base(dummy_arg):
+        nonlocal MyBase
+        class MyBaseK:
+            pass
+        MyBase = MyBaseK
+        return lambda a: a
+
+    # this should just work: the decorator expression first
+    # creates MyBase and only then is the rest evaluated
+    @create_base('dummy')
+    class MyClass(MyBase):
+        pass
+
+    # dummy helper for following tests
+    def my_decorator(x):
+        return x
+
+    class assert_name_error:
+        def __init__(self, name):
+            self.name = name
+        def __enter__(self):
+            pass
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            assert exc_type == NameError, f"did not raise NameError with name '{self.name}'"
+            assert self.name in str(exc_val), f"not NameError for name '{self.name}'"
+            return True
+
+    with assert_name_error('my_decoratorr'):
+        @my_decoratorr
+        class ClassA(NonExistingBaseClass):
+            pass
+
+    with assert_name_error('NonExistingBase'):
+        @my_decorator
+        class ClassA(NonExistingBase):
+            pass
+
+    with assert_name_error('my_decoratorr'):
+        @my_decoratorr
+        def my_function(x=NonexistingName):
+            pass
+
+    with assert_name_error('NonexistingDefaultName'):
+        @my_decorator
+        def my_function(x=NonexistingDefaultName):
+            pass

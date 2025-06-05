@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2019, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -113,6 +113,7 @@
 #define XML_SetNotStandaloneHandler     PyExpat_XML_SetNotStandaloneHandler
 #define XML_SetParamEntityParsing       PyExpat_XML_SetParamEntityParsing
 #define XML_SetProcessingInstructionHandler PyExpat_XML_SetProcessingInstructionHandler
+#define XML_SetReparseDeferralEnabled   PyExpat_XML_SetReparseDeferralEnabled
 #define XML_SetReturnNSTriplet          PyExpat_XML_SetReturnNSTriplet
 #define XML_SetSkippedEntityHandler     PyExpat_XML_SetSkippedEntityHandler
 #define XML_SetStartCdataSectionHandler PyExpat_XML_SetStartCdataSectionHandler

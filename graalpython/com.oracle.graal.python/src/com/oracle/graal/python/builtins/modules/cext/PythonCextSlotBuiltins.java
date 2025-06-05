@@ -49,12 +49,12 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyByteArrayObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCFunctionObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCMethodObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCompactUnicodeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyDescrObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyGetSetDef;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyInstanceMethodObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyListObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyLongObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDef;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDescrObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodObject;
@@ -72,9 +72,9 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyUnicodeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyVarObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINTPTR_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_INT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.WCHAR_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.destructor;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.getattrfunc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.getattrofunc;
@@ -105,16 +105,14 @@ import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyMethodDefHelper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -263,23 +261,6 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = WCHAR_T_PTR, args = {PyASCIIObject}, call = Ignored)
-    abstract static class Py_get_PyASCIIObject_wstr extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static Object get(Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached UnicodeAsWideCharNode asWideCharNode) {
-            int elementSize = CStructs.wchar_t.size();
-            /*
-             * TODO: the string might get GC'd, since the object isn't referenced from anywhere. The
-             * proper solution needs to differentiate here, and maybe use the "toNative" of
-             * TruffleString.
-             */
-            return PySequenceArrayWrapper.ensureNativeSequence(asWideCharNode.executeNativeOrder(inliningTarget, object, elementSize));
-        }
-    }
-
     @CApiBuiltin(ret = PyTypeObjectBorrowed, args = {PyCMethodObject}, call = Ignored)
     abstract static class Py_get_PyCMethodObject_mm_class extends CApiUnaryBuiltinNode {
         @Specialization
@@ -409,19 +390,6 @@ public final class PythonCextSlotBuiltins {
         static Object set(PByteArray object, int value) {
             object.setExports(value);
             return PNone.NO_VALUE;
-        }
-    }
-
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyCompactUnicodeObject}, call = Ignored)
-    abstract static class Py_get_PyCompactUnicodeObject_wstr_length extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static long get(Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached UnicodeAsWideCharNode asWideCharNode) {
-            long sizeofWchar = CStructs.wchar_t.size();
-            PBytes result = asWideCharNode.executeNativeOrder(inliningTarget, object, sizeofWchar);
-            return result.getSequenceStorage().length() / sizeofWchar;
         }
     }
 
@@ -789,8 +757,23 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         static long get(Object object,
                         @Bind("this") Node inliningTarget,
+                        @Cached GetClassNode getClassNode,
+                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
                         @Cached ObSizeNode obSizeNode) {
+            assert !isSameTypeNode.execute(inliningTarget, getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PInt);
+            assert !isSameTypeNode.execute(inliningTarget, getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.Boolean);
             return obSizeNode.execute(inliningTarget, object);
+        }
+    }
+
+    @CApiBuiltin(ret = UINTPTR_T, args = {PyLongObject}, call = Ignored)
+    abstract static class Py_get_PyLongObject_long_value_lv_tag extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static long getLvTag(Object n,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CExtNodes.LvTagNode lvTagNode) {
+            return lvTagNode.execute(inliningTarget, n);
         }
     }
 

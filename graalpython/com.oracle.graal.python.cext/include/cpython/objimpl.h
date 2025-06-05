@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -7,7 +7,9 @@
 #  error "this header file must not be included directly"
 #endif
 
-#define _PyObject_SIZE(typeobj) ( (typeobj)->tp_basicsize )
+static inline size_t _PyObject_SIZE(PyTypeObject *type) {
+    return _Py_STATIC_CAST(size_t, type->tp_basicsize);
+}
 
 /* _PyObject_VAR_SIZE returns the number of bytes (as size_t) allocated for a
    vrbl-size object with nitems items, exclusive of gc overhead (if any).  The
@@ -23,10 +25,11 @@
 #   error "_PyObject_VAR_SIZE requires SIZEOF_VOID_P be a power of 2"
 #endif
 
-#define _PyObject_VAR_SIZE(typeobj, nitems)     \
-    _Py_SIZE_ROUND_UP((typeobj)->tp_basicsize + \
-        (nitems)*(typeobj)->tp_itemsize,        \
-        SIZEOF_VOID_P)
+static inline size_t _PyObject_VAR_SIZE(PyTypeObject *type, Py_ssize_t nitems) {
+    size_t size = _Py_STATIC_CAST(size_t, type->tp_basicsize);
+    size += _Py_STATIC_CAST(size_t, nitems) * _Py_STATIC_CAST(size_t, type->tp_itemsize);
+    return _Py_SIZE_ROUND_UP(size, SIZEOF_VOID_P);
+}
 
 
 /* This example code implements an object constructor with a custom
@@ -92,3 +95,6 @@ PyAPI_FUNC(int) PyObject_IS_GC(PyObject *obj);
 PyAPI_FUNC(int) PyType_SUPPORTS_WEAKREFS(PyTypeObject *type);
 
 PyAPI_FUNC(PyObject **) PyObject_GET_WEAKREFS_LISTPTR(PyObject *op);
+
+PyAPI_FUNC(PyObject *) PyUnstable_Object_GC_NewWithExtraData(PyTypeObject *,
+                                                             size_t);

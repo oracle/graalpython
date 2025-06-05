@@ -703,7 +703,17 @@ public final class CertUtils {
 
     @TruffleBoundary
     static Collection<?> generateCertificates(byte[] bytes) throws CertificateException {
-        return CertificateFactory.getInstance("X.509").generateCertificates(new ByteArrayInputStream(bytes));
+        // test_load_verify_cadata appends an extra byte to a valid certificate and expects
+        // a failure.
+        // For some reason, CertificateFactory#generateCertificates() consumes the whole input
+        // ignoring any extra bytes. Parsing certificate one by one seems to detect them.
+        CertificateFactory factory = CertificateFactory.getInstance("X.509");
+        ArrayList<Object> list = new ArrayList<>();
+        ByteArrayInputStream is = new ByteArrayInputStream(bytes);
+        while (is.available() > 0) {
+            list.add(factory.generateCertificate(is));
+        }
+        return list;
     }
 
     @TruffleBoundary

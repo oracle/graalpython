@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,8 @@ class IOBaseTests(unittest.TestCase):
 
     def test_iobase_ctor_accepts_anything(self):
         _io._IOBase()
-        _io._IOBase(1, '2', kw=3)
+        with self.assertRaises(TypeError):
+            _io._IOBase(1, '2', kw=3)
 
     def test_close(self):
         x = _io._IOBase()
@@ -103,7 +104,7 @@ class IOBaseTests(unittest.TestCase):
             self.assertEqual('abc', e.__context__.args[0])
 
     def test_unsupported(self):
-        self.assertRaises(_io.UnsupportedOperation, _io._IOBase().seek)
+        self.assertRaises(_io.UnsupportedOperation, _io._IOBase().seek, 0, 0)
         self.assertRaises(_io.UnsupportedOperation, _io._IOBase().truncate)
         self.assertRaises(_io.UnsupportedOperation, _io._IOBase().fileno)
 

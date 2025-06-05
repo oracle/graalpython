@@ -43,7 +43,7 @@ import gc
 import os
 import shutil
 import sys
-import time
+import sysconfig
 import unittest
 from copy import deepcopy
 from io import StringIO
@@ -91,12 +91,49 @@ class CPyExtTestCase(unittest.TestCase):
 
 compiled_registry = set()
 
+def find_rootdir():
+    # graalpython/com.oracle.graal.python.test/src/tests/cpyext/__init__.py
+    cur_dir = Path(__file__).parent
+    while cur_dir.name != 'graalpython':
+        cur_dir = cur_dir.parent
+    return cur_dir.parent
+
+def get_setuptools(setuptools='setuptools==67.6.1'):
+    """
+    distutils is not part of std library since python 3.12
+    we rely on distutils to pick the toolchain for the underlying system
+    and build the c extension tests.
+    """
+    import site    
+    setuptools_path = find_rootdir() / ('%s-setuptools-venv' % sys.implementation.name)
+
+    if not os.path.isdir(setuptools_path / 'setuptools'):
+        import subprocess
+        import tempfile
+        import venv
+        temp_env = Path(tempfile.mkdtemp())
+        venv.create(temp_env, with_pip=True)
+        if sys.platform.startswith('win32'):
+            py_executable = temp_env / 'Scripts' / 'python.exe'
+        else:
+            py_executable = temp_env / 'bin' / 'python3'
+        extra_args = []
+        if GRAALPYTHON and __graalpython__.is_bytecode_dsl_interpreter:
+            extra_args = ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
+        subprocess.run([py_executable, *extra_args, "-m", "pip", "install", "--target", str(setuptools_path), setuptools], check=True)
+        print('setuptools is installed in %s' % setuptools_path)
+        shutil.rmtree(temp_env)
+    
+    pyvenv_site = str(setuptools_path)
+    if pyvenv_site not in site.getsitepackages():
+        site.addsitedir(pyvenv_site)
+
 
 def ccompile(self, name, check_duplicate_name=True):
-    from distutils.core import setup, Extension
-    from distutils.sysconfig import get_config_var
+    get_setuptools()
+    from setuptools import setup, Extension
     from hashlib import sha256
-    EXT_SUFFIX = get_config_var("EXT_SUFFIX")
+    EXT_SUFFIX = sysconfig.get_config_var("EXT_SUFFIX")
 
     source_file = DIR / f'{name}.c'
     file_not_empty(source_file)
@@ -143,7 +180,7 @@ def ccompile(self, name, check_duplicate_name=True):
             module = Extension(name, sources=[source_file.name])
             args = [
                 '--verbose' if sys.flags.verbose else '--quiet',
-                'build',
+                'build', '--build-temp=t', '--build-base=b', '--build-purelib=l', '--build-platlib=l',
                 'install_lib', '-f', '--install-dir=.',
             ]
             setup(

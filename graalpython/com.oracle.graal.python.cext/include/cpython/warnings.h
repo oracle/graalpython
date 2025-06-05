@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2023, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2023 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -22,4 +22,4 @@ PyAPI_FUNC(int) PyErr_WarnExplicitFormat(
     const char *format, ...);
 
 // DEPRECATED: Use PyErr_WarnEx() instead.
-#define PyErr_Warn(category, msg) PyErr_WarnEx(category, msg, 1)
+#define PyErr_Warn(category, msg) PyErr_WarnEx((category), (msg), 1)

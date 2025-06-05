@@ -40,9 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COLON_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_BRACES;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
@@ -64,12 +66,21 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
+import com.oracle.graal.python.builtins.objects.dict.DictReprBuiltin.ReprNode.AbstractForEachRepr;
+import com.oracle.graal.python.builtins.objects.dict.DictReprBuiltin.ReprNode.ReprState;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
+import com.oracle.graal.python.builtins.objects.ordereddict.POrderedDict;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.IteratorExhausted;
+import com.oracle.graal.python.lib.PyIterNextNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -79,6 +90,8 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -88,6 +101,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -117,10 +131,16 @@ public final class DictReprBuiltin extends PythonBuiltins {
             private final Object self;
             private final TruffleStringBuilder result;
             private final int initialLength;
+            private final boolean ellipsisInBraces;
 
             ReprState(Object self, TruffleStringBuilder result) {
+                this(self, result, true);
+            }
+
+            ReprState(Object self, TruffleStringBuilder result, boolean ellipsisInBraces) {
                 this.self = self;
                 this.result = result;
+                this.ellipsisInBraces = ellipsisInBraces;
                 initialLength = result.byteLength();
             }
         }
@@ -143,7 +163,8 @@ public final class DictReprBuiltin extends PythonBuiltins {
                             LookupAndCallUnaryDynamicNode reprNode,
                             CastToTruffleStringNode castStr,
                             PRaiseNode raiseNode) {
-                Object reprObj = s == null || obj != s.self ? reprNode.executeObject(obj, T___REPR__) : T_ELLIPSIS_IN_BRACES;
+                TruffleString ellipsisStr = s == null || s.ellipsisInBraces ? T_ELLIPSIS_IN_BRACES : T_ELLIPSIS;
+                Object reprObj = s == null || obj != s.self ? reprNode.executeObject(obj, T___REPR__) : ellipsisStr;
                 try {
                     return castStr.execute(inliningTarget, reprObj);
                 } catch (CannotCastException e) {
@@ -329,6 +350,67 @@ public final class DictReprBuiltin extends PythonBuiltins {
             forEachNode.execute(null, inliningTarget, dictStorage, consumerNode, new ReprState(view, sb));
             appendStringNode.execute(sb, T_RPAREN_BRACKET);
             return toStringNode.execute(sb);
+        }
+    }
+
+    public abstract static class FormatKeyValueDictRepr extends Node {
+
+        abstract void execute(Object key, Object value, ReprState s);
+
+        @Specialization
+        public static void keyValue(Object key, Object value, ReprState s,
+                        @Bind("this") Node inliningTarget,
+                        @Cached LookupAndCallUnaryDynamicNode keyReprNode,
+                        @Cached LookupAndCallUnaryDynamicNode valueReprNode,
+                        @Cached CastToTruffleStringNode castStr,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached InlinedConditionProfile lengthCheck,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
+            TruffleString keyReprString = AbstractForEachRepr.getReprString(inliningTarget, key, null, keyReprNode, castStr, raiseNode);
+            TruffleString valueReprString = AbstractForEachRepr.getReprString(inliningTarget, value, s, valueReprNode, castStr, raiseNode);
+            AbstractForEachRepr.appendSeparator(inliningTarget, s, lengthCheck, appendStringNode);
+            appendStringNode.execute(s.result, keyReprString);
+            appendStringNode.execute(s.result, T_COLON_SPACE);
+            appendStringNode.execute(s.result, valueReprString);
+        }
+    }
+
+    public abstract static class ReprOrderedDictItemsNode extends Node {
+        public abstract void execute(VirtualFrame frame, POrderedDict dict, TruffleStringBuilder sb);
+
+        @Specialization
+        static void repr(VirtualFrame frame, POrderedDict dict, TruffleStringBuilder sb,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached PyIterNextNode nextNode,
+                        @Cached FormatKeyValueDictRepr formatKeyValueDictRepr) {
+            Object oditems = callMethod.execute(frame, inliningTarget, dict, T_ITEMS);
+            ReprState s = new ReprState(dict, sb, false);
+            int count = 0;
+            try {
+                Object iter = getIter.execute(frame, inliningTarget, oditems);
+                while (true) {
+                    Object next;
+                    try {
+                        next = nextNode.execute(frame, inliningTarget, iter);
+                    } catch (IteratorExhausted e) {
+                        break;
+                    }
+                    if (CompilerDirectives.hasNextTier()) {
+                        count++;
+                    }
+                    assert PGuards.isPTuple(next);
+                    ObjectSequenceStorage item = (ObjectSequenceStorage) ((PTuple) next).getSequenceStorage();
+                    Object key = item.getObjectItemNormalized(0);
+                    Object value = item.getObjectItemNormalized(1);
+                    formatKeyValueDictRepr.execute(key, value, s);
+                }
+            } finally {
+                if (count != 0) {
+                    LoopNode.reportLoopCount(inliningTarget, count);
+                }
+            }
         }
     }
 }

@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_INT_AS_R;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
@@ -264,6 +265,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object type = getClassNode.execute(inliningTarget, self);
             PList poolList = PFactory.createList(language, self.getPool());
             PTuple tuple = PFactory.createTuple(language, new Object[]{poolList, self.getR()});
@@ -303,6 +305,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                         @Cached CastToJavaBooleanNode castBoolean,
                         @Cached CastToJavaIntExactNode castInt,
                         @Cached PRaiseNode raiseNode) {
+            warnPickleDeprecated();
             try {
                 if (sizeNode.execute(frame, inliningTarget, state) != 3) {
                     throw raiseNode.raise(inliningTarget, ValueError, INVALID_ARGS, T___SETSTATE__);
