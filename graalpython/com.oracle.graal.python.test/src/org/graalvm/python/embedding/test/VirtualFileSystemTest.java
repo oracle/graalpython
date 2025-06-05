@@ -74,6 +74,7 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -184,7 +185,7 @@ public class VirtualFileSystemTest {
         assertEquals(Path.of(VFS_MOUNT_POINT, "does-not-exist"), fs.toRealPath(Path.of(pathPrefix, "does-not-exist")));
         assertEquals(Path.of(VFS_MOUNT_POINT, "extractme"), fs.toRealPath(Path.of(pathPrefix, "extractme"), LinkOption.NOFOLLOW_LINKS));
         checkExtractedFile(fs.toRealPath(Path.of(pathPrefix, "extractme")), new String[]{"text1", "text2"});
-        checkException(NoSuchFileException.class, () -> fs.toRealPath(Path.of(pathPrefix, "does-not-exist", "extractme")));
+        assertEquals(Path.of(VFS_MOUNT_POINT, "does-not-exist", "extractme"), fs.toRealPath(Path.of(pathPrefix, "does-not-exist", "extractme")));
     }
 
     @Test
@@ -699,33 +700,44 @@ public class VirtualFileSystemTest {
         try (VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
-                        extractFilter(p -> p.getFileName().toString().endsWith(".tso")).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build()) {
             FileSystem fs = getDelegatingFS(vfs);
-            Path p = fs.toRealPath(VFS_ROOT_PATH.resolve("site-packages/testpkg/file.tso"));
+            Path p = fs.toRealPath(VFS_ROOT_PATH.resolve("src/pkg1/pkg1-fake-library.so"));
             checkExtractedFile(p, null);
             Path extractedRoot = p.getParent().getParent().getParent();
 
-            checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/file1.tso"), null);
-            checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/file2.tso"), null);
-            checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/file1.tso"), null);
-            checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/file2.tso"), null);
-            checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/nofilterfile"), null);
-            checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/dir/file1.tso"), null);
-            checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/dir/file2.tso"), null);
-
-            p = fs.toRealPath(VFS_ROOT_PATH.resolve("site-packages/testpkg-nolibs/file.tso"));
-            checkExtractedFile(p, null);
+            checkExtractedFile(extractedRoot.resolve("src/package1.libs/fake-dependency1.so"), null);
+            checkExtractedFile(extractedRoot.resolve("src/package1.libs/fake-dependency2.so.2"), null);
+            assertFalse(Files.exists(extractedRoot.resolve("src/package2.libs/not-extracted.so")));
         }
     }
 
-    private static void checkExtractedFile(Path extractedFile, String[] expectedContens) throws IOException {
+    @Test
+    public void libsExtractCustomFilter() throws Exception {
+        try (VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
+                        unixMountPoint(VFS_MOUNT_POINT).//
+                        windowsMountPoint(VFS_WIN_MOUNT_POINT).//
+                        extractFilter((p) -> p.toString().endsWith(".py")).//
+                        resourceLoadingClass(VirtualFileSystemTest.class).build()) {
+            FileSystem fs = getDelegatingFS(vfs);
+            Path p = fs.toRealPath(VFS_ROOT_PATH.resolve("src/pkg1/pkg1-fake-library.so"));
+            checkExtractedFile(p, null);
+            Path extractedRoot = p.getParent().getParent().getParent();
+
+            checkExtractedFile(extractedRoot.resolve("src/pkg1/__init__.py"), null);
+            checkExtractedFile(extractedRoot.resolve("src/package1.libs/fake-dependency1.so"), null);
+            checkExtractedFile(extractedRoot.resolve("src/package1.libs/fake-dependency2.so.2"), null);
+            assertFalse(Files.exists(extractedRoot.resolve("src/package2.libs/not-extracted.so")));
+        }
+    }
+
+    private static void checkExtractedFile(Path extractedFile, String[] expectedContents) throws IOException {
         assertTrue(Files.exists(extractedFile));
         List<String> lines = Files.readAllLines(extractedFile);
-        if (expectedContens != null) {
-            assertEquals("expected " + expectedContens.length + " lines in extracted file '" + extractedFile + "'", expectedContens.length, lines.size());
-            for (String line : expectedContens) {
-                assertTrue("expected line '" + line + "' in file '" + extractedFile + "' with contents:\n" + expectedContens, lines.contains(line));
+        if (expectedContents != null) {
+            assertEquals("expected " + expectedContents.length + " lines in extracted file '" + extractedFile + "'", expectedContents.length, lines.size());
+            for (String line : expectedContents) {
+                assertTrue("expected line '" + line + "' in file '" + extractedFile + "' with contents:\n" + Arrays.toString(expectedContents), lines.contains(line));
             }
         } else {
             assertEquals("extracted file '" + extractedFile + "' expected to be empty, but had " + lines.size() + " lines", 0, lines.size());
@@ -740,7 +752,7 @@ public class VirtualFileSystemTest {
                         extractFilter(null).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build()) {
             FileSystem fs = getDelegatingFS(vfs);
-            assertEquals(22, checkNotExtracted(fs, VFS_ROOT_PATH));
+            assertEquals(20, checkNotExtracted(fs, VFS_ROOT_PATH));
         }
     }
 
@@ -1141,8 +1153,12 @@ public class VirtualFileSystemTest {
     @Test
     public void testGetFileStoreSpace() throws Exception {
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
-            long expectedSize = IS_WINDOWS ? 1162 : 1158; // this is because of different newlines
-            assertEquals(expectedSize, fs.getFileStoreTotalSpace(VFS_ROOT_PATH.resolve("file1")));
+            long size = fs.getFileStoreTotalSpace(VFS_ROOT_PATH.resolve("file1"));
+            /*
+             * Approximate check so that we don't have to recalculate this for two platforms every
+             * time we change the test VFS
+             */
+            assertTrue(size > 1000 && size < 2000);
             assertEquals(0, fs.getFileStoreUnallocatedSpace(VFS_ROOT_PATH.resolve("file1")));
             assertEquals(0, fs.getFileStoreUsableSpace(VFS_ROOT_PATH.resolve("file1")));
             assertEquals(4096, fs.getFileStoreBlockSize(VFS_ROOT_PATH.resolve("file1")));

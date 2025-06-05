@@ -200,6 +200,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     private final class FileEntry extends BaseEntry {
         private byte[] data;
+        private List<FileEntry> toExtract;
 
         public FileEntry(String path) {
             super(path);
@@ -241,7 +242,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     private boolean extractOnStartup = "true".equals(System.getProperty("org.graalvm.python.vfs.extractOnStartup")) || "true".equals(System.getProperty("graalpy.vfs.extractOnStartup"));
 
     /**
-     * A filter to determine if a path should be extracted (see {@link #shouldExtract(Path)}).
+     * A filter to determine if a path should be extracted (see {@link #shouldExtract(BaseEntry)}).
      */
     private final Predicate<Path> extractFilter;
     private final boolean caseInsensitive;
@@ -507,6 +508,9 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
                     assert parent != null;
                     if (!platformPath.endsWith(PLATFORM_SEPARATOR)) {
                         FileEntry fileEntry = new FileEntry(platformPath);
+                        if (extractFilter != null && extractFilter.test(Paths.get(platformPath))) {
+                            fileEntry.toExtract = List.of(fileEntry);
+                        }
                         BaseEntry previous = vfsEntries.put(toCaseComparable(platformPath), fileEntry);
                         if (previous != null) {
                             if (previous instanceof DirEntry) {
@@ -520,12 +524,6 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
                         }
                         finest("  %s", fileEntry.getResourcePath());
                         parent.entries.add(fileEntry);
-                        if (extractOnStartup) {
-                            Path p = Paths.get(fileEntry.getPlatformPath());
-                            if (shouldExtract(p)) {
-                                getExtractedPath(p);
-                            }
-                        }
                     }
                 }
             } catch (IOException ex) {
@@ -540,6 +538,52 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         }
         if (hasNativeFiles) {
             checkPlatform();
+        }
+        if (extractFilter != null) {
+            String wheelMetadataSuffix = ".dist-info" + getSeparator() + "RECORD";
+            for (BaseEntry entry : vfsEntries.values()) {
+                if (entry instanceof FileEntry fileEntry && fileEntry.getPlatformPath().endsWith(wheelMetadataSuffix)) {
+                    Path baseDir = Paths.get(fileEntry.getPlatformPath()).getParent().getParent();
+                    try (BufferedReader is = new BufferedReader(new InputStreamReader(getResourceUrl(fileEntry.getResourcePath()).openStream()))) {
+                        String line;
+                        List<FileEntry> extractedTogether = new ArrayList<>();
+                        while ((line = is.readLine()) != null) {
+                            int commaIndex = line.indexOf(',');
+                            if (commaIndex < 0) {
+                                warn("Failed to parse wheel entry in record file %s: %s", fileEntry.getPlatformPath(), line);
+                                continue;
+                            }
+                            Path platformPath = baseDir.resolve(line.substring(0, commaIndex).replace("/", PLATFORM_SEPARATOR));
+                            if (extractFilter.test(platformPath)) {
+                                BaseEntry extractableEntry = getEntry(platformPath);
+                                if (extractableEntry instanceof FileEntry extractableFileEntry) {
+                                    extractedTogether.add(extractableFileEntry);
+                                } else {
+                                    warn("Could not find file referred from wheel record file %s: %s", fileEntry.getPlatformPath(), platformPath);
+                                }
+                            }
+                        }
+                        if (!extractedTogether.isEmpty()) {
+                            for (FileEntry extractableFileEntry : extractedTogether) {
+                                extractableFileEntry.toExtract = extractedTogether;
+                            }
+                        }
+                    } catch (IOException ex) {
+                        // This is just best-effort attempt at guessing which libraries to extract
+                        // together, ignore errors
+                        warn("Exception when reading wheel record file %s: %s", fileEntry.getPlatformPath(), ex);
+                    }
+                }
+            }
+            if (extractOnStartup) {
+                for (BaseEntry entry : vfsEntries.values()) {
+                    if (entry instanceof FileEntry fileEntry) {
+                        if (fileEntry.toExtract != null) {
+                            getExtractedPath(fileEntry);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -706,7 +750,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         }
     }
 
-    byte[] readResource(String path) throws IOException {
+    private URL getResourceUrl(String path) throws IOException {
         List<URL> urls = Collections.list(this.resourceLoadingClass.getClassLoader().getResources(path.substring(1)));
         if (vfsRootURL != null) {
             urls = getURLInRoot(urls);
@@ -714,7 +758,11 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         if (urls.isEmpty()) {
             throw new IllegalStateException("VFS.initEntries: could not find resource: " + path);
         }
-        try (InputStream stream = urls.get(0).openStream()) {
+        return urls.get(0);
+    }
+
+    byte[] readResource(String path) throws IOException {
+        try (InputStream stream = getResourceUrl(path).openStream()) {
             if (stream == null) {
                 throw new IllegalStateException("VFS.initEntries: could not read resource: " + path);
             }
@@ -766,13 +814,8 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         return true;
     }
 
-    /**
-     * Uses {@link #extractFilter} to determine if the given platform path should be extracted.
-     */
-    private boolean shouldExtract(Path path) {
-        boolean ret = extractFilter != null && extractFilter.test(path);
-        finest("VFS.shouldExtract '%s' %s", path, ret);
-        return ret;
+    private static boolean shouldExtract(BaseEntry entry) {
+        return entry instanceof FileEntry fileEntry && fileEntry.toExtract != null;
     }
 
     private static boolean followLinks(LinkOption... linkOptions) {
@@ -791,85 +834,44 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
      * path to the extracted file. Nonexistent parent directories will also be created
      * (recursively). If the extracted file or directory already exists, nothing will be done.
      */
-    private Path getExtractedPath(Path path) {
-        assert shouldExtract(path);
-        return extractPath(path, true);
-    }
-
-    private Path extractPath(Path path, boolean extractLibsDir) {
+    private Path getExtractedPath(BaseEntry entry) {
         assert extractDir != null;
         try {
-            /*
-             * Remove the mountPoint(X) (e.g. "graalpy_vfs(x)") prefix if given. Method 'file' is
-             * able to handle relative paths and we need it to compute the extract path.
-             */
-            BaseEntry entry = getEntry(path);
-            if (entry == null) {
+            if (entry instanceof FileEntry fileEntry) {
+                for (FileEntry toExtract : fileEntry.toExtract) {
+                    extractSingleFile(toExtract);
+                }
+                return extractSingleFile(fileEntry);
+            } else {
                 return null;
             }
-            Path relPath = mountPoint.relativize(Paths.get(entry.getPlatformPath()));
-
-            // create target path
-            Path xPath = extractDir.resolve(relPath);
-            if (!Files.exists(xPath)) {
-                if (entry instanceof FileEntry fileEntry) {
-                    // first create parent dirs
-                    Path parent = xPath.getParent();
-                    assert parent == null || !Files.exists(parent) || Files.isDirectory(parent);
-                    if (parent == null) {
-                        throw new NullPointerException("Parent is null during extracting path.");
-                    }
-                    Files.createDirectories(parent);
-
-                    // write data extracted file
-                    Files.write(xPath, fileEntry.getData());
-                    finest("extracted '%s' -> '%s'", path, xPath);
-
-                    if (extractLibsDir) {
-                        Path pkgDir = getPythonPackageDir(path);
-                        if (pkgDir != null) {
-                            Path libsDir = Paths.get(pkgDir + ".libs");
-                            extract(libsDir);
-                        }
-                    }
-
-                } else if (entry instanceof DirEntry) {
-                    Files.createDirectories(xPath);
-                } else {
-                    return path;
-                }
-            }
-
-            return xPath;
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Error while extracting virtual filesystem path '%s' to the disk", path), e);
+            throw new RuntimeException(String.format("Error while extracting virtual filesystem path '%s' to the disk", entry.getPlatformPath()), e);
         }
     }
 
-    private static Path getPythonPackageDir(Path path) {
-        Path prev = null;
-        Path p = path;
-        while ((p = p.getParent()) != null) {
-            Path fileName = p.getFileName();
-            if (fileName != null && "site-packages".equals(fileName.toString())) {
-                return prev;
+    private Path extractSingleFile(FileEntry toExtract) throws IOException {
+        /*
+         * Remove the mountPoint(X) (e.g. "graalpy_vfs(x)") prefix if given. Method 'file' is able
+         * to handle relative paths and we need it to compute the extract path.
+         */
+        Path relPath = mountPoint.relativize(Paths.get(toExtract.getPlatformPath()));
+        // create target path
+        Path extractedPath = extractDir.resolve(relPath);
+        if (!Files.exists(extractedPath)) {
+            // first create parent dirs
+            Path parent = extractedPath.getParent();
+            assert parent == null || !Files.exists(parent) || Files.isDirectory(parent);
+            if (parent == null) {
+                throw new NullPointerException("Parent is null during extracting path.");
             }
-            prev = p;
-        }
-        return null;
-    }
+            Files.createDirectories(parent);
 
-    private void extract(Path path) throws IOException {
-        BaseEntry entry = getEntry(path);
-        if (entry instanceof FileEntry) {
-            extractPath(path, false);
-        } else if (entry != null) {
-            if (((DirEntry) entry).entries != null) {
-                for (BaseEntry be : ((DirEntry) entry).entries) {
-                    extract(Path.of(be.getPlatformPath()));
-                }
-            }
+            // write data extracted file
+            Files.write(extractedPath, toExtract.getData());
+            finest("extracted '%s' -> '%s'", toExtract.getPlatformPath(), extractedPath);
         }
+        return extractedPath;
     }
 
     void extractResources(Path externalResourceDirectory) throws IOException {
@@ -940,10 +942,10 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Objects.requireNonNull(modes);
 
         Path path = toAbsoluteNormalizedPath(p);
+        BaseEntry entry = getEntry(path);
 
-        boolean extractable = shouldExtract(path);
-        if (extractable && followLinks(linkOptions)) {
-            Path extractedPath = getExtractedPath(path);
+        if (shouldExtract(entry) && followLinks(linkOptions)) {
+            Path extractedPath = getExtractedPath(entry);
             if (extractedPath != null) {
                 extractedFilesFS.checkAccess(extractedPath, modes, linkOptions);
                 return;
@@ -986,10 +988,11 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
         Path path = toAbsoluteNormalizedPath(p);
 
-        boolean extractable = shouldExtract(path);
-        if (extractable) {
+        BaseEntry entry = getEntry(p);
+
+        if (shouldExtract(entry)) {
             if (!options.contains(NOFOLLOW_LINKS)) {
-                Path extractedPath = getExtractedPath(path);
+                Path extractedPath = getExtractedPath(entry);
                 if (extractedPath != null) {
                     return extractedFilesFS.newByteChannel(extractedPath, options);
                 } else {
@@ -1005,7 +1008,6 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
         checkNoWriteOption(options, p);
 
-        BaseEntry entry = getEntry(path);
         if (entry == null) {
             String msg = String.format("No such file or directory: '%s'", path);
             finer("VFS.newByteChannel '%s'", path);
@@ -1170,17 +1172,14 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     }
 
     @Override
-    public Path toRealPath(Path p, LinkOption... linkOptions) throws IOException {
+    public Path toRealPath(Path p, LinkOption... linkOptions) {
         Objects.requireNonNull(p);
 
         Path path = toAbsoluteNormalizedPath(p);
+        BaseEntry entry = getEntry(path);
         Path result = path;
-        if (shouldExtract(path) && followLinks(linkOptions)) {
-            result = getExtractedPath(path);
-            if (result == null) {
-                warn("no VFS entry for '%s'", p);
-                throw new NoSuchFileException(String.format("no such file or directory: '%s'", p));
-            }
+        if (shouldExtract(entry) && followLinks(linkOptions)) {
+            result = getExtractedPath(entry);
         }
         finer("VFS.toRealPath '%s' -> '%s'", path, result);
         return result;
@@ -1192,9 +1191,10 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
         Path path = toAbsoluteNormalizedPath(p);
 
-        boolean extractable = shouldExtract(path);
+        BaseEntry entry = getEntrySafe("VFS.readAttributes", path);
+        boolean extractable = shouldExtract(entry);
         if (extractable && followLinks(options)) {
-            Path extractedPath = getExtractedPath(path);
+            Path extractedPath = getExtractedPath(entry);
             if (extractedPath != null) {
                 return extractedFilesFS.readAttributes(extractedPath, attributes, options);
             } else {
@@ -1203,7 +1203,6 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
             }
         }
 
-        BaseEntry entry = getEntrySafe("VFS.readAttributes", path);
         HashMap<String, Object> attrs = new HashMap<>();
         if (attributes.startsWith("unix:") || attributes.startsWith("posix:")) {
             finer("VFS.readAttributes unsupported attributes '%s' %s", path, attributes);
@@ -1273,19 +1272,14 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     public Path readSymbolicLink(Path link) throws IOException {
         Objects.requireNonNull(link);
 
-        Path path = toAbsoluteNormalizedPath(link);
-        if (shouldExtract(path)) {
-            Path result = getExtractedPath(path);
-            if (result != null) {
-                finer("VFS.readSymbolicLink '%s' '%s'", link, result);
-                return result;
-            }
-            finer("VFS.readSymbolicLink could not extract path '%s'", link);
-            throw new NoSuchFileException(String.format("no such file or directory: '%s'", path));
-        }
-        if (getEntry(path) == null) {
+        BaseEntry entry = getEntry(link);
+        if (entry == null) {
             finer("VFS.readSymbolicLink no entry for path '%s'", link);
-            throw new NoSuchFileException(path.toString());
+            throw new NoSuchFileException(link.toString());
+        }
+
+        if (shouldExtract(entry)) {
+            return getExtractedPath(entry);
         }
         throw new NotLinkException(link.toString());
     }
