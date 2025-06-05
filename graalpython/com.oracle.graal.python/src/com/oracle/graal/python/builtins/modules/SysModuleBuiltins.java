@@ -111,7 +111,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.WARN_DEPRECTATED_SYS_C
 import static com.oracle.graal.python.nodes.ErrorMessages.WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T_GET;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SIZEOF__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_BACKSLASHREPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_BASE_PREFIX;
@@ -189,6 +188,7 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.lib.OsEnvironGetNode;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
@@ -222,7 +222,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -1703,21 +1702,6 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class BreakpointHookNode extends PythonBuiltinNode {
         static final TruffleString T_VAL_PDB_SETTRACE = tsLiteral("pdb.set_trace");
-        static final TruffleString T_MOD_OS = tsLiteral("os");
-        static final TruffleString T_ATTR_ENVIRON = tsLiteral("environ");
-
-        private static TruffleString getEnvVar(VirtualFrame frame, Node inliningTarget, PyImportImport importNode,
-                        PyObjectGetAttr getAttr, PyObjectCallMethodObjArgs callMethodObjArgs,
-                        CastToTruffleStringNode castToStringNode) {
-            Object os = importNode.execute(frame, inliningTarget, T_MOD_OS);
-            final Object environ = getAttr.execute(frame, inliningTarget, os, T_ATTR_ENVIRON);
-            Object var = callMethodObjArgs.execute(frame, inliningTarget, environ, T_GET, T_PYTHONBREAKPOINT);
-            try {
-                return castToStringNode.execute(inliningTarget, var);
-            } catch (CannotCastException cce) {
-                return null;
-            }
-        }
 
         @Specialization
         Object doHook(VirtualFrame frame, Object[] args, PKeyword[] keywords,
@@ -1725,16 +1709,14 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyImportImport importNode,
-                        @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached IsBuiltinObjectProfile attrErrorProfile,
-                        @Cached CastToTruffleStringNode castToStringNode,
                         @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached TruffleString.LastIndexOfCodePointNode lastIndexOfCodePointNode,
                         @Cached TruffleString.SubstringNode substringNode) {
-            TruffleString hookName = getEnvVar(frame, inliningTarget, importNode, getAttr, callMethodObjArgs, castToStringNode);
+            TruffleString hookName = OsEnvironGetNode.executeUncached(T_PYTHONBREAKPOINT);
             if (hookName == null || hookName.isEmpty()) {
                 hookName = T_VAL_PDB_SETTRACE;
             }

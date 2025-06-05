@@ -45,8 +45,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowEr
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.LOGGER;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
 import static com.oracle.graal.python.nodes.ErrorMessages.S;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -89,26 +87,23 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils.NeedsPasswordException;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils.NoCertificateFoundException;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.OsEnvironGetNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -119,7 +114,6 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -145,7 +139,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -155,8 +148,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public final class SSLContextBuiltins extends PythonBuiltins {
-
-    private static final TruffleString T_ENVIRON = tsLiteral("environ");
 
     public static final TpSlots SLOTS = SSLContextBuiltinsSlotsGen.SLOTS;
 
@@ -618,27 +609,15 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     @Builtin(name = "set_default_verify_paths", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SetDefaultVerifyPathsNode extends PythonUnaryBuiltinNode {
+        static final TruffleString T_SSL_CERT_FILE = tsLiteral("SSL_CERT_FILE");
+        static final TruffleString T_SSL_CERT_DIR = tsLiteral("SSL_CERT_DIR");
+
         @Specialization
         Object set(VirtualFrame frame, PSSLContext self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyUnicodeFSDecoderNode asPath,
-                        @Cached("createEnvironLookup()") GetAttributeNode getAttribute,
-                        @Cached HashingStorageGetItem getItem,
-                        @Cached("createCertFileKey()") PBytes certFileKey,
-                        @Cached("createCertDirKey()") PBytes certDirKey,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-
-            PythonModule posix;
-            if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-                posix = getContext().lookupBuiltinModule(T_NT);
-            } else {
-                posix = getContext().lookupBuiltinModule(T_POSIX);
-            }
-            PDict environ = (PDict) getAttribute.executeObject(frame, posix);
-            HashingStorage storage = environ.getDictStorage();
-
-            TruffleFile file = toTruffleFile(frame, asPath, getItem.execute(frame, inliningTarget, storage, certFileKey), toJavaStringNode);
-            TruffleFile path = toTruffleFile(frame, asPath, getItem.execute(frame, inliningTarget, storage, certDirKey), toJavaStringNode);
+                        @Cached PyUnicodeFSDecoderNode asPath) {
+            TruffleFile file = toTruffleFile(frame, asPath, OsEnvironGetNode.executeUncached(T_SSL_CERT_FILE));
+            TruffleFile path = toTruffleFile(frame, asPath, OsEnvironGetNode.executeUncached(T_SSL_CERT_DIR));
             if (file != null || path != null) {
                 LOGGER.fine(() -> String.format("set_default_verify_paths file: %s. path: %s", file != null ? file.getPath() : "None", path != null ? path.getPath() : "None"));
                 try {
@@ -653,30 +632,13 @@ public final class SSLContextBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @NeverDefault
-        @TruffleBoundary
-        protected PBytes createCertFileKey() {
-            return PFactory.createBytes(PythonLanguage.get(null), "SSL_CERT_FILE".getBytes());
-        }
-
-        @NeverDefault
-        @TruffleBoundary
-        protected PBytes createCertDirKey() {
-            return PFactory.createBytes(PythonLanguage.get(null), "SSL_CERT_DIR".getBytes());
-        }
-
-        @NeverDefault
-        protected static GetAttributeNode createEnvironLookup() {
-            return GetAttributeNode.create(T_ENVIRON);
-        }
-
-        private TruffleFile toTruffleFile(VirtualFrame frame, PyUnicodeFSDecoderNode asPath, Object path, TruffleString.ToJavaStringNode toJavaStringNode) throws PException {
+        private TruffleFile toTruffleFile(VirtualFrame frame, PyUnicodeFSDecoderNode asPath, TruffleString path) throws PException {
             if (path == null) {
                 return null;
             }
             TruffleFile file;
             try {
-                file = getContext().getEnv().getPublicTruffleFile(toJavaStringNode.execute(asPath.execute(frame, path)));
+                file = getContext().getEnv().getPublicTruffleFile(asPath.execute(frame, path).toJavaStringUncached());
                 if (!file.exists()) {
                     return null;
                 }

@@ -73,6 +73,10 @@ public abstract class BuiltinNames {
     public static final String J___NOTES__ = "__notes__";
     public static final TruffleString T___NOTES__ = tsLiteral(J___NOTES__);
 
+    // os
+    public static final TruffleString T_OS = tsLiteral("os");
+    public static final TruffleString T_ENVIRON = tsLiteral("environ");
+
     // sys
     public static final TruffleString T_TRACEBACKLIMIT = tsLiteral("tracebacklimit");
 
