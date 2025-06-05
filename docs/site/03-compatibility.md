@@ -21,6 +21,15 @@ img.pylogo {
 
 <script src="{{ '/assets/js/check_compatibility_helpers.js' | relative_url }}"></script>
 <script>
+    DB.ANY_VERSION = "any";
+    DB.INSTALLS_BUT_FAILS_TESTS = "The package installs, but the test suite was not set up for GraalPy.";
+    DB.FAILS_TO_INSTALL = "The package fails to build or install.";
+    DB.UNSUPPORTED = "The package is unsupported.";
+    DB.PERCENT_PASSING = (pct) => `${pct}% of the tests are passing on GraalPy.`;
+    const PATCH_AVAILABLE = "GraalPy will automatically apply a patch when installing this package to improve compatibility.";
+    const LOWER_PRIORITY = "This version works, but there is no reason to prefer it over more recent versions.";
+    const BUILD_SCRIPT_AVAILABLE = (url) => `If you have trouble building this package, there is a <a href='${url}'>script</a>.`
+
     const default_version = 'v242';
     const show_percentages = true;
     const dbs = {};
@@ -39,8 +48,8 @@ img.pylogo {
                     for (const item of contents) {
                         const parts = item.name.split('.');
                         const package_name = parts[0];
-                        const version = parts.slice(1, -1).join('.') || "any";
-                        packages.push(`${package_name},${version},0,GraalPy provides a script to build this package from <a href='${item.html_url}'>source</a>.`);
+                        const version = parts.slice(1, -1).join('.') || DB.ANY_VERSION;
+                        packages.push(`${package_name},${version},0,${BUILD_SCRIPT_AVAILABLE(item.html_url)}`);
                     }
                     resolve(packages.join("\n"));
                 } else {
@@ -70,11 +79,11 @@ img.pylogo {
                                     [currentPatch.name,
                                      currentPatch.version,
                                      0,
-                                     currentPatch.comment || "GraalPy automatically applies a patch to run this package."].join(",")
+                                     currentPatch.comment || PATCH_AVAILABLE].join(",")
                                 )
                             }
                             let pkgName = line.substring(2, line.indexOf(".")).trim();
-                            currentPatch = {name: pkgName, version: "any"};
+                            currentPatch = {name: pkgName, version: DB.ANY_VERSION};
                         } else if (line.startsWith('#')) {
                             if (!currentPatch.comment) {
                                 currentPatch.comment = line.substring(1).trim();
@@ -89,9 +98,9 @@ img.pylogo {
                                     if (!currentPatch.comment.endsWith(".")) {
                                         currentPatch.comment += ".";
                                     }
-                                    currentPatch.comment += " This version works, but another should be chosen if possible.";
+                                    currentPatch.comment += " " + LOWER_PRIORITY;
                                 } else {
-                                    currentPatch.comment = "GraalPy provides a patch for this version, but it is recommended to use another if possible.";
+                                    currentPatch.comment = LOWER_PRIORITY;
                                 }
                             }
                         }
@@ -101,7 +110,7 @@ img.pylogo {
                             [currentPatch.name,
                              currentPatch.version,
                              0,
-                             currentPatch.comment || "GraalPy provides a patch to make this package work."].join(",")
+                             currentPatch.comment || PATCH_AVAILABLE].join(",")
                         )
                     }
                     resolve(patches.join("\n"));
@@ -287,6 +296,7 @@ img.pylogo {
                             </tr>`);
                 }
             }
+            $('#compatibility_page__search-field').trigger("input");
             updateStatistics(count, countCompatible, countUntested, countIncompatible, countNotSupported);
             updatePagination(true);
         });
@@ -361,7 +371,17 @@ img.pylogo {
         $(".compatibility_page-item").click(function () {
             $(this).addClass("compatibility_page-active").siblings().removeClass("compatibility_page-active");
             const graalpyModuleValue = $(".compatibility_page-item.compatibility_page-module.compatibility_page-active").attr("data-filter");
-            window.history.pushState("", window.location.title, `?version=${graalpyModuleValue}`);
+            let search = window.location.search;
+            if (search) {
+                search = search.replace(/version=[^&]+/, "");
+                if (search != "?") {
+                    search += "&";
+                }
+            } else {
+                search = "?";
+            }
+            search += `version=${graalpyModuleValue}`;
+            window.history.pushState("", window.location.title, search);
             updatePageData();
         });
         function setFilters() {
@@ -369,6 +389,8 @@ img.pylogo {
             const graalpyModuleValue = params.get('version') || default_version;
             const moduleFilterElement = $(`.compatibility_page-module[data-filter=${graalpyModuleValue}]`);
             moduleFilterElement.addClass("compatibility_page-active").siblings().removeClass("compatibility_page-active");
+            const packages = params.get('packages') || "";
+            $('#compatibility_page__search-field').val(packages);
         }
         setFilters();
     });

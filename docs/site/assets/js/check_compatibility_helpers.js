@@ -23,14 +23,14 @@ class DBEntry {
         if (this.is_test_percentage()) {
             if (this.has_no_test_results()) {
                 if (this.test_status < 2) {
-                    notes = "The package installs, but the test suite was not set up for GraalPy.";
+                    notes = DB.INSTALLS_BUT_FAILS_TESTS;
                 } else if (this.test_status == 2) {
-                    notes = "The package fails to build or install.";
+                    notes = DB.FAILS_TO_INSTALL;
                 } else {
-                    notes = "The package is unsupported.";
+                    notes = DB.UNSUPPORTED;
                 }
             } else {
-                notes = notes + "% of the tests are passing on GraalPy.";
+                notes = DB.PERCENT_PASSING(notes);
             }
         }
         if (!notes.endsWith(".")) {
@@ -58,7 +58,7 @@ class DB {
             this.db[entry.name] ||= {};
             this.db[entry.name][entry.version] = merge_entries(entry, this.db[entry.name][entry.version]);
 
-            if (entry.version == "any") {
+            if (entry.version == DB.ANY_VERSION) {
                 any_versions[entry.name] = this.db[entry.name][entry.version];
             }
         }
