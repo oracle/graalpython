@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,5 +36,163 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import sys
+import os
+import shutil
+import sysconfig
 
-# dummy file
+from importlib import invalidate_caches
+from pathlib import Path
+
+
+compiled_registry = set()
+
+
+def find_rootdir():
+    cur_dir = Path(__file__).parent
+    while cur_dir.name != 'graalpython':
+        cur_dir = cur_dir.parent
+    rootdir = cur_dir.parent / "mxbuild" / "cpyexts"
+    rootdir.mkdir(parents=True, exist_ok=True)
+    return rootdir
+
+
+DIR = find_rootdir()
+
+
+def get_setuptools(setuptools='setuptools==67.6.1'):
+    """
+    distutils is not part of std library since python 3.12
+    we rely on distutils to pick the toolchain for the underlying system
+    and build the c extension tests.
+    """
+    import site
+    setuptools_path = find_rootdir() / ('%s-setuptools-venv' % sys.implementation.name)
+
+    if not os.path.isdir(setuptools_path / 'setuptools'):
+        import subprocess
+        import venv
+        print('installing setuptools in %s' % setuptools_path)
+        venv.create(setuptools_path, with_pip=True)
+        if sys.platform.startswith('win32'):
+            py_executable = setuptools_path / 'Scripts' / 'python.exe'
+        else:
+            py_executable = setuptools_path / 'bin' / 'python3'
+        extra_args = []
+        if sys.implementation.name == "graalpy" and __graalpython__.is_bytecode_dsl_interpreter:
+            extra_args = ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
+        subprocess.run([py_executable, *extra_args, "-m", "pip", "install", "--target", str(setuptools_path), setuptools], check=True)
+        print('setuptools is installed in %s' % setuptools_path)
+
+    pyvenv_site = str(setuptools_path)
+    if pyvenv_site not in site.getsitepackages():
+        site.addsitedir(pyvenv_site)
+
+
+def compile_module_from_string(c_source: str, name: str):
+    source_file = DIR / f'{name}.c'
+    with open(source_file, "wb", buffering=0) as f:
+        f.write(bytes(c_source, 'utf-8'))
+    return compile_module_from_file(name)
+
+
+def compile_module_from_file(module_name: str):
+    install_dir = ccompile(None, module_name)
+    sys.path.insert(0, install_dir)
+    try:
+        cmodule = __import__(module_name)
+    finally:
+        sys.path.pop(0)
+    return cmodule
+
+
+def ccompile(self, name, check_duplicate_name=True):
+    get_setuptools()
+    from setuptools import setup, Extension
+    from hashlib import sha256
+    EXT_SUFFIX = sysconfig.get_config_var("EXT_SUFFIX")
+
+    source_file = DIR / f'{name}.c'
+    file_not_empty(source_file)
+
+    # compute checksum of source file
+    m = sha256()
+    with open(source_file,"rb") as f:
+        # read 4K blocks
+        for block in iter(lambda: f.read(4096),b""):
+            m.update(block)
+    cur_checksum = m.hexdigest()
+
+    build_dir = DIR / 'build' / name
+
+    # see if there is already a checksum file
+    checksum_file = build_dir / f'{name}{EXT_SUFFIX}.sha256'
+    available_checksum = ""
+    if checksum_file.exists():
+        # read checksum file
+        with open(checksum_file, "r") as f:
+            available_checksum = f.readline()
+
+    # note, the suffix is already a string like '.so'
+    lib_file = build_dir / f'{name}{EXT_SUFFIX}'
+
+    if check_duplicate_name and available_checksum != cur_checksum and name in compiled_registry:
+        raise RuntimeError(f"\n\nModule with name '{name}' was already compiled, but with different source code. "
+              "Have you accidentally used the same name for two different CPyExtType, CPyExtHeapType, "
+              "or similar helper calls? Modules with same name can sometimes confuse the import machinery "
+              "and cause all sorts of trouble.\n")
+
+    compiled_registry.add(name)
+
+    # Compare checksums and only re-compile if different.
+    # Note: It could be that the C source file's checksum didn't change but someone
+    # manually deleted the shared library file.
+    if available_checksum != cur_checksum or not lib_file.exists():
+        os.makedirs(build_dir, exist_ok=True)
+        # MSVC linker doesn't like absolute paths in some parameters, so just run from the build dir
+        old_cwd = os.getcwd()
+        os.chdir(build_dir)
+        try:
+            shutil.copy(source_file, '.')
+            module = Extension(name, sources=[source_file.name])
+            args = [
+                '--verbose' if sys.flags.verbose else '--quiet',
+                'build', '--build-temp=t', '--build-base=b', '--build-purelib=l', '--build-platlib=l',
+                'install_lib', '-f', '--install-dir=.',
+            ]
+            setup(
+                script_name='setup',
+                script_args=args,
+                name=name,
+                version='1.0',
+                description='',
+                ext_modules=[module]
+            )
+        finally:
+            os.chdir(old_cwd)
+
+        # write new checksum
+        with open(checksum_file, "w") as f:
+            f.write(cur_checksum)
+
+        # IMPORTANT:
+        # Invalidate caches after creating the native module.
+        # FileFinder caches directory contents, and the check for directory
+        # changes has whole-second precision, so it can miss quick updates.
+        invalidate_caches()
+
+    # ensure file was really written
+    file_not_empty(lib_file)
+
+    return str(build_dir)
+
+
+def file_not_empty(path):
+    for i in range(3):
+        try:
+            stat_result = os.stat(path)
+            if stat_result[6] != 0:
+                return
+        except FileNotFoundError:
+            pass
+    raise SystemError("file %s not available" % path)

@@ -37,22 +37,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import textwrap
-from importlib import invalidate_caches
 
 import gc
-import os
-import shutil
 import sys
-import sysconfig
 import unittest
 from copy import deepcopy
 from io import StringIO
-from pathlib import Path
 from string import Formatter
 
-DIR = Path(__file__).parent.absolute()
+from .. import ccompile, compile_module_from_file, compile_module_from_string, DIR
+
 
 GRAALPYTHON = sys.implementation.name == "graalpy"
+
 
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
@@ -63,7 +60,7 @@ def assert_raises(err, fn, *args, **kwargs):
     assert raised
 
 
-if sys.implementation.name == 'graalpy':
+if GRAALPYTHON:
     is_native_object = getattr(__graalpython__, 'is_native_object', None)
     if not is_native_object:
         raise RuntimeError("Needs to be run with --python.EnableDebuggingBuiltins")
@@ -88,138 +85,6 @@ def unhandled_error_compare_with_message(x, y):
 class CPyExtTestCase(unittest.TestCase):
     pass
 
-
-compiled_registry = set()
-
-def find_rootdir():
-    # graalpython/com.oracle.graal.python.test/src/tests/cpyext/__init__.py
-    cur_dir = Path(__file__).parent
-    while cur_dir.name != 'graalpython':
-        cur_dir = cur_dir.parent
-    return cur_dir.parent
-
-def get_setuptools(setuptools='setuptools==67.6.1'):
-    """
-    distutils is not part of std library since python 3.12
-    we rely on distutils to pick the toolchain for the underlying system
-    and build the c extension tests.
-    """
-    import site    
-    setuptools_path = find_rootdir() / ('%s-setuptools-venv' % sys.implementation.name)
-
-    if not os.path.isdir(setuptools_path / 'setuptools'):
-        import subprocess
-        import tempfile
-        import venv
-        temp_env = Path(tempfile.mkdtemp())
-        venv.create(temp_env, with_pip=True)
-        if sys.platform.startswith('win32'):
-            py_executable = temp_env / 'Scripts' / 'python.exe'
-        else:
-            py_executable = temp_env / 'bin' / 'python3'
-        extra_args = []
-        if GRAALPYTHON and __graalpython__.is_bytecode_dsl_interpreter:
-            extra_args = ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
-        subprocess.run([py_executable, *extra_args, "-m", "pip", "install", "--target", str(setuptools_path), setuptools], check=True)
-        print('setuptools is installed in %s' % setuptools_path)
-        shutil.rmtree(temp_env)
-    
-    pyvenv_site = str(setuptools_path)
-    if pyvenv_site not in site.getsitepackages():
-        site.addsitedir(pyvenv_site)
-
-
-def ccompile(self, name, check_duplicate_name=True):
-    get_setuptools()
-    from setuptools import setup, Extension
-    from hashlib import sha256
-    EXT_SUFFIX = sysconfig.get_config_var("EXT_SUFFIX")
-
-    source_file = DIR / f'{name}.c'
-    file_not_empty(source_file)
-
-    # compute checksum of source file
-    m = sha256()
-    with open(source_file,"rb") as f:
-        # read 4K blocks
-        for block in iter(lambda: f.read(4096),b""):
-            m.update(block)
-    cur_checksum = m.hexdigest()
-
-    build_dir = DIR / 'build' / name
-
-    # see if there is already a checksum file
-    checksum_file = build_dir / f'{name}{EXT_SUFFIX}.sha256'
-    available_checksum = ""
-    if checksum_file.exists():
-        # read checksum file
-        with open(checksum_file, "r") as f:
-            available_checksum = f.readline()
-
-    # note, the suffix is already a string like '.so'
-    lib_file = build_dir / f'{name}{EXT_SUFFIX}'
-
-    if check_duplicate_name and available_checksum != cur_checksum and name in compiled_registry:
-        raise RuntimeError(f"\n\nModule with name '{name}' was already compiled, but with different source code. "
-              "Have you accidentally used the same name for two different CPyExtType, CPyExtHeapType, "
-              "or similar helper calls? Modules with same name can sometimes confuse the import machinery "
-              "and cause all sorts of trouble.\n")
-
-    compiled_registry.add(name)
-
-    # Compare checksums and only re-compile if different.
-    # Note: It could be that the C source file's checksum didn't change but someone
-    # manually deleted the shared library file.
-    if available_checksum != cur_checksum or not lib_file.exists():
-        os.makedirs(build_dir, exist_ok=True)
-        # MSVC linker doesn't like absolute paths in some parameters, so just run from the build dir
-        old_cwd = os.getcwd()
-        os.chdir(build_dir)
-        try:
-            shutil.copy(source_file, '.')
-            module = Extension(name, sources=[source_file.name])
-            args = [
-                '--verbose' if sys.flags.verbose else '--quiet',
-                'build', '--build-temp=t', '--build-base=b', '--build-purelib=l', '--build-platlib=l',
-                'install_lib', '-f', '--install-dir=.',
-            ]
-            setup(
-                script_name='setup',
-                script_args=args,
-                name=name,
-                version='1.0',
-                description='',
-                ext_modules=[module]
-            )
-        finally:
-            os.chdir(old_cwd)
-
-        # write new checksum
-        with open(checksum_file, "w") as f:
-            f.write(cur_checksum)
-
-        # IMPORTANT:
-        # Invalidate caches after creating the native module.
-        # FileFinder caches directory contents, and the check for directory
-        # changes has whole-second precision, so it can miss quick updates.
-        invalidate_caches()
-
-    # ensure file was really written
-    if GRAALPYTHON:
-        file_not_empty(lib_file)
-
-    return str(build_dir)
-
-
-def file_not_empty(path):
-    for i in range(3):
-        try:
-            stat_result = os.stat(path)
-            if stat_result[6] != 0:
-                return
-        except FileNotFoundError:
-            pass
-    raise SystemError("file %s not available" % path)
 
 resulttype_mapping = {'s': 'const char *', 'y': 'const char *', 'z': 'const char *', 'u': 'const wchar_t *', 'U': 'const char *',
                       'i': 'int', 'b': 'char', 'h': 'short int', 'l': 'long int', 'B': 'unsigned char', 'H': 'unsigned short int',
@@ -562,23 +427,6 @@ class UnseenFormatter(Formatter):
                 return 0
         else:
             return Formatter.get_value(key, args, kwds)
-
-
-def compile_module_from_string(c_source: str, name: str):
-    source_file = DIR / f'{name}.c'
-    with open(source_file, "wb", buffering=0) as f:
-        f.write(bytes(c_source, 'utf-8'))
-    return compile_module_from_file(name)
-
-
-def compile_module_from_file(module_name: str):
-    install_dir = ccompile(None, module_name)
-    sys.path.insert(0, install_dir)
-    try:
-        cmodule = __import__(module_name)
-    finally:
-        sys.path.pop(0)
-    return cmodule
 
 
 def CPyExtType(name, code='', **kwargs):
