@@ -441,12 +441,11 @@ public class VirtualFileSystemIntegrationTest {
                         assert len(f) == 0, 'expected no files'
 
                         f = listdir('/test_mount_point/')
-                        assert len(f) == 7, 'expected 7 files, got ' + str(len(f))
+                        assert len(f) == 6, 'expected 6 files, got ' + repr(list(f))
 
                         assert 'dir1' in f, 'does not contain "dir1"'
                         assert 'emptydir' in f, 'does not contain "emptydir"'
                         assert 'file1' in f, 'does not contain "file1"'
-                        assert 'fileslist.txt' in f, 'does not contain "fileslist.txt"'
 
                         f = listdir('{pathPrefix}dir1')
                         if len(f) != 2:
@@ -485,7 +484,7 @@ public class VirtualFileSystemIntegrationTest {
                                 dirs.add(r + "/" + dd)
 
                         assert len(roots) == 9, 'expected 10 roots, got ' + str(len(roots))
-                        assert len(files) == 15, 'expected 15 files, got ' + str(len(files))
+                        assert len(files) == 14, 'expected 14 files, got ' + str(len(files))
                         assert len(dirs) == 8, 'expected 8 dirs, got ' + str(len(dirs))
                         """, pathPrefix);
 

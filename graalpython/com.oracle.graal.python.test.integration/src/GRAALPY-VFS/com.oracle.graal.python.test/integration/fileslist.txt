@@ -5,7 +5,6 @@
 /GRAALPY-VFS/com.oracle.graal.python.test/integration/emptydir/
 /GRAALPY-VFS/com.oracle.graal.python.test/integration/file1
 /GRAALPY-VFS/com.oracle.graal.python.test/integration/extractme
-/GRAALPY-VFS/com.oracle.graal.python.test/integration/fileslist.txt
 /GRAALPY-VFS/com.oracle.graal.python.test/integration/SomeFile
 /GRAALPY-VFS/com.oracle.graal.python.test/integration/site-packages/
 /GRAALPY-VFS/com.oracle.graal.python.test/integration/site-packages/testpkg/

@@ -550,7 +550,7 @@ test.test_tarfile.WriteTest.test_fileobj_no_close @ darwin-arm64,darwin-x86_64,l
 test.test_tarfile.WriteTest.test_filter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.WriteTest.test_gettarinfo_pathlike_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.WriteTest.test_link_size @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_tarfile.WriteTest.test_open_nonwritable_fileobj @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tarfile.WriteTest.test_open_nonwritable_fileobj @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.WriteTest.test_ordered_recursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.WriteTest.test_pathnames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.WriteTest.test_symlink_size @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

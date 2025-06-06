@@ -178,7 +178,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     private static final char RESOURCE_SEPARATOR_CHAR = '/';
     private static final String RESOURCE_SEPARATOR = String.valueOf(RESOURCE_SEPARATOR_CHAR);
 
-    private abstract class BaseEntry {
+    private abstract sealed class BaseEntry permits FileEntry, DirEntry {
         final String platformPath;
 
         private BaseEntry(String platformPath) {
@@ -191,6 +191,10 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
         String getResourcePath() {
             return platformPathToResourcePath(platformPath);
+        }
+
+        static AssertionError throwUnexpectedSubclass() {
+            throw new AssertionError("Unexpected subclass of sealed DirEntry");
         }
     }
 
@@ -735,6 +739,15 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         return vfsEntries.get(toCaseComparable(path.toString()));
     }
 
+    private BaseEntry getEntrySafe(String callerId, Path path) throws NoSuchFileException {
+        BaseEntry entry = getEntry(path);
+        if (entry == null) {
+            finer("%s: no such file or directory: '%s'", callerId, path);
+            throw new NoSuchFileException(path.toString());
+        }
+        return entry;
+    }
+
     /**
      * Determines if the given path belongs to the VFS. The path should be already normalized
      */
@@ -947,11 +960,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
             throw securityException("VFS.checkAccess", String.format("execute access not supported for  '%s'", p));
         }
 
-        if (getEntry(path) == null) {
-            String msg = String.format("no such file or directory: '%s'", path);
-            finer("VFS.checkAccess %s", msg);
-            throw new NoSuchFileException(msg);
-        }
+        getEntrySafe("VFS.checkAccess", path);
         finer("VFS.checkAccess %s OK", path);
     }
 
@@ -1100,7 +1109,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Objects.requireNonNull(d);
         Path dir = toAbsoluteNormalizedPath(d);
         Objects.requireNonNull(filter);
-        BaseEntry entry = getEntry(dir);
+        BaseEntry entry = getEntrySafe("VFS.newDirectoryStream", dir);
         if (entry instanceof FileEntry) {
             finer("VFS.newDirectoryStream not a directory %s", dir);
             throw new NotDirectoryException(dir.toString());
@@ -1127,9 +1136,8 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
                     }).map(e -> Path.of(e.getPlatformPath())).iterator();
                 }
             };
-        } else {
-            throw new NoSuchFileException(dir.toString());
         }
+        throw BaseEntry.throwUnexpectedSubclass();
     }
 
     private static Path toAbsoluteNormalizedPath(Path path) {
@@ -1195,12 +1203,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
             }
         }
 
-        BaseEntry entry = getEntry(path);
-        if (entry == null) {
-            String msg = String.format("no such file or directory: '%s'", path);
-            finer("VFS.readAttributes %s", msg);
-            throw new NoSuchFileException(msg);
-        }
+        BaseEntry entry = getEntrySafe("VFS.readAttributes", path);
         HashMap<String, Object> attrs = new HashMap<>();
         if (attributes.startsWith("unix:") || attributes.startsWith("posix:")) {
             finer("VFS.readAttributes unsupported attributes '%s' %s", path, attributes);
@@ -1282,7 +1285,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         }
         if (getEntry(path) == null) {
             finer("VFS.readSymbolicLink no entry for path '%s'", link);
-            throw new NoSuchFileException(String.format("no such file or directory: '%s'", path));
+            throw new NoSuchFileException(path.toString());
         }
         throw new NotLinkException(link.toString());
     }
@@ -1302,6 +1305,63 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     @Override
     public Path getTempDirectory() {
         throw new RuntimeException("should not reach here");
+    }
+
+    @Override
+    public boolean isFileStoreReadOnly(Path path) throws NoSuchFileException {
+        Objects.requireNonNull(path);
+        getEntrySafe("VFS.isFileStoreReadOnly", path);
+        return true;
+    }
+
+    @Override
+    public long getFileStoreTotalSpace(Path path) throws IOException {
+        Objects.requireNonNull(path);
+        getEntrySafe("VFS.getFileStoreTotalSpace", path);
+        return getEntryTotalSpace(getEntrySafe("VFS.getFileStoreTotalSpace:VFS-root:", mountPoint));
+    }
+
+    private long getEntryTotalSpace(BaseEntry entry) throws IOException {
+        // This is a bit arbitrary best effort approximation.
+        // For each file we count its data size and for each entry we take its full path size (+1
+        // for newline) as this is what we store in the filelist.txt, so the total should
+        // approximate the size the VFS takes up in the resources.
+        try {
+            long size = entry.getResourcePath().length() + 1;
+            if (entry instanceof FileEntry fe) {
+                size = Math.addExact(size, fe.getData().length);
+            } else if (entry instanceof DirEntry de) {
+                for (BaseEntry e : de.entries) {
+                    size = Math.addExact(size, getEntryTotalSpace(e));
+                }
+            } else {
+                throw BaseEntry.throwUnexpectedSubclass();
+            }
+            return size;
+        } catch (ArithmeticException ex) {
+            return Long.MAX_VALUE;
+        }
+    }
+
+    @Override
+    public long getFileStoreUsableSpace(Path path) throws NoSuchFileException {
+        Objects.requireNonNull(path);
+        getEntrySafe("VFS.getFileStoreUsableSpace", path);
+        return 0;
+    }
+
+    @Override
+    public long getFileStoreUnallocatedSpace(Path path) throws NoSuchFileException {
+        Objects.requireNonNull(path);
+        getEntrySafe("VFS.getFileStoreUnallocatedSpace", path);
+        return 0;
+    }
+
+    @Override
+    public long getFileStoreBlockSize(Path path) throws NoSuchFileException {
+        Objects.requireNonNull(path);
+        getEntrySafe("VFS.getFileStoreBlockSize", path);
+        return 4096;
     }
 
     private static void warn(String msgFormat, Object... args) {
