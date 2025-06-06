@@ -96,8 +96,12 @@ def compile_module_from_string(c_source: str, name: str):
     return compile_module_from_file(name)
 
 
-def compile_module_from_file(module_name: str):
-    install_dir = ccompile(None, module_name)
+def compile_module_from_file(module_name: str, sibling_to=None):
+    if sibling_to:
+        compile_name = str(Path(sibling_to).absolute().parent / module_name)
+    else:
+        compile_name = module_name
+    install_dir = ccompile(None, compile_name)
     sys.path.insert(0, install_dir)
     try:
         cmodule = __import__(module_name)
@@ -113,6 +117,7 @@ def ccompile(self, name, check_duplicate_name=True):
     EXT_SUFFIX = sysconfig.get_config_var("EXT_SUFFIX")
 
     source_file = DIR / f'{name}.c'
+    filename = Path(name).name
     file_not_empty(source_file)
 
     # compute checksum of source file
@@ -123,10 +128,10 @@ def ccompile(self, name, check_duplicate_name=True):
             m.update(block)
     cur_checksum = m.hexdigest()
 
-    build_dir = DIR / 'build' / name
+    build_dir = DIR / 'build' / filename
 
     # see if there is already a checksum file
-    checksum_file = build_dir / f'{name}{EXT_SUFFIX}.sha256'
+    checksum_file = build_dir / f'{filename}{EXT_SUFFIX}.sha256'
     available_checksum = ""
     if checksum_file.exists():
         # read checksum file
@@ -134,7 +139,7 @@ def ccompile(self, name, check_duplicate_name=True):
             available_checksum = f.readline()
 
     # note, the suffix is already a string like '.so'
-    lib_file = build_dir / f'{name}{EXT_SUFFIX}'
+    lib_file = build_dir / f'{filename}{EXT_SUFFIX}'
 
     if check_duplicate_name and available_checksum != cur_checksum and name in compiled_registry:
         raise RuntimeError(f"\n\nModule with name '{name}' was already compiled, but with different source code. "
@@ -154,7 +159,7 @@ def ccompile(self, name, check_duplicate_name=True):
         os.chdir(build_dir)
         try:
             shutil.copy(source_file, '.')
-            module = Extension(name, sources=[source_file.name])
+            module = Extension(filename, sources=[source_file.name])
             args = [
                 '--verbose' if sys.flags.verbose else '--quiet',
                 'build', '--build-temp=t', '--build-base=b', '--build-purelib=l', '--build-platlib=l',
@@ -163,7 +168,7 @@ def ccompile(self, name, check_duplicate_name=True):
             setup(
                 script_name='setup',
                 script_args=args,
-                name=name,
+                name=filename,
                 version='1.0',
                 description='',
                 ext_modules=[module]
