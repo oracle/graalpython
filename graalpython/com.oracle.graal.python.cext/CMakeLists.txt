@@ -82,6 +82,7 @@ if (MSVC)
     /wd4774 # 'sprintf': format string expected in argument 2 is not a string literal
     /wd4191 # unsafe conversion from 'PyObject *(__cdecl *)(MatchObject *,PyObject *const *,Py_ssize_t)' to 'void (__cdecl *)(void)'
     /wd4574 # sqlite, expat: 'SQLITE_ATOMIC_INTRINSICS' is defined to be '0': did you mean to use '#if SQLITE_ATOMIC_INTRINSICS'?
+    /wd4701 # potentially uninitialized local variable used
 
     # Some that I'm not so happy about
     /wd4232 # sre: nonstandard extension used: 'ml_meth': address of dllimport 'Py_GenericAlias' is not static, identity not guaranteed
@@ -221,9 +222,6 @@ endfunction()
 add_library(${TARGET_LIBPYTHON} SHARED)
 native_module("_cpython_sre" TRUE "${SRC_DIR}/modules/_cpython_sre/sre.c")
 simple_native_module("_cpython_unicodedata")
-if(WIN32)
-    target_compile_options("_cpython_unicodedata" PRIVATE /wd4701)
-endif()
 if(NOT WIN32)
     simple_native_module("termios")
 endif()
