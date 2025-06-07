@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -42,10 +42,10 @@ from . import CPyExtTestCase, compile_module_from_file
 
 class TestSimple(CPyExtTestCase):
     def test_demo(self):
-        demo = compile_module_from_file('demo')
+        demo = compile_module_from_file('demo', __file__)
         assert demo.system("echo 1") == 0
         assert demo.system("arrrr") != 0
 
     def test_demo2(self):
-        demo2 = compile_module_from_file('demo2')
+        demo2 = compile_module_from_file('demo2', __file__)
         assert demo2.system("Hello World") == "Hello World from C", demo2.system("Hello World")
