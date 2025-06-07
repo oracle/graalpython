@@ -67,16 +67,12 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
@@ -130,6 +126,7 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.OsEnvironGetNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -631,14 +628,22 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
 
         private static int which() {
             CompilerAsserts.neverPartOfCompilation();
-            String path = System.getenv("PATH");
+            Env env = PythonContext.get(null).getEnv();
+            TruffleString tspath = OsEnvironGetNode.executeUncached(T_PATH);
+            if (tspath == null) {
+                return -1;
+            }
+            String path = tspath.toJavaStringUncached();
             if (path != null) {
                 for (int i = 0; i < C_COMPILER_PRECEDENCE.length; i++) {
                     int last = 0;
-                    for (int j = path.indexOf(File.pathSeparatorChar); j != -1; j = path.indexOf(File.pathSeparatorChar, last)) {
-                        Path resolvedProgramName = Paths.get(path.substring(last, j)).resolve(C_COMPILER_PRECEDENCE[i]);
-                        if (Files.isExecutable(resolvedProgramName)) {
-                            return i;
+                    for (int j = path.indexOf(env.getPathSeparator()); j != -1; j = path.indexOf(env.getPathSeparator(), last)) {
+                        try {
+                            if (env.getPublicTruffleFile(path.substring(last, j)).resolve(C_COMPILER_PRECEDENCE[i]).isExecutable()) {
+                                return i;
+                            }
+                        } catch (UnsupportedOperationException | IllegalArgumentException e) {
+                            // skip
                         }
                         /*
                          * next start is the char after the separator because we have "path0:path1"
@@ -902,6 +907,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "java_assert", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class JavaAssertNode extends PythonBuiltinNode {
+        @SuppressWarnings("all")
         @Specialization
         Object doit() {
             boolean assertOn = false;
@@ -1017,7 +1023,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         TruffleString get() {
             PythonContext context = getContext();
-            TruffleString sep = TruffleString.fromJavaStringUncached(File.pathSeparator, TS_ENCODING);
+            TruffleString sep = TruffleString.fromJavaStringUncached(context.getEnv().getPathSeparator(), TS_ENCODING);
             return context.getStdlibHome().concatUncached(sep, TS_ENCODING, false).concatUncached(context.getCoreHome(), TS_ENCODING, false);
         }
     }
@@ -1096,6 +1102,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             return new ForeignNumberList(number);
         }
 
+        @SuppressWarnings("static-method")
         @ExportLibrary(value = InteropLibrary.class, delegateTo = "number")
         static final class ForeignNumberList implements TruffleObject {
             final Object number;
@@ -1140,7 +1147,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             return new ForeignWrapper(object);
         }
 
-        @SuppressWarnings("unused")
+        @SuppressWarnings({"unused", "static-method"})
         @ExportLibrary(value = InteropLibrary.class, delegateTo = "object")
         static final class ForeignWrapper implements TruffleObject {
             final Object object;
