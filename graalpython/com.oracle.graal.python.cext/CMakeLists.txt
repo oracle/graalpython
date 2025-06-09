@@ -313,7 +313,7 @@ set(TESTCAPI_SRC
 
 native_module("_testcapi" FALSE "${TESTCAPI_SRC}")
 if(WIN32)
-    target_compile_options("_testcapi" PRIVATE /wd4296)
+    target_compile_options("_testcapi" PRIVATE /wd4296 /wd4130)
 endif()
 simple_native_module("_testbuffer")
 if(WIN32)
