@@ -540,17 +540,26 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
             checkPlatform();
         }
         if (extractFilter != null) {
-            String wheelMetadataSuffix = ".dist-info" + getSeparator() + "RECORD";
             for (BaseEntry entry : vfsEntries.values()) {
-                if (entry instanceof FileEntry fileEntry && fileEntry.getPlatformPath().endsWith(wheelMetadataSuffix)) {
-                    Path baseDir = Paths.get(fileEntry.getPlatformPath()).getParent().getParent();
-                    try (BufferedReader is = new BufferedReader(new InputStreamReader(getResourceUrl(fileEntry.getResourcePath()).openStream()))) {
+                Path baseDir = null;
+                if (entry instanceof FileEntry fileEntry) {
+                    Path path = Paths.get(fileEntry.getPlatformPath());
+                    Path name = path.getFileName();
+                    if (name != null && name.endsWith("RECORD")) {
+                        Path distInfo = path.getParent();
+                        if (distInfo != null && distInfo.toString().endsWith(".dist-info")) {
+                            baseDir = distInfo.getParent();
+                        }
+                    }
+                }
+                if (baseDir != null) {
+                    try (BufferedReader is = new BufferedReader(new InputStreamReader(getResourceUrl(entry.getResourcePath()).openStream()))) {
                         String line;
                         List<FileEntry> extractedTogether = new ArrayList<>();
                         while ((line = is.readLine()) != null) {
                             int commaIndex = line.indexOf(',');
                             if (commaIndex < 0) {
-                                warn("Failed to parse wheel entry in record file %s: %s", fileEntry.getPlatformPath(), line);
+                                warn("Failed to parse wheel entry in record file %s: %s", entry.getPlatformPath(), line);
                                 continue;
                             }
                             Path platformPath = baseDir.resolve(line.substring(0, commaIndex).replace("/", PLATFORM_SEPARATOR));
@@ -559,7 +568,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
                                 if (extractableEntry instanceof FileEntry extractableFileEntry) {
                                     extractedTogether.add(extractableFileEntry);
                                 } else {
-                                    warn("Could not find file referred from wheel record file %s: %s", fileEntry.getPlatformPath(), platformPath);
+                                    warn("Could not find file referred from wheel record file %s: %s", entry.getPlatformPath(), platformPath);
                                 }
                             }
                         }
@@ -571,7 +580,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
                     } catch (IOException ex) {
                         // This is just best-effort attempt at guessing which libraries to extract
                         // together, ignore errors
-                        warn("Exception when reading wheel record file %s: %s", fileEntry.getPlatformPath(), ex);
+                        warn("Exception when reading wheel record file %s: %s", entry.getPlatformPath(), ex);
                     }
                 }
             }
