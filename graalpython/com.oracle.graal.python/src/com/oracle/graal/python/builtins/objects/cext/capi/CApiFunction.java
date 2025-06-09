@@ -1238,6 +1238,12 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyInterpreterState_HasFeature", ret = PrimitiveResult32, args = {PyInterpreterState, UNSIGNED_LONG}, call = CImpl)
     @CApiBuiltin(name = "_PyImport_AcquireLock", ret = Void, args = {PyInterpreterState}, call = NotImplemented)
     @CApiBuiltin(name = "_PyImport_ReleaseLock", ret = PrimitiveResult32, args = {PyInterpreterState}, call = NotImplemented)
+    // Windows only functions
+    @CApiBuiltin(name = "PyUnicode_DecodeMBCS", ret = PyObject, args = {ConstCharPtr, Py_ssize_t, ConstCharPtr}, call = NotImplemented)
+    @CApiBuiltin(name = "PyUnicode_DecodeMBCSStateful", ret = PyObject, args = {ConstCharPtr, Py_ssize_t, ConstCharPtr, PY_SSIZE_T_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "PyUnicode_DecodeCodePageStateful", ret = PyObject, args = {Int, ConstCharPtr, Py_ssize_t, ConstCharPtr, PY_SSIZE_T_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "PyUnicode_AsMBCSString", ret = PyObject, args = {PyObject}, call = NotImplemented)
+    @CApiBuiltin(name = "PyUnicode_EncodeCodePage", ret = PyObject, args = {Int, PyObject, ConstCharPtr}, call = NotImplemented)
 
     private static final class Dummy {
         // only here for the annotations
