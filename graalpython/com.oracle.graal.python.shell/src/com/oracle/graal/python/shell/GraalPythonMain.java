@@ -167,9 +167,11 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             polyglotGet(launcherName, givenArgs);
         }
         ArrayList<String> unrecognized = new ArrayList<>();
-        List<String> defaultEnvironmentArgs = getDefaultEnvironmentArgs();
-        ArrayList<String> inputArgs = new ArrayList<>(givenArgs);
-        inputArgs.addAll(defaultEnvironmentArgs);
+        List<String> envVmArgs = getDefaultEnvironmentArgs("GRAAL_PYTHON_VM_ARGS");
+        List<String> envArgs = getDefaultEnvironmentArgs("GRAAL_PYTHON_ARGS");
+        ArrayList<String> inputArgs = new ArrayList<>(envVmArgs);
+        inputArgs.addAll(givenArgs);
+        inputArgs.addAll(envArgs);
         givenArguments = new ArrayList<>(inputArgs);
         List<String> arguments = new ArrayList<>(inputArgs);
         List<String> subprocessArgs = new ArrayList<>();
@@ -1133,7 +1135,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                         "   in the range [0,4294967295] to get hash values with a predictable seed.\n" +
                         "PYTHONPYCACHEPREFIX: if this is set, GraalPython will write .pyc files in a mirror\n" +
                         "   directory tree at this path, instead of in __pycache__ directories within the source tree.\n" +
-                        "GRAAL_PYTHON_ARGS: the value is added as arguments as if passed on the\n" +
+                        "GRAAL_PYTHON_ARGS: the value is added as arguments as if passed at the end of the\n" +
                         "   commandline. Arguments are split on whitespace - you can use \" and/or ' as required to\n" +
                         "   group them. Alternatively, if the value starts with a vertical tab character, the entire\n" +
                         "   value is split at vertical tabs and the elements are used as arguments without any further\n" +
@@ -1143,6 +1145,8 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                         "   with the current process id, and any $UUID$ is replaced with random unique string\n" +
                         "   that may contain letters, digits, and '-'. To pass a literal `$$', you must escape the\n" +
                         "   second `$' like so: `$\\$'\n" +
+                        "GRAAL_PYTHON_VM_ARGS: the value is prepended as arguments as if passed at the beginning\n" +
+                        "   of the commandline. See GRAAL_PYTHON_ARGS for details.\n" +
                         (wantsExperimental ? "\nArguments specific to the Graal Python launcher:\n" +
                                         "--show-version : print the Python version number and continue.\n" +
                                         "-CC            : run the C compiler used for generating GraalPython C extensions.\n" +
@@ -1462,7 +1466,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         VTAB_DELIMITED,
     }
 
-    private static List<String> getDefaultEnvironmentArgs() {
+    private static List<String> getDefaultEnvironmentArgs(String envName) {
         String pid;
         if (isAOT()) {
             pid = String.valueOf(ProcessProperties.getProcessID());
@@ -1470,7 +1474,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             pid = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
         }
         String uuid = UUID.randomUUID().toString();
-        String envArgsOpt = getEnv("GRAAL_PYTHON_ARGS");
+        String envArgsOpt = getEnv(envName);
         ArrayList<String> envArgs = new ArrayList<>();
         if (envArgsOpt != null) {
             State s = State.NORMAL;

@@ -2219,7 +2219,7 @@ def python_coverage(args):
                 *common_coverage_args,
                 f"--coverage.OutputFile={outfile}",
             ]
-            env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
+            env['GRAAL_PYTHON_VM_ARGS'] = " ".join(extra_args)
             if kwds.pop("tagged", False):
                 run_tagged_unittests(executable, env=env, nonZeroIsFatal=False, **kwds) # pylint: disable=unexpected-keyword-arg;
             elif kwds.pop("hpy", False):
