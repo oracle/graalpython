@@ -105,6 +105,7 @@
 #define __SIZEOF_UINTPTR_T__ 8
 #define __SIZEOF_POINTER__ 8
 #define __SIZEOF_WCHAR_T__ 2
+#define pid_t int
 #endif
 
 // defines based on Clang defines
