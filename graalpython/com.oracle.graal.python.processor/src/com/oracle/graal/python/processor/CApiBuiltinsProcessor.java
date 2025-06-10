@@ -748,6 +748,10 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                     "_PyCFunction_SetModule", "_PyCFunction_SetMethodDef",
                     "PyCode_GetFileName", "_PyArray_Resize", "_PyArray_Data",
                     "_PyErr_Occurred", "_PyNamespace_New", "_Py_GetErrorHandler",
+                    // Not actually additional, only defined on Windows.
+                    // TODO: fix generated CAPIFunctions.txt
+                    "PyUnicode_AsMBCSString", "PyUnicode_EncodeCodePage", "PyUnicode_DecodeMBCS",
+                    "PyUnicode_DecodeCodePageStateful", "PyUnicode_DecodeMBCSStateful",
     };
 
     public String resolveArgDescriptor(String sig) {

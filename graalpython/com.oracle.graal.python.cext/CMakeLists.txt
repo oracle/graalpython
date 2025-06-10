@@ -80,14 +80,14 @@ if (MSVC)
     /wd4710 # 'fprintf': function not inlined
     /wd4706 # assignment within conditional expression
     /wd4774 # 'sprintf': format string expected in argument 2 is not a string literal
+    /wd4191 # unsafe conversion from 'PyObject *(__cdecl *)(MatchObject *,PyObject *const *,Py_ssize_t)' to 'void (__cdecl *)(void)'
+    /wd4574 # sqlite, expat: 'SQLITE_ATOMIC_INTRINSICS' is defined to be '0': did you mean to use '#if SQLITE_ATOMIC_INTRINSICS'?
+    /wd4701 # potentially uninitialized local variable used
 
     # Some that I'm not so happy about
     /wd4232 # sre: nonstandard extension used: 'ml_meth': address of dllimport 'Py_GenericAlias' is not static, identity not guaranteed
-    /wd4191 # sre and sqlite: 'type cast': like unsafe conversion from 'PyObject *(__cdecl *)(MatchObject *,PyObject *const *,Py_ssize_t)' to 'void (__cdecl *)(void)'
     /wd4918 # sre: invalid character in pragma optimization list
-    /wd4701 # cpython_unicodedata: potentially uninitialized local variable 'rc' used
     /wd4703 # unicodeobject.c:potentially uninitialized local pointer variable used
-    /wd4574 # sqlite: 'SQLITE_ATOMIC_INTRINSICS' is defined to be '0': did you mean to use '#if SQLITE_ATOMIC_INTRINSICS'?
     /wd4310 # xmlparse: cast truncates constant value
     /wd4777 # format string '%zd' requires an argument of type 'unsigned __int64'
   )
@@ -238,7 +238,19 @@ set(SQLITE3_SRC
     "${SRC_DIR}/modules/_sqlite/util.c"
 )
 native_module("_sqlite3" TRUE "${SQLITE3_SRC}")
+# This combines the flags CPython uses on macOS and Windows, on Linux systems
+# it usually links against the system sqlite3 so we do not really know. See
+# https://github.com/python/cpython/issues/88017 for some reasons
 target_include_directories("_sqlite3" PUBLIC "${SRC_DIR}/modules/_sqlite/sqlite")
+target_compile_definitions("_sqlite3" PRIVATE
+    SQLITE_ENABLE_MATH_FUNCTIONS
+    SQLITE_ENABLE_FTS5
+    SQLITE_ENABLE_FTS4
+    SQLITE_ENABLE_FTS3_PARENTHESIS
+    SQLITE_ENABLE_RTREE
+    SQLITE_OMIT_AUTOINIT
+    SQLITE_TCL=0
+)
 
 set(LIBHACL_HEADERS
     # "${SRC_DIR}/modules/_hacl/include/krml/FStar_UInt128_Verified.h"
@@ -299,13 +311,19 @@ set(TESTCAPI_SRC
     "${SRC_DIR}/modules/_testcapi.c"
 )
 
-if(NOT WIN32)
-    native_module("_testcapi" FALSE "${TESTCAPI_SRC}")
-    simple_native_module("_testbuffer")
-    simple_native_module("_testmultiphase")
-    simple_native_module("_testsinglephase")
-    simple_native_module("_ctypes_test")
+native_module("_testcapi" FALSE "${TESTCAPI_SRC}")
+if(WIN32)
+    target_compile_options("_testcapi" PRIVATE /wd4296 /wd4130)
+endif()
+simple_native_module("_testbuffer")
+if(WIN32)
+    target_compile_options("_testbuffer" PRIVATE /wd4090)
+endif()
+simple_native_module("_testmultiphase")
+simple_native_module("_testsinglephase")
+simple_native_module("_ctypes_test")
 
+if(NOT WIN32)
     ###################### BZIP2 ########################
     if(DEFINED LIBBZ2_BUILD_FILE)
         include("${LIBBZ2_BUILD_FILE}")

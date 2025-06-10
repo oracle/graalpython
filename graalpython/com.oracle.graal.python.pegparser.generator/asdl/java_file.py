@@ -131,7 +131,24 @@ class Emitter:
 def create(out_dir_base: str, java_package: str, java_class_name: str):
     sst_dir = os.path.join(out_dir_base, *java_package.split('.'))
     os.makedirs(sst_dir, exist_ok=True)
-    with open(os.path.join(sst_dir, java_class_name + '.java'), 'w') as f:
+    filename = os.path.join(sst_dir, java_class_name + '.java')
+
+    # Determine which line separator to use
+    if os.path.exists(filename):
+        with open(filename, "r", encoding="utf-8", newline=os.linesep) as f:
+            content = f.read()
+        if os.linesep != "\n":
+            if content.replace(os.linesep, "\n") == content:
+                # Windows file has Unix line endings
+                linesep = "\n"
+            else:
+                linesep = os.linesep
+        else:
+            linesep = "\n"
+    else:
+        linesep = os.linesep
+
+    with open(filename, 'w', encoding="utf-8", newline=linesep) as f:
         emitter = Emitter(f)
         f.write(HEADER)
         f.write(f'package {java_package};\n')
