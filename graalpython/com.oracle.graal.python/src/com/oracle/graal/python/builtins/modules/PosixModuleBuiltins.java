@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T_ENVIRON;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
@@ -252,7 +253,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
         PythonLanguage language = core.getLanguage();
         addBuiltinConstant("_have_functions", PFactory.createList(language, haveFunctions.toArray()));
-        addBuiltinConstant("environ", PFactory.createDict(language));
+        addBuiltinConstant(T_ENVIRON, PFactory.createDict(language));
 
         LinkedHashMap<String, Object> sysconfigNames = new LinkedHashMap<>();
         for (IntConstant name : PosixConstants.sysconfigNames) {
@@ -313,16 +314,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 // we don't want subprocesses to pick it up
                 continue;
             }
-            Object key, val;
-            if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-                if (entry.getKey().startsWith("=")) {
-                    // Hidden variable, shouldn't be visible to python
-                    continue;
-                }
-                key = toTruffleStringUncached(entry.getKey());
-            } else {
-                key = PFactory.createBytes(language, entry.getKey().getBytes());
+            if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 && entry.getKey().startsWith("=")) {
+                // Hidden variable, shouldn't be visible to python
+                continue;
             }
+            Object key = toEnv(language, entry.getKey());
+            Object val = toEnv(language, entry.getValue());
             if (pyenvLauncherKey.equals(entry.getKey())) {
                 // On Mac, the CPython launcher uses this env variable to specify the real Python
                 // executable. It will be honored by packages like "site". So, if it is set, we
@@ -334,31 +331,24 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                     posixLib.setenv(posixSupport, k, v, true);
                 } catch (PosixException ignored) {
                 }
-                if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-                    val = value;
-                } else {
-                    val = PFactory.createBytes(language, value.toJavaStringUncached().getBytes());
-                }
-            } else {
-                if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-                    val = toTruffleStringUncached(entry.getValue());
-                } else {
-                    val = PFactory.createBytes(language, (entry.getValue().getBytes()));
-                }
+                val = toEnv(language, value);
             }
             environ.setItem(key, val);
         }
         if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             // XXX: Until we fix pip
-            environ.setItem(toTruffleStringUncached("PIP_NO_CACHE_DIR"), toTruffleStringUncached("0"));
+            environ.setItem(toEnv(language, "PIP_NO_CACHE_DIR"), toEnv(language, "0"));
         }
+        // XXX: Until a pyo3 version that doesn't have a different maximum version for GraalPy than
+        // CPython gets widespread
+        environ.setItem(toEnv(language, "UNSAFE_PYO3_SKIP_VERSION_CHECK"), toEnv(language, "1"));
         PythonModule posix;
         if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             posix = core.lookupBuiltinModule(T_NT);
         } else {
             posix = core.lookupBuiltinModule(T_POSIX);
         }
-        Object environAttr = posix.getAttribute(tsLiteral("environ"));
+        Object environAttr = posix.getAttribute(T_ENVIRON);
         ((PDict) environAttr).setDictStorage(environ.getDictStorage());
 
         if (posixLib.getBackend(posixSupport).toJavaStringUncached().equals("java")) {
@@ -367,6 +357,22 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             posix.setAttribute(toTruffleStringUncached("getegid"), PNone.NO_VALUE);
 
             posix.setAttribute(toTruffleStringUncached("WNOHANG"), EMULATED_WNOHANG);
+        }
+    }
+
+    private static Object toEnv(PythonLanguage language, String value) {
+        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            return toTruffleStringUncached(value);
+        } else {
+            return PFactory.createBytes(language, value.getBytes());
+        }
+    }
+
+    private static Object toEnv(PythonLanguage language, TruffleString value) {
+        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            return value;
+        } else {
+            return PFactory.createBytes(language, value.toJavaStringUncached().getBytes());
         }
     }
 
