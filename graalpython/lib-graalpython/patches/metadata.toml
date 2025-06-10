@@ -175,15 +175,28 @@ patch = 'hmmlearn.patch'
 license = 'BSD-3-Clause'
 
 [[hypothesis.rules]]
-install-priority = 1
 # can be removed once [GR-65570] is done
 patch = 'hypothesis-6.135.0.patch'
 version = '>= 6.120.0'
 license = 'MPL-2.0'
 
 [[hypothesis.rules]]
-install-priority = 0
-version = '>= 6.69.0, < 6.120.0'
+# can be removed once [GR-65570] is done
+patch = 'hypothesis-6.118.5.patch'
+version = '>= 6.118.5, < 6.120.0'
+license = 'MPL-2.0'
+
+[[hypothesis.rules]]
+# can be removed once [GR-65570] is done
+patch = 'hypothesis-6.105.2.patch'
+version = '>= 6.105.2, < 6.118.5'
+license = 'MPL-2.0'
+
+[[hypothesis.rules]]
+# can be removed once [GR-65570] is done
+patch = 'hypothesis-6.104.1.patch'
+version = '>= 6.99.0, < 6.105.2'
+license = 'MPL-2.0'
 
 [[hypothesis.rules]]
 install-priority = 0

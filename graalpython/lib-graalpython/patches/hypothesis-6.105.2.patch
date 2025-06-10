@@ -1,0 +1,70 @@
+diff --git a/hypothesis/core.py b/hypothesis/core.py
+index b04235c..ac65b68 100644
+--- a/hypothesis/core.py
++++ b/hypothesis/core.py
+@@ -70,6 +70,7 @@ from hypothesis.errors import (
+ )
+ from hypothesis.internal.compat import (
+     PYPY,
++    GRAALPY,
+     BaseExceptionGroup,
+     add_note,
+     bad_django_TestCase,
+@@ -1166,7 +1167,7 @@ class StateForActualGivenExecution:
+         # we'd expect to do so reliably, i.e. on CPython>=3.12)
+         if (
+             sys.version_info[:2] >= (3, 12)
+-            and not PYPY
++            and not PYPY and not GRAALPY
+             and self._should_trace()
+             and not Tracer.can_trace()
+         ):  # pragma: no cover
+diff --git a/hypothesis/internal/scrutineer.py b/hypothesis/internal/scrutineer.py
+index 0cd760c..60bb7a2 100644
+--- a/hypothesis/internal/scrutineer.py
++++ b/hypothesis/internal/scrutineer.py
+@@ -21,7 +21,7 @@ from pathlib import Path
+ from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
+ 
+ from hypothesis._settings import Phase, Verbosity
+-from hypothesis.internal.compat import PYPY
++from hypothesis.internal.compat import PYPY, GRAALPY
+ from hypothesis.internal.escalation import is_hypothesis_file
+ 
+ if TYPE_CHECKING:
+@@ -46,7 +46,7 @@ def should_trace_file(fname):
+ # tool_id = 1 is designated for coverage, but we intentionally choose a
+ # non-reserved tool id so we can co-exist with coverage tools.
+ MONITORING_TOOL_ID = 3
+-if sys.version_info[:2] >= (3, 12):
++if sys.version_info[:2] >= (3, 12) and not GRAALPY:
+     MONITORING_EVENTS = {sys.monitoring.events.LINE: "trace_line"}
+ 
+ 
+@@ -64,7 +64,7 @@ class Tracer:
+         return (
+             (sys.version_info[:2] < (3, 12) and sys.gettrace() is None)
+             or (
+-                sys.version_info[:2] >= (3, 12)
++                sys.version_info[:2] >= (3, 12) and not GRAALPY
+                 and sys.monitoring.get_tool(MONITORING_TOOL_ID) is None
+             )
+         ) and not PYPY
+@@ -93,7 +93,7 @@ class Tracer:
+     def __enter__(self):
+         assert self.can_trace()  # caller checks in core.py
+ 
+-        if sys.version_info[:2] < (3, 12):
++        if sys.version_info[:2] < (3, 12) or GRAALPY:
+             sys.settrace(self.trace)
+             return self
+ 
+@@ -106,7 +106,7 @@ class Tracer:
+         return self
+ 
+     def __exit__(self, *args, **kwargs):
+-        if sys.version_info[:2] < (3, 12):
++        if sys.version_info[:2] < (3, 12) or GRAALPY:
+             sys.settrace(None)
+             return
+ 

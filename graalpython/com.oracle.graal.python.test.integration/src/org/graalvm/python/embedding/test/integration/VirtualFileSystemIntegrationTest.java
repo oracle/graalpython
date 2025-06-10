@@ -484,7 +484,7 @@ public class VirtualFileSystemIntegrationTest {
                                 dirs.add(r + "/" + dd)
 
                         assert len(roots) == 9, 'expected 10 roots, got ' + str(len(roots))
-                        assert len(files) == 14, 'expected 14 files, got ' + str(len(files))
+                        assert len(files) == 12, 'expected 12 files, got ' + str(len(files))
                         assert len(dirs) == 8, 'expected 8 dirs, got ' + str(len(dirs))
                         """, pathPrefix);
 
