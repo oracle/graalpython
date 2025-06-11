@@ -43,6 +43,11 @@
 static inline int
 call_traverse(traverseproc traverse, PyObject *op, visitproc visit, void *arg)
 {
+    if (points_to_py_handle_space(op)) {
+        // Ignore managed handles. Some builtin types don't (yet) create native objects when subclassed in native,
+        // so they can end up with native traverse. Example is pybind11_static_property that subclasses builtin property
+        return 0;
+    }
     if (!traverse) {
         PyTruffle_Log(PY_TRUFFLE_LOG_FINE,
                       "type '%.100s' is a GC type but tp_traverse is NULL",

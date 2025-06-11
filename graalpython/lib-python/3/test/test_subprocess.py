@@ -832,7 +832,8 @@ class ProcessTestCase(BaseTestCase):
                     n == 'PWD' or n == 'SHLVL' or # Graalpython bash launcher
                     n.startswith('JAVA_MAIN_CLASS') or # JVM on MacOS
                     n == 'LD_LIBRARY_PATH' or n == 'DYLD_LIBRARY_PATH' or # Added by graalpy launcher
-                    n == 'LC_CTYPE') # Locale coercion triggered
+                    n == 'LC_CTYPE', # Locale coercion triggered
+                    n == 'UNSAFE_PYO3_SKIP_VERSION_CHECK') # GraalPy change
 
         with subprocess.Popen([sys.executable, "-c",
                                'import os; print(list(os.environ.keys()))'],
