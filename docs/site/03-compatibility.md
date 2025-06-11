@@ -63,7 +63,7 @@ img.pylogo {
         });
         var patch_metadata = new Promise(function (resolve, reject) {
             const xhr = new XMLHttpRequest();
-            const url = `https://raw.githubusercontent.com/oracle/graalpython/refs/heads/release/graal-vm/${graalvmVersion}/graalpython/lib-graalpython/patches/metadata.toml`;
+            const url = `https://raw.githubusercontent.com/oracle/graalpython/refs/heads/github/patches/${graalvmVersion}/graalpython/lib-graalpython/patches/metadata.toml`;
             xhr.open('GET', url);
             xhr.overrideMimeType('text/plain');
             xhr.onload = function () {
