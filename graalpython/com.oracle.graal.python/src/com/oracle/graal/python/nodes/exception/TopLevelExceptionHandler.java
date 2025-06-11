@@ -140,9 +140,6 @@ public final class TopLevelExceptionHandler extends RootNode {
                 throw handlePythonException(exception);
             } else {
                 checkInitialized();
-                PythonContext pythonContext = getContext();
-                PythonLanguage lang = getPythonLanguage();
-                assert pythonContext.getThreadState(lang).getCurrentException() == null;
                 try {
                     return run(frame);
                 } catch (PythonExitException e) {

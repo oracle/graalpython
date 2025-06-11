@@ -67,21 +67,20 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.EnsureExecutableNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIndexNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ReadUnicodeArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
@@ -93,7 +92,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -125,8 +123,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -472,58 +468,69 @@ public abstract class CExtCommonNodes {
     @GenerateUncached
     public abstract static class TransformExceptionToNativeNode extends Node {
 
-        public abstract void execute(Frame frame, Node inliningTarget, PException e, LazyTraceback tb);
+        public abstract void execute(Node inliningTarget, Object pythonException);
 
         public final void execute(Node inliningTarget, PException e) {
-            execute(null, inliningTarget, e, null);
-        }
-
-        public final void execute(Frame frame, Node inliningTarget, PException e) {
-            execute(frame, inliningTarget, e, null);
-        }
-
-        public final void execute(Node inliningTarget, PException e, LazyTraceback tb) {
-            execute(null, inliningTarget, e, tb);
+            execute(inliningTarget, e.getEscapedException());
         }
 
         public final void executeCached(PException e) {
-            execute(null, this, e, null);
+            execute(this, e.getEscapedException());
+        }
+
+        public static void executeUncached(Object pythonException) {
+            CExtCommonNodesFactory.TransformExceptionToNativeNodeGen.getUncached().execute(null, pythonException);
+        }
+
+        public static void executeUncached(PException e) {
+            CExtCommonNodesFactory.TransformExceptionToNativeNodeGen.getUncached().execute(null, e.getEscapedException());
         }
 
         @Specialization
-        static void setCurrentException(Frame frame, Node inliningTarget, PException e, LazyTraceback tb,
-                        @Cached GetCurrentFrameRef getCurrentFrameRef,
+        static void setCurrentException(Node inliningTarget, Object pythonException,
                         @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached(inline = false) PythonToNativeNode pythonToNativeNode,
+                        @Cached CExtNodes.XDecRefPointerNode decRefPointerNode,
+                        @Cached(inline = false) PythonToNativeNewRefNode pythonToNativeNode,
+                        @Cached(inline = false) CStructAccess.ReadPointerNode readPointerNode,
                         @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode) {
             /*
-             * Run the ToNative conversion early so that nothing interrups the code between setting
-             * the managed and native states
+             * Run the ToNative conversion early so that the reference poll won't interrupt between
+             * the read and write.
              */
-            Object currentException = pythonToNativeNode.execute(e.getEscapedException());
-            // TODO connect f_back
-            getCurrentFrameRef.execute(frame, inliningTarget).markAsEscaped();
-            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
-            if (tb != null) {
-                threadState.setCurrentException(e, tb);
-            } else {
-                threadState.setCurrentException(e);
-            }
-            /*
-             * Mirror the global exception state to native for faster access. For now, we only write
-             * 'PyThreadState.curexc_type' (which is the only one required for 'PyErr_Occurred').
-             * Since that won't escape the exception object to the program, we can use
-             * 'getUnreifiedException'. As soon as we provide the exception object and the traceback
-             * as well, we need to use 'getEscapedException'.
-             */
+            Object currentException = pythonToNativeNode.execute(pythonException);
+            Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(getThreadStateNode.execute(inliningTarget));
+            Object oldException = readPointerNode.read(nativeThreadState, CFields.PyThreadState__current_exception);
+            writePointerNode.write(nativeThreadState, CFields.PyThreadState__current_exception, currentException);
+            decRefPointerNode.execute(inliningTarget, oldException);
+        }
+    }
+
+    /**
+     * Equivalent of native {@code _PyErr_GetRaisedException}. Returns {@link PNone#NO_VALUE} if
+     * there is no exception.
+     */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class ReadAndClearNativeException extends Node {
+        public abstract Object execute(Node inliningTarget, PythonThreadState threadState);
+
+        public static Object executeUncached(PythonThreadState threadState) {
+            return CExtCommonNodesFactory.ReadAndClearNativeExceptionNodeGen.getUncached().execute(null, threadState);
+        }
+
+        @Specialization
+        static Object getException(PythonThreadState threadState,
+                        @Cached(inline = false) CStructAccess.ReadPointerNode readPointerNode,
+                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
+                        @Cached CApiTransitions.NativeToPythonTransferNode nativeToPythonNode) {
             Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
             if (nativeThreadState != null) {
-                /*
-                 * Write a borrowed ref to the native mirror because we need to keep that in sync
-                 * anyway.
-                 */
-                writePointerNode.write(nativeThreadState, CFields.PyThreadState__current_exception, currentException);
+                Object exception = nativeToPythonNode.execute(readPointerNode.read(nativeThreadState, CFields.PyThreadState__current_exception));
+                writePointerNode.write(nativeThreadState, CFields.PyThreadState__current_exception, 0L);
+                return exception;
             }
+            return PNone.NO_VALUE;
         }
     }
 
@@ -569,33 +576,29 @@ public abstract class CExtCommonNodes {
                         TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage,
                         @Cached InlinedConditionProfile errOccurredProfile,
                         @Cached InlinedConditionProfile indicatesErrorProfile,
-                        @Cached ClearCurrentExceptionNode clearCurrentExceptionNode) {
-            AbstractTruffleException currentException = threadState.getCurrentException();
-            boolean errOccurred = errOccurredProfile.profile(inliningTarget, currentException != null);
+                        @Cached ReadAndClearNativeException readAndClearNativeException) {
+            Object currentException = readAndClearNativeException.execute(inliningTarget, threadState);
+            boolean errOccurred = errOccurredProfile.profile(inliningTarget, currentException != PNone.NO_VALUE);
             boolean indicatesErrorProfiled = indicatesErrorProfile.profile(inliningTarget, indicatesError);
             if (indicatesErrorProfiled || errOccurred) {
-                checkFunctionResultSlowpath(inliningTarget, threadState, name, indicatesErrorProfiled, strict,
-                                nullButNoErrorMessage, resultWithErrorMessage, errOccurred, currentException, clearCurrentExceptionNode);
+                checkFunctionResultSlowpath(inliningTarget, name, indicatesErrorProfiled, strict,
+                                nullButNoErrorMessage, resultWithErrorMessage, errOccurred, currentException);
             }
-            assert threadState.getCurrentException() == null;
         }
 
         @InliningCutoff
-        private static void checkFunctionResultSlowpath(Node inliningTarget, PythonThreadState threadState, TruffleString name, boolean indicatesError, boolean strict,
-                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage, boolean errOccurred, AbstractTruffleException currentException,
-                        ClearCurrentExceptionNode clearCurrentExceptionNode) {
+        private static void checkFunctionResultSlowpath(Node inliningTarget, TruffleString name, boolean indicatesError, boolean strict,
+                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage, boolean errOccurred, Object currentException) {
             if (indicatesError) {
                 if (errOccurred) {
-                    assert currentException != null;
-                    throw clearCurrentExceptionNode.getCurrentExceptionForReraise(inliningTarget, threadState);
+                    assert currentException != PNone.NO_VALUE;
+                    throw PException.fromObject(currentException, inliningTarget, false);
                 } else if (strict) {
-                    assert currentException == null;
+                    assert currentException == PNone.NO_VALUE;
                     throw raiseNullButNoError(inliningTarget, name, nullButNoErrorMessage);
                 }
             } else if (errOccurred) {
                 assert currentException != null;
-                // consume exception
-                clearCurrentExceptionNode.execute(inliningTarget, threadState);
                 throw raiseResultWithError(inliningTarget, name, currentException, resultWithErrorMessage);
             }
         }
@@ -606,10 +609,10 @@ public abstract class CExtCommonNodes {
         }
 
         @TruffleBoundary
-        private static PException raiseResultWithError(Node node, TruffleString name, AbstractTruffleException currentException, TruffleString resultWithErrorMessage) {
+        private static PException raiseResultWithError(Node node, TruffleString name, Object currentException, TruffleString resultWithErrorMessage) {
             PythonLanguage language = PythonLanguage.get(null);
             PBaseException sysExc = PFactory.createBaseException(language, SystemError, resultWithErrorMessage, new Object[]{name});
-            sysExc.setCause(GetEscapedExceptionNode.executeUncached(currentException));
+            sysExc.setCause(currentException);
             throw PRaiseNode.raiseExceptionObject(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(language));
         }
     }
@@ -1250,30 +1253,6 @@ public abstract class CExtCommonNodes {
 
         static boolean isNativePointer(Object pointerObject) {
             return pointerObject instanceof NativePointer;
-        }
-    }
-
-    @GenerateInline
-    @GenerateCached(false)
-    @GenerateUncached
-    public abstract static class ClearCurrentExceptionNode extends Node {
-
-        public abstract void execute(Node inliningTarget, PythonThreadState threadState);
-
-        public final AbstractTruffleException getCurrentExceptionForReraise(Node inliningTarget, PythonThreadState threadState) {
-            AbstractTruffleException exceptionForReraise = threadState.getCurrentExceptionForReraise();
-            execute(inliningTarget, threadState);
-            return exceptionForReraise;
-        }
-
-        @Specialization
-        static void doGeneric(PythonThreadState threadState,
-                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode) {
-            threadState.clearCurrentException();
-            Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
-            if (nativeThreadState != null) {
-                writePointerNode.write(nativeThreadState, CFields.PyThreadState__current_exception, 0L);
-            }
         }
     }
 

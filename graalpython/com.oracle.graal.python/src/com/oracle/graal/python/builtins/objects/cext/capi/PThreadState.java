@@ -48,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -114,11 +113,6 @@ public final class PThreadState extends PythonStructNativeWrapper {
         writePtrNode.write(ptr, CFields.PyThreadState__dict, toNative.execute(threadStateDict));
         CApiContext cApiContext = pythonContext.getCApiContext();
         writePtrNode.write(ptr, CFields.PyThreadState__small_ints, cApiContext.getOrCreateSmallInts());
-        if (threadState.getCurrentException() != null) {
-            // See TransformExceptionToNativeNode
-            Object currentException = GetEscapedExceptionNode.executeUncached(threadState.getCurrentException());
-            CStructAccess.WritePointerNode.getUncached().write(ptr, CFields.PyThreadState__current_exception, PythonToNativeNode.getUncached().execute(currentException));
-        }
         writePtrNode.write(ptr, CFields.PyThreadState__gc, cApiContext.getGCState());
         CStructAccess.WriteIntNode writeIntNode = CStructAccess.WriteIntNode.getUncached();
         // py_recursion_limit = Py_DEFAULT_RECURSION_LIMIT (1000)

@@ -40,10 +40,9 @@ _PyErr_FormatV(PyThreadState *tstate, PyObject *exception,
 void
 _PyErr_SetRaisedException(PyThreadState *tstate, PyObject *exc)
 {
-    // GraalPy change
-    // PyObject *old_exc = tstate->current_exception;
+    PyObject *old_exc = tstate->current_exception;
     tstate->current_exception = exc;
-    // Py_XDECREF(old_exc);
+    Py_XDECREF(old_exc);
 }
 
 static PyObject*
@@ -80,13 +79,13 @@ _PyErr_Restore(PyThreadState *tstate, PyObject *type, PyObject *value,
         assert(value == NULL);
         assert(traceback == NULL);
         _PyErr_SetRaisedException(tstate, NULL);
-        // return;
+        return;
     }
-#if 0 // GraalPy change
     assert(PyExceptionClass_Check(type));
     if (value != NULL && type == (PyObject *)Py_TYPE(value)) {
         /* Already normalized */
-        assert(((PyBaseExceptionObject *)value)->traceback != Py_None);
+        // GraalPy change
+        // assert(((PyBaseExceptionObject *)value)->traceback != Py_None);
     }
     else {
         PyObject *exc = _PyErr_CreateException(type, value);
@@ -112,24 +111,20 @@ _PyErr_Restore(PyThreadState *tstate, PyObject *type, PyObject *value,
             return;
         }
     }
-    PyObject *old_traceback = ((PyBaseExceptionObject *)value)->traceback;
-    ((PyBaseExceptionObject *)value)->traceback = traceback;
-    Py_XDECREF(old_traceback);
+    // GraalPy change: upcall for setting the traceback
+    GraalPyTruffleErr_SetTraceback(value, traceback);
+    // GraalPy change: the traceback is now owned by the managed side
+    Py_XDECREF(traceback);
     _PyErr_SetRaisedException(tstate, value);
     Py_DECREF(type);
-#else // GraalPy change: different implementation
-    PyErr_Restore(type, value, traceback);
-#endif // GraalPy change
 }
 
-#if 0 // GraalPy change
 void
 PyErr_Restore(PyObject *type, PyObject *value, PyObject *traceback)
 {
     PyThreadState *tstate = _PyThreadState_GET();
     _PyErr_Restore(tstate, type, value, traceback);
 }
-#endif // GraalPy change
 
 void
 PyErr_SetRaisedException(PyObject *exc)
@@ -138,15 +133,7 @@ PyErr_SetRaisedException(PyObject *exc)
     _PyErr_SetRaisedException(tstate, exc);
 }
 
-
 #if 0 // GraalPy change
-void
-PyErr_Restore(PyObject *type, PyObject *value, PyObject *traceback)
-{
-    PyThreadState *tstate = _PyThreadState_GET();
-    _PyErr_Restore(tstate, type, value, traceback);
-}
-
 _PyErr_StackItem *
 _PyErr_GetTopmostException(PyThreadState *tstate)
 {
@@ -160,7 +147,6 @@ _PyErr_GetTopmostException(PyThreadState *tstate)
     }
     return exc_info;
 }
-#endif // GraalPy change
 
 static PyObject *
 get_normalization_failure_note(PyThreadState *tstate, PyObject *exception, PyObject *value)
@@ -183,6 +169,7 @@ get_normalization_failure_note(PyThreadState *tstate, PyObject *exception, PyObj
     }
     return note;
 }
+#endif // GraalPy change
 
 void
 _PyErr_SetObject(PyThreadState *tstate, PyObject *exception, PyObject *value)
@@ -537,7 +524,6 @@ void
 _PyErr_Fetch(PyThreadState *tstate, PyObject **p_type, PyObject **p_value,
              PyObject **p_traceback)
 {
-#if 0 // GraalPy change
     PyObject *exc = _PyErr_GetRaisedException(tstate);
     *p_value = exc;
     if (exc == NULL) {
@@ -546,18 +532,9 @@ _PyErr_Fetch(PyThreadState *tstate, PyObject **p_type, PyObject **p_value,
     }
     else {
         *p_type = Py_NewRef(Py_TYPE(exc));
-        *p_traceback = Py_XNewRef(((PyBaseExceptionObject *)exc)->traceback);
+        // GraalPy change: upcall to get the traceback
+        *p_traceback = PyException_GetTraceback(*p_value);
     }
-#else // GraalPy change: different implementation
-    if (_PyErr_Occurred(tstate)) {
-        // avoid the upcall if there is no current exception
-        GraalPyTruffleErr_Fetch(p_type, p_value, p_traceback);
-    } else {
-        *p_type = NULL;
-        *p_value = NULL;
-        *p_traceback = NULL;
-    }
-#endif // GraalPy change
 }
 
 
@@ -690,6 +667,7 @@ _PyErr_StackItemToExcInfoTuple(_PyErr_StackItem *err_info)
         exc_value ? exc_value : Py_None,
         exc_traceback ? exc_traceback : Py_None);
 }
+#endif // GraalPy change
 
 
 /* Like PyErr_Restore(), but if an exception is already set,
@@ -751,6 +729,7 @@ _PyErr_ChainExceptions1(PyObject *exc)
     }
 }
 
+#if 0 // GraalPy change
 /* Set the currently set exception's context to the given exception.
 
    If the provided exc_info is NULL, then the current Python thread state's
