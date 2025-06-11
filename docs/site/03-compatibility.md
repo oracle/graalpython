@@ -69,7 +69,7 @@ img.pylogo {
             xhr.onload = function () {
                 if (this.status === 200) {
                     const patches = [];
-                    const lines = this.responseText.trim().split('\n');
+                    const lines = txt.split('\n');
                     var currentPatch = null;
                     for (let i = 0; i < lines.length; i++) {
                         const line = lines[i].trim();
@@ -84,12 +84,8 @@ img.pylogo {
                             }
                             let pkgName = line.substring(2, line.indexOf(".")).trim();
                             currentPatch = {name: pkgName, version: DB.ANY_VERSION};
-                        } else if (line.startsWith('#')) {
-                            if (!currentPatch.comment) {
-                                currentPatch.comment = line.substring(1).trim();
-                            } else {
-                                currentPatch.comment += ' ' + line.substring(1).trim();
-                            }
+                        } else if (line.startsWith('note =')) {
+                            currentPatch.comment = line.substring('note ='.length).trim();
                         } else if (line.startsWith('version =')) {
                             currentPatch.version = line.substring('version ='.length).trim().replace(/'|"/g, '').replace(/^== ?/, "").replace(/, ?/g, " and ");
                         } else if (line.startsWith('install-priority =')) {
