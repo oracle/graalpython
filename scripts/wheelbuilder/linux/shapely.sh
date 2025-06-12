@@ -37,6 +37,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+GEOS_VERSION=3.13.1
+GEOS_INSTALL="/usr"
+
 if [ -n "$GITHUB_RUN_ID" ]; then
-    dnf install -y geos-devel
+    dnf install -y cmake
+    curl -OL --retry 5 "https://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2"
+    tar xfj "geos-${GEOS_VERSION}.tar.bz2" && rm "geos-${GEOS_VERSION}.tar.bz2"
+    cmake -DCMAKE_INSTALL_LIBDIR=lib \
+          "-DCMAKE_INSTALL_NAME_DIR=${GEOS_INSTALL}/lib" \
+          "-DCMAKE_INSTALL_PREFIX=${GEOS_INSTALL}" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_TESTING=OFF \
+          -S "geos-${GEOS_VERSION}" -B build
+    cmake --build build -j 4
+    cmake --install build
+    rm -rf build "geos-${GEOS_VERSION}"
+fi
+
+if [ -n "$1" ]; then
+    pip wheel "shapely==$1"
+else
+    pip wheel shapely
 fi
