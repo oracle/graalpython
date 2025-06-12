@@ -68,7 +68,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
@@ -79,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonTransferNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
@@ -93,7 +93,6 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
@@ -124,7 +123,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -424,19 +422,7 @@ public abstract class CApiTransitions {
                  * There can be an active exception. Since we might be calling arbitary python, we
                  * need to stash it.
                  */
-                AbstractTruffleException savedException = null;
-                LazyTraceback savedTraceback = null;
-                Object savedNativeException = null;
-                if (threadState.getCurrentException() != null) {
-                    savedException = threadState.getCurrentException();
-                    savedTraceback = threadState.getCurrentTraceback();
-                    threadState.clearCurrentException();
-                    Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
-                    if (nativeThreadState != null) {
-                        savedNativeException = CStructAccess.ReadPointerNode.readUncached(nativeThreadState, CFields.PyThreadState__current_exception);
-                        CStructAccess.WritePointerNode.writeUncached(nativeThreadState, CFields.PyThreadState__current_exception, 0L);
-                    }
-                }
+                Object savedException = CExtCommonNodes.ReadAndClearNativeException.executeUncached(threadState);
                 try {
                     while (true) {
                         Object entry = queue.poll();
@@ -518,12 +504,9 @@ public abstract class CApiTransitions {
                         }
                     }
                 } finally {
-                    if (savedException != null) {
-                        threadState.setCurrentException(savedException, savedTraceback);
-                        Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
-                        if (nativeThreadState != null) {
-                            CStructAccess.WritePointerNode.writeUncached(nativeThreadState, CFields.PyThreadState__current_exception, savedNativeException);
-                        }
+                    CExtCommonNodes.ReadAndClearNativeException.executeUncached(threadState);
+                    if (savedException != PNone.NO_VALUE) {
+                        CExtCommonNodes.TransformExceptionToNativeNode.executeUncached(savedException);
                     }
                 }
             }

@@ -77,8 +77,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ClearCurrentExceptionNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
@@ -121,6 +121,7 @@ import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -149,7 +150,6 @@ import com.oracle.truffle.api.dsl.InlineSupport.RequiredField;
 import com.oracle.truffle.api.dsl.InlineSupport.StateField;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -735,8 +735,6 @@ public abstract class ExternalFunctionNodes {
         static Object invoke(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments,
                         @Cached(value = "createFor(this)", uncached = "getUncached()") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "2") InteropLibrary lib) {
-
-            assert threadState.getCurrentException() == null;
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
@@ -2225,15 +2223,15 @@ public abstract class ExternalFunctionNodes {
         static Object doGeneric(PythonThreadState state, @SuppressWarnings("unused") TruffleString name, Object result,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("result") InteropLibrary lib,
-                        @Cached ClearCurrentExceptionNode clearCurrentExceptionNode,
+                        @Cached CExtCommonNodes.ReadAndClearNativeException readAndClearNativeException,
                         @Cached PRaiseNode raiseNode) {
             if (lib.isNull(result)) {
-                AbstractTruffleException currentException = state.getCurrentException();
+                Object currentException = readAndClearNativeException.execute(inliningTarget, state);
                 // if no exception occurred, the iterator is exhausted -> raise StopIteration
-                if (currentException == null) {
+                if (currentException == PNone.NO_VALUE) {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
                 } else {
-                    throw clearCurrentExceptionNode.getCurrentExceptionForReraise(inliningTarget, state);
+                    throw PException.fromObject(currentException, inliningTarget, false);
                 }
             }
             return result;

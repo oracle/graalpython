@@ -68,6 +68,10 @@ public abstract class PyLongAsLongNode extends PNodeWithContext {
         return execute(frame, this, object);
     }
 
+    public static long executeUncached(Object object) {
+        return PyLongAsLongNodeGen.getUncached().execute(null, null, object);
+    }
+
     public abstract long execute(Frame frame, Node inliningTarget, Object object);
 
     @Specialization

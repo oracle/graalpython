@@ -764,7 +764,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     throw checkThrowableBeforeNative(t, "SetAttrWrapper", getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return -1;
             } finally {
                 CApiTiming.exit(timing);

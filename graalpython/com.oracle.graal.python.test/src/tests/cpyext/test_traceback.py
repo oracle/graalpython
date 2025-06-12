@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -70,6 +70,7 @@ class TestTraceback(unittest.TestCase):
             Tester.test(frame)
         except RuntimeError as e:
             assert e.__traceback__
+            assert e.__traceback__.tb_frame is sys._getframe(0)
             assert e.__traceback__.tb_next
             assert e.__traceback__.tb_next.tb_frame is frame
             assert e.__traceback__.tb_next.tb_next is None

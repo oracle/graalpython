@@ -124,9 +124,6 @@ import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
-import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -137,9 +134,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNode;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
-import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
-import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
-import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -320,12 +314,6 @@ public final class PythonContext extends Python3Core {
 
         WeakReference<PLock> sentinelLock;
 
-        /* corresponds to 'PyThreadState.curexc_value' */
-        private AbstractTruffleException currentException;
-
-        /* corresponds to 'PyThreadState.curexc_traceback' */
-        private LazyTraceback currentTraceback;
-
         /* corresponds to 'PyThreadState.exc_info' */
         private AbstractTruffleException caughtException = PException.NO_EXCEPTION;
 
@@ -428,59 +416,6 @@ public final class PythonContext extends Python3Core {
         @TruffleBoundary
         void reprLeave(Object item) {
             reprObjectSet.remove(item);
-        }
-
-        public AbstractTruffleException getCurrentException() {
-            return currentException;
-        }
-
-        public void clearCurrentException() {
-            this.currentException = null;
-            this.currentTraceback = null;
-        }
-
-        public void setCurrentException(AbstractTruffleException currentException) {
-            this.currentException = currentException;
-            if (currentException instanceof PException pe && pe.getEscapedException() instanceof PBaseException pythonException) {
-                this.currentTraceback = pythonException.getTraceback();
-            } else {
-                Object exceptionObject = GetEscapedExceptionNode.executeUncached(currentException);
-                Object tb = ExceptionNodes.GetTracebackNode.executeUncached(exceptionObject);
-                this.currentTraceback = tb instanceof PTraceback ptb ? new LazyTraceback(ptb) : null;
-            }
-        }
-
-        public void setCurrentException(AbstractTruffleException currentException, LazyTraceback currentTraceback) {
-            this.currentException = currentException;
-            this.currentTraceback = currentTraceback;
-        }
-
-        public AbstractTruffleException getCurrentExceptionForReraise() {
-            syncTracebackToException();
-            if (currentException instanceof PException pe) {
-                return pe.getExceptionForReraise(false);
-            } else {
-                return currentException;
-            }
-        }
-
-        public void syncTracebackToException() {
-            if (currentException instanceof PException pe) {
-                if (pe.getUnreifiedException() instanceof PBaseException pythonException) {
-                    pythonException.setTraceback(currentTraceback);
-                } else {
-                    PTraceback materialized = currentTraceback != null ? MaterializeLazyTracebackNode.executeUncached(currentTraceback) : null;
-                    ExceptionNodes.SetTracebackNode.executeUncached(pe.getUnreifiedException(), materialized != null ? materialized : PNone.NONE);
-                }
-            }
-        }
-
-        public LazyTraceback getCurrentTraceback() {
-            return currentTraceback;
-        }
-
-        public void setCurrentTraceback(LazyTraceback currentTraceback) {
-            this.currentTraceback = currentTraceback;
         }
 
         public AbstractTruffleException getCaughtException() {
@@ -1792,7 +1727,6 @@ public final class PythonContext extends Python3Core {
             patchPackagePaths(T_STD_LIB_PLACEHOLDER, getStdlibHome());
         }
 
-        applyToAllThreadStates(ts -> ts.clearCurrentException());
         isInitialized = true;
     }
 
