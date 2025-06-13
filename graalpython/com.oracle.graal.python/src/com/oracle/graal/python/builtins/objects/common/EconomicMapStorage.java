@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Speci
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.DictKey;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
-import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutUnsafeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -73,21 +72,21 @@ public class EconomicMapStorage extends HashingStorage {
     }
 
     public static EconomicMapStorage createWithSideEffects() {
-        return new EconomicMapStorage(4, true);
+        return new EconomicMapStorage(4);
     }
 
     public static EconomicMapStorage create(int initialCapacity) {
-        return new EconomicMapStorage(initialCapacity, false);
+        return new EconomicMapStorage(initialCapacity);
     }
 
     final ObjectHashMap map;
 
-    private EconomicMapStorage(int initialCapacity, boolean hasSideEffects) {
-        this.map = new ObjectHashMap(initialCapacity, hasSideEffects);
+    private EconomicMapStorage(int initialCapacity) {
+        this.map = new ObjectHashMap(initialCapacity);
     }
 
     private EconomicMapStorage() {
-        this(4, false);
+        this(4);
     }
 
     public EconomicMapStorage(ObjectHashMap original, boolean copy) {
@@ -96,14 +95,14 @@ public class EconomicMapStorage extends HashingStorage {
 
     @TruffleBoundary
     public static EconomicMapStorage create(LinkedHashMap<String, Object> map) {
-        EconomicMapStorage result = new EconomicMapStorage(map.size(), false);
+        EconomicMapStorage result = new EconomicMapStorage(map.size());
         putAllUncached(map, result);
         return result;
     }
 
     public static EconomicMapStorage createGeneric(LinkedHashMap<Object, Object> map) {
         CompilerAsserts.neverPartOfCompilation();
-        EconomicMapStorage result = new EconomicMapStorage(map.size(), false);
+        EconomicMapStorage result = new EconomicMapStorage(map.size());
         putAllUncachedGeneric(map, result);
         return result;
     }
@@ -140,7 +139,7 @@ public class EconomicMapStorage extends HashingStorage {
         return new EconomicMapStorage(this.map, true);
     }
 
-    protected void setValueForAllKeys(VirtualFrame frame, Node inliningTarget, Object value, PutUnsafeNode putNode, InlinedLoopConditionProfile loopProfile) {
+    protected void setValueForAllKeys(VirtualFrame frame, Node inliningTarget, Object value, ObjectHashMap.PutNode putNode, InlinedLoopConditionProfile loopProfile) {
         MapCursor cursor = map.getEntries();
         final int size = map.size();
         loopProfile.profileCounted(inliningTarget, size);
@@ -152,7 +151,7 @@ public class EconomicMapStorage extends HashingStorage {
 
     @TruffleBoundary
     public void putUncached(TruffleString key, Object value) {
-        PutUnsafeNode.putUncached(this.map, key, PyObjectHashNode.hash(key, HashCodeNode.getUncached()), value);
+        ObjectHashMap.PutNode.putUncached(this.map, key, PyObjectHashNode.hash(key, HashCodeNode.getUncached()), value);
     }
 
     @TruffleBoundary
@@ -162,7 +161,7 @@ public class EconomicMapStorage extends HashingStorage {
 
     @TruffleBoundary
     public void putUncached(int key, Object value) {
-        PutUnsafeNode.putUncached(this.map, key, PyObjectHashNode.hash(key), value);
+        ObjectHashMap.PutNode.putUncached(this.map, key, PyObjectHashNode.hash(key), value);
     }
 
     @TruffleBoundary
@@ -214,7 +213,7 @@ public class EconomicMapStorage extends HashingStorage {
         @Specialization
         static void doIt(Node inliningTarget, HashingStorage self, TruffleString key, Object value,
                         @Cached PyObjectHashNode hashNode,
-                        @Cached PutUnsafeNode putNode) {
+                        @Cached ObjectHashMap.PutNode putNode) {
             putNode.put(null, inliningTarget, ((EconomicMapStorage) self).map, key, hashNode.execute(null, inliningTarget, key), value);
         }
     }

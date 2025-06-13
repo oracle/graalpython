@@ -66,7 +66,7 @@ public abstract class MakeSetStorageNode extends Node {
                     @Cached PyObjectHashNode hashNode,
                     @Cached PutNode putNode) {
         int profiledLen = lengthProfile.profile(inliningTarget, elements.length);
-        ObjectHashMap map = new ObjectHashMap(profiledLen, false);
+        ObjectHashMap map = new ObjectHashMap(profiledLen);
         for (int i = 0; i < profiledLen; i++) {
             Object key = elements[i];
             long keyHash = hashNode.execute(frame, inliningTarget, key);

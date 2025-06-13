@@ -5619,7 +5619,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static ObjectHashMap moveFromStackToSetHashMap(VirtualFrame virtualFrame, int start, int stop, ObjHashMapPutNode putNode) {
         CompilerAsserts.partialEvaluationConstant(start);
         CompilerAsserts.partialEvaluationConstant(stop);
-        var result = new ObjectHashMap(stop - start, false);
+        var result = new ObjectHashMap(stop - start);
         for (int i = start; i < stop; i++) {
             putNode.execute(virtualFrame, result, virtualFrame.getObject(i), PNone.NONE);
             virtualFrame.clear(i);
@@ -5631,7 +5631,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static ObjectHashMap moveFromStackToDictHashMap(VirtualFrame virtualFrame, int start, int stop, ObjHashMapPutNode putNode) {
         CompilerAsserts.partialEvaluationConstant(start);
         CompilerAsserts.partialEvaluationConstant(stop);
-        var result = new ObjectHashMap((stop - start) / 2, false);
+        var result = new ObjectHashMap((stop - start) / 2);
         for (int i = start; i + 1 < stop; i += 2) {
             putNode.execute(virtualFrame, result, virtualFrame.getObject(i), virtualFrame.getObject(i + 1));
             virtualFrame.clear(i);
