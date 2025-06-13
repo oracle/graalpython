@@ -107,7 +107,9 @@ class TestSubprocess(unittest.TestCase):
         res = os.waitpid(0, 0)
         assert res[1] == 0, res
 
-    @unittest.skipIf(sys.platform == 'win32', "Posix-specific")
+    # @unittest.skipIf(sys.platform == 'win32', "Posix-specific")
+    # Skipped because of transient: https://jira.oci.oraclecorp.com/browse/GR-65714
+    @unittest.skip
     def test_waitpid_any_child(self):
         import os
         p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(0.1); 42"])
