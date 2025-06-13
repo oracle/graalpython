@@ -1,4 +1,4 @@
-# Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,6 +37,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-if [ -n "$GITHUB_RUN_ID" ]; then
-    brew install libjpeg libtiff little-cms2 openjpeg webp
+export MACOSX_DEPLOYMENT_TARGET=11.0
+
+if [ -n "$1" ]; then
+    pip wheel "grpcio==$1"
+else
+    pip wheel grpcio
 fi
