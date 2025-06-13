@@ -127,6 +127,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.S_IFSOCK;
 import static com.oracle.graal.python.runtime.PosixConstants.TCP_NODELAY;
 import static com.oracle.graal.python.runtime.PosixConstants.W_OK;
 import static com.oracle.graal.python.runtime.PosixConstants.X_OK;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_INT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -724,6 +725,17 @@ public final class EmulatedPosixSupport extends PosixResources {
             }
         }
         return channels;
+    }
+
+    @ExportMessage
+    public boolean poll(int fd, boolean forWriting, Timeval timeout) throws PosixException {
+        SelectResult r = select(forWriting ? EMPTY_INT_ARRAY : new int[]{fd},
+                        forWriting ? new int[]{fd} : EMPTY_INT_ARRAY, EMPTY_INT_ARRAY, timeout);
+        if (forWriting) {
+            return r.getWriteFds().length > 0 && r.getWriteFds()[0];
+        } else {
+            return r.getReadFds().length > 0 && r.getReadFds()[0];
+        }
     }
 
     @ExportMessage

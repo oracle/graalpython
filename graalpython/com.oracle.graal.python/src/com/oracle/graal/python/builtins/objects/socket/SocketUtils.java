@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,14 +44,12 @@ import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EAG
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EINTR;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EWOULDBLOCK;
 import static com.oracle.graal.python.builtins.objects.socket.PSocket.INVALID_FD;
-import static com.oracle.graal.python.util.PythonUtils.EMPTY_INT_ARRAY;
 
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.TimeUtils;
@@ -101,12 +99,9 @@ public class SocketUtils {
                 try {
                     gil.release(true);
                     try {
-                        int[] fds = new int[]{socket.getFd()};
-                        int[] readfds = writing ? EMPTY_INT_ARRAY : fds;
-                        int[] writefds = writing ? fds : EMPTY_INT_ARRAY;
-                        SelectResult selectResult = posixLib.select(posixSupport, readfds, writefds, EMPTY_INT_ARRAY, selectTimeout);
-                        boolean[] resultFds = writing ? selectResult.getWriteFds() : selectResult.getReadFds();
-                        if (resultFds.length == 0 || !resultFds[0]) {
+                        // CPython uses poll for a single fd when available here, so even higher fd
+                        // socket connections can be established
+                        if (!posixLib.poll(posixSupport, socket.getFd(), writing, selectTimeout)) {
                             throw constructAndRaiseNode.get(inliningTarget).raiseTimeoutError(frame, ErrorMessages.TIMED_OUT);
                         }
                     } finally {

@@ -84,6 +84,9 @@
 #endif
 
 #ifndef _WIN32
+#include <time.h>
+#include <poll.h>
+#include <limits.h>
 #include <sys/resource.h>
 #endif
 
@@ -198,7 +201,6 @@ static void fill_fd_set(fd_set *set, int32_t* fds, int32_t len) {
 int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen,
     int32_t* writefds, int32_t writefdsLen, int32_t* errfds, int32_t errfdsLen,
     int64_t timeoutSec, int64_t timeoutUsec, int8_t* selected) {
-
     fd_set readfdsSet, writefdsSet, errfdsSet;
     fill_fd_set(&readfdsSet, readfds, readfdsLen);
     fill_fd_set(&writefdsSet, writefds, writefdsLen);
@@ -213,6 +215,38 @@ int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen,
     fill_select_result(writefds, writefdsLen, &writefdsSet, selected, readfdsLen);
     fill_select_result(errfds, errfdsLen, &errfdsSet, selected, readfdsLen + writefdsLen);
     return (int32_t) result;
+}
+
+int32_t call_poll(int32_t fd, int32_t writing, int64_t timeoutSec, int64_t timeoutUsec) {
+#ifdef _WIN32
+    // for windows, use select() as a worse fallback
+    int selected[2] = {0, 0};
+    return call_select(1,
+                       writing ? NULL : &fd, writing ? 0 : 1,
+                       writing ? &fd : NULL, writing ? 1 : 0,
+                       NULL, 0,
+                       timeoutSec, timeoutUsec, &selected);
+#else
+    struct pollfd pollfd;
+    pollfd.fd = fd;
+    pollfd.events = writing ? POLLOUT : POLLIN;
+
+    int timeout_ms;
+    if (timeoutSec < 0) {
+        timeout_ms = -1;
+    } else if (timeoutSec > INT_MAX / 1000) {
+        errno = EINVAL;
+        return -1;
+    } else {
+        int64_t timeout_ms_64 = timeoutSec * 1000 + timeoutUsec / 1000;
+        if (timeout_ms_64 > INT_MAX) {
+            errno = EINVAL;
+            return -1;
+        }
+        timeout_ms = (int)timeout_ms_64;
+    }
+    return poll(&pollfd, 1, timeout_ms);
+#endif
 }
 
 int64_t call_lseek(int32_t fd, int64_t offset, int32_t whence) {
