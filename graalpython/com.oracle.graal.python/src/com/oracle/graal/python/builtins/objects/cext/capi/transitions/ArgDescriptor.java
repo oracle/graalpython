@@ -220,6 +220,7 @@ public enum ArgDescriptor {
     PyFunctionObject(ArgBehavior.PyObject, "PyFunctionObject*"),
     PyFrameConstructor("PyFrameConstructor*"),
     PyFrameObject(ArgBehavior.PyObject, "PyFrameObject*"),
+    PyFrameObjectBorrowed(ArgBehavior.PyObjectBorrowed, "PyFrameObject*"),
     PyFrameObjectTransfer(ArgBehavior.PyObject, "PyFrameObject*", true),
     _PyFrameEvalFunction("_PyFrameEvalFunction"),
     _PyInterpreterFrame("struct _PyInterpreterFrame*"),
