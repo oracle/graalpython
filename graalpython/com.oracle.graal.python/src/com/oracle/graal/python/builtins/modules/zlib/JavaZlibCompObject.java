@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,50 +40,36 @@
  */
 package com.oracle.graal.python.builtins.modules.zlib;
 
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
-public abstract class ZLibCompObject extends PythonBuiltinObject {
+public abstract class JavaZlibCompObject extends ZLibCompObject {
 
-    protected volatile boolean isInitialized;
-    private boolean eof;
-    private PBytes unusedData;
-    private PBytes unconsumedTail;
+    protected final byte[] zdict;
+    protected final int wbits;
 
-    public ZLibCompObject(Object cls, Shape instanceShape) {
+    protected byte[] inputData; // helper for copy operation
+    protected int inputLen;
+
+    protected boolean canCopy; // to assist if copying is allowed
+
+    public JavaZlibCompObject(Object cls, Shape instanceShape, int wbits, byte[] zdict) {
         super(cls, instanceShape);
-        this.isInitialized = true;
-        this.eof = false;
-        this.unusedData = null;
-        this.unconsumedTail = null;
+        this.zdict = zdict;
+        this.wbits = wbits;
+        this.inputData = null;
+        this.canCopy = true;
     }
 
-    public final boolean isInitialized() {
-        return isInitialized;
+    public void setUninitialized() {
+        isInitialized = false;
     }
 
-    public final boolean isEof() {
-        return eof;
+    public byte[] getZdict() {
+        return zdict;
     }
 
-    public final void setEof(boolean eof) {
-        this.eof = eof;
+    public boolean canCopy() {
+        return canCopy;
     }
 
-    public final PBytes getUnusedData() {
-        return unusedData;
-    }
-
-    public final void setUnusedData(PBytes unusedData) {
-        this.unusedData = unusedData;
-    }
-
-    public final PBytes getUnconsumedTail() {
-        return unconsumedTail;
-    }
-
-    public final void setUnconsumedTail(PBytes unconsumedTail) {
-        this.unconsumedTail = unconsumedTail;
-    }
 }

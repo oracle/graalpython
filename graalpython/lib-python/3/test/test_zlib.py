@@ -9,6 +9,16 @@ import random
 import sys
 from test.support import bigmemtest, _1G, _4G, is_s390x
 
+try:
+    __graalpython__.zlib_module_backend()
+except:
+    class GP:
+        def zlib_module_backend(self):
+            return 'cpython'
+
+        def _disable_native_zlib(self):
+            return None
+    __graalpython__ = GP()
 
 zlib = import_helper.import_module('zlib')
 
@@ -811,6 +821,7 @@ class CompressObjectTestCase(BaseCompressTestCase, unittest.TestCase):
         finally:
             comp = uncomp = data = None
 
+    @unittest.skipUnless(__graalpython__.zlib_module_backend() != 'java', 'not supported in the java implementation of zlib')
     def test_wbits(self):
         # wbits=0 only supported since zlib v1.2.3.5
         supports_wbits_0 = ZLIB_RUNTIME_VERSION_TUPLE >= (1, 2, 3, 5)

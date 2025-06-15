@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -334,8 +335,10 @@ public class NFIZlibSupport {
         }
     }
 
+    @TruffleBoundary
     public void notAvailable() {
         if (available) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             CompilerAsserts.neverPartOfCompilation("Checking NFIZlibSupport availability should only be done during initialization.");
             available = false;
         }
@@ -343,6 +346,15 @@ public class NFIZlibSupport {
 
     public boolean isAvailable() {
         return available;
+    }
+
+    @TruffleBoundary
+    public void setAvailable() {
+        if (!available && typedNativeLib != null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            CompilerAsserts.neverPartOfCompilation("Checking NFIZlibSupport availability should only be done during initialization.");
+            available = true;
+        }
     }
 
     /**

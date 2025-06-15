@@ -41,6 +41,7 @@
 
 package com.oracle.graal.python.builtins.modules.zlib;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.zlib.ZlibNodes.Z_OK;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -48,14 +49,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibErro
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.crc32;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static java.util.zip.Deflater.DEFAULT_COMPRESSION;
 
-import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.zip.Adler32;
 import java.util.zip.CRC32;
-import java.util.zip.DataFormatException;
-import java.util.zip.Deflater;
-import java.util.zip.Inflater;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -64,7 +62,6 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForN
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -529,26 +526,26 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
                 return PythonContext.get(this).getNFIZlibSupport().isAvailable();
             }
 
+            protected static boolean isValidLevel(int level) {
+                return !((level < 0 || level > 9) && level != DEFAULT_COMPRESSION);
+            }
+
             @Specialization(guards = "useNative()")
             static byte[] doNative(Node inliningTarget, byte[] bytes, int length, int level, int wbits,
                             @Cached ZlibNodes.ZlibNativeCompress nativeCompress) {
                 return nativeCompress.execute(inliningTarget, bytes, length, level, wbits);
             }
 
-            @Specialization(guards = "!useNative()")
-            @TruffleBoundary
-            static byte[] doJava(byte[] bytes, int length, int level, int wbits) {
-                Deflater compresser = new Deflater(level, wbits < 0 || wbits > (MAX_WBITS + 9));
-                compresser.setInput(bytes, 0, length);
-                compresser.finish();
-                byte[] resultArray = new byte[DEF_BUF_SIZE];
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                while (!compresser.finished()) {
-                    int howmany = compresser.deflate(resultArray);
-                    baos.write(resultArray, 0, howmany);
-                }
-                compresser.end();
-                return baos.toByteArray();
+            @Specialization(guards = {"!useNative()", "isValidLevel(level)"})
+            static byte[] doJava(byte[] bytes, int length, int level, int wbits,
+                            @Bind("this") Node inliningTarget) {
+                return JavaCompress.compressFinish(bytes, length, level, wbits, inliningTarget);
+            }
+
+            @Specialization(guards = {"!useNative()", "!isValidLevel(level)"})
+            static byte[] doJavaLevelError(byte[] bytes, int length, int level, int wbits,
+                            @Bind("this") Node inliningTarget) {
+                throw PRaiseNode.raiseStatic(inliningTarget, ZLibError, ErrorMessages.BAD_COMPRESSION_LEVEL);
             }
         }
     }
@@ -606,28 +603,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
             @Specialization(guards = "!useNative()")
             @TruffleBoundary
             static byte[] doJava(Node inliningTarget, byte[] bytes, int length, int wbits, int bufsize) {
-                try {
-                    int bufsize1 = bufsize == 0 ? 1 : bufsize;
-                    // zlib can decompress all those formats:
-                    // to (de-)compress deflate format, use wbits = -zlib.MAX_WBITS
-                    // to (de-)compress zlib format, use wbits = zlib.MAX_WBITS
-                    // to (de-)compress gzip format, use wbits = zlib.MAX_WBITS | 16
-                    Inflater decompresser = new Inflater(wbits < 0 || (wbits & 16) == 16);
-                    decompresser.setInput(bytes, 0, length);
-                    byte[] resultArray = new byte[bufsize1];
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    while (!decompresser.finished()) {
-                        int howmany = decompresser.inflate(resultArray);
-                        if (howmany == 0 && decompresser.needsInput()) {
-                            throw PRaiseNode.raiseStatic(inliningTarget, ZLibError, ErrorMessages.ERROR_5_WHILE_DECOMPRESSING);
-                        }
-                        baos.write(resultArray, 0, howmany);
-                    }
-                    decompresser.end();
-                    return baos.toByteArray();
-                } catch (DataFormatException e) {
-                    throw PRaiseNode.raiseStatic(inliningTarget, ZLibError, ErrorMessages.WHILE_PREPARING_TO_S_DATA, "decompress");
-                }
+                return JavaDecompress.decompress(bytes, length, wbits, bufsize == 0 ? 1 : bufsize, inliningTarget);
             }
         }
     }
@@ -688,31 +664,26 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
          */
         @TruffleBoundary
         @Specialization(guards = {"method == DEFLATED", "!useNative()", "isValidWBitRange(wbits)"})
-        static Object doJava(int level, @SuppressWarnings("unused") int method, int wbits, @SuppressWarnings("unused") int memLevel, int strategy, byte[] zdict) {
-            // wbits < 0: generate a RAW stream, i.e., no wrapping
-            // wbits 25..31: gzip container, i.e., no wrapping
-            // Otherwise: wrap stream with zlib header and trailer
-            Deflater deflater = new Deflater(level, wbits < 0 || wbits > (MAX_WBITS + 9));
-
-            deflater.setStrategy(strategy);
-            if (zdict.length > 0) {
-                deflater.setDictionary(zdict);
-            }
-            return PFactory.createJavaZLibCompObjectCompress(PythonLanguage.get(null), deflater, level, wbits, strategy, zdict);
+        static Object doJava(int level, @SuppressWarnings("unused") int method, int wbits, @SuppressWarnings("unused") int memLevel, int strategy, byte[] zdict,
+                        @Bind PythonLanguage language) {
+            JavaCompress compress = PFactory.createJavaZLibCompObjectCompress(language, level, wbits, strategy, zdict);
+            compress.setStrategy();
+            compress.setDictionary();
+            return compress;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"method == DEFLATED", "!useNative()", "!isValidWBitRange(wbits)"})
         static Object invalid(int level, int method, int wbits, int memLevel, int strategy, byte[] zdict,
                         @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_INITIALIZATION_OPTION);
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.INVALID_INITIALIZATION_OPTION);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"method != DEFLATED"})
         static Object methodErr(int level, int method, int wbits, int memLevel, int strategy, byte[] zdict,
                         @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFLATED_ALLOWED_AS_METHOD, DEFLATED, method);
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.ONLY_DEFLATED_ALLOWED_AS_METHOD, DEFLATED, method);
         }
     }
 
@@ -765,12 +736,11 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
             // wbits 25..31: gzip container, i.e., no wrapping
             // Otherwise: wrap stream with zlib header and trailer
             boolean isRAW = wbits < 0;
-            Inflater inflater = new Inflater(isRAW || wbits > (MAX_WBITS + 9));
-            if (isRAW && zdict.length > 0) {
-                inflater.setDictionary(zdict);
-            }
             PythonLanguage language = PythonLanguage.get(null);
-            ZLibCompObject obj = PFactory.createJavaZLibCompObjectDecompress(language, inflater, wbits, zdict);
+            JavaDecompress obj = PFactory.createJavaZLibCompObjectDecompress(language, wbits, zdict);
+            if (isRAW) {
+                obj.setDictionary();
+            }
             obj.setUnusedData(PFactory.createEmptyBytes(language));
             obj.setUnconsumedTail(PFactory.createEmptyBytes(language));
             return obj;
@@ -780,7 +750,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!useNative()", "!isValidWBitRange(wbits)"})
         static Object invalid(int wbits, byte[] zdict,
                         @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_INITIALIZATION_OPTION);
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.INVALID_INITIALIZATION_OPTION);
         }
     }
 }
