@@ -1,3 +1,96 @@
+diff --git a/c10/cuda/CUDACachingAllocator.cpp b/c10/cuda/CUDACachingAllocator.cpp
+index 4a1e4654f..8b0ea304c 100644
+--- a/c10/cuda/CUDACachingAllocator.cpp
++++ b/c10/cuda/CUDACachingAllocator.cpp
+@@ -1099,6 +1099,8 @@ class DeviceCachingAllocator {
+   // XXX - maybe we should generalize and have multiple events
+   std::vector<OutOfMemoryObserver> oom_observers_;
+ 
++  std::vector<OutOfMemoryRetrier> oom_retriers_;
++
+   std::vector<AllocatorTraceTracker> trace_trackers_;
+ 
+   // mapping from block to a stream_set, containing streams on which the block
+@@ -1167,6 +1169,10 @@ class DeviceCachingAllocator {
+     oom_observers_.emplace_back(std::move(observer));
+   }
+ 
++  void attachOutOfMemoryRetrier(OutOfMemoryRetrier retrier) {
++    oom_retriers_.emplace_back(std::move(retrier));
++  }
++
+   void attachAllocatorTraceTracker(AllocatorTraceTracker tracker) {
+     std::unique_lock<std::recursive_mutex> lock(mutex);
+     trace_trackers_.emplace_back(std::move(tracker));
+@@ -1191,6 +1197,9 @@ class DeviceCachingAllocator {
+     // to have...
+     auto context = maybeGatherContext(RecordContext::STATE);
+ 
++    int retries = 10;
++retry:
++
+     std::unique_lock<std::recursive_mutex> lock(mutex);
+ 
+     if (C10_LIKELY(captures_underway.empty())) {
+@@ -1244,6 +1253,13 @@ class DeviceCachingAllocator {
+     }
+ 
+     if (!block_found) {
++      if (retries && !oom_retriers_.empty()) {
++          retries -= 1;
++          for (const auto& retrier : oom_retriers_) {
++              retrier();
++          }
++          goto retry;
++      }
+       // For any error code other than cudaErrorMemoryAllocation,
+       // alloc_block should have thrown an exception already.
+       TORCH_INTERNAL_ASSERT(params.err == cudaErrorMemoryAllocation);
+@@ -3486,6 +3502,12 @@ class NativeCachingAllocator : public CUDAAllocator {
+     }
+   }
+ 
++  void attachOutOfMemoryRetrier(OutOfMemoryRetrier retrier) override {
++    for (auto& allocator : device_allocator) {
++      allocator->attachOutOfMemoryRetrier(retrier);
++    }
++  }
++
+   void attachAllocatorTraceTracker(AllocatorTraceTracker tracker) override {
+     for (auto& allocator : device_allocator) {
+       allocator->attachAllocatorTraceTracker(tracker);
+diff --git a/c10/cuda/CUDACachingAllocator.h b/c10/cuda/CUDACachingAllocator.h
+index df31a11da..55b8e6225 100644
+--- a/c10/cuda/CUDACachingAllocator.h
++++ b/c10/cuda/CUDACachingAllocator.h
+@@ -191,6 +191,8 @@ using OutOfMemoryObserver = std::function<void(
+ 
+ using AllocatorTraceTracker = std::function<void(const TraceEntry&)>;
+ 
++using OutOfMemoryRetrier = std::function<void()>;
++
+ struct ShareableHandle {
+   ptrdiff_t offset;
+   std::string handle;
+@@ -268,6 +270,7 @@ class CUDAAllocator : public Allocator {
+   virtual void recordAnnotation(
+       const std::vector<std::pair<std::string, std::string>>& md) {}
+   virtual void attachOutOfMemoryObserver(OutOfMemoryObserver observer) = 0;
++  virtual void attachOutOfMemoryRetrier(OutOfMemoryRetrier retrier) {};
+ 
+   // Attached AllocatorTraceTracker callbacks will be called while the
+   // per-device allocator lock is held. Any additional locks taken from within
+@@ -440,6 +443,10 @@ inline void attachOutOfMemoryObserver(OutOfMemoryObserver observer) {
+   return get()->attachOutOfMemoryObserver(std::move(observer));
+ }
+ 
++inline void attachOutOfMemoryRetrier(OutOfMemoryRetrier retrier) {
++  return get()->attachOutOfMemoryRetrier(std::move(retrier));
++}
++
+ inline void attachAllocatorTraceTracker(AllocatorTraceTracker tracker) {
+   return get()->attachAllocatorTraceTracker(std::move(tracker));
+ }
 diff --git a/functorch/csrc/dim/dim.cpp b/functorch/csrc/dim/dim.cpp
 index 23179ad0e..ad9dbdbf7 100644
 --- a/functorch/csrc/dim/dim.cpp
@@ -567,6 +660,28 @@ index 7efab1dcf..67b3cf44e 100644
        throw python_error();
      }
      stop = clip_val(stop);
+diff --git a/torch/csrc/cuda/Module.cpp b/torch/csrc/cuda/Module.cpp
+index b81ff5d4e..c44f0b617 100644
+--- a/torch/csrc/cuda/Module.cpp
++++ b/torch/csrc/cuda/Module.cpp
+@@ -1516,6 +1516,17 @@ static PyObject* THCPModule_initExtension(PyObject* self, PyObject* noargs) {
+   poison_fork();
+   at::globalContext().lazyInitDevice(c10::DeviceType::CUDA);
+ 
++  // GraalPy change
++  auto retrier = [](){
++      py::gil_scoped_acquire g;
++      PyObject* gcmodule = PyImport_ImportModule("gc");
++      if (gcmodule) {
++          PyObject_CallMethod(gcmodule, "collect", NULL);
++      }
++      PyErr_Clear();
++  };
++  c10::cuda::CUDACachingAllocator::attachOutOfMemoryRetrier(std::move(retrier));
++
+   auto m = THPObjectPtr(PyImport_ImportModule("torch.cuda"));
+   if (!m)
+     throw python_error();
 diff --git a/torch/csrc/dynamo/cpython_defs.c b/torch/csrc/dynamo/cpython_defs.c
 index b68ef894a..0837d95be 100644
 --- a/torch/csrc/dynamo/cpython_defs.c
@@ -812,3 +927,18 @@ index 876186743..041348257 100644
      auto new_frame = PyFrame_GetBack(frame);
      Py_DECREF(frame);
      frame = new_frame;
+diff --git a/torch/csrc/profiler/python/combined_traceback.cpp b/torch/csrc/profiler/python/combined_traceback.cpp
+index f9e20541e..f5d4d1375 100644
+--- a/torch/csrc/profiler/python/combined_traceback.cpp
++++ b/torch/csrc/profiler/python/combined_traceback.cpp
+@@ -86,8 +86,8 @@ struct PythonTraceback : public CapturedTraceback::Python {
+     }
+     for (const auto& f : to_symbolize) {
+       auto f_code = (PyCodeObject*)f.code;
+-      py::handle filename = f_code->co_filename;
+-      py::handle funcname = f_code->co_name;
++      py::object filename = pybind11::reinterpret_steal<py::object>(PyCode_GetFileName(f_code));
++      py::object funcname = pybind11::reinterpret_steal<py::object>(PyCode_GetName(f_code));
+       auto lineno = PyCode_Addr2Line(f_code, f.lasti);
+       result.tracebacks.emplace_back();
+       result.tracebacks.back().push_back(result.all_frames.size());
