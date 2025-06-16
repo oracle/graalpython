@@ -1124,6 +1124,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
             run_mx(["build"], env={**os.environ, **LATEST_JAVA_HOME})
+            run_mx(["build", "--only", "JLINE3"], env={**os.environ})
             if WIN32:
                 punittest(
                     [
