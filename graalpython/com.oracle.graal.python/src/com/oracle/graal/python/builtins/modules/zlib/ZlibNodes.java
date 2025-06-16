@@ -41,8 +41,6 @@
 package com.oracle.graal.python.builtins.modules.zlib;
 
 import static com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins.DEF_BUF_SIZE;
-import static com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins.Z_FINISH;
-import static com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins.Z_SYNC_FLUSH;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANT_ALLOCATE_MEMORY_FOR_S_OBJECT;
 import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_D_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_D_S_S;
@@ -68,13 +66,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemEr
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
 
-import java.io.ByteArrayOutputStream;
-import java.util.zip.DataFormatException;
-import java.util.zip.Deflater;
-import java.util.zip.Inflater;
-
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -84,7 +76,6 @@ import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -95,7 +86,6 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -123,10 +113,10 @@ public class ZlibNodes {
     @GenerateCached(false)
     public abstract static class ZlibNativeCompressObj extends PNodeWithContext {
 
-        public abstract byte[] execute(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, PythonContext context, byte[] bytes, int len);
+        public abstract byte[] execute(Node inliningTarget, NativeZlibCompObject self, PythonContext context, byte[] bytes, int len);
 
         @Specialization
-        static byte[] nativeCompress(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, PythonContext context, byte[] bytes, int len,
+        static byte[] nativeCompress(Node inliningTarget, NativeZlibCompObject self, PythonContext context, byte[] bytes, int len,
                         @Cached(inline = false) NativeLibrary.InvokeNativeFunction compressObj,
                         @Cached GetNativeBufferNode getBuffer,
                         @Cached ZlibNativeErrorHandling errorHandling) {
@@ -172,10 +162,10 @@ public class ZlibNodes {
     @GenerateCached(false)
     public abstract static class ZlibNativeDecompressObj extends PNodeWithContext {
 
-        public abstract byte[] execute(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, PythonContext context, byte[] bytes, int len, int maxLength);
+        public abstract byte[] execute(Node inliningTarget, NativeZlibCompObject self, PythonContext context, byte[] bytes, int len, int maxLength);
 
         @Specialization
-        static byte[] nativeDecompress(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, PythonContext context, byte[] bytes, int len, int maxLength,
+        static byte[] nativeDecompress(Node inliningTarget, NativeZlibCompObject self, PythonContext context, byte[] bytes, int len, int maxLength,
                         @Cached(inline = false) NativeLibrary.InvokeNativeFunction decompressObj,
                         @Cached GetNativeBufferNode getBuffer,
                         @Cached ZlibNativeErrorHandling errorHandling) {
@@ -500,10 +490,10 @@ public class ZlibNodes {
     @GenerateCached(false)
     public abstract static class NativeDeallocation extends PNodeWithContext {
 
-        public abstract void execute(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, PythonContext context, boolean isCompressObj);
+        public abstract void execute(Node inliningTarget, NativeZlibCompObject self, PythonContext context, boolean isCompressObj);
 
         @Specialization(guards = "isCompressObj")
-        static void doCompressObj(ZLibCompObject.NativeZlibCompObject self, PythonContext context,
+        static void doCompressObj(NativeZlibCompObject self, PythonContext context,
                         @SuppressWarnings("unused") boolean isCompressObj,
                         @Shared @Cached(inline = false) NativeLibrary.InvokeNativeFunction deallocateStream) {
             context.getNFIZlibSupport().deallocateStream(self.getZst(), deallocateStream);
@@ -512,7 +502,7 @@ public class ZlibNodes {
         }
 
         @Specialization(guards = "!isCompressObj")
-        static void doDecompressObj(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, PythonContext context,
+        static void doDecompressObj(Node inliningTarget, NativeZlibCompObject self, PythonContext context,
                         @SuppressWarnings("unused") boolean isCompressObj,
                         @Cached GetNativeBufferNode getUnusedDataBuffer,
                         @Cached GetNativeBufferNode getUnconsumedBuffer,
@@ -560,113 +550,6 @@ public class ZlibNodes {
             Object out = context.getEnv().asGuestValue(resultArray);
             zlibSupport.getBuffer(zst, option, out, getBuffer);
             return resultArray;
-        }
-    }
-
-    abstract static class JavaCompressNode {
-        private JavaCompressNode() {
-        }
-
-        @TruffleBoundary
-        public static byte[] execute(ZLibCompObject.JavaZlibCompObject self, int mode) {
-            byte[] result = new byte[DEF_BUF_SIZE];
-            Deflater deflater = (Deflater) self.stream;
-            int deflateMode = mode;
-            if (mode == Z_FINISH) {
-                deflateMode = Z_SYNC_FLUSH;
-                deflater.finish();
-            }
-
-            int bytesWritten = result.length;
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            while (bytesWritten == result.length) {
-                bytesWritten = deflater.deflate(result, 0, result.length, deflateMode);
-                baos.write(result, 0, bytesWritten);
-            }
-
-            if (mode == Z_FINISH) {
-                deflater.end();
-                self.setUninitialized();
-            }
-            return baos.toByteArray();
-        }
-    }
-
-    static final class JavaDecompressor {
-        @TruffleBoundary
-        private static byte[] createByteArray(ZLibCompObject.JavaZlibCompObject self, Inflater inflater, byte[] bytes, int length, int maxLength, int bufSize, Node nodeForRaise) {
-            int maxLen = maxLength == 0 ? Integer.MAX_VALUE : maxLength;
-            byte[] result = new byte[Math.min(maxLen, bufSize)];
-            boolean zdictIsSet = false;
-
-            self.setInflaterInput(bytes, length, nodeForRaise);
-
-            int bytesWritten = result.length;
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            while (baos.size() < maxLen && bytesWritten == result.length) {
-                try {
-                    int len = Math.min(maxLen - baos.size(), result.length);
-                    bytesWritten = inflater.inflate(result, 0, len);
-                    if (bytesWritten == 0 && !zdictIsSet && inflater.needsDictionary()) {
-                        if (self.getZdict().length > 0) {
-                            inflater.setDictionary(self.getZdict());
-                            zdictIsSet = true;
-                            // we inflate again with a dictionary
-                            bytesWritten = inflater.inflate(result, 0, len);
-                        } else {
-                            throw PRaiseNode.raiseStatic(nodeForRaise, ZLibError, WHILE_SETTING_ZDICT);
-                        }
-                    }
-                } catch (DataFormatException e) {
-                    throw PRaiseNode.raiseStatic(nodeForRaise, ZLibError, e);
-                }
-                baos.write(result, 0, bytesWritten);
-            }
-            return baos.toByteArray();
-        }
-
-        public static byte[] execute(VirtualFrame frame, ZLibCompObject.JavaZlibCompObject self, byte[] bytes, int length, int maxLength, int bufSize,
-                        Node inliningTarget, BytesNodes.ToBytesNode toBytesNode) {
-            Inflater inflater = (Inflater) self.stream;
-            byte[] result = createByteArray(self, inflater, bytes, length, maxLength, bufSize, inliningTarget);
-            self.setEof(isFinished(inflater));
-            byte[] unusedDataBytes = toBytesNode.execute(frame, self.getUnusedData());
-            int unconsumedTailLen = self.getUnconsumedTail().getSequenceStorage().length();
-            saveUnconsumedInput(self, bytes, length, unusedDataBytes, unconsumedTailLen, inliningTarget);
-            return result;
-        }
-
-        private static void saveUnconsumedInput(ZLibCompObject.JavaZlibCompObject self, byte[] data, int length,
-                        byte[] unusedDataBytes, int unconsumedTailLen, Node inliningTarget) {
-            Inflater inflater = (Inflater) self.stream;
-            int unusedLen = getRemaining(inflater);
-            byte[] tail = PythonUtils.arrayCopyOfRange(data, length - unusedLen, length);
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
-            if (self.isEof()) {
-                if (unconsumedTailLen > 0) {
-                    self.setUnconsumedTail(PFactory.createEmptyBytes(language));
-                }
-                if (unusedDataBytes.length > 0 && tail.length > 0) {
-                    byte[] newUnusedData = new byte[unusedDataBytes.length + tail.length];
-                    PythonUtils.arraycopy(unusedDataBytes, 0, newUnusedData, 0, unusedDataBytes.length);
-                    PythonUtils.arraycopy(tail, 0, newUnusedData, unusedDataBytes.length, tail.length);
-                    self.setUnusedData(PFactory.createBytes(language, newUnusedData));
-                } else if (tail.length > 0) {
-                    self.setUnusedData(PFactory.createBytes(language, tail));
-                }
-            } else {
-                self.setUnconsumedTail(PFactory.createBytes(language, tail));
-            }
-        }
-
-        @TruffleBoundary
-        public static int getRemaining(Inflater inflater) {
-            return inflater.getRemaining();
-        }
-
-        @TruffleBoundary
-        public static boolean isFinished(Inflater inflater) {
-            return inflater.finished();
         }
     }
 

@@ -82,6 +82,9 @@ import com.oracle.graal.python.builtins.modules.pickle.PPickler;
 import com.oracle.graal.python.builtins.modules.pickle.PPicklerMemoProxy;
 import com.oracle.graal.python.builtins.modules.pickle.PUnpickler;
 import com.oracle.graal.python.builtins.modules.pickle.PUnpicklerMemoProxy;
+import com.oracle.graal.python.builtins.modules.zlib.JavaCompress;
+import com.oracle.graal.python.builtins.modules.zlib.JavaDecompress;
+import com.oracle.graal.python.builtins.modules.zlib.NativeZlibCompObject;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressorObject;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -1203,20 +1206,12 @@ public final class PFactory {
         return trace(language, BZ2Object.createDecompressor(cls, shape));
     }
 
-    public static ZLibCompObject createJavaZLibCompObjectCompress(PythonLanguage language, Object stream, int level, int wbits, int strategy, byte[] zdict) {
-        return createJavaZLibCompObject(language, PythonBuiltinClassType.ZlibCompress, PythonBuiltinClassType.ZlibCompress.getInstanceShape(language), stream, level, wbits, strategy, zdict);
+    public static JavaCompress createJavaZLibCompObjectCompress(PythonLanguage language, int level, int wbits, int strategy, byte[] zdict) {
+        return trace(language, new JavaCompress(PythonBuiltinClassType.ZlibCompress, PythonBuiltinClassType.ZlibCompress.getInstanceShape(language), level, wbits, strategy, zdict));
     }
 
-    public static ZLibCompObject createJavaZLibCompObject(PythonLanguage language, Object cls, Shape shape, Object stream, int level, int wbits, int strategy, byte[] zdict) {
-        return trace(language, ZLibCompObject.createJava(cls, shape, stream, level, wbits, strategy, zdict));
-    }
-
-    public static ZLibCompObject createJavaZLibCompObjectDecompress(PythonLanguage language, Object stream, int wbits, byte[] zdict) {
-        return createJavaZLibCompObject(language, PythonBuiltinClassType.ZlibDecompress, PythonBuiltinClassType.ZlibDecompress.getInstanceShape(language), stream, wbits, zdict);
-    }
-
-    public static ZLibCompObject createJavaZLibCompObject(PythonLanguage language, Object cls, Shape shape, Object stream, int wbits, byte[] zdict) {
-        return trace(language, ZLibCompObject.createJava(cls, shape, stream, wbits, zdict));
+    public static JavaDecompress createJavaZLibCompObjectDecompress(PythonLanguage language, int wbits, byte[] zdict) {
+        return trace(language, new JavaDecompress(PythonBuiltinClassType.ZlibDecompress, PythonBuiltinClassType.ZlibDecompress.getInstanceShape(language), wbits, zdict));
     }
 
     public static ZLibCompObject createNativeZLibCompObjectCompress(PythonLanguage language, Object zst, NFIZlibSupport zlibSupport) {
@@ -1228,11 +1223,11 @@ public final class PFactory {
     }
 
     public static ZLibCompObject createNativeZLibCompObject(PythonLanguage language, Object cls, Shape shape, Object zst, NFIZlibSupport zlibSupport) {
-        return trace(language, ZLibCompObject.createNative(cls, shape, zst, zlibSupport));
+        return trace(language, new NativeZlibCompObject(cls, shape, zst, zlibSupport));
     }
 
-    public static ZlibDecompressorObject createJavaZlibDecompressorObject(PythonLanguage language, Object stream, int wbits, byte[] zdict) {
-        return trace(language, ZlibDecompressorObject.createJava(PythonBuiltinClassType.ZlibDecompressor, PythonBuiltinClassType.ZlibDecompressor.getInstanceShape(language), stream, wbits, zdict));
+    public static ZlibDecompressorObject createJavaZlibDecompressorObject(PythonLanguage language, int wbits, byte[] zdict) {
+        return trace(language, ZlibDecompressorObject.createJava(PythonBuiltinClassType.ZlibDecompressor, PythonBuiltinClassType.ZlibDecompressor.getInstanceShape(language), wbits, zdict));
     }
 
     public static ZlibDecompressorObject createNativeZlibDecompressorObject(PythonLanguage language, Object zst, NFIZlibSupport zlibSupport) {

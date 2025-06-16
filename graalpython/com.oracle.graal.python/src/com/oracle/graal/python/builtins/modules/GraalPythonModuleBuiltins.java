@@ -667,6 +667,15 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "zlib_module_backend", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class ZlibModuleBackendNode extends PythonBuiltinNode {
+        @Specialization
+        TruffleString zlibModuleBackend() {
+            return getContext().getNFIZlibSupport().isAvailable() ? T_NATIVE : T_JAVA;
+        }
+    }
+
     @Builtin(name = "sha3_module_backend", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class Sha3ModuleBackendNode extends PythonBuiltinNode {
@@ -1252,6 +1261,20 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         static Object create(VirtualFrame frame, Object cls,
                         @Cached ObjectBuiltins.ObjectNode objectNode) {
             return objectNode.execute(frame, cls, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
+        }
+    }
+
+    @Builtin(name = "_disable_native_zlib", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class DisableNativeZlibNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object disableNativeZlib(boolean disable) {
+            if (disable) {
+                getContext().getNFIZlibSupport().notAvailable();
+            } else {
+                getContext().getNFIZlibSupport().setAvailable();
+            }
+            return PNone.NONE;
         }
     }
 }

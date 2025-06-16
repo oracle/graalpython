@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,50 +40,36 @@
  */
 package com.oracle.graal.python.builtins.modules.zlib;
 
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.runtime.NFIZlibSupport;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.Shape;
 
-public abstract class ZLibCompObject extends PythonBuiltinObject {
+// Note: some IDEs mark this class as inaccessible in PFactory, but changing this to
+// public will cause a warning: [this-escape] possible 'this' escape before subclass is fully
+// initialized
+public class NativeZlibCompObject extends ZLibCompObject {
+    private NFIZlibSupport.Pointer pointer;
+    Object lastInput;
 
-    protected volatile boolean isInitialized;
-    private boolean eof;
-    private PBytes unusedData;
-    private PBytes unconsumedTail;
-
-    public ZLibCompObject(Object cls, Shape instanceShape) {
+    public NativeZlibCompObject(Object cls, Shape instanceShape, Object zst, NFIZlibSupport zlibSupport) {
         super(cls, instanceShape);
-        this.isInitialized = true;
-        this.eof = false;
-        this.unusedData = null;
-        this.unconsumedTail = null;
+        this.pointer = new NFIZlibSupport.Pointer(this, zst, zlibSupport);
+        this.lastInput = null;
     }
 
-    public final boolean isInitialized() {
-        return isInitialized;
+    public Object getZst() {
+        assert pointer != null;
+        return pointer.getReference();
     }
 
-    public final boolean isEof() {
-        return eof;
-    }
-
-    public final void setEof(boolean eof) {
-        this.eof = eof;
-    }
-
-    public final PBytes getUnusedData() {
-        return unusedData;
-    }
-
-    public final void setUnusedData(PBytes unusedData) {
-        this.unusedData = unusedData;
-    }
-
-    public final PBytes getUnconsumedTail() {
-        return unconsumedTail;
-    }
-
-    public final void setUnconsumedTail(PBytes unconsumedTail) {
-        this.unconsumedTail = unconsumedTail;
+    @CompilerDirectives.TruffleBoundary
+    public void markReleased() {
+        if (isInitialized) {
+            synchronized (this) {
+                isInitialized = false;
+                pointer.markReleased();
+                pointer = null;
+            }
+        }
     }
 }

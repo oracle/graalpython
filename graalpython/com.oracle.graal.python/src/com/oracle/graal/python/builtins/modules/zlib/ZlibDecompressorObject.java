@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.zlib;
 
-import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject.JavaZlibCompObject;
-import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject.NativeZlibCompObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
@@ -62,15 +60,15 @@ public class ZlibDecompressorObject extends PythonBuiltinObject {
     // native
     private ZlibDecompressorObject(Object cls, Shape instanceShape, Object zst, NFIZlibSupport zlibSupport) {
         super(cls, instanceShape);
-        this.compObject = ZLibCompObject.createNative(cls, instanceShape, zst, zlibSupport);
+        this.compObject = new NativeZlibCompObject(cls, instanceShape, zst, zlibSupport);
         this.availInReal = 0;
         this.needsInput = true;
     }
 
     // Java
-    private ZlibDecompressorObject(Object cls, Shape instanceShape, Object stream, int wbits, byte[] zdict) {
+    private ZlibDecompressorObject(Object cls, Shape instanceShape, int wbits, byte[] zdict) {
         super(cls, instanceShape);
-        this.compObject = ZLibCompObject.createJava(cls, instanceShape, stream, wbits, zdict);
+        this.compObject = new JavaDecompress(cls, instanceShape, wbits, zdict);
         this.availInReal = 0;
         this.needsInput = true;
     }
@@ -92,9 +90,9 @@ public class ZlibDecompressorObject extends PythonBuiltinObject {
         return ((NativeZlibCompObject) compObject).getZst();
     }
 
-    public JavaZlibCompObject getStream() {
+    public JavaDecompress getStream() {
         assert !isNative();
-        return ((JavaZlibCompObject) compObject);
+        return ((JavaDecompress) compObject);
     }
 
     public long getAvailInReal() {
@@ -130,14 +128,14 @@ public class ZlibDecompressorObject extends PythonBuiltinObject {
     }
 
     public boolean isNative() {
-        return compObject instanceof ZLibCompObject.NativeZlibCompObject;
+        return compObject instanceof NativeZlibCompObject;
     }
 
     public static ZlibDecompressorObject createNative(Object cls, Shape instanceShape, Object zst, NFIZlibSupport zlibSupport) {
         return new ZlibDecompressorObject(cls, instanceShape, zst, zlibSupport);
     }
 
-    public static ZlibDecompressorObject createJava(Object cls, Shape instanceShape, Object stream, int wbits, byte[] zdict) {
-        return new ZlibDecompressorObject(cls, instanceShape, stream, wbits, zdict);
+    public static ZlibDecompressorObject createJava(Object cls, Shape instanceShape, int wbits, byte[] zdict) {
+        return new ZlibDecompressorObject(cls, instanceShape, wbits, zdict);
     }
 }

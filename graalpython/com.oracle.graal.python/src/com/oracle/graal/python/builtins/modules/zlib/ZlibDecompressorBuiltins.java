@@ -49,7 +49,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_D_S_S;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
 
 import java.util.List;
-import java.util.zip.Inflater;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -76,7 +75,6 @@ import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -145,19 +143,13 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
             return PFactory.createNativeZlibDecompressorObject(context.getLanguage(inliningTarget), zst, zlibSupport);
         }
 
-        @TruffleBoundary
         @Specialization(guards = {"!useNative()", "isValidWBitRange(wbits)"})
-        static Object doJava(@SuppressWarnings("unused") Object type, int wbits, byte[] zdict) {
-            // wbits < 0: generate a RAW stream, i.e., no wrapping
-            // wbits 25..31: gzip container, i.e., no wrapping
-            // Otherwise: wrap stream with zlib header and trailer
-            boolean isRAW = wbits < 0;
-            Inflater inflater = new Inflater(isRAW || wbits > (MAX_WBITS + 9));
-            if (isRAW && zdict.length > 0) {
-                inflater.setDictionary(zdict);
+        static Object doJava(@SuppressWarnings("unused") Object type, int wbits, byte[] zdict,
+                        @Bind PythonLanguage language) {
+            ZlibDecompressorObject obj = PFactory.createJavaZlibDecompressorObject(language, wbits, zdict);
+            if (wbits < 0) {
+                obj.getStream().setDictionary();
             }
-            PythonLanguage language = PythonLanguage.get(null);
-            ZlibDecompressorObject obj = PFactory.createJavaZlibDecompressorObject(language, inflater, wbits, zdict);
             obj.setUnusedData(PFactory.createEmptyBytes(language));
             obj.setUnconsumedTail(PFactory.createEmptyBytes(language));
             return obj;
@@ -223,7 +215,7 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
             @Specialization(guards = {"!self.isNative()"})
             static byte[] doJava(VirtualFrame frame, Node inliningTarget, ZlibDecompressorObject self, byte[] bytes, int length, int maxLength,
                             @Cached(inline = false) BytesNodes.ToBytesNode toBytes) {
-                byte[] ret = ZlibNodes.JavaDecompressor.execute(frame, self.getStream(), bytes, length, maxLength, DEF_BUF_SIZE, inliningTarget, toBytes);
+                byte[] ret = self.getStream().decompress(frame, bytes, length, maxLength, DEF_BUF_SIZE, inliningTarget, toBytes);
                 if (self.isEof()) {
                     self.setNeedsInput(false);
                 } else if (self.getUnconsumedTail() == null || self.getUnconsumedTail().getSequenceStorage().length() == 0) {

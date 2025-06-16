@@ -1,7 +1,18 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+
+try:
+    __graalpython__.zlib_module_backend()
+except:
+    class GP:
+        def zlib_module_backend(self):
+            return 'cpython'
+
+        def _disable_native_zlib(self, flag):
+            return None
+    __graalpython__ = GP()
 
 import os
 import unittest
@@ -241,3 +252,22 @@ def test_zlib_decompress_gzip():
     with open(GZ_PATH, 'rb') as f:
         data = d.decompress(f.read()) + d.flush()
     assert data == GZ_DATA
+
+def test_GR65704():
+    contents = b"The quick brown fox jumped over the lazy dog"
+    wbits = 27
+
+    __graalpython__._disable_native_zlib(True)
+
+    compressed = zlib.compress(contents, wbits=wbits)
+    decompressor = zlib.decompressobj(wbits=wbits)
+
+    decompressed = b''
+    for b in compressed:
+        out = decompressor.decompress(bytes([b]))
+        decompressed += out
+    decompressed += decompressor.flush()
+
+    __graalpython__._disable_native_zlib(False)
+
+    assert decompressed == contents

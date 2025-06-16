@@ -1111,6 +1111,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INVALID_INPUT_DATA = tsLiteral("invalid input data");
     public static final TruffleString INCOMPLETE_OR_TRUNCATED_STREAM = tsLiteral("incomplete or truncated stream");
     public static final TruffleString S_MUST_BE_GREATER_THAN_ZERO = tsLiteral("%s must be greater than zero");
+    public static final TruffleString INVALID_WINDOW_SIZE = tsLiteral("invalid window size");
 
     // bz2 errors
     public static final TruffleString REPEATED_CALL_TO_FLUSH = tsLiteral("Repeated call to flush()");
@@ -1399,9 +1400,6 @@ public abstract class ErrorMessages {
     public static final TruffleString WARN_DELEGATION_OF_INT_TO_TRUNC_IS_DEPRECATED = tsLiteral("The delegation of int() to __trunc__ is deprecated.");
 
     // zip
-    public static final TruffleString NOT_IN_GZIP_FORMAT = tsLiteral("Not in GZIP format");
-    public static final TruffleString UNSUPPORTED_COMPRESSION_METHOD = tsLiteral("Unsupported compression method");
-    public static final TruffleString CORRUPT_GZIP_HEADER = tsLiteral("Corrupt GZIP header");
     public static final TruffleString UNHANDLED_ERROR = tsLiteral("Unhandled Error!");
 
     // cext
