@@ -217,6 +217,22 @@ def _extract_graalpython_internal_options(args):
     return non_internal, additional_dists
 
 
+
+def mx_register_dynamic_suite_constituents(register_project, register_distribution):
+    if register_project and register_distribution:
+        isolate_build_options = [
+                '-H:+DetectUserDirectoriesInImageHeap',
+        ]
+        meta_pom = None
+        for dist in SUITE.dists:
+            if dist.name == 'PYTHON_POM':
+                meta_pom = dist
+        assert meta_pom, "Cannot find python meta-POM distribution in the graalpython suite"
+        mx_truffle.register_polyglot_isolate_distributions(SUITE, register_project, register_distribution,'python',
+                                    'graalpython', meta_pom.name, meta_pom.maven_group_id(), meta_pom.theLicense,
+                                    isolate_build_options)
+
+
 def extend_os_env(**kwargs):
     env = os.environ.copy()
     env.update(**kwargs)
