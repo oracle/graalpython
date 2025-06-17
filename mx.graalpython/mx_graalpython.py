@@ -356,7 +356,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         cp_prefix = ver_dep if cp_prefix is None else (ver_dep + os.pathsep + cp_prefix)
     else:
         dists = ['GRAALPYTHON']
-    dists += ['TRUFFLE_NFI', 'TRUFFLE_NFI_LIBFFI', 'GRAALPYTHON-LAUNCHER']
+    dists += ['GRAALPYTHON-LAUNCHER']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     if minimal:
@@ -396,7 +396,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
 
 def node_footprint_analyzer(args, **kwargs):
     main_class = 'com.oracle.graal.python.test.advanced.NodeFootprintAnalyzer'
-    vm_args = mx.get_runtime_jvm_args(['GRAALPYTHON_UNIT_TESTS', 'GRAALPYTHON', 'TRUFFLE_NFI', 'TRUFFLE_NFI_LIBFFI'])
+    vm_args = mx.get_runtime_jvm_args(['GRAALPYTHON_UNIT_TESTS', 'GRAALPYTHON'])
     return mx.run_java(vm_args + [main_class] + args, **kwargs)
 
 
@@ -2538,7 +2538,7 @@ def run_leak_launcher(input_args):
 
     env = os.environ.copy()
 
-    dists = ['GRAALPYTHON', 'GRAALPYTHON_RESOURCES', 'TRUFFLE_NFI', 'TRUFFLE_NFI_LIBFFI', 'GRAALPYTHON_UNIT_TESTS']
+    dists = ['GRAALPYTHON', 'GRAALPYTHON_RESOURCES', 'GRAALPYTHON_UNIT_TESTS']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     vm_args += mx.get_runtime_jvm_args(dists)
