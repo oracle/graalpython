@@ -378,7 +378,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
 
     graalpython_args.insert(0, '--experimental-options=true')
 
-    vm_args += mx.get_runtime_jvm_args(dists, jdk=jdk, cp_prefix=cp_prefix, cp_suffix=cp_suffix)
+    vm_args += mx.get_runtime_jvm_args(dists, jdk=jdk, cp_prefix=cp_prefix, cp_suffix=cp_suffix, force_cp=True)
 
     if not jdk:
         jdk = get_jdk()
