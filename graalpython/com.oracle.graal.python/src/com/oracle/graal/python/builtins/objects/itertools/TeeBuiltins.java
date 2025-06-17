@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -78,7 +78,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -144,25 +143,19 @@ public final class TeeBuiltins extends PythonBuiltins {
     @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "self.getIndex() < LINKCELLS")
-        static Object next(VirtualFrame frame, PTee self,
+        @Specialization
+        static Object doIt(VirtualFrame frame, PTee self,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached BuiltinFunctions.NextNode nextNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached InlinedConditionProfile indexConditionProfile,
+                        @Cached BuiltinFunctions.NextNode nextNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (indexConditionProfile.profile(inliningTarget, self.getIndex() >= LINKCELLS)) {
+                self.setDataObj(self.getDataobj().jumplink(factory));
+                self.setIndex(0);
+            }
             Object value = self.getDataobj().getItem(frame, inliningTarget, self.getIndex(), nextNode, raiseNode);
             self.setIndex(self.getIndex() + 1);
-            return value;
-        }
-
-        @Specialization(guards = "self.getIndex() >= LINKCELLS")
-        static Object nextNext(VirtualFrame frame, PTee self,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached PythonObjectFactory factory,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            self.setDataObj(self.getDataobj().jumplink(factory));
-            Object value = self.getDataobj().getItem(frame, inliningTarget, 0, nextNode, raiseNode);
-            self.setIndex(1);
             return value;
         }
     }
