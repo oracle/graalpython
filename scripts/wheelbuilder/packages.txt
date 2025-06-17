@@ -36,10 +36,8 @@ idna==3.7
 jiter==0.8.2
 jsonref==1.1.0
 marisa_trie==1.2.1
-numpy==1.23.2
-numpy==1.23.5
-numpy==1.24.3
 numpy==1.26.4
+numpy==2.2.4
 oci==2.149.2
 openai==1.35.10
 openai==1.62.0

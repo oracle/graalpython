@@ -1,5 +1,5 @@
 diff --git a/pip/__init__.py b/pip/__init__.py
-index efefccffc..5f5c95289 100644
+index efefccf..5f5c952 100644
 --- a/pip/__init__.py
 +++ b/pip/__init__.py
 @@ -11,3 +11,6 @@ def main(args: Optional[List[str]] = None) -> int:
@@ -10,7 +10,7 @@ index efefccffc..5f5c95289 100644
 +
 +__GRAALPY_PATCHED = True
 diff --git a/pip/_internal/cli/cmdoptions.py b/pip/_internal/cli/cmdoptions.py
-index 0b7cff77b..07c86bf7b 100644
+index 0b7cff7..07c86bf 100644
 --- a/pip/_internal/cli/cmdoptions.py
 +++ b/pip/_internal/cli/cmdoptions.py
 @@ -357,7 +357,8 @@ def extra_index_url() -> Option:
@@ -33,7 +33,7 @@ index 0b7cff77b..07c86bf7b 100644
      "of pip is available for download. Implied with --no-index.",
  )
 diff --git a/pip/_internal/cli/index_command.py b/pip/_internal/cli/index_command.py
-index db105d0fe..251413304 100644
+index db105d0..2514133 100644
 --- a/pip/_internal/cli/index_command.py
 +++ b/pip/_internal/cli/index_command.py
 @@ -24,6 +24,9 @@ if TYPE_CHECKING:
@@ -58,7 +58,7 @@ index db105d0fe..251413304 100644
  
      def _build_session(
 diff --git a/pip/_internal/index/package_finder.py b/pip/_internal/index/package_finder.py
-index 0d65ce35f..63aa51355 100644
+index 0d65ce3..63aa513 100644
 --- a/pip/_internal/index/package_finder.py
 +++ b/pip/_internal/index/package_finder.py
 @@ -36,6 +36,7 @@ from pip._internal.utils.logging import indent_log
@@ -91,7 +91,7 @@ index 0d65ce35f..63aa51355 100644
      def make_candidate_evaluator(
          self,
 diff --git a/pip/_internal/network/download.py b/pip/_internal/network/download.py
-index 5c3bce3d2..f3057d0fd 100644
+index 5c3bce3..f3057d0 100644
 --- a/pip/_internal/network/download.py
 +++ b/pip/_internal/network/download.py
 @@ -7,6 +7,7 @@ import mimetypes
@@ -112,7 +112,7 @@ index 5c3bce3d2..f3057d0fd 100644
      ext: Optional[str] = splitext(filename)[1]
      if not ext:
 diff --git a/pip/_internal/operations/install/wheel.py b/pip/_internal/operations/install/wheel.py
-index aef42aa9e..0dcc3573c 100644
+index aef42aa..0dcc357 100644
 --- a/pip/_internal/operations/install/wheel.py
 +++ b/pip/_internal/operations/install/wheel.py
 @@ -590,6 +590,9 @@ def _install_wheel(  # noqa: C901, PLR0915 function is too long
@@ -126,7 +126,7 @@ index aef42aa9e..0dcc3573c 100644
          # We de-duplicate installation paths, since there can be overlap (e.g.
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/resolution/resolvelib/candidates.py b/pip/_internal/resolution/resolvelib/candidates.py
-index 6617644fe..ee583c01a 100644
+index 6617644..ad52082 100644
 --- a/pip/_internal/resolution/resolvelib/candidates.py
 +++ b/pip/_internal/resolution/resolvelib/candidates.py
 @@ -23,6 +23,7 @@ from pip._internal.req.constructors import (
@@ -142,13 +142,13 @@ index 6617644fe..ee583c01a 100644
              yield from self._factory.make_requirements_from_spec(str(r), self._ireq)
          yield self._factory.make_requires_python_requirement(self.dist.requires_python)
 +        if self.name == 'virtualenv' and not graalpy.DISABLE_PATCHING:
-+            yield self._factory.make_requirement_from_spec('graalpy-virtualenv-seeder', self._ireq)
++            yield from self._factory.make_requirements_from_spec('graalpy-virtualenv-seeder', self._ireq)
  
      def get_install_requirement(self) -> Optional[InstallRequirement]:
          return self._ireq
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 000000000..9e79fb0d7
+index 0000000..9e79fb0
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
 @@ -0,0 +1,334 @@
@@ -487,7 +487,7 @@ index 000000000..9e79fb0d7
 +    with zipfile.ZipFile(path) as z:
 +        return any(re.match(rf'[^/]+.dist-info/{MARKER_FILE_NAME}$', f) for f in z.namelist())
 diff --git a/pip/_internal/utils/unpacking.py b/pip/_internal/utils/unpacking.py
-index 875e30e13..f6562cf28 100644
+index 875e30e..f6562cf 100644
 --- a/pip/_internal/utils/unpacking.py
 +++ b/pip/_internal/utils/unpacking.py
 @@ -335,3 +335,5 @@ def unpack_file(
@@ -497,7 +497,7 @@ index 875e30e13..f6562cf28 100644
 +    from pip._internal.utils.graalpy import apply_graalpy_patches
 +    apply_graalpy_patches(filename, location)
 diff --git a/pip/_internal/wheel_builder.py b/pip/_internal/wheel_builder.py
-index 93f8e1f5b..32fd4ab0f 100644
+index 93f8e1f..32fd4ab 100644
 --- a/pip/_internal/wheel_builder.py
 +++ b/pip/_internal/wheel_builder.py
 @@ -7,6 +7,7 @@ import re
@@ -532,7 +532,7 @@ index 93f8e1f5b..32fd4ab0f 100644
              dest_path = os.path.join(output_dir, wheel_name)
              try:
 diff --git a/pip/_vendor/platformdirs/api.py b/pip/_vendor/platformdirs/api.py
-index c50caa648..a46cac7a1 100644
+index c50caa6..a46cac7 100644
 --- a/pip/_vendor/platformdirs/api.py
 +++ b/pip/_vendor/platformdirs/api.py
 @@ -80,7 +80,7 @@ class PlatformDirsABC(ABC):  # noqa: PLR0904
