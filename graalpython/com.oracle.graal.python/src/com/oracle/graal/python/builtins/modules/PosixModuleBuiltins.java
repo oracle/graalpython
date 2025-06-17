@@ -345,6 +345,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         PythonModule posix;
         if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             posix = core.lookupBuiltinModule(T_NT);
+            posix.setAttribute(toTruffleStringUncached("chown"), PNone.NO_VALUE);
+            posix.setAttribute(toTruffleStringUncached("fchown"), PNone.NO_VALUE);
+            posix.setAttribute(toTruffleStringUncached("lchown"), PNone.NO_VALUE);
         } else {
             posix = core.lookupBuiltinModule(T_POSIX);
         }

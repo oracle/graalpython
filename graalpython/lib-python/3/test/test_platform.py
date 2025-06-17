@@ -341,7 +341,8 @@ class PlatformTest(unittest.TestCase):
                 int(v)  # should not fail
         if csd:
             self.assertTrue(csd.startswith('SP'), msg=csd)
-        if ptype:
+        # Truffle change: graalpy does not support registry access
+        if ptype and ptype != ptype1:
             if os.cpu_count() > 1:
                 self.assertIn('Multiprocessor', ptype)
             else:
