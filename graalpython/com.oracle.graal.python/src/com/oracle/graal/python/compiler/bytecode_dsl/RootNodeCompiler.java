@@ -358,7 +358,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
         }
 
-        BytecodeDSLCodeUnit codeUnit = new BytecodeDSLCodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(ctx.getQualifiedName(scope)),
+        BytecodeDSLCodeUnit codeUnit = new BytecodeDSLCodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(ctx.getQualifiedName(name, scope)),
                         argumentInfo.argCount, argumentInfo.kwOnlyArgCount, argumentInfo.positionalOnlyArgCount,
                         flags, orderedTruffleStringArray(names),
                         orderedTruffleStringArray(varnames),
@@ -3672,7 +3672,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         ArgumentsTy argsForDefaults, List<ParamAnnotation> annotations) {
             TruffleString functionName = toTruffleStringUncached(name);
             Scope targetScope = ctx.scopeEnvironment.lookupScope(scopeKey);
-            TruffleString qualifiedName = toTruffleStringUncached(ctx.getQualifiedName(targetScope));
+            TruffleString qualifiedName = toTruffleStringUncached(ctx.getQualifiedName(name, targetScope));
 
             // Register these in the Python constants list.
             addConstant(qualifiedName);

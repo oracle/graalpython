@@ -143,8 +143,21 @@ public class BytecodeDSLCompiler {
             }
         }
 
+        String getQualifiedName(String name, Scope scope) {
+            if (qualifiedNames.containsKey(scope)) {
+                return qualifiedNames.get(scope);
+            } else {
+                String qualifiedName = computeQualifiedName(name, scope);
+                qualifiedNames.put(scope, qualifiedName);
+                return qualifiedName;
+            }
+        }
+
         private String computeQualifiedName(Scope scope) {
-            String qualifiedName = scope.getName();
+            return computeQualifiedName(scope.getName(), scope);
+        }
+
+        private String computeQualifiedName(String qualifiedName, Scope scope) {
             Scope parentScope = scopeEnvironment.lookupParent(scope);
             if (parentScope != null && parentScope != scopeEnvironment.getTopScope()) {
                 if (parentScope.isTypeParam()) {
@@ -153,14 +166,14 @@ public class BytecodeDSLCompiler {
                         return qualifiedName;
                     }
                 }
-                if (!((scope.isFunction() || scope.isClass()) && parentScope.getUseOfName(mangle(scope, scope.getName())).contains(Scope.DefUse.GlobalExplicit))) {
+                if (!((scope.isFunction() || scope.isClass()) && parentScope.getUseOfName(mangle(scope, qualifiedName)).contains(Scope.DefUse.GlobalExplicit))) {
                     // Qualify the name, unless it's a function/class and the parent declared the
                     // name as a global (in which case the function/class doesn't belong to the
                     // parent).
                     if (parentScope.isFunction()) {
-                        qualifiedName = getQualifiedName(parentScope) + ".<locals>." + scope.getName();
+                        qualifiedName = getQualifiedName(parentScope) + ".<locals>." + qualifiedName;
                     } else {
-                        qualifiedName = getQualifiedName(parentScope) + "." + scope.getName();
+                        qualifiedName = getQualifiedName(parentScope) + "." + qualifiedName;
                     }
                 }
             }
