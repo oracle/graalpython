@@ -162,6 +162,7 @@ test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_fromkeys @ darwin
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_highly_nested @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_init_calls @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_issue119004_attribute_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_issue24348 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_issue24667 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_iterators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -205,6 +206,7 @@ test.test_ordered_dict.PurePythonOrderedDictTests.test_fromkeys @ darwin-arm64,d
 test.test_ordered_dict.PurePythonOrderedDictTests.test_highly_nested @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_init_calls @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ordered_dict.PurePythonOrderedDictTests.test_issue119004_attribute_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_issue24348 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_issue24667 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_iterators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

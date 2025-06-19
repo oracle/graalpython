@@ -45,12 +45,16 @@ test.test_ntpath.PathLikeTests.test_path_relpath @ darwin-arm64,darwin-x86_64,li
 test.test_ntpath.PathLikeTests.test_path_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ntpath.PathLikeTests.test_path_splitdrive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ntpath.PathLikeTests.test_path_splitext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ntpath.PathLikeTests.test_path_splitroot @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ntpath.TestNtpath.test_commonpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ntpath.TestNtpath.test_commonprefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ntpath.TestNtpath.test_expanduser @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ntpath.TestNtpath.test_expandvars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ntpath.TestNtpath.test_expandvars_nonascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ntpath.TestNtpath.test_isabs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ntpath.TestNtpath.test_isdevdrive_fallback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_isfile_anonymous_pipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ntpath.TestNtpath.test_isfile_driveletter @ win32-AMD64
 test.test_ntpath.TestNtpath.test_ismount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ntpath.TestNtpath.test_join @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ntpath.TestNtpath.test_normpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -61,3 +65,4 @@ test.test_ntpath.TestNtpath.test_sameopenfile @ darwin-arm64,darwin-x86_64,linux
 test.test_ntpath.TestNtpath.test_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ntpath.TestNtpath.test_splitdrive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ntpath.TestNtpath.test_splitext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ntpath.TestNtpath.test_splitroot @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

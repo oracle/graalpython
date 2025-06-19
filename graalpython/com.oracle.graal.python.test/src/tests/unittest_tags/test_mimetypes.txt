@@ -13,6 +13,7 @@ test.test_mimetypes.MimeTypesTestCase.test_non_standard_types @ darwin-arm64,dar
 test.test_mimetypes.MimeTypesTestCase.test_path_like_ob @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_mimetypes.MimeTypesTestCase.test_preferred_extension @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_mimetypes.MimeTypesTestCase.test_read_mime_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_mimetypes.MimeTypesTestCase.test_url @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_mimetypes.MimetypesCliTestCase.test_guess_extension @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_mimetypes.MimetypesCliTestCase.test_guess_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_mimetypes.MimetypesCliTestCase.test_help_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

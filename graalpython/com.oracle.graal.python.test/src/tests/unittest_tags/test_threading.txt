@@ -5,6 +5,7 @@ test.test_threading.BarrierTests.test_abort_and_reset @ darwin-arm64,darwin-x86_
 test.test_threading.BarrierTests.test_action @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.BarrierTests.test_barrier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.BarrierTests.test_barrier_10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_threading.BarrierTests.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.BarrierTests.test_default_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.BarrierTests.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.BarrierTests.test_reset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -127,6 +128,7 @@ test.test_threading.SemaphoreTests.test_with @ darwin-arm64,darwin-x86_64,linux-
 # Can transiently fail with java.lang.AssertionError: The TruffleContext must be entered
 !test.test_threading.ThreadJoinOnShutdown.test_1_join_on_shutdown @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_threading.ThreadJoinOnShutdown.test_4_daemon_threads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_threading.ThreadJoinOnShutdown.test_thread_from_thread @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ThreadTests.test_BoundedSemaphore_limit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ThreadTests.test_args_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ThreadTests.test_boolean_target @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -156,6 +158,7 @@ test.test_threading.ThreadingExceptionTests.test_joining_current_thread @ darwin
 test.test_threading.ThreadingExceptionTests.test_joining_inactive_thread @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ThreadingExceptionTests.test_multithread_modify_file_noerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ThreadingExceptionTests.test_print_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_threading.ThreadingExceptionTests.test_print_exception_gh_102056 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ThreadingExceptionTests.test_print_exception_stderr_is_none_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ThreadingExceptionTests.test_print_exception_stderr_is_none_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ThreadingExceptionTests.test_start_thread_again @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

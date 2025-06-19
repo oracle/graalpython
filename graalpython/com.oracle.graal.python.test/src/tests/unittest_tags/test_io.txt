@@ -308,6 +308,7 @@ test.test_io.PyBufferedRandomTest.test_no_extraneous_read @ darwin-arm64,darwin-
 test.test_io.PyBufferedRandomTest.test_nonnormalized_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyBufferedRandomTest.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyBufferedRandomTest.test_read1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_read1_after_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyBufferedRandomTest.test_read1_arbitrary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyBufferedRandomTest.test_read_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyBufferedRandomTest.test_read_and_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -322,7 +323,9 @@ test.test_io.PyBufferedRandomTest.test_readlines @ darwin-arm64,darwin-x86_64,li
 test.test_io.PyBufferedRandomTest.test_readonly_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyBufferedRandomTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyBufferedRandomTest.test_seek_and_tell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_seek_character_device_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyBufferedRandomTest.test_slow_close_from_thread @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_tell_character_device_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyBufferedRandomTest.test_threads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyBufferedRandomTest.test_truncate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyBufferedRandomTest.test_truncate_after_read_or_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -372,6 +375,8 @@ test.test_io.PyBufferedReaderTest.test_readinto_array @ darwin-arm64,darwin-x86_
 test.test_io.PyBufferedReaderTest.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyBufferedReaderTest.test_readonly_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyBufferedReaderTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_seek_character_device_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_tell_character_device_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyBufferedReaderTest.test_threads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyBufferedReaderTest.test_truncate_on_read_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyBufferedReaderTest.test_uninitialized @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -483,6 +488,7 @@ test.test_io.PyTextIOWrapperTest.test_issue1395_5 @ darwin-arm64,darwin-x86_64,l
 test.test_io.PyTextIOWrapperTest.test_issue2282 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_issue22849 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_issue25862 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_issue35928 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_line_buffering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_multi_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_multibyte_seek_and_tell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -503,6 +509,7 @@ test.test_io.PyTextIOWrapperTest.test_reconfigure_defaults @ darwin-arm64,darwin
 test.test_io.PyTextIOWrapperTest.test_reconfigure_encoding_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_reconfigure_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_reconfigure_line_buffering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_reconfigure_locale @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_reconfigure_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_reconfigure_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_reconfigure_write_fromascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

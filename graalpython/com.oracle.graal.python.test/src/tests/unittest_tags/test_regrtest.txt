@@ -1,5 +1,6 @@
 test.test_regrtest.ParseArgsTestCase.test_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ParseArgsTestCase.test_arg_option_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_bisect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ParseArgsTestCase.test_coverage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ParseArgsTestCase.test_coverdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ParseArgsTestCase.test_dont_add_python_opts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -39,9 +40,11 @@ test.test_regrtest.ParseArgsTestCase.test_unrecognized_argument @ darwin-arm64,d
 test.test_regrtest.ParseArgsTestCase.test_use @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ParseArgsTestCase.test_verbose @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ParseArgsTestCase.test_verbose3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_verbose3_huntrleaks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ParseArgsTestCase.test_wait @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.TestUtils.test_format_duration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.TestUtils.test_format_resources @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.TestUtils.test_get_signal_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.TestUtils.test_match_test @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.TestUtils.test_normalize_test_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.TestUtils.test_sanitize_xml @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

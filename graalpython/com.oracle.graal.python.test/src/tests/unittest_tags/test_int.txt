@@ -36,3 +36,7 @@ test.test_int.IntTestCases.test_non_numeric_input_types @ darwin-arm64,darwin-x8
 test.test_int.IntTestCases.test_string_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_int.IntTestCases.test_underscores @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_int.IntTestCases.test_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_int.PyLongModuleTests.test_pylong_int_divmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_int.PyLongModuleTests.test_pylong_int_to_decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_int.PyLongModuleTests.test_pylong_int_to_decimal_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_int.PyLongModuleTests.test_pylong_str_to_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

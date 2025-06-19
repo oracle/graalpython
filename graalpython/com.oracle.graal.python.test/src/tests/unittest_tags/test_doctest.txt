@@ -13,5 +13,6 @@ DocTestCase.doctest.__test__.whitespace normalization @ darwin-arm64,darwin-x86_
 DocTestCase.doctest._ellipsis_match @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 DocTestCase.doctest.script_from_examples @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 DocTestCase.doctest.set_unittest_reportflags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_doctest.TestDocTestFinder.test_empty_namespace_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_doctest.TestDocTestFinder.test_issue35753 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_doctest.test_doctest.TestDocTestFinder.test_empty_namespace_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_doctest.test_doctest.TestDocTestFinder.test_issue35753 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_doctest.test_doctest2.Test.test_testmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

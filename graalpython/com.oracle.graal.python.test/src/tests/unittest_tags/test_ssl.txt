@@ -3,10 +3,10 @@ test.test_ssl.BasicSocketTests.test_cert_time_to_seconds @ darwin-arm64,darwin-x
 test.test_ssl.BasicSocketTests.test_cert_time_to_seconds_timezone @ darwin-arm64,darwin-x86_64,win32-AMD64
 test.test_ssl.BasicSocketTests.test_connect_ex_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.BasicSocketTests.test_empty_cert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_ssl.BasicSocketTests.test_errors_sslwrap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ssl.BasicSocketTests.test_get_default_verify_paths @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ssl.BasicSocketTests.test_malformed_cert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ssl.BasicSocketTests.test_malformed_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_options @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ssl.BasicSocketTests.test_parse_cert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ssl.BasicSocketTests.test_parse_cert_CVE_2019_5010 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ssl.BasicSocketTests.test_private_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -91,6 +91,8 @@ test.test_ssl.ThreadedTests.test_ecc_cert @ darwin-arm64,darwin-x86_64,linux-aar
 test.test_ssl.ThreadedTests.test_getpeercert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.ThreadedTests.test_getpeercert_enotconn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ssl.ThreadedTests.test_handshake_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_legacy_server_connect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_no_legacy_server_connect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.ThreadedTests.test_nonblocking_send @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.ThreadedTests.test_npn_protocols @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ssl.ThreadedTests.test_protocol_tlsv1_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

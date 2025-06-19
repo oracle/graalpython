@@ -32,6 +32,7 @@ test.test_exception_group.NestedExceptionGroupBasicsTest.test_iteration_full_tra
 test.test_exception_group.NestedExceptionGroupBasicsTest.test_nested_exception_group_tracebacks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exception_group.NestedExceptionGroupBasicsTest.test_nested_group_chaining @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exception_group.NestedExceptionGroupBasicsTest.test_nested_group_matches_template @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exception_group.NestedExceptionGroupSplitTest.test_drive_invalid_return_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exception_group.NestedExceptionGroupSplitTest.test_split_BaseExceptionGroup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exception_group.NestedExceptionGroupSplitTest.test_split_by_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exception_group.NestedExceptionGroupSplitTest.test_split_copies_notes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

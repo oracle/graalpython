@@ -29,7 +29,6 @@ test.test_base64.LegacyBase64TestCase.test_decodebytes @ darwin-arm64,darwin-x86
 test.test_base64.LegacyBase64TestCase.test_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_base64.LegacyBase64TestCase.test_encodebytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_base64.TestMain.test_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_base64.TestMain.test_encode_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_base64.TestMain.test_encode_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_base64.TestMain.test_encode_from_stdin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_base64.TestMain.test_prints_usage_with_help_flag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

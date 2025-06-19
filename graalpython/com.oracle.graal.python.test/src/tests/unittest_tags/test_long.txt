@@ -14,6 +14,7 @@ test.test_long.LongTest.test_floordiv @ darwin-arm64,darwin-x86_64,linux-aarch64
 test.test_long.LongTest.test_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_long.LongTest.test_from_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_long.LongTest.test_huge_rshift @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_long.LongTest.test_is_integer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_long.LongTest.test_karatsuba @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_long.LongTest.test_logs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_long.LongTest.test_long @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

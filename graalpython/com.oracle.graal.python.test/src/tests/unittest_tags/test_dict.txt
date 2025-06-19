@@ -54,6 +54,7 @@ test.test_dict.DictTest.test_reverseiterator_pickling @ darwin-arm64,darwin-x86_
 test.test_dict.DictTest.test_reversevaluesiterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_dict.DictTest.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_dict.DictTest.test_setitem_atomic_at_resize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_store_evilattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_dict.DictTest.test_str_nonstr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_dict.DictTest.test_string_keys_can_track_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_dict.DictTest.test_tuple_keyerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

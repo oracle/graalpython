@@ -16,6 +16,7 @@ test.test_posixpath.PathLikeTests.test_path_relpath @ darwin-arm64,darwin-x86_64
 test.test_posixpath.PathLikeTests.test_path_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posixpath.PathLikeTests.test_path_splitdrive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posixpath.PathLikeTests.test_path_splitext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_splitroot @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posixpath.PosixCommonTest.test_abspath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posixpath.PosixCommonTest.test_abspath_issue3426 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posixpath.PosixCommonTest.test_commonprefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -50,7 +51,9 @@ test.test_posixpath.PosixPathTest.test_dirname @ darwin-arm64,darwin-x86_64,linu
 test.test_posixpath.PosixPathTest.test_expanduser @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posixpath.PosixPathTest.test_expanduser_home_envvar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posixpath.PosixPathTest.test_expanduser_pwd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_expanduser_pwd2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_posixpath.PosixPathTest.test_isabs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixPathTest.test_isjunction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posixpath.PosixPathTest.test_islink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_posixpath.PosixPathTest.test_ismount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_posixpath.PosixPathTest.test_ismount_different_device @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -75,3 +78,4 @@ test.test_posixpath.PosixPathTest.test_relpath @ darwin-arm64,darwin-x86_64,linu
 test.test_posixpath.PosixPathTest.test_relpath_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posixpath.PosixPathTest.test_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posixpath.PosixPathTest.test_splitext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixPathTest.test_splitroot @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

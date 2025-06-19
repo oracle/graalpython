@@ -64,5 +64,7 @@ test.test_import.RelativeImportTests.test_import_from_non_package @ darwin-arm64
 test.test_import.RelativeImportTests.test_import_from_unloaded_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_import.RelativeImportTests.test_issue3221 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_import.RelativeImportTests.test_parentless_import_shadowed_by_global @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_import.RelativeImportTests.test_rebinding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_import.RelativeImportTests.test_rebinding2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_import.RelativeImportTests.test_relimport_star @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_import.TestSymbolicallyLinkedPackage.test_symlinked_dir_importable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

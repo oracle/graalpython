@@ -33,7 +33,7 @@ test.test_subprocess.POSIXProcessTestCase.test_exception_bad_executable @ darwin
 test.test_subprocess.POSIXProcessTestCase.test_exception_cwd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_exception_errpipe_bad_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_exception_errpipe_normal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_subprocess.POSIXProcessTestCase.test_extra_groups_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subprocess.POSIXProcessTestCase.test_extra_groups_invalid_gid_t_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_group_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_invalid_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_kill @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -121,6 +121,7 @@ test.test_subprocess.ProcessTestCase.test_io_unbuffered_works @ darwin-arm64,dar
 test.test_subprocess.ProcessTestCase.test_issue8780 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_subprocess.ProcessTestCase.test_leaking_fds_on_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_subprocess.ProcessTestCase.test_list2cmdline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_subprocess.ProcessTestCase.test_one_environment_variable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.ProcessTestCase.test_pathlike_executable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_subprocess.ProcessTestCase.test_pathlike_executable_replaces_shell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.ProcessTestCase.test_poll @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

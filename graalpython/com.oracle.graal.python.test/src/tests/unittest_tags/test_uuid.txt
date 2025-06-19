@@ -9,6 +9,11 @@ test.test_uuid.TestInternalsWithoutExtModule.test_parse_mac @ darwin-arm64,darwi
 test.test_uuid.TestInternalsWithoutExtModule.test_parse_mac_aix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_uuid.TestInternalsWithoutExtModule.test_random_getnode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_uuid.TestUUIDWithoutExtModule.test_UUID @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_cli_name_required_for_uuid3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_cli_namespace_required_for_uuid3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_cli_uuid3_ouputted_with_valid_namespace_and_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_cli_uuid4_outputted_with_no_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_cli_uuid5_ouputted_with_valid_namespace_and_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_uuid.TestUUIDWithoutExtModule.test_exceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_uuid.TestUUIDWithoutExtModule.test_getnode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_uuid.TestUUIDWithoutExtModule.test_pickle_roundtrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -20,12 +20,12 @@ test.test_xml_etree_c.BasicElementTest.test___copy__ @ darwin-arm64,darwin-x86_6
 test.test_xml_etree_c.BasicElementTest.test___deepcopy__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.BasicElementTest.test___init__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.BasicElementTest.test_augmentation_type_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_xml_etree_c.BasicElementTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 !test.test_xml_etree_c.BasicElementTest.test_cyclic_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.BasicElementTest.test_get_keyword_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.BasicElementTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.BasicElementTest.test_pickle_issue18997 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.BasicElementTest.test_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_xml_etree_c.BoolTest.test_warning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.BugsTest.test_39495_treebuilder_start @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.BugsTest.test_bug_1534630 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.BugsTest.test_bug_200708_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -48,6 +48,7 @@ test.test_xml_etree_c.BugsTest.test_bug_xmltoolkitX1 @ darwin-arm64,darwin-x86_6
 test.test_xml_etree_c.BugsTest.test_expat224_utf8_bug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.BugsTest.test_expat224_utf8_bug_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.BugsTest.test_issue10777 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_xml_etree_c.BugsTest.test_issue123213_correct_extend_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.BugsTest.test_issue6233 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.BugsTest.test_issue6565 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.BugsTest.test_lost_tail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -72,6 +73,7 @@ test.test_xml_etree_c.ElementSlicingTest.test_getslice_negative_steps @ darwin-a
 test.test_xml_etree_c.ElementSlicingTest.test_getslice_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.ElementSlicingTest.test_getslice_single_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.ElementSlicingTest.test_getslice_steps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_xml_etree_c.ElementSlicingTest.test_issue123213_setslice_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.ElementSlicingTest.test_setslice_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.ElementSlicingTest.test_setslice_single_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.ElementTreeTest.test_attlist_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -173,9 +175,13 @@ test.test_xml_etree_c.XMLPullParserTest.test_events_comment @ darwin-arm64,darwi
 test.test_xml_etree_c.XMLPullParserTest.test_events_pi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.XMLPullParserTest.test_events_sequence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.XMLPullParserTest.test_feed_while_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_xml_etree_c.XMLPullParserTest.test_flush_reparse_deferral_disabled @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.XMLPullParserTest.test_ns_events @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.XMLPullParserTest.test_ns_events_start @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.XMLPullParserTest.test_ns_events_start_end @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.XMLPullParserTest.test_simple_xml @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_xml_etree_c.XMLPullParserTest.test_simple_xml_chunk_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_xml_etree_c.XMLPullParserTest.test_simple_xml_chunk_22 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_xml_etree_c.XMLPullParserTest.test_simple_xml_chunk_5 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.XMLPullParserTest.test_simple_xml_with_ns @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_xml_etree_c.XMLPullParserTest.test_unknown_event @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

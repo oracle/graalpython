@@ -12,6 +12,8 @@ test.test_generators.ExceptionTest.test_except_next @ darwin-arm64,darwin-x86_64
 test.test_generators.ExceptionTest.test_except_throw @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_generators.ExceptionTest.test_except_throw_bad_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_generators.ExceptionTest.test_except_throw_exception_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_generators.ExceptionTest.test_gen_3_arg_deprecation_warning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_generators.ExceptionTest.test_nested_gen_except_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_generators.ExceptionTest.test_return_stopiteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_generators.ExceptionTest.test_return_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_generators.ExceptionTest.test_stopiteration_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -23,6 +25,7 @@ test.test_generators.GeneratorTest.test_ag_frame_f_back @ darwin-arm64,darwin-x8
 test.test_generators.GeneratorTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_generators.GeneratorTest.test_cr_frame_f_back @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_generators.GeneratorTest.test_gi_frame_f_back @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_generators.GeneratorTest.test_issue103488 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_generators.GeneratorTest.test_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_generators.GeneratorTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_generators.GeneratorTest.test_send_non_none_to_new_gen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

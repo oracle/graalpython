@@ -77,6 +77,7 @@ test.test_socket.GeneralModuleTests.test_addressfamily_enum @ darwin-arm64,darwi
 test.test_socket.GeneralModuleTests.test_addressinfo_enum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_socket.GeneralModuleTests.test_csocket_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_socket.GeneralModuleTests.test_flowinfo @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_socket.GeneralModuleTests.test_getaddrinfo_int_port_overflow @ win32-AMD64
 test.test_socket.GeneralModuleTests.test_getaddrinfo_ipv6_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_socket.GeneralModuleTests.test_getfqdn_filter_localhost @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_socket.GeneralModuleTests.test_getnameinfo @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -101,6 +102,7 @@ test.test_socket.GeneralModuleTests.test_socket_fileno_rejects_other_types @ dar
 test.test_socket.GeneralModuleTests.test_socket_fileno_requires_socket_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_socket.GeneralModuleTests.test_socket_fileno_requires_valid_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_socket.GeneralModuleTests.test_socket_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_socket.GeneralModuleTests.test_socket_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_socket.GeneralModuleTests.test_socketkind_enum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_socket.GeneralModuleTests.test_str_for_enums @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_socket.GeneralModuleTests.test_unknown_socket_family_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -135,6 +137,11 @@ test.test_socket.NonBlockingTCPTests.testAccept @ darwin-arm64,darwin-x86_64,lin
 test.test_socket.NonBlockingTCPTests.testInheritFlagsBlocking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_socket.NonBlockingTCPTests.testInheritFlagsTimeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_socket.NonBlockingTCPTests.testRecv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_socket.PurePythonSocketPairTest.test_injected_authentication_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_socket.PurePythonSocketPairTest.test_ipv4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_socket.PurePythonSocketPairTest.test_ipv6 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_socket.PurePythonSocketPairTest.test_recv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_socket.PurePythonSocketPairTest.test_send @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_socket.SendfileUsingSendTest.testCount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_socket.SendfileUsingSendTest.testCountSmall @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_socket.SendfileUsingSendTest.testCountWithOffset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

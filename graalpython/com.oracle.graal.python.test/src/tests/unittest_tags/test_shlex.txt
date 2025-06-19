@@ -7,7 +7,7 @@ test.test_shlex.ShlexTest.testPunctuationInWordChars @ darwin-arm64,darwin-x86_6
 test.test_shlex.ShlexTest.testPunctuationWithPosix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_shlex.ShlexTest.testPunctuationWithWhitespaceSplit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_shlex.ShlexTest.testQuote @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_shlex.ShlexTest.testSplitNoneDeprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testSplitNone @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_shlex.ShlexTest.testSplitPosix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_shlex.ShlexTest.testSyntaxSplitAmpersandAndPipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_shlex.ShlexTest.testSyntaxSplitCustom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

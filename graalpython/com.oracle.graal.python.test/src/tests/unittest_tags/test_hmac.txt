@@ -24,3 +24,4 @@ test.test_hmac.TestVectorsTestCase.test_sha512_rfc4231 @ darwin-arm64,darwin-x86
 test.test_hmac.TestVectorsTestCase.test_sha_vectors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hmac.TestVectorsTestCase.test_with_digestmod_no_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hmac.TestVectorsTestCase.test_with_fallback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.UpdateTestCase.test_with_str_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

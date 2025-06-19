@@ -44,3 +44,4 @@ test.test_htmlparser.HTMLParserTestCase.test_starttag_junk_chars @ darwin-arm64,
 test.test_htmlparser.HTMLParserTestCase.test_tolerant_parsing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_htmlparser.HTMLParserTestCase.test_unclosed_entityref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_htmlparser.HTMLParserTestCase.test_valid_doctypes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_htmlparser.TestInheritance.test_base_class_methods_called @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

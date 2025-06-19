@@ -19,7 +19,10 @@ test.test_urllib2.HandlerTests.test_http_body_iterable @ darwin-arm64,darwin-x86
 test.test_urllib2.HandlerTests.test_http_body_pipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urllib2.HandlerTests.test_http_closed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urllib2.HandlerTests.test_http_doubleslash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_urllib2.HandlerTests.test_http_handler_debuglevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib2.HandlerTests.test_http_handler_global_debuglevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib2.HandlerTests.test_http_handler_local_debuglevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib2.HandlerTests.test_https_handler_global_debuglevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib2.HandlerTests.test_https_handler_local_debuglevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urllib2.HandlerTests.test_invalid_closed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urllib2.HandlerTests.test_invalid_redirect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urllib2.HandlerTests.test_osx_proxy_bypass @ darwin-arm64,darwin-x86_64
@@ -34,6 +37,7 @@ test.test_urllib2.HandlerTests.test_redirect_fragment @ darwin-arm64,darwin-x86_
 test.test_urllib2.HandlerTests.test_relative_redirect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urllib2.HandlerTests.test_unsupported_auth_basic_handler @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urllib2.HandlerTests.test_unsupported_auth_digest_handler @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib2.HandlerTests.test_winreg_proxy_bypass @ win32-AMD64
 test.test_urllib2.MiscTests.test_HTTPError_interface @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urllib2.MiscTests.test_build_opener @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urllib2.MiscTests.test_gh_98778 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -41,6 +41,7 @@ test.test_userlist.UserListTest.test_setitem @ darwin-arm64,darwin-x86_64,linux-
 test.test_userlist.UserListTest.test_setitem_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_userlist.UserListTest.test_setslice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_userlist.UserListTest.test_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_slice_assign_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_userlist.UserListTest.test_slice_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_userlist.UserListTest.test_sort @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_userlist.UserListTest.test_subscript @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

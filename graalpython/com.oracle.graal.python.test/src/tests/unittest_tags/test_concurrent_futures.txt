@@ -1,12 +1,12 @@
 test.test_concurrent_futures.test_as_completed.ProcessPoolForkAsCompletedTest.test_correct_timeout_exception_msg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_as_completed.ProcessPoolSpawnAsCompletedTest.test_correct_timeout_exception_msg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_as_completed.ProcessPoolSpawnAsCompletedTest.test_duplicate_futures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_concurrent_futures.test_as_completed.ProcessPoolSpawnAsCompletedTest.test_future_times_out @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_as_completed.ProcessPoolSpawnAsCompletedTest.test_no_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_concurrent_futures.test_as_completed.ProcessPoolSpawnAsCompletedTest.test_zero_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_as_completed.ThreadPoolAsCompletedTest.test_correct_timeout_exception_msg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_as_completed.ThreadPoolAsCompletedTest.test_duplicate_futures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_concurrent_futures.test_as_completed.ThreadPoolAsCompletedTest.test_future_times_out @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_as_completed.ThreadPoolAsCompletedTest.test_no_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_concurrent_futures.test_as_completed.ThreadPoolAsCompletedTest.test_zero_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_deadlock.ProcessPoolSpawnExecutorDeadlockTest.test_crash_at_task_unpickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_deadlock.ProcessPoolSpawnExecutorDeadlockTest.test_error_at_task_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_deadlock.ProcessPoolSpawnExecutorDeadlockTest.test_error_at_task_unpickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -58,6 +58,7 @@ test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecut
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_max_tasks_per_child @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_max_tasks_per_child_defaults_to_spawn_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_max_workers_negative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_python_finalization_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_saturation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_shutdown_race_issue12456 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_submit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

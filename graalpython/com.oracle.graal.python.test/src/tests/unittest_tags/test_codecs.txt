@@ -28,12 +28,7 @@ test.test_codecs.EscapeDecodeTest.test_empty @ darwin-arm64,darwin-x86_64,linux-
 test.test_codecs.EscapeDecodeTest.test_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.EscapeDecodeTest.test_raw @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.EscapeEncodeTest.test_escape_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_codecs.ExceptionChainingTest.test_init_override_is_not_wrapped @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_codecs.ExceptionChainingTest.test_instance_attribute_is_not_wrapped @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_codecs.ExceptionChainingTest.test_multiple_args_is_not_wrapped @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_codecs.ExceptionChainingTest.test_new_override_is_not_wrapped @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_codecs.ExceptionChainingTest.test_non_str_arg_is_not_wrapped @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_codecs.ExceptionChainingTest.test_unflagged_non_text_codec_handling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecs.ExceptionNotesTest.test_unflagged_non_text_codec_handling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.IDNACodecTest.test_builtin_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.IDNACodecTest.test_builtin_decode_length_limit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.IDNACodecTest.test_builtin_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -53,8 +48,10 @@ test.test_codecs.RawUnicodeEscapeTest.test_bug1098990_a @ darwin-arm64,darwin-x8
 test.test_codecs.RawUnicodeEscapeTest.test_bug1098990_b @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.RawUnicodeEscapeTest.test_bug1175396 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.RawUnicodeEscapeTest.test_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecs.RawUnicodeEscapeTest.test_escape_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.RawUnicodeEscapeTest.test_escape_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.RawUnicodeEscapeTest.test_mixed_readline_and_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecs.RawUnicodeEscapeTest.test_raw_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.RawUnicodeEscapeTest.test_raw_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.RawUnicodeEscapeTest.test_readlinequeue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.Rot13Test.test_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

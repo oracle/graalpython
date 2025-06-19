@@ -5,6 +5,8 @@ test.test_bisect.TestBisectPython.test_keyword_args @ darwin-arm64,darwin-x86_64
 test.test_bisect.TestBisectPython.test_large_pyrange @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_bisect.TestBisectPython.test_large_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_bisect.TestBisectPython.test_lookups_with_key_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_bisect.TestBisectPython.test_lt_returns_non_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_bisect.TestBisectPython.test_lt_returns_notimplemented @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_bisect.TestBisectPython.test_negative_lo @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_bisect.TestBisectPython.test_optionalSlicing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_bisect.TestBisectPython.test_precomputed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

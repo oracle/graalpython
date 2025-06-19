@@ -24,5 +24,7 @@ test.test_platform.PlatformTest.test_uname_processor @ darwin-arm64,darwin-x86_6
 test.test_platform.PlatformTest.test_uname_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_platform.PlatformTest.test_uname_slices @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_platform.PlatformTest.test_uname_win32_ARCHITEW6432 @ win32-AMD64
+test.test_platform.PlatformTest.test_uname_win32_without_wmi @ win32-AMD64
 test.test_platform.PlatformTest.test_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_platform.PlatformTest.test_win32_ver @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_win32_ver @ win32-AMD64
+test.test_platform.PlatformTest.test_win32_ver_on_non_windows @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

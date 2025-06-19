@@ -48,6 +48,7 @@ test.test_sax.ExpatReaderTest.test_expat_locator_withinfo_nonascii @ darwin-arm6
 test.test_sax.ExpatReaderTest.test_expat_nsattrs_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sax.ExpatReaderTest.test_expat_nsattrs_wattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sax.ExpatReaderTest.test_expat_text_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_flush_reparse_deferral_disabled @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sax.LexicalHandlerTest.test_handlers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sax.MakeParserTest.test_make_parser2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sax.MakeParserTest.test_make_parser3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
