@@ -1,0 +1,10 @@
+diff --git a/rasterio/_base.pyx b/rasterio/_base.pyx
+index 8562b7d..7950486 100644
+--- a/rasterio/_base.pyx
++++ b/rasterio/_base.pyx
+@@ -1,4 +1,4 @@
+-# cython: boundscheck=False, c_string_type=unicode, c_string_encoding=utf8"""
++# cython: boundscheck=False, c_string_type=unicode, c_string_encoding=utf8
+ 
+ """Numpy-free base classes."""
+ 
