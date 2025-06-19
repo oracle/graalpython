@@ -91,6 +91,7 @@ import java.util.logging.Level;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -113,6 +114,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
+import com.oracle.graal.python.util.FunctionWithSignature;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -316,19 +318,19 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     protected static final class InvokeNativeFunction extends Node {
-        private static final InvokeNativeFunction UNCACHED = new InvokeNativeFunction(InteropLibrary.getUncached(), InteropLibrary.getUncached());
+        private static final InvokeNativeFunction UNCACHED = new InvokeNativeFunction(SignatureLibrary.getUncached(), InteropLibrary.getUncached());
 
-        @Child private InteropLibrary functionInterop;
+        @Child private SignatureLibrary functionInterop;
         @Child private InteropLibrary resultInterop;
 
-        public InvokeNativeFunction(InteropLibrary functionInterop, InteropLibrary resultInterop) {
+        public InvokeNativeFunction(SignatureLibrary functionInterop, InteropLibrary resultInterop) {
             this.functionInterop = functionInterop;
             this.resultInterop = resultInterop;
         }
 
         @NeverDefault
         public static InvokeNativeFunction create() {
-            return new InvokeNativeFunction(InteropLibrary.getFactory().createDispatched(2), null);
+            return new InvokeNativeFunction(SignatureLibrary.getFactory().createDispatched(2), null);
         }
 
         public static InvokeNativeFunction getUncached() {
@@ -342,9 +344,9 @@ public final class NFIPosixSupport extends PosixSupport {
             if (injectBranchProbability(SLOWPATH_PROBABILITY, posix.cachedFunctions.get(function.ordinal()) == null)) {
                 loadFunction(posix, posix.nfiLibrary, function);
             }
-            Object funObject = posix.cachedFunctions.get(function.ordinal());
+            FunctionWithSignature funObject = posix.cachedFunctions.get(function.ordinal());
             try {
-                return functionInterop.execute(funObject, args);
+                return functionInterop.call(funObject.signature(), funObject.function(), args);
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -424,14 +426,13 @@ public final class NFIPosixSupport extends PosixSupport {
             Object unbound;
             try {
                 InteropLibrary interop = InteropLibrary.getUncached();
-                SignatureLibrary sigs = SignatureLibrary.getUncached();
 
                 String sig = String.format("with %s %s", posix.nfiBackend, function.signature);
                 Source sigSrc = Source.newBuilder(J_NFI_LANGUAGE, sig, "posix-nfi-signature").internal(true).build();
                 Object signature = posix.context.getEnv().parseInternal(sigSrc).call();
 
                 unbound = interop.readMember(library, function.name());
-                posix.cachedFunctions.set(function.ordinal(), sigs.bind(signature, unbound));
+                posix.cachedFunctions.set(function.ordinal(), new FunctionWithSignature(signature, unbound));
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 throw CompilerDirectives.shouldNotReachHere(function.name(), e);
             }
@@ -450,7 +451,7 @@ public final class NFIPosixSupport extends PosixSupport {
     private final TruffleString nfiBackend;
     private volatile Object nfiLibrary;
     private volatile Object cryptLibrary;
-    private final AtomicReferenceArray<Object> cachedFunctions;
+    private final AtomicReferenceArray<FunctionWithSignature> cachedFunctions;
     @CompilationFinal(dimensions = 1) private long[] constantValues;
 
     public NFIPosixSupport(PythonContext context, TruffleString nfiBackend) {
@@ -465,7 +466,7 @@ public final class NFIPosixSupport extends PosixSupport {
         if (constantValues == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             constantValues = new long[NFIPosixConstants.values().length];
-            int result = InvokeNativeFunction.getUncached().callInt(this, PosixNativeFunction.init_constants, wrap(constantValues), constantValues.length);
+            int result = InvokeNativeFunction.getUncached().callInt(this, PosixNativeFunction.init_constants, constantValues, constantValues.length);
             if (result != 0) {
                 throw CompilerDirectives.shouldNotReachHere("Mismatched build of posix native library");
             }
@@ -508,7 +509,7 @@ public final class NFIPosixSupport extends PosixSupport {
         // This buffer size therefore should be sufficient to avoid an ERANGE error when calling
         // strerror_r().
         byte[] buf = new byte[1024];
-        invokeNode.call(this, PosixNativeFunction.call_strerror, errorCode, wrap(buf), buf.length);
+        invokeNode.call(this, PosixNativeFunction.call_strerror, errorCode, buf, buf.length);
         // TODO PyUnicode_DecodeLocale
         return cStringToTruffleString(buf, fromByteArrayNode, switchEncodingFromUtf8Node);
     }
@@ -554,7 +555,7 @@ public final class NFIPosixSupport extends PosixSupport {
         long count = Math.min(length, MAX_READ);
         Buffer buffer = Buffer.allocate(count);
         setErrno(invokeNode, 0);        // TODO CPython does this, but do we need it?
-        long n = invokeNode.callLong(this, PosixNativeFunction.call_read, fd, wrap(buffer), count);
+        long n = invokeNode.callLong(this, PosixNativeFunction.call_read, fd, buffer.data, count);
         if (n < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -565,7 +566,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public long write(int fd, Buffer data,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         setErrno(invokeNode, 0);        // TODO CPython does this, but do we need it?
-        long n = invokeNode.callLong(this, PosixNativeFunction.call_write, fd, wrap(data), data.length);
+        long n = invokeNode.callLong(this, PosixNativeFunction.call_write, fd, data.data, data.length);
         if (n < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -614,7 +615,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public int[] pipe(
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int[] fds = new int[2];
-        if (invokeNode.callInt(this, PosixNativeFunction.call_pipe2, context.getEnv().asGuestValue(fds)) != 0) {
+        if (invokeNode.callInt(this, PosixNativeFunction.call_pipe2, fds) != 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         return fds;
@@ -636,10 +637,10 @@ public final class NFIPosixSupport extends PosixSupport {
             usecs = timeout.getMicroseconds();
         }
         int result = invokeNode.callInt(this, PosixNativeFunction.call_select, nfds,
-                        wrap(readfds), readfds.length,
-                        wrap(writefds), writefds.length,
-                        wrap(errorfds), errorfds.length,
-                        secs, usecs, wrap(selected));
+                        readfds, readfds.length,
+                        writefds, writefds.length,
+                        errorfds, errorfds.length,
+                        secs, usecs, selected);
         if (result < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -745,7 +746,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public int[] getTerminalSize(int fd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int[] size = new int[2];
-        if (invokeNode.callInt(this, PosixNativeFunction.get_terminal_size, fd, context.getEnv().asGuestValue(size)) != 0) {
+        if (invokeNode.callInt(this, PosixNativeFunction.get_terminal_size, fd, size) != 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         return size;
@@ -768,7 +769,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public long[] fstatat(int dirFd, Object pathname, boolean followSymlinks,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         long[] out = new long[13];
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_fstatat, dirFd, pathToCString(pathname), followSymlinks ? 1 : 0, wrap(out));
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_fstatat, dirFd, pathToCString(pathname), followSymlinks ? 1 : 0, out);
         if (res != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
@@ -779,7 +780,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public long[] fstat(int fd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         long[] out = new long[13];
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_fstat, fd, wrap(out));
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_fstat, fd, out);
         if (res != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
@@ -790,7 +791,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public long[] statvfs(Object path,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         long[] out = new long[11];
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_statvfs, pathToCString(path), wrap(out));
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_statvfs, pathToCString(path), out);
         if (res != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
@@ -801,7 +802,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public long[] fstatvfs(int fd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         long[] out = new long[11];
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_fstatvfs, fd, wrap(out));
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_fstatvfs, fd, out);
         if (res != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
@@ -818,7 +819,7 @@ public final class NFIPosixSupport extends PosixSupport {
         byte[] rel = new byte[UNAME_BUF_LENGTH];
         byte[] ver = new byte[UNAME_BUF_LENGTH];
         byte[] machine = new byte[UNAME_BUF_LENGTH];
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_uname, wrap(sys), wrap(node), wrap(rel), wrap(ver), wrap(machine), UNAME_BUF_LENGTH);
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_uname, sys, node, rel, ver, machine, UNAME_BUF_LENGTH);
         if (res != 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -873,7 +874,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         for (int bufLen = 1024;; bufLen += 1024) {
             Buffer buffer = Buffer.allocate(bufLen);
-            int n = invokeNode.callInt(this, PosixNativeFunction.call_getcwd, wrap(buffer), bufLen);
+            int n = invokeNode.callInt(this, PosixNativeFunction.call_getcwd, buffer.data, bufLen);
             if (n == 0) {
                 buffer = buffer.withLength(findZero(buffer.data));
                 return buffer;
@@ -945,7 +946,7 @@ public final class NFIPosixSupport extends PosixSupport {
         long[] out = new long[2];
         int result;
         do {
-            result = invokeNode.callInt(this, PosixNativeFunction.call_readdir, dirStreamObj, wrap(name), DIRENT_NAME_BUF_LENGTH, wrap(out));
+            result = invokeNode.callInt(this, PosixNativeFunction.call_readdir, dirStreamObj, name.data, DIRENT_NAME_BUF_LENGTH, out);
         } while (result != 0 && name.data[0] == '.' && (name.data[1] == 0 || (name.data[1] == '.' && name.data[2] == 0)));
         if (result != 0) {
             return new DirEntry(name.withLength(findZero(name.data)), out[0], (int) out[1]);
@@ -1020,7 +1021,13 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         assert PosixConstants.HAVE_UTIMENSAT.value;
         assert timespec == null || timespec.length == 4;
-        int ret = invokeNode.callInt(this, PosixNativeFunction.call_utimensat, dirFd, pathToCString(pathname), wrap(timespec), followSymlinks ? 1 : 0);
+        Object timespecArg;
+        if (timespec == null) {
+            timespecArg = PNone.NO_VALUE;
+        } else {
+            timespecArg = timespec;
+        }
+        int ret = invokeNode.callInt(this, PosixNativeFunction.call_utimensat, dirFd, pathToCString(pathname), timespecArg, followSymlinks ? 1 : 0);
         if (ret != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
@@ -1031,7 +1038,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         assert PosixConstants.HAVE_FUTIMENS.value;
         assert timespec == null || timespec.length == 4;
-        int ret = invokeNode.callInt(this, PosixNativeFunction.call_futimens, fd, wrap(timespec));
+        int ret = invokeNode.callInt(this, PosixNativeFunction.call_futimens, fd, timespec);
         if (ret != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
@@ -1126,7 +1133,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public Object readlinkat(int dirFd, Object path,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         Buffer buffer = Buffer.allocate(PATH_MAX.value);
-        long n = invokeNode.callLong(this, PosixNativeFunction.call_readlinkat, dirFd, pathToCString(path), wrap(buffer), PATH_MAX.value);
+        long n = invokeNode.callLong(this, PosixNativeFunction.call_readlinkat, dirFd, pathToCString(path), buffer.data, PATH_MAX.value);
         if (n < 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
@@ -1157,7 +1164,7 @@ public final class NFIPosixSupport extends PosixSupport {
         int[] status = new int[1];
         boolean hasNohang = (options & WNOHANG.getValueIfDefined()) != 0;
         int subOptions = options | WNOHANG.getValueIfDefined();
-        Object wrappedStatus = wrap(status);
+        Object wrappedStatus = status;
         long res = invokeNode.callLong(this, PosixNativeFunction.call_waitpid, pid, wrappedStatus, subOptions);
         while (res == 0 && !hasNohang) {
             TruffleSafepoint.setBlockedThreadInterruptible(invokeNode, (ignored) -> {
@@ -1305,7 +1312,7 @@ public final class NFIPosixSupport extends PosixSupport {
             return EMPTY_LONG_ARRAY;
         }
         long[] groups = new long[res];
-        res = invokeNode.callInt(this, PosixNativeFunction.call_getgroups, groups.length, wrap(groups));
+        res = invokeNode.callInt(this, PosixNativeFunction.call_getgroups, groups.length, groups);
         if (res < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1316,7 +1323,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public RusageResult getrusage(int who,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         long[] result = new long[16];
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_getrusage, who, wrap(result));
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_getrusage, who, result);
         if (res < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1329,7 +1336,7 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public OpenPtyResult openpty(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int[] outvars = new int[2];
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_openpty, wrap(outvars));
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_openpty, outvars);
         if (res == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1341,7 +1348,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                     @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
         byte[] buf = new byte[L_ctermid.value];
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_ctermid, wrap(buf));
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_ctermid, buf);
         if (res == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1454,7 +1461,7 @@ public final class NFIPosixSupport extends PosixSupport {
         assert offset == dataLen;
 
         int res = invokeNode.callInt(this, PosixNativeFunction.fork_exec,
-                        wrap(data), wrap(offsets), offsets.length, argsPos, envPos, cwdPos,
+                        data, offsets, offsets.length, argsPos, envPos, cwdPos,
                         stdinReadFd, stdinWriteFd,
                         stdoutReadFd, stdoutWriteFd,
                         stderrReadFd, stderrWriteFd,
@@ -1462,7 +1469,7 @@ public final class NFIPosixSupport extends PosixSupport {
                         closeFds ? 1 : 0,
                         restoreSignals ? 1 : 0,
                         callSetsid ? 1 : 0,
-                        wrap(fdsToKeep), fdsToKeep.length);
+                        fdsToKeep, fdsToKeep.length);
         if (res == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1514,7 +1521,7 @@ public final class NFIPosixSupport extends PosixSupport {
         long offset = encodeCStringArray(data, pathnameLen + 1L, offsets, 1, args);
         assert offset == dataLen;
 
-        invokeNode.call(this, PosixNativeFunction.call_execv, wrap(data), wrap(offsets), offsets.length);
+        invokeNode.call(this, PosixNativeFunction.call_execv, data, offsets, offsets.length);
         throw getErrnoAndThrowPosixException(invokeNode);
     }
 
@@ -1663,7 +1670,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public AcceptResult accept(int sockfd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_accept, sockfd, wrap(addr.data), wrap(addr.len));
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_accept, sockfd, addr.data, addr.len);
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1674,7 +1681,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public void bind(int sockfd, UniversalSockAddr usa,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         UniversalSockAddrImpl addr = (UniversalSockAddrImpl) usa;
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_bind, sockfd, wrap(addr.data), addr.getLen());
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_bind, sockfd, addr.data, addr.getLen());
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1684,7 +1691,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public void connect(int sockfd, UniversalSockAddr usa,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         UniversalSockAddrImpl addr = (UniversalSockAddrImpl) usa;
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_connect, sockfd, wrap(addr.data), addr.getLen());
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_connect, sockfd, addr.data, addr.getLen());
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1703,7 +1710,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public UniversalSockAddr getpeername(int sockfd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_getpeername, sockfd, wrap(addr.data), wrap(addr.len));
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_getpeername, sockfd, addr.data, addr.len);
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1714,7 +1721,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public UniversalSockAddr getsockname(int sockfd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_getsockname, sockfd, wrap(addr.data), wrap(addr.len));
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_getsockname, sockfd, addr.data, addr.len);
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1725,7 +1732,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public int send(int sockfd, byte[] buf, int offset, int len, int flags,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         checkBounds(buf, offset, len);
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_send, sockfd, wrap(buf), offset, len, flags);
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_send, sockfd, buf, offset, len, flags);
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1737,7 +1744,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         checkBounds(buf, offset, len);
         UniversalSockAddrImpl destAddr = (UniversalSockAddrImpl) usa;
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_sendto, sockfd, wrap(buf), offset, len, flags, wrap(destAddr.data), destAddr.getLen());
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_sendto, sockfd, buf, offset, len, flags, destAddr.data, destAddr.getLen());
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1748,7 +1755,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public int recv(int sockfd, byte[] buf, int offset, int len, int flags,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         checkBounds(buf, offset, len);
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_recv, sockfd, wrap(buf), offset, len, flags);
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_recv, sockfd, buf, offset, len, flags);
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1760,7 +1767,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         checkBounds(buf, offset, len);
         UniversalSockAddrImpl srcAddr = new UniversalSockAddrImpl(this);
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_recvfrom, sockfd, wrap(buf), offset, len, flags, wrap(srcAddr.data), wrap(srcAddr.len));
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_recvfrom, sockfd, buf, offset, len, flags, srcAddr.data, srcAddr.len);
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1781,7 +1788,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         assert optlen >= 0 && optval.length >= optlen;
         int[] bufLen = new int[]{optlen};
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_getsockopt, sockfd, level, optname, wrap(optval), wrap(bufLen));
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_getsockopt, sockfd, level, optname, optval, bufLen);
         if (res != 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1792,7 +1799,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         assert optlen >= 0 && optval.length >= optlen;
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_setsockopt, sockfd, level, optname, wrap(optval), optlen);
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_setsockopt, sockfd, level, optname, optval, optlen);
         if (res != 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1818,7 +1825,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public Object inet_ntoa(int src,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         Buffer buf = Buffer.allocate(INET_ADDRSTRLEN.value);
-        int len = invokeNode.callInt(this, PosixNativeFunction.call_inet_ntoa, src, wrap(buf));
+        int len = invokeNode.callInt(this, PosixNativeFunction.call_inet_ntoa, src, buf.data);
         return buf.withLength(len);
     }
 
@@ -1826,7 +1833,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public byte[] inet_pton(int family, Object src,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException, InvalidAddressException {
         byte[] buf = new byte[family == AF_INET.value ? 4 : 16];
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_inet_pton, family, pathToCString(src), wrap(buf));
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_inet_pton, family, pathToCString(src), buf);
         // Rather unusually, the return value of 0 does not indicate success but is used by
         // inet_pton to report invalid format of the address (without setting errno).
         // Success is reported by returning 1.
@@ -1847,7 +1854,7 @@ public final class NFIPosixSupport extends PosixSupport {
             throw new IllegalArgumentException("Invalid length of IPv4/6 address");
         }
         Buffer buf = Buffer.allocate(INET6_ADDRSTRLEN.value);
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_inet_ntop, family, wrap(src), wrap(buf), INET6_ADDRSTRLEN.value);
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_inet_ntop, family, src, buf.data, INET6_ADDRSTRLEN.value);
         if (res < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1858,7 +1865,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public Object gethostname(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int maxLen = (HOST_NAME_MAX.defined ? HOST_NAME_MAX.getValueIfDefined() : _POSIX_HOST_NAME_MAX.value) + 1;
         Buffer buf = Buffer.allocate(maxLen);
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_gethostname, wrap(buf), maxLen);
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_gethostname, buf.data, maxLen);
         if (res != 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1873,7 +1880,7 @@ public final class NFIPosixSupport extends PosixSupport {
         Buffer host = Buffer.allocate(NI_MAXHOST.value);
         Buffer serv = Buffer.allocate(NI_MAXSERV.value);
         UniversalSockAddrImpl addr = (UniversalSockAddrImpl) usa;
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_getnameinfo, wrap(addr.data), addr.getLen(), wrap(host), NI_MAXHOST.value, wrap(serv), NI_MAXSERV.value, flags);
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_getnameinfo, addr.data, addr.getLen(), host.data, NI_MAXHOST.value, serv.data, NI_MAXSERV.value, flags);
         if (res != 0) {
             throw new GetAddrInfoException(res, gai_strerror(res, invokeNode, fromByteArrayNode, switchEncodingFromUtf8Node));
         }
@@ -1889,7 +1896,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                     @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws GetAddrInfoException {
         long[] ptr = new long[1];
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_getaddrinfo, pathToCStringOrNull(node), pathToCStringOrNull(service), family, sockType, protocol, flags, wrap(ptr));
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_getaddrinfo, pathToCStringOrNull(node), pathToCStringOrNull(service), family, sockType, protocol, flags, ptr);
         if (res != 0) {
             throw new GetAddrInfoException(res, gai_strerror(res, invokeNode, fromByteArrayNode, switchEncodingFromUtf8Node));
         }
@@ -1921,7 +1928,7 @@ public final class NFIPosixSupport extends PosixSupport {
         if (injectBranchProbability(SLOWPATH_PROBABILITY, cachedFunctions.get(function.ordinal()) == null)) {
             InvokeNativeFunction.loadFunction(this, cryptLibrary, function);
         }
-        Object funObject = cachedFunctions.get(function.ordinal());
+        FunctionWithSignature funObject = cachedFunctions.get(function.ordinal());
         /*
          * From the manpage: Upon successful completion, crypt returns a pointer to a string which
          * encodes both the hashed passphrase, and the settings that were used to encode it. See
@@ -1937,7 +1944,7 @@ public final class NFIPosixSupport extends PosixSupport {
                             stringToUTF8CString(word, switchEncodingToUtf8Node, copyToByteArrayNode),
                             stringToUTF8CString(salt, switchEncodingToUtf8Node, copyToByteArrayNode)};
             try {
-                Object interopResult = invokeNode.functionInterop.execute(funObject, args);
+                Object interopResult = invokeNode.functionInterop.call(funObject.signature(), funObject.function(), args);
                 resultPtr = invokeNode.getResultInterop().asLong(interopResult);
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
@@ -1958,7 +1965,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private TruffleString gai_strerror(int errorCode, InvokeNativeFunction invokeNode, TruffleString.FromByteArrayNode fromByteArrayNode, TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) {
         byte[] buf = new byte[1024];
-        invokeNode.call(this, PosixNativeFunction.call_gai_strerror, errorCode, wrap(buf), buf.length);
+        invokeNode.call(this, PosixNativeFunction.call_gai_strerror, errorCode, buf, buf.length);
         // TODO PyUnicode_DecodeLocale
         return cStringToTruffleString(buf, fromByteArrayNode, switchEncodingFromUtf8Node);
     }
@@ -2005,8 +2012,8 @@ public final class NFIPosixSupport extends PosixSupport {
 
         private void update(long ptr, NFIPosixSupport nfiPosixSupport, InvokeNativeFunction invokeNode) {
             socketAddress = new byte[(int) nfiPosixSupport.getConstant(SIZEOF_STRUCT_SOCKADDR_STORAGE)];
-            int res = invokeNode.callInt(nfiPosixSupport, PosixNativeFunction.get_addrinfo_members, ptr, nfiPosixSupport.wrap(intData), nfiPosixSupport.wrap(longData),
-                            nfiPosixSupport.wrap(socketAddress));
+            int res = invokeNode.callInt(nfiPosixSupport, PosixNativeFunction.get_addrinfo_members, ptr, intData, longData,
+                            socketAddress);
             if (res != 0) {
                 throw shouldNotReachHere("the length of ai_canonname does not fit into an int");
             }
@@ -2331,7 +2338,7 @@ public final class NFIPosixSupport extends PosixSupport {
             throw NO_SEM_GETVALUE_EXCEPTION;
         }
         int[] value = new int[1];
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_getvalue, handle, wrap(value));
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_getvalue, handle, value);
         if (res < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -2443,7 +2450,7 @@ public final class NFIPosixSupport extends PosixSupport {
         byte[] buffer = new byte[initialBufferSize];
         try {
             while (true) {
-                Object pwPtr = invokeNode.call(this, PosixNativeFunction.call_getpwent, wrap(bufferSize));
+                Object pwPtr = invokeNode.call(this, PosixNativeFunction.call_getpwent, bufferSize);
                 if (invokeNode.getResultInterop().isNull(pwPtr)) {
                     break;
                 }
@@ -2453,7 +2460,7 @@ public final class NFIPosixSupport extends PosixSupport {
                 if (buffer.length < bufferSize[0]) {
                     buffer = new byte[(int) bufferSize[0]];
                 }
-                int code = invokeNode.callInt(this, PosixNativeFunction.get_getpwent_data, pwPtr, wrap(buffer), buffer.length, wrap(output));
+                int code = invokeNode.callInt(this, PosixNativeFunction.get_getpwent_data, pwPtr, buffer, buffer.length, output);
                 if (code != 0) {
                     throw CompilerDirectives.shouldNotReachHere("get_getpwent_data failed");
                 }
@@ -2477,7 +2484,7 @@ public final class NFIPosixSupport extends PosixSupport {
         while (bufferSize < PWD_BUFFER_MAX_SIZE) {
             byte[] data = new byte[bufferSize];
             long[] output = new long[PWD_OUTPUT_LEN];
-            int result = invokeNode.callInt(this, pwfun, pwfunArg, wrap(data), data.length, wrap(output));
+            int result = invokeNode.callInt(this, pwfun, pwfunArg, data, data.length, output);
             if (result == -1) {
                 return null;
             }
@@ -2506,7 +2513,7 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public int ioctlBytes(int fd, long request, byte[] arg,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        int res = invokeNode.callInt(this, PosixNativeFunction.call_ioctl_bytes, fd, request, wrap(arg));
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_ioctl_bytes, fd, request, arg);
         if (res < 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
@@ -2665,25 +2672,12 @@ public final class NFIPosixSupport extends PosixSupport {
         throw new PosixException(errno, strerror(errno, invokeNode, TruffleString.FromByteArrayNode.getUncached(), TruffleString.SwitchEncodingNode.getUncached()));
     }
 
-    private Object wrap(byte[] bytes) {
-        return context.getEnv().asGuestValue(bytes);
-    }
-
-    private Object wrap(long[] longs) {
-        return context.getEnv().asGuestValue(longs);
-    }
-
-    private Object wrap(int[] ints) {
-        return context.getEnv().asGuestValue(ints);
-    }
-
     private Object wrap(Timeval[] timeval) {
-        long[] longs = timeval == null ? null : new long[]{timeval[0].getSeconds(), timeval[0].getMicroseconds(), timeval[1].getSeconds(), timeval[1].getMicroseconds()};
-        return wrap(longs);
-    }
-
-    private Object wrap(Buffer buffer) {
-        return context.getEnv().asGuestValue(buffer.data);
+        if (timeval == null) {
+            return PNone.NO_VALUE;
+        } else {
+            return new long[]{timeval[0].getSeconds(), timeval[0].getMicroseconds(), timeval[1].getSeconds(), timeval[1].getMicroseconds()};
+        }
     }
 
     private static TruffleString cStringToTruffleString(byte[] buf, TruffleString.FromByteArrayNode fromByteArrayNode, TruffleString.SwitchEncodingNode switchEncodingNode) {
@@ -2700,7 +2694,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     private Object pathToCStringOrNull(Object path) {
-        return path == null ? context.getEnv().asGuestValue(null) : bufferToCString((Buffer) path);
+        return path == null ? PNone.NO_VALUE : bufferToCString((Buffer) path);
     }
 
     private Object pathToCString(Object path) {
@@ -2708,14 +2702,14 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     private Object bufferToCString(Buffer path) {
-        return wrap(nullTerminate(path.data, (int) path.length));
+        return nullTerminate(path.data, (int) path.length);
     }
 
     private Object stringToUTF8CString(TruffleString input,
                     @Cached TruffleString.SwitchEncodingNode switchEncodingToUtf8Node,
                     @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
         byte[] utf8 = getStringBytes(input, switchEncodingToUtf8Node, copyToByteArrayNode);
-        return wrap(nullTerminate(utf8, utf8.length));
+        return nullTerminate(utf8, utf8.length);
     }
 
     private static byte[] nullTerminate(byte[] str, int length) {

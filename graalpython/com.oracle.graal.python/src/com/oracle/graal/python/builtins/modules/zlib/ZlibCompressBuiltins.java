@@ -249,10 +249,10 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
                 assert self.isInitialized();
                 PythonContext context = PythonContext.get(inliningTarget);
                 NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
-                Object lastInput;
+                byte[] lastInput;
                 if (self.lastInput == null) {
                     // all previous input data has been processed or nothing has been compressed.
-                    lastInput = context.getEnv().asGuestValue(PythonUtils.EMPTY_BYTE_ARRAY);
+                    lastInput = PythonUtils.EMPTY_BYTE_ARRAY;
                 } else {
                     // pass the last data input to continue processing.
                     // all other needed info, e.g. size and offset, about the last data input is

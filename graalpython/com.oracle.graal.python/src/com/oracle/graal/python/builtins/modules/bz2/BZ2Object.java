@@ -106,7 +106,6 @@ public abstract class BZ2Object extends PythonBuiltinObject {
         private int bzsAvailInReal;
 
         private byte[] nextIn;
-        private Object nextInGuest;
         private int nextInIndex;
 
         public BZ2Decompressor(Object cls, Shape instanceShape) {
@@ -119,7 +118,6 @@ public abstract class BZ2Object extends PythonBuiltinObject {
             this.unusedData = PythonUtils.EMPTY_BYTE_ARRAY;
 
             this.nextIn = null;
-            this.nextInGuest = null;
             this.nextInIndex = 0;
         }
 
@@ -190,19 +188,10 @@ public abstract class BZ2Object extends PythonBuiltinObject {
         public void setNextIn(byte[] in) {
             assert in != null;
             this.nextIn = in;
-            this.nextInGuest = null;
         }
 
         public void clearNextIn() {
             this.nextIn = null;
-            this.nextInGuest = null;
-        }
-
-        public Object getNextInGuest(PythonContext context) {
-            if (nextInGuest == null) {
-                this.nextInGuest = context.getEnv().asGuestValue(nextIn);
-            }
-            return nextInGuest;
         }
 
         public int getNextInIndex() {

@@ -38,38 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules.zlib;
+package com.oracle.graal.python.util;
 
-import com.oracle.graal.python.runtime.NFIZlibSupport;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.object.Shape;
-
-// Note: some IDEs mark this class as inaccessible in PFactory, but changing this to
-// public will cause a warning: [this-escape] possible 'this' escape before subclass is fully
-// initialized
-public class NativeZlibCompObject extends ZLibCompObject {
-    private NFIZlibSupport.Pointer pointer;
-    byte[] lastInput;
-
-    public NativeZlibCompObject(Object cls, Shape instanceShape, Object zst, NFIZlibSupport zlibSupport) {
-        super(cls, instanceShape);
-        this.pointer = new NFIZlibSupport.Pointer(this, zst, zlibSupport);
-        this.lastInput = null;
-    }
-
-    public Object getZst() {
-        assert pointer != null;
-        return pointer.getReference();
-    }
-
-    @CompilerDirectives.TruffleBoundary
-    public void markReleased() {
-        if (isInitialized) {
-            synchronized (this) {
-                isInitialized = false;
-                pointer.markReleased();
-                pointer = null;
-            }
-        }
-    }
+public final record FunctionWithSignature(Object signature, Object function) {
 }

@@ -121,7 +121,7 @@ public class ZlibNodes {
                         @Cached GetNativeBufferNode getBuffer,
                         @Cached ZlibNativeErrorHandling errorHandling) {
             NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
-            self.lastInput = context.getEnv().asGuestValue(bytes);
+            self.lastInput = bytes;
             int err = zlibSupport.compressObj(self.getZst(), self.lastInput, len, DEF_BUF_SIZE, compressObj);
             if (err != Z_OK) {
                 errorHandling.execute(inliningTarget, self.getZst(), err, zlibSupport, false);
@@ -146,7 +146,7 @@ public class ZlibNodes {
                         @Cached ZlibNativeErrorHandling errorHandling) {
             PythonContext context = PythonContext.get(inliningTarget);
             NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
-            Object in = context.getEnv().asGuestValue(bytes);
+            byte[] in = bytes;
             Object zst = zlibSupport.createStream(createStream);
             int err = zlibSupport.deflateOffHeap(zst, in, len, DEF_BUF_SIZE, level, wbits, deflateOffHeap);
             if (err != Z_OK) {
@@ -170,7 +170,7 @@ public class ZlibNodes {
                         @Cached GetNativeBufferNode getBuffer,
                         @Cached ZlibNativeErrorHandling errorHandling) {
             NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
-            Object in = context.getEnv().asGuestValue(bytes);
+            byte[] in = bytes;
             int err = zlibSupport.decompressObj(self.getZst(), in, len, DEF_BUF_SIZE, maxLength, decompressObj);
             if (err != Z_OK) {
                 errorHandling.execute(inliningTarget, self.getZst(), err, zlibSupport, false);
@@ -192,7 +192,7 @@ public class ZlibNodes {
                         @Cached GetNativeBufferNode getBuffer,
                         @Cached ZlibNativeErrorHandling errorHandling) {
             NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
-            Object in = context.getEnv().asGuestValue(bytes);
+            byte[] in = bytes;
             int ret = zlibSupport.decompressor(self.getZst(), in, len, maxLength, decompressor);
             if (ret < 0) {
                 errorHandling.execute(inliningTarget, self.getZst(), ret, zlibSupport, false);
@@ -217,7 +217,7 @@ public class ZlibNodes {
                         @Cached ZlibNativeErrorHandling errorHandling) {
             NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
             Object zst = zlibSupport.createStream(createStream);
-            Object in = context.getEnv().asGuestValue(bytes);
+            byte[] in = bytes;
             int err = zlibSupport.inflateOffHeap(zst, in, len, bufsize, wbits, inflateOffHeap);
             if (err != Z_OK) {
                 errorHandling.execute(inliningTarget, zst, err, zlibSupport, true);
@@ -547,8 +547,7 @@ public class ZlibNodes {
                 return PythonUtils.EMPTY_BYTE_ARRAY;
             }
             byte[] resultArray = new byte[size];
-            Object out = context.getEnv().asGuestValue(resultArray);
-            zlibSupport.getBuffer(zst, option, out, getBuffer);
+            zlibSupport.getBuffer(zst, option, resultArray, getBuffer);
             return resultArray;
         }
     }

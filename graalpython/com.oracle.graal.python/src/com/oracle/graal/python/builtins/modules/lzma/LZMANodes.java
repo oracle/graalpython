@@ -511,14 +511,13 @@ public class LZMANodes {
                         NativeLibrary.InvokeNativeFunction setFilterSpecBCJ,
                         PRaiseNode raiseNode) {
             NFILZMASupport lzmaSupport = context.getNFILZMASupport();
-            Object opts = context.getEnv().asGuestValue(filter);
             int err;
             long id = filter[0];
             switch (LZMAFilter.from(id)) {
                 case LZMA_FILTER_LZMA1:
                 case LZMA_FILTER_LZMA2:
                     assert filter.length == 10;
-                    err = lzmaSupport.setFilterSpecLZMA(lzmast, fidx, opts, setFilterSpecLZMA);
+                    err = lzmaSupport.setFilterSpecLZMA(lzmast, fidx, filter, setFilterSpecLZMA);
                     if (err != LZMA_OK) {
                         if (err == LZMA_PRESET_ERROR) {
                             throw raiseNode.raise(inliningTarget, LZMAError, INVALID_COMPRESSION_PRESET, filter[LZMAOption.preset.ordinal()]);
@@ -528,7 +527,7 @@ public class LZMANodes {
                     return;
                 case LZMA_FILTER_DELTA:
                     assert filter.length == 2;
-                    err = lzmaSupport.setFilterSpecDelta(lzmast, fidx, opts, setFilterSpecDelta);
+                    err = lzmaSupport.setFilterSpecDelta(lzmast, fidx, filter, setFilterSpecDelta);
                     if (err != LZMA_OK) {
                         errorHandling(inliningTarget, err, raiseNode);
                     }
@@ -540,7 +539,7 @@ public class LZMANodes {
                 case LZMA_FILTER_ARMTHUMB:
                 case LZMA_FILTER_SPARC:
                     assert filter.length == 2;
-                    err = lzmaSupport.setFilterSpecBCJ(lzmast, fidx, opts, setFilterSpecBCJ);
+                    err = lzmaSupport.setFilterSpecBCJ(lzmast, fidx, filter, setFilterSpecBCJ);
                     if (err != LZMA_OK) {
                         errorHandling(inliningTarget, err, raiseNode);
                     }
@@ -877,8 +876,7 @@ public class LZMANodes {
                         @Cached InlinedConditionProfile errProfile,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             NFILZMASupport lzmaSupport = context.getNFILZMASupport();
-            Object inGuest = context.getEnv().asGuestValue(bytes);
-            int err = lzmaSupport.compress(self.getLzs(), inGuest, len, action, INITIAL_BUFFER_SIZE, compress);
+            int err = lzmaSupport.compress(self.getLzs(), bytes, len, action, INITIAL_BUFFER_SIZE, compress);
             if (errProfile.profile(inliningTarget, err != LZMA_OK)) {
                 errorHandling(inliningTarget, err, raiseNode);
             }
@@ -1119,7 +1117,7 @@ public class LZMANodes {
                         @Cached InlinedConditionProfile errProfile) {
             PythonContext context = PythonContext.get(inliningTarget);
             NFILZMASupport lzmaSupport = context.getNFILZMASupport();
-            Object inGuest = context.getEnv().asGuestValue(self.getNextIn());
+            byte[] inGuest = self.getNextIn();
             int offset = self.getNextInIndex();
             int err = lzmaSupport.decompress(self.getLzs(), inGuest, offset, maxLength, INITIAL_BUFFER_SIZE, self.getLzsAvailIn(), decompress);
             long nextInIdx = lzmaSupport.getNextInIndex(self.getLzs(), getNextInIndex);
@@ -1242,9 +1240,8 @@ public class LZMANodes {
                 return PythonUtils.EMPTY_BYTE_ARRAY;
             }
             byte[] resultArray = new byte[size];
-            Object out = context.getEnv().asGuestValue(resultArray);
             /* this will clear the native output once retrieved */
-            lzmaSupport.getOutputBuffer(lzmast, out, getBuffer);
+            lzmaSupport.getOutputBuffer(lzmast, resultArray, getBuffer);
             return resultArray;
         }
     }
@@ -1302,7 +1299,7 @@ public class LZMANodes {
             NFILZMASupport lzmaSupport = ctxt.getNFILZMASupport();
             Object lzmast = lzmaSupport.createStream(createStream);
             long[] opts = filterConverter.execute(frame, filter);
-            int lzret = lzmaSupport.encodeFilter(lzmast, ctxt.getEnv().asGuestValue(opts), encodeFilter);
+            int lzret = lzmaSupport.encodeFilter(lzmast, opts, encodeFilter);
             if (errProfile.profile(inliningTarget, lzret != LZMA_OK)) {
                 lzmaSupport.deallocateStream(lzmast, deallocateStream);
                 if (lzret == LZMA_PRESET_ERROR) {
@@ -1344,9 +1341,7 @@ public class LZMANodes {
             NFILZMASupport lzmaSupport = ctxt.getNFILZMASupport();
             long[] opts = new long[MAX_OPTS_INDEX];
             int len = encoded.length;
-            Object encodedProps = ctxt.getEnv().asGuestValue(encoded);
-            Object filter = ctxt.getEnv().asGuestValue(opts);
-            int lzret = lzmaSupport.decodeFilter(id, encodedProps, len, filter, decodeFilter);
+            int lzret = lzmaSupport.decodeFilter(id, encoded, len, opts, decodeFilter);
             if (errProfile.profile(inliningTarget, lzret != LZMA_OK)) {
                 if (lzret == LZMA_ID_ERROR) {
                     throw raiseNode.raise(inliningTarget, LZMAError, INVALID_FILTER, opts[LZMAOption.id.ordinal()]);
