@@ -1,12 +1,23 @@
+/* Copyright (c) 2025, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2025 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 #include "Python.h"
 #include "pycore_fileutils.h"     // _Py_HasFileSystemDefaultEncodeErrors
+#if 0 // GraalPy change
 #include "pycore_getopt.h"        // _PyOS_GetOpt()
+#endif // GraalPy change
 #include "pycore_initconfig.h"    // _PyStatus_OK()
 #include "pycore_interp.h"        // _PyInterpreterState.runtime
 #include "pycore_long.h"          // _PY_LONG_MAX_STR_DIGITS_THRESHOLD
+#if 0 // GraalPy change
 #include "pycore_pathconfig.h"    // _Py_path_config
+#endif // GraalPy change
 #include "pycore_pyerrors.h"      // _PyErr_GetRaisedException()
+#if 0 // GraalPy change
 #include "pycore_pylifecycle.h"   // _Py_PreInitializeFromConfig()
+#endif // GraalPy change
 #include "pycore_pymem.h"         // _PyMem_SetDefaultAllocator()
 #include "pycore_pystate.h"       // _PyThreadState_GET()
 
@@ -196,6 +207,7 @@ int Py_LegacyWindowsStdioFlag = 0; /* Uses FileIO instead of WindowsConsoleIO */
 #endif
 
 
+#if 0 // GraalPy change
 static PyObject *
 _Py_GetGlobalVariablesAsDict(void)
 {
@@ -269,6 +281,7 @@ fail:
 #undef SET_ITEM_STR
 _Py_COMP_DIAG_POP
 }
+#endif // GraalPy change
 
 char*
 Py_GETENV(const char *name)
@@ -359,6 +372,7 @@ _PyWideStringList_Clear(PyWideStringList *list)
 }
 
 
+#if 0 // GraalPy change
 int
 _PyWideStringList_Copy(PyWideStringList *list, const PyWideStringList *list2)
 {
@@ -684,6 +698,7 @@ config_check_consistency(const PyConfig *config)
 }
 #endif
 
+#endif // GraalPy change
 
 /* Free memory allocated in config, but don't clear all attributes */
 void
@@ -837,6 +852,7 @@ PyConfig_InitIsolatedConfig(PyConfig *config)
 }
 
 
+#if 0 // GraalPy change
 /* Copy str into *config_str (duplicate the string) */
 PyStatus
 PyConfig_SetString(PyConfig *config, wchar_t **config_str, const wchar_t *str)
@@ -3178,3 +3194,4 @@ _Py_DumpPathConfig(PyThreadState *tstate)
 
     _PyErr_SetRaisedException(tstate, exc);
 }
+#endif // GraalPy change

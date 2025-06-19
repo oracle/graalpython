@@ -3879,6 +3879,7 @@ PyUnicode_WriteChar(PyObject *unicode, Py_ssize_t index, Py_UCS4 ch)
                     index, ch);
     return 0;
 }
+#endif // GraalPy change
 
 const char *
 PyUnicode_GetDefaultEncoding(void)
@@ -3886,6 +3887,7 @@ PyUnicode_GetDefaultEncoding(void)
     return "utf-8";
 }
 
+#if 0 // GraalPy change
 /* create or adjust a UnicodeDecodeError */
 static void
 make_decode_exception(PyObject **exceptionObject,
