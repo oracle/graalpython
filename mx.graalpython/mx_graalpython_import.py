@@ -138,7 +138,6 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/include/dynamic_annotations.h": CopyFrom("Include/dynamic_annotations.h"),
     "graalpython/com.oracle.graal.python.cext/expat": CopyFromWithOverrides("Modules/expat"),
     "graalpython/com.oracle.graal.python.cext/modules/_sqlite": CopyFrom("Modules/_sqlite"),
-    # "graalpython/com.oracle.graal.python.cext/modules/_hacl": CopyFromWithOverrides("Modules/_hacl"),
 	"graalpython/com.oracle.graal.python.cext/modules/_hacl/Hacl_Hash_SHA3.c": CopyFrom("Modules/_hacl/Hacl_Hash_SHA3.c"),
 	"graalpython/com.oracle.graal.python.cext/modules/_hacl/Hacl_Hash_SHA3.h": CopyFrom("Modules/_hacl/Hacl_Hash_SHA3.h"),
 	"graalpython/com.oracle.graal.python.cext/modules/_hacl/Hacl_Streaming_Types.h": CopyFrom("Modules/_hacl/Hacl_Streaming_Types.h"),
