@@ -60,6 +60,7 @@ import mx_gate
 import mx_native
 import mx_unittest
 import mx_sdk
+import mx_sdk_vm_ng
 import mx_subst
 import mx_truffle
 import mx_graalpython_bisect
@@ -264,6 +265,14 @@ def graalpy_standalone_deps():
     include_truffle_runtime = not mx.env_var_to_bool("EXCLUDE_TRUFFLE_RUNTIME")
     deps = mx_truffle.resolve_truffle_dist_names(use_optimized_runtime=include_truffle_runtime)
     return deps
+
+
+def libpythonvm_build_args():
+    build_args = []
+    build_args += bytecode_dsl_build_args()
+    if mx_sdk_vm_ng.is_nativeimage_ee() and mx.get_os() == 'linux' and 'NATIVE_IMAGE_AUXILIARY_ENGINE_CACHE' not in os.environ:
+        build_args += ['--gc=G1', '-H:-ProtectionKeys']
+    return build_args
 
 
 def full_python(args, env=None):
@@ -2026,11 +2035,6 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
 
 def bytecode_dsl_build_args():
     return ['-Dpython.EnableBytecodeDSLInterpreter=true'] if BYTECODE_DSL_INTERPRETER else []
-
-mx_subst.results_substitutions.register_no_arg(
-    'bytecode_dsl_build_args',
-    lambda: f'-Dpython.EnableBytecodeDSLInterpreter={repr(BYTECODE_DSL_INTERPRETER).lower()}'
-)
 
 mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,

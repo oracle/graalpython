@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,12 +39,14 @@
 
 from _weakref import ref, getweakrefcount
 import gc
+import sys
 
 
 def test_gc_collect():
     assert isinstance(gc.collect(), (int, type(None)))
 
 
-def test_gc_count():
-    c0, c1, c2 = gc.get_count()
-    assert c0 + c1 + c2 > 0, "we definitely had something collected"
+if not (sys.implementation.name == "graalpy" and __graalpython__.is_native): # GR-15504
+    def test_gc_count():
+        c0, c1, c2 = gc.get_count()
+        assert c0 + c1 + c2 > 0, "we definitely had something collected"

@@ -847,8 +847,8 @@ suite = {
                 "-J-Xms14g", # GR-46399: libpythonvm needs more than the default minimum of 8 GB to be built
                 "-Dpolyglot.python.PosixModuleBackend=native",
                 "-Dpolyglot.python.Sha3ModuleBackend=native",
-                "<bytecode_dsl_build_args>",
             ],
+            "dynamicBuildArgs": "libpythonvm_build_args",
         },
     },
 
