@@ -1400,7 +1400,8 @@ def graalpython_gate_runner(args, tasks):
             run_mx(["build"], env={**os.environ, **LATEST_JAVA_HOME})
             args =['--verbose']
             vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false']
-            mx_unittest.unittest(vm_args + ['org.graalvm.python.embedding.vfs.test'] + args + ["--use-graalvm"])
+            has_compiler = bool(mx.suite('compiler', fatalIfMissing=False))
+            mx_unittest.unittest(vm_args + ['org.graalvm.python.embedding.vfs.test'] + args + (["--use-graalvm"] if has_compiler else []))
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
