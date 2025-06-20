@@ -51,6 +51,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.junit.After;
@@ -70,7 +71,8 @@ public class TimeDateTest extends PythonTests {
     public void setUpTest() {
         out = new ByteArrayOutputStream();
         err = new ByteArrayOutputStream();
-        Context.Builder builder = Context.newBuilder();
+        Context.Builder builder = Context.newBuilder()
+            .engine(Engine.newBuilder("python").allowExperimentalOptions(true).build());
         builder.allowExperimentalOptions(true);
         builder.allowAllAccess(true);
         builder.out(out);

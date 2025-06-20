@@ -47,6 +47,7 @@ import java.nio.charset.Charset;
 import java.util.Locale;
 
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Value;
 import org.junit.Test;
 
@@ -78,7 +79,9 @@ public class LocaleTest {
     @Test
     public void getlocaleWithOption() {
         String expectedEncoding = Charset.defaultCharset().displayName();
-        try (Context context = Context.newBuilder("python").option("python.InitialLocale", "en_GB").build()) {
+        try (Context context = Context.newBuilder("python")
+                        .engine(Engine.newBuilder("python").allowExperimentalOptions(true).build())
+                        .option("python.InitialLocale", "en_GB").build()) {
             Value tuple = context.eval("python", "import locale; locale.getlocale()");
             assertEquals("en_GB", tuple.getArrayElement(0).asString());
             assertEquals(expectedEncoding, tuple.getArrayElement(1).asString());

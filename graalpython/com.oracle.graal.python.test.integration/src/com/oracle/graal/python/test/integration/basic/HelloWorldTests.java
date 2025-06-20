@@ -31,6 +31,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
 import org.junit.Test;
 
 import com.oracle.graal.python.test.integration.PythonTests;
@@ -53,7 +54,7 @@ public class HelloWorldTests {
     public void usesFrozenModules() {
         final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
         final PrintStream printStream = new PrintStream(byteArray);
-        try (Context c = Context.newBuilder().option("log.python.level", "FINE").out(printStream).err(printStream).build()) {
+        try (Context c = Context.newBuilder().engine(Engine.newBuilder("python").allowExperimentalOptions(true).build()).option("log.python.level", "FINE").out(printStream).err(printStream).build()) {
             c.initialize("python");
         }
         String result = byteArray.toString().replaceAll("\r\n", "\n");

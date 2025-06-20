@@ -43,22 +43,22 @@ package com.oracle.graal.python.test.integration.interop;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayOutputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
-
-import com.oracle.graal.python.test.integration.PythonTests;
-import java.io.ByteArrayOutputStream;
-
 import org.graalvm.python.embedding.KeywordArguments;
 import org.graalvm.python.embedding.PositionalArguments;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.oracle.graal.python.test.integration.PythonTests;
 
 public class ArgumentsTest extends PythonTests {
 
@@ -70,7 +70,8 @@ public class ArgumentsTest extends PythonTests {
     public void setUpTest() {
         out = new ByteArrayOutputStream();
         err = new ByteArrayOutputStream();
-        Context.Builder builder = Context.newBuilder();
+        Context.Builder builder = Context.newBuilder()
+            .engine(Engine.newBuilder("python").allowExperimentalOptions(true).build());
         builder.allowExperimentalOptions(true);
         builder.allowAllAccess(true);
         builder.out(out);

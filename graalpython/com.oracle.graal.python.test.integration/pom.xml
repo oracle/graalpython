@@ -160,7 +160,14 @@ Additionally, one can change the polyglot artifacts version with
         </dependency>
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>
-            <artifactId>python-community</artifactId>
+            <artifactId>python</artifactId>
+            <version>${com.oracle.graal.python.test.polyglot.version}</version>
+            <scope>runtime</scope>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.polyglot</groupId>
+            <artifactId>python-isolate</artifactId>
             <version>${com.oracle.graal.python.test.polyglot.version}</version>
             <scope>runtime</scope>
             <type>pom</type>

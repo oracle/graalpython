@@ -45,6 +45,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.io.IOAccess;
 import org.junit.Before;
 import org.junit.Test;
@@ -72,7 +73,7 @@ public class ResourcesTest {
 
     @Test
     public void testResourcesAlwaysAllowReading() {
-        try (Context context = Context.newBuilder("python").allowIO(IOAccess.NONE).option("python.PythonHome", "/path/that/does/not/exist").build()) {
+        try (Context context = Context.newBuilder("python").engine(Engine.newBuilder("python").allowExperimentalOptions(true).build()).allowIO(IOAccess.NONE).option("python.PythonHome", "/path/that/does/not/exist").build()) {
             String foundHome = context.eval("python", "import email; email.__spec__.origin").asString();
             assertTrue(foundHome, foundHome.contains("python" + File.separator + "python-home"));
         }

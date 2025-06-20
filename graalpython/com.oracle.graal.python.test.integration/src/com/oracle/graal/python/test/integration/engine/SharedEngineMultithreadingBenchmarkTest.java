@@ -59,7 +59,7 @@ public class SharedEngineMultithreadingBenchmarkTest extends SharedEngineMultith
 
     @Test
     public void testRichardsInParallelInMultipleContexts() throws Throwable {
-        try (Engine engine = Engine.newBuilder().allowExperimentalOptions(true).option("python.IsolateNativeModules", "true").build()) {
+        try (Engine engine = Engine.newBuilder("python").allowExperimentalOptions(true).option("python.IsolateNativeModules", "true").build()) {
             Source richardsSource = PythonTests.getScriptSource("richards3.py");
             Task[] tasks = new Task[THREADS_COUNT];
             for (int taskIdx = 0; taskIdx < tasks.length; taskIdx++) {

@@ -60,7 +60,7 @@ public class SharedEngineMultithreadingSimpleLambdaTest extends SharedEngineMult
             // Note: for some reason we must create a fresh source for each run in order to
             // reproduce GR-30689
             Source code = Source.create("python", "lambda: 42");
-            try (Engine engine = Engine.create()) {
+            try (Engine engine = Engine.newBuilder("python").allowExperimentalOptions(true).build()) {
                 Task[] tasks = new Task[THREADS_COUNT];
                 log("Iteration %d, submitting %d tasks...", runIndex, tasks.length);
                 for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
@@ -89,7 +89,7 @@ public class SharedEngineMultithreadingSimpleLambdaTest extends SharedEngineMult
         log("Running testLambdaInParallelCtxCreatedInMainThread");
         for (int runIndex = 0; runIndex < RUNS_COUNT; runIndex++) {
             Source code = Source.create("python", "lambda: 42");
-            try (Engine engine = Engine.create()) {
+            try (Engine engine = Engine.newBuilder("python").allowExperimentalOptions(true).build()) {
                 Task[] tasks = new Task[THREADS_COUNT];
                 log("Iteration %d, submitting %d tasks...", runIndex, tasks.length);
                 for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
@@ -115,7 +115,7 @@ public class SharedEngineMultithreadingSimpleLambdaTest extends SharedEngineMult
         log("Running testLambdaInParallelCtxCreatedInMainThread");
         for (int runIndex = 0; runIndex < RUNS_COUNT; runIndex++) {
             Source code = Source.create("python", "lambda: 42");
-            try (Engine engine = Engine.create()) {
+            try (Engine engine = Engine.newBuilder("python").allowExperimentalOptions(true).build()) {
                 InitializedContext[] contexts = new InitializedContext[]{
                                 initContext(engine, new String[0]),
                                 initContext(engine, new String[0]),

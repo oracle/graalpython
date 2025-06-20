@@ -45,6 +45,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Value;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameter;
@@ -60,7 +61,7 @@ public class LzmaTests {
 
     @Test
     public void testLzmaBasics() {
-        try (Context context = Context.newBuilder("python").allowNativeAccess(useNative).build()) {
+        try (Context context = Context.newBuilder("python").engine(Engine.newBuilder("python").allowExperimentalOptions(true).build()).allowNativeAccess(useNative).build()) {
             Value isSupported = context.eval("python", "import lzma; lzma.is_check_supported(lzma.CHECK_CRC32)");
             assertTrue(isSupported.isBoolean());
             assertTrue(isSupported.asBoolean());

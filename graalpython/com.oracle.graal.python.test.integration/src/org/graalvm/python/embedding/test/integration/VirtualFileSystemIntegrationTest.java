@@ -69,6 +69,7 @@ import java.util.logging.Logger;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
+import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
@@ -123,9 +124,9 @@ public class VirtualFileSystemIntegrationTest {
 
     private Context.Builder newContextBuilder() {
         if (useDefaultResourcesDir()) {
-            return GraalPyResources.contextBuilder();
+            return GraalPyResources.contextBuilder().engine(Engine.newBuilder("python").allowExperimentalOptions(true).build());
         }
-        return GraalPyResources.contextBuilder(createVirtualFileSystem());
+        return GraalPyResources.contextBuilder(createVirtualFileSystem()).engine(Engine.newBuilder("python").allowExperimentalOptions(true).build());
     }
 
     private VirtualFileSystem.Builder newVirtualFileSystemBuilder() {
@@ -685,13 +686,13 @@ public class VirtualFileSystemIntegrationTest {
                         unixMountPoint(VFS_UNIX_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).build();
         assertEquals(VFS_MOUNT_POINT, vfs.getMountPoint());
-        try (Context ctx = GraalPyResources.contextBuilder(vfs).build()) {
+        try (Context ctx = addTestOptions(GraalPyResources.contextBuilder(vfs)).build()) {
             Value paths = ctx.eval("python", getPathsSource);
             checkPaths(paths.as(List.class), vfs.getMountPoint());
         }
         Path resourcesDir = Files.createTempDirectory("python-resources");
 
-        try (Context ctx = GraalPyResources.contextBuilder(resourcesDir).build()) {
+        try (Context ctx = addTestOptions(GraalPyResources.contextBuilder(resourcesDir)).build()) {
             Value paths = ctx.eval("python", getPathsSource);
             checkPaths(paths.as(List.class), resourcesDir.toString());
         }
@@ -706,14 +707,14 @@ public class VirtualFileSystemIntegrationTest {
     }
 
     private static Builder addTestOptions(Builder builder) {
-        return builder.option("engine.WarnInterpreterOnly", "false");
+        return builder.engine(Engine.newBuilder("python").allowExperimentalOptions(true).option("engine.WarnInterpreterOnly", "false").build());
     }
 
     @Test
     public void testAnotherVfs() throws IOException {
         assumeDefaultResourcesDir();
         try (var vfs = VirtualFileSystem.newBuilder().resourceDirectory("GRAALPY-VFS/foo").build()) {
-            try (Context ctx = GraalPyResources.contextBuilder(vfs).build()) {
+            try (Context ctx = addTestOptions(GraalPyResources.contextBuilder(vfs)).build()) {
                 eval(ctx, """
                                 def test(mount_point):
                                     import os

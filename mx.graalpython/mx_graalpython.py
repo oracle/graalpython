@@ -229,7 +229,7 @@ def mx_register_dynamic_suite_constituents(register_project, register_distributi
             if dist.name == 'PYTHON_POM':
                 meta_pom = dist
         assert meta_pom, "Cannot find python meta-POM distribution in the graalpython suite"
-        mx_truffle.register_polyglot_isolate_distributions(SUITE, register_project, register_distribution,'python',
+        mx_truffle.register_polyglot_isolate_distributions(SUITE, register_project, register_distribution, 'python',
                                     'graalpython', meta_pom.name, meta_pom.maven_group_id(), meta_pom.theLicense,
                                     isolate_build_options)
 
@@ -767,8 +767,8 @@ def get_maven_cache():
     # don't worry about maven.repo.local if not running on gate
     return os.path.join(SUITE.get_mx_output_dir(), 'm2_cache_' + buildnr) if buildnr else None
 
-def deploy_local_maven_repo():
-    env = os.environ.copy()
+def deploy_local_maven_repo(env=None):
+    env = {**os.environ.copy(), **(env or {})}
     m2_cache = get_maven_cache()
     if m2_cache:
         mvn_repo_local = f'-Dmaven.repo.local={m2_cache}'
@@ -791,7 +791,7 @@ def deploy_local_maven_repo():
     # deploy maven artifacts
     version = GRAAL_VERSION
     path = os.path.join(SUITE.get_mx_output_dir(), 'public-maven-repo')
-    licenses = ['EPL-2.0', 'PSF-License', 'GPLv2-CPE', 'ICU,GPLv2', 'BSD-simplified', 'BSD-new', 'UPL', 'MIT']
+    licenses = ['EPL-2.0', 'PSF-License', 'GPLv2-CPE', 'ICU,GPLv2', 'BSD-simplified', 'BSD-new', 'UPL', 'MIT', 'GFTC']
     deploy_args = run_mx_args + [
         'maven-deploy',
         '--tags=public',
@@ -1190,7 +1190,11 @@ def graalpython_gate_runner(args, tasks):
     # JUnit tests with Maven
     with Task('GraalPython integration JUnit with Maven', tasks, tags=[GraalPythonTags.junit_maven]) as task:
         if task:
-            mvn_repo_path, artifacts_version, env = deploy_local_maven_repo()
+            mvn_repo_path, artifacts_version, env = deploy_local_maven_repo(env={
+                "DYNAMIC_IMPORTS": "/truffle-enterprise,/substratevm-enterprise",
+                "NATIVE_IMAGES": "",
+                "POLYGLOT_ISOLATES": "python",
+            })
             mvn_repo_path = pathlib.Path(mvn_repo_path).as_uri()
             central_override = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
             pom_path = os.path.join(SUITE.dir, 'graalpython/com.oracle.graal.python.test.integration/pom.xml')
@@ -1205,6 +1209,16 @@ def graalpython_gate_runner(args, tasks):
             mx.log("Running integration JUnit tests on GraalVM SDK")
             env['JAVA_HOME'] = graalvm_jdk()
             mx.run_maven(mvn_cmd_base + ['-U', 'clean', 'test'], env=env)
+
+            mx.log("Running integration JUnit tests on GraalVM SDK with external polyglot isolates")
+            env['JAVA_HOME'] = graalvm_jdk()
+            mx.run_maven(mvn_cmd_base + [
+                '-U',
+                '-Dpolyglot.engine.SpawnIsolate=true',
+                '-Dpolyglot.engine.IsolateMode=external',
+                'clean',
+                'test'
+            ], env=env)
 
             env['JAVA_HOME'] = os.environ['JAVA_HOME']
             mx.log(f"Running integration JUnit tests on vanilla JDK: {os.environ.get('JAVA_HOME', 'system java')}")
