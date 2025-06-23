@@ -531,6 +531,7 @@ def nativeclean(args):
 class GraalPythonTags(object):
     junit = 'python-junit'
     junit_maven = 'python-junit-maven'
+    junit_maven_isolates = 'python-junit-maven-isolates'
     unittest = 'python-unittest'
     unittest_cpython = 'python-unittest-cpython'
     unittest_sandboxed = 'python-unittest-sandboxed'
@@ -1190,6 +1191,29 @@ def graalpython_gate_runner(args, tasks):
     # JUnit tests with Maven
     with Task('GraalPython integration JUnit with Maven', tasks, tags=[GraalPythonTags.junit_maven]) as task:
         if task:
+            mvn_repo_path, artifacts_version, env = deploy_local_maven_repo()
+            mvn_repo_path = pathlib.Path(mvn_repo_path).as_uri()
+            central_override = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
+            pom_path = os.path.join(SUITE.dir, 'graalpython/com.oracle.graal.python.test.integration/pom.xml')
+            mvn_cmd_base = ['-f', pom_path,
+                            f'-Dcom.oracle.graal.python.test.polyglot.version={artifacts_version}',
+                            f'-Dcom.oracle.graal.python.test.polyglot_repo={mvn_repo_path}',
+                            f'-Dcom.oracle.graal.python.test.central_repo={central_override}',
+                            '--batch-mode']
+
+            env['PATH'] = get_path_with_patchelf()
+
+            mx.log("Running integration JUnit tests on GraalVM SDK")
+            env['JAVA_HOME'] = graalvm_jdk()
+            mx.run_maven(mvn_cmd_base + ['-U', 'clean', 'test'], env=env)
+
+            env['JAVA_HOME'] = os.environ['JAVA_HOME']
+            mx.log(f"Running integration JUnit tests on vanilla JDK: {os.environ.get('JAVA_HOME', 'system java')}")
+            mx.run_maven(mvn_cmd_base + ['-U', '-Dpolyglot.engine.WarnInterpreterOnly=false', 'clean', 'test'], env=env)
+
+    # JUnit tests with Maven and polyglot isolates
+    with Task('GraalPython integration JUnit with Maven and Polyglot Isolates', tasks, tags=[GraalPythonTags.junit_maven_isolates]) as task:
+        if task:
             mvn_repo_path, artifacts_version, env = deploy_local_maven_repo(env={
                 "DYNAMIC_IMPORTS": "/truffle-enterprise,/substratevm-enterprise",
                 "NATIVE_IMAGES": "",
@@ -1206,10 +1230,6 @@ def graalpython_gate_runner(args, tasks):
 
             env['PATH'] = get_path_with_patchelf()
 
-            mx.log("Running integration JUnit tests on GraalVM SDK")
-            env['JAVA_HOME'] = graalvm_jdk()
-            mx.run_maven(mvn_cmd_base + ['-U', 'clean', 'test'], env=env)
-
             mx.log("Running integration JUnit tests on GraalVM SDK with external polyglot isolates")
             env['JAVA_HOME'] = graalvm_jdk()
             mx.run_maven(mvn_cmd_base + [
@@ -1220,10 +1240,6 @@ def graalpython_gate_runner(args, tasks):
                 'clean',
                 'test'
             ], env=env)
-
-            env['JAVA_HOME'] = os.environ['JAVA_HOME']
-            mx.log(f"Running integration JUnit tests on vanilla JDK: {os.environ.get('JAVA_HOME', 'system java')}")
-            mx.run_maven(mvn_cmd_base + ['-U', '-Dpolyglot.engine.WarnInterpreterOnly=false', 'clean', 'test'], env=env)
 
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
