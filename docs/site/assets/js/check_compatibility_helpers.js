@@ -14,6 +14,10 @@ class DBEntry {
         return !!this._notes.match(/^0+\.0+$/)
     }
 
+    has_good_test_results() {
+        return this.is_test_percentage() && this.test_status == 0 && parseFloat(this._notes.match(/^\d+\.\d+$/)[0]) > 90;
+    }
+
     set notes(value) {
         this._notes = value;
     }
@@ -46,10 +50,10 @@ class DBEntry {
     get highlight() {
         if (this._highlight) {
             return this._highlight;
-        } if (this.is_test_percentage() && this.test_status == 0) {
+        } else if (this.has_good_test_results()) {
             return 1;
         } else if (!this.is_test_percentage() && this.test_status == 0) {
-            return 1;
+            return 0.1;
         } else {
             return 0;
         }
@@ -88,13 +92,13 @@ class DB {
         function merge_entries(entry, previous_entry) {
             if (previous_entry) {
                 if (!notes_overlap(previous_entry.notes, entry.notes)) {
+                    previous_entry.highlight = entry.highlight + previous_entry.highlight;
                     if (previous_entry.is_test_percentage() && previous_entry.has_no_test_results()) {
                         previous_entry.notes = entry.notes;
                     } else {
                         previous_entry.notes = entry.notes + " " + previous_entry.notes;
                     }
                 }
-                previous_entry.highlight = Math.min(entry.highlight + previous_entry.highlight, 2);
                 return previous_entry;
             } else {
                 return entry;

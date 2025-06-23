@@ -327,7 +327,7 @@ img.pylogo {
                             continue versions_loop;
                     }
                     const styling = count++ < rowsPerPage ? '' : ' style="display: none;"';
-                    const highlight = '<span class="highlight-package legend-item-1"></span>'.repeat(info.highlight);
+                    const highlight = '<span class="highlight-package legend-item-1"></span>'.repeat(Math.ceil(info.highlight));
                     $('#dataTable tbody').append(`
                             <tr${styling}>
                                 <td class="dataTable-name"><a href="https://pypi.org/project/${info.name}">${info.name}<a/></td>
