@@ -49,11 +49,13 @@ import java.util.Locale;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Value;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class LocaleTest {
     @Test
     public void getlocaleWithJvmLocale() {
+        Assume.assumeFalse(Boolean.getBoolean("polyglot.engine.SpawnIsolate"));
         String expectedEncoding = Charset.defaultCharset().displayName();
         String expectedOutput = String.format("('it_IT', '%s')\n", expectedEncoding);
         Locale currentDefault = Locale.getDefault();
@@ -67,6 +69,7 @@ public class LocaleTest {
 
     @Test
     public void localeconvWithJvmLocale() {
+        Assume.assumeFalse(Boolean.getBoolean("polyglot.engine.SpawnIsolate"));
         Locale currentDefault = Locale.getDefault();
         try {
             Locale.setDefault(Locale.ITALY);
