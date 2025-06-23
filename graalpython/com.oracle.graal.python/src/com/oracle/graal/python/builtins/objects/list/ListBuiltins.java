@@ -89,6 +89,7 @@ import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
@@ -113,6 +114,7 @@ import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -124,6 +126,9 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -184,6 +189,7 @@ public final class ListBuiltins extends PythonBuiltins {
         public TruffleString repr(VirtualFrame frame, Object self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetListStorageNode getStorageNode,
+                        @CachedLibrary(limit = "2") InteropLibrary interopLib,
                         @Cached SequenceStorageNodes.GetItemNode getItem,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
@@ -193,7 +199,21 @@ public final class ListBuiltins extends PythonBuiltins {
             if (length == 0) {
                 return T_EMPTY_BRACKETS;
             }
-            if (!PythonContext.get(this).reprEnter(self)) {
+            Object reprIdentity = self;
+            if (!PGuards.isAnyPythonObject(self)) {
+                // The interop library dispatch initialization acts as branch profile. Hash codes
+                // may clash, but in this case the only downside is that we print an ellipsis
+                // instead of expanding more.
+                if (interopLib.hasIdentity(self)) {
+                    try {
+                        reprIdentity = interopLib.identityHashCode(self);
+                    } catch (UnsupportedMessageException e) {
+                        throw CompilerDirectives.shouldNotReachHere(e);
+                    }
+                }
+            }
+            PythonContext context = PythonContext.get(this);
+            if (!context.reprEnter(reprIdentity)) {
                 return T_ELLIPSIS_IN_BRACKETS;
             }
             try {
@@ -212,7 +232,7 @@ public final class ListBuiltins extends PythonBuiltins {
                 appendStringNode.execute(buf, T_RBRACKET);
                 return toStringNode.execute(buf);
             } finally {
-                PythonContext.get(this).reprLeave(self);
+                context.reprLeave(reprIdentity);
             }
         }
     }

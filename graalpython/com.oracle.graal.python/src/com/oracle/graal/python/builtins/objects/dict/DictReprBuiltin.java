@@ -101,6 +101,9 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -281,13 +284,27 @@ public final class DictReprBuiltin extends PythonBuiltins {
                                                       // library
         public static TruffleString repr(Object dict,
                         @Bind("this") Node inliningTarget,
+                        @CachedLibrary(limit = "2") InteropLibrary interopLib,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached("create(3)") ForEachDictRepr consumerNode,
                         @Shared @Cached HashingStorageForEach forEachNode,
                         @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             PythonContext ctxt = PythonContext.get(forEachNode);
-            if (!ctxt.reprEnter(dict)) {
+            Object reprIdentity = dict;
+            if (!PGuards.isAnyPythonObject(dict)) {
+                // The interop library dispatch initialization acts as branch profile. Hash codes
+                // may clash, but in this case the only downside is that we print an ellipsis
+                // instead of expanding more.
+                if (interopLib.hasIdentity(dict)) {
+                    try {
+                        reprIdentity = interopLib.identityHashCode(dict);
+                    } catch (UnsupportedMessageException e) {
+                        throw CompilerDirectives.shouldNotReachHere(e);
+                    }
+                }
+            }
+            if (!ctxt.reprEnter(reprIdentity)) {
                 return T_ELLIPSIS_IN_BRACES;
             }
             try {
@@ -298,7 +315,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
                 appendStringNode.execute(sb, T_RBRACE);
                 return toStringNode.execute(sb);
             } finally {
-                ctxt.reprLeave(dict);
+                ctxt.reprLeave(reprIdentity);
             }
         }
 
