@@ -413,8 +413,8 @@ img.pylogo {
             const graalpyModuleValue = $(".compatibility_page-item.compatibility_page-module.compatibility_page-active").attr("data-filter");
             let search = window.location.search;
             if (search) {
-                search = search.replace(/version=[^&]+/, "");
-                if (search != "?") {
+                search = search.replace(/version=[^&]+&?/, "");
+                if (search != "?" && !search.endsWith("&")) {
                     search += "&";
                 }
             } else {
@@ -488,7 +488,7 @@ You can extend it with Python code or leverage packages from the Python ecosyste
               <h4>Numeric Computing</h4>
             </div>
             <div class="langpage__benefits-text">
-              <h5>We test <a href="https://numpy.org/">NumPy</a> across multiple versions and know of multiple deployments where it brings numeric computing to Java.</h5>
+              <h5>We test <a href="?packages=numpy#compattable-container">NumPy</a> across multiple versions and know of multiple deployments where it brings numeric computing to Java.</h5>
             </div>
           </div>
           <div class="langbenefits__card">
@@ -499,7 +499,7 @@ You can extend it with Python code or leverage packages from the Python ecosyste
               <h4>Scientific Computing</h4>
             </div>
             <div class="langpage__benefits-text">
-              <h5><a href="https://scipy.org/">SciPy</a>'s rich library for scientific computing is just a package download away.</h5>
+              <h5><a href="?packages=scipy#compattable-container">SciPy</a>'s rich library for scientific computing is just a package download away.</h5>
             </div>
           </div>
           <div class="langbenefits__card">
@@ -510,7 +510,7 @@ You can extend it with Python code or leverage packages from the Python ecosyste
               <h4>Data Processing</h4>
             </div>
             <div class="langpage__benefits-text">
-              <h5>Thanks to Arrow, <a href="https://pandas.pydata.org/">Pandas</a> on GraalPy can run multi-threaded while avoiding unneccessary data copies.</h5>
+              <h5>Thanks to Arrow, <a href="?packages=pandas,arrow#compattable-container">Pandas</a> on GraalPy can run multi-threaded while avoiding unneccessary data copies.</h5>
             </div>
           </div>
         </div>
@@ -523,7 +523,7 @@ You can extend it with Python code or leverage packages from the Python ecosyste
               <h4>Models for any Task</h4>
             </div>
             <div class="langpage__benefits-text">
-              <h5>The <a href="https://huggingface.co/">Huggingface</a> transformers library works on GraalPy with its huge library of language, vision, and audio models.</h5>
+              <h5>The <a href="?packages=huggingface,transformers#compattable-container">Huggingface</a> transformers library works on GraalPy with its huge library of language, vision, and audio models.</h5>
             </div>
           </div>
           <div class="langbenefits__card">
@@ -534,7 +534,7 @@ You can extend it with Python code or leverage packages from the Python ecosyste
               <h4>Training and Inference</h4>
             </div>
             <div class="langpage__benefits-text">
-              <h5>Train models and run inference on GraalPy with <a href="https://pytorch.org/">PyTorch</a>, taking full advantage of the latest techniques and accellerator hardware.</h5>
+              <h5>Train models and run inference on GraalPy with <a href="?packages=torch#compattable-container">PyTorch</a>, taking full advantage of the latest techniques and accellerator hardware.</h5>
             </div>
           </div>
           <div class="langbenefits__card">
@@ -545,7 +545,7 @@ You can extend it with Python code or leverage packages from the Python ecosyste
               <h4>Agentic Workflows</h4>
             </div>
             <div class="langpage__benefits-text">
-              <h5>With <a href="https://microsoft.github.io/autogen/stable/">Autogen</a> and GraalPy you can write agentic workflows and use Java code to create tools for AI Agents.</h5>
+              <h5>With <a href="?packages=autogen#compattable-container">Autogen</a> and GraalPy you can write agentic workflows and use Java code to create tools for AI Agents.</h5>
             </div>
           </div>
         </div>
@@ -612,7 +612,7 @@ You can extend it with Python code or leverage packages from the Python ecosyste
     <div class="wrapper">
         <div class="compatibility">
             <div class="container">
-                <h3 class="langpage__title-02">Python Packages</h3>
+                <h3 id="compattable-container" class="langpage__title-02">Python Packages</h3>
                 <div class="package__row">
                     <div class="package__search">
                         <input type="text" id="compatibility_page__search-field" placeholder="Comma-separated list of packages">
