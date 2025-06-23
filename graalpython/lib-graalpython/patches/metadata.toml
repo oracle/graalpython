@@ -510,6 +510,11 @@ version = '== 19.0.1'
 patch = 'pyarrow-19.0.1.patch'
 license = 'Apache-2.0'
 
+[[pyarrow.rules]]
+version = '== 20.0.0'
+patch = 'pyarrow-20.0.0.patch'
+license = 'Apache-2.0'
+
 [[pybind11.rules]]
 # Upstreamed
 install-priority = 0
