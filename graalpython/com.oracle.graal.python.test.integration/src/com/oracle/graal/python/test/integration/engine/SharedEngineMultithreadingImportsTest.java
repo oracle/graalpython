@@ -55,7 +55,7 @@ public class SharedEngineMultithreadingImportsTest extends SharedEngineMultithre
     public void testImportsInParallel() throws InterruptedException, ExecutionException {
         ExecutorService executorService = createExecutorService();
         for (int runIndex = 0; runIndex < RUNS_COUNT; runIndex++) {
-            try (Engine engine = Engine.newBuilder("python").allowExperimentalOptions(true).build()) {
+            try (Engine engine = Engine.create("python")) {
                 Task[] tasks = new Task[Runtime.getRuntime().availableProcessors()];
                 Arrays.fill(tasks, (Task) () -> {
                     try (InitializedContext ctx = initContext(engine, new String[0])) {

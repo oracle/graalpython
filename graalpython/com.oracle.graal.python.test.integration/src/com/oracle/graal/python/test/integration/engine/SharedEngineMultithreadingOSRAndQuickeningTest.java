@@ -136,7 +136,7 @@ public class SharedEngineMultithreadingOSRAndQuickeningTest extends SharedEngine
     public void testOSRAndQuickenInParallel() throws InterruptedException, ExecutionException {
         ExecutorService executorService = createExecutorService();
         InitializedContext[] contexts = new InitializedContext[Runtime.getRuntime().availableProcessors()];
-        try (Engine e = Engine.newBuilder("python").allowExperimentalOptions(true).build()) {
+        try (Engine e = Engine.create("python")) {
             // No point in this test if compiler is enabled and OSR cannot be configured
             Assume.assumeNotNull(e.getOptions().get("engine.OSRCompilationThreshold"));
         }

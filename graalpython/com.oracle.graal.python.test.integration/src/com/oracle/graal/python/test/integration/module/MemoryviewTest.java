@@ -49,7 +49,7 @@ import com.oracle.graal.python.test.integration.PythonTests;
 public class MemoryviewTest extends PythonTests {
     @Test
     public void testContextReuse() {
-        Engine engine = Engine.newBuilder("python").allowExperimentalOptions(true).build();
+        Engine engine = Engine.create("python");
         try (Context context = newContext(engine)) {
             context.eval("python", "memoryview(b'abc')");
         }

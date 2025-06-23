@@ -53,7 +53,7 @@ public class EngineOptionsTests {
     @Test
     public void engineOptions() {
         assumeFalse(IS_WINDOWS);
-        Engine engine = Engine.newBuilder("python").allowExperimentalOptions(true).build();
+        Engine engine = Engine.create("python");
 
         assertEquals("java", doit(engine, null));
         assertEquals("java", doit(engine, "java"));

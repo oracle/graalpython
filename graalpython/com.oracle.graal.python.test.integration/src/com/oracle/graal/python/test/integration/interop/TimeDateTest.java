@@ -72,7 +72,7 @@ public class TimeDateTest extends PythonTests {
         out = new ByteArrayOutputStream();
         err = new ByteArrayOutputStream();
         Context.Builder builder = Context.newBuilder()
-            .engine(Engine.newBuilder("python").allowExperimentalOptions(true).build());
+            .engine(Engine.create("python"));
         builder.allowExperimentalOptions(true);
         builder.allowAllAccess(true);
         builder.out(out);

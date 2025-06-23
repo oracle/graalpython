@@ -162,7 +162,7 @@ public class ShutdownTest extends PythonTests {
     }
 
     private static Context createContext() {
-        return Context.newBuilder().engine(Engine.newBuilder("python").allowExperimentalOptions(true).build()).allowExperimentalOptions(true).allowAllAccess(true).option("python.IsolateNativeModules", "true").build();
+        return Context.newBuilder().engine(Engine.create("python")).allowExperimentalOptions(true).allowAllAccess(true).option("python.IsolateNativeModules", "true").build();
     }
 
     private static void loadNativeExtension(Context context) {

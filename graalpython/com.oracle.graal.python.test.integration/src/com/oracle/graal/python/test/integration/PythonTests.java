@@ -58,7 +58,7 @@ public class PythonTests {
     static final PrintStream errStream = new PrintStream(errArray);
     static final PrintStream outStream = new PrintStream(outArray);
 
-    private static final Engine engine = Engine.newBuilder("python").allowExperimentalOptions(true).out(PythonTests.outStream).err(PythonTests.errStream).build();
+    private static final Engine engine = Engine.newBuilder("python").out(PythonTests.outStream).err(PythonTests.errStream).build();
     private static Context context = null;
 
     public static Context enterContext(String... newArgs) {

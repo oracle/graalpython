@@ -1214,6 +1214,7 @@ def graalpython_gate_runner(args, tasks):
             env['JAVA_HOME'] = graalvm_jdk()
             mx.run_maven(mvn_cmd_base + [
                 '-U',
+                '-Dpolyglot.engine.AllowExperimentalOptions=true',
                 '-Dpolyglot.engine.SpawnIsolate=true',
                 '-Dpolyglot.engine.IsolateMode=external',
                 'clean',

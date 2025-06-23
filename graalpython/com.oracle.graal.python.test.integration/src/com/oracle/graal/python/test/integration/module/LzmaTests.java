@@ -61,7 +61,7 @@ public class LzmaTests {
 
     @Test
     public void testLzmaBasics() {
-        try (Context context = Context.newBuilder("python").engine(Engine.newBuilder("python").allowExperimentalOptions(true).build()).allowNativeAccess(useNative).build()) {
+        try (Context context = Context.newBuilder("python").engine(Engine.create("python")).allowNativeAccess(useNative).build()) {
             Value isSupported = context.eval("python", "import lzma; lzma.is_check_supported(lzma.CHECK_CRC32)");
             assertTrue(isSupported.isBoolean());
             assertTrue(isSupported.asBoolean());

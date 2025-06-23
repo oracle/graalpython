@@ -52,7 +52,7 @@ public class GraalPyResourcesTests {
     @Test
     public void sharedEngine() {
         // simply check if we are able to create a context with a shared engine
-        Engine sharedEngine = Engine.newBuilder("python").allowExperimentalOptions(true).build();
+        Engine sharedEngine = Engine.create("python");
         GraalPyResources.contextBuilder().engine(sharedEngine).build().close();
         GraalPyResources.contextBuilder().engine(sharedEngine).build().close();
         GraalPyResources.contextBuilder(Path.of("test")).engine(sharedEngine).build().close();

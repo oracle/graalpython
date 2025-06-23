@@ -54,7 +54,13 @@ public class HelloWorldTests {
     public void usesFrozenModules() {
         final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
         final PrintStream printStream = new PrintStream(byteArray);
-        try (Context c = Context.newBuilder().engine(Engine.newBuilder("python").allowExperimentalOptions(true).build()).option("log.python.level", "FINE").out(printStream).err(printStream).build()) {
+        try (Context c = Context.newBuilder()
+                        .engine(Engine.newBuilder("python")
+                                        .out(printStream)
+                                        .err(printStream)
+                                        .build())
+                        .option("log.python.level", "FINE")
+                        .build()) {
             c.initialize("python");
         }
         String result = byteArray.toString().replaceAll("\r\n", "\n");

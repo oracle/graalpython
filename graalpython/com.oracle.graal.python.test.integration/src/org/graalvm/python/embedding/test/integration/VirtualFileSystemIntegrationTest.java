@@ -124,9 +124,9 @@ public class VirtualFileSystemIntegrationTest {
 
     private Context.Builder newContextBuilder() {
         if (useDefaultResourcesDir()) {
-            return GraalPyResources.contextBuilder().engine(Engine.newBuilder("python").allowExperimentalOptions(true).build());
+            return GraalPyResources.contextBuilder().engine(Engine.create("python"));
         }
-        return GraalPyResources.contextBuilder(createVirtualFileSystem()).engine(Engine.newBuilder("python").allowExperimentalOptions(true).build());
+        return GraalPyResources.contextBuilder(createVirtualFileSystem()).engine(Engine.create("python"));
     }
 
     private VirtualFileSystem.Builder newVirtualFileSystemBuilder() {
@@ -707,7 +707,7 @@ public class VirtualFileSystemIntegrationTest {
     }
 
     private static Builder addTestOptions(Builder builder) {
-        return builder.engine(Engine.newBuilder("python").allowExperimentalOptions(true).option("engine.WarnInterpreterOnly", "false").build());
+        return builder.engine(Engine.newBuilder("python").option("engine.WarnInterpreterOnly", "false").build());
     }
 
     @Test

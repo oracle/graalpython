@@ -67,7 +67,7 @@ public class SharedEngineMultithreadingShapeTransitionsTest extends SharedEngine
 
         for (int runIndex = 0; runIndex < RUNS_COUNT; runIndex++) {
             log("Running %d iteration of testLambdaInParallelCtxCreatedInMainThread", runIndex);
-            try (Engine engine = Engine.newBuilder("python").allowExperimentalOptions(true).build()) {
+            try (Engine engine = Engine.create("python")) {
                 for (int i = 0; i < contexts.length; i++) {
                     contexts[i] = initContext(engine, new String[0]);
                 }
