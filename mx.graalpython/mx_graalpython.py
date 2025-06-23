@@ -717,7 +717,7 @@ def graalpy_standalone_native_enterprise():
     return os.path.join(graalpy_standalone_home('native', enterprise=True), 'bin', _graalpy_launcher())
 
 
-def graalvm_jdk():
+def graalvm_jdk(enterprise=False):
     jdk_version = mx.get_jdk().version
 
     # Check if GRAAL_JDK_HOME points to some compatible pre-built gvm
@@ -756,9 +756,14 @@ def graalvm_jdk():
         return graal_jdk_home
 
     jdk_major_version = mx.get_jdk().version.parts[0]
-    mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce']
+    if enterprise:
+        mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', '..', 'graal-enterprise', 'vm-enterprise'), '--env', 'ee']
+        edition = ""
+    else:
+        mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce']
+        edition = "COMMUNITY_"
     if not DISABLE_REBUILD:
-        run_mx(mx_args + ["build", "--dep", f"GRAALVM_COMMUNITY_JAVA{jdk_major_version}"], env={**os.environ, **LATEST_JAVA_HOME})
+        run_mx(mx_args + ["build", "--dep", f"GRAALVM_{edition}JAVA{jdk_major_version}"], env={**os.environ, **LATEST_JAVA_HOME})
     out = mx.OutputCapture()
     run_mx(mx_args + ["graalvm-home"], out=out)
     return out.data.splitlines()[-1].strip()
@@ -1231,14 +1236,14 @@ def graalpython_gate_runner(args, tasks):
             env['PATH'] = get_path_with_patchelf()
 
             mx.log("Running integration JUnit tests on GraalVM SDK with external polyglot isolates")
-            env['JAVA_HOME'] = graalvm_jdk()
+            env['JAVA_HOME'] = graalvm_jdk(enterprise=True)
             mx.run_maven(mvn_cmd_base + [
                 '-U',
                 '-Dpolyglot.engine.AllowExperimentalOptions=true',
                 '-Dpolyglot.engine.SpawnIsolate=true',
                 '-Dpolyglot.engine.IsolateMode=external',
                 'clean',
-                'test'
+                'test',
             ], env=env)
 
     # Unittests on JVM
