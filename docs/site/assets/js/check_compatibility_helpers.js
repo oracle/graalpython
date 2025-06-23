@@ -38,6 +38,22 @@ class DBEntry {
         }
         return notes;
     }
+
+    set highlight(value) {
+        this._highlight = value;
+    }
+
+    get highlight() {
+        if (this._highlight) {
+            return this._highlight;
+        } if (this.is_test_percentage() && this.test_status == 0) {
+            return 1;
+        } else if (!this.is_test_percentage() && this.test_status == 0) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
 }
 
 class DB {
@@ -78,6 +94,7 @@ class DB {
                         previous_entry.notes = entry.notes + " " + previous_entry.notes;
                     }
                 }
+                previous_entry.highlight = Math.min(entry.highlight + previous_entry.highlight, 2);
                 return previous_entry;
             } else {
                 return entry;

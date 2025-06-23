@@ -6,15 +6,58 @@ permalink: compatibility/
 
 <style>
 img.pylogo {
-  // background-color: #8ec9e6;
-  // padding: 15px;
-  // border-radius: 10px;
   width: 80px;
   height: 80px;
 }
 
 .langbenefits__icon_pylogo {
   width: 80px;
+}
+
+.dataTable-version {
+  min-width: 120px;
+}
+
+.highlight-package::before
+{
+  float: right;
+  border-radius: 50%;
+  margin-top: 0.5ex;
+  width: 15px;
+  height: 15px;
+  display: inline-block;
+  margin-right: 5px;
+}
+
+.legend-item-1::before
+{
+  font-size: 12px;
+  font-weight: bold;
+  text-align: center;
+  content: "✓";
+}
+
+.legend-item-2::before
+{
+  font-size: 12px;
+  font-weight: bold;
+  text-align: center;
+  content: "?";
+}
+
+.legend-item-3::before
+{
+  font-size: 12px;
+  font-weight: bold;
+  text-align: center;
+  content: "🗲";
+}
+
+#compatibility-stats-compatible,
+#compatibility-stats-untested,
+#compatibility-stats-incompatible,
+#compatibility-stats-not-supported {
+  padding-left: 0.5em;
 }
 </style>
 
@@ -284,10 +327,11 @@ img.pylogo {
                             continue versions_loop;
                     }
                     const styling = count++ < rowsPerPage ? '' : ' style="display: none;"';
+                    const highlight = '<span class="highlight-package legend-item-1"></span>'.repeat(info.highlight);
                     $('#dataTable tbody').append(`
                             <tr${styling}>
-                                <td class="dataTable-name">${info.name}</td>
-                                <td>${info.version}</td>
+                                <td class="dataTable-name"><a href="https://pypi.org/project/${info.name}">${info.name}<a/></td>
+                                <td class="dataTable-version">${info.version}${highlight}</td>
                                 <td>${info.notes}</td>
                             </tr>`);
                 }
