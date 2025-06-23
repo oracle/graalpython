@@ -446,7 +446,7 @@ public class JavaInteropTest {
                 }
             }
             assertNotNull("Dacapo found", dacapo);
-            assertEquals("'e39957904b7e79caf4fa54f30e8e4ee74d4e9e37'", dacapo.getHashValue("sha1").toString());
+            assertEquals("e39957904b7e79caf4fa54f30e8e4ee74d4e9e37", dacapo.getHashValue("sha1").asString());
         }
 
         public class AForeignExecutable implements ProxyExecutable {
