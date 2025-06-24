@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -121,8 +122,8 @@ public abstract class HashingCollectionNodes {
 
         @Specialization
         static HashingStorage doEconomicStorage(VirtualFrame frame, Node inliningTarget, EconomicMapStorage map, Object value,
-                        @Cached ObjectHashMap.PutNode putNode,
-                        @Cached InlinedLoopConditionProfile loopProfile) {
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("loopProfile") @Cached InlinedLoopConditionProfile loopProfile) {
             // We want to avoid calling __hash__() during map.put
             map.setValueForAllKeys(frame, inliningTarget, value, putNode, loopProfile);
             return map;
@@ -134,14 +135,25 @@ public abstract class HashingCollectionNodes {
                         @Cached HashingStorageSetItem setItem,
                         @Cached HashingStorageGetIterator getIterator,
                         @Cached HashingStorageIteratorNext itNext,
-                        @Cached HashingStorageIteratorKey itKey) {
+                        @Cached HashingStorageIteratorKey itKey,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("loopProfile") @Cached InlinedLoopConditionProfile loopProfile) {
             HashingStorageIterator it = getIterator.execute(inliningTarget, map);
-            HashingStorage storage = map;
             while (itNext.execute(inliningTarget, map, it)) {
-                Object key = itKey.execute(inliningTarget, storage, it);
-                storage = setItem.execute(frame, inliningTarget, storage, key, value);
+                Object key = itKey.execute(inliningTarget, map, it);
+                HashingStorage newStorage = setItem.execute(frame, inliningTarget, map, key, value);
+                if (newStorage != map) {
+                    // when the storage changes, the iterator state is not a reliable cursor
+                    // anymore and we need to restart.
+                    if (newStorage instanceof EconomicMapStorage mapStorage) {
+                        mapStorage.setValueForAllKeys(frame, inliningTarget, value, putNode, loopProfile);
+                        return mapStorage;
+                    } else {
+                        throw CompilerDirectives.shouldNotReachHere("We only generalize to EconomicMapStorage");
+                    }
+                }
             }
-            return storage;
+            return map;
         }
 
         protected static boolean isEconomicMapStorage(Object o) {
