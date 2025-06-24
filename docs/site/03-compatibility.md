@@ -568,7 +568,7 @@ You can extend it with Python code or leverage packages from the Python ecosyste
                     toolsets.</h5>
                 <h5 class="compatibility-text">Many more Python packages than are on this list work on GraalPy.
                     If there is a package you are interested in that you cannot find here, chances are that it
-                    might just work. If it does not, please reach out to us on <a href="https://github.com/oracle/graalpython/issues">Github</a></h5>
+                    might just work. If it does not, please reach out to us on <a href="https://github.com/oracle/graalpython/issues" target="_blank">GitHub</a></h5>
             </div>
         </div>
     </div>
