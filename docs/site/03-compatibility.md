@@ -330,7 +330,7 @@ img.pylogo {
                     const highlight = '<span class="highlight-package legend-item-1"></span>'.repeat(Math.ceil(info.highlight));
                     $('#dataTable tbody').append(`
                             <tr${styling}>
-                                <td class="dataTable-name"><a href="https://pypi.org/project/${info.name}">${info.name}<a/></td>
+                                <td class="dataTable-name"><a href="https://pypi.org/project/${info.name}" target="_blank">${info.name}<a/></td>
                                 <td class="dataTable-version">${info.version}${highlight}</td>
                                 <td>${info.notes}</td>
                             </tr>`);
