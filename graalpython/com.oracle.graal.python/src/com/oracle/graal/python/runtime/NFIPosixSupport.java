@@ -1021,13 +1021,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         assert PosixConstants.HAVE_UTIMENSAT.value;
         assert timespec == null || timespec.length == 4;
-        Object timespecArg;
-        if (timespec == null) {
-            timespecArg = PNone.NO_VALUE;
-        } else {
-            timespecArg = timespec;
-        }
-        int ret = invokeNode.callInt(this, PosixNativeFunction.call_utimensat, dirFd, pathToCString(pathname), timespecArg, followSymlinks ? 1 : 0);
+        int ret = invokeNode.callInt(this, PosixNativeFunction.call_utimensat, dirFd, pathToCString(pathname), wrap(timespec), followSymlinks ? 1 : 0);
         if (ret != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
@@ -1038,7 +1032,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         assert PosixConstants.HAVE_FUTIMENS.value;
         assert timespec == null || timespec.length == 4;
-        int ret = invokeNode.callInt(this, PosixNativeFunction.call_futimens, fd, timespec);
+        int ret = invokeNode.callInt(this, PosixNativeFunction.call_futimens, fd, wrap(timespec));
         if (ret != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
@@ -2670,6 +2664,14 @@ public final class NFIPosixSupport extends PosixSupport {
     @TruffleBoundary
     private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno) throws PosixException {
         throw new PosixException(errno, strerror(errno, invokeNode, TruffleString.FromByteArrayNode.getUncached(), TruffleString.SwitchEncodingNode.getUncached()));
+    }
+
+    private Object wrap(long[] value) {
+        if (value == null) {
+            return PNone.NO_VALUE;
+        } else {
+            return value;
+        }
     }
 
     private Object wrap(Timeval[] timeval) {
