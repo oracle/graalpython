@@ -531,7 +531,7 @@ def nativeclean(args):
 class GraalPythonTags(object):
     junit = 'python-junit'
     junit_maven = 'python-junit-maven'
-    junit_maven_isolates = 'python-junit-maven-isolates'
+    junit_maven_isolates = 'python-junit-polyglot-isolates'
     unittest = 'python-unittest'
     unittest_cpython = 'python-unittest-cpython'
     unittest_sandboxed = 'python-unittest-sandboxed'
