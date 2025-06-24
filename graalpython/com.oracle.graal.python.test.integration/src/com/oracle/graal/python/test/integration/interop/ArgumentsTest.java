@@ -81,6 +81,7 @@ public class ArgumentsTest extends PythonTests {
     @After
     public void tearDown() {
         context.close();
+        context.getEngine().close();
     }
 
     public interface TestPositionalArgsLong {

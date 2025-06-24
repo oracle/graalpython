@@ -57,5 +57,6 @@ public class GraalPyResourcesTests {
         GraalPyResources.contextBuilder().engine(sharedEngine).build().close();
         GraalPyResources.contextBuilder(Path.of("test")).engine(sharedEngine).build().close();
         GraalPyResources.contextBuilder(VirtualFileSystem.newBuilder().build()).engine(sharedEngine).build().close();
+        sharedEngine.close();
     }
 }

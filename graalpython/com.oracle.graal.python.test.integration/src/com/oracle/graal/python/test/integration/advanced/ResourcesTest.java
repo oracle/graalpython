@@ -73,7 +73,7 @@ public class ResourcesTest {
 
     @Test
     public void testResourcesAlwaysAllowReading() {
-        try (Context context = Context.newBuilder("python").engine(Engine.create("python")).allowIO(IOAccess.NONE).option("python.PythonHome", "/path/that/does/not/exist").build()) {
+        try (Engine engine = Engine.create("python"); Context context = Context.newBuilder("python").engine(engine).allowIO(IOAccess.NONE).option("python.PythonHome", "/path/that/does/not/exist").build()) {
             String foundHome = context.eval("python", "import email; email.__spec__.origin").asString();
             assertTrue(foundHome, foundHome.contains("python" + File.separator + "python-home"));
         }

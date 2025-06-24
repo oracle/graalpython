@@ -82,6 +82,7 @@ public class TimeDateTest extends PythonTests {
     @After
     public void tearDown() {
         context.close();
+        context.getEngine().close();
     }
 
     @Test

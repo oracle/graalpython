@@ -82,7 +82,7 @@ public class LocaleTest {
     @Test
     public void getlocaleWithOption() {
         String expectedEncoding = Charset.defaultCharset().displayName();
-        try (Context context = Context.newBuilder("python").engine(Engine.create("python")).option("python.InitialLocale", "en_GB").build()) {
+        try (Engine engine = Engine.create("python"); Context context = Context.newBuilder("python").engine(engine).option("python.InitialLocale", "en_GB").build()) {
             Value tuple = context.eval("python", "import locale; locale.getlocale()");
             assertEquals("en_GB", tuple.getArrayElement(0).asString());
             assertEquals(expectedEncoding, tuple.getArrayElement(1).asString());

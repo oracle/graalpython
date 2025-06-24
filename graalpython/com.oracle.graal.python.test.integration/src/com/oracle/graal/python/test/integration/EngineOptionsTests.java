@@ -58,6 +58,7 @@ public class EngineOptionsTests {
         assertEquals("java", doit(engine, null));
         assertEquals("java", doit(engine, "java"));
         assertEquals("native", doit(engine, "native"));
+        engine.close();
     }
 
     private static String doit(Engine engine, String backend) {

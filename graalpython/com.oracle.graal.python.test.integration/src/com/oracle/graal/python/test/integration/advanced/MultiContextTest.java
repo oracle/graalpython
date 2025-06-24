@@ -55,6 +55,7 @@ public class MultiContextTest extends PythonTests {
                 context.eval("python", "memoryview(b'abc')");
             }
         }
+        engine.close();
     }
 
     @Test
@@ -72,6 +73,7 @@ public class MultiContextTest extends PythonTests {
                                 "last_val");
             }
         }
+        engine.close();
     }
 
     private static Context newContext(Engine engine) {

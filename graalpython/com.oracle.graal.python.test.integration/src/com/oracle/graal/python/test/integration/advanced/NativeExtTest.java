@@ -104,6 +104,7 @@ public class NativeExtTest {
 
         } finally {
             cextContext.close(true);
+            engine.close();
         }
     }
 

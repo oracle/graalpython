@@ -76,8 +76,10 @@ import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.io.IOAccess;
 import org.graalvm.python.embedding.GraalPyResources;
 import org.graalvm.python.embedding.VirtualFileSystem;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -122,11 +124,23 @@ public class VirtualFileSystemIntegrationTest {
         return VirtualFileSystem.newBuilder().resourceDirectory(resourceDirectory).build();
     }
 
+    private static Engine engine;
+    
+    @BeforeClass
+    public static void makeEngine() {
+        engine = Engine.create("python");
+    }
+
+    @AfterClass
+    public static void closeEngine() {
+        engine.close();
+    }
+
     private Context.Builder newContextBuilder() {
         if (useDefaultResourcesDir()) {
-            return GraalPyResources.contextBuilder().engine(Engine.create("python"));
+            return GraalPyResources.contextBuilder().engine(engine);
         }
-        return GraalPyResources.contextBuilder(createVirtualFileSystem()).engine(Engine.create("python"));
+        return GraalPyResources.contextBuilder(createVirtualFileSystem()).engine(engine);
     }
 
     private VirtualFileSystem.Builder newVirtualFileSystemBuilder() {
