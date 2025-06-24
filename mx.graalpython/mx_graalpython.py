@@ -1219,6 +1219,10 @@ def graalpython_gate_runner(args, tasks):
     # JUnit tests with Maven and polyglot isolates
     with Task('GraalPython integration JUnit with Maven and Polyglot Isolates', tasks, tags=[GraalPythonTags.junit_maven_isolates]) as task:
         if task:
+            if mx.is_windows():
+                mx.log(mx.colorize('Polyglot isolate tests do not work on Windows', color='magenta'))
+                return
+
             mvn_repo_path, artifacts_version, env = deploy_local_maven_repo(env={
                 "DYNAMIC_IMPORTS": "/truffle-enterprise,/substratevm-enterprise",
                 "NATIVE_IMAGES": "",
