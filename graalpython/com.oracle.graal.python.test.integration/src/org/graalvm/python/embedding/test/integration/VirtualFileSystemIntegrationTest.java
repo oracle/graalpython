@@ -125,7 +125,7 @@ public class VirtualFileSystemIntegrationTest {
     }
 
     private static Engine engine;
-    
+
     @BeforeClass
     public static void makeEngine() {
         engine = Engine.create("python");

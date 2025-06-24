@@ -120,7 +120,8 @@ public class JavaInteropTest {
 
         @Test
         public void evalNonInteractiveThrowsSyntaxError() throws IOException {
-            try (Engine engine = Engine.create("python"); Context c = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).option("python.TerminalIsInteractive", "false").build()) {
+            try (Engine engine = Engine.create("python");
+                            Context c = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).option("python.TerminalIsInteractive", "false").build()) {
                 c.eval(Source.newBuilder("python", INCOMPLETE_SOURCE, "eval").interactive(false).build());
             } catch (PolyglotException t) {
                 assertTrue(t.isSyntaxError());
@@ -132,7 +133,8 @@ public class JavaInteropTest {
 
         @Test
         public void evalNonInteractiveInInteractiveTerminalThrowsSyntaxError() throws IOException {
-            try (Engine engine = Engine.create("python"); Context c = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).option("python.TerminalIsInteractive", "true").build()) {
+            try (Engine engine = Engine.create("python");
+                            Context c = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).option("python.TerminalIsInteractive", "true").build()) {
                 c.eval(Source.newBuilder("python", INCOMPLETE_SOURCE, "eval").interactive(false).build());
             } catch (PolyglotException t) {
                 assertTrue(t.isSyntaxError());
@@ -144,7 +146,8 @@ public class JavaInteropTest {
 
         @Test
         public void evalInteractiveInNonInteractiveTerminalThrowsSyntaxError() throws IOException {
-            try (Engine engine = Engine.create("python"); Context c = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).option("python.TerminalIsInteractive", "false").build()) {
+            try (Engine engine = Engine.create("python");
+                            Context c = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).option("python.TerminalIsInteractive", "false").build()) {
                 c.eval(Source.newBuilder("python", INCOMPLETE_SOURCE, "eval").interactive(true).build());
             } catch (PolyglotException t) {
                 assertTrue(t.isSyntaxError());
@@ -156,7 +159,8 @@ public class JavaInteropTest {
 
         @Test
         public void evalInteractiveInInteractiveTerminalThrowsSyntaxError() throws IOException {
-            try (Engine engine = Engine.create("python"); Context c = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).option("python.TerminalIsInteractive", "true").build()) {
+            try (Engine engine = Engine.create("python");
+                            Context c = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).option("python.TerminalIsInteractive", "true").build()) {
                 c.eval(Source.newBuilder("python", INCOMPLETE_SOURCE, "eval").interactive(true).build());
             } catch (PolyglotException t) {
                 assertTrue(t.isSyntaxError());
