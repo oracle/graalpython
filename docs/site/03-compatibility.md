@@ -71,7 +71,7 @@ img.pylogo {
     DB.PERCENT_PASSING = (pct) => `${pct}% of the tests are passing on GraalPy.`;
     const PATCH_AVAILABLE = "GraalPy will automatically apply a patch when installing this package to improve compatibility.";
     const LOWER_PRIORITY = "This version works, but there is no reason to prefer it over more recent versions.";
-    const BUILD_SCRIPT_AVAILABLE = (url) => `If you have trouble building this package, there is a <a href='${url}'>script</a>.`
+    const BUILD_SCRIPT_AVAILABLE = (url) => `If you have trouble building this package, there is a <a href='${url}' target='_blank'>script</a>.`
 
     const default_version = 'v242';
     const show_percentages = true;
