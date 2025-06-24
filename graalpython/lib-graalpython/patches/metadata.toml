@@ -204,7 +204,7 @@ version = '0.4.13'
 url = 'https://github.com/google/jax/archive/refs/tags/jaxlib-v0.4.13.tar.gz'
 
 [[jiter.rules]]
-note = "Our patch was accepted upstream and should not be needed in the next release."
+note = "GraalPy patch was accepted upstream and should not be needed in the next release."
 version = '<= 0.5.0'
 install-priority = 0
 patch = 'jiter.patch'
@@ -293,7 +293,7 @@ patch = 'lxml-4.9.patch'
 license = 'BSD-3-Clause'
 
 [[MarkupSafe.rules]]
-note = "Our patch is upstreamed."
+note = "GraalPy patch is upstreamed."
 version = "< 2.1.0"
 patch = "MarkupSafe.patch"
 license = "BSD-3-Clause"
@@ -301,7 +301,7 @@ install-priority = 0  # Don't make pip install prefer this version
 dist-type = "sdist"
 
 [[meson-python.rules]]
-note = "Our patch is upstreamed."
+note = "GraalPy patch is upstreamed."
 version = '<= 0.16.0'
 install-priority = 0
 patch = 'meson-python.patch'
@@ -564,7 +564,7 @@ license = 'MIT'
 [[PyDriller.rules]]
 version = '< 2.4'
 patch = 'PyDriller.patch'
-note = "Our patch was accepted upstream."
+note = "GraalPy patch was accepted upstream."
 install-priority = 0
 license = 'Apache-2.0'
 
@@ -587,7 +587,7 @@ license = 'Apache-2.0'
 [[pymongo.rules]]
 version = ">= 4.8.0, <= 4.13.0"
 patch = 'pymongo-4.8.0.patch'
-note = "Our patch was accepted upstream."
+note = "GraalPy patch was accepted upstream."
 install-priority = 0
 license = 'Apache-2.0'
 
@@ -689,14 +689,14 @@ version = '2.9.1'
 url = 'https://github.com/ray-project/ray/archive/refs/tags/ray-2.9.1.tar.gz'
 
 [[rpds_py.rules]]
-note = "Our patch is not needed anymore in recent version since PyO3 now supports GraalPy."
+note = "GraalPy patch is not needed anymore in recent version since PyO3 now supports GraalPy."
 install-priority = 0
 version = '== 0.10.3'
 patch = 'rpds_py-0.10.3.patch'
 license = 'MIT'
 
 [[safetensors.rules]]
-note = "Our patch is not needed anymore in recent version since PyO3 now supports GraalPy."
+note = "GraalPy patch is not needed anymore in recent version since PyO3 now supports GraalPy."
 install-priority = 0
 version = '== 0.3.3'
 patch = 'safetensors-0.3.3.patch'
