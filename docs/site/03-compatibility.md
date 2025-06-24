@@ -106,13 +106,13 @@ img.pylogo {
         });
         var patch_metadata = new Promise(function (resolve, reject) {
             const xhr = new XMLHttpRequest();
-            const url = `https://raw.githubusercontent.com/oracle/graalpython/refs/heads/github/patches/${graalvmVersion}/graalpython/lib-graalpython/patches/metadata.toml`;
+            const url = `https://raw.githubusercontent.com/oracle/graalpython/refs/heads/release/graal-vm/${graalvmVersion}/graalpython/lib-graalpython/patches/metadata.toml`;
             xhr.open('GET', url);
             xhr.overrideMimeType('text/plain');
             xhr.onload = function () {
                 if (this.status === 200) {
                     const patches = [];
-                    const lines = txt.split('\n');
+                    const lines = this.responseText.split('\n');
                     var currentPatch = null;
                     for (let i = 0; i < lines.length; i++) {
                         const line = lines[i].trim();

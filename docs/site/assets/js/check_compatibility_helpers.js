@@ -53,7 +53,7 @@ class DBEntry {
         } else if (this.has_good_test_results()) {
             return 1;
         } else if (!this.is_test_percentage() && this.test_status == 0) {
-            return 0.1;
+            return 1;
         } else {
             return 0;
         }
@@ -92,7 +92,7 @@ class DB {
         function merge_entries(entry, previous_entry) {
             if (previous_entry) {
                 if (!notes_overlap(previous_entry.notes, entry.notes)) {
-                    previous_entry.highlight = entry.highlight + previous_entry.highlight;
+                    previous_entry.highlight = Math.max(entry.highlight, previous_entry.highlight);
                     if (previous_entry.is_test_percentage() && previous_entry.has_no_test_results()) {
                         previous_entry.notes = entry.notes;
                     } else {
