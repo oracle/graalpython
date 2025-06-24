@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@ import os
 import shutil
 import sys
 from textwrap import dedent
+import glob
 
 import mx
 
@@ -92,6 +93,9 @@ class CopyFrom(AbstractRule):
             shutil.copy(src, dst)
         elif os.path.isdir(src):
             shutil.copytree(src, dst, dirs_exist_ok=True)
+            files = glob.iglob(os.path.join(dst, '**', '__pycache__', '*'), recursive=True)
+            for f in files:
+                os.remove(f)
         else:
             sys.exit(f"Source path {src} not found")
 
@@ -134,6 +138,17 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/include/dynamic_annotations.h": CopyFrom("Include/dynamic_annotations.h"),
     "graalpython/com.oracle.graal.python.cext/expat": CopyFromWithOverrides("Modules/expat"),
     "graalpython/com.oracle.graal.python.cext/modules/_sqlite": CopyFrom("Modules/_sqlite"),
+	"graalpython/com.oracle.graal.python.cext/modules/_hacl/Hacl_Hash_SHA3.c": CopyFrom("Modules/_hacl/Hacl_Hash_SHA3.c"),
+	"graalpython/com.oracle.graal.python.cext/modules/_hacl/Hacl_Hash_SHA3.h": CopyFrom("Modules/_hacl/Hacl_Hash_SHA3.h"),
+	"graalpython/com.oracle.graal.python.cext/modules/_hacl/Hacl_Streaming_Types.h": CopyFrom("Modules/_hacl/Hacl_Streaming_Types.h"),
+	"graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/FStar_UInt128_Verified.h": CopyFrom("Modules/_hacl/include/krml/FStar_UInt128_Verified.h"),
+	"graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/FStar_UInt_8_16_32_64.h": CopyFrom("Modules/_hacl/include/krml/FStar_UInt_8_16_32_64.h"),
+	"graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/fstar_uint128_struct_endianness.h": CopyFrom("Modules/_hacl/include/krml/fstar_uint128_struct_endianness.h"),
+	"graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/internal/target.h": CopyFrom("Modules/_hacl/include/krml/internal/target.h"),
+	"graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/lowstar_endianness.h": CopyFrom("Modules/_hacl/include/krml/lowstar_endianness.h"),
+	"graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/types.h": CopyFrom("Modules/_hacl/include/krml/types.h"),
+	"graalpython/com.oracle.graal.python.cext/modules/_hacl/internal/Hacl_Hash_SHA3.h": CopyFrom("Modules/_hacl/internal/Hacl_Hash_SHA3.h"),
+	"graalpython/com.oracle.graal.python.cext/modules/_hacl/python_hacl_namespaces.h": CopyFrom("Modules/_hacl/python_hacl_namespaces.h"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_sre": CopyFromWithOverrides("Modules/_sre"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c": CopyFrom("Modules/unicodedata.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_bz2.c": CopyFrom("Modules/_bz2module.c"),
@@ -161,6 +176,7 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/src/gcmodule.c": CopyFrom("Modules/gcmodule.c"),
     "graalpython/com.oracle.graal.python.cext/src/getargs.c": CopyFrom("Python/getargs.c"),
     "graalpython/com.oracle.graal.python.cext/src/import.c": CopyFrom("Python/import.c"),
+    "graalpython/com.oracle.graal.python.cext/src/initconfig.c": CopyFrom("Python/initconfig.c"),
     "graalpython/com.oracle.graal.python.cext/src/modsupport.c": CopyFrom("Python/modsupport.c"),
     "graalpython/com.oracle.graal.python.cext/src/pyctype.c": CopyFrom("Python/pyctype.c"),
     "graalpython/com.oracle.graal.python.cext/src/pyhash.c": CopyFrom("Python/pyhash.c"),
