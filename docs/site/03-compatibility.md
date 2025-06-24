@@ -50,7 +50,7 @@ img.pylogo {
   font-size: 12px;
   font-weight: bold;
   text-align: center;
-  content: "🗲";
+  content: "✗";
 }
 
 #compatibility-stats-compatible,
