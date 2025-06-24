@@ -60,7 +60,7 @@ ALLOWED_WITH_CLAUSES = {
 }
 
 SECTIONS = frozenset({'rules', 'add-sources'})
-RULE_KEYS = frozenset({'version', 'patch', 'license', 'subdir', 'dist-type', 'install-priority'})
+RULE_KEYS = frozenset({'version', 'patch', 'license', 'subdir', 'dist-type', 'install-priority', 'note'})
 
 
 def validate_metadata(patches_dir):
