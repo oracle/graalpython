@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -218,8 +218,10 @@ public final class FrozenModules {
         private static final PythonFrozenModule FROZEN_ONLY = new PythonFrozenModule("FROZEN_ONLY", null, false);
         private static final PythonFrozenModule POLYGLOT_ARROW = new PythonFrozenModule("POLYGLOT_ARROW", null, false);
         private static final PythonFrozenModule _SYSCONFIGDATA = new PythonFrozenModule("_SYSCONFIGDATA", null, false);
+        private static final PythonFrozenModule _POLYGLOT = new PythonFrozenModule("_POLYGLOT", null, false);
+        private static final PythonFrozenModule _POLYGLOT_DATETIME = new PythonFrozenModule("_POLYGLOT_DATETIME", null, false);
+        private static final PythonFrozenModule _POLYGLOT_TIME = new PythonFrozenModule("_POLYGLOT_TIME", null, false);
         private static final PythonFrozenModule GRAALPY___GRAALPYTHON__ = new PythonFrozenModule("GRAALPY___GRAALPYTHON__", null, false);
-        private static final PythonFrozenModule GRAALPY__POLYGLOT = new PythonFrozenModule("GRAALPY__POLYGLOT", null, false);
         private static final PythonFrozenModule GRAALPY__SRE = new PythonFrozenModule("GRAALPY__SRE", null, false);
         private static final PythonFrozenModule GRAALPY__SYSCONFIG = new PythonFrozenModule("GRAALPY__SYSCONFIG", null, false);
         private static final PythonFrozenModule GRAALPY__WEAKREF = new PythonFrozenModule("GRAALPY__WEAKREF", null, false);
@@ -227,6 +229,7 @@ public final class FrozenModules {
         private static final PythonFrozenModule GRAALPY_JAVA = new PythonFrozenModule("GRAALPY_JAVA", null, false);
         private static final PythonFrozenModule GRAALPY_PIP_HOOK = new PythonFrozenModule("GRAALPY_PIP_HOOK", null, false);
         private static final PythonFrozenModule GRAALPY_UNICODEDATA = new PythonFrozenModule("GRAALPY_UNICODEDATA", null, false);
+        private static final PythonFrozenModule GRAALPY__NT = new PythonFrozenModule("GRAALPY__NT", null, false);
     }
 
     public static final PythonFrozenModule lookup(String name) {
@@ -595,10 +598,14 @@ public final class FrozenModules {
                 return Map.POLYGLOT_ARROW;
             case "_sysconfigdata":
                 return Map._SYSCONFIGDATA;
+            case "_polyglot":
+                return Map._POLYGLOT;
+            case "_polyglot_datetime":
+                return Map._POLYGLOT_DATETIME;
+            case "_polyglot_time":
+                return Map._POLYGLOT_TIME;
             case "graalpy.__graalpython__":
                 return Map.GRAALPY___GRAALPYTHON__;
-            case "graalpy._polyglot":
-                return Map.GRAALPY__POLYGLOT;
             case "graalpy._sre":
                 return Map.GRAALPY__SRE;
             case "graalpy._sysconfig":
@@ -613,6 +620,8 @@ public final class FrozenModules {
                 return Map.GRAALPY_PIP_HOOK;
             case "graalpy.unicodedata":
                 return Map.GRAALPY_UNICODEDATA;
+            case "graalpy._nt":
+                return Map.GRAALPY__NT;
             default:
                 return null;
         }

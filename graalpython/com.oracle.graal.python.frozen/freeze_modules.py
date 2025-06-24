@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2021, 2025, Oracle and/or its affiliates.
 # Copyright (C) 1996-2020 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -105,13 +105,15 @@ def add_graalpython_core():
     l.append("polyglot.arrow : polyglot.arrow = " + os.path.join(lib_graalpython, "modules/_polyglot_arrow.py"))
     for name in [
         "modules/_sysconfigdata",
+        "modules/_polyglot",
+        "modules/_polyglot_datetime",
+        "modules/_polyglot_time",
     ]:
         modname = os.path.basename(name)
         modpath = os.path.join(lib_graalpython, f"{name}.py")
         l.append(f"{modname} : {modname} = {modpath}")
     for name in [
         "__graalpython__",
-        "_polyglot",
         "_sre",
         "_sysconfig",
         "_weakref",
@@ -119,6 +121,7 @@ def add_graalpython_core():
         "java",
         "pip_hook",
         "unicodedata",
+        "_nt",
     ]:
         modname = f"graalpy.{os.path.basename(name)}"
         modpath = os.path.join(lib_graalpython, f"{name}.py")
@@ -495,7 +498,7 @@ def lower_camel_case(str):
 # write frozen files
 
 FROZEN_MODULES_HEADER = """/*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -588,19 +591,27 @@ def write_frozen_module_file(file, modules):
     if os.path.exists(file):
         with open(file, "r", encoding="utf-8", newline=os.linesep) as f:
             content = f.read()
+        if os.linesep != "\n":
+            if content.replace(os.linesep, "\n") == content:
+                # Windows file has Unix line endings
+                linesep = "\n"
+            else:
+                linesep = os.linesep
+        else:
+            linesep = "\n"
         stat_result = os.stat(file)
         atime, mtime = stat_result.st_atime, stat_result.st_mtime
     else:
         content = None
     os.makedirs(os.path.dirname(file), exist_ok=True)
-    with open(file, "w", encoding="utf-8", newline=os.linesep) as out_file:
+    with open(file, "w", encoding="utf-8", newline=linesep) as out_file:
         out_file.write(FROZEN_MODULES_HEADER)
         out_file.write("\n\n")
         write_frozen_modules_map(out_file, modules)
         out_file.write("\n")
         write_frozen_lookup(out_file, modules)
         out_file.write("}\n")
-    with open(file, "r", encoding="utf-8", newline=os.linesep) as f:
+    with open(file, "r", encoding="utf-8", newline=linesep) as f:
         new_content = f.read()
     if new_content == content:
         # set mtime to the old one, if we didn't change anything

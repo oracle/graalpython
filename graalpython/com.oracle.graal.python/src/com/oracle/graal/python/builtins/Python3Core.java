@@ -424,6 +424,11 @@ public abstract class Python3Core {
                         toTruffleStringUncached("_sysconfig"),
                         toTruffleStringUncached("java"),
                         toTruffleStringUncached("pip_hook")));
+        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            coreFiles = new ArrayList<>(coreFiles);
+            coreFiles.add(toTruffleStringUncached("_nt"));
+        }
+
         // add service loader defined python file extensions
         if (!ImageInfo.inImageRuntimeCode()) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
@@ -1065,9 +1070,6 @@ public abstract class Python3Core {
                                     "Cannot expose `PollPythonAsyncActions'. If this is not called regularly, Python will leak memory.");
                 }
             }
-
-            // import polyglot decorators and special interop predefined behavior
-            loadFile(toTruffleStringUncached("_polyglot"), getContext().getCoreHomeOrFail());
 
             initialized = true;
         }

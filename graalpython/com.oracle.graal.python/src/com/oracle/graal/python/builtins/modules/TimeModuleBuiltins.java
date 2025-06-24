@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -49,6 +49,7 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.TimeZone;
 
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -153,6 +154,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     public static final TruffleString T_DAYLIGHT = tsLiteral("daylight");
     public static final TruffleString T_TIMEZONE = tsLiteral("timezone");
     public static final TruffleString T_ALTZONE = tsLiteral("altzone");
+    public static final TruffleString T_POLYGLOT_TIME = tsLiteral("_polyglot_time");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -192,6 +194,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         int rawOffsetSeconds = defaultTimeZone.getRawOffset() / -1000;
         timeModule.setAttribute(T_TIMEZONE, rawOffsetSeconds);
         timeModule.setAttribute(T_ALTZONE, rawOffsetSeconds - 3600);
+
+        // register_interop_behavior() for time.struct_time
+        AbstractImportNode.importModule(T_POLYGLOT_TIME);
     }
 
     @TruffleBoundary

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -113,6 +113,7 @@ import com.oracle.graal.python.nodes.interop.InteropBehavior;
 import com.oracle.graal.python.nodes.interop.InteropBehaviorMethod;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetForeignObjectClassNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -161,6 +162,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     private static final TruffleString T_MODIFIABLE = tsLiteral("modifiable");
     private static final TruffleString T_INVOKABLE = tsLiteral("invokable");
     private static final TruffleString T_INTERNAL = tsLiteral("internal");
+    private static final TruffleString T_INTERNAL_POLYGLOT_MODULE = tsLiteral("_polyglot");
 
     @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -189,6 +191,9 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
 
         GetForeignObjectClassNode.getUncached().defineSingleTraitClasses();
+
+        // import polyglot decorators which are defined in Python code
+        AbstractImportNode.importModule(T_INTERNAL_POLYGLOT_MODULE);
     }
 
     @Builtin(name = "import_value", minNumOfPositionalArgs = 1, parameterNames = {"name"})

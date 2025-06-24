@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIOBase;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIncrementalNewlineDecoder;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PTextIOWrapper;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PWindowsConsoleIO;
 import static com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.T_WARN;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_END;
@@ -144,6 +145,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("_warn", core.lookupBuiltinModule(T__WARNINGS).getAttribute(T_WARN));
         if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             addBuiltinConstant("_os", core.lookupBuiltinModule(T_NT));
+            addBuiltinConstant("_WindowsConsoleIO", PWindowsConsoleIO);
         } else {
             addBuiltinConstant("_os", core.lookupBuiltinModule(T_POSIX));
         }
