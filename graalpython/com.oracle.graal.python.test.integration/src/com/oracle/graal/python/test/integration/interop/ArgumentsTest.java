@@ -70,8 +70,7 @@ public class ArgumentsTest extends PythonTests {
     public void setUpTest() {
         out = new ByteArrayOutputStream();
         err = new ByteArrayOutputStream();
-        Context.Builder builder = Context.newBuilder()
-            .engine(Engine.create("python"));
+        Context.Builder builder = Context.newBuilder().engine(Engine.create("python"));
         builder.allowExperimentalOptions(true);
         builder.allowAllAccess(true);
         builder.out(out);

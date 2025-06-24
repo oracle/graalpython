@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,9 +82,7 @@ public class LocaleTest {
     @Test
     public void getlocaleWithOption() {
         String expectedEncoding = Charset.defaultCharset().displayName();
-        try (Context context = Context.newBuilder("python")
-                        .engine(Engine.create("python"))
-                        .option("python.InitialLocale", "en_GB").build()) {
+        try (Context context = Context.newBuilder("python").engine(Engine.create("python")).option("python.InitialLocale", "en_GB").build()) {
             Value tuple = context.eval("python", "import locale; locale.getlocale()");
             assertEquals("en_GB", tuple.getArrayElement(0).asString());
             assertEquals(expectedEncoding, tuple.getArrayElement(1).asString());

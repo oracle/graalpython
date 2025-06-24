@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -54,13 +54,7 @@ public class HelloWorldTests {
     public void usesFrozenModules() {
         final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
         final PrintStream printStream = new PrintStream(byteArray);
-        try (Context c = Context.newBuilder()
-                        .engine(Engine.newBuilder("python")
-                                        .out(printStream)
-                                        .err(printStream)
-                                        .build())
-                        .option("log.python.level", "FINE")
-                        .build()) {
+        try (Context c = Context.newBuilder().engine(Engine.newBuilder("python").out(printStream).err(printStream).build()).option("log.python.level", "FINE").build()) {
             c.initialize("python");
         }
         String result = byteArray.toString().replaceAll("\r\n", "\n");
