@@ -684,6 +684,7 @@ version = '2.9.1'
 url = 'https://github.com/ray-project/ray/archive/refs/tags/ray-2.9.1.tar.gz'
 
 [[rasterio.rules]]
+install-priority = 0
 version = '<= 1.4.3'
 patch = 'rasterio-1.4.3.patch'
 license = 'BSD-3-Clause'
