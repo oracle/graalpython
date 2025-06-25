@@ -113,7 +113,7 @@ public final class PythonCextContextBuiltins {
                 return raiseNative.get(inliningTarget).raise(null, marker, PythonBuiltinClassType.TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
             }
             PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
-            Object result = ((PContextVar) var).getValue(threadState);
+            Object result = ((PContextVar) var).getValue(inliningTarget, threadState);
             if (result == null) {
                 if (def == PNone.NO_VALUE) {
                     if (((PContextVar) var).getDefault() == PContextVar.NO_DEFAULT) {
@@ -141,8 +141,8 @@ public final class PythonCextContextBuiltins {
             }
             PythonLanguage language = pythonContext.getLanguage(inliningTarget);
             PythonContext.PythonThreadState threadState = pythonContext.getThreadState(language);
-            Object oldValue = pvar.getValue(threadState);
-            pvar.setValue(threadState, val);
+            Object oldValue = pvar.getValue(inliningTarget, threadState);
+            pvar.setValue(inliningTarget, threadState, val);
             return PFactory.createContextVarsToken(language, pvar, oldValue);
         }
     }

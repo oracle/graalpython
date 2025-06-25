@@ -63,6 +63,6 @@ public abstract class PyContextCopyCurrent extends PNodeWithContext {
         PythonContext context = PythonContext.get(inliningTarget);
         PythonLanguage language = context.getLanguage(inliningTarget);
         PythonContext.PythonThreadState threadState = context.getThreadState(language);
-        return PFactory.copyContextVarsContext(language, threadState.getContextVarsContext());
+        return PFactory.copyContextVarsContext(language, threadState.getContextVarsContext(inliningTarget));
     }
 }
