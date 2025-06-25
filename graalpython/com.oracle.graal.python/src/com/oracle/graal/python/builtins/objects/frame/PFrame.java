@@ -60,6 +60,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 
 public final class PFrame extends PythonBuiltinObject {
     private static final int UNINITIALIZED_LINE = -2;
@@ -121,13 +122,12 @@ public final class PFrame extends PythonBuiltinObject {
     // TODO: frames: this is a large object, think about how to make this
     // smaller
     public static final class Reference {
-        public static final Reference EMPTY = new Reference(null);
+        public static final Reference EMPTY = new Reference(null, null);
 
         // The Python-level frame
         private PFrame pyFrame = null;
 
-        // The location of the last call
-        private Node callNode = null;
+        private final RootNode rootNode;
 
         // A flag whether this frame is escaped. A Truffle frame is escaped if the corresponding
         // PFrame may be used without having the Truffle frame on the stack. This flag is also set
@@ -136,8 +136,13 @@ public final class PFrame extends PythonBuiltinObject {
 
         private final Reference callerInfo;
 
-        public Reference(Reference callerInfo) {
+        public Reference(RootNode rootNode, Reference callerInfo) {
+            this.rootNode = rootNode;
             this.callerInfo = callerInfo;
+        }
+
+        public RootNode getRootNode() {
+            return rootNode;
         }
 
         public void setBackref(PFrame.Reference backref) {
@@ -162,14 +167,6 @@ public final class PFrame extends PythonBuiltinObject {
             this.pyFrame = escapedFrame;
         }
 
-        public Node getCallNode() {
-            return callNode;
-        }
-
-        public void setCallNode(Node callNode) {
-            this.callNode = callNode;
-        }
-
         public Reference getCallerInfo() {
             return callerInfo;
         }
@@ -188,10 +185,10 @@ public final class PFrame extends PythonBuiltinObject {
         Object[] frameArgs = PArguments.create();
         PArguments.setGlobals(frameArgs, globals);
         PArguments.setSpecialArgument(frameArgs, localsDict);
-        Reference curFrameInfo = new Reference(null);
+        this.location = GetCodeRootNode.executeUncached(code);
+        Reference curFrameInfo = new Reference(location != null ? location.getRootNode() : null, null);
         this.virtualFrameInfo = curFrameInfo;
         curFrameInfo.setPyFrame(this);
-        this.location = GetCodeRootNode.executeUncached(code);
         this.line = this.location == null ? code.getFirstLineNo() : UNINITIALIZED_LINE;
         this.arguments = frameArgs;
         this.locals = null;
@@ -291,8 +288,8 @@ public final class PFrame extends PythonBuiltinObject {
         if (callTarget == null) {
             if (location != null) {
                 callTarget = PythonUtils.getOrCreateCallTarget(location.getRootNode());
-            } else if (getRef() != null && getRef().getCallNode() != null) {
-                callTarget = PythonUtils.getOrCreateCallTarget(getRef().getCallNode().getRootNode());
+            } else if (getRef() != null && getRef().getRootNode() != null) {
+                callTarget = PythonUtils.getOrCreateCallTarget(getRef().getRootNode());
             }
         }
         return callTarget;

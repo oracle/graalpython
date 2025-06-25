@@ -2514,12 +2514,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     // will use the explicitly given object as it is
                 }
             }
-            Object savedState = IndirectCallContext.enter(frame, indirectCallData);
+            Object savedState = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
             InitializeBuildClass init;
             try {
                 init = new InitializeBuildClass(ctx);
             } finally {
-                IndirectCallContext.exit(frame, indirectCallData, savedState);
+                IndirectCallContext.exit(frame, inliningTarget, indirectCallData, savedState);
             }
 
             Object ns;

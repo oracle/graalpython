@@ -155,7 +155,7 @@ public final class ReadCallerFrameNode extends Node {
                         return ensureMaterializeNode().execute(false, true, callerFrame);
                     }
                     return null;
-                } else if (!selector.skip(callerInfo)) {
+                } else if (!selector.skip(callerInfo.getRootNode())) {
                     i++;
                 }
                 curFrameInfo = callerInfo;
@@ -180,7 +180,7 @@ public final class ReadCallerFrameNode extends Node {
                     return PArguments.getCurrentFrameInfo(callerFrame);
                 }
                 return PFrame.Reference.EMPTY;
-            } else if (!selector.skip(callerInfo)) {
+            } else if (!selector.skip(callerInfo.getRootNode())) {
                 i++;
             }
             currentFrame = callerInfo;
@@ -323,19 +323,6 @@ public final class ReadCallerFrameNode extends Node {
                             if (i == level || startFrame == null) {
                                 Frame frame = getFrame(frameInstance, frameAccess);
                                 assert PArguments.isPythonFrame(frame);
-                                PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
-                                // avoid overriding the location if we don't know it
-                                if (callNode != null) {
-                                    info.setCallNode(callNode);
-                                } else {
-                                    // In some special cases we call without a Truffle call node; in
-                                    // this case, we use the root node as location (e.g. see
-                                    // AsyncHandler.processAsyncActions).
-                                    info.setCallNode(pRootNode);
-                                }
-                                // We may never return a frame without location because then we
-                                // cannot materialize it.
-                                assert info.getCallNode() != null : "tried to read frame without location (root: " + pRootNode + ")";
                                 outputFrame[0] = frame;
                                 needsCallerFrame = false;
                             }

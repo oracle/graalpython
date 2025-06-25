@@ -1209,7 +1209,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public static IndirectCallData createIndirectCallData(Node node) {
         CompilerAsserts.neverPartOfCompilation();
-        return get(node).indirectCallDataMap.computeIfAbsent(node, n -> new IndirectCallData(node));
+        return get(node).indirectCallDataMap.computeIfAbsent(node, n -> new IndirectCallData());
     }
 
     public Source getOrCreateSource(Function<Object, Source> rootNodeFunction, Object key) {

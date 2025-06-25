@@ -191,11 +191,11 @@ public final class StructureBuiltins extends PythonBuiltins {
                                     indirectCallData, setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode,
                                     raiseNode, recursionLimit - 1);
                 } else {
-                    Object savedState = IndirectCallContext.enter(frame, indirectCallData);
+                    Object savedState = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
                     try {
                         index = _init_pos_args_boundary(self, base, args, kwds, index, indirectCallData, setAttr, getItemNode);
                     } finally {
-                        IndirectCallContext.exit(frame, indirectCallData, savedState);
+                        IndirectCallContext.exit(frame, inliningTarget, indirectCallData, savedState);
                     }
                 }
             }

@@ -905,11 +905,11 @@ public final class ObjectBuiltins extends PythonBuiltins {
             }
             Object klass = lookupAttrNode.execute(frame, inliningTarget, obj, T___CLASS__);
             if (klass != PNone.NO_VALUE) {
-                Object state = IndirectCallContext.enter(frame, indirectCallData);
+                Object state = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
                 try {
                     com.oracle.graal.python.builtins.objects.type.TypeBuiltins.DirNode.dir(names, klass);
                 } finally {
-                    IndirectCallContext.exit(frame, indirectCallData, state);
+                    IndirectCallContext.exit(frame, inliningTarget, indirectCallData, state);
                 }
             }
             return constructListNode.execute(frame, names);

@@ -91,9 +91,8 @@ public abstract class MaterializeFrameNode extends Node {
 
     public final PFrame execute(boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
         PFrame.Reference info = PArguments.getCurrentFrameInfo(frameToMaterialize);
-        assert info != null && info.getCallNode() != null : "cannot materialize a frame without location information";
-        Node callNode = info.getCallNode();
-        return execute(callNode, markAsEscaped, forceSync, frameToMaterialize);
+        Node rootNode = info.getRootNode();
+        return execute(rootNode, markAsEscaped, forceSync, frameToMaterialize);
     }
 
     public final PFrame execute(Frame frame, boolean markAsEscaped) {

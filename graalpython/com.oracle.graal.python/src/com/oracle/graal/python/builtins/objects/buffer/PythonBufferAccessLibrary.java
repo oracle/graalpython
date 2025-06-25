@@ -117,11 +117,11 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * multiple times on the same buffer.
      */
     public final void release(Object receiver, VirtualFrame frame, IndirectCallData indirectCallData) {
-        Object savedState = IndirectCallContext.enter(frame, indirectCallData);
+        Object savedState = IndirectCallContext.enter(frame, this, indirectCallData);
         try {
             release(receiver);
         } finally {
-            IndirectCallContext.exit(frame, indirectCallData, savedState);
+            IndirectCallContext.exit(frame, this, indirectCallData, savedState);
         }
     }
 
