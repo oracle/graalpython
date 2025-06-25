@@ -82,6 +82,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -103,6 +104,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
     /**
      * Equivalent of {@code PyImport_Import} and {@code PyImport_ImportModule}.
      */
+    @TruffleBoundary
     public static PythonModule importModule(TruffleString name) {
         /*
          * TODO we should rather use {@link com.oracle.graal.python.lib.PyImportImport}, but it
