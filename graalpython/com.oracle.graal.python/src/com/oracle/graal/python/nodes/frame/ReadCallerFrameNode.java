@@ -62,47 +62,53 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class ReadCallerFrameNode extends Node {
-    public enum FrameSelector {
-        ALL_PYTHON_FRAMES {
-            @Override
-            public boolean skip(RootNode rootNode) {
-                return false;
-            }
-        },
-        /**
-         * Skips any internal code frames including internal Python level frames of functions
-         * annotated with @builtin.
-         */
-        SKIP_PYTHON_INTERNAL {
-            @Override
-            public boolean skip(RootNode rootNode) {
-                return PRootNode.isPythonInternal(rootNode);
-            }
-        },
-        /**
-         * Skips any internal frames including Python frames from internal modules in lib-graalpy.
-         */
-        SKIP_INTERNAL {
-            @Override
-            public boolean skip(RootNode rootNode) {
-                return (rootNode != null && rootNode.isInternal()) || PRootNode.isPythonInternal(rootNode);
-            }
-        },
-        /**
-         * Skips only builtins frames, not internal Python level frames.
-         */
-        SKIP_PYTHON_BUILTIN {
-            @Override
-            public boolean skip(RootNode rootNode) {
-                return PRootNode.isPythonBuiltin(rootNode);
-            }
-        };
+    public interface FrameSelector {
+        boolean skip(RootNode rootNode);
+    }
 
-        public abstract boolean skip(RootNode rootNode);
+    public static class AllFramesSelector implements FrameSelector {
+        public static final AllFramesSelector INSTANCE = new AllFramesSelector();
 
-        public final boolean skip(PFrame.Reference ref) {
-            Node callNode = ref.getCallNode();
-            return callNode == null || skip(callNode.getRootNode());
+        @Override
+        public boolean skip(RootNode rootNode) {
+            return false;
+        }
+    }
+
+    /**
+     * Skips any internal code frames including internal Python level frames of functions annotated
+     * with @builtin.
+     */
+    public static class SkipPythonInternalFramesSelector implements FrameSelector {
+        public static final SkipPythonInternalFramesSelector INSTANCE = new SkipPythonInternalFramesSelector();
+
+        @Override
+        public boolean skip(RootNode rootNode) {
+            return PRootNode.isPythonInternal(rootNode);
+        }
+    }
+
+    /**
+     * Skips any internal frames including Python frames from internal modules in lib-graalpy.
+     */
+    public static class SkipInternalFramesSelector implements FrameSelector {
+        public static final SkipInternalFramesSelector INSTANCE = new SkipInternalFramesSelector();
+
+        @Override
+        public boolean skip(RootNode rootNode) {
+            return (rootNode != null && rootNode.isInternal()) || PRootNode.isPythonInternal(rootNode);
+        }
+    }
+
+    /**
+     * Skips only builtins frames, not internal Python level frames.
+     */
+    public static class SkipPythonBuiltinFramesSelector implements FrameSelector {
+        public static final SkipPythonBuiltinFramesSelector INSTANCE = new SkipPythonBuiltinFramesSelector();
+
+        @Override
+        public boolean skip(RootNode rootNode) {
+            return PRootNode.isPythonBuiltin(rootNode);
         }
     }
 
@@ -118,7 +124,7 @@ public final class ReadCallerFrameNode extends Node {
     }
 
     public PFrame executeWith(VirtualFrame frame, int level) {
-        return executeWith(PArguments.getCurrentFrameInfo(frame), FrameSelector.SKIP_PYTHON_INTERNAL, level);
+        return executeWith(PArguments.getCurrentFrameInfo(frame), SkipPythonInternalFramesSelector.INSTANCE, level);
     }
 
     public PFrame executeWith(VirtualFrame frame, FrameSelector selector, int level) {
@@ -126,15 +132,15 @@ public final class ReadCallerFrameNode extends Node {
     }
 
     public PFrame executeWith(Frame startFrame, int level) {
-        return executeWith(PArguments.getCurrentFrameInfo(startFrame), FrameSelector.SKIP_PYTHON_INTERNAL, level);
+        return executeWith(PArguments.getCurrentFrameInfo(startFrame), SkipPythonInternalFramesSelector.INSTANCE, level);
     }
 
     public PFrame executeWith(PFrame.Reference startFrameInfo, int level) {
-        return executeWith(startFrameInfo, FrameSelector.SKIP_PYTHON_INTERNAL, level);
+        return executeWith(startFrameInfo, SkipPythonInternalFramesSelector.INSTANCE, level);
     }
 
     public PFrame executeWith(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, int level) {
-        return executeWith(startFrameInfo, frameAccess, FrameSelector.SKIP_PYTHON_INTERNAL, level);
+        return executeWith(startFrameInfo, frameAccess, SkipPythonInternalFramesSelector.INSTANCE, level);
     }
 
     public PFrame executeWith(PFrame.Reference startFrameInfo, FrameSelector selector, int level) {
@@ -252,7 +258,7 @@ public final class ReadCallerFrameNode extends Node {
      * @param frameAccess - the desired {@link FrameInstance} access kind
      */
     public static Frame getCurrentFrame(Node requestingNode, FrameInstance.FrameAccess frameAccess) {
-        return getFrame(Objects.requireNonNull(requestingNode), null, frameAccess, FrameSelector.ALL_PYTHON_FRAMES, 0);
+        return getFrame(Objects.requireNonNull(requestingNode), null, frameAccess, AllFramesSelector.INSTANCE, 0);
     }
 
     /**

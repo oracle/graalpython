@@ -1232,6 +1232,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ISINSTANCE_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC = tsLiteral("isinstance() argument 2 cannot contain a parameterized generic");
     public static final TruffleString ISSUBCLASS_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC = tsLiteral("issubclass() argument 2 cannot contain a parameterized generic");
     public static final TruffleString ISSUBCLASS_ARG_1_MUST_BE_A_CLASS = tsLiteral("issubclass() arg 1 must be a class");
+    public static final TruffleString FOUND_NON_STR_S_IN_SKIP_FILE_PREFIXES = tsLiteral("Found non-str '%s' in skip_file_prefixes.");
 
     // ctypes
     public static final TruffleString PASSING_STRUCTS_BY_VALUE_NOT_SUPPORTED = tsLiteral("Passing structs by value is not supported on NFI backend");
