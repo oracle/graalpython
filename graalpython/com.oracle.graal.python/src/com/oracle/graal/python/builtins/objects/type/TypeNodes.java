@@ -2636,25 +2636,11 @@ public abstract class TypeNodes {
         static long lookup(Object cls,
                         @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
                         @Cached(inline = false) CExtNodes.LookupNativeI64MemberFromBaseNode lookup) {
-            long result = lookup.execute(cls, PyTypeObject__tp_dictoffset, DICTOFFSET, GetDictOffsetNode::getBuiltinDictoffset);
+            long result = lookup.execute(cls, PyTypeObject__tp_dictoffset, DICTOFFSET, PythonBuiltinClassType::getDictoffset);
             if (result == 0 && (getTypeFlagsNode.execute(cls) & TypeFlags.MANAGED_DICT) != 0) {
                 return MANAGED_DICT_OFFSET;
             }
             return result;
-        }
-
-        private static int getBuiltinDictoffset(PythonBuiltinClassType cls) {
-            if (!cls.isBuiltinWithDict()) {
-                return 0;
-            }
-            // TODO there are more builtins with dict
-            return switch (cls) {
-                case PBaseException, PythonModule, PSimpleNamespace -> 16;
-                case PythonClass -> 264;
-                case PStaticmethod, PClassmethod -> 24;
-                case POrderedDict -> 96;
-                default -> cls.getBase() != null ? getBuiltinDictoffset(cls.getBase()) : 0;
-            };
         }
     }
 
