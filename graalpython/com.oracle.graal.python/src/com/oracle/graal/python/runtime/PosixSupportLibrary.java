@@ -1019,7 +1019,7 @@ public abstract class PosixSupportLibrary extends Library {
             msg = message;
         }
 
-        public final TruffleString getMessageAsTruffleString() {
+        public TruffleString getMessageAsTruffleString() {
             return msg;
         }
 
@@ -1034,7 +1034,7 @@ public abstract class PosixSupportLibrary extends Library {
 
         @SuppressWarnings("sync-override")
         @Override
-        public final Throwable fillInStackTrace() {
+        public Throwable fillInStackTrace() {
             return this;
         }
     }
