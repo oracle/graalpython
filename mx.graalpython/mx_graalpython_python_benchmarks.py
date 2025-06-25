@@ -566,6 +566,7 @@ class NumPySuite(PySuite):
 
     BENCHMARK_REQ = [
         "asv==0.5.1",
+        "setuptools==70.3.0",
         "distlib==0.3.6",
         "filelock==3.8.0",
         "platformdirs==2.5.2",
@@ -672,6 +673,7 @@ class PandasSuite(PySuite):
 
     BENCHMARK_REQ = [
         "asv==0.5.1",
+        "setuptools==70.3.0",
         "distlib==0.3.6",
         "filelock==3.8.0",
         "platformdirs==2.5.2",
