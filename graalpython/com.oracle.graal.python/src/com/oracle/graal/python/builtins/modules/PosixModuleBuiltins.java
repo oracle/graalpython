@@ -355,7 +355,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         ((PDict) environAttr).setDictStorage(environ.getDictStorage());
 
         if (posixLib.getBackend(posixSupport).toJavaStringUncached().equals("java")) {
-            posix.setAttribute(toTruffleStringUncached("statvfs"), PNone.NO_VALUE);
             posix.setAttribute(toTruffleStringUncached("geteuid"), PNone.NO_VALUE);
             posix.setAttribute(toTruffleStringUncached("getegid"), PNone.NO_VALUE);
 

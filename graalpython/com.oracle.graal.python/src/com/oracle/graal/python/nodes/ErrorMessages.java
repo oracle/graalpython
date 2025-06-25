@@ -580,7 +580,8 @@ public abstract class ErrorMessages {
     public static final TruffleString NO_CURRENT_FRAME = tsLiteral("%s: no current frame");
     public static final TruffleString NO_FUNCTION_FOUND = tsLiteral("no function %s%s found in %s");
     public static final TruffleString NO_LOCALS_FOUND = tsLiteral("no locals found");
-    public static final TruffleString NO_SUCH_FILE_OR_DIR = tsLiteral("No such file or directory: '%s:/%s'");
+    public static final TruffleString NO_SUCH_FILE_OR_DIR = tsLiteral("No such file or directory");
+    public static final TruffleString NO_SUCH_FILE_OR_DIR_WITH_LABEL = tsLiteral("No such file or directory: '%s:/%s'");
     public static final TruffleString NO_SUCH_NAME = tsLiteral("no such name");
     public static final TruffleString NONEMPTY_SLOTS_NOT_ALLOWED_FOR_SUBTYPE_OF_S = tsLiteral("nonempty __slots__ not supported for subtype of '%s'");
     public static final TruffleString NON_HEX_DIGIT_FOUND = tsLiteral("Non-hexadecimal digit found");

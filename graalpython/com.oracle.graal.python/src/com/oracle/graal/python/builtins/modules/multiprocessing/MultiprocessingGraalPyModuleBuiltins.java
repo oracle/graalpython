@@ -127,7 +127,7 @@ public final class MultiprocessingGraalPyModuleBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Semaphore prev = getContext().getSharedMultiprocessingData().removeNamedSemaphore(name);
             if (prev == null) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseFileNotFoundError(frame, ErrorMessages.NO_SUCH_FILE_OR_DIR, "semaphores", name);
+                throw constructAndRaiseNode.get(inliningTarget).raiseFileNotFoundError(frame, ErrorMessages.NO_SUCH_FILE_OR_DIR_WITH_LABEL, "semaphores", name);
             }
             return PNone.NONE;
         }
