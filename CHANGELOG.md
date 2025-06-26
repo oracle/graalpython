@@ -17,6 +17,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Enable FTS3, FTS4, FTS5, RTREE, and math function features in the bundled sqlite3 library.
 * Add support patches for Torch 2.7.0, PyGObject 3.52.3, xmlschema 4.0.0, lxml < 5.4.0, SciPy 1.15, jq 1.8.0, NumPy < 2.3, ormsgpack < 1.9.1, pandas 2.2.3, PyArrow 19.0, PyMuPDF 1.25.4.
 * The GraalPy Native standalone on Linux now uses the G1 garbage collector which is much faster.
+* Speedup native extensions by using the Panama NFI backend for faster native calls, available on GraalVM 25, JDK 25 and in the GraalPy JVM standalone.
 
 ## Version 24.2.0
 * Updated developer metadata of Maven artifacts.
