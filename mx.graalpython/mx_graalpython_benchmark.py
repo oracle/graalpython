@@ -73,7 +73,6 @@ CONFIGURATION_NATIVE_MULTI = "native-multi"
 CONFIGURATION_NATIVE_MULTI_TIER = "native-multi-tier"
 CONFIGURATION_SANDBOXED = "sandboxed"
 CONFIGURATION_SANDBOXED_MULTI = "sandboxed-multi"
-CONFIGURATION_PANAMA = "panama"
 
 PYTHON_JAVA_EMBEDDING_VM_REGISTRY_NAME = "PythonJavaDriver"
 CONFIGURATION_JAVA_EMBEDDING_MULTI = "java-driver-multi-default"
@@ -1042,7 +1041,6 @@ def register_vms(suite, sandboxed_options):
     add_graalpy_vm(CONFIGURATION_NATIVE_MULTI, '--experimental-options', '-multi-context')
     add_graalpy_vm(CONFIGURATION_NATIVE_INTERPRETER_MULTI, '--experimental-options', '-multi-context', '--engine.Compilation=false')
     add_graalpy_vm(CONFIGURATION_NATIVE_MULTI_TIER, '--experimental-options', '--engine.MultiTier=true')
-    add_graalpy_vm(CONFIGURATION_PANAMA, '--experimental-options', '--python.UsePanama=true')
 
     # all of the graalpy vms, but with bc dsl
     for name, extra_polyglot_args in graalpy_vms[:]:
