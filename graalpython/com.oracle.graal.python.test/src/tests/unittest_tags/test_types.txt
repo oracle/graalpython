@@ -1,4 +1,5 @@
 test.test_types.ClassCreationTests.test_bad___prepare__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_types.ClassCreationTests.test_get_original_bases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_types.ClassCreationTests.test_metaclass_derivation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_types.ClassCreationTests.test_metaclass_new_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_types.ClassCreationTests.test_metaclass_override_callable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -94,6 +95,7 @@ test.test_types.UnionTests.test_or_type_repr @ darwin-arm64,darwin-x86_64,linux-
 test.test_types.UnionTests.test_or_types_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_types.UnionTests.test_union_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_types.UnionTests.test_union_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_types.UnionTests.test_union_of_unhashable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_types.UnionTests.test_union_parameter_chaining @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_types.UnionTests.test_union_parameter_substitution @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_types.UnionTests.test_union_parameter_substitution_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

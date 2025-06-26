@@ -13,6 +13,7 @@ test.test_bool.BoolTest.test_format @ darwin-arm64,darwin-x86_64,linux-aarch64,l
 test.test_bool.BoolTest.test_from_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_bool.BoolTest.test_hasattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_bool.BoolTest.test_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_bool.BoolTest.test_interpreter_convert_to_bool_raises @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_bool.BoolTest.test_isinstance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_bool.BoolTest.test_issubclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_bool.BoolTest.test_keyword_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

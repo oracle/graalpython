@@ -19,7 +19,7 @@ test.test_runpy.RunModuleTestCase.test_run_package_init_exceptions @ darwin-arm6
 test.test_runpy.RunModuleTestCase.test_submodule_imported_warning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_runpy.RunPathTestCase.test_basic_script @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_runpy.RunPathTestCase.test_basic_script_no_suffix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_runpy.RunPathTestCase.test_basic_script_with_path_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_runpy.RunPathTestCase.test_basic_script_with_pathlike_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_runpy.RunPathTestCase.test_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_runpy.RunPathTestCase.test_directory_compiled @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_runpy.RunPathTestCase.test_directory_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

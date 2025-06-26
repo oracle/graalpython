@@ -97,6 +97,7 @@ test.test_collections.TestOneTrickPonyABCs.test_Sized @ darwin-arm64,darwin-x86_
 test.test_collections.TestOneTrickPonyABCs.test_direct_subclassing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_collections.TestOneTrickPonyABCs.test_registration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_collections.TestUserObjects.test_dict_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_collections.TestUserObjects.test_dict_missing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_collections.TestUserObjects.test_dict_protocol @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_collections.TestUserObjects.test_list_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_collections.TestUserObjects.test_list_protocol @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

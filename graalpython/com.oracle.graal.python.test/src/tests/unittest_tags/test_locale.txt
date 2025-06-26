@@ -21,14 +21,12 @@ test.test_locale.TestEnUSDelocalize.test_delocalize @ darwin-arm64,darwin-x86_64
 test.test_locale.TestEnUSLocalize.test_localize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_locale.TestEnUSNumberFormatting.test_complex_formatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_locale.TestEnUSNumberFormatting.test_currency @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_locale.TestEnUSNumberFormatting.test_format_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_locale.TestEnUSNumberFormatting.test_grouping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_locale.TestEnUSNumberFormatting.test_grouping_and_padding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_locale.TestEnUSNumberFormatting.test_integer_grouping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_locale.TestEnUSNumberFormatting.test_integer_grouping_and_padding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_locale.TestEnUSNumberFormatting.test_padding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_locale.TestEnUSNumberFormatting.test_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_locale.TestFormatPatternArg.test_onlyOnePattern @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_locale.TestFrFRNumberFormatting.test_currency @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_locale.TestFrFRNumberFormatting.test_decimal_point @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_locale.TestFrFRNumberFormatting.test_grouping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -46,7 +44,6 @@ test.test_locale.TestMiscellaneous.test_invalid_locale_format_in_localetuple @ d
 test.test_locale.TestMiscellaneous.test_setlocale_category @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_locale.TestMiscellaneous.test_strcoll_3303 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_locale.TestNumberFormatting.test_complex_formatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_locale.TestNumberFormatting.test_format_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_locale.TestNumberFormatting.test_grouping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_locale.TestNumberFormatting.test_grouping_and_padding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_locale.TestNumberFormatting.test_integer_grouping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

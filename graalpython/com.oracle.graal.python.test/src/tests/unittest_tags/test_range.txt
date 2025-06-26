@@ -9,6 +9,8 @@ test.test_range.RangeTest.test_invalid_invocation @ darwin-arm64,darwin-x86_64,l
 test.test_range.RangeTest.test_issue11845 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_range.RangeTest.test_iterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_range.RangeTest.test_iterator_pickling_overflowing_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_range.RangeTest.test_iterator_setstate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_range.RangeTest.test_iterator_unpickle_compat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_range.RangeTest.test_large_exhausted_iterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_range.RangeTest.test_large_operands @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_range.RangeTest.test_large_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

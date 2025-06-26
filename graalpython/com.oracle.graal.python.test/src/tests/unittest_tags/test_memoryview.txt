@@ -103,5 +103,7 @@ test.test_memoryview.BytesMemoryviewTest.test_tolist @ darwin-arm64,darwin-x86_6
 test.test_memoryview.BytesMemoryviewTest.test_toreadonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_memoryview.BytesMemoryviewTest.test_writable_readonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_memoryview.OtherTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.OtherTest.test_half_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_memoryview.OtherTest.test_memoryview_hex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_memoryview.OtherTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.OtherTest.test_picklebuffer_reference_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

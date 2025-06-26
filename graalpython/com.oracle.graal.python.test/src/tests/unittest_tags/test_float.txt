@@ -28,16 +28,13 @@ test.test_float.HexFloatTestCase.test_subclass @ darwin-arm64,darwin-x86_64,linu
 test.test_float.HexFloatTestCase.test_whitespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_float.IEEEFormatTestCase.test_double_specials_do_unpack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_float.IEEEFormatTestCase.test_float_specials_do_unpack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_float.IEEEFormatTestCase.test_serialized_float_rounding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_float.IEEEFormatTestCase.test_serialized_float_rounding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_float.InfNanTest.test_inf_as_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_float.InfNanTest.test_inf_from_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_float.InfNanTest.test_inf_signs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_float.InfNanTest.test_nan_as_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_float.InfNanTest.test_nan_from_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_float.InfNanTest.test_nan_signs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_float.PackTests.test_pack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_float.PackTests.test_roundtrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_float.PackTests.test_unpack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_float.ReprTestCase.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_float.ReprTestCase.test_short_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_float.RoundTestCase.test_None_ndigits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

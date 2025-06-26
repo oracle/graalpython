@@ -12,6 +12,7 @@ test.test_trace.TestFuncs.test_loop_caller_importing @ darwin-arm64,darwin-x86_6
 test.test_trace.TestFuncs.test_simple_caller @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_trace.TestFuncs.test_traced_decorated_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_trace.TestLineCounts.test_linear_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_trace.TestLineCounts.test_trace_list_comprehension @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_trace.TestLineCounts.test_traced_decorated_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_trace.TestLineCounts.test_traced_func_importing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_trace.TestLineCounts.test_traced_func_linear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

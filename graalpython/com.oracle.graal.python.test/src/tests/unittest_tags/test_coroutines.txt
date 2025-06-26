@@ -33,6 +33,7 @@ test.test_coroutines.CoroutineTest.test_copy @ darwin-arm64,darwin-x86_64,linux-
 test.test_coroutines.CoroutineTest.test_coro_wrapper_send_stop_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_coroutines.CoroutineTest.test_coro_wrapper_send_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_coroutines.CoroutineTest.test_cr_await @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_coroutines.CoroutineTest.test_cr_frame_after_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_coroutines.CoroutineTest.test_for_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_coroutines.CoroutineTest.test_for_11 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_coroutines.CoroutineTest.test_for_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -46,6 +46,11 @@ test.test_csv.TestDialectValidity.test_escapechar @ darwin-arm64,darwin-x86_64,l
 test.test_csv.TestDialectValidity.test_invalid_chars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_csv.TestDialectValidity.test_lineterminator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_csv.TestDialectValidity.test_quoting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_csv.TestDictFields.test_dict_reader_fieldnames_accepts_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_csv.TestDictFields.test_dict_reader_fieldnames_accepts_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_csv.TestDictFields.test_dict_reader_fieldnames_is_optional @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_csv.TestDictFields.test_dict_writer_fieldnames_accepts_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_csv.TestDictFields.test_dict_writer_fieldnames_rejects_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_csv.TestDictFields.test_read_dict_fieldnames_chain @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_csv.TestDictFields.test_read_dict_fieldnames_from_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_csv.TestDictFields.test_read_dict_fields @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -89,6 +94,7 @@ test.test_csv.Test_Csv.test_read_nul @ darwin-arm64,darwin-x86_64,linux-aarch64,
 test.test_csv.Test_Csv.test_read_oddinputs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_csv.Test_Csv.test_read_quoting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_csv.Test_Csv.test_read_skipinitialspace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_csv.Test_Csv.test_read_space_delimiter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_csv.Test_Csv.test_reader_arg_valid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_csv.Test_Csv.test_reader_attrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_csv.Test_Csv.test_reader_dialect_attrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -97,6 +103,8 @@ test.test_csv.Test_Csv.test_roundtrip_escaped_unquoted_newlines @ darwin-arm64,d
 test.test_csv.Test_Csv.test_roundtrip_quoteed_newlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_csv.Test_Csv.test_write_arg_valid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_csv.Test_Csv.test_write_bigfield @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_csv.Test_Csv.test_write_empty_fields @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_csv.Test_Csv.test_write_empty_fields_space_delimiter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_csv.Test_Csv.test_write_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_csv.Test_Csv.test_write_iterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_csv.Test_Csv.test_write_lineterminator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -7,6 +7,7 @@ test.test_glob.GlobTests.test_glob_empty_pattern @ darwin-arm64,darwin-x86_64,li
 test.test_glob.GlobTests.test_glob_literal @ darwin-arm64,darwin-x86_64,linux-x86_64
 test.test_glob.GlobTests.test_glob_many_open_files @ darwin-arm64,darwin-x86_64,linux-x86_64
 test.test_glob.GlobTests.test_glob_nested_directory @ darwin-arm64,darwin-x86_64,linux-x86_64
+test.test_glob.GlobTests.test_glob_non_directory @ darwin-arm64,darwin-x86_64,linux-x86_64
 test.test_glob.GlobTests.test_glob_one_directory @ darwin-arm64,darwin-x86_64,linux-x86_64
 test.test_glob.GlobTests.test_glob_symlinks @ darwin-arm64,darwin-x86_64,linux-x86_64
 test.test_glob.GlobTests.test_hidden_glob @ darwin-arm64,darwin-x86_64,linux-x86_64

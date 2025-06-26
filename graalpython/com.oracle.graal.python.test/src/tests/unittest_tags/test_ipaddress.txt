@@ -135,7 +135,9 @@ test.test_ipaddress.IpaddrUnitTest.testIpFromInt @ darwin-arm64,darwin-x86_64,li
 test.test_ipaddress.IpaddrUnitTest.testIpFromPacked @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ipaddress.IpaddrUnitTest.testIpType @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ipaddress.IpaddrUnitTest.testIpv4Mapped @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ipaddress.IpaddrUnitTest.testIpv4MappedLoopbackCheck @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ipaddress.IpaddrUnitTest.testIpv4MappedPrivateCheck @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ipaddress.IpaddrUnitTest.testIpv4MappedProperties @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ipaddress.IpaddrUnitTest.testMaxPrefixLength @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ipaddress.IpaddrUnitTest.testNetworkComparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ipaddress.IpaddrUnitTest.testNetworkElementCaching @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

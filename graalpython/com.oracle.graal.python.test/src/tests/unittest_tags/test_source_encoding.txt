@@ -33,8 +33,8 @@ test.test_source_encoding.MiscSourceEncodingTest.test_compilestring @ darwin-arm
 test.test_source_encoding.MiscSourceEncodingTest.test_error_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_source_encoding.MiscSourceEncodingTest.test_exec_valid_coding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_source_encoding.MiscSourceEncodingTest.test_file_parse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.MiscSourceEncodingTest.test_import_encoded_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_source_encoding.MiscSourceEncodingTest.test_issue2301 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_source_encoding.MiscSourceEncodingTest.test_issue3297 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_source_encoding.MiscSourceEncodingTest.test_issue4626 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_source_encoding.MiscSourceEncodingTest.test_issue7820 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_source_encoding.MiscSourceEncodingTest.test_pep263 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

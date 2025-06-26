@@ -1,4 +1,5 @@
 DocTestCase.builtins.zip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test___ne__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_builtin.BuiltinTest.test_abs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_builtin.BuiltinTest.test_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_builtin.BuiltinTest.test_any @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -50,6 +51,7 @@ test.test_builtin.BuiltinTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch
 test.test_builtin.BuiltinTest.test_round @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_builtin.BuiltinTest.test_round_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_builtin.BuiltinTest.test_setattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_singleton_attribute_access @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_builtin.BuiltinTest.test_sum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_builtin.BuiltinTest.test_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_builtin.BuiltinTest.test_vars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -73,6 +75,7 @@ test.test_builtin.TestBreakpoint.test_envar_good_path_noop_0 @ darwin-arm64,darw
 test.test_builtin.TestBreakpoint.test_envar_good_path_other @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_builtin.TestBreakpoint.test_envar_ignored_when_hook_is_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_builtin.TestBreakpoint.test_envar_unimportable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestBreakpoint.test_runtime_error_when_hook_is_lost @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_builtin.TestSorted.test_bad_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_builtin.TestSorted.test_baddecorator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_builtin.TestSorted.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -85,3 +88,4 @@ test.test_builtin.TestType.test_type_doc @ darwin-arm64,darwin-x86_64,linux-aarc
 test.test_builtin.TestType.test_type_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_builtin.TestType.test_type_nokwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_builtin.TestType.test_type_qualname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestType.test_type_typeparams @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -14,6 +14,8 @@ test.test_http_cookies.CookieTests.test_secure_httponly_true_if_have_value @ dar
 test.test_http_cookies.CookieTests.test_secure_httponly_true_if_present @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_http_cookies.CookieTests.test_set_secure_httponly_attrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_http_cookies.CookieTests.test_special_attrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.CookieTests.test_unquote @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.CookieTests.test_unquote_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_http_cookies.MorselTests.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_http_cookies.MorselTests.test_defaults @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_http_cookies.MorselTests.test_eq @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

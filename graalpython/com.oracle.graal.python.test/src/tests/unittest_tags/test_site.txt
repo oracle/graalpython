@@ -5,6 +5,7 @@ test.test_site.HelperFunctionsTests.test_addpackage_import_bad_exec @ darwin-arm
 test.test_site.HelperFunctionsTests.test_addpackage_import_bad_pth_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_site.HelperFunctionsTests.test_addpackage_import_bad_syntax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_site.HelperFunctionsTests.test_addsitedir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.HelperFunctionsTests.test_addsitedir_dotfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_site.HelperFunctionsTests.test_get_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_site.HelperFunctionsTests.test_getsitepackages @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_site.HelperFunctionsTests.test_getuserbase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

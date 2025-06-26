@@ -8,7 +8,7 @@ test.test_deque.TestBasic.test_big_stack_right @ darwin-arm64,darwin-x86_64,linu
 test.test_deque.TestBasic.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_deque.TestBasic.test_comparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_deque.TestBasic.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_deque.TestBasic.test_contains_count_stop_crashes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_deque.TestBasic.test_contains_count_index_stop_crashes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_deque.TestBasic.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_deque.TestBasic.test_copy_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_deque.TestBasic.test_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
