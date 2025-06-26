@@ -161,7 +161,22 @@ Remember to use the appropriate `GraalPyResources` API to create the Context. Th
       ...
   </configuration>
   ```
-  
+
+- If you want to remove packages that are only needed during venv creation but not at runtime, such as setuptools or pip, you can use e.g. the `maven-jar-plugin`:
+  ```xml
+  <plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-jar-plugin</artifactId>
+    <version>3.4.2</version>
+    <configuration>
+        <excludes>
+            <exclude>**/site-packages/pip*/**</exclude>
+            <exclude>**/site-packages/setuptools*/**</exclude>
+        </excludes>
+    </configuration>
+  </plugin>
+  ```
+
 ### Locking Python Packages
 To lock the dependency tree of the specified Python packages, execute the GraalPy plugin goal `org.graalvm.python:graalpy-maven-plugin:lock-packages`. 
 ```bash
