@@ -207,6 +207,16 @@ version = '< 6.69.0'
 patch = 'hypothesis-6.patch'
 license = 'MPL-2.0'
 
+[[itk.rules]]
+note = """\
+ITK cannot be directly installed with pip. It can be built manually from upstream source tarball with cmake. \
+GraalPy includes a patch `itk-5.4.3.patch` that can be manually applied to fix library loading issues.\
+"""
+# Note: there is no source, the patch isn't complete enough to build a wheel
+version = '== 5.4.3'
+patch = 'itk-5.4.3.patch'
+license = 'Apache-2.0'
+
 [[jaxlib.rules]]
 version = '== 0.4.13'
 patch = 'jaxlib-0.4.13.patch'
