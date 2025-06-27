@@ -5,3 +5,7 @@ repos:
     name: Copyright check
     language: system
     entry: mx python-checkcopyrights --assumed-modified --fix --files
+  - id: eclipseformat
+    name: Eclipse formatter
+    language: system
+    entry: bash scripts/pre-commit-eclipseformat.sh
