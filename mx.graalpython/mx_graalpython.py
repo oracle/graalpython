@@ -2000,10 +2000,20 @@ def python_checkcopyrights(args):
     if mx.is_windows():
         # skip, broken with crlf stuff
         return
+    files = None
+    if '--files' in args:
+        i = args.index('--files')
+        files = args[i + 1:]
+        args = args[:i]
     # we wan't to ignore lib-python/3, because that's just crazy
     listfilename = tempfile.mktemp()
     with open(listfilename, "w") as listfile:
-        mx.run(["git", "ls-tree", "-r", "HEAD", "--name-only"], out=listfile)
+        if files is None:
+            mx.run(["git", "ls-tree", "-r", "HEAD", "--name-only"], out=listfile)
+        else:
+            for x in files:
+                listfile.write(x)
+                listfile.write('\n')
     with open(listfilename, "r") as listfile:
         content = listfile.read()
     with open(listfilename, "w") as listfile:

@@ -1,0 +1,7 @@
+repos:
+- repo: local
+  hooks:
+  - id: checkcopyrights
+    name: Copyright check
+    language: system
+    entry: mx python-checkcopyrights --assumed-modified --fix --files
