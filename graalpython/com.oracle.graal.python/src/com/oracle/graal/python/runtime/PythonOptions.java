@@ -61,6 +61,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Option;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -362,8 +363,8 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, usageSyntax = "<bytes>", help = "Initial native memory heap size that triggers a GC (default: 256 MB).") //
     public static final OptionKey<Long> InitialNativeMemory = new OptionKey<>(1L << 28);
 
-    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Use the experimental panama backend for NFI.", stability = OptionStability.EXPERIMENTAL) //
-    public static final OptionKey<Boolean> UsePanama = new OptionKey<>(false);
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Use the panama backend for NFI.", stability = OptionStability.EXPERIMENTAL) //
+    public static final OptionKey<Boolean> UsePanama = new OptionKey<>(!TruffleOptions.AOT && Runtime.version().feature() >= 22);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Set by the launcher to true (false means that GraalPy is being embedded in an application).") //
     public static final OptionKey<Boolean> RunViaLauncher = new OptionKey<>(false);
