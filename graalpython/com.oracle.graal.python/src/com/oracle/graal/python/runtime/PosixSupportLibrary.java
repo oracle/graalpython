@@ -107,6 +107,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract SelectResult select(Object receiver, int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException;
 
+    public abstract boolean poll(Object receiver, int fd, boolean forWriting, Timeval timeout) throws PosixException;
+
     public abstract long lseek(Object receiver, int fd, long offset, int how) throws PosixException;
 
     public abstract void ftruncate(Object receiver, int fd, long length) throws PosixException;

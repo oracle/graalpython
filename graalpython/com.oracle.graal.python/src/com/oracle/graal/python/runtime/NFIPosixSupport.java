@@ -185,6 +185,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_dup2("(sint32, sint32, sint32):sint32"),
         call_pipe2("([sint32]):sint32"),
         call_select("(sint32, [sint32], sint32, [sint32], sint32, [sint32], sint32, sint64, sint64, [sint8]):sint32"),
+        call_poll("(sint32, sint32, sint64, sint64):sint32"),
         call_lseek("(sint32, sint64, sint32):sint64"),
         call_ftruncate("(sint32, sint64):sint32"),
         call_truncate("([sint8], sint64):sint32"),
@@ -667,6 +668,26 @@ public final class NFIPosixSupport extends PosixSupport {
             }
         }
         return max;
+    }
+
+    @ExportMessage
+    public boolean poll(int fd, boolean forWriting, Timeval timeout,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        long secs = -1, usecs = -1;
+        if (timeout != null) {
+            secs = timeout.getSeconds();
+            usecs = timeout.getMicroseconds();
+        }
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_poll, fd,
+                        forWriting ? 1 : 0, secs, usecs);
+        if (result < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        if (result == 0) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     @ExportMessage

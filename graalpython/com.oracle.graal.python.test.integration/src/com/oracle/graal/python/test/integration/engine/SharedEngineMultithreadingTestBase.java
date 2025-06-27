@@ -77,8 +77,8 @@ public class SharedEngineMultithreadingTestBase extends PythonTests {
 
     @BeforeClass
     public static void setupClass() {
-        Assume.assumeFalse("Polyglot isolates may run out of socket descriptors, but apparently this just happens in our amd64 runners",
-                        Boolean.getBoolean("polyglot.engine.SpawnIsolate") && !isAArch64());
+        Assume.assumeFalse("Polyglot isolates may run out of socket descriptors, this is to be investigated",
+                        Boolean.getBoolean("polyglot.engine.SpawnIsolate"));
     }
 
     protected static void log(String fmt, Object... args) {

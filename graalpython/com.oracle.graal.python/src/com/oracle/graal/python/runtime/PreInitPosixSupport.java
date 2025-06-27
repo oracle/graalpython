@@ -255,6 +255,13 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final boolean poll(int fd, boolean forWriting, Timeval timeout,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInPreInitialization();
+        return nativeLib.poll(nativePosixSupport, fd, forWriting, timeout);
+    }
+
+    @ExportMessage
     final long lseek(int fd, long offset, int how,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         if (inPreInitialization) {
