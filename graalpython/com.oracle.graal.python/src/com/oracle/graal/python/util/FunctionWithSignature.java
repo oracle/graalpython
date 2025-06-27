@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,42 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.test.integration.module;
+package com.oracle.graal.python.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Engine;
-import org.graalvm.polyglot.Value;
-import org.junit.Test;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
-
-public class LzmaTests {
-    @Parameter(0) public boolean useNative;
-
-    @Parameters(name = "{0}")
-    public static boolean[] params() {
-        return new boolean[]{false, true};
-    }
-
-    @Test
-    public void testLzmaBasics() {
-        try (Engine engine = Engine.create("python"); Context context = Context.newBuilder("python").engine(engine).allowNativeAccess(useNative).build()) {
-            Value isSupported = context.eval("python", "import lzma; lzma.is_check_supported(lzma.CHECK_CRC32)");
-            assertTrue(isSupported.isBoolean());
-            assertTrue(isSupported.asBoolean());
-
-            Value decompressed = context.eval("python", "import lzma; lzma.decompress(lzma.compress('Hello LZMA'.encode('ascii'))).decode('ascii')");
-            assertTrue(decompressed.isString());
-            assertEquals("Hello LZMA", decompressed.asString());
-
-            // bogus check ID -> should not be supported
-            isSupported = context.eval("python", "import lzma; lzma.is_check_supported(42)");
-            assertTrue(isSupported.isBoolean());
-            assertFalse(isSupported.asBoolean());
-        }
-    }
+public final record FunctionWithSignature(Object signature, Object function) {
 }

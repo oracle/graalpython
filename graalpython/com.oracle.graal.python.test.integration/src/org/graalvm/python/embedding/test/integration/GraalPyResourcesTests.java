@@ -40,22 +40,23 @@
  */
 package org.graalvm.python.embedding.test.integration;
 
+import java.nio.file.Path;
+
 import org.graalvm.polyglot.Engine;
 import org.graalvm.python.embedding.GraalPyResources;
 import org.graalvm.python.embedding.VirtualFileSystem;
 import org.junit.Test;
-
-import java.nio.file.Path;
 
 public class GraalPyResourcesTests {
 
     @Test
     public void sharedEngine() {
         // simply check if we are able to create a context with a shared engine
-        Engine sharedEngine = Engine.newBuilder().build();
+        Engine sharedEngine = Engine.create("python");
         GraalPyResources.contextBuilder().engine(sharedEngine).build().close();
         GraalPyResources.contextBuilder().engine(sharedEngine).build().close();
         GraalPyResources.contextBuilder(Path.of("test")).engine(sharedEngine).build().close();
         GraalPyResources.contextBuilder(VirtualFileSystem.newBuilder().build()).engine(sharedEngine).build().close();
+        sharedEngine.close();
     }
 }

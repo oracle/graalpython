@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -136,12 +136,12 @@ public class SharedEngineMultithreadingOSRAndQuickeningTest extends SharedEngine
     public void testOSRAndQuickenInParallel() throws InterruptedException, ExecutionException {
         ExecutorService executorService = createExecutorService();
         InitializedContext[] contexts = new InitializedContext[Runtime.getRuntime().availableProcessors()];
-        try (Engine e = Engine.create()) {
+        try (Engine e = Engine.create("python")) {
             // No point in this test if compiler is enabled and OSR cannot be configured
             Assume.assumeNotNull(e.getOptions().get("engine.OSRCompilationThreshold"));
         }
         for (int runIndex = 0; runIndex < RUNS_COUNT; runIndex++) {
-            try (Engine engine = Engine.newBuilder().allowExperimentalOptions(true).option("engine.OSRCompilationThreshold", "100").build()) {
+            try (Engine engine = Engine.newBuilder("python").allowExperimentalOptions(true).option("engine.OSRCompilationThreshold", "100").build()) {
                 for (int i = 0; i < contexts.length; i++) {
                     contexts[i] = initContext(engine, new String[0]);
                 }

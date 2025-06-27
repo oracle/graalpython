@@ -204,7 +204,12 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         ModuleData data = mod.getModuleState(ModuleData.class);
         if (data != null) {
             for (Map.Entry<Integer, SignalHandler> entry : data.defaultSignalHandlers.entrySet()) {
-                Signals.setSignalHandler(entry.getKey(), entry.getValue());
+                try {
+                    Signals.setSignalHandler(entry.getKey(), entry.getValue());
+                } catch (IllegalArgumentException e) {
+                    // Resetting the signal handlers to their original values is best-effort and
+                    // may not work, so we ignore errors here.
+                }
             }
             data.signalHandlers.clear();
             data.defaultSignalHandlers.clear();

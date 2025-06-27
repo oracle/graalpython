@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.junit.After;
@@ -70,7 +71,7 @@ public class TimeDateTest extends PythonTests {
     public void setUpTest() {
         out = new ByteArrayOutputStream();
         err = new ByteArrayOutputStream();
-        Context.Builder builder = Context.newBuilder();
+        Context.Builder builder = Context.newBuilder().engine(Engine.create("python"));
         builder.allowExperimentalOptions(true);
         builder.allowAllAccess(true);
         builder.out(out);
@@ -81,6 +82,7 @@ public class TimeDateTest extends PythonTests {
     @After
     public void tearDown() {
         context.close();
+        context.getEngine().close();
     }
 
     @Test

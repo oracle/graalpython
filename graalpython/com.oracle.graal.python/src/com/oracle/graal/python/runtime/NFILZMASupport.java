@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -380,7 +380,7 @@ public class NFILZMASupport {
      * @param preset uint64_t* preset
      *
      */
-    public Object getMacros(Object formats, Object checks, Object filters, Object mfs, Object modes, Object preset) {
+    public Object getMacros(int[] formats, int[] checks, long[] filters, int[] mfs, int[] modes, long[] preset) {
         return typedNativeLib.callUncached(pythonContext, LZMANativeFunctions.get_macros, formats, checks, filters, mfs, modes, preset);
     }
 
@@ -403,7 +403,7 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      *
      * @return lzmast_stream*
      */
@@ -413,7 +413,7 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream* lzmast
      *
      */
@@ -423,7 +423,7 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @return ssize_t
      */
@@ -433,7 +433,7 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @return size_t
      */
@@ -443,7 +443,7 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @return size_t
      */
@@ -453,7 +453,7 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @return int
      */
@@ -463,7 +463,7 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @param v size_t v
      *
@@ -474,7 +474,7 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @return size_t
      */
@@ -484,18 +484,18 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @param dest Byte *dest
      *
      */
-    public void getOutputBuffer(Object lzmast, Object dest,
+    public void getOutputBuffer(Object lzmast, byte[] dest,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         invokeNode.call(typedNativeLib, LZMANativeFunctions.lzma_get_output_buffer, lzmast, dest);
     }
 
     /**
-     * 
+     *
      * @param check_id int check_id
      * @return int
      */
@@ -505,67 +505,67 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @param fidx int fidx
      * @param opts int64_t* opts
      * @return int
      */
-    public int setFilterSpecLZMA(Object lzmast, int fidx, Object opts,
+    public int setFilterSpecLZMA(Object lzmast, int fidx, long[] opts,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_set_filter_spec_lzma, lzmast, fidx, opts);
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @param fidx int fidx
      * @param opts int64_t* opts
      * @return int
      */
-    public int setFilterSpecDelta(Object lzmast, int fidx, Object opts,
+    public int setFilterSpecDelta(Object lzmast, int fidx, long[] opts,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_set_filter_spec_delta, lzmast, fidx, opts);
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @param fidx int fidx
      * @param opts int64_t* opts
      * @return int
      */
-    public int setFilterSpecBCJ(Object lzmast, int fidx, Object opts,
+    public int setFilterSpecBCJ(Object lzmast, int fidx, long[] opts,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_set_filter_spec_bcj, lzmast, fidx, opts);
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @param opts int64_t* opts
      * @return int
      */
-    public int encodeFilter(Object lzmast, Object opts,
+    public int encodeFilter(Object lzmast, long[] opts,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_encode_filter_spec, lzmast, opts);
     }
 
     /**
-     * 
+     *
      * @param filter_id int64_t filter_id
      * @param encoded_props Byte* encoded_props
      * @param len int len
      * @param opts int64_t *opts
      * @return int
      */
-    public int decodeFilter(long filter_id, Object encoded_props, int len, Object opts,
+    public int decodeFilter(long filter_id, byte[] encoded_props, int len, long[] opts,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_decode_filter_spec, filter_id, encoded_props, len, opts);
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @param preset uint32_t preset
      * @param check int check
@@ -577,7 +577,7 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @param check int check
      * @return int
@@ -588,7 +588,7 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @param preset uint32_t preset
      * @return int
@@ -599,7 +599,7 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @return int
      */
@@ -609,7 +609,7 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @return int
      */
@@ -619,7 +619,7 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @param data Byte *data
      * @param len size_t len
@@ -627,13 +627,13 @@ public class NFILZMASupport {
      * @param bufsize ssize_t bufsize
      * @return int
      */
-    public int compress(Object lzmast, Object data, long len, int iaction, long bufsize,
+    public int compress(Object lzmast, byte[] data, long len, int iaction, long bufsize,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_compress, lzmast, data, len, iaction, bufsize);
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @return int
      */
@@ -643,7 +643,7 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @param memlimit uint64_t memlimit
      * @param decoder_flags uint32_t decoder_flags
@@ -655,7 +655,7 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @param memlimit uint64_t memlimit
      * @param decoder_flags uint32_t decoder_flags
@@ -667,7 +667,7 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @param memlimit uint64_t memlimit
      * @return int
@@ -678,7 +678,7 @@ public class NFILZMASupport {
     }
 
     /**
-     * 
+     *
      * @param lzmast lzmast_stream *lzmast
      * @param input_buffer Byte *input_buffer
      * @param offset ssize_t offset
@@ -687,7 +687,7 @@ public class NFILZMASupport {
      * @param lzs_avail_in size_t lzs_avail_in
      * @return int
      */
-    public int decompress(Object lzmast, Object input_buffer, long offset, long max_length, long bufsize, long lzs_avail_in,
+    public int decompress(Object lzmast, byte[] input_buffer, long offset, long max_length, long bufsize, long lzs_avail_in,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_decompress, lzmast, input_buffer, offset, max_length, bufsize, lzs_avail_in);
     }

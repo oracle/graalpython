@@ -49,7 +49,7 @@ import com.oracle.truffle.api.object.Shape;
 // initialized
 public class NativeZlibCompObject extends ZLibCompObject {
     private NFIZlibSupport.Pointer pointer;
-    Object lastInput;
+    byte[] lastInput;
 
     public NativeZlibCompObject(Object cls, Shape instanceShape, Object zst, NFIZlibSupport zlibSupport) {
         super(cls, instanceShape);

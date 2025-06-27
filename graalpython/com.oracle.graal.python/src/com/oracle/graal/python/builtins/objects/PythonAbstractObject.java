@@ -2802,9 +2802,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 throw InvalidBufferOffsetException.create(byteOffset, length);
             }
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
-            for (int i = 0; i < length; i++) {
-                destination[destinationOffset + i] = bufferLib.readByte(this, offset + i);
-            }
+            bufferLib.readIntoByteArray(this, offset, destination, destinationOffset, length);
         } else {
             throw UnsupportedMessageException.create();
         }

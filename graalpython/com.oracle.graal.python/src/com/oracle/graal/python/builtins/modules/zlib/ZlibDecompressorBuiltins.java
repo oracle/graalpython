@@ -133,7 +133,7 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
 
             int err;
             if (zdict.length > 0) {
-                err = zlibSupport.decompressObjInitWithDict(zst, wbits, context.getEnv().asGuestValue(zdict), zdict.length, decompressObjInit);
+                err = zlibSupport.decompressObjInitWithDict(zst, wbits, zdict, zdict.length, decompressObjInit);
             } else {
                 err = zlibSupport.decompressObjInit(zst, wbits, decompressObjInit);
             }

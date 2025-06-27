@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,7 +67,7 @@ public class SharedEngineMultithreadingShapeTransitionsTest extends SharedEngine
 
         for (int runIndex = 0; runIndex < RUNS_COUNT; runIndex++) {
             log("Running %d iteration of testLambdaInParallelCtxCreatedInMainThread", runIndex);
-            try (Engine engine = Engine.create()) {
+            try (Engine engine = Engine.create("python")) {
                 for (int i = 0; i < contexts.length; i++) {
                     contexts[i] = initContext(engine, new String[0]);
                 }

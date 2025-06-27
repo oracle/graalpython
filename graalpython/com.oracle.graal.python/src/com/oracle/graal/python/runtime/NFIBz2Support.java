@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -249,7 +249,7 @@ public class NFIBz2Support {
     }
 
     /**
-     * 
+     *
      *
      * @return bzst_stream*
      */
@@ -259,7 +259,7 @@ public class NFIBz2Support {
     }
 
     /**
-     * 
+     *
      * @param bzst bzst_stream* bzst
      *
      */
@@ -269,7 +269,7 @@ public class NFIBz2Support {
     }
 
     /**
-     * 
+     *
      * @param bzst bzst_stream *bzst
      * @return ssize_t
      */
@@ -279,7 +279,7 @@ public class NFIBz2Support {
     }
 
     /**
-     * 
+     *
      * @param bzst bzst_stream *bzst
      * @return ssize_t
      */
@@ -289,7 +289,7 @@ public class NFIBz2Support {
     }
 
     /**
-     * 
+     *
      * @param bzst bzst_stream *bzst
      * @param v ssize_t v
      *
@@ -300,7 +300,7 @@ public class NFIBz2Support {
     }
 
     /**
-     * 
+     *
      * @param bzst bzst_stream *bzst
      * @return size_t
      */
@@ -310,18 +310,18 @@ public class NFIBz2Support {
     }
 
     /**
-     * 
+     *
      * @param bzst bzst_stream *bzst
      * @param dest Byte *dest
      *
      */
-    public void getOutputBuffer(Object bzst, Object dest,
+    public void getOutputBuffer(Object bzst, byte[] dest,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         invokeNode.call(typedNativeLib, Bz2NativeFunctions.bz_get_output_buffer, bzst, dest);
     }
 
     /**
-     * 
+     *
      * @param bzst bzst_stream *bzst
      * @param compresslevel int compresslevel
      * @return int
@@ -332,7 +332,7 @@ public class NFIBz2Support {
     }
 
     /**
-     * 
+     *
      * @param bzst bzst_stream *bzst
      * @param data Byte *data
      * @param len ssize_t len
@@ -340,13 +340,13 @@ public class NFIBz2Support {
      * @param bufsize ssize_t bufsize
      * @return int
      */
-    public int compress(Object bzst, Object data, long len, int action, long bufsize,
+    public int compress(Object bzst, byte[] data, long len, int action, long bufsize,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(typedNativeLib, Bz2NativeFunctions.bz_compress, bzst, data, len, action, bufsize);
     }
 
     /**
-     * 
+     *
      * @param bzst bzst_stream *bzst
      * @return int
      */
@@ -356,7 +356,7 @@ public class NFIBz2Support {
     }
 
     /**
-     * 
+     *
      * @param bzst bzst_stream *bzst
      * @param input_buffer Byte *input_buffer
      * @param offset ssize_t offset
@@ -365,7 +365,7 @@ public class NFIBz2Support {
      * @param bzs_avail_in_real ssize_t bzs_avail_in_real
      * @return int
      */
-    public int decompress(Object bzst, Object input_buffer, long offset, long max_length, long bufsize, long bzs_avail_in_real,
+    public int decompress(Object bzst, byte[] input_buffer, long offset, long max_length, long bufsize, long bzs_avail_in_real,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(typedNativeLib, Bz2NativeFunctions.bz_decompress, bzst, input_buffer, offset, max_length, bufsize, bzs_avail_in_real);
     }

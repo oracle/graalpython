@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,7 +60,7 @@ public class SharedEngineMultithreadingSimpleLambdaTest extends SharedEngineMult
             // Note: for some reason we must create a fresh source for each run in order to
             // reproduce GR-30689
             Source code = Source.create("python", "lambda: 42");
-            try (Engine engine = Engine.create()) {
+            try (Engine engine = Engine.create("python")) {
                 Task[] tasks = new Task[THREADS_COUNT];
                 log("Iteration %d, submitting %d tasks...", runIndex, tasks.length);
                 for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
@@ -89,7 +89,7 @@ public class SharedEngineMultithreadingSimpleLambdaTest extends SharedEngineMult
         log("Running testLambdaInParallelCtxCreatedInMainThread");
         for (int runIndex = 0; runIndex < RUNS_COUNT; runIndex++) {
             Source code = Source.create("python", "lambda: 42");
-            try (Engine engine = Engine.create()) {
+            try (Engine engine = Engine.create("python")) {
                 Task[] tasks = new Task[THREADS_COUNT];
                 log("Iteration %d, submitting %d tasks...", runIndex, tasks.length);
                 for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
@@ -115,7 +115,7 @@ public class SharedEngineMultithreadingSimpleLambdaTest extends SharedEngineMult
         log("Running testLambdaInParallelCtxCreatedInMainThread");
         for (int runIndex = 0; runIndex < RUNS_COUNT; runIndex++) {
             Source code = Source.create("python", "lambda: 42");
-            try (Engine engine = Engine.create()) {
+            try (Engine engine = Engine.create("python")) {
                 InitializedContext[] contexts = new InitializedContext[]{
                                 initContext(engine, new String[0]),
                                 initContext(engine, new String[0]),

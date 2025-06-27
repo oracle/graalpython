@@ -229,7 +229,7 @@ def mx_register_dynamic_suite_constituents(register_project, register_distributi
             if dist.name == 'PYTHON_POM':
                 meta_pom = dist
         assert meta_pom, "Cannot find python meta-POM distribution in the graalpython suite"
-        mx_truffle.register_polyglot_isolate_distributions(SUITE, register_project, register_distribution,'python',
+        mx_truffle.register_polyglot_isolate_distributions(SUITE, register_project, register_distribution, 'python',
                                     'graalpython', meta_pom.name, meta_pom.maven_group_id(), meta_pom.theLicense,
                                     isolate_build_options)
 
@@ -531,6 +531,7 @@ def nativeclean(args):
 class GraalPythonTags(object):
     junit = 'python-junit'
     junit_maven = 'python-junit-maven'
+    junit_maven_isolates = 'python-junit-polyglot-isolates'
     unittest = 'python-unittest'
     unittest_cpython = 'python-unittest-cpython'
     unittest_sandboxed = 'python-unittest-sandboxed'
@@ -716,7 +717,7 @@ def graalpy_standalone_native_enterprise():
     return os.path.join(graalpy_standalone_home('native', enterprise=True), 'bin', _graalpy_launcher())
 
 
-def graalvm_jdk():
+def graalvm_jdk(enterprise=False):
     jdk_version = mx.get_jdk().version
 
     # Check if GRAAL_JDK_HOME points to some compatible pre-built gvm
@@ -755,9 +756,14 @@ def graalvm_jdk():
         return graal_jdk_home
 
     jdk_major_version = mx.get_jdk().version.parts[0]
-    mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce']
+    if enterprise:
+        mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', '..', 'graal-enterprise', 'vm-enterprise'), '--env', 'ee']
+        edition = ""
+    else:
+        mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce']
+        edition = "COMMUNITY_"
     if not DISABLE_REBUILD:
-        run_mx(mx_args + ["build", "--dep", f"GRAALVM_COMMUNITY_JAVA{jdk_major_version}"], env={**os.environ, **LATEST_JAVA_HOME})
+        run_mx(mx_args + ["build", "--dep", f"GRAALVM_{edition}JAVA{jdk_major_version}"], env={**os.environ, **LATEST_JAVA_HOME})
     out = mx.OutputCapture()
     run_mx(mx_args + ["graalvm-home"], out=out)
     return out.data.splitlines()[-1].strip()
@@ -767,8 +773,8 @@ def get_maven_cache():
     # don't worry about maven.repo.local if not running on gate
     return os.path.join(SUITE.get_mx_output_dir(), 'm2_cache_' + buildnr) if buildnr else None
 
-def deploy_local_maven_repo():
-    env = os.environ.copy()
+def deploy_local_maven_repo(env=None):
+    env = {**os.environ.copy(), **(env or {})}
     m2_cache = get_maven_cache()
     if m2_cache:
         mvn_repo_local = f'-Dmaven.repo.local={m2_cache}'
@@ -791,7 +797,7 @@ def deploy_local_maven_repo():
     # deploy maven artifacts
     version = GRAAL_VERSION
     path = os.path.join(SUITE.get_mx_output_dir(), 'public-maven-repo')
-    licenses = ['EPL-2.0', 'PSF-License', 'GPLv2-CPE', 'ICU,GPLv2', 'BSD-simplified', 'BSD-new', 'UPL', 'MIT']
+    licenses = ['EPL-2.0', 'PSF-License', 'GPLv2-CPE', 'ICU,GPLv2', 'BSD-simplified', 'BSD-new', 'UPL', 'MIT', 'GFTC']
     deploy_args = run_mx_args + [
         'maven-deploy',
         '--tags=public',
@@ -1209,6 +1215,40 @@ def graalpython_gate_runner(args, tasks):
             env['JAVA_HOME'] = os.environ['JAVA_HOME']
             mx.log(f"Running integration JUnit tests on vanilla JDK: {os.environ.get('JAVA_HOME', 'system java')}")
             mx.run_maven(mvn_cmd_base + ['-U', '-Dpolyglot.engine.WarnInterpreterOnly=false', 'clean', 'test'], env=env)
+
+    # JUnit tests with Maven and polyglot isolates
+    with Task('GraalPython integration JUnit with Maven and Polyglot Isolates', tasks, tags=[GraalPythonTags.junit_maven_isolates]) as task:
+        if task:
+            if mx.is_windows():
+                mx.log(mx.colorize('Polyglot isolate tests do not work on Windows', color='magenta'))
+                return
+
+            mvn_repo_path, artifacts_version, env = deploy_local_maven_repo(env={
+                "DYNAMIC_IMPORTS": "/truffle-enterprise,/substratevm-enterprise",
+                "NATIVE_IMAGES": "",
+                "POLYGLOT_ISOLATES": "python",
+            })
+            mvn_repo_path = pathlib.Path(mvn_repo_path).as_uri()
+            central_override = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
+            pom_path = os.path.join(SUITE.dir, 'graalpython/com.oracle.graal.python.test.integration/pom.xml')
+            mvn_cmd_base = ['-f', pom_path,
+                            f'-Dcom.oracle.graal.python.test.polyglot.version={artifacts_version}',
+                            f'-Dcom.oracle.graal.python.test.polyglot_repo={mvn_repo_path}',
+                            f'-Dcom.oracle.graal.python.test.central_repo={central_override}',
+                            '--batch-mode']
+
+            env['PATH'] = get_path_with_patchelf()
+
+            mx.log("Running integration JUnit tests on GraalVM SDK with external polyglot isolates")
+            env['JAVA_HOME'] = graalvm_jdk(enterprise=True)
+            mx.run_maven(mvn_cmd_base + [
+                '-U',
+                '-Dpolyglot.engine.AllowExperimentalOptions=true',
+                '-Dpolyglot.engine.SpawnIsolate=true',
+                '-Dpolyglot.engine.IsolateMode=external',
+                'clean',
+                'test',
+            ], env=env)
 
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:

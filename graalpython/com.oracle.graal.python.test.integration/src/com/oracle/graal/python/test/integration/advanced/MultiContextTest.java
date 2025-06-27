@@ -49,17 +49,18 @@ import com.oracle.graal.python.test.integration.PythonTests;
 public class MultiContextTest extends PythonTests {
     @Test
     public void testSharingWithMemoryview() {
-        Engine engine = Engine.newBuilder().build();
+        Engine engine = Engine.create("python");
         for (int i = 0; i < 10; i++) {
             try (Context context = newContext(engine)) {
                 context.eval("python", "memoryview(b'abc')");
             }
         }
+        engine.close();
     }
 
     @Test
     public void testTryCatch() {
-        Engine engine = Engine.newBuilder().build();
+        Engine engine = Engine.create("python");
         for (int i = 0; i < 10; i++) {
             try (Context context = newContext(engine)) {
                 context.eval("python", "last_val = -1\n" +
@@ -72,6 +73,7 @@ public class MultiContextTest extends PythonTests {
                                 "last_val");
             }
         }
+        engine.close();
     }
 
     private static Context newContext(Engine engine) {

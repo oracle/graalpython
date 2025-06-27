@@ -389,7 +389,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         long nativeCrc32(byte[] bytes, int len, int value,
                         NativeLibrary.InvokeNativeFunction invoke) {
             PythonContext ctxt = getContext();
-            int signedVal = (int) ctxt.getNFIZlibSupport().crc32(value, ctxt.getEnv().asGuestValue(bytes), len, invoke);
+            int signedVal = (int) ctxt.getNFIZlibSupport().crc32(value, bytes, len, invoke);
             return signedVal & 0xFFFFFFFFL;
         }
     }
@@ -463,7 +463,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         long nativeAdler32(byte[] bytes, int len, int value,
                         PythonContext ctxt,
                         NativeLibrary.InvokeNativeFunction invoke) {
-            int signedVal = (int) ctxt.getNFIZlibSupport().adler32(value, ctxt.getEnv().asGuestValue(bytes), len, invoke);
+            int signedVal = (int) ctxt.getNFIZlibSupport().adler32(value, bytes, len, invoke);
             return signedVal & 0xFFFFFFFFL;
         }
 
@@ -648,7 +648,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
             int err;
             if (zdict.length > 0) {
                 err = zlibSupport.compressObjInitWithDict(zst, level, method, wbits, memLevel, strategy,
-                                PythonContext.get(inliningTarget).getEnv().asGuestValue(zdict), zdict.length, compressObjInit);
+                                zdict, zdict.length, compressObjInit);
             } else {
                 err = zlibSupport.compressObjInit(zst, level, method, wbits, memLevel, strategy, compressObjInit);
             }
@@ -719,7 +719,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
             int err;
             if (zdict.length > 0) {
-                err = zlibSupport.decompressObjInitWithDict(zst, wbits, context.getEnv().asGuestValue(zdict), zdict.length, decompressObjInit);
+                err = zlibSupport.decompressObjInitWithDict(zst, wbits, zdict, zdict.length, decompressObjInit);
             } else {
                 err = zlibSupport.decompressObjInit(zst, wbits, decompressObjInit);
             }

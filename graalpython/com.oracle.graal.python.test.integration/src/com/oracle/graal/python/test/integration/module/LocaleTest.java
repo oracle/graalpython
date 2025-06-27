@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,12 +47,15 @@ import java.nio.charset.Charset;
 import java.util.Locale;
 
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Value;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class LocaleTest {
     @Test
     public void getlocaleWithJvmLocale() {
+        Assume.assumeFalse("Setting host locale is not propagated to isolate", Boolean.getBoolean("polyglot.engine.SpawnIsolate"));
         String expectedEncoding = Charset.defaultCharset().displayName();
         String expectedOutput = String.format("('it_IT', '%s')\n", expectedEncoding);
         Locale currentDefault = Locale.getDefault();
@@ -66,6 +69,7 @@ public class LocaleTest {
 
     @Test
     public void localeconvWithJvmLocale() {
+        Assume.assumeFalse("Setting host locale is not propagated to isolate", Boolean.getBoolean("polyglot.engine.SpawnIsolate"));
         Locale currentDefault = Locale.getDefault();
         try {
             Locale.setDefault(Locale.ITALY);
@@ -78,7 +82,7 @@ public class LocaleTest {
     @Test
     public void getlocaleWithOption() {
         String expectedEncoding = Charset.defaultCharset().displayName();
-        try (Context context = Context.newBuilder("python").option("python.InitialLocale", "en_GB").build()) {
+        try (Engine engine = Engine.create("python"); Context context = Context.newBuilder("python").engine(engine).option("python.InitialLocale", "en_GB").build()) {
             Value tuple = context.eval("python", "import locale; locale.getlocale()");
             assertEquals("en_GB", tuple.getArrayElement(0).asString());
             assertEquals(expectedEncoding, tuple.getArrayElement(1).asString());
