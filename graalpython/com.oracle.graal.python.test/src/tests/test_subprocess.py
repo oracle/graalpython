@@ -103,9 +103,23 @@ class TestSubprocess(unittest.TestCase):
     @unittest.skipIf(sys.platform == 'win32', "Posix-specific")
     def test_waitpid_group_child(self):
         import os
-        p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(0.1); 42"])
+        p = subprocess.Popen([sys.executable, "-c", "import time; print('before'); time.sleep(0.1); print('after'); 42"],
+                             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        ps_list = 'not available'
+        if sys.implementation.name == "graalpy" and \
+                __graalpython__.posix_module_backend != 'java' \
+                and sys.platform.startswith("linux"):
+            ps_list = subprocess.check_output("ps", shell=True, text=True)
         res = os.waitpid(0, 0)
-        assert res[1] == 0, res
+        msg = f"Spawned {p.pid=}, os.waitpid result={res}, output of ps:\n{ps_list}"
+        try:
+            stdout, stderr = p.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            p.kill()
+            stdout, stderr = p.communicate()
+        msg += f"\n{stdout.decode().strip()=}, {stderr.decode().strip()=}"
+        assert res[1] == 0, msg
 
     # @unittest.skipIf(sys.platform == 'win32', "Posix-specific")
     # Skipped because of transient: https://jira.oci.oraclecorp.com/browse/GR-65714
