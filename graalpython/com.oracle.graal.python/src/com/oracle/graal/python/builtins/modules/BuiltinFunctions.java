@@ -788,16 +788,27 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         static Object[] inheritGlobals(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PNone globals, Object locals, TruffleString mode,
                         @Exclusive @Cached ReadCallerFrameNode readCallerFrameNode,
+                        @Exclusive @Cached GetOrCreateDictNode getOrCreateDictNode,
+                        @Exclusive @Cached InlinedConditionProfile haveCallerFrameProfile,
                         @Exclusive @Cached InlinedConditionProfile haveLocals,
                         @Exclusive @Cached PyMappingCheckNode mappingCheckNode,
                         @Exclusive @Cached GetFrameLocalsNode getFrameLocalsNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             Object[] args = PArguments.create();
-            PArguments.setGlobals(args, callerFrame.getGlobals());
+            boolean haveCallerFrame = haveCallerFrameProfile.profile(inliningTarget, callerFrame != null);
+            if (haveCallerFrame) {
+                PArguments.setGlobals(args, callerFrame.getGlobals());
+            } else {
+                PArguments.setGlobals(args, getOrCreateDictNode.execute(inliningTarget, PythonContext.get(inliningTarget).getMainModule()));
+            }
             if (haveLocals.profile(inliningTarget, locals instanceof PNone)) {
-                Object callerLocals = getFrameLocalsNode.execute(inliningTarget, callerFrame);
-                setCustomLocals(args, callerLocals);
+                if (haveCallerFrame) {
+                    Object callerLocals = getFrameLocalsNode.execute(inliningTarget, callerFrame);
+                    setCustomLocals(args, callerLocals);
+                } else {
+                    setCustomLocals(args, PArguments.getGlobals(args));
+                }
             } else {
                 if (!mappingCheckNode.execute(inliningTarget, locals)) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.LOCALS_MUST_BE_MAPPING, mode, locals);
@@ -951,15 +962,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
         protected abstract Object executeInternal(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, int flags, boolean dontInherit, int optimize,
                         int featureVersion);
 
+        private int inheritFlags(VirtualFrame frame, int flags, ReadCallerFrameNode readCallerFrame) {
+            PFrame fr = readCallerFrame.executeWith(frame, 0);
+            if (fr != null) {
+                PCode code = PFactory.createCode(PythonLanguage.get(this), fr.getTarget());
+                flags |= code.getFlags() & PyCF_MASK;
+            }
+            return flags;
+        }
+
         @Specialization
         Object doCompile(VirtualFrame frame, TruffleString expression, TruffleString filename, TruffleString mode, int flags, boolean dontInherit, int optimize,
                         int featureVersion,
-                        @Shared @Cached ReadCallerFrameNode readCallerFrame,
-                        @Bind PythonLanguage language) {
+                        @Shared @Cached ReadCallerFrameNode readCallerFrame) {
             if (!dontInherit) {
-                PFrame fr = readCallerFrame.executeWith(frame, 0);
-                PCode code = PFactory.createCode(language, fr.getTarget());
-                flags |= code.getFlags() & PyCF_MASK;
+                flags = inheritFlags(frame, flags, readCallerFrame);
             }
             EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
             Node encapsulatingNode = encapsulating.set(this);
@@ -1037,7 +1054,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(limit = "3")
         @SuppressWarnings("truffle-static-method")
-        Object generic(VirtualFrame frame, Object wSource, Object wFilename, TruffleString mode, int flags, @SuppressWarnings("unused") boolean dontInherit, int optimize, int featureVersion,
+        Object generic(VirtualFrame frame, Object wSource, Object wFilename, TruffleString mode, int flags, boolean dontInherit, int optimize, int featureVersion,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
@@ -1056,9 +1073,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             TruffleString filename = asPath.execute(frame, wFilename);
 
             if (!dontInherit) {
-                PFrame fr = readCallerFrame.executeWith(frame, 0);
-                PCode code = PFactory.createCode(PythonLanguage.get(inliningTarget), fr.getTarget());
-                flags |= code.getFlags() & PyCF_MASK;
+                flags = inheritFlags(frame, flags, readCallerFrame);
             }
 
             EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();

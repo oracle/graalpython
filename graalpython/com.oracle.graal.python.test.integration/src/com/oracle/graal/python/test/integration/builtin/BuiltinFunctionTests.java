@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,6 +28,7 @@ package com.oracle.graal.python.test.integration.builtin;
 import static com.oracle.graal.python.test.integration.PythonTests.assertPrintContains;
 import static com.oracle.graal.python.test.integration.PythonTests.assertPrints;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.graalvm.polyglot.Context;
@@ -382,4 +383,81 @@ public class BuiltinFunctionTests {
         }
     }
 
+    @Test
+    public void testExec() {
+        Context context = PythonTests.enterContext();
+        try {
+            Value mainModule = context.getBindings("python");
+            Value exec = context.eval("python", "exec");
+            Value dict = context.eval("python", "dict");
+            // Inherited globals and locals
+            exec.execute("foo = 1");
+            assertTrue(mainModule.hasMember("foo"));
+            // Explicit globals
+            Value globals = dict.newInstance();
+            exec.execute("a = 1", globals);
+            assertTrue(globals.hasHashEntry("a"));
+            assertFalse(mainModule.hasMember("a"));
+            // Explicit globals and locals
+            Value locals = dict.newInstance();
+            exec.execute("b = a", globals, locals);
+            assertTrue(locals.hasHashEntry("b"));
+            assertFalse(globals.hasHashEntry("b"));
+            assertFalse(mainModule.hasMember("b"));
+            // Inherited globals, explicit locals
+            exec.execute("c = foo", mainModule.getMember("None"), locals);
+            assertTrue(locals.hasHashEntry("c"));
+            assertFalse(mainModule.hasMember("c"));
+        } finally {
+            PythonTests.closeContext();
+        }
+    }
+
+    @Test
+    public void testEval() {
+        Context context = PythonTests.enterContext();
+        try {
+            Value mainModule = context.getBindings("python");
+            Value eval = context.eval("python", "eval");
+            Value dict = context.eval("python", "dict");
+            mainModule.putMember("foo", 1);
+            // Inherited globals and locals
+            Value result = eval.execute("foo");
+            assertEquals(1, result.asInt());
+            // Explicit globals
+            Value globals = dict.newInstance();
+            globals.putHashEntry("a", 2);
+            result = eval.execute("a", globals);
+            assertEquals(2, result.asInt());
+            // Explicit globals and locals
+            Value locals = dict.newInstance();
+            locals.putHashEntry("b", 3);
+            result = eval.execute("b", globals, locals);
+            assertEquals(3, result.asInt());
+            result = eval.execute("a", globals, locals);
+            assertEquals(2, result.asInt());
+            // Inherited globals, explicit locals
+            Value none = mainModule.getMember("None");
+            result = eval.execute("b", none, locals);
+            assertEquals(3, result.asInt());
+            result = eval.execute("foo", none, locals);
+            assertEquals(1, result.asInt());
+        } finally {
+            PythonTests.closeContext();
+        }
+    }
+
+    @Test
+    public void testCompile() {
+        Context context = PythonTests.enterContext();
+        try {
+            Value compile = context.eval("python", "compile");
+            Value eval = context.eval("python", "eval");
+            Value code = compile.execute("1", "<input>", "eval");
+            Value result = eval.execute(code);
+            assertEquals(1, result.asInt());
+        } finally {
+            PythonTests.closeContext();
+        }
+    }
 }
