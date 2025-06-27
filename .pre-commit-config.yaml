@@ -9,3 +9,9 @@ repos:
     name: Eclipse formatter
     language: system
     entry: bash scripts/pre-commit-eclipseformat.sh
+    files: '\.java$'
+  - id: checkstyle
+    name: Checkstyle
+    language: system
+    entry: bash scripts/pre-commit-checkstyle.sh
+    files: '\.java$'
