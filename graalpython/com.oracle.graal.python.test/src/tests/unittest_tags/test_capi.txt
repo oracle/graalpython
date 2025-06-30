@@ -123,6 +123,10 @@ test.test_capi.test_getargs.Signed_TestCase.test_n @ darwin-arm64,darwin-x86_64,
 test.test_capi.test_getargs.SkipitemTest.test_skipitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_getargs.SkipitemTest.test_skipitem_with_suffix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_getargs.String_TestCase.test_C @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_capi.test_getargs.String_TestCase.test_es @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_capi.test_getargs.String_TestCase.test_es_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_capi.test_getargs.String_TestCase.test_et @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_capi.test_getargs.String_TestCase.test_et_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_getargs.String_TestCase.test_gh_99240_clear_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_getargs.String_TestCase.test_s @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_getargs.String_TestCase.test_s_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
