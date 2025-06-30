@@ -18,6 +18,13 @@ repos:
     entry: bash scripts/pre-commit-checkstyle.sh
     types: [text]
     files: '\.java$'
+  - id: pylint
+    name: Pylint on mx files
+    language: system
+    pass_filenames: false
+    entry: mx --primary pylint --primary
+    types: [text]
+    files: '^mx\.graalpython/.*\.py$'
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v5.0.0
   hooks:
