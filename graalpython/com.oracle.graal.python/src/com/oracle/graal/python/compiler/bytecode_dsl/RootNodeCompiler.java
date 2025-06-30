@@ -191,7 +191,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
      */
     private final String privateName;
     private final RootNodeCompiler parent;
-    private final boolean isRoot;
     private String qualName;
 
     // Immutable after construction
@@ -221,11 +220,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         this.startNode = rootNode;
         this.scope = ctx.scopeEnvironment.lookupScope(scopeKey);
         this.scopeType = getScopeType(scope, scopeKey);
-        if (parent == null) {
-            this.isRoot = true;
-        } else {
-            this.isRoot = false;
-        }
         this.parent = parent;
         if (privateName != null) {
             this.privateName = privateName;
@@ -333,10 +327,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     private String getNewScopeQualName(String name, CompilationScope scopeType) {
         RootNodeCompiler parent = this.parent;
-        if (parent != null && !parent.isRoot) {
+        if (parent != null && parent.parent != null) {
             if (parent.scopeType == TypeParams && parent.parent != null && parent.parent.parent != null) {
                 parent = parent.parent;
-                if (parent.parent.parent != null && parent.parent.parent.parent == null) {
+                if (parent.parent != null && parent.parent.parent == null) {
+                    // if there are exactly two parents/ancestros, then return the name
                     return name;
                 }
             }
