@@ -5,13 +5,25 @@ repos:
     name: Copyright check
     language: system
     entry: mx python-checkcopyrights --assumed-modified --fix --files
+    types: [text]
   - id: eclipseformat
     name: Eclipse formatter
     language: system
     entry: bash scripts/pre-commit-eclipseformat.sh
+    types: [text]
     files: '\.java$'
   - id: checkstyle
     name: Checkstyle
     language: system
     entry: bash scripts/pre-commit-checkstyle.sh
+    types: [text]
     files: '\.java$'
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: trailing-whitespace
+    name: Trim Trailing Whitespace
+    entry: trailing-whitespace-fixer
+    language: python
+    types: [text]
+    files: '\.(java|py|md|c|h|sh)$'
