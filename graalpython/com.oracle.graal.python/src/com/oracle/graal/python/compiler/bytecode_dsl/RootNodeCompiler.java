@@ -336,7 +336,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 }
             }
             if (!(EnumSet.of(CompilationScope.Function, AsyncFunction, Class).contains(scopeType) &&
-                    parent.scope.getUseOfName(ScopeEnvironment.mangle(parent.privateName, name)).contains(Scope.DefUse.GlobalExplicit))) {
+                            parent.scope.getUseOfName(ScopeEnvironment.mangle(parent.privateName, name)).contains(Scope.DefUse.GlobalExplicit))) {
                 String base;
                 if (EnumSet.of(CompilationScope.Function, AsyncFunction, CompilationScope.Lambda).contains(parent.scopeType)) {
                     base = parent.qualName + ".<locals>";
