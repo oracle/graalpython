@@ -41,8 +41,6 @@
 package com.oracle.graal.python.compiler.bytecode_dsl;
 
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.compiler.Compiler;
