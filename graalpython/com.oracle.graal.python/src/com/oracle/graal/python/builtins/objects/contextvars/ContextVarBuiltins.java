@@ -122,7 +122,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
             Object defValue = defIsNoValueProfile.profile(inliningTarget, isNoValue(def)) ? PContextVar.NO_DEFAULT : def;
             PythonContext context = PythonContext.get(inliningTarget);
             PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
-            Object value = self.get(threadState, defValue);
+            Object value = self.get(inliningTarget, threadState, defValue);
             if (value != null) {
                 return value;
             }
@@ -139,8 +139,8 @@ public final class ContextVarBuiltins extends PythonBuiltins {
                         @Bind PythonContext context) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonContext.PythonThreadState threadState = context.getThreadState(language);
-            Object oldValue = self.getValue(threadState);
-            self.setValue(threadState, value);
+            Object oldValue = self.getValue(inliningTarget, threadState);
+            self.setValue(inliningTarget, threadState, value);
             return PFactory.createContextVarsToken(language, self, oldValue);
         }
     }
@@ -157,10 +157,10 @@ public final class ContextVarBuiltins extends PythonBuiltins {
                 token.use(inliningTarget, raise);
                 PythonContext.PythonThreadState threadState = pythonContext.getThreadState(pythonContext.getLanguage(inliningTarget));
                 if (token.getOldValue() == null) {
-                    PContextVarsContext context = threadState.getContextVarsContext();
+                    PContextVarsContext context = threadState.getContextVarsContext(inliningTarget);
                     context.contextVarValues = context.contextVarValues.without(self, self.getHash());
                 } else {
-                    self.setValue(threadState, token.getOldValue());
+                    self.setValue(inliningTarget, threadState, token.getOldValue());
                 }
             } else {
                 throw raise.raise(inliningTarget, ValueError, ErrorMessages.TOKEN_FOR_DIFFERENT_CONTEXTVAR, token);

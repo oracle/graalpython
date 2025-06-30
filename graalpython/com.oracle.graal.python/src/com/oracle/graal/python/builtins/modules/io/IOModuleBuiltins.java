@@ -231,7 +231,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
 
                 /* if not buffering, returns the raw file object */
                 if (buffering == 0) {
-                    invalidunbuf(file, mode, bufferingValue, encoding, errors, newline, closefd, opener, raiseNode);
+                    throw raiseNode.raise(inliningTarget, ValueError, CAN_T_HAVE_UNBUFFERED_TEXT_IO);
                 }
 
                 /* wraps into a buffered file */

@@ -1210,11 +1210,11 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached ConstructListNode constructListNode,
                         @Cached("createFor(this)") IndirectCallData indirectCallData) {
             PSet names = PFactory.createSet(PythonLanguage.get(inliningTarget));
-            Object state = IndirectCallContext.enter(frame, indirectCallData);
+            Object state = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
             try {
                 dir(names, klass);
             } finally {
-                IndirectCallContext.exit(frame, indirectCallData, state);
+                IndirectCallContext.exit(frame, inliningTarget, indirectCallData, state);
             }
             return constructListNode.execute(frame, names);
         }

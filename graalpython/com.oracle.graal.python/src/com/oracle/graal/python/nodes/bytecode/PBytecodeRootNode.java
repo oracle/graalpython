@@ -1057,7 +1057,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object[] generatorFrameArguments = PArguments.create();
         MaterializedFrame generatorFrame = Truffle.getRuntime().createMaterializedFrame(generatorFrameArguments, getFrameDescriptor());
         PArguments.setGeneratorFrame(arguments, generatorFrame);
-        PArguments.setCurrentFrameInfo(generatorFrameArguments, new PFrame.Reference(null));
+        PArguments.setCurrentFrameInfo(generatorFrameArguments, new PFrame.Reference(getRootNode(), null));
         // The invoking node will set these two to the correct value only when the callee requests
         // it, otherwise they stay at the initial value, which we must set to null here
         PArguments.setException(arguments, null);

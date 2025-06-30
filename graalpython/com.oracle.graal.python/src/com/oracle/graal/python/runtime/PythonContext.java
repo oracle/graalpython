@@ -460,9 +460,9 @@ public final class PythonContext extends Python3Core {
             this.nativeWrapper = nativeWrapper;
         }
 
-        public PContextVarsContext getContextVarsContext() {
+        public PContextVarsContext getContextVarsContext(Node node) {
             if (contextVarsContext == null) {
-                contextVarsContext = PFactory.createContextVarsContext(PythonLanguage.get(null));
+                contextVarsContext = PFactory.createContextVarsContext(PythonLanguage.get(node));
             }
             return contextVarsContext;
         }

@@ -211,7 +211,7 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
                 CApiTransitions.addNativeWeakRef(getContext(), pythonObject);
                 return PFactory.createReferenceType(language, cls, getInstanceShape.execute(cls), pythonObject, actualCallback, getWeakReferenceQueue(inliningTarget, readQueueNode));
             } else {
-                return refType(cls, pythonObject, actualCallback, raiseNode);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, pythonObject);
             }
         }
 

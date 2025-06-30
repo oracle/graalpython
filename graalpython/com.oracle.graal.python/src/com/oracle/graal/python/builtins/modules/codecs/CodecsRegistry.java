@@ -131,17 +131,22 @@ public final class CodecsRegistry {
 
     public static void ensureRegistryInitialized(PythonContext context) {
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, !context.isCodecsInitialized())) {
-            registerDefaultHandler(context, T_STRICT, StrictErrorHandlerNodeFactory.getInstance());
-            registerDefaultHandler(context, T_IGNORE, IgnoreErrorHandlerNodeFactory.getInstance());
-            registerDefaultHandler(context, T_REPLACE, ReplaceErrorHandlerNodeFactory.getInstance());
-            registerDefaultHandler(context, T_XMLCHARREFREPLACE, XmlCharRefReplaceErrorHandlerNodeFactory.getInstance());
-            registerDefaultHandler(context, T_BACKSLASHREPLACE, BackslashReplaceErrorHandlerNodeFactory.getInstance());
-            registerDefaultHandler(context, T_NAMEREPLACE, NameReplaceErrorHandlerNodeFactory.getInstance());
-            registerDefaultHandler(context, T_SURROGATEPASS, SurrogatePassErrorHandlerNodeFactory.getInstance());
-            registerDefaultHandler(context, T_SURROGATEESCAPE, SurrogateEscapeErrorHandlerNodeFactory.getInstance());
-            AbstractImportNode.importModule(T_ENCODINGS);
-            context.markCodecsInitialized();
+            doInitialize(context);
         }
+    }
+
+    @TruffleBoundary
+    private static void doInitialize(PythonContext context) {
+        registerDefaultHandler(context, T_STRICT, StrictErrorHandlerNodeFactory.getInstance());
+        registerDefaultHandler(context, T_IGNORE, IgnoreErrorHandlerNodeFactory.getInstance());
+        registerDefaultHandler(context, T_REPLACE, ReplaceErrorHandlerNodeFactory.getInstance());
+        registerDefaultHandler(context, T_XMLCHARREFREPLACE, XmlCharRefReplaceErrorHandlerNodeFactory.getInstance());
+        registerDefaultHandler(context, T_BACKSLASHREPLACE, BackslashReplaceErrorHandlerNodeFactory.getInstance());
+        registerDefaultHandler(context, T_NAMEREPLACE, NameReplaceErrorHandlerNodeFactory.getInstance());
+        registerDefaultHandler(context, T_SURROGATEPASS, SurrogatePassErrorHandlerNodeFactory.getInstance());
+        registerDefaultHandler(context, T_SURROGATEESCAPE, SurrogateEscapeErrorHandlerNodeFactory.getInstance());
+        AbstractImportNode.importModule(T_ENCODINGS);
+        context.markCodecsInitialized();
     }
 
     @TruffleBoundary

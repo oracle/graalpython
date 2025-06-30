@@ -86,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
@@ -137,6 +138,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -402,13 +404,37 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             return getDictFromGlobalsNode.executeCached(globals);
         }
 
-        private PFrame getCallerFrame(VirtualFrame frame, int stackLevel) {
+        private PFrame getCallerFrame(VirtualFrame frame, int stackLevel, TruffleString[] skipFilePrefixes) {
             if (readCallerNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 reportPolymorphicSpecialize();
                 readCallerNode = insert(ReadCallerFrameNode.create());
             }
-            return readCallerNode.executeWith(PArguments.getCurrentFrameInfo(frame), ReadCallerFrameNode.FrameSelector.SKIP_INTERNAL, stackLevel);
+            PFrame.Reference ref = PArguments.getCurrentFrameInfo(frame);
+            ReadCallerFrameNode.FrameSelector selector = ReadCallerFrameNode.SkipInternalFramesSelector.INSTANCE;
+            if (skipFilePrefixes != null) {
+                /*
+                 * CPython would always count the first frame into the stacklevel even if it is
+                 * supposed to be skipped. We do that too, but our code is one off because of the
+                 * builtin frame. Let's just assume the common case where the first python frame is
+                 * always skipped by the filter.
+                 */
+                stackLevel--;
+                selector = rootNode -> ReadCallerFrameNode.SkipInternalFramesSelector.INSTANCE.skip(rootNode) || isFilenameToSkip(skipFilePrefixes, rootNode);
+            }
+            return readCallerNode.executeWith(ref, selector, stackLevel);
+        }
+
+        @TruffleBoundary
+        private static boolean isFilenameToSkip(TruffleString[] skipFilePrefixes, RootNode rootNode) {
+            TruffleString fileName = PCode.extractFileName(rootNode);
+            for (TruffleString prefix : skipFilePrefixes) {
+                if (fileName.byteLength(TS_ENCODING) >= prefix.byteLength(TS_ENCODING) &&
+                                prefix.regionEqualByteIndexUncached(0, fileName, 0, prefix.byteLength(TS_ENCODING), TS_ENCODING)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         // _Warnings_GetState split up
@@ -852,10 +878,10 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         /**
          * Used from doWarn. On the fast path.
          */
-        private void setupContext(VirtualFrame frame, int stackLevel, TruffleString[] filename, int[] lineno, TruffleString[] module, Object[] registry) {
+        private void setupContext(VirtualFrame frame, int stackLevel, TruffleString[] skipFilePrefixes, TruffleString[] filename, int[] lineno, TruffleString[] module, Object[] registry) {
             // the stack level for the intrinsified version is off-by-one compared to the Python
             // version
-            PFrame f = frame == null ? null : getCallerFrame(frame, stackLevel - 1);
+            PFrame f = frame == null ? null : getCallerFrame(frame, stackLevel - 1, skipFilePrefixes);
             PDict globals;
             if (f == null || f.getGlobals() == null) {
                 globals = getSysDict();
@@ -910,12 +936,12 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
          */
         private void doWarn(VirtualFrame frame, PythonModule warnings,
                         Object message, Object category, int stackLevel, Object source,
-                        IndirectCallData indirectCallData) {
+                        IndirectCallData indirectCallData, TruffleString[] skipFilePrefixes) {
             TruffleString[] filename = new TruffleString[1];
             int[] lineno = new int[1];
             TruffleString[] module = new TruffleString[1];
             Object[] registry = new Object[1];
-            setupContext(frame, stackLevel, filename, lineno, module, registry);
+            setupContext(frame, stackLevel, skipFilePrefixes, filename, lineno, module, registry);
             warnExplicit(frame, warnings, category, message, filename[0], lineno[0], module[0], registry[0], null, source, indirectCallData);
         }
 
@@ -956,7 +982,8 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_WARN, minNumOfPositionalArgs = 2, parameterNames = {"$mod", "message", "category", "stacklevel", "source"}, declaresExplicitSelf = true, alwaysNeedsCallerFrame = true)
+    @Builtin(name = J_WARN, minNumOfPositionalArgs = 2, parameterNames = {"$mod", "message", "category", "stacklevel", "source",
+                    "skip_file_prefixes"}, declaresExplicitSelf = true, alwaysNeedsCallerFrame = true)
     @ArgumentClinic(name = "category", defaultValue = "PNone.NONE")
     @ArgumentClinic(name = "stacklevel", conversion = ClinicConversion.Int, defaultValue = "1")
     @ArgumentClinic(name = "source", defaultValue = "PNone.NONE")
@@ -967,14 +994,34 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             return WarnBuiltinNodeClinicProviderGen.INSTANCE;
         }
 
-        public abstract Object execute(VirtualFrame frame, PythonModule mod, Object message, Object category, int stacklevel, Object source);
+        public abstract Object execute(VirtualFrame frame, PythonModule mod, Object message, Object category, int stacklevel, Object source, Object skipFilePrefixes);
 
         @Specialization
-        Object doWarn(VirtualFrame frame, PythonModule mod, Object message, Object category, int stacklevel, Object source,
+        Object doWarn(VirtualFrame frame, PythonModule mod, Object message, Object category, int stacklevel, Object source, Object skipFilePrefixesObj,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
+                        @Cached StringNodes.CastToTruffleStringCheckedNode castToStringChecked,
+                        @Cached PRaiseNode raiseNode,
                         @Cached WarningsModuleNode moduleFunctionsNode) {
             // warnings_warn_impl
-            moduleFunctionsNode.doWarn(frame, mod, message, moduleFunctionsNode.getCategory(frame, message, category), stacklevel, source, indirectCallData);
+            TruffleString[] skipFilePrefixes = null;
+            if (skipFilePrefixesObj instanceof PTuple tuple) {
+                SequenceStorage storage = tuple.getSequenceStorage();
+                if (storage.length() > 0) {
+                    skipFilePrefixes = new TruffleString[storage.length()];
+                    for (int i = 0; i < storage.length(); i++) {
+                        Object item = getItemScalarNode.execute(inliningTarget, storage, i);
+                        skipFilePrefixes[i] = castToStringChecked.cast(inliningTarget, item, ErrorMessages.FOUND_NON_STR_S_IN_SKIP_FILE_PREFIXES, item);
+                    }
+                    if (stacklevel < 2) {
+                        stacklevel = 2;
+                    }
+                }
+            } else if (skipFilePrefixesObj != PNone.NO_VALUE) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError);
+            }
+            moduleFunctionsNode.doWarn(frame, mod, message, moduleFunctionsNode.getCategory(frame, message, category), stacklevel, source, indirectCallData, skipFilePrefixes);
             return PNone.NONE;
         }
 
@@ -1105,7 +1152,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     moduleFunctionsNode = insert(WarningsModuleNode.create());
                 }
-                moduleFunctionsNode.doWarn((VirtualFrame) frame, _warnings, message, category, stackLevel, source, indirectCallData);
+                moduleFunctionsNode.doWarn((VirtualFrame) frame, _warnings, message, category, stackLevel, source, indirectCallData, null);
             }
 
             /*

@@ -363,12 +363,12 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int bytesLen = bufferLib.getBufferLength(buffer);
                 BytesFormatProcessor formatter = new BytesFormatProcessor(PythonContext.get(inliningTarget), getTupleItemNode, bytes, bytesLen, inliningTarget);
-                Object savedState = IndirectCallContext.enter(frame, indirectCallData);
+                Object savedState = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
                 try {
                     byte[] data = formatter.format(right);
                     return create.execute(inliningTarget, self, data);
                 } finally {
-                    IndirectCallContext.exit(frame, indirectCallData, savedState);
+                    IndirectCallContext.exit(frame, inliningTarget, indirectCallData, savedState);
                 }
             } finally {
                 bufferLib.release(buffer, frame, indirectCallData);

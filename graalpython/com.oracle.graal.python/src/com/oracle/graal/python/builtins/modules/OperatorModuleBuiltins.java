@@ -159,7 +159,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
                 if (!bufferAcquireLib.hasBuffer(left) || !bufferAcquireLib.hasBuffer(right)) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, left, right);
                 }
-                Object savedState = IndirectCallContext.enter(frame, indirectCallData);
+                Object savedState = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
                 Object leftBuffer = bufferAcquireLib.acquireReadonly(left);
                 try {
                     Object rightBuffer = bufferAcquireLib.acquireReadonly(right);
@@ -170,7 +170,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
                     }
                 } finally {
                     bufferLib.release(leftBuffer);
-                    IndirectCallContext.exit(frame, indirectCallData, savedState);
+                    IndirectCallContext.exit(frame, inliningTarget, indirectCallData, savedState);
                 }
             }
         }

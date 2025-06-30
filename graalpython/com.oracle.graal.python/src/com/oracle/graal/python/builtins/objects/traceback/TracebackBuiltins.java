@@ -264,12 +264,12 @@ public final class TracebackBuiltins extends PythonBuiltins {
 
             // case 2.1: the frame info refers to the current frame
             if (isCurFrameProfile.profile(inliningTarget, PArguments.getCurrentFrameInfo(frame) == frameInfo)) {
-                // materialize the current frame; marking is not necessary (already done);
-                // refreshing
-                // values is also not necessary (will be done on access to the locals or when
-                // returning
-                // from the frame)
-                escapedFrame = materializeNode.execute(frame, false);
+                /*
+                 * materialize the current frame; marking is not necessary (already done);
+                 * refreshing values is also not necessary (will be done on access to the locals or
+                 * when returning from the frame)
+                 */
+                escapedFrame = materializeNode.executeOnStack(false, false, frame);
             } else {
                 // case 2.2: the frame info does not refer to the current frame
                 for (int i = 0;; i++) {

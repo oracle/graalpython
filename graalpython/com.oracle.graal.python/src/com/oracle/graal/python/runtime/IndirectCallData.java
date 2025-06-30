@@ -47,35 +47,24 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
 public final class IndirectCallData {
 
-    private static final IndirectCallData UNCACHED = new IndirectCallData();
+    private static final IndirectCallData UNCACHED = new IndirectCallData(Assumption.NEVER_VALID, Assumption.NEVER_VALID);
 
-    private final TruffleWeakReference<Node> nodeRef;
     @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState;
     @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame;
 
-    private IndirectCallData() {
-        this.nodeRef = new TruffleWeakReference<>(null);
-        nativeCodeDoesntNeedMyFrame = Assumption.ALWAYS_VALID;
-        nativeCodeDoesntNeedExceptionState = Assumption.ALWAYS_VALID;
+    private IndirectCallData(Assumption nativeCodeDoesntNeedExceptionState, Assumption nativeCodeDoesntNeedMyFrame) {
+        this.nativeCodeDoesntNeedExceptionState = nativeCodeDoesntNeedExceptionState;
+        this.nativeCodeDoesntNeedMyFrame = nativeCodeDoesntNeedMyFrame;
     }
 
-    public IndirectCallData(Node node) {
-        assert node != null;
-        this.nodeRef = new TruffleWeakReference<>(node);
+    public IndirectCallData() {
     }
 
     public boolean isUncached() {
-        assert (nodeRef.get() == null) == (this == UNCACHED);
         return this == UNCACHED;
-    }
-
-    public Node getNode() {
-        assert !isUncached();
-        return nodeRef.get();
     }
 
     public boolean calleeNeedsCallerFrame() {
