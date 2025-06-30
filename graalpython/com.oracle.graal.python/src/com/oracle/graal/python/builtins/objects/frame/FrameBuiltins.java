@@ -303,7 +303,7 @@ public final class FrameBuiltins extends PythonBuiltins {
             // frame. If 'self' represents another frame on the stack, the values are already
             // refreshed.
             if (profile.profile(inliningTarget, frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
-                PFrame pyFrame = materializeNode.execute(false, true, frame);
+                PFrame pyFrame = materializeNode.executeOnStack(false, true, frame);
                 assert pyFrame == self;
             }
             return getFrameLocalsNode.execute(inliningTarget, self);

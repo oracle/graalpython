@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.StackWalkResult;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.ExecutionContextFactory.CallContextNodeGen;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -71,7 +72,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -327,12 +327,10 @@ public abstract class ExecutionContext {
                 // n.b. We need to use 'ReadCallerFrameNode.getCallerFrame' instead of
                 // 'Truffle.getRuntime().getCallerFrame()' because we still need to skip
                 // non-Python frames, even if we do not skip frames of builtin functions.
-                Frame callerFrame = ReadCallerFrameNode.getCallerFrame(info, FrameInstance.FrameAccess.READ_ONLY, ReadCallerFrameNode.AllFramesSelector.INSTANCE, 0);
-                if (PArguments.isPythonFrame(callerFrame)) {
-                    callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
+                StackWalkResult callerFrameResult = ReadCallerFrameNode.getCallerFrame(info, FrameInstance.FrameAccess.READ_ONLY, ReadCallerFrameNode.AllFramesSelector.INSTANCE, 0);
+                if (callerFrameResult != null) {
+                    callerInfo = PArguments.getCurrentFrameInfo(callerFrameResult.frame());
                 } else {
-                    // TODO: frames: an assertion should be that this is one of our
-                    // entry point call nodes
                     callerInfo = Reference.EMPTY;
                 }
                 // ReadCallerFrameNode.getCallerFrame must have the assumption invalidated
