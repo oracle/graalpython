@@ -334,9 +334,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     private String getNewScopeQualName(String name, CompilationScope scopeType) {
         RootNodeCompiler parent = this.parent;
         if (parent != null && !parent.isRoot) {
-            if (parent.scopeType == TypeParams && parent.parent != null && !parent.parent.isRoot) {
+            if (parent.scopeType == TypeParams && parent.parent != null && parent.parent.parent != null) {
                 parent = parent.parent;
-                if (parent.parent.parent != null && parent.parent.parent.isRoot) {
+                if (parent.parent.parent != null && parent.parent.parent.parent == null) {
                     return name;
                 }
             }
@@ -355,6 +355,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     }
 
     private BytecodeDSLCompilerResult compileRootNode(String name, ArgumentInfo argumentInfo, SourceRange sourceRange, BytecodeParser<Builder> parser) {
+        qualName = getNewScopeQualName(name, scopeType);
+
         BytecodeRootNodes<PBytecodeDSLRootNode> nodes = PBytecodeDSLRootNodeGen.create(ctx.language, BytecodeConfig.WITH_SOURCE, parser);
         List<PBytecodeDSLRootNode> nodeList = nodes.getNodes();
         assert nodeList.size() == 1;
@@ -392,8 +394,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 selfIndex = cellLocals.get(selfCellName).getLocalOffset();
             }
         }
-
-        qualName = getNewScopeQualName(name, scopeType);
 
         BytecodeDSLCodeUnit codeUnit = new BytecodeDSLCodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(qualName),
                         argumentInfo.argCount, argumentInfo.kwOnlyArgCount, argumentInfo.positionalOnlyArgCount,
@@ -930,7 +930,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             endStoreLocal("__module__", b);
 
             beginStoreLocal("__qualname__", b);
-            emitPythonConstant(toTruffleStringUncached(ctx.getQualifiedName(scope)), b);
+            emitPythonConstant(toTruffleStringUncached(this.qualName), b);
             endStoreLocal("__qualname__", b);
 
             if (node.isGeneric()) {
@@ -1145,7 +1145,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     @Override
     public BytecodeDSLCompilerResult visit(ExprTy.GeneratorExp node) {
-        return buildComprehensionCodeUnit(node, node.generators, "<generator>",
+        return buildComprehensionCodeUnit(node, node.generators, "<genexpr>",
                         null,
                         (statementCompiler, collection) -> emitYield((statementCompiler_) -> node.element.accept(statementCompiler_), statementCompiler));
     }
@@ -2138,7 +2138,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             boolean newStatement = beginSourceSection(node, b);
 
             b.beginCallUnaryMethod();
-            emitMakeFunction(node, "<generator>", COMPREHENSION_ARGS);
+            emitMakeFunction(node, "<genexpr>", COMPREHENSION_ARGS);
             node.generators[0].iter.accept(this);
             b.endCallUnaryMethod();
 
