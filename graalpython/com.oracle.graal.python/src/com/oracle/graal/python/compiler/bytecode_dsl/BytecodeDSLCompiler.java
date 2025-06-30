@@ -98,7 +98,6 @@ public class BytecodeDSLCompiler {
         public final int futureLineNumber;
         public final ParserCallbacksImpl errorCallback;
         public final ScopeEnvironment scopeEnvironment;
-//        public final Map<Scope, String> qualifiedNames;
 
         public BytecodeDSLCompilerContext(PythonLanguage language, PythonContext context, ModTy mod, Source source, int optimizationLevel,
                         EnumSet<FutureFeature> futureFeatures, int futureLineNumber, ParserCallbacksImpl errorCallback, ScopeEnvironment scopeEnvironment) {
@@ -111,7 +110,6 @@ public class BytecodeDSLCompiler {
             this.futureLineNumber = futureLineNumber;
             this.errorCallback = errorCallback;
             this.scopeEnvironment = scopeEnvironment;
-//            this.qualifiedNames = new HashMap<>();
         }
 
         public String maybeMangle(String privateName, Scope scope, String name) {
@@ -132,43 +130,5 @@ public class BytecodeDSLCompiler {
             }
             return null;
         }
-
-//        String getQualifiedName(Scope scope) {
-//            if (qualifiedNames.containsKey(scope)) {
-//                return qualifiedNames.get(scope);
-//            } else {
-//                String qualifiedName = computeQualifiedName(scope);
-//                qualifiedNames.put(scope, qualifiedName);
-//                return qualifiedName;
-//            }
-//        }
-//
-//        private String computeQualifiedName(Scope scope) {
-//            return computeQualifiedName(scope.getName(), scope);
-//        }
-//
-//        private String computeQualifiedName(String qualifiedName, Scope scope) {
-//            Scope parentScope = scopeEnvironment.lookupParent(scope);
-//            if (parentScope != null && parentScope != scopeEnvironment.getTopScope()) {
-//                if (parentScope.isTypeParam()) {
-//                    parentScope = scopeEnvironment.lookupParent(parentScope);
-//                    if (parentScope == null || scopeEnvironment.lookupParent(parentScope) == null) {
-//                        return qualifiedName;
-//                    }
-//                }
-//                if (!((scope.isFunction() || scope.isClass()) && parentScope.getUseOfName(mangle(scope, qualifiedName)).contains(Scope.DefUse.GlobalExplicit))) {
-//                    // Qualify the name, unless it's a function/class and the parent declared the
-//                    // name as a global (in which case the function/class doesn't belong to the
-//                    // parent).
-//                    if (parentScope.isFunction()) {
-//                        qualifiedName = getQualifiedName(parentScope) + ".<locals>." + qualifiedName;
-//                    } else {
-//                        qualifiedName = getQualifiedName(parentScope) + "." + qualifiedName;
-//                    }
-//                }
-//            }
-//
-//            return qualifiedName;
-//        }
     }
 }
