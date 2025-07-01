@@ -380,7 +380,6 @@ class WithTempFilesTests(unittest.TestCase):
         with open(TEST_FULL_PATH2, 0) as fd:           # follows symlink
             self.assertEqual(inode, os.fstat(fd).st_ino)
 
-    @unittest.skipIf(__graalpython__.posix_module_backend() == 'java', 'statvfs emulation is not supported')
     def test_statvfs(self):
         res = os.statvfs(TEST_FULL_PATH1)
         with open(TEST_FULL_PATH1, 0) as fd:

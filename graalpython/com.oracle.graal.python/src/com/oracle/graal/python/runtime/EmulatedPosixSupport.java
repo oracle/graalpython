@@ -189,6 +189,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
@@ -211,6 +212,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.nodes.ErrorMessages;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.io.ProcessHandler.Redirect;
@@ -1088,15 +1090,54 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public long[] statvfs(Object path) {
-        throw createUnsupportedFeature("statvfs");
+    public long[] statvfs(Object path) throws PosixException {
+        try {
+            Env env = PythonContext.get(null).getEnv();
+            TruffleFile truffleFile = env.getPublicTruffleFile((String) path);
+            TruffleFile.FileStoreInfo fileStoreInfo = truffleFile.getFileStoreInfo();
+
+            long totalSpace, usableSpace, unallocatedSpace, blockSize;
+
+            totalSpace = fileStoreInfo.getTotalSpace();
+            usableSpace = fileStoreInfo.getUsableSpace();
+            unallocatedSpace = fileStoreInfo.getUnallocatedSpace();
+            blockSize = fileStoreInfo.getBlockSize();
+
+            long bsize, frsize, blocks, bfree, bavail, files, ffree, favail, flag, namemax, fsid;
+
+            bsize = blockSize;                    // file system block size
+            frsize = blockSize;                   // fragment size
+            blocks = totalSpace / blockSize;      // size of fs in f_frsize units
+            bfree = unallocatedSpace / blockSize; // free blocks
+            bavail = usableSpace / blockSize;     // free blocks for unprivileged users
+            files = 0;                            // inodes
+            ffree = 0;                            // free inodes
+            favail = 0;                           // free inodes for unprivileged users
+            flag = 0;                             // mount flags
+            namemax = 0;                          // maximum filename length
+            fsid = 0;                             // file system ID
+
+            return new long[]{bsize, frsize, blocks, bfree, bavail, files, ffree, favail, flag, namemax, fsid};
+        } catch (NoSuchFileException e) {
+            throw new PosixException(OSErrorEnum.ENOENT.getNumber(), ErrorMessages.NO_SUCH_FILE_OR_DIR);
+        } catch (UnsupportedOperationException | IOException | SecurityException e) {
+            TruffleString message = PythonUtils.toTruffleStringUncached(e.getMessage());
+            throw new PosixException(OSErrorEnum.EPERM.getNumber(), message);
+        }
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public long[] fstatvfs(int fd) {
-        throw createUnsupportedFeature("fstatvfs");
+    public long[] fstatvfs(int fd) throws PosixException {
+        String path = getFilePath(fd);
+
+        if (path == null) {
+            throw new PosixException(OSErrorEnum.EBADF.getNumber(), ErrorMessages.BAD_FILE_DESCRIPTOR);
+        }
+
+        return statvfs(path);
     }
 
     private static long[] fstatWithoutPath(Channel fileChannel) {
