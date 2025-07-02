@@ -372,24 +372,6 @@
     packages(os, arch)::
         get(PACKAGES, os, arch),
 
-    gcc_8:: task_spec({
-        // we replace devtoolset with gcc 8.3.0
-        local pkgs = if self.os == "linux" then
-                std.prune(super.packages + {
-                    "00:devtoolset": null,
-                    "01:binutils": null,
-                    gcc: "==8.3.0",
-                    binutils: "==2.34",
-                })
-            else
-                super.packages,
-        packages: pkgs,
-    }),
-
-    with_dy(dynamic_imports):: task_spec({
-        dynamic_imports +:: if std.type(dynamic_imports) == "array" then dynamic_imports else [dynamic_imports],
-    }),
-
     local eclipse = task_spec(evaluate_late({
         // late evaluation of the eclipse mixin, conditional import based on platform
         // eclipse downloads are not provided for aarch64
@@ -402,24 +384,6 @@
     })),
 
     logs(os, arch):: LOGS,
-
-    graal_core:: task_spec({
-        environment +: {
-            HOST_VM_CONFIG: "graal-core",
-        },
-    }),
-
-    // gcc_8 needed for the OL8 (gfortran is missing)
-    blas:: $.ol8 + $.gcc_8 + task_spec({
-        packages: {
-            openblas: ">=0.3.21",
-            lapack: ">=3.8.0",
-        }
-    }),
-
-    notify:: task_spec({
-        notify_groups: const.NOTIFY_GROUPS,
-    }),
 
     //------------------------------------------------------------------------------------------------------------------
     // graalpy gates
