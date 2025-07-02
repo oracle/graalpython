@@ -481,7 +481,7 @@ You can extend it with Python code or leverage packages from the Python ecosyste
                     It also enables developers to use GraalPy to create more efficient and productive applications in the areas of
                     machine learning, data analysis, and web development using their familiar Python
                     toolsets.</h5>
-                <h5 class="compatibility-text">Many more Python packages work on GraalPy than are listed here. If there is  a package you are interested in that is not included, chances are that it might just work. If it does not, feel free to reach out to us on <a href="https://github.com/oracle/graalpython/issues" target="_blank">GitHub</a>.</h5>
+                <h5 class="compatibility-text">Many more Python packages work on GraalPy than are listed here. If there is a package you are interested in that is not included, chances are that it might just work. If it does not, feel free to reach out to us on <a href="https://github.com/oracle/graalpython/issues" target="_blank">GitHub</a>.</h5>
             </div>
         </div>
     </div>
