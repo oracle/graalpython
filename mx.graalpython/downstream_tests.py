@@ -111,7 +111,9 @@ def downstream_test_pybind11(graalpy):
     run([graalpy, '-m', 'venv', str(venv)])
     run_in_venv(venv, ['pip', 'install', 'pytest'])
     run_in_venv(venv, ['cmake', '-S', '.', '-B', 'build', '-DPYBIND11_WERROR=ON'], cwd=src)
-    run_in_venv(venv, ['cmake', '--build', 'build', '--parallel'], cwd=src)
+    # GitHub actions tend to OOM here
+    parallel_arg = ['--parallel'] if "GITHUB_ACTIONS" not in os.environ else []
+    run_in_venv(venv, ['cmake', '--build', 'build', *parallel_arg], cwd=src)
     env = os.environ.copy()
     env['PYTHONPATH'] = 'build/tests'
     run_in_venv(venv, ['pytest', '-v', '--tb=short', 'tests'], cwd=src, env=env)
