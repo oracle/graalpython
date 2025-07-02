@@ -137,7 +137,7 @@
     // gates
     // -----------------------------------------------------------------------------------------------------------------
     local gate_task_dict = {
-        "python-jvm-build": gpgate + platform_spec(no_jobs) + platform_spec({
+        "build": gpgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier1                     + provide(GPY_JVM_STANDALONE),
         }),
         "python-unittest": gpgate + platform_spec(no_jobs) + platform_spec({
@@ -194,7 +194,7 @@
             "darwin:aarch64:jdk21"       : daily     + t("02:00:00") + require(GPY_JVM21_STANDALONE),
             "darwin:amd64:jdk-latest"    : daily     + t("02:00:00") + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "windows:amd64:jdk21"        : daily     + t("02:00:00") + require(GPY_JVM21_STANDALONE) + batches(2),
-            "linux:amd64:jdk-latest"     : tier2                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
+            "linux:amd64:jdk-latest"     : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "linux:aarch64:jdk-latest"   : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "darwin:aarch64:jdk-latest"  : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "windows:amd64:jdk-latest"   : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST) + batches(2),
@@ -244,14 +244,14 @@
             "linux:aarch64:jdk21"        : daily     + t("01:30:00"),
             "darwin:aarch64:jdk21"       : daily     + t("01:30:00"),
             "windows:amd64:jdk21"        : daily     + t("01:00:00"),
-            "linux:amd64:jdk-latest"     : tier2,
-            "linux:aarch64:jdk-latest"   : tier3,
+            "linux:amd64:jdk-latest"     : tier3                      + require(GRAAL_JDK_LATEST),
+            "linux:aarch64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST),
             "darwin:amd64:jdk-latest"    : daily     + t("01:30:00"),
-            "darwin:aarch64:jdk-latest"  : tier3,
-            "windows:amd64:jdk-latest"   : tier3,
+            "darwin:aarch64:jdk-latest"  : tier3                      + require(GRAAL_JDK_LATEST),
+            "windows:amd64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST),
         }),
         "python-junit-bytecode-dsl": gpgate + platform_spec(no_jobs) + bytecode_dsl_gate("python-junit") + platform_spec({
-            "linux:amd64:jdk21"          : tier2,
+            "linux:amd64:jdk21"          : tier3                      + require(GRAAL_JDK_LATEST),
         }),
         "python-junit-maven": gpgate_maven + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk21"          : daily     + t("00:30:00"),
@@ -294,11 +294,11 @@
             "linux:amd64:jdk-latest"     : tier3,
         }),
         "python-graalvm": gpgate + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier2,
-            "linux:aarch64:jdk-latest"   : tier3,
+            "linux:amd64:jdk-latest"     : tier3                      + require(GRAAL_JDK_LATEST),
+            "linux:aarch64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST),
             "darwin:amd64:jdk-latest"    : daily     + t("01:00:00") + daily,
-            "darwin:aarch64:jdk-latest"  : tier3,
-            "windows:amd64:jdk-latest"   : tier3,
+            "darwin:aarch64:jdk-latest"  : tier3                      + require(GRAAL_JDK_LATEST),
+            "windows:amd64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST),
         }),
         "python-unittest-cpython": cpygate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier1,
@@ -338,7 +338,7 @@
         }),
         // tests with sandboxed backends for various modules (posix, sha3, ctypes, ...)
         "python-unittest-sandboxed": gpgate_ee + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier2,
+            "linux:amd64:jdk-latest"     : tier3,
         }),
         "python-svm-unittest-sandboxed": gpgate_ee + provide(GPYEE_NATIVE_STANDALONE) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3,

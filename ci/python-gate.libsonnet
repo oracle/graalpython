@@ -310,6 +310,9 @@
             else 
                 ["set-export", "GRAAL_JDK_HOME", "../graal/sdk/mxbuild/*/GRAALVM_COMMUNITY_JAVA" + jdk_version + "/graalvm-community-*"]
         ],
+        environment+: {
+            MX_BUILD_SHALLOW_DEPENDENCY_CHECKS: "true",
+        },
         requireArtifacts+: [{
             name: artifact_name,
             autoExtract: false,
