@@ -137,7 +137,7 @@
     // gates
     // -----------------------------------------------------------------------------------------------------------------
     local gate_task_dict = {
-        "build": gpgate + platform_spec(no_jobs) + platform_spec({
+        "python-jvm-build": gpgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier1                     + provide(GPY_JVM_STANDALONE),
         }),
         "python-unittest": gpgate + platform_spec(no_jobs) + platform_spec({
@@ -183,7 +183,7 @@
             "linux:amd64:jdk-latest"     : tier2,
         }),
         "python-unittest-posix": gpgate + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier1                     + require(GPY_JVM_STANDALONE),
+            "linux:amd64:jdk-latest"     : tier2                     + require(GPY_JVM_STANDALONE),
             "linux:aarch64:jdk-latest"   : tier3                     + require(GPY_JVM_STANDALONE),
             "darwin:amd64:jdk-latest"    : daily     + t("01:30:00") + require(GPY_JVM_STANDALONE),
             "darwin:aarch64:jdk-latest"  : tier3                     + require(GPY_JVM_STANDALONE),
@@ -205,7 +205,7 @@
             "darwin:aarch64:jdk21"       : daily     + t("02:00:00") + require(GPY_JVM21_STANDALONE),
             "darwin:amd64:jdk-latest"    : daily     + t("02:00:00") + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "windows:amd64:jdk21"        : daily     + t("02:00:00") + require(GPY_JVM21_STANDALONE) + batches(2),
-            "linux:amd64:jdk-latest"     : tier1                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
+            "linux:amd64:jdk-latest"     : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "linux:aarch64:jdk-latest"   : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "darwin:aarch64:jdk-latest"  : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "windows:amd64:jdk-latest"   : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST) + batches(2),
@@ -222,13 +222,13 @@
             "darwin:aarch64:jdk21"       : daily     + t("02:00:00") + require(GPY_JVM21_STANDALONE),
             "darwin:amd64:jdk-latest"    : daily     + t("02:00:00") + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "windows:amd64:jdk21"        : daily     + t("02:00:00") + require(GPY_JVM21_STANDALONE) + batches(2),
-            "linux:amd64:jdk-latest"     : tier1                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
+            "linux:amd64:jdk-latest"     : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "linux:aarch64:jdk-latest"   : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "darwin:aarch64:jdk-latest"  : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "windows:amd64:jdk-latest"   : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST) + batches(2),
         }),
         "python-junit-vfsutils": gpgate + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier1                      + require(GPY_JVM_STANDALONE),
+            "linux:amd64:jdk-latest"     : tier3                      + require(GPY_JVM_STANDALONE),
             "linux:aarch64:jdk-latest"   : tier3                      + require(GPY_JVM_STANDALONE),
             "darwin:aarch64:jdk-latest"  : tier3                      + require(GPY_JVM_STANDALONE),
             "windows:amd64:jdk-latest"   : post_merge + t("03:59:00") + require(GPY_JVM_STANDALONE),
@@ -244,7 +244,7 @@
             "linux:aarch64:jdk21"        : daily     + t("01:30:00"),
             "darwin:aarch64:jdk21"       : daily     + t("01:30:00"),
             "windows:amd64:jdk21"        : daily     + t("01:00:00"),
-            "linux:amd64:jdk-latest"     : tier1,
+            "linux:amd64:jdk-latest"     : tier2,
             "linux:aarch64:jdk-latest"   : tier3,
             "darwin:amd64:jdk-latest"    : daily     + t("01:30:00"),
             "darwin:aarch64:jdk-latest"  : tier3,
@@ -258,20 +258,23 @@
             "linux:aarch64:jdk21"        : daily     + t("01:00:00"),
             "darwin:aarch64:jdk21"       : daily     + t("01:30:00"),
             "windows:amd64:jdk21"        : daily     + t("01:30:00"),
-            "linux:amd64:jdk-latest"     : tier1                     + provide(GRAAL_JDK_LATEST),
+            "linux:amd64:jdk-latest"     : tier3                     + provide(GRAAL_JDK_LATEST),
             "linux:aarch64:jdk-latest"   : tier3                     + provide(GRAAL_JDK_LATEST),
             "darwin:amd64:jdk-latest"    : daily     + t("01:30:00") + provide(GRAAL_JDK_LATEST),
             "darwin:aarch64:jdk-latest"  : tier3                     + provide(GRAAL_JDK_LATEST),
             "windows:amd64:jdk-latest"   : tier3                     + provide(GRAAL_JDK_LATEST),
         }),
         "python-junit-polyglot-isolates": gpgate_ee + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier1,
+            "linux:amd64:jdk-latest"     : tier3,
             "linux:aarch64:jdk-latest"   : tier3,
             "darwin:aarch64:jdk-latest"  : tier3,
             "windows:amd64:jdk-latest"   : tier3,
         }),
+        "python-svm-build": gpgate + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest"     : tier2                     + provide(GPY_NATIVE_STANDALONE),
+        }),
         "python-svm-unittest": gpgate + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier1                     + provide(GPY_NATIVE_STANDALONE),
+            "linux:amd64:jdk-latest"     : tier2                     + require(GPY_NATIVE_STANDALONE),
             "linux:aarch64:jdk-latest"   : tier3                     + provide(GPY_NATIVE_STANDALONE),
             "darwin:amd64:jdk-latest"    : daily     + t("01:30:00") + provide(GPY_NATIVE_STANDALONE),
             "darwin:aarch64:jdk-latest"  : tier3                     + provide(GPY_NATIVE_STANDALONE),

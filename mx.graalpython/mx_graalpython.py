@@ -535,6 +535,7 @@ class GraalPythonTags(object):
     junit = 'python-junit'
     junit_maven = 'python-junit-maven'
     junit_maven_isolates = 'python-junit-polyglot-isolates'
+    jvmbuild = 'python-jvm-build'
     unittest = 'python-unittest'
     unittest_cpython = 'python-unittest-cpython'
     unittest_sandboxed = 'python-unittest-sandboxed'
@@ -551,6 +552,7 @@ class GraalPythonTags(object):
     unittest_maven_plugin_long_run = 'python-unittest-maven-plugin-long-run'
     junit_vfsutils = 'python-junit-vfsutils'
     tagged = 'python-tagged-unittest'
+    svmbuild = 'python-svm-build'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
     graalvm = 'python-graalvm'
@@ -1253,6 +1255,10 @@ def graalpython_gate_runner(args, tasks):
             ], env=env)
 
     # Unittests on JVM
+    with Task('GraalPython JVM build', tasks, tags=[GraalPythonTags.jvmbuild]) as task:
+        if task:
+            graalpy_standalone_jvm()
+
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
             run_python_unittests(
@@ -1412,6 +1418,10 @@ def graalpython_gate_runner(args, tasks):
             run_tagged_unittests(graalpy_standalone_native(), nonZeroIsFatal=(not is_collecting_coverage()), report=report())
 
     # Unittests on SVM
+    with Task('GraalPython build on SVM', tasks, tags=[GraalPythonTags.svmbuild]) as task:
+        if task:
+            graalpy_standalone_native()
+
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:
             run_python_unittests(graalpy_standalone_native(), parallel=8, report=report())
