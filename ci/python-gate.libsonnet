@@ -573,9 +573,7 @@
           "pip:pylint": "==2.4.4",
         }
     }),
-    style_gate:: base_style_gate + task_spec({
-        tags +:: ",fullbuild,python-license",
-    }),
+    style_gate:: base_style_gate,
 }
 
 // Local Variables:

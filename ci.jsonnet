@@ -137,9 +137,6 @@
     // gates
     // -----------------------------------------------------------------------------------------------------------------
     local gate_task_dict = {
-        "build": gpgate + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier1                     + provide(GPY_JVM_STANDALONE),
-        }),
         "python-unittest": gpgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk21"          : daily     + t("01:00:00") + provide(GPY_JVM21_STANDALONE),
             "linux:aarch64:jdk21"        : daily     + t("02:00:00") + provide(GPY_JVM21_STANDALONE),
@@ -333,15 +330,18 @@
             # JDK, but there is nothing we can do about that.
             "linux:amd64:jdk-latest"     : on_demand + t("20:00:00"),
         }),
-        "style": style_gate + platform_spec(no_jobs) + platform_spec({
+        "style": style_gate + task_spec({ tags:: "style,build,python-license" }) + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest"     : tier1 + provide(GPY_JVM_STANDALONE),
+        }),
+        "style-ecj": style_gate + task_spec({ tags:: "style,ecjbuild" }) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier1,
         }),
         // tests with sandboxed backends for various modules (posix, sha3, ctypes, ...)
         "python-unittest-sandboxed": gpgate_ee + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3,
         }),
-        "python-svm-unittest-sandboxed": gpgate_ee + provide(GPYEE_NATIVE_STANDALONE) + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier3,
+        "python-svm-unittest-sandboxed": gpgate_ee + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest"     : tier3 + provide(GPYEE_NATIVE_STANDALONE),
         }),
         "tox-example": gpgate_ee + require(GPYEE_NATIVE_STANDALONE) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3,
