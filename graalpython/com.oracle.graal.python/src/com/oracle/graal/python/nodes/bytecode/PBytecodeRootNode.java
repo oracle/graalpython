@@ -1575,26 +1575,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeClosureFromStack(virtualFrame, stackTop, oparg);
                         break;
                     }
-                    case OpCodesConstants.LOAD_LOCALS: {
-                        if (locals == null) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.NO_LOCALS_FOUND);
-                        }
-                        virtualFrame.setObject(++stackTop, locals);
-                        break;
-                    }
-                    case OpCodesConstants.LOAD_FROM_DICT_OR_DEREF: {
-                        setCurrentBci(virtualFrame, bciSlot, bci);
-                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeLoadFromDictOrDeref(virtualFrame, localFrame, stackTop, beginBci, localNodes, oparg, localCelloffset, useCachedNodes);
-                        break;
-                    }
-                    case OpCodesConstants.LOAD_FROM_DICT_OR_GLOBALS: {
-                        setCurrentBci(virtualFrame, bciSlot, bci);
-                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeLoadFromDictOrGlobals(virtualFrame, globals, stackTop, beginBci, localNames[oparg], localNodes, useCachedNodes);
-                        break;
-                    }
                     case OpCodesConstants.LOAD_DEREF: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeLoadDeref(virtualFrame, localFrame, stackTop, beginBci, localNodes, oparg, localCelloffset, useCachedNodes);
@@ -2325,21 +2305,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         bci++;
                         continue;
                     }
-                    case OpCodesConstants.MAKE_TYPE_PARAM: {
-                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeMakeTypeParam(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci, oparg);
-                        break;
+                    default: {
+                        long r = infrequentBytecodes(virtualFrame, localFrame, bc, bci, stackTop, beginBci, oparg, localBC, globals, locals, localNames, localNodes, bciSlot, localCelloffset,
+                                        useCachedNodes);
+                        stackTop = (int) (r >> 32);
+                        bci = (int) r;
                     }
-                    case OpCodesConstants.MAKE_TYPE_ALIAS: {
-                        stackTop = bytecodeMakeTypeAlias(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
-                        break;
-                    }
-                    case OpCodesConstants.MAKE_GENERIC: {
-                        stackTop = bytecodeMakeGeneric(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
-                        break;
-                    }
-                    default:
-                        throw raiseUnknownBytecodeError(bc);
                 }
                 // prepare next loop
                 oparg = 0;
@@ -2427,6 +2398,52 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
             }
         }
+    }
+
+    private long infrequentBytecodes(VirtualFrame virtualFrame, Frame localFrame, byte bc, int bci, int stackTop, int beginBci, int oparg, byte[] localBC, Object globals, Object locals,
+                    TruffleString[] localNames, Node[] localNodes, int bciSlot, int localCelloffset, boolean useCachedNodes) {
+        switch (bc) {
+            case OpCodesConstants.LOAD_LOCALS: {
+                if (locals == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.NO_LOCALS_FOUND);
+                }
+                virtualFrame.setObject(++stackTop, locals);
+                break;
+            }
+            case OpCodesConstants.LOAD_FROM_DICT_OR_DEREF: {
+                setCurrentBci(virtualFrame, bciSlot, bci);
+                oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                stackTop = bytecodeLoadFromDictOrDeref(virtualFrame, localFrame, stackTop, beginBci, localNodes,
+                                oparg, localCelloffset, useCachedNodes);
+                break;
+            }
+            case OpCodesConstants.LOAD_FROM_DICT_OR_GLOBALS: {
+                setCurrentBci(virtualFrame, bciSlot, bci);
+                oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                stackTop = bytecodeLoadFromDictOrGlobals(virtualFrame, globals, stackTop, beginBci,
+                                localNames[oparg], localNodes, useCachedNodes);
+                break;
+            }
+            case OpCodesConstants.MAKE_TYPE_PARAM: {
+                oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                stackTop = bytecodeMakeTypeParam(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci,
+                                oparg);
+                break;
+            }
+            case OpCodesConstants.MAKE_TYPE_ALIAS: {
+                stackTop = bytecodeMakeTypeAlias(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
+                break;
+            }
+            case OpCodesConstants.MAKE_GENERIC: {
+                stackTop = bytecodeMakeGeneric(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
+                break;
+            }
+            default:
+                throw raiseUnknownBytecodeError(bc);
+
+        }
+        return (long) stackTop << 32 | bci;
     }
 
     @BytecodeInterpreterSwitch
