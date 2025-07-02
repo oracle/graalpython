@@ -441,8 +441,8 @@ img.pylogo {
         <div>
             <div class="container">
                 <h3 class="truffle__subtitle">GraalPy: Package Compatibility</h3>
-                <p class="truffle__subtitle">GraalPy is compatible with many packages for Data Science and Machine Learning, including the popular PyTorch, NumPy, and Huggingface Transformers.
-                To try a package, pick any version and only if you run into problems, consult our table below to see if there is a version that may work better.</p>
+                <p class="truffle__subtitle">GraalPy is compatible with many packages for data science and machine learning, including the popular PyTorch, NumPy, and Huggingface Transformers.
+                To try a package, choose any version. If you encounter issues, consult the table below for recommended compatible versions.</p>
 
                 <div class="compatibility_page-filter">
                     <div class="compatibility__row">
@@ -475,18 +475,13 @@ You can extend it with Python code or leverage packages from the Python ecosyste
     <div class="wrapper">
         <div class="compatibility">
             <div class="container">
-                <h5 class="compatibility-text first-comp-text">To ensure GraalPy is compatible with common Python packages,
-                    the GraalPy team conducts compatibility testing and creates scripts to build and patch many
-                    of the top packages on PyPI plus some more that are of special interest to us, including
-                  	libraries and frameworks such as NumPy, Pandas, and Django.</h5>
+                <h5 class="compatibility-text first-comp-text">To ensure GraalPy is compatible with the most popular Python packages, the GraalPy team performs compatibility testing and maintains build-and-patch scripts for many top PyPI libraries—especially of special interest for us—such as NumPy, Pandas, and Django.</h5>
                 <h5 class="compatibility-text">Compatibility testing ensures that
                     developers can leverage GraalPy's powerful capabilities in their existing applications.
                     It also enables developers to use GraalPy to create more efficient and productive applications in the areas of
                     machine learning, data analysis, and web development using their familiar Python
                     toolsets.</h5>
-                <h5 class="compatibility-text">Many more Python packages than are on this list work on GraalPy.
-                    If there is a package you are interested in that you cannot find here, chances are that it
-                    might just work. If it does not, please reach out to us on <a href="https://github.com/oracle/graalpython/issues" target="_blank">GitHub</a></h5>
+                <h5 class="compatibility-text">Many more Python packages work on GraalPy than are listed here. If there is  a package you are interested in that is not included, chances are that it might just work. If it does not, feel free to reach out to us on <a href="https://github.com/oracle/graalpython/issues" target="_blank">GitHub</a>.</h5>
             </div>
         </div>
     </div>
@@ -530,7 +525,7 @@ You can extend it with Python code or leverage packages from the Python ecosyste
 <!-- Benefits -->
 <section class="content-section">
   <div class="wrapper">
-    <div class="langbenefits">
+    <div class="langbenefits compbenefits">
       <div class="container">
         <h3 class="langpage__title-02">Advantages</h3>
         <div class="langbenefits__row">
