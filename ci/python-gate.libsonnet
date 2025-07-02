@@ -614,21 +614,6 @@
     style_gate:: base_style_gate + task_spec({
         tags +:: ",fullbuild,python-license",
     }),
-
-    local downstream_projects = ["pybind11", "virtualenv"],
-    local downstream_tests_feature_map = {
-        project: {
-            [name]: $.no_jobs {"*" +: task_spec({downstream_project:: name})}
-            for name in downstream_projects
-        },
-    },
-
-    downstream_tests_gate(downstream_spec):: run_spec.generate_variants(downstream_spec, downstream_tests_feature_map) + task_spec({
-        name_suffix:: [self.downstream_project],
-        run: [
-            ["mx"] + self.mx_parameters + self.dy + self.primary_suite + ["downstream-test", self.downstream_project],
-        ],
-    }),
 }
 
 // Local Variables:
