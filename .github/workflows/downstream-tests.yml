@@ -1,0 +1,47 @@
+name: Weekly Downstream Tests
+on:
+  schedule:
+  - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+jobs:
+  downstream-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        name:
+        - pybind11
+        - virtualenv
+        - pyo3
+        os:
+        - id: ubuntu-latest
+          graalpy_platform: linux-amd64
+        - id: macos-latest
+          graalpy_platform: darwin-aarch64
+
+    runs-on: ${{ matrix.os.id }}
+
+    steps:
+    - name: Install CMake
+      if: ${{ matrix.name == 'pybind11' }}
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: 3.30.8
+        ninjaVersion: 1.12.1
+
+    - name: Install Rust toolchain
+      if: ${{ matrix.name == 'pyo3' }}
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+
+    - name: Checkout main repository
+      uses: actions/checkout@v4
+
+    - name: Get GraalPy EA build
+      run: |
+        tarball="$(curl -sfL https://raw.githubusercontent.com/graalvm/graal-languages-ea-builds/refs/heads/main/graalpy/versions/latest-native-${{ matrix.os.graalpy_platform }}.url)"
+        curl -sfL "$tarball" | tar xz
+
+    - name: Run downstream tests for ${{ matrix.name }}
+      run: python mx.graalpython/downstream_tests.py graalpy-*/bin/python ${{ matrix.name }}
