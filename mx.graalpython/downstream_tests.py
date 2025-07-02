@@ -139,6 +139,19 @@ def downstream_test_virtualenv(graalpy):
     ], cwd=src, env=env)
 
 
+@downstream_test('pyo3')
+def downstream_test_pyo3(graalpy):
+    testdir = Path('upstream-tests').absolute()
+    shutil.rmtree(testdir, ignore_errors=True)
+    testdir.mkdir(exist_ok=True)
+    run(['git', 'clone', 'https://github.com/PyO3/pyo3.git', '-b', 'main'], cwd=testdir)
+    src = testdir / 'pyo3'
+    venv = src / 'venv'
+    run([graalpy, '-m', 'venv', str(venv)])
+    run_in_venv(venv, ['pip', 'install', 'nox'])
+    run_in_venv(venv, ['nox', '-s', 'test-py'], cwd=src)
+
+
 def run_downstream_test(python, project):
     DOWNSTREAM_TESTS[project](python)
 
