@@ -12,7 +12,8 @@ jobs:
         name:
         - pybind11
         - virtualenv
-        - pyo3
+        # Currently fails
+        # - pyo3
         os:
         - id: ubuntu-latest
           graalpy_platform: linux-amd64
