@@ -40,21 +40,22 @@
  */
 package com.oracle.graal.python.test.interop;
 
-import com.oracle.graal.python.test.PythonTests;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+
+import java.util.Map;
+
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
-import org.graalvm.python.embedding.KeywordArguments;
-import org.graalvm.python.embedding.PositionalArguments;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import com.oracle.graal.python.test.PythonTests;
+import com.oracle.graal.python.test.integration.KeywordArgumentsMock;
+import com.oracle.graal.python.test.integration.PositionalArgumentsMock;
 
 public class ArgsKwArgsTest extends PythonTests {
     private Context context;
@@ -91,13 +92,13 @@ public class ArgsKwArgsTest extends PythonTests {
         assertEquals(0, module.invokeMember("sum").asInt());
         assertEquals(22, module.invokeMember("sum", 22).asInt());
         assertEquals(60, module.invokeMember("sum", 10, 20, 30).asInt());
-        assertEquals(6, module.invokeMember("sum", PositionalArguments.of(1, 2, 3)).asInt());
+        assertEquals(6, module.invokeMember("sum", PositionalArgumentsMock.of(1, 2, 3)).asInt());
 
-        assertEquals(0, module.invokeMember("sum", PositionalArguments.of()).asInt());
-        assertEquals(0, module.invokeMember("sum", KeywordArguments.from(Map.of())).asInt());
+        assertEquals(0, module.invokeMember("sum", PositionalArgumentsMock.of()).asInt());
+        assertEquals(0, module.invokeMember("sum", KeywordArgumentsMock.from(Map.of())).asInt());
 
         PolyglotException pe = assertThrows(PolyglotException.class, () -> {
-            assertEquals(0, module.invokeMember("sum", KeywordArguments.of("one", 1)).asInt());
+            assertEquals(0, module.invokeMember("sum", new KeywordArgumentsMock(Map.of("one", 1))).asInt());
         });
         assertEquals("TypeError: sum() got an unexpected keyword argument 'one'", pe.getMessage());
 
@@ -120,14 +121,14 @@ public class ArgsKwArgsTest extends PythonTests {
         assertEquals("a=0,", module.invokeMember("text", 0).asString());
         assertEquals("a=22,args[0]=33,", module.invokeMember("text", 22, 33).asString());
         assertEquals("a='hello',args[0]=ahoj,args[1]=cau,", module.invokeMember("text", "hello", "ahoj", "cau").asString());
-        assertEquals("a='6',args[0]=1,args[1]=2,args[2]=3,", module.invokeMember("text", "6",  PositionalArguments.of(1, 2, 3)).asString());
-        assertEquals("a=1,args[0]=2,args[1]=3,", module.invokeMember("text", PositionalArguments.of(1, 2, 3)).asString());
-        assertEquals("a=1,", module.invokeMember("text", PositionalArguments.of(1)).asString());
+        assertEquals("a='6',args[0]=1,args[1]=2,args[2]=3,", module.invokeMember("text", "6",  PositionalArgumentsMock.of(1, 2, 3)).asString());
+        assertEquals("a=1,args[0]=2,args[1]=3,", module.invokeMember("text", PositionalArgumentsMock.of(1, 2, 3)).asString());
+        assertEquals("a=1,", module.invokeMember("text", PositionalArgumentsMock.of(1)).asString());
 
-        assertEquals("a=1,", module.invokeMember("text", KeywordArguments.of("a", 1)).asString());
+        assertEquals("a=1,", module.invokeMember("text", new KeywordArgumentsMock(Map.of("a", 1))).asString());
 
         PolyglotException pe = assertThrows(PolyglotException.class, () -> {
-            module.invokeMember("text", KeywordArguments.of("a", 1, "b", 2));
+            module.invokeMember("text", new KeywordArgumentsMock(Map.of("a", 1, "b", 2)));
         });
         assertEquals("TypeError: text() got an unexpected keyword argument 'b'", pe.getMessage());
     }
@@ -149,11 +150,11 @@ public class ArgsKwArgsTest extends PythonTests {
         assertEquals("a=0,b=44,", module.invokeMember("text", 0).asString());
         assertEquals("a=22,b=33,", module.invokeMember("text", 22, 33).asString());
         assertEquals("a='hello',b='ahoj',args[0]=cau,", module.invokeMember("text", "hello", "ahoj", "cau").asString());
-        assertEquals("a='6',b=1,args[0]=2,args[1]=3,", module.invokeMember("text", "6",  PositionalArguments.of(1, 2, 3)).asString());
-        assertEquals("a=1,b=44,", module.invokeMember("text", PositionalArguments.of(1)).asString());
-        assertEquals("a=1,b=2,", module.invokeMember("text", PositionalArguments.of(1, 2)).asString());
-        assertEquals("a=1,b=2,args[0]=3,", module.invokeMember("text", PositionalArguments.of(1, 2, 3)).asString());
-        assertEquals("a='a',b='b',args[0]=1,args[1]=2,args[2]=3,", module.invokeMember("text", "a", "b", PositionalArguments.of(1, 2, 3)).asString());
+        assertEquals("a='6',b=1,args[0]=2,args[1]=3,", module.invokeMember("text", "6",  PositionalArgumentsMock.of(1, 2, 3)).asString());
+        assertEquals("a=1,b=44,", module.invokeMember("text", PositionalArgumentsMock.of(1)).asString());
+        assertEquals("a=1,b=2,", module.invokeMember("text", PositionalArgumentsMock.of(1, 2)).asString());
+        assertEquals("a=1,b=2,args[0]=3,", module.invokeMember("text", PositionalArgumentsMock.of(1, 2, 3)).asString());
+        assertEquals("a='a',b='b',args[0]=1,args[1]=2,args[2]=3,", module.invokeMember("text", "a", "b", PositionalArgumentsMock.of(1, 2, 3)).asString());
     }
 
     private static String assertAllKeysInText(String text, Map<String, Object> kwArgs) {
@@ -181,20 +182,20 @@ public class ArgsKwArgsTest extends PythonTests {
         );
 
         assertEquals("", module.invokeMember("text").asString());
-        assertEquals("", module.invokeMember("text", KeywordArguments.from(Map.of())).asString());
+        assertEquals("", module.invokeMember("text", KeywordArgumentsMock.from(Map.of())).asString());
 
         Map<String, Object> kwargsMap = Map.of("key1", 1);
-        String remaining = assertAllKeysInText(module.invokeMember("text", KeywordArguments.from(kwargsMap)).asString(), kwargsMap);
+        String remaining = assertAllKeysInText(module.invokeMember("text", KeywordArgumentsMock.from(kwargsMap)).asString(), kwargsMap);
         assertTrue(remaining.isEmpty());
 
         kwargsMap = Map.of("key1", 1, "key2", 22);
-        remaining = assertAllKeysInText(module.invokeMember("text", KeywordArguments.from(kwargsMap)).asString(), kwargsMap);
+        remaining = assertAllKeysInText(module.invokeMember("text", KeywordArgumentsMock.from(kwargsMap)).asString(), kwargsMap);
         assertTrue(remaining.isEmpty());
 
-        assertTrue(module.invokeMember("text", PositionalArguments.of()).asString().isEmpty());
+        assertTrue(module.invokeMember("text", PositionalArgumentsMock.of()).asString().isEmpty());
 
         PolyglotException pe = assertThrows(PolyglotException.class, () -> {
-            module.invokeMember("text", PositionalArguments.of(44)).asString();
+            module.invokeMember("text", PositionalArgumentsMock.of(44)).asString();
         });
         assertEquals("TypeError: text() takes 0 positional arguments but 1 was given", pe.getMessage());
     }
@@ -212,11 +213,11 @@ public class ArgsKwArgsTest extends PythonTests {
         );
 
         Map<String, Object> kwargsMap = Map.of("named1", 1);
-        String remaining = assertAllKeysInText(module.invokeMember("text", KeywordArguments.from(kwargsMap)).asString(), kwargsMap);
+        String remaining = assertAllKeysInText(module.invokeMember("text", KeywordArgumentsMock.from(kwargsMap)).asString(), kwargsMap);
         assertTrue(remaining.isEmpty());
 
         kwargsMap = Map.of("named1", 1, "named2", 2);
-        remaining = assertAllKeysInText(module.invokeMember("text", KeywordArguments.from(kwargsMap)).asString(), kwargsMap);
+        remaining = assertAllKeysInText(module.invokeMember("text", KeywordArgumentsMock.from(kwargsMap)).asString(), kwargsMap);
         assertTrue(remaining.isEmpty());
 
         PolyglotException pe = assertThrows(PolyglotException.class, () -> {
@@ -225,22 +226,22 @@ public class ArgsKwArgsTest extends PythonTests {
         assertEquals("TypeError: text() missing 1 required keyword-only argument: 'named1'", pe.getMessage());
 
         pe = assertThrows(PolyglotException.class, () -> {
-            module.invokeMember("text", KeywordArguments.from(Map.of())).asString();
+            module.invokeMember("text", KeywordArgumentsMock.from(Map.of())).asString();
         });
         assertEquals("TypeError: text() missing 1 required keyword-only argument: 'named1'", pe.getMessage());
 
         pe = assertThrows(PolyglotException.class, () -> {
-            module.invokeMember("text", KeywordArguments.of("named2", 10)).asString();
+            module.invokeMember("text", new KeywordArgumentsMock(Map.of("named2", 10))).asString();
         });
         assertEquals("TypeError: text() missing 1 required keyword-only argument: 'named1'", pe.getMessage());
 
         pe = assertThrows(PolyglotException.class, () -> {
-            module.invokeMember("text", PositionalArguments.of()).asString();
+            module.invokeMember("text", PositionalArgumentsMock.of()).asString();
         });
         assertEquals("TypeError: text() missing 1 required keyword-only argument: 'named1'", pe.getMessage());
 
         pe = assertThrows(PolyglotException.class, () -> {
-            module.invokeMember("text", PositionalArguments.of(10)).asString();
+            module.invokeMember("text", PositionalArgumentsMock.of(10)).asString();
         });
         assertEquals("TypeError: text() takes 0 positional arguments but 1 was given", pe.getMessage());
     }
@@ -258,11 +259,11 @@ public class ArgsKwArgsTest extends PythonTests {
         );
 
         Map<String, Object> kwargsMap = Map.of("named1", 1);
-        String  remaining = assertAllKeysInText(module.invokeMember("text", KeywordArguments.from(kwargsMap)).asString(), kwargsMap);
+        String  remaining = assertAllKeysInText(module.invokeMember("text", new KeywordArgumentsMock(kwargsMap)).asString(), kwargsMap);
         assertEquals("[named2:44],", remaining);
 
         kwargsMap = Map.of("named1", 1, "named2", 2);
-        remaining = assertAllKeysInText(module.invokeMember("text", KeywordArguments.from(kwargsMap)).asString(), kwargsMap);
+        remaining = assertAllKeysInText(module.invokeMember("text", new KeywordArgumentsMock(kwargsMap)).asString(), kwargsMap);
         assertTrue(remaining.isEmpty());
     }
 
@@ -277,16 +278,16 @@ public class ArgsKwArgsTest extends PythonTests {
         );
 
         Map<String, Object> kwargsMap = Map.of("named1", 1);
-        String  remaining = module.invokeMember("text", KeywordArguments.from(kwargsMap)).asString();
+        String  remaining = module.invokeMember("text", new KeywordArgumentsMock(kwargsMap)).asString();
         assertEquals("[named1:1],[named2:44],", remaining);
 
         kwargsMap = Map.of("named1", 1, "named2", 2);
-        remaining = module.invokeMember("text", KeywordArguments.from(kwargsMap)).asString();
+        remaining = module.invokeMember("text", new KeywordArgumentsMock(kwargsMap)).asString();
         assertEquals("[named1:1],[named2:2],", remaining);
 
         PolyglotException pe = assertThrows(PolyglotException.class, () -> {
             module.invokeMember("text",
-                module.invokeMember("text", KeywordArguments.of("named1", 1, "named2", 2, "named3", 3))).asString();
+                module.invokeMember("text", new KeywordArgumentsMock(Map.of("named1", 1, "named2", 2, "named3", 3)))).asString();
         });
         assertEquals("TypeError: text() got an unexpected keyword argument 'named3'", pe.getMessage());
     }

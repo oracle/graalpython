@@ -45,19 +45,18 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
-import org.graalvm.python.embedding.KeywordArguments;
-import org.graalvm.python.embedding.PositionalArguments;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.oracle.graal.python.test.integration.KeywordArgumentsMock;
+import com.oracle.graal.python.test.integration.PositionalArgumentsMock;
 import com.oracle.graal.python.test.integration.PythonTests;
 
 public class ArgumentsTest extends PythonTests {
@@ -85,7 +84,7 @@ public class ArgumentsTest extends PythonTests {
     }
 
     public interface TestPositionalArgsLong {
-        long fn(PositionalArguments args);
+        long fn(PositionalArgumentsMock args);
     }
 
     @Test
@@ -96,17 +95,17 @@ public class ArgumentsTest extends PythonTests {
                         """;
 
         TestPositionalArgsLong module = context.eval(Source.create("python", source)).as(TestPositionalArgsLong.class);
-        assertEquals(1, module.fn(PositionalArguments.of(22)));
-        assertEquals(2, module.fn(PositionalArguments.of(1, null)));
-        assertEquals(2, module.fn(PositionalArguments.of(null, 2)));
-        assertEquals(5, module.fn(PositionalArguments.of(1, 2, 3, 4, 5)));
-        assertEquals(0, module.fn(PositionalArguments.of()));
+        assertEquals(1, module.fn(PositionalArgumentsMock.of(22)));
+        assertEquals(2, module.fn(PositionalArgumentsMock.of(1, null)));
+        assertEquals(2, module.fn(PositionalArgumentsMock.of(null, 2)));
+        assertEquals(5, module.fn(PositionalArgumentsMock.of(1, 2, 3, 4, 5)));
+        assertEquals(0, module.fn(PositionalArgumentsMock.of()));
 
-        assertEquals(1, module.fn(PositionalArguments.from(List.of(2))));
-        assertEquals(2, module.fn(PositionalArguments.from(List.of(2, 3))));
+        assertEquals(1, module.fn(PositionalArgumentsMock.of(2)));
+        assertEquals(2, module.fn(PositionalArgumentsMock.of(2, 3)));
 
-        assertEquals(3, module.fn(PositionalArguments.of(new Object[]{2, 3, 4})));
-        assertEquals(1, module.fn(PositionalArguments.of(new Object[]{null})));
+        assertEquals(3, module.fn(PositionalArgumentsMock.of(2, 3, 4)));
+        assertEquals(1, module.fn(PositionalArgumentsMock.of(new Object[]{null})));
     }
 
     @Test
@@ -121,20 +120,20 @@ public class ArgumentsTest extends PythonTests {
                         """;
 
         TestPositionalArgsLong module = context.eval(Source.create("python", source)).as(TestPositionalArgsLong.class);
-        assertEquals(0, module.fn(PositionalArguments.of(22)));
-        assertEquals(1, module.fn(PositionalArguments.of(1, null)));
-        assertEquals(1, module.fn(PositionalArguments.of(null, 2)));
-        assertEquals(3, module.fn(PositionalArguments.of(null, null, null)));
-        assertEquals(1, module.fn(PositionalArguments.of(new Object[]{null})));
+        assertEquals(0, module.fn(PositionalArgumentsMock.of(22)));
+        assertEquals(1, module.fn(PositionalArgumentsMock.of(1, null)));
+        assertEquals(1, module.fn(PositionalArgumentsMock.of(null, 2)));
+        assertEquals(3, module.fn(PositionalArgumentsMock.of(null, null, null)));
+        assertEquals(1, module.fn(PositionalArgumentsMock.of(new Object[]{null})));
 
         Value none = context.eval(Source.create("python", "a = None")).getMember("a");
-        assertEquals(1, module.fn(PositionalArguments.of(none)));
-        assertEquals(3, module.fn(PositionalArguments.of(none, null, none)));
-        assertEquals(2, module.fn(PositionalArguments.of(new Object[]{none, null})));
+        assertEquals(1, module.fn(PositionalArgumentsMock.of(none)));
+        assertEquals(3, module.fn(PositionalArgumentsMock.of(none, null, none)));
+        assertEquals(2, module.fn(PositionalArgumentsMock.of(new Object[]{none, null})));
     }
 
     public interface TestPositionalArgs01 {
-        String fn(Object a, Object b, PositionalArguments args);
+        String fn(Object a, Object b, PositionalArgumentsMock args);
     }
 
     @Test
@@ -147,23 +146,23 @@ public class ArgumentsTest extends PythonTests {
                             return result
                         """;
         TestPositionalArgs01 module = context.eval(Source.create("python", source)).as(TestPositionalArgs01.class);
-        assertEquals("12", module.fn(1, 2, PositionalArguments.of()));
-        assertEquals("123", module.fn(1, 2, PositionalArguments.of(3)));
-        assertEquals("123Ahoj", module.fn(1, 2, PositionalArguments.of(3, "Ahoj")));
-        assertEquals("123AhojTrue", module.fn(1, 2, PositionalArguments.of(3, "Ahoj", true)));
-        assertEquals("123AhojTrueNone", module.fn(1, 2, PositionalArguments.of(3, "Ahoj", true, null)));
+        assertEquals("12", module.fn(1, 2, PositionalArgumentsMock.of()));
+        assertEquals("123", module.fn(1, 2, PositionalArgumentsMock.of(3)));
+        assertEquals("123Ahoj", module.fn(1, 2, PositionalArgumentsMock.of(3, "Ahoj")));
+        assertEquals("123AhojTrue", module.fn(1, 2, PositionalArgumentsMock.of(3, "Ahoj", true)));
+        assertEquals("123AhojTrueNone", module.fn(1, 2, PositionalArgumentsMock.of(3, "Ahoj", true, null)));
     }
 
     public interface TestPositionalArgs02 {
         String fn(Object a);
 
-        String fn(Object a, PositionalArguments args);
+        String fn(Object a, PositionalArgumentsMock args);
 
-        String fn(PositionalArguments args);
+        String fn(PositionalArgumentsMock args);
 
         String fn(Object a, Object b);
 
-        String fn(Object a, Object b, PositionalArguments args);
+        String fn(Object a, Object b, PositionalArgumentsMock args);
     }
 
     @Test
@@ -178,19 +177,19 @@ public class ArgumentsTest extends PythonTests {
         TestPositionalArgs02 module = context.eval(Source.create("python", source)).as(TestPositionalArgs02.class);
         assertEquals("1correct", module.fn(1));
         assertEquals("12", module.fn(1, 2));
-        assertEquals("1only one", module.fn(1, PositionalArguments.of("only one")));
-        assertEquals("1only oneand two", module.fn(1, PositionalArguments.of("only one", "and two")));
-        assertEquals("12", module.fn(1, 2, PositionalArguments.of()));
-        assertEquals("123", module.fn(1, 2, PositionalArguments.of(3)));
-        assertEquals("123Ahoj", module.fn(1, 2, PositionalArguments.of(3, "Ahoj")));
-        assertEquals("123AhojTrue", module.fn(1, 2, PositionalArguments.of(3, "Ahoj", true)));
-        assertEquals("123AhojTrueNone", module.fn(1, 2, PositionalArguments.of(3, "Ahoj", true, null)));
+        assertEquals("1only one", module.fn(1, PositionalArgumentsMock.of("only one")));
+        assertEquals("1only oneand two", module.fn(1, PositionalArgumentsMock.of("only one", "and two")));
+        assertEquals("12", module.fn(1, 2, PositionalArgumentsMock.of()));
+        assertEquals("123", module.fn(1, 2, PositionalArgumentsMock.of(3)));
+        assertEquals("123Ahoj", module.fn(1, 2, PositionalArgumentsMock.of(3, "Ahoj")));
+        assertEquals("123AhojTrue", module.fn(1, 2, PositionalArgumentsMock.of(3, "Ahoj", true)));
+        assertEquals("123AhojTrueNone", module.fn(1, 2, PositionalArgumentsMock.of(3, "Ahoj", true, null)));
     }
 
     public interface TestKeywordArgs01 {
         String fn();
 
-        String fn(KeywordArguments kwArgs);
+        String fn(KeywordArgumentsMock kwArgs);
     }
 
     @Test
@@ -204,8 +203,8 @@ public class ArgumentsTest extends PythonTests {
                         """;
         TestKeywordArgs01 module = context.eval(Source.create("python", source)).as(TestKeywordArgs01.class);
         assertEquals("", module.fn());
-        assertEquals("", module.fn(KeywordArguments.from(new HashMap<>())));
-        assertEquals("[jedna:1],", module.fn(KeywordArguments.of("jedna", 1)));
+        assertEquals("", module.fn(new KeywordArgumentsMock(new HashMap<>())));
+        assertEquals("[jedna:1],", module.fn(new KeywordArgumentsMock(Map.of("jedna", 1))));
 
         Value none = context.eval(Source.create("python", "a = None")).getMember("a");
         Map<String, Object> keyArgs = new HashMap<>();
@@ -213,7 +212,7 @@ public class ArgumentsTest extends PythonTests {
         keyArgs.put("true", true);
         keyArgs.put("null", none);
 
-        String result = module.fn(KeywordArguments.from(keyArgs));
+        String result = module.fn(new KeywordArgumentsMock(keyArgs));
         assertTrue(result.contains("[true:True],"));
         assertTrue(result.contains("[jedna:1],"));
         assertTrue(result.contains("[null:None],"));
