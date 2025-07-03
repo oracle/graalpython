@@ -1427,6 +1427,66 @@ long_to_decimal_string_internal(PyObject *aa,
                                 _PyBytesWriter *bytes_writer,
                                 char **bytes_str)
 {
+    // GraalPy change:  different implementation
+    PyObject *str;
+
+    // writer or bytes_writer can be used, but not both at the same time.
+    assert(writer == NULL || bytes_writer == NULL);
+
+    if (aa == NULL || !PyLong_Check(aa)) {
+        PyErr_BadInternalCall();
+        return -1;
+    }
+
+    str = PyObject_Repr(aa);
+    if (str == NULL) {
+        goto error;
+    }
+    if (!PyUnicode_Check(str)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "long.repr did not return a str");
+        goto error;
+    }
+    if (writer) {
+        Py_ssize_t size = PyUnicode_GET_LENGTH(str);
+        if (_PyUnicodeWriter_Prepare(writer, size, '9') == -1) {
+            goto error;
+        }
+        if (_PyUnicodeWriter_WriteStr(writer, str) < 0) {
+            goto error;
+        }
+        goto success;
+    }
+    else if (bytes_writer) {
+        Py_ssize_t size = PyUnicode_GET_LENGTH(str);
+        const void *data = PyUnicode_DATA(str);
+        int kind = PyUnicode_KIND(str);
+        *bytes_str = _PyBytesWriter_Prepare(bytes_writer, *bytes_str, size);
+        if (*bytes_str == NULL) {
+            goto error;
+        }
+        char *p = *bytes_str;
+        for (Py_ssize_t i=0; i < size; i++) {
+            Py_UCS4 ch = PyUnicode_READ(kind, data, i);
+            *p++ = (char) ch;
+        }
+        (*bytes_str) = p;
+        goto success;
+    }
+    else {
+        *p_output = Py_NewRef(str);
+        goto success;
+    }
+
+error:
+    Py_XDECREF(str);
+    return -1;
+
+success:
+    Py_DECREF(str);
+    return 0;
+
+#if 0
     PyLongObject *scratch, *a;
     PyObject *str = NULL;
     Py_ssize_t size, strlen, size_a, i, j;
@@ -1450,7 +1510,6 @@ long_to_decimal_string_internal(PyObject *aa,
 
        explanation in https://github.com/python/cpython/pull/96537
     */
-#if 0 // GraalPy change: interp->long_state not supported yet
     if (size_a >= 10 * _PY_LONG_MAX_STR_DIGITS_THRESHOLD
                   / (3 * PyLong_SHIFT) + 2) {
         PyInterpreterState *interp = _PyInterpreterState_GET();
@@ -1462,7 +1521,6 @@ long_to_decimal_string_internal(PyObject *aa,
             return -1;
         }
     }
-    #endif // GraalPy change
 
 #if WITH_PYLONG_MODULE
     if (size_a > 1000) {
@@ -1516,12 +1574,10 @@ long_to_decimal_string_internal(PyObject *aa,
             hi /= _PyLong_DECIMAL_BASE;
         }
         /* check for keyboard interrupt */
-#if 0 // GraalPy change
         SIGCHECK({
                 Py_DECREF(scratch);
                 return -1;
             });
-#endif // GraalPy change
     }
     /* pout should have at least one digit, so that the case when a = 0
        works correctly */
@@ -1536,7 +1592,6 @@ long_to_decimal_string_internal(PyObject *aa,
         tenpow *= 10;
         strlen++;
     }
-#if 0 // GraalPy change: interp->long_state not supported yet
     if (strlen > _PY_LONG_MAX_STR_DIGITS_THRESHOLD) {
         PyInterpreterState *interp = _PyInterpreterState_GET();
         int max_str_digits = interp->long_state.max_str_digits;
@@ -1548,7 +1603,6 @@ long_to_decimal_string_internal(PyObject *aa,
             return -1;
         }
     }
-#endif // GraalPy change
     if (writer) {
         if (_PyUnicodeWriter_Prepare(writer, strlen, '9') == -1) {
             Py_DECREF(scratch);
@@ -1651,6 +1705,7 @@ long_to_decimal_string_internal(PyObject *aa,
         *p_output = (PyObject *)str;
     }
     return 0;
+#endif // GraalPy change
 }
 
 static PyObject *

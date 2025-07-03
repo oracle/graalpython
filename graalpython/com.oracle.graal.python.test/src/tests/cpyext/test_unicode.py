@@ -674,6 +674,7 @@ class TestPyUnicode(CPyExtTestCase):
             ("%s, %r", ("hello", "world")),
             ("nothing else", tuple()),
             (UnicodeSubclass("%s, %r"), ("hello", "world")),
+            ("%d.%d", (42, 123)),
         ),
         resultspec="O",
         argspec='OO',
