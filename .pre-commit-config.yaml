@@ -4,7 +4,7 @@ repos:
   - id: checkcopyrights
     name: Copyright check
     language: system
-    entry: mx python-checkcopyrights --assumed-modified --fix --files
+    entry: bash scripts/pre-commit-checkcopyrights.sh
     types: [text]
   - id: eclipseformat
     name: Eclipse formatter
@@ -22,7 +22,7 @@ repos:
     name: Pylint on mx files
     language: system
     pass_filenames: false
-    entry: mx --primary pylint --primary
+    entry: bash scripts/pre-commit-pylint.sh
     types: [text]
     files: '^mx\.graalpython/.*\.py$'
 - repo: https://github.com/pre-commit/pre-commit-hooks

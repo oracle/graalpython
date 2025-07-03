@@ -39,4 +39,4 @@
 
 #!/bin/bash
 unset GIT_DIR # workaround for git worktrees
-mx eclipseformat --no-backup --primary --filelist <(echo "${@}" | tr ' ' '\n')
+mx --primary pylint --primary

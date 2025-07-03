@@ -38,4 +38,5 @@
 # SOFTWARE.
 
 #!/bin/bash
+unset GIT_DIR # workaround for git worktrees
 mx -p "$suite" checkstyle --primary --fix-unused-imports --filelist <(echo "${@}" | tr ' ' '\n')
