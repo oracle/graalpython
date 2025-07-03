@@ -43,6 +43,7 @@ from textwrap import dedent
 
 from typing import cast
 
+import downstream_tests
 import mx_graalpython_benchmark
 import mx_graalpython_gradleproject
 import mx_urlrewrites
@@ -1056,7 +1057,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
 
 def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, timeout=None, report=False):
     t0 = time.time()
-    result = downstream_test_hpy(python_binary, args=args, env=env, nonZeroIsFatal=nonZeroIsFatal, timeout=timeout)
+    result = downstream_tests.downstream_test_hpy(python_binary, args=args, env=env, check=nonZeroIsFatal, timeout=timeout)
     if report:
         mx_gate.make_test_report([{
             "name": report.title,
@@ -2626,105 +2627,16 @@ def graalpy_jmh(args):
     mx.run_java(vm_args + ['org.openjdk.jmh.Main'] + args)
 
 
-def run_in_venv(venv, cmd, **kwargs):
-    return mx.run(['sh', '-c', f". {venv}/bin/activate && {shlex.join(cmd)}"], **kwargs)
-
-
-DOWNSTREAM_TESTS = {}
-
-def downstream_test(name):
-    def decorator(fn):
-        DOWNSTREAM_TESTS[name] = fn
-        return fn
-    return decorator
-
-
-@downstream_test('hpy')
-def downstream_test_hpy(graalpy, args=None, env=None, nonZeroIsFatal=True, timeout=None):
-    testdir = Path('upstream-tests').absolute()
-    shutil.rmtree(testdir, ignore_errors=True)
-    testdir.mkdir(exist_ok=True)
-    hpy_root = os.path.join(mx.dependency("hpy").dir)
-    shutil.copytree(hpy_root, testdir / "hpy")
-    hpy_root = testdir / "hpy"
-    hpy_test_root = hpy_root / "test"
-    venv = testdir / 'hpy_venv'
-    mx.run([graalpy, "-m", "venv", str(venv)])
-    run_in_venv(venv, ["pip", "install", "pytest", "pytest-xdist", "pytest-rerunfailures", "filelock"])
-    env = env or os.environ.copy()
-    env["SETUPTOOLS_SCM_PRETEND_VERSION"] = "0.9.0"
-    run_in_venv(venv, ["pip", "install", "-e", "."], cwd=str(hpy_root), env=env)
-    parallelism = str(min(os.cpu_count(), int(os.cpu_count() / 4)))
-    args = args or []
-    args = [
-        "python",
-        "--vm.ea",
-        "--experimental-options=true",
-        "--python.EnableDebuggingBuiltins",
-        *args,
-        "-m", "pytest",
-        "-v",
-        # for those cases where testing invalid handles corrupts the process so
-        # much that we crash - we don't recover gracefully in some cases :(
-        "--reruns", "3",
-        "-n", parallelism,
-        str(hpy_test_root),
-        # test_distutils is just slow and testing the build infrastructure
-        "-k", "not test_distutils"
-    ]
-    mx.logv(shlex.join(args))
-    return run_in_venv(venv, args, env=env, cwd=str(hpy_root), nonZeroIsFatal=nonZeroIsFatal, timeout=timeout)
-
-
-@downstream_test('pybind11')
-def downstream_test_pybind11(graalpy):
-    testdir = Path('upstream-tests').absolute()
-    shutil.rmtree(testdir, ignore_errors=True)
-    testdir.mkdir(exist_ok=True)
-    mx.run(['git', 'clone', 'https://github.com/pybind/pybind11.git'], cwd=testdir)
-    src = testdir / 'pybind11'
-    venv = src / 'venv'
-    mx.run([graalpy, '-m', 'venv', str(venv)])
-    run_in_venv(venv, ['pip', 'install', 'pytest'])
-    run_in_venv(venv, ['cmake', '-S', '.', '-B', 'build', '-DPYBIND11_WERROR=ON'], cwd=src)
-    run_in_venv(venv, ['cmake', '--build', 'build', '--parallel'], cwd=src)
-    env = os.environ.copy()
-    env['PYTHONPATH'] = 'build/tests'
-    run_in_venv(venv, ['pytest', '-v', '--tb=short', 'tests'], cwd=src, env=env)
-
-
-@downstream_test('virtualenv')
-def downstream_test_virtualenv(graalpy):
-    testdir = Path('upstream-tests').absolute()
-    shutil.rmtree(testdir, ignore_errors=True)
-    testdir.mkdir(exist_ok=True)
-    mx.run(['git', 'clone', 'https://github.com/pypa/virtualenv.git', '-b', 'main'], cwd=testdir)
-    src = testdir / 'virtualenv'
-    venv = src / 'venv'
-    mx.run([graalpy, '-m', 'venv', str(venv)])
-    env = os.environ.copy()
-    env.pop('VIRTUAL_ENV_DISABLE_PROMPT', None)
-    env['CI_RUN'] = '1'
-    # Need to avoid pulling in graalpy seeder
-    env['PIP_GRAALPY_DISABLE_PATCHING'] = '1'
-    run_in_venv(venv, ['pip', 'install', f'{src}[test]'], env=env)
-    # Don't activate the venv, it interferes with the test
-    mx.run([
-        str(venv / 'bin' / 'pytest'), '-v', '--tb=short', 'tests',
-        '-k', 'not fish and not csh and not nushell and not powershell',
-    ], cwd=src, env=env)
-
-
 def run_downstream_test(args):
     parser = ArgumentParser(description="Runs important upstream packages tests using their main branch")
-    parser.add_argument('project', choices=sorted(DOWNSTREAM_TESTS))
+    parser.add_argument('project')
     parser.add_argument('--dev', action='store_true', help="Use JVM dev standalone")
     args = parser.parse_args(args)
     if args.dev:
         graalpy = graalpy_standalone('jvm', dev=True)
     else:
         graalpy = graalpy_standalone_native()
-    DOWNSTREAM_TESTS[args.project](graalpy)
+    downstream_tests.run_downstream_test(graalpy, args.project)
 
 
 # ----------------------------------------------------------------------------------------------------------------------

@@ -72,7 +72,6 @@
     local cov_jacoco_base       = self.cov_jacoco_gate_base,
     local cov_truffle           = self.cov_truffle_gate,
     local watchdog              = self.watchdog,
-    local downstream_tests_gate = self.downstream_tests_gate,
     local bench_task(bench=null, benchmarks=BENCHMARKS) = super.bench_task(bench=bench, benchmarks=benchmarks),
     local bisect_bench_task     = self.bisect_bench_task,
 
@@ -340,14 +339,6 @@
         }),
         "tox-example": gpgate_ee + require(GPYEE_NATIVE_STANDALONE) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3     + t("01:00:00"),
-        }),
-        "python-downstream-tests": gpgate + platform_spec(no_jobs) + downstream_tests_gate({
-            "project:*": {
-                "linux:amd64:jdk-latest": daily + require(GPY_NATIVE_STANDALONE) + t("01:00:00"),
-            },
-            "project:virtualenv": {
-                "darwin:aarch64:jdk-latest": weekly + t("01:00:00"),
-            },
         }),
         "build-wheels": base_gate + platform_spec(no_jobs) + platform_spec({
             "windows:amd64:jdk-latest"    : on_demand   + t("01:00:00"),
