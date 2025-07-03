@@ -983,7 +983,7 @@ public abstract class ExternalFunctionNodes {
             Object[] args = readVarargsNode.executeObjectArray(frame);
             PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
             PythonLanguage language = getLanguage(PythonLanguage.class);
-            return new Object[]{self, createArgsTupleNode.execute(language, args, seenNativeArgsTupleStorage), PFactory.createDict(language, kwargs)};
+            return new Object[]{self, createArgsTupleNode.execute(language, args, seenNativeArgsTupleStorage), kwargs.length > 0 ? PFactory.createDict(language, kwargs) : PNone.NO_VALUE};
         }
 
         @Override
@@ -1106,7 +1106,7 @@ public abstract class ExternalFunctionNodes {
             args = PythonUtils.arrayCopyOfRange(args, 1, args.length);
             PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
             PythonLanguage language = getLanguage(PythonLanguage.class);
-            return new Object[]{self, createArgsTupleNode.execute(language, args, seenNativeArgsTupleStorage), PFactory.createDict(language, kwargs)};
+            return new Object[]{self, createArgsTupleNode.execute(language, args, seenNativeArgsTupleStorage), kwargs.length > 0 ? PFactory.createDict(language, kwargs) : PNone.NO_VALUE};
         }
     }
 

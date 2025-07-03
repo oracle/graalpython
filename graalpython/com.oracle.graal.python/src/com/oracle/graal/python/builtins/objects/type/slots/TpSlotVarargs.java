@@ -322,7 +322,7 @@ public final class TpSlotVarargs {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, context);
             PTuple argsTuple = createArgsTupleNode.execute(inliningTarget, language, args, eagerTupleState);
-            Object kwargsDict = PFactory.createDict(language, keywords);
+            Object kwargsDict = keywords.length > 0 ? PFactory.createDict(language, keywords) : NO_VALUE;
             Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, name, slot.callable,
                             toNativeNode.execute(self), toNativeNode.execute(argsTuple), toNativeNode.execute(kwargsDict));
             eagerTupleState.report(inliningTarget, argsTuple);
