@@ -146,6 +146,8 @@ class TestPyFloat(CPyExtTestCase):
             ("nan",),
             ("-inf",),
             ("not-a-float",),
+            (b"1",),
+            (memoryview(b"1"),),
         ),
         resultspec="O",
         argspec='O',
