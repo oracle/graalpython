@@ -6,8 +6,8 @@ permalink: compatibility/
 
 <style>
 img.pylogo {
-  width: 80px;
-  height: 80px;
+  width: 56px;
+  height: 56px;
 }
 
 .langbenefits__icon_pylogo {
@@ -441,83 +441,7 @@ img.pylogo {
         <div>
             <div class="container">
                 <h3 class="truffle__subtitle">GraalPy: Package Compatibility</h3>
-                <p class="truffle__subtitle">GraalPy is compatible with many packages for data science and machine learning, including the popular PyTorch, NumPy, and Huggingface Transformers.
-                To try a package, choose any version. If you encounter issues, consult the table below for recommended compatible versions.</p>
-
-                <div class="compatibility_page-filter">
-                    <div class="compatibility__row">
-                        <p class="compatibility_page-item compatibility_page-module compatibility_page-active" data-filter="v242">GraalPy 24.2</p>
-                        <p class="compatibility_page-item compatibility_page-module" data-filter="v241">GraalPy 24.1</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-<!-- <section class="content-section download-homescreen">
-  <div class="wrapper">
-    <div>
-      <div class="container">
-        <h3 class="truffle__subtitle">Download GraalPy from Maven Central</h3>
-        <div>
-          <h5 class="download-text">
-            Have a Java application?
-          </h5>
-          <h5 class="download-text">
-You can extend it with Python code or leverage packages from the Python ecosystem. GraalPy is available on <a href="https://central.sonatype.com/artifact/org.graalvm.polyglot/python" target="_blank">Maven Central</a> and can be added as a dependency to your Maven or Gradle project as — see <a href="#" target="_blank">setup instructions</a>.
-          </h5>
-        </div>
-      </div>
-    </div>
-  </div>
-</section> -->
-<section class="content-section">
-    <div class="wrapper">
-        <div class="compatibility">
-            <div class="container">
-                <h5 class="compatibility-text first-comp-text">To ensure GraalPy is compatible with the most popular Python packages, the GraalPy team performs compatibility testing and maintains build-and-patch scripts for many top PyPI libraries—especially of special interest for us—such as NumPy, Pandas, and Django.</h5>
-                <h5 class="compatibility-text">Compatibility testing ensures that
-                    developers can leverage GraalPy's powerful capabilities in their existing applications.
-                    It also enables developers to use GraalPy to create more efficient and productive applications in the areas of
-                    machine learning, data analysis, and web development using their familiar Python
-                    toolsets.</h5>
-                <h5 class="compatibility-text">Many more Python packages work on GraalPy than are listed here. If there is a package you are interested in that is not included, chances are that it might just work. If it does not, feel free to reach out to us on <a href="https://github.com/oracle/graalpython/issues" target="_blank">GitHub</a>.</h5>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="boxes">
-    <div class="wrapper">
-        <div class="compatibility">
-            <div class="container compatibility_page-box v231 all">
-                <div class="compatibility__mid">
-                    <div class="container">
-                        <div class="compatibility__chart">
-                            <div class="compatibility__chart-row">
-                                <div class="chart" id="pie-chart">
-                                </div>
-                                <div class="legend">
-                                    <div>
-                                        <div class="legend-item legend-item-1"
-                                            title="More than 90% of the package's tests run successfully on GraalPy">Compatible: <span id="compatibility-stats-compatible">loading...</span><sup class="info-tooltip"></sup></div>
-                                        <div class="legend-item legend-item-2"
-                                            title="The package either does not install on GraalPy or is not currently tested">
-                                            Currently Untested: <span id="compatibility-stats-untested">loading...</span><sup class="info-tooltip"></sup></div>
-                                    </div>
-                                    <div>
-                                        <div class="legend-item legend-item-3"
-                                            title="Fewer than 90% of the package's tests run successfully on GraalPy">Currently
-                                            Incompatible: <span id="compatibility-stats-incompatible">loading...</span><sup class="info-tooltip"></sup></div>
-                                        <div class="legend-item legend-item-4"
-                                            title="We have no plans to test the package">Not
-                                            Supported: <span id="compatibility-stats-not-supported">loading...</span><sup class="info-tooltip"></sup></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <p class="truffle__subtitle">GraalPy is compatible with many packages for data science and machine learning, including the popular PyTorch, NumPy, and Huggingface Transformers.</p>
             </div>
         </div>
     </div>
@@ -525,9 +449,9 @@ You can extend it with Python code or leverage packages from the Python ecosyste
 <!-- Benefits -->
 <section class="content-section">
   <div class="wrapper">
-    <div class="langbenefits compbenefits">
+    <div class="langbenefits">
       <div class="container">
-        <h3 class="langpage__title-02">Advantages</h3>
+        <!-- <h3 class="langpage__title-02">Advantages</h3> -->
         <div class="langbenefits__row">
           <div class="langbenefits__card">
             <div class="langbenefits__icon langbenefits__icon_pylogo">
@@ -602,12 +526,87 @@ You can extend it with Python code or leverage packages from the Python ecosyste
     </div>
   </div>
 </section>
+<!-- <section class="content-section download-homescreen">
+  <div class="wrapper">
+    <div>
+      <div class="container">
+        <h3 class="truffle__subtitle">Download GraalPy from Maven Central</h3>
+        <div>
+          <h5 class="download-text">
+            Have a Java application?
+          </h5>
+          <h5 class="download-text">
+You can extend it with Python code or leverage packages from the Python ecosystem. GraalPy is available on <a href="https://central.sonatype.com/artifact/org.graalvm.polyglot/python" target="_blank">Maven Central</a> and can be added as a dependency to your Maven or Gradle project as — see <a href="#" target="_blank">setup instructions</a>.
+          </h5>
+        </div>
+      </div>
+    </div>
+  </div>
+</section> -->
+<section class="content-section compbenefits">
+    <div class="wrapper">
+        <div class="compatibility">
+            <div class="container">
+                <h5 class="compatibility-text first-comp-text">To ensure GraalPy is compatible with the most popular Python packages, the GraalPy team performs compatibility testing and maintains build-and-patch scripts for many top PyPI libraries—especially of special interest for us—such as NumPy, Pandas, and Django.</h5>
+                <h5 class="compatibility-text">Compatibility testing ensures that
+                    developers can leverage GraalPy's powerful capabilities in their existing applications.
+                    It also enables developers to use GraalPy to create more efficient and productive applications in the areas of
+                    machine learning, data analysis, and web development using their familiar Python
+                    toolsets.</h5>
+                <h5 class="compatibility-text">Many more Python packages work on GraalPy than are listed here. If there is a package you are interested in that is not included, chances are that it might just work. If it does not, feel free to reach out to us on <a href="https://github.com/oracle/graalpython/issues" target="_blank">GitHub</a>.</h5>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="boxes">
+    <div class="wrapper">
+        <div class="">
+            <div class="container compatibility_page-box v231 all">
+                <div class="compatibility__mid">
+                    <div class="container">
+                      <h3 id="compattable-container" class="langpage__title-02">Python Packages</h3>
+                      <h5 class="compatibility-text comp-text-mod">To try a package, choose any version. If you encounter issues, consult the table below for recommended compatible versions.</h5>
+                    <div class="compatibility_page-filter">
+                    <div class="compatibility__row">
+                        <p class="compatibility_page-item compatibility_page-module compatibility_page-active" data-filter="v242">GraalPy 24.2</p>
+                        <p class="compatibility_page-item compatibility_page-module" data-filter="v241">GraalPy 24.1</p>
+                    </div>
+                </div>
+                        <div class="compatibility__chart">
+                            <div class="compatibility__chart-row">
+                                <div class="chart" id="pie-chart">
+                                </div>
+                                <div class="legend">
+                                    <div>
+                                        <div class="legend-item legend-item-1"
+                                            title="More than 90% of the package's tests run successfully on GraalPy">Compatible: <span id="compatibility-stats-compatible">loading...</span><sup class="info-tooltip"></sup></div>
+                                        <div class="legend-item legend-item-2"
+                                            title="The package either does not install on GraalPy or is not currently tested">
+                                            Currently Untested: <span id="compatibility-stats-untested">loading...</span><sup class="info-tooltip"></sup></div>
+                                    </div>
+                                    <div>
+                                        <div class="legend-item legend-item-3"
+                                            title="Fewer than 90% of the package's tests run successfully on GraalPy">Currently
+                                            Incompatible: <span id="compatibility-stats-incompatible">loading...</span><sup class="info-tooltip"></sup></div>
+                                        <div class="legend-item legend-item-4"
+                                            title="We have no plans to test the package">Not
+                                            Supported: <span id="compatibility-stats-not-supported">loading...</span><sup class="info-tooltip"></sup></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
 <section class="content-section module-table">
     <div class="wrapper">
         <div class="compatibility">
             <div class="container">
-                <h3 id="compattable-container" class="langpage__title-02">Python Packages</h3>
                 <div class="package__row">
                     <div class="package__search">
                         <input type="text" id="compatibility_page__search-field" placeholder="Comma-separated list of packages">
