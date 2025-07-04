@@ -1044,7 +1044,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyDict_DelItemIf", ret = Int, args = {PyObject, PyObject, func_objint}, call = NotImplemented)
     @CApiBuiltin(name = "_PyDict_DelItem_KnownHash", ret = Int, args = {PyObject, PyObject, Py_hash_t}, call = NotImplemented)
     @CApiBuiltin(name = "_PyDict_GetItemWithError", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyDict_HasOnlyStringKeys", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyDict_MergeEx", ret = Int, args = {PyObject, PyObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "_PyDict_SizeOf", ret = Py_ssize_t, args = {PYDICTOBJECT_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_PyErr_CheckSignals", ret = Int, args = {}, call = NotImplemented)

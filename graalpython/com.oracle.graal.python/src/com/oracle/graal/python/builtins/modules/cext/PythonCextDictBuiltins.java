@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -93,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItemWithHash;
+import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ClearNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.PopNode;
@@ -105,6 +107,7 @@ import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -127,6 +130,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 public final class PythonCextDictBuiltins {
@@ -652,6 +656,34 @@ public final class PythonCextDictBuiltins {
             // return true;
             // }
             // return false;
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
+    abstract static class _PyDict_HasOnlyStringKeys extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static int check(PDict dict,
+                        @Bind Node inliningTarget,
+                        @Cached InlinedConditionProfile storageProfile,
+                        @Cached InlinedLoopConditionProfile loopConditionProfile,
+                        @Cached HashingStorageGetIterator getIter,
+                        @Cached HashingStorageIteratorNext getIterNext,
+                        @Cached HashingStorageIteratorKey getIterKey,
+                        @Cached PyUnicodeCheckNode check) {
+            HashingStorage storage = dict.getDictStorage();
+            // Keywords and dynamic object storages only allow strings
+            if (storageProfile.profile(inliningTarget, storage instanceof KeywordsStorage || storage instanceof DynamicObjectStorage)) {
+                return 1;
+            }
+            HashingStorageIterator it = getIter.execute(inliningTarget, storage);
+            while (loopConditionProfile.profile(inliningTarget, getIterNext.execute(inliningTarget, storage, it))) {
+                Object key = getIterKey.execute(inliningTarget, storage, it);
+                if (!check.execute(inliningTarget, key)) {
+                    return 0;
+                }
+            }
+            return 1;
         }
     }
 }

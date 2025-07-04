@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -79,6 +79,15 @@ def _reference_parse_tuple(args):
         return t[0], t[1]
     except Exception:
         raise TypeError
+
+
+def _reference_validate_keywords(args):
+    kwargs = args[0]
+    if not isinstance(kwargs, dict):
+        raise SystemError
+    if not all(isinstance(k, str) for k in kwargs):
+        raise TypeError
+    return 1
 
 
 class Indexable:
@@ -716,4 +725,17 @@ class TestModsupport(CPyExtTestCase):
         argspec="O",
         arguments=["PyObject* a"],
         cmpfunc=compare_new_object
+    )
+
+    test_PyArg_ValidateKeywordArguments = CPyExtFunction(
+        _reference_validate_keywords,
+        lambda: (
+            ({'a': 1, 'b': 2},),
+            ({'a': 1, 1: 2},),
+            ("not-dict",),
+        ),
+        resultspec='i',
+        argspec='O',
+        arguments=["PyObject* kwds"],
+        cmpfunc=unhandled_error_compare,
     )
