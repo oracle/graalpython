@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -5555,10 +5555,12 @@ _PyObject_IsInstanceDictEmpty(PyObject *obj)
     }
     return ((PyDictObject *)dict)->ma_used == 0;
 }
+#endif // GraalPy change
 
 void
 _PyObject_FreeInstanceAttributes(PyObject *self)
 {
+#if 0 // GraalPy change
     PyTypeObject *tp = Py_TYPE(self);
     assert(Py_TYPE(self)->tp_flags & Py_TPFLAGS_MANAGED_DICT);
     PyDictOrValues dorv = *_PyObject_DictOrValuesPointer(self);
@@ -5571,11 +5573,13 @@ _PyObject_FreeInstanceAttributes(PyObject *self)
         Py_XDECREF(values->values[i]);
     }
     free_values(values);
+#endif // GraalPy change
 }
 
 int
 _PyObject_VisitManagedDict(PyObject *obj, visitproc visit, void *arg)
 {
+#if 0 // GraalPy change
     PyTypeObject *tp = Py_TYPE(obj);
     if((tp->tp_flags & Py_TPFLAGS_MANAGED_DICT) == 0) {
         return 0;
@@ -5593,12 +5597,14 @@ _PyObject_VisitManagedDict(PyObject *obj, visitproc visit, void *arg)
         PyObject *dict = _PyDictOrValues_GetDict(dorv);
         Py_VISIT(dict);
     }
+#endif // GraalPy change
     return 0;
 }
 
 void
 _PyObject_ClearManagedDict(PyObject *obj)
 {
+#if 0 // GraalPy change
     PyTypeObject *tp = Py_TYPE(obj);
     if((tp->tp_flags & Py_TPFLAGS_MANAGED_DICT) == 0) {
         return;
@@ -5620,8 +5626,8 @@ _PyObject_ClearManagedDict(PyObject *obj)
             Py_DECREF(dict);
         }
     }
-}
 #endif // GraalPy change
+}
 
 PyObject *
 PyObject_GenericGetDict(PyObject *obj, void *context)
