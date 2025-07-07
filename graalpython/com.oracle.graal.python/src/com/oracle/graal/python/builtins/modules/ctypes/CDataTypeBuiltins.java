@@ -93,7 +93,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -327,7 +327,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
         static Object CDataType_in_dll(VirtualFrame frame, Object type, Object dll, TruffleString name,
                         @Bind Node inliningTarget,
                         @Cached PyLongCheckNode longCheckNode,
-                        @Cached("create(T__HANDLE)") GetAttributeNode getAttributeNode,
+                        @Cached("create(T__HANDLE)") GetFixedAttributeNode getAttributeNode,
                         @Cached PyCDataAtAddress atAddress,
                         @Cached AuditNode auditNode,
                         @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,

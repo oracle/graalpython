@@ -67,7 +67,7 @@ import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
@@ -256,7 +256,7 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static Object getModule(VirtualFrame frame, PMethod self, @SuppressWarnings("unused") Object value,
-                        @Cached("create(T___MODULE__)") GetAttributeNode getAttributeNode) {
+                        @Cached("create(T___MODULE__)") GetFixedAttributeNode getAttributeNode) {
             return getAttributeNode.executeObject(frame, self.getFunction());
         }
 
