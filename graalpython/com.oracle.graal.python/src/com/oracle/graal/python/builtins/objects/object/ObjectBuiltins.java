@@ -54,7 +54,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SINGLE_QUOTE_COMMA_SPACE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -146,7 +145,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -159,7 +157,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -509,27 +506,6 @@ public final class ObjectBuiltins extends PythonBuiltins {
 
         @Child private CallSlotDescrGet callSlotDescrGet;
         @Child private ReadAttributeFromObjectNode attrRead;
-
-        @Idempotent
-        protected static int tsLen(TruffleString ts) {
-            CompilerAsserts.neverPartOfCompilation();
-            return TruffleString.CodePointLengthNode.getUncached().execute(ts, TS_ENCODING) + 1;
-        }
-
-        // Shortcut, only useful for interpreter performance, but doesn't hurt peak
-        @Specialization(guards = {"keyObj == cachedKey", "tsLen(cachedKey) < 32"}, limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        Object doItTruffleString(VirtualFrame frame, Object object, @SuppressWarnings("unused") TruffleString keyObj,
-                        @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached("keyObj") TruffleString cachedKey,
-                        @Exclusive @Cached GetClassNode getClassNode,
-                        @Exclusive @Cached GetObjectSlotsNode getSlotsNode,
-                        @Cached("create(cachedKey)") LookupAttributeInMRONode lookup,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
-            Object type = getClassNode.execute(inliningTarget, object);
-            Object descr = lookup.execute(type);
-            return fullLookup(frame, inliningTarget, object, cachedKey, type, descr, getSlotsNode, raiseNode);
-        }
 
         @Specialization
         @SuppressWarnings("truffle-static-method")
