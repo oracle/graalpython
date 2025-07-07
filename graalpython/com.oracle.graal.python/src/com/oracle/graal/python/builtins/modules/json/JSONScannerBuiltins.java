@@ -36,7 +36,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -79,12 +79,12 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MakeScanner extends PythonBinaryBuiltinNode {
 
-        @Child private GetAttributeNode.GetFixedAttributeNode getStrict = GetAttributeNode.GetFixedAttributeNode.create(T_STRICT);
-        @Child private GetAttributeNode.GetFixedAttributeNode getObjectHook = GetAttributeNode.GetFixedAttributeNode.create(tsLiteral("object_hook"));
-        @Child private GetAttributeNode.GetFixedAttributeNode getObjectPairsHook = GetAttributeNode.GetFixedAttributeNode.create(tsLiteral("object_pairs_hook"));
-        @Child private GetAttributeNode.GetFixedAttributeNode getParseFloat = GetAttributeNode.GetFixedAttributeNode.create(tsLiteral("parse_float"));
-        @Child private GetAttributeNode.GetFixedAttributeNode getParseInt = GetAttributeNode.GetFixedAttributeNode.create(tsLiteral("parse_int"));
-        @Child private GetAttributeNode.GetFixedAttributeNode getParseConstant = GetAttributeNode.GetFixedAttributeNode.create(tsLiteral("parse_constant"));
+        @Child private GetFixedAttributeNode getStrict = GetFixedAttributeNode.create(T_STRICT);
+        @Child private GetFixedAttributeNode getObjectHook = GetFixedAttributeNode.create(tsLiteral("object_hook"));
+        @Child private GetFixedAttributeNode getObjectPairsHook = GetFixedAttributeNode.create(tsLiteral("object_pairs_hook"));
+        @Child private GetFixedAttributeNode getParseFloat = GetFixedAttributeNode.create(tsLiteral("parse_float"));
+        @Child private GetFixedAttributeNode getParseInt = GetFixedAttributeNode.create(tsLiteral("parse_int"));
+        @Child private GetFixedAttributeNode getParseConstant = GetFixedAttributeNode.create(tsLiteral("parse_constant"));
 
         @Specialization
         public PJSONScanner doNew(VirtualFrame frame, Object cls, Object context,

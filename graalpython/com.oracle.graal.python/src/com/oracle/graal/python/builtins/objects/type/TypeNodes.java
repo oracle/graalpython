@@ -188,7 +188,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -1946,7 +1946,7 @@ public abstract class TypeNodes {
                         @Cached("create(T___SET_NAME__)") LookupSpecialMethodNode getSetNameNode,
                         @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
-                        @Cached("create(T___INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
+                        @Cached("create(T___INIT_SUBCLASS__)") GetFixedAttributeNode getInitSubclassNode,
                         @Cached GetMroStorageNode getMroStorageNode,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raise,

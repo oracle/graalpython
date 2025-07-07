@@ -81,7 +81,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -175,7 +175,7 @@ public final class CDataBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached("create(T___DICT__)") GetAttributeNode getAttributeNode,
+                        @Cached("create(T___DICT__)") GetFixedAttributeNode getAttributeNode,
                         @Cached ReadAttributeFromPythonObjectNode readAttrNode,
                         @Cached PointerNodes.ReadBytesNode readBytesNode,
                         @Cached GetClassNode getClassNode,
@@ -209,7 +209,7 @@ public final class CDataBuiltins extends PythonBuiltins {
         static Object PyCData_setstate(VirtualFrame frame, CDataObject self, PTuple args,
                         @Bind Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
-                        @Cached("create(T___DICT__)") GetAttributeNode getAttributeNode,
+                        @Cached("create(T___DICT__)") GetFixedAttributeNode getAttributeNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached PRaiseNode raiseNode) {

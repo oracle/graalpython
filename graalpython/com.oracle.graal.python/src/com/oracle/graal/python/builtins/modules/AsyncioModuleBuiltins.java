@@ -72,7 +72,7 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -178,8 +178,8 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
                         @Cached CallNode callGetPolicy,
                         @Cached CallNode callGetLoop,
                         @Cached AbstractImportNode.ImportName importName,
-                        @Cached(parameters = "T_GET_EVENT_LOOP") GetAttributeNode.GetFixedAttributeNode getGetLoop,
-                        @Cached(parameters = "T_GET_EVENT_LOOP_POLICY") GetAttributeNode.GetFixedAttributeNode getGetLoopPolicy) {
+                        @Cached(parameters = "T_GET_EVENT_LOOP") GetFixedAttributeNode getGetLoop,
+                        @Cached(parameters = "T_GET_EVENT_LOOP_POLICY") GetFixedAttributeNode getGetLoopPolicy) {
             Object eventLoop = context.getThreadState(context.getLanguage(inliningTarget)).getRunningEventLoop();
             if (eventLoop == null) {
                 Object asyncio = importName.execute(frame, context, context.getBuiltins(), T_ASYNCIO_EVENTS, PNone.NONE, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, 0);

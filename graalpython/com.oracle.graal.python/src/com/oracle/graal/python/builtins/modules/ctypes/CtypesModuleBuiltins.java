@@ -144,7 +144,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -546,7 +546,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         // This shouldn't call the slot directly to make sure the check in the
                         // wrapper runs
                         @Cached("create(T___NEW__)") LookupAndCallUnaryNode lookupAndCallUnaryNode,
-                        @Cached("create(T___SETSTATE__)") GetAttributeNode setStateAttr) {
+                        @Cached("create(T___SETSTATE__)") GetFixedAttributeNode setStateAttr) {
             Object obj = lookupAndCallUnaryNode.executeObject(frame, typ);
             Object meth = setStateAttr.executeObject(frame, obj);
             callNode.execute(frame, meth, state);
