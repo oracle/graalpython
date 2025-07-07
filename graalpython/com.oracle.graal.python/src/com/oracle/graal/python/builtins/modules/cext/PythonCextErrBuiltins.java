@@ -501,4 +501,27 @@ public final class PythonCextErrBuiltins {
             return 0;
         }
     }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    abstract static class PyException_GetArgs extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static Object get(Object exc,
+                        @Bind Node inliningTarget,
+                        @Cached ExceptionNodes.GetArgsNode getArgsNode) {
+            return getArgsNode.execute(inliningTarget, exc);
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct)
+    abstract static class PyException_SetArgs extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object set(PBaseException exc, PTuple args,
+                        @Bind Node inliningTarget,
+                        @Cached ExceptionNodes.SetArgsNode setArgsNode) {
+            setArgsNode.execute(inliningTarget, exc, args);
+            return PNone.NO_VALUE;
+        }
+    }
 }

@@ -1262,8 +1262,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyErr_SetRaisedException", ret = Void, args = {PyObjectRawPointer}, call = CImpl)
     @CApiBuiltin(name = "PyEval_SetProfileAllThreads", ret = Void, args = {PY_TRACEFUNC, PyObjectRawPointer}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_SetTraceAllThreads", ret = Void, args = {PY_TRACEFUNC, PyObjectRawPointer}, call = NotImplemented)
-    @CApiBuiltin(name = "PyException_GetArgs", ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = NotImplemented)
-    @CApiBuiltin(name = "PyException_SetArgs", ret = Void, args = {PyObjectRawPointer, PyObjectRawPointer}, call = NotImplemented)
     @CApiBuiltin(name = "PyFrame_GetVar", ret = PyObjectRawPointer, args = {PyFrameObjectBorrowed, PyObjectRawPointer}, call = NotImplemented)
     @CApiBuiltin(name = "PyFrame_GetVarString", ret = PyObjectRawPointer, args = {PyFrameObjectBorrowed, ConstCharPtr}, call = NotImplemented)
     @CApiBuiltin(name = "PyFunction_AddWatcher", ret = PrimitiveResult32, args = {PyFunction_WatchCallback}, call = NotImplemented)
