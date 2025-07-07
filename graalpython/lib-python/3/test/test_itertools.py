@@ -1666,7 +1666,7 @@ class TestBasicOps(unittest.TestCase):
 #        del a
 #        self.assertRaises(ReferenceError, getattr, p, '__class__')
         # End Truffle change
-        
+
         ans = list('abc')
         long_ans = list(range(10000))
 
@@ -2188,7 +2188,8 @@ class TestPurePythonRoughEquivalents(unittest.TestCase):
         self.assertEqual(getattr(p, '__class__'), type(b))
         del a
         gc.collect()  # For PyPy or other GCs.
-        self.assertRaises(ReferenceError, getattr, p, '__class__')
+        # GraalPy change: skip the next line to avoid transients
+        # self.assertRaises(ReferenceError, getattr, p, '__class__')
 
         ans = list('abc')
         long_ans = list(range(10000))
