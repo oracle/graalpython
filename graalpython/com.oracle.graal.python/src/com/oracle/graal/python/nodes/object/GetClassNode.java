@@ -58,7 +58,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
@@ -230,7 +229,7 @@ public abstract class GetClassNode extends PNodeWithContext {
     }
 
     @InliningCutoff
-    @Fallback
+    @Specialization(guards = "isForeignObject(object)")
     static Object getForeign(Object object,
                     @Cached(inline = false) GetRegisteredClassNode getRegisteredClassNode) {
         return getRegisteredClassNode.execute(object);

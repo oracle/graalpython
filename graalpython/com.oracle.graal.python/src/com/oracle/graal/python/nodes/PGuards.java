@@ -96,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNod
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -292,6 +293,10 @@ public abstract class PGuards {
 
     public static boolean isAnyPythonObject(Object obj) {
         return obj instanceof PythonAbstractObject;
+    }
+
+    public static boolean isForeignObject(Object obj) {
+        return IsForeignObjectNode.executeUncached(obj);
     }
 
     public static boolean canBeInteger(Object idx) {
