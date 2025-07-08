@@ -166,6 +166,9 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         if (launcherName != null && (launcherName.endsWith("graalpy-polyglot-get") || launcherName.endsWith("graalpy-polyglot-get.exe"))) {
             polyglotGet(launcherName, givenArgs);
         }
+        if (launcherName != null && (launcherName.endsWith("graalpy-config") || launcherName.endsWith("graalpy-config.exe"))) {
+            givenArgs.addAll(0, List.of("-m", "graalpy-config"));
+        }
         ArrayList<String> unrecognized = new ArrayList<>();
         List<String> envVmArgs = getDefaultEnvironmentArgs("GRAAL_PYTHON_VM_ARGS");
         List<String> envArgs = getDefaultEnvironmentArgs("GRAAL_PYTHON_ARGS");
