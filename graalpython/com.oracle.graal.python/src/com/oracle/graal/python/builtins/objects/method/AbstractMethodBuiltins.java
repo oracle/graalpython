@@ -226,7 +226,7 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(none)")
         static Object getModule(VirtualFrame frame, PBuiltinMethod self, @SuppressWarnings("unused") PNone none,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached ReadAttributeFromPythonObjectNode readAttrNode) {
             // No profiling, performance here is not very important

@@ -194,7 +194,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached PUnpickler.LoadNode loadNode,
                         @Cached PyObjectGetIter getIter) {
             try {

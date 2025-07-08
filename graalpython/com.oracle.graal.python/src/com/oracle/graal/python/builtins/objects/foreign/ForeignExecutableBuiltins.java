@@ -128,7 +128,7 @@ public final class ForeignExecutableBuiltins extends PythonBuiltins {
         @Specialization
         static Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "4") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,
                         @Cached GilNode gil,

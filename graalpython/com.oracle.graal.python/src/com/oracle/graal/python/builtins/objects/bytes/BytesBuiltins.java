@@ -225,7 +225,7 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static long hash(VirtualFrame frame, Object self,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("self") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.HashBufferNode hashBufferNode) {

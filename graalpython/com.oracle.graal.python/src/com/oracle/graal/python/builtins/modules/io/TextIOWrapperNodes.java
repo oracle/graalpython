@@ -495,7 +495,7 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = "self.hasDecoder()")
         static boolean readChunk(VirtualFrame frame, Node inliningTarget, PTextIO self, int hint,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached SequenceNodes.GetObjectArrayNode getArray,
                         @Cached(inline = false) DecodeNode decodeNode,
                         @Cached PyObjectCallMethodObjArgs callMethodGetState,

@@ -141,7 +141,7 @@ public final class MemoryBIOBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static int write(VirtualFrame frame, PMemoryBIO self, Object buffer,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode) {

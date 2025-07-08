@@ -271,7 +271,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "3")
         static Object doBuffer(VirtualFrame frame, Object cls, Object obj, Object encoding, Object errors,
                         @Bind Node inliningTarget,
-                        @Exclusive @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Exclusive @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Exclusive @Cached InlinedConditionProfile isStringProfile,
@@ -329,7 +329,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "1")
         static Object doNativeSubclassEncodeErr(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
-                        @Exclusive @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Exclusive @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Shared @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
@@ -454,7 +454,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString format(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwargs,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached BuiltinFunctions.FormatNode format,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PRaiseNode raiseNode) {
@@ -488,7 +488,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString format(VirtualFrame frame, TruffleString self, Object mapping,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached BuiltinFunctions.FormatNode format) {
 
             TemplateFormatter template = new TemplateFormatter(self);
@@ -1868,7 +1868,7 @@ public final class StringBuiltins extends PythonBuiltins {
         static Object doGeneric(VirtualFrame frame, Object self, Object right,
                         @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyUnicodeCheckNode check,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             String selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, T___MOD__, self);

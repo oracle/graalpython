@@ -394,7 +394,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         @Specialization
         static Object split(VirtualFrame frame, PBaseExceptionGroup self, Object matcherValue,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData) {
+                        @Cached("createFor($node)") IndirectCallData indirectCallData) {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
@@ -420,7 +420,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         @Specialization
         static Object subgroup(VirtualFrame frame, PBaseExceptionGroup self, Object matcherValue,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData) {
+                        @Cached("createFor($node)") IndirectCallData indirectCallData) {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);

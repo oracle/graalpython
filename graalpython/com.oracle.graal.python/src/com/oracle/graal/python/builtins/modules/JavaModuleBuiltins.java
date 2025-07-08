@@ -310,7 +310,7 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isBytes(object)", limit = "3")
         static Object doBuffer(VirtualFrame frame, Object object,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             Object buffer = acquireLib.acquireReadonly(object, frame, indirectCallData);

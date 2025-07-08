@@ -113,7 +113,7 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached DecompressInnerNode innerNode,
                         @Cached PRaiseNode raiseNode) {
             try {

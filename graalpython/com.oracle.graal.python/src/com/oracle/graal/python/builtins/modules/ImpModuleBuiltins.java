@@ -286,7 +286,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached ReadAttributeFromPythonObjectNode readNameNode,
                         @Cached ReadAttributeFromPythonObjectNode readOriginNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
@@ -344,7 +344,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         static int doPythonModule(VirtualFrame frame, PythonModule extensionModule,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached ExecModuleNode execModuleNode,
                         @Cached PRaiseNode raiseNode) {
@@ -537,7 +537,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         static Object run(VirtualFrame frame, TruffleString name, Object dataObj,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached InlinedConditionProfile isCodeObjectProfile,

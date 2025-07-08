@@ -1208,7 +1208,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         static PList dir(VirtualFrame frame, Object klass,
                         @Bind Node inliningTarget,
                         @Cached ConstructListNode constructListNode,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData) {
+                        @Cached("createFor($node)") IndirectCallData indirectCallData) {
             PSet names = PFactory.createSet(PythonLanguage.get(inliningTarget));
             Object state = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
             try {

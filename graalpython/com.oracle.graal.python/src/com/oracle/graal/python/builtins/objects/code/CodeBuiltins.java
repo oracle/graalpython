@@ -647,7 +647,7 @@ public final class CodeBuiltins extends PythonBuiltins {
                         TruffleString coName, TruffleString coQualname,
                         Object coLnotab, @SuppressWarnings("unused") Object coExceptiontable,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {

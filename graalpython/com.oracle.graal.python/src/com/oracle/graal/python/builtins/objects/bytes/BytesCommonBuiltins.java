@@ -294,7 +294,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static PBytesLike add(VirtualFrame frame, Object self, Object other,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached GetBytesStorage getBytesStorage,
                         @CachedLibrary("other") PythonBufferAcquireLibrary bufferAcquireLib,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
@@ -352,7 +352,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         static Object mod(VirtualFrame frame, Object self, Object right,
                         @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached BytesLikeCheck check,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create) {
@@ -607,7 +607,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         PTuple partition(VirtualFrame frame, Object self, Object sep,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("sep") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached GetBytesStorage getBytesStorage,
@@ -807,7 +807,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Specialization(guards = "bufferAcquireLib.hasBuffer(object)", limit = "3")
         static byte doBuffer(VirtualFrame frame, Object object,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -1526,7 +1526,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         static byte[] doBuffer(VirtualFrame frame, Object object,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             PythonLanguage language = context.getLanguage(inliningTarget);
@@ -1906,7 +1906,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPNone(object)")
         PBytesLike strip(VirtualFrame frame, Object self, Object object,
                         @Bind Node node,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Shared("createByte") @Cached BytesNodes.CreateBytesNode create,
@@ -2342,7 +2342,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Specialization
         static PBytesLike remove(VirtualFrame frame, Object self, Object prefix,
                         @Bind Node node,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create,
@@ -2384,7 +2384,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Specialization
         static PBytesLike remove(VirtualFrame frame, Object self, Object suffix,
                         @Bind Node node,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create,

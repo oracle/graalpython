@@ -98,7 +98,7 @@ public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltin
         @Specialization(guards = "self.isOK()")
         static Object write(@SuppressWarnings("unused") VirtualFrame frame, PBuffered self, Object buffer,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached EnterBufferedNode lock,
                         @Cached("create(T_WRITE)") CheckIsClosedNode checkIsClosedNode,

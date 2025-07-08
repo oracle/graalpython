@@ -62,7 +62,7 @@ public abstract class ReadableBufferConversionNode extends ObjectConversionBaseN
     Object doObject(VirtualFrame frame, Object value,
                     @Bind Node inliningTarget,
                     @Bind PythonContext context,
-                    @Cached("createFor(this)") IndirectCallData indirectCallData,
+                    @Cached("createFor($node)") IndirectCallData indirectCallData,
                     @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib) {
         return acquireLib.acquireReadonly(value, frame, context, context.getLanguage(inliningTarget), indirectCallData);
     }

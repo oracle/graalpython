@@ -1208,7 +1208,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         static Object frombytes(VirtualFrame frame, PArray self, Object buffer,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode,
                         @Cached ArrayNodes.SetLengthNode setLengthNode,

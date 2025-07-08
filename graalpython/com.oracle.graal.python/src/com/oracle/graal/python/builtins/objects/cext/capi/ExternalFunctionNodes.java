@@ -733,7 +733,7 @@ public abstract class ExternalFunctionNodes {
 
         @Specialization
         static Object invoke(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments,
-                        @Cached(value = "createFor(this)", uncached = "getUncached()") IndirectCallData indirectCallData,
+                        @Cached(value = "createFor($node)", uncached = "getUncached()") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "2") InteropLibrary lib) {
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store

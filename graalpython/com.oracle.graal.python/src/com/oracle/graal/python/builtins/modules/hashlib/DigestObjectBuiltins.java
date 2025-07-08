@@ -133,7 +133,7 @@ public final class DigestObjectBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static PNone update(VirtualFrame frame, DigestObject self, Object buffer,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode) {
             if (self.wasReset()) {

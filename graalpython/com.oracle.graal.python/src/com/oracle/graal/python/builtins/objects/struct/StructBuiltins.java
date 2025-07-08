@@ -478,7 +478,7 @@ public class StructBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static Object packInto(VirtualFrame frame, PStruct self, Object buffer, int offset, Object[] args,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached StructNodes.PackValueNode packValueNode,
                         @Cached PRaiseNode raiseNode) {
@@ -552,7 +552,7 @@ public class StructBuiltins extends PythonBuiltins {
         static Object unpack(VirtualFrame frame, PStruct self, Object buffer,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached StructNodes.UnpackValueNode unpackValueNode,
                         @Cached PRaiseNode raiseNode) {
@@ -584,7 +584,7 @@ public class StructBuiltins extends PythonBuiltins {
         static Object iterUnpack(VirtualFrame frame, PStruct self, Object buffer,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -623,7 +623,7 @@ public class StructBuiltins extends PythonBuiltins {
         static Object unpackFrom(VirtualFrame frame, PStruct self, Object buffer, int offset,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached StructNodes.UnpackValueNode unpackValueNode,
                         @Cached PRaiseNode raiseNode) {

@@ -203,7 +203,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached CastToTruffleStringNode castToString,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,

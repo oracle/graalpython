@@ -174,7 +174,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         static Object doit(VirtualFrame frame, Object value, Object file, int version,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PRaiseNode raiseNode) {
             PythonLanguage language = context.getLanguage(inliningTarget);
@@ -207,7 +207,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         static Object doit(VirtualFrame frame, Object value, int version,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached PRaiseNode raiseNode) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonContext.PythonThreadState threadState = context.getThreadState(language);
@@ -262,7 +262,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         static Object doit(VirtualFrame frame, Object buffer,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode) {
             try {

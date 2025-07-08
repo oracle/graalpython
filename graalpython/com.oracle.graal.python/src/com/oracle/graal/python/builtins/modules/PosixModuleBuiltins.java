@@ -955,7 +955,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static long doWrite(VirtualFrame frame, int fd, Object dataBuffer,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("dataBuffer") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,

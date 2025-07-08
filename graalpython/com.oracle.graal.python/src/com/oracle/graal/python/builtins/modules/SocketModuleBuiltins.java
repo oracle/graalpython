@@ -813,7 +813,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static TruffleString doGeneric(VirtualFrame frame, Object addr,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("addr") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
@@ -871,7 +871,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static TruffleString doGeneric(VirtualFrame frame, int family, Object obj,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("obj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,

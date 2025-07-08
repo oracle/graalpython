@@ -130,7 +130,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isPBytes(value)", "!isString(value)"})
         static PBytes doOther(VirtualFrame frame, Object value,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonLanguage language) {
             try {

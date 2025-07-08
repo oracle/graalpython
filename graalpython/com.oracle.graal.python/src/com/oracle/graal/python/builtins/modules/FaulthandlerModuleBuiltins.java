@@ -134,7 +134,7 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
         PNone doit(VirtualFrame frame, Object fileObj, boolean allThreads,
                         @Bind Node inliningTarget,
                         @Cached GetFilenoNode getFilenoNode,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData) {
+                        @Cached("createFor($node)") IndirectCallData indirectCallData) {
             int fileno = getFilenoNode.execute(frame, inliningTarget, fileObj);
             PythonContext context = getContext();
             PythonLanguage language = context.getLanguage(this);

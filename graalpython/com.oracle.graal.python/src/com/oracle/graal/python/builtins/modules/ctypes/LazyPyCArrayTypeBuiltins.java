@@ -153,7 +153,7 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static Object doSet(VirtualFrame frame, CDataObject self, Object value,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PointerNodes.WriteBytesNode writeBytesNode,

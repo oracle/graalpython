@@ -94,7 +94,7 @@ public class PickleBufferBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static PPickleBuffer construct(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object object,
                         @Bind PythonLanguage language,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib) {
             Object buffer = acquireLib.acquire(object, BufferFlags.PyBUF_FULL_RO, frame, indirectCallData);
             return PFactory.createPickleBuffer(language, buffer);

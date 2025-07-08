@@ -70,7 +70,7 @@ public abstract class WritableBufferConversionNode extends ArgumentCastNode {
     Object doObject(VirtualFrame frame, Object value,
                     @Bind Node inliningTarget,
                     @Bind PythonContext context,
-                    @Cached("createFor(this)") IndirectCallData indirectCallData,
+                    @Cached("createFor($node)") IndirectCallData indirectCallData,
                     @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib,
                     @Cached PRaiseNode raiseNode) {
         try {

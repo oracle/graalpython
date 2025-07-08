@@ -121,7 +121,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         @Specialization(rewriteOn = PException.class)
         static PList starredIterable(VirtualFrame frame, PythonObject value,
                         @Bind Node inliningTarget,
-                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Shared @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Shared @Cached ConstructListNode constructListNode) {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
@@ -136,7 +136,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         @Specialization
         static PList starredGeneric(VirtualFrame frame, Object v,
                         @Bind Node inliningTarget,
-                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Shared @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Shared @Cached ConstructListNode constructListNode,
                         @Cached IsBuiltinObjectProfile attrProfile,
                         @Cached PRaiseNode raise) {

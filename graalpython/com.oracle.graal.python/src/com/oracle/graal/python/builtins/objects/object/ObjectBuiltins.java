@@ -891,7 +891,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
         @Specialization
         static Object dir(VirtualFrame frame, Object obj,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached SetBuiltins.UpdateSingleNode updateSetNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached GetClassNode getClassNode,

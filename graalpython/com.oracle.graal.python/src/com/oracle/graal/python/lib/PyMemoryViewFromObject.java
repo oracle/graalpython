@@ -128,7 +128,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
     @Fallback
     static PMemoryView fromManaged(VirtualFrame frame, Object object,
                     @Bind Node inliningTarget,
-                    @Cached("createFor(this)") IndirectCallData indirectCallData,
+                    @Cached("createFor($node)") IndirectCallData indirectCallData,
                     @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                     @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                     @Cached InlinedConditionProfile hasSlotProfile,

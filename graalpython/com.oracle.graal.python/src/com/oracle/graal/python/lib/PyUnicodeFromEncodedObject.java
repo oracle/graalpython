@@ -105,7 +105,7 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithContext {
     @Specialization(guards = {"!isPBytes(object)", "!isString(object)"}, limit = "3")
     static Object doBuffer(VirtualFrame frame, Node inliningTarget, Object object, Object encoding, Object errors,
                     @Bind PythonLanguage language,
-                    @Cached("createFor(this)") IndirectCallData indirectCallNode,
+                    @Cached("createFor($node)") IndirectCallData indirectCallNode,
                     @Exclusive @Cached InlinedConditionProfile emptyStringProfile,
                     @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                     @Exclusive @Cached PyUnicodeDecode decode,
