@@ -62,8 +62,17 @@ public abstract class IsForeignObjectNode extends PNodeWithContext {
 
     public abstract boolean execute(Node inliningTarget, Object object);
 
+    // This is useful as a guard and much better than the inlined node in terms of host inlining
+    // code size.
+    // The generated uncached node doesn't work as a guard because of @TruffleBoundary.
     public static boolean executeUncached(Object object) {
-        return IsForeignObjectNodeGen.getUncached().execute(null, object);
+        return !(object instanceof Boolean ||
+                        object instanceof Integer ||
+                        object instanceof Long ||
+                        object instanceof Double ||
+                        object instanceof TruffleString ||
+                        object instanceof PythonAbstractObject ||
+                        object instanceof PythonBuiltinClassType);
     }
 
     @Specialization
