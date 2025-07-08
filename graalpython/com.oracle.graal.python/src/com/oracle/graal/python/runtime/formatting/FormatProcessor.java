@@ -20,13 +20,13 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyNumberLongNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyTupleGetItem;
+import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -58,17 +58,15 @@ abstract class FormatProcessor<T> {
     /** see {@link #getArg()} for the meaning of this value. */
     private int argIndex = -1;
     private Object args;
-    private final TupleBuiltins.GetItemNode getTupleItemNode;
 
     protected int index;
     protected final Python3Core core;
     protected final Node raisingNode;
     protected final FormattingBuffer buffer;
 
-    public FormatProcessor(Python3Core core, TupleBuiltins.GetItemNode getTupleItemNode, FormattingBuffer buffer, Node raisingNode) {
+    public FormatProcessor(Python3Core core, FormattingBuffer buffer, Node raisingNode) {
         this.core = core;
         this.raisingNode = raisingNode;
-        this.getTupleItemNode = getTupleItemNode;
         this.buffer = buffer;
         index = 0;
     }
@@ -101,10 +99,6 @@ abstract class FormatProcessor<T> {
         return CallNode.executeUncached(callable, args, PKeyword.EMPTY_KEYWORDS);
     }
 
-    Object getItem(Object arg, Object arg2) {
-        return PyObjectGetItem.executeUncached(arg, arg2);
-    }
-
     Object getArg() {
         Object ret = null;
         switch (argIndex) {
@@ -121,7 +115,7 @@ abstract class FormatProcessor<T> {
                 // directly, so the only error can be IndexError, which we ignore and transform into
                 // the TypeError below.
                 try {
-                    ret = getTupleItemNode.execute(null, args, argIndex++);
+                    ret = PyTupleGetItem.executeUncached(args, argIndex++);
                 } catch (PException e) {
                     // fall through
                 }
@@ -174,7 +168,7 @@ abstract class FormatProcessor<T> {
         return specType == 'x' || specType == 'X' || specType == 'o' || specType == 'c';
     }
 
-    protected final Object asNumber(Object arg, char specType) {
+    protected static Object asNumber(Object arg, char specType) {
         if (arg instanceof Integer || arg instanceof Long || arg instanceof PInt) {
             // arg is already acceptable
             return arg;
@@ -328,7 +322,7 @@ abstract class FormatProcessor<T> {
                 Object tmp = parseMappingKey(keyStart, index - 1);
                 // Look it up using this extent as the (right type of) key. The caller must have
                 // pushed the frame.
-                this.args = getItem(mapping, tmp);
+                this.args = PyObjectGetItem.executeUncached(mapping, tmp);
             } else {
                 // Not a mapping key: next clause will re-read c.
                 push();
@@ -489,7 +483,7 @@ abstract class FormatProcessor<T> {
          * of range; if a special value, it would be wrong if it were -1, indicating a single item
          * that has not yet been used.
          */
-        if (argIndex == -1 || (argIndex >= 0 && PyObjectSizeNode.executeUncached(args1) >= argIndex + 1)) {
+        if (argIndex == -1 || (argIndex >= 0 && PyTupleSizeNode.executeUncached(args1) >= argIndex + 1)) {
             throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING, getFormatType());
         }
 
