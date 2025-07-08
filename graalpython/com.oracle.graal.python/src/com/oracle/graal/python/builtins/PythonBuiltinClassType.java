@@ -269,6 +269,7 @@ import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
+import com.oracle.graal.python.builtins.objects.tuple.CapsuleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.InstantiableStructSequenceBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
@@ -1251,7 +1252,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // CPython uses separate keys, values, items python types for the iterators.
     ContextIterator("context_iterator", PythonObject, newBuilder().publishInModule(J__CONTEXTVARS).slots(ContextIteratorBuiltins.SLOTS)),
 
-    Capsule("PyCapsule", PythonObject, newBuilder().basetype()),
+    Capsule("PyCapsule", PythonObject, newBuilder().basetype().slots(CapsuleBuiltins.SLOTS)),
 
     PTokenizerIter("TokenizerIter", PythonObject, newBuilder().publishInModule("_tokenize").basetype().slots(TokenizerIterBuiltins.SLOTS)),
 
