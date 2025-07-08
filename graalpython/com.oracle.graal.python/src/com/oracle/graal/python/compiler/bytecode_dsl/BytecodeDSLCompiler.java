@@ -41,8 +41,6 @@
 package com.oracle.graal.python.compiler.bytecode_dsl;
 
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.compiler.Compiler;
@@ -98,7 +96,6 @@ public class BytecodeDSLCompiler {
         public final int futureLineNumber;
         public final ParserCallbacksImpl errorCallback;
         public final ScopeEnvironment scopeEnvironment;
-        public final Map<Scope, String> qualifiedNames;
 
         public BytecodeDSLCompilerContext(PythonLanguage language, PythonContext context, ModTy mod, Source source, int optimizationLevel,
                         EnumSet<FutureFeature> futureFeatures, int futureLineNumber, ParserCallbacksImpl errorCallback, ScopeEnvironment scopeEnvironment) {
@@ -111,7 +108,6 @@ public class BytecodeDSLCompiler {
             this.futureLineNumber = futureLineNumber;
             this.errorCallback = errorCallback;
             this.scopeEnvironment = scopeEnvironment;
-            this.qualifiedNames = new HashMap<>();
         }
 
         public String maybeMangle(String privateName, Scope scope, String name) {
@@ -131,41 +127,6 @@ public class BytecodeDSLCompiler {
                 cur = scopeEnvironment.lookupParent(cur);
             }
             return null;
-        }
-
-        String getQualifiedName(Scope scope) {
-            if (qualifiedNames.containsKey(scope)) {
-                return qualifiedNames.get(scope);
-            } else {
-                String qualifiedName = computeQualifiedName(scope);
-                qualifiedNames.put(scope, qualifiedName);
-                return qualifiedName;
-            }
-        }
-
-        private String computeQualifiedName(Scope scope) {
-            String qualifiedName = scope.getName();
-            Scope parentScope = scopeEnvironment.lookupParent(scope);
-            if (parentScope != null && parentScope != scopeEnvironment.getTopScope()) {
-                if (parentScope.isTypeParam()) {
-                    parentScope = scopeEnvironment.lookupParent(parentScope);
-                    if (parentScope == null || scopeEnvironment.lookupParent(parentScope) == null) {
-                        return qualifiedName;
-                    }
-                }
-                if (!((scope.isFunction() || scope.isClass()) && parentScope.getUseOfName(mangle(scope, scope.getName())).contains(Scope.DefUse.GlobalExplicit))) {
-                    // Qualify the name, unless it's a function/class and the parent declared the
-                    // name as a global (in which case the function/class doesn't belong to the
-                    // parent).
-                    if (parentScope.isFunction()) {
-                        qualifiedName = getQualifiedName(parentScope) + ".<locals>." + scope.getName();
-                    } else {
-                        qualifiedName = getQualifiedName(parentScope) + "." + scope.getName();
-                    }
-                }
-            }
-
-            return qualifiedName;
         }
     }
 }

@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.compiler.bytecode_dsl;
 
+import static com.oracle.graal.python.compiler.CompilationScope.AsyncFunction;
 import static com.oracle.graal.python.compiler.CompilationScope.Class;
+import static com.oracle.graal.python.compiler.CompilationScope.TypeParams;
 import static com.oracle.graal.python.compiler.SSTUtils.checkCaller;
 import static com.oracle.graal.python.compiler.SSTUtils.checkCompare;
 import static com.oracle.graal.python.compiler.SSTUtils.checkForbiddenArgs;
@@ -99,6 +101,7 @@ import com.oracle.graal.python.pegparser.ParserCallbacks.ErrorType;
 import com.oracle.graal.python.pegparser.ParserCallbacks.WarningType;
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.Scope.DefUse;
+import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
@@ -187,6 +190,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
      * {@link com.oracle.graal.python.pegparser.scope.ScopeEnvironment#maybeMangle(String, Scope, String)}.
      */
     private final String privateName;
+    private final RootNodeCompiler parent;
+    private String qualName;
 
     // Immutable after construction
     private final HashMap<String, Integer> varnames;
@@ -215,6 +220,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         this.startNode = rootNode;
         this.scope = ctx.scopeEnvironment.lookupScope(scopeKey);
         this.scopeType = getScopeType(scope, scopeKey);
+        this.parent = parent;
         if (privateName != null) {
             this.privateName = privateName;
         } else if (scopeType == Class) {
@@ -319,7 +325,33 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         return orderedKeys(map, new TruffleString[0], PythonUtils::toTruffleStringUncached);
     }
 
+    private String getNewScopeQualName(String name, CompilationScope scopeType) {
+        RootNodeCompiler parent = this.parent;
+        if (parent != null && parent.parent != null) {
+            if (parent.scopeType == TypeParams && parent.parent != null && parent.parent.parent != null) {
+                parent = parent.parent;
+                if (parent.parent != null && parent.parent.parent == null) {
+                    // if there are exactly two parents/ancestros, then return the name
+                    return name;
+                }
+            }
+            if (!(EnumSet.of(CompilationScope.Function, AsyncFunction, Class).contains(scopeType) &&
+                            parent.scope.getUseOfName(ScopeEnvironment.mangle(parent.privateName, name)).contains(Scope.DefUse.GlobalExplicit))) {
+                String base;
+                if (EnumSet.of(CompilationScope.Function, AsyncFunction, CompilationScope.Lambda).contains(parent.scopeType)) {
+                    base = parent.qualName + ".<locals>";
+                } else {
+                    base = parent.qualName;
+                }
+                return base + "." + name;
+            }
+        }
+        return name;
+    }
+
     private BytecodeDSLCompilerResult compileRootNode(String name, ArgumentInfo argumentInfo, SourceRange sourceRange, BytecodeParser<Builder> parser) {
+        qualName = getNewScopeQualName(name, scopeType);
+
         BytecodeRootNodes<PBytecodeDSLRootNode> nodes = PBytecodeDSLRootNodeGen.create(ctx.language, BytecodeConfig.WITH_SOURCE, parser);
         List<PBytecodeDSLRootNode> nodeList = nodes.getNodes();
         assert nodeList.size() == 1;
@@ -358,7 +390,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
         }
 
-        BytecodeDSLCodeUnit codeUnit = new BytecodeDSLCodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(ctx.getQualifiedName(scope)),
+        BytecodeDSLCodeUnit codeUnit = new BytecodeDSLCodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(qualName),
                         argumentInfo.argCount, argumentInfo.kwOnlyArgCount, argumentInfo.positionalOnlyArgCount,
                         flags, orderedTruffleStringArray(names),
                         orderedTruffleStringArray(varnames),
@@ -893,7 +925,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             endStoreLocal("__module__", b);
 
             beginStoreLocal("__qualname__", b);
-            emitPythonConstant(toTruffleStringUncached(ctx.getQualifiedName(scope)), b);
+            emitPythonConstant(toTruffleStringUncached(this.qualName), b);
             endStoreLocal("__qualname__", b);
 
             if (node.isGeneric()) {
@@ -1108,7 +1140,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     @Override
     public BytecodeDSLCompilerResult visit(ExprTy.GeneratorExp node) {
-        return buildComprehensionCodeUnit(node, node.generators, "<generator>",
+        return buildComprehensionCodeUnit(node, node.generators, "<genexpr>",
                         null,
                         (statementCompiler, collection) -> emitYield((statementCompiler_) -> node.element.accept(statementCompiler_), statementCompiler));
     }
@@ -2101,7 +2133,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             boolean newStatement = beginSourceSection(node, b);
 
             b.beginCallUnaryMethod();
-            emitMakeFunction(node, "<generator>", COMPREHENSION_ARGS);
+            emitMakeFunction(node, "<genexpr>", COMPREHENSION_ARGS);
             node.generators[0].iter.accept(this);
             b.endCallUnaryMethod();
 
@@ -3672,7 +3704,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         ArgumentsTy argsForDefaults, List<ParamAnnotation> annotations) {
             TruffleString functionName = toTruffleStringUncached(name);
             Scope targetScope = ctx.scopeEnvironment.lookupScope(scopeKey);
-            TruffleString qualifiedName = toTruffleStringUncached(ctx.getQualifiedName(targetScope));
+            TruffleString qualifiedName = codeUnit.qualname;
 
             // Register these in the Python constants list.
             addConstant(qualifiedName);

@@ -9,6 +9,7 @@ test.test_reprlib.ReprTests.test_container @ linux-x86_64
 test.test_reprlib.ReprTests.test_descriptors @ linux-x86_64
 test.test_reprlib.ReprTests.test_frozenset @ linux-x86_64
 test.test_reprlib.ReprTests.test_instance @ linux-x86_64
+test.test_reprlib.ReprTests.test_lambda @ linux-x86_64
 test.test_reprlib.ReprTests.test_nesting @ linux-x86_64
 test.test_reprlib.ReprTests.test_numbers @ linux-x86_64
 test.test_reprlib.ReprTests.test_range @ linux-x86_64
