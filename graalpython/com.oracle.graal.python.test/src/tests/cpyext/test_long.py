@@ -40,7 +40,6 @@ import struct
 
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare
 
-
 int_bits = struct.calcsize('i') * 8
 max_int = 2 ** (int_bits - 1) - 1
 min_int = -2 ** (int_bits - 1)
@@ -131,6 +130,22 @@ def _reference_is_compact(args):
     n = args[0]
     # the range is impl. specific, but let's assume it's at least int32
     return 1 if -2147483648 <= n <= 2147483647 else 0
+
+
+def _reference_long_from_string(args):
+    num, base = args
+    if not num.strip():
+        return ValueError, len(num)
+    try:
+        return int(num, base), len(num)
+    except Exception as e:
+        for i in range(len(num)):
+            try:
+                int(num[:i + 1], base)
+            except Exception:
+                if num[0] == '0' and base == 0:
+                    i = len(num)
+                return type(e), i
 
 
 class DummyNonInt():
@@ -360,10 +375,11 @@ class TestPyLong(CPyExtTestCase):
     )
 
     test_PyLong_FromString = CPyExtFunction(
-        lambda args: int(args[0], args[1]),
+        _reference_long_from_string,
         lambda: (
             ("00", 0),
             ("03", 0),
+            ("0003", 0),
             ("  12 ", 10),
             ("  12abg13 ", 22),
             ("12", 0),
@@ -371,10 +387,27 @@ class TestPyLong(CPyExtTestCase):
             ("0x132f1", 0),
             ("0x132132ff213213213231", 0),
             ("13123441234123423412341234123412341234124312341234213213213213213231", 0),
+            ("1312344123412342341234123412341234123x4124312341234213213213213213231", 0),
+            ("", 0),
+            (" ", 0),
+            ("123 ", 0),
+            ("-123 ", 0),
+            ("123 x", 0),
+            ("x", 0),
+            ("_1", 0),
+            ("1_", 0),
+            ("1_1", 0),
+            ("1__1", 0),
         ),
         code='''PyObject* wrap_PyLong_FromString(const char* str, int base) {
             char* pend;
-            return PyLong_FromString(str, &pend, base);
+            PyObject* val = PyLong_FromString(str, &pend, base);
+            if (!val) {
+                PyObject* exc = PyErr_GetRaisedException();
+                val = Py_NewRef(Py_TYPE(exc));
+                Py_DECREF(exc);
+            }
+            return Py_BuildValue("OL", val, pend - str);
         }''',
         callfunction="wrap_PyLong_FromString",
         resultspec="O",
