@@ -88,7 +88,7 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
 
     @Specialization
     static PythonAbstractObjectNativeWrapper doString(TruffleString str,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Bind PythonLanguage language,
                     @Exclusive @Cached InlinedConditionProfile noWrapperProfile) {
         return PythonObjectNativeWrapper.wrap(PFactory.createString(language, str), inliningTarget, noWrapperProfile);
@@ -96,7 +96,7 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
 
     @Specialization
     static PythonAbstractObjectNativeWrapper doBoolean(boolean b,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached InlinedConditionProfile profile) {
         Python3Core core = PythonContext.get(inliningTarget);
         PInt boxed = b ? core.getTrue() : core.getFalse();
@@ -111,7 +111,7 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
 
     @Specialization(guards = "isSmallInteger(i)")
     static PrimitiveNativeWrapper doIntegerSmall(int i,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         PythonContext context = PythonContext.get(inliningTarget);
         if (context.getCApiContext() != null) {
             return context.getCApiContext().getCachedPrimitiveNativeWrapper(i);
@@ -133,7 +133,7 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
 
     @Specialization(guards = "isSmallLong(l)")
     static PrimitiveNativeWrapper doLongSmall(long l,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         return doLongSmall(l, PythonContext.get(inliningTarget));
     }
 
@@ -149,7 +149,7 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
 
     @Specialization(guards = "isNaN(d)")
     static PythonNativeWrapper doDoubleNaN(@SuppressWarnings("unused") double d,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         PFloat boxed = PythonContext.get(inliningTarget).getNaN();
         PythonAbstractObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
         // Use a counting profile since we should enter the branch just once per context.
@@ -165,7 +165,7 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
 
     @Specialization(guards = "isSpecialSingleton(object)")
     static PythonNativeWrapper doSingleton(PythonAbstractObject object,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         PythonContext context = PythonContext.get(inliningTarget);
         PythonAbstractObjectNativeWrapper nativeWrapper = context.getCApiContext().getSingletonNativeWrapper(object);
         assert nativeWrapper != null;
@@ -174,7 +174,7 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
 
     @Specialization
     static PythonNativeWrapper doPythonClassUncached(PythonManagedClass object,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached TypeNodes.GetTpNameNode getTpNameNode,
                     @Shared @Cached TruffleString.SwitchEncodingNode switchEncoding) {
         return PythonClassNativeWrapper.wrap(object, getTpNameNode.execute(inliningTarget, object), switchEncoding);
@@ -182,7 +182,7 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
 
     @Specialization
     static PythonNativeWrapper doPythonTypeUncached(PythonBuiltinClassType object,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared @Cached TruffleString.SwitchEncodingNode switchEncoding) {
         PythonBuiltinClass type = PythonContext.get(inliningTarget).lookupType(object);
         return PythonClassNativeWrapper.wrap(type, type.getName(), switchEncoding);
@@ -190,7 +190,7 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
 
     @Specialization(guards = {"!isClass(inliningTarget, object, isTypeNode)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, limit = "1")
     static PythonNativeWrapper runAbstractObject(PythonAbstractObject object,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached InlinedConditionProfile noWrapperProfile,
                     @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
         assert object != PNone.NO_VALUE;
@@ -199,7 +199,7 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
 
     @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
     static PythonNativeWrapper doForeignObject(Object object,
-                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
         assert !CApiTransitions.isBackendPointerObject(object);
         assert !(object instanceof String);

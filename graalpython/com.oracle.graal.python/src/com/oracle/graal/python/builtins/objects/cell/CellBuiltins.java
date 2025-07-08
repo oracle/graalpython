@@ -119,7 +119,7 @@ public final class CellBuiltins extends PythonBuiltins {
 
         @Specialization
         Object newCell(@SuppressWarnings("unused") Object cls, Object contents,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile nonEmptyProfile) {
             Assumption assumption = getAssumption();
@@ -136,7 +136,7 @@ public final class CellBuiltins extends PythonBuiltins {
     public abstract static class EqNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
         static boolean eq(VirtualFrame frame, PCell self, PCell other, RichCmpOp op,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectRichCompareBool richCmpNode,
                         @Cached InlinedConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
@@ -152,7 +152,7 @@ public final class CellBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         static Object eq(Object self, Object other, RichCmpOp op,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
@@ -166,7 +166,7 @@ public final class CellBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString repr(PCell self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetRefNode getRef,
                         @Cached GetClassNode getClassNode,
                         @Cached TypeNodes.GetNameNode getNameNode,
@@ -182,7 +182,7 @@ public final class CellBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object eq(Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
@@ -196,7 +196,7 @@ public final class CellBuiltins extends PythonBuiltins {
     public abstract static class CellContentsNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
         static Object get(PCell self, @SuppressWarnings("unused") PNone none,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetRefNode getRef,
                         @Cached PRaiseNode raiseNode) {
             Object ref = getRef.execute(inliningTarget, self);

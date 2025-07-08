@@ -93,7 +93,7 @@ public final class CodecCtxBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object codecctxErrorsSet(MultibyteStatefulCodecContext self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.EqualNode isEqual,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,

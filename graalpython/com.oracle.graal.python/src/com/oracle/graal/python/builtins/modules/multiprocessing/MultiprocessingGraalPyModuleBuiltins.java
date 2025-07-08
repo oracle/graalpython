@@ -123,7 +123,7 @@ public final class MultiprocessingGraalPyModuleBuiltins extends PythonBuiltins {
     abstract static class SemUnlink extends PythonUnaryBuiltinNode {
         @Specialization
         PNone doit(VirtualFrame frame, TruffleString name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Semaphore prev = getContext().getSharedMultiprocessingData().removeNamedSemaphore(name);
             if (prev == null) {
@@ -138,7 +138,7 @@ public final class MultiprocessingGraalPyModuleBuiltins extends PythonBuiltins {
     abstract static class SpawnContextNode extends PythonBuiltinNode {
         @Specialization
         long spawn(int fd, int sentinel, PList keepFds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SequenceStorageNodes.GetItemNode getItem,
                         @Cached CastToJavaIntExactNode castToJavaIntNode) {
             SequenceStorage storage = keepFds.getSequenceStorage();
@@ -160,7 +160,7 @@ public final class MultiprocessingGraalPyModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         long getTid(
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             return convertTid(PThread.getThreadId(Objects.requireNonNull(PythonContext.get(inliningTarget).getMainThread())));
         }
     }
@@ -345,7 +345,7 @@ public final class MultiprocessingGraalPyModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGeneric(VirtualFrame frame, Object multiprocessingFdsList, Object multiprocessingObjsList, Object posixFileObjsList, Object timeoutObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PosixModuleBuiltins.FileDescriptorConversionNode fdConvertor,
                         @Cached PyObjectSizeNode sizeNode,

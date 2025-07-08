@@ -95,7 +95,7 @@ public final class MemberDescriptorBuiltins extends PythonBuiltins {
     abstract static class MemberDescriptorReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString repr(GetSetDescriptor descr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TypeNodes.GetNameNode getName,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             return simpleTruffleStringFormatNode.format("<member '%s' of '%s' objects>", descr.getName(), getName.execute(inliningTarget, descr.getType()));
@@ -128,7 +128,7 @@ public final class MemberDescriptorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(obj)")
         static Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached DescriptorCheckNode descriptorCheckNode,
                         @Cached DescrGetNode getNode) {
             descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getName(), obj);
@@ -142,7 +142,7 @@ public final class MemberDescriptorBuiltins extends PythonBuiltins {
     abstract static class DescrSet extends DescrSetBuiltinNode {
         @Specialization(guards = "!isNoValue(value)")
         static void doGetSetDescriptorSet(VirtualFrame frame, GetSetDescriptor descr, Object obj, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached DescriptorCheckNode descriptorCheckNode,
                         @Cached DescrSetNode setNode) {
             descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getName(), obj);
@@ -151,7 +151,7 @@ public final class MemberDescriptorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static void doGetSetDescriptorDel(VirtualFrame frame, GetSetDescriptor descr, Object obj, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached DescriptorCheckNode descriptorCheckNode,
                         @Cached DescrDeleteNode deleteNode) {
             descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getName(), obj);

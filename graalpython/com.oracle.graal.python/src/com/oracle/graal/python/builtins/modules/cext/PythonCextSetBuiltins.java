@@ -109,7 +109,7 @@ public final class PythonCextSetBuiltins {
     abstract static class PySet_Contains extends CApiBinaryBuiltinNode {
         @Specialization
         static int contains(PSet anyset, Object item,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached HashingStorageGetItem getItem) {
             HashingStorage storage = anyset.getDictStorage();
             // TODO: FIXME: this might call __hash__ twice
@@ -118,7 +118,7 @@ public final class PythonCextSetBuiltins {
 
         @Specialization
         static int contains(PFrozenSet anyset, Object item,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached HashingStorageGetItem getItem) {
             HashingStorage storage = anyset.getDictStorage();
             // TODO: FIXME: this might call __hash__ twice
@@ -135,7 +135,7 @@ public final class PythonCextSetBuiltins {
     abstract static class _PyTruffleSet_NextEntry extends CApiBinaryBuiltinNode {
         @Specialization(guards = "pos < size(inliningTarget, set, sizeNode)")
         static Object nextEntry(PSet set, long pos,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyObjectSizeNode sizeNode,
                         @Shared @Cached HashingStorageGetIterator getIterator,
                         @Shared @Cached HashingStorageIteratorNext itNext,
@@ -147,7 +147,7 @@ public final class PythonCextSetBuiltins {
 
         @Specialization(guards = "pos < size(inliningTarget, set, sizeNode)")
         static Object nextEntry(PFrozenSet set, long pos,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyObjectSizeNode sizeNode,
                         @Shared @Cached HashingStorageGetIterator getIterator,
                         @Shared @Cached HashingStorageIteratorNext itNext,
@@ -159,7 +159,7 @@ public final class PythonCextSetBuiltins {
 
         @Specialization(guards = {"isPSet(set) || isPFrozenSet(set)", "pos >= size(inliningTarget, set, sizeNode)"})
         static Object nextEntry(@SuppressWarnings("unused") Object set, @SuppressWarnings("unused") long pos,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyObjectSizeNode sizeNode) {
             return getNativeNull(inliningTarget);
         }
@@ -168,7 +168,7 @@ public final class PythonCextSetBuiltins {
         static Object nextNative(@SuppressWarnings("unused") Object anyset, @SuppressWarnings("unused") Object pos,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
         }
 
@@ -177,7 +177,7 @@ public final class PythonCextSetBuiltins {
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StringBuiltins.StrNewNode strNode,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(anyset), anyset);
         }
 
@@ -272,7 +272,7 @@ public final class PythonCextSetBuiltins {
 
         @Specialization
         static int add(PBaseSet self, Object o,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode) {
             setItemNode.execute(null, inliningTarget, self, o, PNone.NO_VALUE);
             return 0;
@@ -280,7 +280,7 @@ public final class PythonCextSetBuiltins {
 
         @Specialization(guards = "!isAnySet(self)")
         static int add(Object self, @SuppressWarnings("unused") Object o,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, SystemError, EXPECTED_S_NOT_P, "a set object", self);
         }
     }
@@ -289,7 +289,7 @@ public final class PythonCextSetBuiltins {
     abstract static class PySet_Size extends CApiUnaryBuiltinNode {
         @Specialization
         static long get(PBaseSet object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageLen lenNode) {
             return lenNode.execute(inliningTarget, object.getDictStorage());
         }

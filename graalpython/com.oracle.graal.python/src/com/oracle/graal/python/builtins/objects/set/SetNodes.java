@@ -81,7 +81,7 @@ public abstract class SetNodes {
 
         @Specialization(guards = "!isNoValue(iterable)")
         static PSet setIterable(VirtualFrame frame, Object iterable,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached PyObjectGetIter getIter,
@@ -101,7 +101,7 @@ public abstract class SetNodes {
 
         @Fallback
         static PSet setObject(Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_NOT_ITERABLE, value);
         }
 
@@ -123,7 +123,7 @@ public abstract class SetNodes {
 
         @Specialization
         public static void add(VirtualFrame frame, PSet self, Object o,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode) {
             setItemNode.execute(frame, inliningTarget, self, o, PNone.NONE);
         }
@@ -144,7 +144,7 @@ public abstract class SetNodes {
 
         @Specialization
         boolean discard(VirtualFrame frame, PSet self, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BaseSetBuiltins.ConvertKeyNode conv,
                         @Cached HashingStorageDelItem delItem) {
             Object checkedKey = conv.execute(inliningTarget, key);

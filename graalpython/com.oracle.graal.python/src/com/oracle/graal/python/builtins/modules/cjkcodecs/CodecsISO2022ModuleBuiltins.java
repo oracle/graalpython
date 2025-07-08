@@ -123,7 +123,7 @@ public final class CodecsISO2022ModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getcodec(Object encoding,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.EqualNode isEqual,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode asUTF8Node,

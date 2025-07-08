@@ -211,7 +211,7 @@ public abstract class TpSlotLen {
 
         @Specialization
         static int doIt(VirtualFrame frame, TpSlotPythonSingle slot, Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached UnaryPythonSlotDispatcherNode dispatcherNode,
                         @Cached InlinedBranchProfile genericCheck,
                         @Cached PRaiseNode raiseNode,

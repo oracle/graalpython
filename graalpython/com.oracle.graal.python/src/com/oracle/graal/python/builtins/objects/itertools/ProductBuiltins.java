@@ -104,7 +104,7 @@ public final class ProductBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)")
         static Object constructNoneRepeat(VirtualFrame frame, Object cls, Object[] iterables, @SuppressWarnings("unused") PNone repeat,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Cached.Shared @Cached IteratorNodes.ToArrayNode toArrayNode,
                         @SuppressWarnings("unused") @Cached.Shared("typeNode") @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Bind PythonLanguage language,
@@ -116,7 +116,7 @@ public final class ProductBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "repeat == 1"}, limit = "1")
         static Object constructOneRepeat(VirtualFrame frame, Object cls, Object[] iterables, @SuppressWarnings("unused") int repeat,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Cached.Shared @Cached IteratorNodes.ToArrayNode toArrayNode,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Bind PythonLanguage language,
@@ -128,7 +128,7 @@ public final class ProductBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "repeat > 1"}, limit = "1")
         static Object construct(VirtualFrame frame, Object cls, Object[] iterables, int repeat,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached.Shared @Cached IteratorNodes.ToArrayNode toArrayNode,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
@@ -148,7 +148,7 @@ public final class ProductBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "repeat == 0"}, limit = "1")
         static Object constructNoRepeat(Object cls, @SuppressWarnings("unused") Object[] iterables, @SuppressWarnings("unused") int repeat,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Bind PythonLanguage language,
                         @Cached.Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
@@ -163,7 +163,7 @@ public final class ProductBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "repeat < 0"}, limit = "1")
         static Object constructNeg(Object cls, Object[] iterables, int repeat,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ARG_CANNOT_BE_NEGATIVE, "repeat");
         }
@@ -199,7 +199,7 @@ public final class ProductBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isTypeNode.execute(inliningTarget, cls)")
         @SuppressWarnings("unused")
         static Object construct(Object cls, Object iterables, Object repeat,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached.Shared("typeNode") @Cached TypeNodes.IsTypeNode isTypeNode) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
@@ -220,7 +220,7 @@ public final class ProductBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isStopped()", "!hasLst(self)"})
         static Object next(PProduct self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
                         @Bind PythonLanguage language) {
             Object[] lst = new Object[self.getGears().length];
@@ -234,7 +234,7 @@ public final class ProductBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isStopped()", "hasLst(self)"})
         static Object next(PProduct self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile gearsProfile,
                         @Cached InlinedConditionProfile indexProfile,
                         @Cached InlinedBranchProfile wasStoppedProfile,
@@ -312,7 +312,7 @@ public final class ProductBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reduce(PProduct self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile stoppedProfile,
                         @Cached InlinedConditionProfile noLstProfile,
                         @Cached GetClassNode getClassNode,
@@ -345,7 +345,7 @@ public final class ProductBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object setState(VirtualFrame frame, PProduct self, Object state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetItem getItemNode,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached PyLongAsIntNode pyLongAsIntNode,

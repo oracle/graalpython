@@ -289,7 +289,7 @@ public final class PMemoryView extends PythonBuiltinObject {
 
     @ExportMessage
     Object acquire(int requestedFlags,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PRaiseNode raiseNode) {
         checkReleased(inliningTarget, raiseNode);
         if (BufferFlags.requestsWritable(requestedFlags) && readonly) {
@@ -320,7 +320,7 @@ public final class PMemoryView extends PythonBuiltinObject {
 
     @ExportMessage
     void release(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PRaiseNode raiseNode,
                     @Cached ReleaseBufferNode releaseNode) {
         /*

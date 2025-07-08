@@ -120,7 +120,7 @@ public final class ParamSpecArgsBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString reprParamSpec(VirtualFrame frame, PParamSpecArgs self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetOriginNameHelperNode helper,
                         @Cached TruffleString.ConcatNode concatNode) {
             return concatNode.execute(helper.execute(frame, inliningTarget, self.origin), T_ARGS, TS_ENCODING, true);
@@ -132,7 +132,7 @@ public final class ParamSpecArgsBuiltins extends PythonBuiltins {
     abstract static class MroEntriesNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object mro(@SuppressWarnings("unused") PParamSpecArgs self, @SuppressWarnings("unused") Object bases,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, CANNOT_SUBCLASS_AN_INSTANCE_OF_PARAMSPEC_ARGS);
         }
     }
@@ -143,7 +143,7 @@ public final class ParamSpecArgsBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doIt(VirtualFrame frame, PParamSpecArgs self, PParamSpecArgs other, RichCmpOp op,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectRichCompareBool eqNode) {
             return eqNode.execute(frame, inliningTarget, self.origin, other.origin, op);
         }

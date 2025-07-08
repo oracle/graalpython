@@ -251,7 +251,7 @@ public abstract class BytesNodes {
         @Specialization(limit = "3")
         @SuppressWarnings("truffle-static-method")  // TODO: arg
         byte[] doBuffer(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
@@ -528,14 +528,14 @@ public abstract class BytesNodes {
 
         @Specialization
         static Object str(PString str,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StringNodes.StringMaterializeNode toStr) {
             return toStr.execute(inliningTarget, str);
         }
 
         @Fallback
         Object doOthers(@SuppressWarnings("unused") VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, className, argNum, PythonBuiltinClassType.PString, value);
         }
 
@@ -561,7 +561,7 @@ public abstract class BytesNodes {
 
         @Specialization
         static byte[] doGeneric(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
@@ -780,7 +780,7 @@ public abstract class BytesNodes {
 
         @Specialization
         static byte[] bytearray(VirtualFrame frame, Object iterable,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached IteratorNodes.GetLength lenghtHintNode,
                         @Cached PyIterNextNode nextNode,
                         @Cached CastToByteNode castToByteNode,
@@ -817,7 +817,7 @@ public abstract class BytesNodes {
 
         @Specialization
         static TruffleString doit(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
@@ -888,7 +888,7 @@ public abstract class BytesNodes {
 
         @Specialization(guards = "isAscii(str, getCodeRangeNode)")
         static byte[] ascii(TruffleString str,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
@@ -924,7 +924,7 @@ public abstract class BytesNodes {
 
         @Specialization(guards = "!isAscii(str, getCodeRangeNode)")
         static byte[] nonAscii(TruffleString str,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,

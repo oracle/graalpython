@@ -200,7 +200,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object setPInt(PBaseException self, PInt value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Shared @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, castToJavaIntExactNode.execute(inliningTarget, value), IDX_START, UNICODE_ERROR_ATTR_FACTORY);
@@ -209,7 +209,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(value)", "!canBeInteger(value)"})
         @SuppressWarnings("unused")
         static Object generic(PBaseException self, Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, INTEGER_REQUIRED);
         }
     }
@@ -237,7 +237,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object setPInt(PBaseException self, PInt value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Shared @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, castToJavaIntExactNode.execute(inliningTarget, value), IDX_END, UNICODE_ERROR_ATTR_FACTORY);
@@ -246,7 +246,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(value)", "!canBeInteger(value)"})
         @SuppressWarnings("unused")
         static Object generic(PBaseException self, Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, INTEGER_REQUIRED);
         }
     }

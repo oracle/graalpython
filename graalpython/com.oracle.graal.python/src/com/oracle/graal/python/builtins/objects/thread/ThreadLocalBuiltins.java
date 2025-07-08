@@ -140,7 +140,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doIt(VirtualFrame frame, PThreadLocal object, Object keyObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
                         @Cached GetClassNode getClassNode,
@@ -202,7 +202,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
     public abstract static class SetattrNode extends SetAttrBuiltinNode {
         @Specialization
         static void doStringKey(VirtualFrame frame, PThreadLocal object, TruffleString key, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
                         @Exclusive @Cached GenericSetAttrWithDictNode setAttrWithDictNode) {
             // Note: getting thread local dict has potential side-effects, don't move
@@ -213,7 +213,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
         @Specialization
         @InliningCutoff
         static void doGeneric(VirtualFrame frame, PThreadLocal object, Object keyObject, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
                         @Cached CastToTruffleStringNode castKeyToStringNode,
                         @Exclusive @Cached PRaiseNode raiseNode,

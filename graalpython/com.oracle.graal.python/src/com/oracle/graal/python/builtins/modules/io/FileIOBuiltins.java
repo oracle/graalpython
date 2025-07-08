@@ -478,14 +478,14 @@ public final class FileIOBuiltins extends PythonBuiltins {
         @Specialization(guards = "isInvalidMode(mode)")
         static void invalidMode(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") Object nameobj, IONodes.IOMode mode, @SuppressWarnings("unused") boolean closefd,
                         @SuppressWarnings("unused") Object opener,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, INVALID_MODE_S, mode.mode);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isBadMode(mode)")
         static void badMode(PFileIO self, Object nameobj, IONodes.IOMode mode, boolean closefd, Object opener,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, BAD_MODE);
         }
     }
@@ -506,7 +506,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization
         static PNone doInit(VirtualFrame frame, PFileIO self, Object nameobj, IONodes.IOMode mode, boolean closefd, Object opener,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached FileIOInit fileIOInit) {
             fileIOInit.execute(frame, inliningTarget, self, nameobj, mode, closefd, opener);
             return PNone.NONE;
@@ -538,7 +538,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isClosed()", "self.isReadable()", "size >= 0"})
         static Object read(VirtualFrame frame, PFileIO self, int size,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile readErrorProfile,
                         @Cached InlinedBranchProfile readErrorProfile2,
                         @Bind PythonContext context,
@@ -558,13 +558,13 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isClosed()", "!self.isReadable()"})
         static Object notReadable(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") int size,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, FILE_NOT_OPEN_FOR_S, "reading");
         }
 
         @Specialization(guards = "self.isClosed()")
         static Object closedError(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") int size,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_CLOSED);
         }
     }
@@ -575,7 +575,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isClosed()")
         static Object readall(VirtualFrame frame, PFileIO self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile readErrorProfile,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Bind PythonContext context,
@@ -664,7 +664,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isClosed()")
         static Object closedError(@SuppressWarnings("unused") PFileIO self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_CLOSED);
         }
     }
@@ -676,7 +676,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isClosed()", "self.isReadable()"})
         static Object readinto(VirtualFrame frame, PFileIO self, Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedBranchProfile readErrorProfile,
@@ -708,14 +708,14 @@ public final class FileIOBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"!self.isClosed()", "!self.isReadable()"})
         static Object notReadable(PFileIO self, Object buffer,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, FILE_NOT_OPEN_FOR_S, "reading");
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isClosed()")
         static Object closedError(PFileIO self, Object buffer,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_CLOSED);
         }
 
@@ -732,7 +732,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static Object write(VirtualFrame frame, PFileIO self, Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
@@ -779,7 +779,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isClosed()")
         Object seek(VirtualFrame frame, PFileIO self, long pos, int whence,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -797,7 +797,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isClosed()")
         static Object closedError(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") Object pos, @SuppressWarnings("unused") int whence,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_CLOSED);
         }
 
@@ -869,14 +869,14 @@ public final class FileIOBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"!self.isClosed()", "!self.isWritable()"})
         static Object notWritable(PFileIO self, Object posobj,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, FILE_NOT_OPEN_FOR_S, "writing");
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isClosed()")
         static Object closedError(PFileIO self, Object posobj,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_CLOSED);
         }
     }
@@ -886,7 +886,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "!self.isCloseFD()")
         static Object simple(VirtualFrame frame, PFileIO self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose) {
             try {
                 callClose.execute(frame, inliningTarget, PythonContext.get(inliningTarget).lookupType(PRawIOBase), T_CLOSE, self);
@@ -900,7 +900,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.isCloseFD()", "!self.isFinalizing()"})
         static Object common(VirtualFrame frame, PFileIO self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("c") @Cached PosixModuleBuiltins.CloseNode posixClose,
                         @Shared("l") @Cached PyObjectCallMethodObjArgs callSuperClose,
                         @Shared @Cached PyErrChainExceptions chainExceptions) {
@@ -920,7 +920,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.isCloseFD()", "self.isFinalizing()"})
         static Object slow(VirtualFrame frame, PFileIO self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("c") @Cached PosixModuleBuiltins.CloseNode posixClose,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Shared("l") @Cached PyObjectCallMethodObjArgs callSuperClose,
@@ -977,7 +977,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isClosed()")
         static Object closedError(@SuppressWarnings("unused") PFileIO self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_CLOSED);
         }
     }
@@ -992,7 +992,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isClosed()")
         static Object closedError(@SuppressWarnings("unused") PFileIO self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_CLOSED);
         }
     }
@@ -1007,7 +1007,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isClosed()")
         static Object closedError(@SuppressWarnings("unused") PFileIO self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_CLOSED);
         }
     }
@@ -1022,7 +1022,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isClosed()")
         static Object closedError(@SuppressWarnings("unused") PFileIO self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_CLOSED);
         }
     }
@@ -1044,7 +1044,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isClosed()")
         static boolean closedError(@SuppressWarnings("unused") PFileIO self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_CLOSED);
         }
     }
@@ -1118,7 +1118,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(v)")
         static Object doit(VirtualFrame frame, PFileIO self, Object v,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             self.setBlksize(asSizeNode.executeExact(frame, inliningTarget, v));
             return PNone.NONE;
@@ -1154,7 +1154,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isClosed()")
         static TruffleString doit(VirtualFrame frame, PFileIO self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupName,
                         @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode,

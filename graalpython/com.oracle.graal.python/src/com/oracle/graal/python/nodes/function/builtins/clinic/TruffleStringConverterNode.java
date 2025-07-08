@@ -69,7 +69,7 @@ public abstract class TruffleStringConverterNode extends ArgumentCastNode {
     @Specialization(guards = {"!shouldUseDefaultValue(value)"}, replaces = "doString")
     @SuppressWarnings("truffle-static-method")
     Object doOthers(Object value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CastToTruffleStringNode castToStringNode,
                     @Cached PRaiseNode raiseNode) {
         try {

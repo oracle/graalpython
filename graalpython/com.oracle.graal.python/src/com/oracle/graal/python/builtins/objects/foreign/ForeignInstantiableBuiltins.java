@@ -77,7 +77,7 @@ public final class ForeignInstantiableBuiltins extends PythonBuiltins {
     public abstract static class CallNode extends PythonBuiltinNode {
         @Specialization
         static Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "4") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,

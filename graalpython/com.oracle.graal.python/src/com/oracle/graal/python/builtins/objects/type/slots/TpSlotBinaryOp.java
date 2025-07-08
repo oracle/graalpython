@@ -399,7 +399,7 @@ public class TpSlotBinaryOp {
 
         @Specialization
         static Object callPython(VirtualFrame frame, TpSlotReversiblePython slot, Object self, Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes, ReversibleSlot op,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached GetCachedTpSlotsNode getSelfSlotsNode,
                         @Cached RichCompareCallablesNotEqual neNode,

@@ -116,7 +116,7 @@ public final class ForeignBooleanBuiltins extends PythonBuiltins {
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object str(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached GilNode gil,
                         @Cached PyObjectStrAsTruffleStringNode strNode) {

@@ -84,7 +84,7 @@ public abstract class PySequenceGetItemNode extends Node {
 
     @Specialization
     static Object doGeneric(VirtualFrame frame, Object object, int index,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached GetObjectSlotsNode getSlotsNode,
                     @Cached IndexForSqSlotInt indexForSqSlot,
                     @Cached CallSlotSizeArgFun callSqItem,

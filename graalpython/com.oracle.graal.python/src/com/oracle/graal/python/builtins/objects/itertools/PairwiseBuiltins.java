@@ -89,7 +89,7 @@ public final class PairwiseBuiltins extends PythonBuiltins {
     public abstract static class PairwaiseNode extends PythonBinaryBuiltinNode {
         @Specialization
         static PPairwise construct(VirtualFrame frame, Object cls, Object iterable,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Bind PythonLanguage language,
@@ -120,7 +120,7 @@ public final class PairwiseBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization(guards = "self.getIterable() != null")
         static Object next(VirtualFrame frame, PPairwise self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectSlotsNode getSlots,
                         @Cached CallSlotTpIterNextNode callIterNext,
                         @Bind PythonLanguage language) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -89,7 +89,7 @@ public final class PythonCextFrameBuiltins {
     abstract static class PyFrame_GetLocals extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PFrame frame,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetFrameLocalsNode getFrameLocalsNode) {
             return getFrameLocalsNode.execute(inliningTarget, frame);
         }

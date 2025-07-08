@@ -97,7 +97,7 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
     public abstract static class GetCode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getCode(PAsyncGen self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile hasCodeProfile) {
             return self.getOrCreateCode(inliningTarget, hasCodeProfile);
         }
@@ -137,7 +137,7 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
     public abstract static class ASend extends PythonBinaryBuiltinNode {
         @Specialization
         static Object aSend(VirtualFrame frame, PAsyncGen self, Object sent,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached CallUnaryMethodNode callFirstIter,
                         @Bind PythonLanguage language) {
@@ -153,7 +153,7 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object athrow(VirtualFrame frame, PAsyncGen self, Object arg1, Object arg2, Object arg3,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached CallUnaryMethodNode callFirstIter,
                         @Bind PythonLanguage language) {
@@ -176,7 +176,7 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
     public abstract static class ANext extends PythonUnaryBuiltinNode {
         @Specialization
         static Object aNext(VirtualFrame frame, PAsyncGen self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached CallUnaryMethodNode callFirstIter,
                         @Bind PythonLanguage language) {
@@ -190,7 +190,7 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
     public abstract static class AClose extends PythonUnaryBuiltinNode {
         @Specialization
         Object aClose(VirtualFrame frame, PAsyncGen self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached CallUnaryMethodNode callFirstIter,
                         @Bind PythonLanguage language) {

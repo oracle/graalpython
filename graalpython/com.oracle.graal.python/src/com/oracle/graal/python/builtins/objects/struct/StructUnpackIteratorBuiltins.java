@@ -55,7 +55,7 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
     protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization
         static Object createNew(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, CANNOT_CREATE_P_OBJECTS, type);
         }
     }

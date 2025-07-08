@@ -236,7 +236,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object decode(VirtualFrame frame, Object self, TruffleString encoding, TruffleString errors,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CodecsModuleBuiltins.DecodeNode decodeNode,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached PRaiseNode raiseNode) {
@@ -268,7 +268,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
     public abstract static class JoinNode extends PythonBinaryBuiltinNode {
         @Specialization
         static PBytesLike join(VirtualFrame frame, Object self, Object iterable,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetBytesStorage getBytesStorage,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached BytesNodes.BytesJoinNode bytesJoinNode,
@@ -293,7 +293,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static PBytesLike add(VirtualFrame frame, Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached GetBytesStorage getBytesStorage,
                         @CachedLibrary("other") PythonBufferAcquireLibrary bufferAcquireLib,
@@ -335,7 +335,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
     public abstract static class MulNode extends SqRepeatBuiltinNode {
         @Specialization
         static PBytesLike mul(VirtualFrame frame, Object self, int times,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetBytesStorage getBytesStorage,
                         @Cached("createWithOverflowError()") SequenceStorageNodes.RepeatNode repeatNode,
                         @Cached BytesNodes.CreateBytesNode create) {
@@ -350,7 +350,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "check.execute(inliningTarget, self)", limit = "1")
         static Object mod(VirtualFrame frame, Object self, Object right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached BytesLikeCheck check,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
@@ -386,7 +386,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends LenBuiltinNode {
         @Specialization
         public static int len(Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetBytesStorage getBytesStorage) {
             return getBytesStorage.execute(inliningTarget, self).length();
         }
@@ -398,7 +398,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean contains(VirtualFrame frame, Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BytesNodes.FindNode findNode) {
             return findNode.execute(frame, inliningTarget, self, other, 0, Integer.MAX_VALUE) != -1;
         }
@@ -421,7 +421,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("truffle-static-method")
         boolean doIt(VirtualFrame frame, Object self, Object substrs, int start, int end,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetBytesStorage getBytesStorage,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached PrefixSuffixDispatchNode dispatchNode) {
@@ -436,7 +436,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Fallback
         static boolean doGeneric(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object substr,
                         @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P, substr);
         }
 
@@ -563,7 +563,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static int index(VirtualFrame frame, Object self, Object arg, int start, int end,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BytesNodes.FindNode findNode,
                         @Cached PRaiseNode raiseNode) {
             int result = findNode.execute(frame, inliningTarget, self, arg, start, end);
@@ -588,7 +588,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static int indexWithStartEnd(VirtualFrame frame, Object self, Object arg, int start, int end,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BytesNodes.FindNode findNode,
                         @Cached PRaiseNode raiseNode) {
             int result = findNode.executeReverse(frame, inliningTarget, self, arg, start, end);
@@ -605,7 +605,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         @SuppressWarnings("truffle-static-method")  // TODO: inh
         PTuple partition(VirtualFrame frame, Object self, Object sep,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("sep") PythonBufferAcquireLibrary acquireLib,
@@ -695,7 +695,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static int count(VirtualFrame frame, Object self, Object needle, int start, int end,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetBytesStorage getBytesStorage,
                         @Cached NeedleToBytesNode needleToBytesNode,
                         @Cached GetInternalByteArrayNode getInternalByteArrayNode) {
@@ -745,7 +745,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static int find(VirtualFrame frame, Object self, Object needle, int start, int end,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BytesNodes.FindNode findNode) {
             return findNode.execute(frame, inliningTarget, self, needle, start, end);
         }
@@ -765,7 +765,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static int find(VirtualFrame frame, Object self, Object needle, int start, int end,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BytesNodes.FindNode findNode) {
             return findNode.executeReverse(frame, inliningTarget, self, needle, start, end);
         }
@@ -788,7 +788,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isString(strObj)")
         static byte pstring(Object strObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode toStr,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
@@ -806,7 +806,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "bufferAcquireLib.hasBuffer(object)", limit = "3")
         static byte doBuffer(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
@@ -831,7 +831,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         static byte error(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.SEP_MUST_BE_STR_OR_BYTES);
         }
 
@@ -855,7 +855,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "check.execute(inliningTarget, self)")
         static TruffleString none(Object self, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") int bytesPerSepGroup,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached BytesLikeCheck check,
                         @Shared @Cached GetBytesStorage getBytesStorage,
                         @Shared @Cached InlinedConditionProfile earlyExit,
@@ -866,7 +866,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "check.execute(inliningTarget, self)")
         static TruffleString hex(Object self, byte sep, int bytesPerSepGroup,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached BytesLikeCheck check,
                         @Shared @Cached GetBytesStorage getBytesStorage,
                         @Shared @Cached InlinedConditionProfile earlyExit,
@@ -884,7 +884,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         static TruffleString err(Object self, Object sep, Object bytesPerSepGroup,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, DESCRIPTOR_NEED_OBJ, "hex", "bytes");
         }
     }
@@ -896,7 +896,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static boolean check(Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile earlyExit) {
             try {
@@ -929,7 +929,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static boolean check(Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile earlyExit) {
             try {
@@ -962,7 +962,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static boolean check(Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile earlyExit) {
             try {
@@ -995,7 +995,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static boolean check(Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile earlyExit) {
             try {
@@ -1028,7 +1028,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static boolean check(Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile earlyExit) {
             try {
@@ -1067,7 +1067,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static boolean check(Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile earlyExit) {
             try {
@@ -1106,7 +1106,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static boolean check(Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile earlyExit) {
             try {
@@ -1139,7 +1139,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static boolean check(Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile earlyExit) {
             try {
@@ -1186,7 +1186,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("truffle-static-method")  // TODO: inh
         PBytesLike bytes(VirtualFrame frame, Object self, Object widthObj, Object fillObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetBytesStorage getBytesStorage,
                         @Cached SequenceStorageNodes.CopyNode copyNode,
                         @Cached BytesNodes.CreateBytesNode create,
@@ -1313,7 +1313,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBytesLike replace(Object self, Object substrBuffer, Object replacementBuffer, int count,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached GetBytesStorage getBytesStorage,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toInternalBytes,
@@ -1347,7 +1347,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Fallback
         static boolean error(@SuppressWarnings("unused") Object self, Object substr, @SuppressWarnings("unused") Object replacement, @SuppressWarnings("unused") Object count,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, BYTESLIKE_OBJ_REQUIRED, substr);
         }
 
@@ -1415,7 +1415,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBytesLike replace(Object self,
-                        @Bind("this") Node node,
+                        @Bind Node node,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached BytesNodes.CreateBytesNode create) {
             byte[] bytes = toBytes.execute(null, self);
@@ -1432,7 +1432,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBytesLike replace(Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached BytesNodes.CreateBytesNode create) {
             byte[] bytes = toBytes.execute(null, self);
@@ -1468,7 +1468,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static int toInt(long x,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 return PInt.intValueExact(x);
@@ -1479,7 +1479,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static int toInt(PInt x,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 return x.intValueExact();
@@ -1490,7 +1490,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static int doOthers(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createRec()") ExpectIntNode rec,
                         @Cached PyNumberIndexNode indexNode) {
             return rec.executeInt(frame, indexNode.execute(frame, inliningTarget, value));
@@ -1524,7 +1524,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isPNone(object)"}, limit = "3")
         static byte[] doBuffer(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
@@ -1581,7 +1581,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isWhitespace(sep)")
         PList whitespace(Object self, @SuppressWarnings("unused") byte[] sep, int maxsplit,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetBytesStorage getBytesStorage,
                         @Shared("toBytes") @Cached SequenceStorageNodes.GetInternalByteArrayNode selfToBytesNode,
                         @Shared("append") @Cached ListNodes.AppendNode appendNode,
@@ -1594,7 +1594,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isWhitespace(sep)", "isSingleSep(sep)"})
         PList single(Object self, byte[] sep, int maxsplit,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetBytesStorage getBytesStorage,
                         @Shared("toBytes") @Cached SequenceStorageNodes.GetInternalByteArrayNode selfToBytesNode,
                         @Shared("append") @Cached ListNodes.AppendNode appendNode,
@@ -1607,7 +1607,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isWhitespace(sep)", "!isEmptySep(sep)", "!isSingleSep(sep)"})
         PList split(Object self, byte[] sep, int maxsplit,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetBytesStorage getBytesStorage,
                         @Shared("toBytes") @Cached SequenceStorageNodes.GetInternalByteArrayNode selfToBytesNode,
                         @Shared("append") @Cached ListNodes.AppendNode appendNode,
@@ -1621,7 +1621,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"isEmptySep(sep)"})
         static PList error(Object bytes, byte[] sep, int maxsplit,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.ValueError, ErrorMessages.EMPTY_SEPARATOR);
         }
 
@@ -1839,7 +1839,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
     public abstract static class SplitLinesNode extends PythonBinaryBuiltinNode {
         @Specialization
         static PList doSplitlines(Object self, Object keependsObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached InlinedBranchProfile isPNoneProfile,
                         @Cached InlinedBranchProfile isBooleanProfile,
@@ -1896,7 +1896,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         PBytesLike strip(VirtualFrame frame, Object self, @SuppressWarnings("unused") PNone bytes,
-                        @Bind("this") Node node,
+                        @Bind Node node,
                         @Shared("createByte") @Cached BytesNodes.CreateBytesNode create,
                         @Shared("toByteSelf") @Cached BytesNodes.ToBytesNode toBytesNode) {
             byte[] bs = toBytesNode.execute(frame, self);
@@ -1905,7 +1905,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPNone(object)")
         PBytesLike strip(VirtualFrame frame, Object self, Object object,
-                        @Bind("this") Node node,
+                        @Bind Node node,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
@@ -1925,7 +1925,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object strip(Object self, Object object,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.INVALID_ARGS, "lstrip/rstrip");
         }
 
@@ -2053,7 +2053,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBytes maketrans(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object from, Object to,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached BytesNodes.ToBytesNode toByteNode,
                         @Cached PRaiseNode raiseNode) {
@@ -2084,7 +2084,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBytesLike capitalize(Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ToBytesNode toBytesNode,
                         @Cached BytesNodes.CreateBytesNode create) {
             byte[] b = toBytesNode.execute(null, self);
@@ -2105,7 +2105,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBytesLike title(Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ToBytesNode toBytesNode,
                         @Cached BytesNodes.CreateBytesNode create) {
             byte[] b = toBytesNode.execute(null, self);
@@ -2142,7 +2142,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBytesLike swapcase(Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ToBytesNode toBytesNode,
                         @Cached BytesNodes.CreateBytesNode create) {
             byte[] b = toBytesNode.execute(null, self);
@@ -2172,7 +2172,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBytesLike expandtabs(Object self, int tabsize,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetBytesStorage getBytesStorage,
                         @Cached GetInternalByteArrayNode getInternalByteArrayNode,
                         @Cached BytesNodes.CreateBytesNode create,
@@ -2250,7 +2250,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBytesLike zfill(Object self, int width,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetBytesStorage getBytesStorage,
                         @Cached GetInternalByteArrayNode getInternalByteArrayNode,
                         @Cached BytesNodes.CreateBytesNode create) {
@@ -2329,7 +2329,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
     public abstract static class GetNewargsNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PTuple doBytes(Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached GetBytesStorage getBytesStorage) {
             return PFactory.createTuple(language, new Object[]{PFactory.createBytes(language, getBytesStorage.execute(inliningTarget, self))});
@@ -2341,7 +2341,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
     abstract static class RemovePrefixNode extends PythonBinaryBuiltinNode {
         @Specialization
         static PBytesLike remove(VirtualFrame frame, Object self, Object prefix,
-                        @Bind("this") Node node,
+                        @Bind Node node,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
@@ -2383,7 +2383,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
     abstract static class RemoveSuffixNode extends PythonBinaryBuiltinNode {
         @Specialization
         static PBytesLike remove(VirtualFrame frame, Object self, Object suffix,
-                        @Bind("this") Node node,
+                        @Bind Node node,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,

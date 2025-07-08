@@ -139,7 +139,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
     protected abstract static class SimpleNamespaceInitNode extends PythonVarargsBuiltinNode {
         @Specialization
         static Object init(PSimpleNamespace self, Object[] args, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached WriteAttributeToPythonObjectNode writeAttrNode,
                         @Cached PRaiseNode raiseNode) {
             if (args.length > 0) {
@@ -157,7 +157,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
     abstract static class SimpleNamespaceDictNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getDict(PSimpleNamespace self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
             return getDict.execute(inliningTarget, self);
         }
@@ -168,7 +168,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
     public abstract static class SimpleNamespaceEqNode extends RichCmpBuiltinNode {
         @Specialization
         static Object eq(VirtualFrame frame, PSimpleNamespace self, PSimpleNamespace other, RichCmpOp op,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict,
                         @Cached DictBuiltins.EqNode eqNode) {
             return eqNode.execute(frame, getDict.execute(inliningTarget, self), getDict.execute(inliningTarget, other), op);
@@ -186,7 +186,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
     public abstract static class SimpleNamespaceReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reduce(PSimpleNamespace self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetOrCreateDictNode getDict,
                         @Bind PythonLanguage language) {
@@ -261,7 +261,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
 
             @Specialization
             public static NSReprState doPStringKey(@SuppressWarnings("unused") Node node, HashingStorage storage, HashingStorageIterator it, NSReprState state,
-                            @Bind("this") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @Cached LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToTruffleStringNode castStrKey,
                             @Cached CastToTruffleStringNode castStrValue,
@@ -285,7 +285,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
 
         @Specialization
         public static Object repr(PSimpleNamespace ns,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached IsBuiltinClassExactProfile clsProfile,
                         @Cached TypeNodes.GetNameNode getNameNode,

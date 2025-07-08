@@ -123,7 +123,7 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"useNative()"})
         static Object doNative(@SuppressWarnings("unused") Object type, int wbits, byte[] zdict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached NativeLibrary.InvokeNativeFunction createCompObject,
                         @Cached NativeLibrary.InvokeNativeFunction decompressObjInit,
@@ -169,7 +169,7 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBytes decompress(VirtualFrame frame, ZlibDecompressorObject self, Object buffer, int maxLength,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
@@ -233,7 +233,7 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
     abstract static class UnusedDataNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = {"self.isInitialized()", "self.isNative()"})
         static PBytes doit(ZlibDecompressorObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached ZlibNodes.GetNativeBufferNode getBuffer) {
             synchronized (self) {

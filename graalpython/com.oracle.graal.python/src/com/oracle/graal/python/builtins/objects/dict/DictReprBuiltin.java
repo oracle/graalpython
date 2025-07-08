@@ -189,7 +189,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
 
             @Specialization
             public static ReprState append(@SuppressWarnings("unused") Node node, HashingStorage storage, HashingStorageIterator it, ReprState s,
-                            @Bind("this") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @Cached LookupAndCallUnaryDynamicNode reprNode,
                             @Cached CastToTruffleStringNode castStr,
                             @Cached PRaiseNode raiseNode,
@@ -210,7 +210,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
 
             @Specialization
             public static ReprState dict(Frame frame, @SuppressWarnings("unused") Node node, HashingStorage storage, HashingStorageIterator it, ReprState s,
-                            @Bind("this") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @Cached LookupAndCallUnaryDynamicNode reprNode,
                             @Cached CastToTruffleStringNode castStr,
                             @Cached PRaiseNode raiseNode,
@@ -231,7 +231,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
 
             @Specialization
             public static ReprState dict(Frame frame, @SuppressWarnings("unused") Node node, HashingStorage storage, HashingStorageIterator it, ReprState s,
-                            @Bind("this") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @Cached LookupAndCallUnaryDynamicNode keyReprNode,
                             @Cached LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToTruffleStringNode castStr,
@@ -259,7 +259,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
 
             @Specialization
             public static ReprState dict(Frame frame, @SuppressWarnings("unused") Node node, HashingStorage storage, HashingStorageIterator it, ReprState s,
-                            @Bind("this") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @Cached LookupAndCallUnaryDynamicNode keyReprNode,
                             @Cached LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToTruffleStringNode castStr,
@@ -283,7 +283,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
         @Specialization(guards = "!isDictView(dict)") // use same limit as for EachRepr nodes
                                                       // library
         public static TruffleString repr(Object dict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "2") InteropLibrary interopLib,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached("create(3)") ForEachDictRepr consumerNode,
@@ -321,7 +321,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
 
         @Specialization// use same limit as for EachRepr nodes library
         public static TruffleString repr(PDictKeysView view,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("create(3)") ForEachKeyRepr consumerNode,
                         @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached TypeNodes.GetNameNode getNameNode,
@@ -334,7 +334,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
 
         @Specialization // use same limit as for EachRepr nodes library
         public static TruffleString repr(PDictValuesView view,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("create(3)") ForEachValueRepr consumerNode,
                         @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached TypeNodes.GetNameNode getNameNode,
@@ -347,7 +347,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
 
         @Specialization// use same limit as for EachRepr nodes library
         public static TruffleString repr(PDictItemsView view,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("create(3)") ForEachItemRepr consumerNode,
                         @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached TypeNodes.GetNameNode getNameNode,
@@ -376,7 +376,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
 
         @Specialization
         public static void keyValue(Object key, Object value, ReprState s,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached LookupAndCallUnaryDynamicNode keyReprNode,
                         @Cached LookupAndCallUnaryDynamicNode valueReprNode,
                         @Cached CastToTruffleStringNode castStr,
@@ -397,7 +397,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
 
         @Specialization
         static void repr(VirtualFrame frame, POrderedDict dict, TruffleStringBuilder sb,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode nextNode,

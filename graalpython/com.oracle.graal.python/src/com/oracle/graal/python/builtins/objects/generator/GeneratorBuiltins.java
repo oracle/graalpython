@@ -108,7 +108,7 @@ public final class GeneratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object setName(PGenerator self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StringNodes.CastToTruffleStringCheckedNode cast) {
             return setName(self, cast.cast(inliningTarget, value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, T___NAME__, "string"));
         }
@@ -130,7 +130,7 @@ public final class GeneratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object setQualname(PGenerator self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StringNodes.CastToTruffleStringCheckedNode cast) {
             return setQualname(self, cast.cast(inliningTarget, value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, T___QUALNAME__, "string"));
         }
@@ -151,7 +151,7 @@ public final class GeneratorBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PGenerator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CommonGeneratorBuiltins.ResumeGeneratorNode resumeGeneratorNode,
                         @Cached PRaiseNode raiseNode) {
             if (self.isFinished()) {
@@ -169,7 +169,7 @@ public final class GeneratorBuiltins extends PythonBuiltins {
     public abstract static class GetCodeNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getCode(PGenerator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile hasCodeProfile) {
             return self.getOrCreateCode(inliningTarget, hasCodeProfile);
         }
@@ -185,7 +185,7 @@ public final class GeneratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(obj)")
         static Object setRunning(@SuppressWarnings("unused") PGenerator self, @SuppressWarnings("unused") Object obj,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, "gi_running", self);
         }
     }

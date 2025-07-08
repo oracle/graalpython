@@ -148,7 +148,7 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doNoTimeout(PSimpleQueue self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             Object result = self.poll();
             if (result != null) {
@@ -184,7 +184,7 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!withTimeout(block, timeout)")
         static Object doNoTimeout(PSimpleQueue self, boolean block, @SuppressWarnings("unused") Object timeout,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GilNode gil,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             // CPython first tries a non-blocking get without releasing the GIL
@@ -209,7 +209,7 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "withTimeout(block, timeout)")
         static Object doTimeout(VirtualFrame frame, PSimpleQueue self, boolean block, Object timeout,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyLongAsLongAndOverflowNode asLongNode,
                         @Cached CastToJavaDoubleNode castToDouble,
                         @Shared @Cached GilNode gil,
@@ -273,7 +273,7 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
 
         @Specialization
         static PNone doGeneric(PSimpleQueue self, Object item, @SuppressWarnings("unused") Object block, @SuppressWarnings("unused") Object timeout,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (!self.put(item)) {
                 /*
@@ -298,7 +298,7 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
 
         @Specialization
         static PNone doGeneric(PSimpleQueue self, Object item,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (!self.put(item)) {
                 /*

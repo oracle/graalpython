@@ -66,7 +66,7 @@ public final class PythonCextFileBuiltins {
 
         @Specialization
         static int writeStr(Object obj, Object f, int flags,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StringBuiltins.StrNewNode strNode,
                         @Cached ReprNode reprNode,
                         @Cached PyObjectGetAttr getAttr,

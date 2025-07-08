@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -180,7 +180,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage
     boolean isIdentical(Object other, InteropLibrary otherInterop,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached InlinedExactClassProfile otherProfile,
                     @Exclusive @CachedLibrary(limit = "1") InteropLibrary thisLib,
                     @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib1,
@@ -241,7 +241,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage(library = InteropLibrary.class)
     boolean isMetaObject(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached TypeNodes.IsTypeNode isType,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -254,7 +254,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage
     boolean isMetaInstance(Object instance,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached TypeNodes.IsTypeNode isType,
                     @Cached GetClassNode getClassNode,
                     @Cached PForeignToPTypeNode convert,
@@ -273,7 +273,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage
     String getMetaSimpleName(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
                     @Shared("getTypeMember") @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
                     @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode,
@@ -292,7 +292,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage
     String getMetaQualifiedName(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
                     @Shared("getTypeMember") @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
                     @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode,
@@ -315,14 +315,14 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage
     boolean hasBuffer(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CExtNodes.HasNativeBufferNode hasNativeBuffer) {
         return hasNativeBuffer.execute(inliningTarget, this);
     }
 
     @ExportMessage
     Object acquire(int flags,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CExtNodes.CreateMemoryViewFromNativeNode createMemoryView) {
         PMemoryView mv = createMemoryView.execute(inliningTarget, this, flags);
         mv.setShouldReleaseImmediately(true);

@@ -139,7 +139,7 @@ public abstract class CallBinaryMethodNode extends AbstractCallMethodNode {
     @Megamorphic
     @InliningCutoff
     static Object call(VirtualFrame frame, Object func, Object arg1, Object arg2,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CallNode callNode,
                     @Exclusive @Cached InlinedConditionProfile isBoundProfile) {
         if (isBoundProfile.profile(inliningTarget, func instanceof BoundDescriptor)) {

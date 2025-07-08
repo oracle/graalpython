@@ -107,7 +107,7 @@ public final class CArgObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString doit(PyCArgObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached PointerNodes.ReadByteNode readByteNode) {
             String ret;

@@ -168,7 +168,7 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object init(VirtualFrame frame, PSocket self, int familyIn, int typeIn, int protoIn, @SuppressWarnings("unused") PNone fileno,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil,
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -219,7 +219,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached PyLongAsIntNode asIntNode,
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
@@ -305,7 +305,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     abstract static class AcceptNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object accept(VirtualFrame frame, PSocket self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
@@ -345,7 +345,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     abstract static class BindNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object bind(VirtualFrame frame, PSocket self, Object address,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLibrary,
                         @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
@@ -375,7 +375,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object close(VirtualFrame frame, PSocket socket,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
@@ -409,7 +409,7 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object connect(VirtualFrame frame, PSocket self, Object address,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
                         @Cached GilNode gil,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
@@ -470,7 +470,7 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object connectEx(VirtualFrame frame, PSocket self, Object address,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
                         @Cached GilNode gil,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
@@ -494,7 +494,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     abstract static class GetPeerNameNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(VirtualFrame frame, PSocket socket,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
@@ -521,7 +521,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     abstract static class GetSockNameNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(VirtualFrame frame, PSocket socket,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
@@ -573,7 +573,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     abstract static class ListenNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         static Object listen(VirtualFrame frame, PSocket self, int backlogIn,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
@@ -609,7 +609,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     abstract static class RecvNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
         static Object recv(VirtualFrame frame, PSocket socket, int recvlen, int flags,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
@@ -659,7 +659,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     abstract static class RecvFromNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
         static Object recvFrom(VirtualFrame frame, PSocket socket, int recvlen, int flags,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
@@ -710,7 +710,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     abstract static class RecvIntoNode extends PythonQuaternaryClinicBuiltinNode {
         @Specialization(limit = "3")
         static Object recvInto(VirtualFrame frame, PSocket socket, Object bufferObj, int recvlenIn, int flags,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
@@ -778,7 +778,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     abstract static class RecvFromIntoNode extends PythonQuaternaryClinicBuiltinNode {
         @Specialization(limit = "3")
         static Object recvFromInto(VirtualFrame frame, PSocket socket, Object bufferObj, int recvlenIn, int flags,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
@@ -845,7 +845,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     abstract static class SendNode extends PythonTernaryClinicBuiltinNode {
         @Specialization(limit = "3")
         static int send(VirtualFrame frame, PSocket socket, Object bufferObj, int flags,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
@@ -886,7 +886,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     abstract static class SendAllNode extends PythonTernaryClinicBuiltinNode {
         @Specialization(limit = "3")
         static Object sendAll(VirtualFrame frame, PSocket socket, Object bufferObj, int flags,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
@@ -945,7 +945,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     abstract static class SendToNode extends PythonBuiltinNode {
         @Specialization(limit = "3")
         static Object sendTo(VirtualFrame frame, PSocket socket, Object bufferObj, Object flagsOrAddress, Object maybeAddress,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
@@ -997,7 +997,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     public abstract static class SetBlockingNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         static PNone doBoolean(VirtualFrame frame, PSocket socket, boolean blocking,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -1022,7 +1022,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     abstract static class SetTimeoutNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object setTimeout(VirtualFrame frame, PSocket socket, Object seconds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SocketNodes.ParseTimeoutNode parseTimeoutNode,
@@ -1045,7 +1045,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     abstract static class ShutdownNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         static Object shutdown(VirtualFrame frame, PSocket socket, int how,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -1127,7 +1127,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyLongAsIntNode asIntNode,
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             byte[] bytes;
@@ -1159,7 +1159,7 @@ public final class SocketBuiltins extends PythonBuiltins {
         static Object setNull(VirtualFrame frame, PSocket socket, int level, int option, @SuppressWarnings("unused") PNone none, Object buflenObj,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyLongAsIntNode asIntNode,
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
@@ -1179,7 +1179,7 @@ public final class SocketBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object error(Object self, Object level, Object option, Object flag1, Object flag2,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.SETSECKOPT_REQUIRERS_3RD_ARG_NULL);
         }
 
@@ -1197,7 +1197,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     abstract static class GetSockOptNode extends PythonQuaternaryClinicBuiltinNode {
         @Specialization
         static Object getSockOpt(VirtualFrame frame, PSocket socket, int level, int option, int buflen,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,

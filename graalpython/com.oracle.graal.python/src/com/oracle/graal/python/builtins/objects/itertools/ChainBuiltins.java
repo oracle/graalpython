@@ -107,7 +107,7 @@ public final class ChainBuiltins extends PythonBuiltins {
 
         @Specialization
         static PChain construct(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
@@ -141,7 +141,7 @@ public final class ChainBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PChain self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode nextNode,
                         @Cached InlinedBranchProfile nextExceptionProfile,
@@ -183,7 +183,7 @@ public final class ChainBuiltins extends PythonBuiltins {
     public abstract static class FromIterNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object fromIter(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object arg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Bind PythonLanguage language) {
             PChain instance = PFactory.createChain(language);
@@ -198,7 +198,7 @@ public final class ChainBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reducePos(PChain self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClass,
                         @Cached InlinedConditionProfile hasSourceProfile,
                         @Cached InlinedConditionProfile hasActiveProfile,
@@ -225,7 +225,7 @@ public final class ChainBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object setState(VirtualFrame frame, PChain self, Object state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached GetItemNode getItemNode,
                         @Cached InlinedBranchProfile len2Profile,

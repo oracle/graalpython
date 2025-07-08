@@ -140,7 +140,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object PyCSimpleType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TypeNode typeNew,
                         @Cached InternStringNode internStringNode,
                         @Cached GetDictIfExistsNode getDict,
@@ -309,7 +309,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object PyCSimpleType_from_param(VirtualFrame frame, Object type, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SetFuncNode setFuncNode,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,

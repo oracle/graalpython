@@ -82,7 +82,7 @@ public final class PPickleBuffer extends PythonBuiltinObject {
 
     @ExportMessage
     Object acquire(int flags,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                     @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                     @Cached PRaiseNode raise) {

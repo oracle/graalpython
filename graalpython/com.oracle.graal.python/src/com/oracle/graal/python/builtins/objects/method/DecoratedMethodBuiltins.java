@@ -121,14 +121,14 @@ public final class DecoratedMethodBuiltins extends PythonBuiltins {
     public abstract static class DictNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object getDict(PDecoratedMethod self, @SuppressWarnings("unused") PNone mapping,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
             return getDict.execute(inliningTarget, self);
         }
 
         @Specialization
         static Object setDict(PDecoratedMethod self, PDict mapping,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SetDictNode setDict) {
             setDict.execute(inliningTarget, self, mapping);
             return PNone.NONE;
@@ -136,7 +136,7 @@ public final class DecoratedMethodBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
         static Object setDict(@SuppressWarnings("unused") PDecoratedMethod self, Object mapping,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
     }
@@ -146,7 +146,7 @@ public final class DecoratedMethodBuiltins extends PythonBuiltins {
     abstract static class IsAbstractMethodNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean isAbstract(VirtualFrame frame, PDecoratedMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached PyObjectIsTrueNode isTrue,
                         @Cached InlinedConditionProfile hasAttrProfile) {

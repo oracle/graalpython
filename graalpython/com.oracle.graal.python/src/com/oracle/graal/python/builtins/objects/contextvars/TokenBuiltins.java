@@ -87,7 +87,7 @@ public final class TokenBuiltins extends PythonBuiltins {
     public abstract static class TokenNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object construct(@SuppressWarnings("unused") Object cls,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.TOKEN_ONLY_BY_CONTEXTVAR);
         }
     }

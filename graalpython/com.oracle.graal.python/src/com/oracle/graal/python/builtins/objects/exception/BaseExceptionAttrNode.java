@@ -92,7 +92,7 @@ public abstract class BaseExceptionAttrNode extends Node {
 
         @Specialization
         static Object[] ensure(PBaseException self, StorageFactory storageFactory,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExceptionNodes.GetArgsNode getArgsNode,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalObjectArrayNode) {
             Object[] attributes = self.getExceptionAttributes();

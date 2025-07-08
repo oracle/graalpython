@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -108,7 +108,7 @@ public abstract class CallQuaternaryMethodNode extends AbstractCallMethodNode {
     @Specialization(replaces = {"callSingle", "call", "callMethodSingle", "callMethod"})
     @InliningCutoff
     Object generic(VirtualFrame frame, Object func, Object arg1, Object arg2, Object arg3, Object arg4,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CallNode callNode,
                     @Cached InlinedConditionProfile isBoundProfile) {
         if (isBoundProfile.profile(inliningTarget, func instanceof BoundDescriptor)) {

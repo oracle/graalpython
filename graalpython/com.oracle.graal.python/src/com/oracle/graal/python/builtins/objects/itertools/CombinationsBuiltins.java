@@ -117,7 +117,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object construct(VirtualFrame frame, Object cls, Object iterable, int r,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached IteratorNodes.ToArrayNode toArrayNode,
                         @Cached LoopConditionProfile indicesLoopProfile,
@@ -165,13 +165,13 @@ public final class CombinationsBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isStopped()")
         static Object nextStopped(PAbstractCombinations self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw iteratorExhausted();
         }
 
         @Specialization(guards = {"!self.isStopped()", "isLastResultNull(self)"})
         static Object nextNoResult(PAbstractCombinations self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached @Exclusive InlinedLoopConditionProfile loopConditionProfile) {
             // On the first pass, initialize result tuple using the indices
@@ -187,7 +187,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isStopped()", "!isLastResultNull(self)"})
         static Object next(PCombinations self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedLoopConditionProfile indexLoopProfile,
                         @Shared @Cached InlinedLoopConditionProfile resultLoopProfile) {
             return nextInternal(inliningTarget, self, indexLoopProfile, resultLoopProfile);
@@ -195,7 +195,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isStopped()", "!isLastResultNull(self)"})
         static Object next(PCombinationsWithReplacement self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedLoopConditionProfile indexLoopProfile,
                         @Shared @Cached InlinedLoopConditionProfile resultLoopProfile) {
             return nextInternal(inliningTarget, self, indexLoopProfile, resultLoopProfile);
@@ -253,7 +253,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reduce(PAbstractCombinations self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile hasNoLastResultProfile,
                         @Cached InlinedConditionProfile stoppedProfile,
                         @Cached GetClassNode getClassNode,
@@ -279,7 +279,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object setState(PAbstractCombinations self, Object stateObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToJavaIntExactNode cast,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached PRaiseNode raiseNode) {

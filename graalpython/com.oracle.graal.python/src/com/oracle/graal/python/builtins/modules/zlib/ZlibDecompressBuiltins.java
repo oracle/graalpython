@@ -110,7 +110,7 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBytes decompress(VirtualFrame frame, ZLibCompObject self, Object buffer, int maxLength,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
@@ -188,14 +188,14 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.isInitialized()", "!self.canCopy()"})
         static PNone error(JavaDecompress self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, toTruffleStringUncached("JDK based zlib doesn't support copying"));
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isInitialized()")
         static PNone error(ZLibCompObject self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, INCONSISTENT_STREAM_STATE);
         }
     }
@@ -205,7 +205,7 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
     abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doit(ZLibCompObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BaseCopyNode copyNode) {
             return copyNode.execute(inliningTarget, self);
         }
@@ -221,7 +221,7 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
     abstract static class DeepCopyNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doit(ZLibCompObject self, @SuppressWarnings("unused") Object memo,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BaseCopyNode copyNode) {
             return copyNode.execute(inliningTarget, self);
         }
@@ -239,7 +239,7 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"length > 0", "!self.isEof()", "self.isInitialized()"})
         static PBytes doit(NativeZlibCompObject self, int length,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached NativeLibrary.InvokeNativeFunction decompressObjFlush,
                         @Cached ZlibNodes.GetNativeBufferNode getBuffer,
@@ -295,7 +295,7 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "length <= 0")
         static PBytes error(ZLibCompObject self, int length,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, S_MUST_BE_GREATER_THAN_ZERO, "length");
         }
     }
@@ -305,7 +305,7 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
     abstract static class UnusedDataNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.isInitialized()")
         static PBytes doit(NativeZlibCompObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached ZlibNodes.GetNativeBufferNode getBuffer) {
             synchronized (self) {
@@ -330,7 +330,7 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
     abstract static class UnconsumedTailNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.isInitialized()")
         static PBytes doit(NativeZlibCompObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached ZlibNodes.GetNativeBufferNode getBuffer) {
             synchronized (self) {

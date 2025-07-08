@@ -127,14 +127,14 @@ public class BytesBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "isNoValue(source)")
         static Object doEmpty(Object cls, PNone source, PNone encoding, PNone errors,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached CreateBytes createBytes) {
             return createBytes.execute(inliningTarget, cls, PythonUtils.EMPTY_BYTE_ARRAY);
         }
 
         @Specialization(guards = "!isNoValue(source)")
         static Object doCallBytes(VirtualFrame frame, Object cls, Object source, PNone encoding, PNone errors,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached InlinedConditionProfile hasBytes,
                         @Cached("create(T___BYTES__)") LookupSpecialMethodNode lookupBytes,
@@ -162,7 +162,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(source) || (!isNoValue(encoding) || !isNoValue(errors))"})
         static Object dontCallBytes(VirtualFrame frame, Object cls, Object source, Object encoding, Object errors,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached BytesNodes.BytesInitNode bytesInitNode,
                         @Exclusive @Cached CreateBytes createBytes) {
             return createBytes.execute(inliningTarget, cls, bytesInitNode.execute(frame, inliningTarget, source, encoding, errors));
@@ -224,7 +224,7 @@ public class BytesBuiltins extends PythonBuiltins {
     abstract static class HashNode extends HashBuiltinNode {
         @Specialization(limit = "3")
         static long hash(VirtualFrame frame, Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("self") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
@@ -243,7 +243,7 @@ public class BytesBuiltins extends PythonBuiltins {
     abstract static class GetitemNode extends SqItemBuiltinNode {
         @Specialization
         static Object doInt(Object self, int key,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Cached BytesNodes.GetBytesStorage getBytesStorage,
                         @Cached SequenceStorageSqItemNode sqItemNode) {
             SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
@@ -256,7 +256,7 @@ public class BytesBuiltins extends PythonBuiltins {
     abstract static class BytesSubcript extends MpSubscriptBuiltinNode {
         @Specialization
         static Object doIt(VirtualFrame frame, Object self, Object idx,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile validProfile,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PRaiseNode raiseNode,
@@ -280,7 +280,7 @@ public class BytesBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         public static TruffleString repr(Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BytesNodes.BytesReprNode reprNode) {
             return reprNode.execute(inliningTarget, self);
         }
@@ -293,7 +293,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object translate(VirtualFrame frame, Object self, Object table, Object delete,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile isLenTable256Profile,
                         @Cached InlinedBranchProfile hasTable,
@@ -373,7 +373,7 @@ public class BytesBuiltins extends PythonBuiltins {
     abstract static class RichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
         static boolean cmp(PBytes self, PBytes other, RichCmpOp op,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached SequenceStorageNodes.GetInternalByteArrayNode getArray) {
             SequenceStorage selfStorage = self.getSequenceStorage();
             SequenceStorage otherStorage = other.getSequenceStorage();
@@ -382,7 +382,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object cmp(Object self, Object other, RichCmpOp op,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyBytesCheckNode check,
                         @Cached BytesNodes.GetBytesStorage getBytesStorage,
                         @Exclusive @Cached SequenceStorageNodes.GetInternalByteArrayNode getArray,
@@ -405,7 +405,7 @@ public class BytesBuiltins extends PythonBuiltins {
     abstract static class BytesNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object bytes(Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PyBytesCheckExactNode check,
                         @Cached BytesNodes.GetBytesStorage getBytesStorage) {

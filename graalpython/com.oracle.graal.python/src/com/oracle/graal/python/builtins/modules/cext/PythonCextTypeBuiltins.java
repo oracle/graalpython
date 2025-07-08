@@ -131,7 +131,7 @@ public final class PythonCextTypeBuiltins {
     abstract static class _PyType_Lookup extends CApiBinaryBuiltinNode {
         @Specialization
         Object doGeneric(Object type, Object name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TypeNodes.GetMroStorageNode getMroStorageNode,
                         @Cached PythonCextBuiltins.PromoteBorrowedValue promoteBorrowedValue,
@@ -186,7 +186,7 @@ public final class PythonCextTypeBuiltins {
         @Specialization
         @TruffleBoundary
         static Object doIt(PythonNativeClass self, TruffleString className,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             PythonAbstractClass[] doSlowPath = TypeNodes.ComputeMroNode.doSlowPath(inliningTarget, self);
             return PFactory.createTuple(PythonLanguage.get(null), new MroSequenceStorage(className, doSlowPath));
         }
@@ -217,7 +217,7 @@ public final class PythonCextTypeBuiltins {
         @TruffleBoundary
         @Specialization
         static Object doIt(PythonAbstractClass object,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             if (object instanceof PythonAbstractNativeObject clazz) {
                 PythonContext context = PythonContext.get(inliningTarget);
                 CyclicAssumption nativeClassStableAssumption = context.getNativeClassStableAssumption(clazz, false);
@@ -293,7 +293,7 @@ public final class PythonCextTypeBuiltins {
 
         @Specialization
         static int classMethod(Object methodDefPtr, Object type, Object dict, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached NewClassMethodNode newClassMethodNode,
                         @Cached PyDictSetDefault setDefault) {
             Object func = newClassMethodNode.execute(inliningTarget, methodDefPtr, name, cfunc, flags, wrapper, type, doc);
@@ -390,7 +390,7 @@ public final class PythonCextTypeBuiltins {
 
         @Specialization
         static int doGeneric(Object cls, PDict dict, TruffleString name, Object getter, Object setter, Object doc, Object closure,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CreateGetSetNode createGetSetNode,
                         @Cached PyDictSetDefault setDefault) {
             GetSetDescriptor descr = createGetSetNode.execute(inliningTarget, name, cls, getter, setter, doc, closure);

@@ -73,7 +73,7 @@ public abstract class ReadBuiltinNode extends PNodeWithContext {
     // module so we can treat anything read from it as constant here.
     @Specialization(guards = "isSingleContext(this)")
     Object returnBuiltinFromConstantModule(TruffleString attributeId,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached InlinedConditionProfile isBuiltinProfile,
                     @Shared @Cached ReadAttributeFromObjectNode readFromBuiltinsNode,
@@ -89,7 +89,7 @@ public abstract class ReadBuiltinNode extends PNodeWithContext {
     @InliningCutoff
     @Specialization(replaces = "returnBuiltinFromConstantModule")
     Object returnBuiltin(TruffleString attributeId,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached InlinedConditionProfile isBuiltinProfile,
                     @Shared @Cached ReadAttributeFromObjectNode readFromBuiltinsNode,

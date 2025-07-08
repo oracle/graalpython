@@ -125,7 +125,7 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
     public abstract static class GetRunningLoop extends PythonBuiltinNode {
         @Specialization
         static Object getCurrentLoop(
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached PRaiseNode raise) {
             Object eventLoop = context.getThreadState(context.getLanguage(inliningTarget)).getRunningEventLoop();
@@ -142,7 +142,7 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
     public abstract static class InternalGetRunningLoop extends PythonBuiltinNode {
         @Specialization
         static Object getCurrentLoop(
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             Object eventLoop = context.getThreadState(context.getLanguage(inliningTarget)).getRunningEventLoop();
 
@@ -155,7 +155,7 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
     public abstract static class InternalSetRunningLoop extends PythonUnaryBuiltinNode {
         @Specialization
         static Object setCurrentLoop(Object loop,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             context.getThreadState(context.getLanguage(inliningTarget)).setRunningEventLoop(loop == PNone.NONE ? null : loop);
             return PNone.NONE;
@@ -173,7 +173,7 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getCurrentLoop(VirtualFrame frame, Object ignored,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached CallNode callGetPolicy,
                         @Cached CallNode callGetLoop,
@@ -209,7 +209,7 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
     public abstract static class EnterTask extends PythonTernaryBuiltinNode {
         @Specialization
         public Object enterTask(VirtualFrame frame, PythonModule self, Object loop, Object task,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ObjectBuiltins.GetAttributeNode getattr,
                         @Cached PyDictSetItem set,
                         @Cached PyDictGetItem get,
@@ -230,7 +230,7 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
     public abstract static class LeaveTask extends PythonTernaryBuiltinNode {
         @Specialization
         public Object leaveTask(VirtualFrame frame, PythonModule self, Object loop, Object task,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ObjectBuiltins.GetAttributeNode getattr,
                         @Cached PyDictDelItem del,
                         @Cached PyDictGetItem get,
@@ -254,7 +254,7 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object registerTask(VirtualFrame frame, PythonModule self, Object task,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ObjectBuiltins.GetAttributeNode getattr,
                         @Cached PyObjectCallMethodObjArgs callmethod) {
             Object weakset = getattr.execute(frame, self, SCHEDULED_TASKS_ATTR);
@@ -269,7 +269,7 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object unregisterTask(VirtualFrame frame, PythonModule self, Object task,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ObjectBuiltins.GetAttributeNode getattr,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             Object weakset = getattr.execute(frame, self, SCHEDULED_TASKS_ATTR);
@@ -318,7 +318,7 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object currentTask(VirtualFrame frame, PythonModule self, Object argloop,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached ObjectBuiltins.GetAttributeNode getattr,
                         @Cached PyDictGetItem get,
@@ -342,7 +342,7 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
     public abstract static class SwapCurrentTaskNode extends PythonTernaryBuiltinNode {
         @Specialization
         public Object enterTask(VirtualFrame frame, PythonModule self, Object loop, Object task,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ObjectBuiltins.GetAttributeNode getattr,
                         @Cached PyObjectHashNode hashNode,
                         @Cached HashingStorageNodes.HashingStorageGetItemWithHash getItem,

@@ -91,7 +91,7 @@ public abstract class PyTupleSizeNode extends PNodeWithContext {
     @Fallback
     @InliningCutoff
     static int size(Object obj,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, "PyTuple_Size");
     }
 

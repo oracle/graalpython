@@ -145,14 +145,14 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(value)")
         static PBytes doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
                         @Bind PythonLanguage language,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PointerNodes.ReadBytesNode read) {
             return PFactory.createBytes(language, read.execute(inliningTarget, self.b_ptr, self.b_size));
         }
 
         @Specialization(limit = "3")
         static Object doSet(VirtualFrame frame, CDataObject self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
@@ -179,7 +179,7 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static PBytes doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PointerNodes.StrLenNode strLenNode,
                         @Cached PointerNodes.ReadBytesNode read) {
@@ -188,7 +188,7 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doSet(CDataObject self, PBytes value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetInternalByteArrayNode getBytes,
                         @Cached PointerNodes.WriteBytesNode writeBytesNode,
                         @Cached PRaiseNode raiseNode) {
@@ -204,7 +204,7 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object error(@SuppressWarnings("unused") Object self, Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, BYTES_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
         }
     }
@@ -215,7 +215,7 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static TruffleString doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PointerNodes.WCsLenNode wCsLenNode,
                         @Cached PointerNodes.ReadBytesNode read,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
@@ -227,7 +227,7 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isString(value)")
         static Object doSet(CDataObject self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
                         @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
@@ -245,7 +245,7 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object error(@SuppressWarnings("unused") Object self, Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, UNICODE_STRING_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
         }
     }

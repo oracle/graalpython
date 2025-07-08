@@ -143,7 +143,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization
         public static Object repr(VirtualFrame frame, PBaseSet self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetClassNode getClassNode,
@@ -189,7 +189,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     protected abstract static class BaseIterNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doBaseSet(PBaseSet self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetIterator getIterator,
                         @Bind PythonLanguage language) {
@@ -204,7 +204,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     protected abstract static class BaseSetLenSlotNode extends LenBuiltinNode {
         @Specialization
         public static int len(PBaseSet self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageLen lenNode) {
             return lenNode.execute(inliningTarget, self.getDictStorage());
         }
@@ -216,7 +216,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reduce(VirtualFrame frame, PBaseSet self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetIterator getIter,
                         @Cached HashingStorageIteratorNext iterNext,
@@ -255,7 +255,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doIt(VirtualFrame frame, PBaseSet self, PBaseSet other, RichCmpOp opIn,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageLen lenSelfNode,
                         @Cached HashingStorageLen lenOtherNode,
                         @Cached InlinedConditionProfile sizeProfile,
@@ -300,7 +300,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean contains(VirtualFrame frame, PBaseSet self, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ConvertKeyNode conv,
                         @Cached HashingStorageGetItem getItem) {
             return getItem.hasKey(frame, inliningTarget, self.getDictStorage(), conv.execute(inliningTarget, key));
@@ -330,7 +330,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     abstract static class SubNode extends BinaryOpBuiltinNode {
         @Specialization
         static PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PBaseSet left, PBaseSet right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageNodes.HashingStorageDiff diffNode,
                         @Cached CreateSetNode createSetNode) {
             HashingStorage storage = diffNode.execute(frame, inliningTarget, left.getDictStorage(), right.getDictStorage());
@@ -350,7 +350,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBaseSet doPBaseSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageNodes.HashingStorageLen lenNode,
                         @Cached HashingStorageNodes.HashingStorageIntersect intersectNode,
                         @Cached InlinedConditionProfile swapProfile,
@@ -379,7 +379,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     public abstract static class OrNode extends BinaryOpBuiltinNode {
         @Specialization
         static Object doSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageCopy copyStorage,
                         @Cached HashingStorageNodes.HashingStorageAddAllToOther addAllToOther,
                         @Cached CreateSetNode createSetNode) {
@@ -402,7 +402,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageNodes.HashingStorageXor xorNode,
                         @Cached CreateSetNode createSetNode) {
             // TODO: calls __eq__ wrong number of times compared to CPython (GR-42240)
@@ -422,7 +422,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     protected abstract static class BaseIsSubsetNode extends PythonBinaryBuiltinNode {
         @Specialization
         static boolean isSubSetGeneric(VirtualFrame frame, PBaseSet self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
                         @Cached IsKeysSubset compareKeys) {
             HashingStorage otherStorage = getSetStorageNode.execute(frame, inliningTarget, other);
@@ -435,7 +435,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     protected abstract static class BaseIsSupersetNode extends PythonBinaryBuiltinNode {
         @Specialization
         static boolean isSuperSetGeneric(VirtualFrame frame, PBaseSet self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
                         @Cached HashingStorageNodes.IsKeysSubset compareKeys) {
             HashingStorage otherStorage = getSetStorageNode.execute(frame, inliningTarget, other);
@@ -450,21 +450,21 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self == other")
         static boolean isDisjointSameObject(PBaseSet self, @SuppressWarnings("unused") PBaseSet other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageLen lenNode) {
             return lenNode.execute(inliningTarget, self.getDictStorage()) == 0;
         }
 
         @Specialization(guards = {"self != other", "isBuiltinAnySet(other)"})
         static boolean isDisjointFastPath(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageAreDisjoint disjointNode) {
             return disjointNode.execute(frame, inliningTarget, self.getDictStorage(), other.getDictStorage());
         }
 
         @Fallback
         static boolean isDisjointGeneric(VirtualFrame frame, Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageGetItem getHashingStorageItem,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode nextNode) {

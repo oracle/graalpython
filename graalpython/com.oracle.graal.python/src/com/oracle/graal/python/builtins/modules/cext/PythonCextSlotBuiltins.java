@@ -195,7 +195,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         int get(PString object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile storageProfile,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode) {
             // important: avoid materialization of native sequences
@@ -222,7 +222,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static int get(PString object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StringNodes.IsInternedStringNode isInternedStringNode) {
             return isInternedStringNode.execute(inliningTarget, object) ? 1 : 0;
         }
@@ -233,7 +233,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static int get(PString object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile storageProfile,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode) {
             // important: avoid materialization of native sequences
@@ -273,7 +273,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyCFunctionObject_m_ml extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PythonBuiltinObject object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HiddenAttr.ReadNode readNode) {
             PBuiltinFunction resolved;
             if (object instanceof PBuiltinMethod builtinMethod) {
@@ -297,7 +297,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_set_PyCFunctionObject_m_ml extends CApiBinaryBuiltinNode {
         @Specialization
         static Object get(PythonBuiltinObject object, Object methodDefPtr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HiddenAttr.WriteNode writeNode) {
             PBuiltinFunction resolved;
             if (object instanceof PBuiltinMethod builtinMethod) {
@@ -317,7 +317,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyCFunctionObject_m_module extends CApiUnaryBuiltinNode {
         @Specialization
         Object get(Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup) {
             Object module = lookup.execute(null, inliningTarget, object, T___MODULE__);
             return module != PNone.NO_VALUE ? module : getNativeNull();
@@ -328,7 +328,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_set_PyCFunctionObject_m_module extends CApiBinaryBuiltinNode {
         @Specialization
         Object set(Object object, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectSetAttr setattr) {
             setattr.execute(null, inliningTarget, object, T___MODULE__, value);
             return PNone.NO_VALUE;
@@ -489,7 +489,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object get(PBuiltinFunction builtinFunction,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HiddenAttr.ReadNode readNode) {
             Object methodDefPtr = readNode.execute(inliningTarget, builtinFunction, METHOD_DEF_PTR, null);
             if (methodDefPtr != null) {
@@ -618,7 +618,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object get(Object object,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             /*
              * We are allocating native object stubs for each wrapper. Therefore, accesses to
              * 'ob_type' should only be done on the native side. However, we allow access for
@@ -636,7 +636,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static long get(PBaseSet object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageLen lenNode) {
             return lenNode.execute(inliningTarget, object.getDictStorage());
         }
@@ -669,7 +669,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object doStart(PSlice object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetSliceField getSliceField) {
             return getSliceField.execute(inliningTarget, object, PROMOTED_START, object.getStart());
         }
@@ -680,7 +680,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object doStep(PSlice object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetSliceField getSliceField) {
             return getSliceField.execute(inliningTarget, object, PROMOTED_STEP, object.getStep());
         }
@@ -691,7 +691,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object doStop(PSlice object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetSliceField getSliceField) {
             return getSliceField.execute(inliningTarget, object, PROMOTED_STOP, object.getStop());
         }
@@ -702,7 +702,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object get(PString object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
@@ -757,7 +757,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static long get(Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
                         @Cached ObSizeNode obSizeNode) {
@@ -772,7 +772,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static long getLvTag(Object n,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CExtNodes.LvTagNode lvTagNode) {
             return lvTagNode.execute(inliningTarget, n);
         }
@@ -824,7 +824,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object setBuiltinClassType(PythonBuiltinClassType clazz, Object bufferProcs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached HiddenAttr.WriteNode writeAttrNode) {
             writeAttrNode.execute(inliningTarget, PythonContext.get(inliningTarget).lookupType(clazz), AS_BUFFER, bufferProcs);
             return PNone.NO_VALUE;
@@ -832,7 +832,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization(guards = "isPythonClass(object)")
         static Object set(PythonAbstractObject object, Object bufferProcs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached HiddenAttr.WriteNode writeAttrNode) {
             writeAttrNode.execute(inliningTarget, object, AS_BUFFER, bufferProcs);
             return PNone.NO_VALUE;
@@ -844,7 +844,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object doTpDict(PythonManagedClass object, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
                         @Cached CastToTruffleStringNode castNode,
@@ -879,7 +879,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object doTpDictoffset(PythonManagedClass object, long value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TypeNodes.SetDictOffsetNode setDictOffsetNode) {
             setDictOffsetNode.execute(inliningTarget, object, value);
             return PNone.NO_VALUE;

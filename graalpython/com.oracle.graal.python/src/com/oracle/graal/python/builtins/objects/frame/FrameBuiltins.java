@@ -94,7 +94,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization
         TruffleString repr(VirtualFrame frame, PFrame self,
                         @Cached GetCodeNode getCodeNode,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile profile,
                         @Cached MaterializeFrameNode materializeFrameNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
@@ -158,7 +158,7 @@ public final class FrameBuiltins extends PythonBuiltins {
 
         @Specialization
         Object delete(VirtualFrame frame, PFrame self, DescriptorDeleteMarker ignored,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached @Cached.Exclusive PRaiseNode raise) {
             raise.raise(inliningTarget, PythonBuiltinClassType.AttributeError, ErrorMessages.CANNOT_DELETE);
             return PNone.NONE;
@@ -166,7 +166,7 @@ public final class FrameBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(newLineno)")
         int get(VirtualFrame frame, PFrame self, Object newLineno,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached @Cached.Exclusive InlinedConditionProfile profile,
                         @Cached @Cached.Exclusive MaterializeFrameNode frameNode) {
             syncLocationIfNeeded(frame, self, this, inliningTarget, profile, frameNode);
@@ -187,7 +187,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method") // this is used for location here
         @Specialization(guards = {"!isNoValue(newLineno)", "!isDeleteMarker(newLineno)"})
         PNone set(VirtualFrame frame, PFrame self, Object newLineno,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached @Cached.Exclusive InlinedConditionProfile isCurrentFrameProfile,
                         @Cached @Cached.Exclusive MaterializeFrameNode materializeNode,
                         @Cached @Cached.Exclusive PRaiseNode raise,
@@ -258,7 +258,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(v)")
-        static Object doSet(PFrame self, Object v, @Bind("this") Node inliningTarget,
+        static Object doSet(PFrame self, Object v, @Bind Node inliningTarget,
                         @Cached PRaiseNode raise,
                         @Cached CastToJavaBooleanNode cast) {
             try {
@@ -294,7 +294,7 @@ public final class FrameBuiltins extends PythonBuiltins {
     public abstract static class GetLocalsNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getUpdating(VirtualFrame frame, PFrame self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile profile,
                         @Cached MaterializeFrameNode materializeNode,
                         @Cached GetFrameLocalsNode getFrameLocalsNode) {
@@ -317,7 +317,7 @@ public final class FrameBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getBackref(VirtualFrame frame, PFrame self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile noBackref,
                         @Cached InlinedBranchProfile topRef,
                         @Cached InlinedConditionProfile notMaterialized,

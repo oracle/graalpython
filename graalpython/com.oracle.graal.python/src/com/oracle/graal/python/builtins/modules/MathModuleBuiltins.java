@@ -239,7 +239,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPInt(value)")
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, SqrtNode::compute);
         }
@@ -256,7 +256,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, ExpNode::compute);
         }
@@ -274,7 +274,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, Expm1Node::compute);
         }
@@ -292,14 +292,14 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object ceilDouble(double value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
             return pyLongFromDoubleNode.execute(inliningTarget, Math.ceil(value));
         }
 
         @Fallback
         static Object ceil(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached("create(T___CEIL__)") LookupSpecialMethodNode lookupCeil,
                         @Cached CallUnaryMethodNode callCeil,
@@ -358,7 +358,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"value < 0"})
         static long factorialNegativeInt(@SuppressWarnings("unused") int value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
@@ -375,7 +375,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"value < 0"})
         static long factorialNegativeLong(@SuppressWarnings("unused") long value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
@@ -392,7 +392,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object factorialObject(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyLongAsLongAndOverflowNode convert,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached FactorialNode recursiveNode,
@@ -470,7 +470,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object comb(VirtualFrame frame, Object n, Object k,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached CombNode recursiveNode) {
             Object nValue = indexNode.execute(frame, inliningTarget, n);
@@ -547,7 +547,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPNone(k)")
         static Object perm(VirtualFrame frame, Object n, Object k,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached PermNode recursiveNode) {
             Object nValue = indexNode.execute(frame, inliningTarget, n);
@@ -563,14 +563,14 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object floorDouble(double value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
             return pyLongFromDoubleNode.execute(inliningTarget, Math.floor(value));
         }
 
         @Fallback
         static Object floor(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached("create(T___FLOOR__)") LookupSpecialMethodNode lookupFloor,
                         @Cached CallUnaryMethodNode callFloor,
@@ -593,7 +593,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double fmodDD(double left, double right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile infProfile,
                         @Cached InlinedConditionProfile zeroProfile,
                         @Cached PRaiseNode raiseNode) {
@@ -622,7 +622,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double remainderDD(double x, double y,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (Double.isFinite(x) && Double.isFinite(y)) {
                 if (y == 0.0) {
@@ -744,7 +744,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public static boolean isinf(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode) {
             return isNan(asDoubleNode.execute(frame, inliningTarget, value));
         }
@@ -759,7 +759,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class IsCloseNode extends PythonClinicBuiltinNode {
         @Specialization
         static boolean isCloseDouble(double a, double b, double rel_tol, double abs_tol,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             double diff;
 
@@ -813,14 +813,14 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double ldexp(double mantissa, long exp,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             return exceptInfinity(inliningTarget, Math.scalb(mantissa, makeInt(exp)), mantissa, raiseNode);
         }
 
         @Specialization(guards = "!isInteger(exp)")
         static double ldexp(VirtualFrame frame, double mantissa, Object exp,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PyNumberIndexNode indexNode,
@@ -871,7 +871,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doIt(VirtualFrame frame, Object iterable,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode nextNode,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
@@ -1011,7 +1011,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == 1", "keywords.length == 0"})
         public static Object gcdOne(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached BuiltinFunctions.AbsNode absNode) {
             return indexNode.execute(frame, inliningTarget, absNode.execute(frame, args[0]));
@@ -1079,37 +1079,37 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") double y,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
         }
 
         @Specialization
         static int gcd(@SuppressWarnings("unused") long x, @SuppressWarnings("unused") double y,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
         }
 
         @Specialization
         static int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") long y,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
         }
 
         @Specialization
         static int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") PInt y,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
         }
 
         @Specialization(guards = "!isRecursive")
         static int gcd(@SuppressWarnings("unused") PInt x, @SuppressWarnings("unused") double y,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
         }
 
         @Specialization(guards = {"!isRecursive", "!isNumber(x) || !isNumber(y)"})
         static Object gcd(VirtualFrame frame, Object x, Object y,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached("create(true)") Gcd2Node recursiveNode) {
             Object xValue = indexNode.execute(frame, inliningTarget, x);
@@ -1139,7 +1139,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length > 1", "keywords.length == 0"})
         static Object gcd(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached LoopConditionProfile profile,
                         @Cached IsZeroNode isZeroNode,
                         @Shared @Cached PyNumberIndexNode indexNode,
@@ -1164,7 +1164,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == 1", "keywords.length == 0"})
         public static Object gcdOne(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyNumberIndexNode indexNode,
                         @Shared @Cached BuiltinFunctions.AbsNode absNode) {
             return indexNode.execute(frame, inliningTarget, absNode.execute(frame, args[0]));
@@ -1237,7 +1237,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNone(stepsArg)")
         double nextAfter(VirtualFrame frame, double x, double y, Object stepsArg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberIndexNode pyNumberIndexNode,
                         @Cached PyLongAsLongAndOverflowNode asLongAndOverflowNode,
                         @Cached PRaiseNode raiseNode) {
@@ -1369,7 +1369,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, AcosNode::compute);
         }
@@ -1403,7 +1403,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPInt(value)")
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, AcoshNode::compute);
         }
@@ -1420,7 +1420,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, AsinNode::compute);
         }
@@ -1437,7 +1437,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, CosNode::compute);
         }
@@ -1453,7 +1453,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, CoshNode::compute);
         }
@@ -1471,7 +1471,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, SinNode::compute);
         }
@@ -1487,7 +1487,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, SinhNode::compute);
         }
@@ -1505,7 +1505,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, TanNode::compute);
         }
@@ -1521,7 +1521,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, TanhNode::compute);
         }
@@ -1537,7 +1537,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, AtanNode::compute);
         }
@@ -1553,7 +1553,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, AtanhNode::compute);
         }
@@ -1573,7 +1573,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, AsinhNode::compute);
         }
@@ -1610,7 +1610,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public static boolean isinf(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode) {
             return isfinite(asDoubleNode.execute(frame, inliningTarget, value));
         }
@@ -1639,7 +1639,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public static boolean isinf(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode) {
             return isinf(asDoubleNode.execute(frame, inliningTarget, value));
         }
@@ -1691,7 +1691,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double log(long value, PNone novalue,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
                         @Shared @Cached PRaiseNode raiseNode) {
             return logDN(value, novalue, inliningTarget, doNotFit, raiseNode);
@@ -1699,7 +1699,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double logDN(double value, @SuppressWarnings("unused") PNone novalue,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
                         @Shared @Cached PRaiseNode raiseNode) {
             raiseMathError(inliningTarget, doNotFit, value <= 0, raiseNode);
@@ -1709,7 +1709,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static double logPIN(PInt value, @SuppressWarnings("unused") PNone novalue,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
                         @Shared @Cached PRaiseNode raiseNode) {
             BigInteger bValue = value.getValue();
@@ -1719,7 +1719,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double logLL(long value, long base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
                         @Shared @Cached InlinedConditionProfile divByZero,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -1728,7 +1728,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double logDL(double value, long base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
                         @Shared @Cached InlinedConditionProfile divByZero,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -1737,7 +1737,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double logLD(long value, double base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
                         @Shared @Cached InlinedConditionProfile divByZero,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -1746,7 +1746,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double logDD(double value, double base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
                         @Shared @Cached InlinedConditionProfile divByZero,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -1758,7 +1758,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static double logDPI(double value, PInt base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
                         @Shared @Cached InlinedConditionProfile divByZero,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -1770,7 +1770,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double logPIL(PInt value, long base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
                         @Shared @Cached InlinedConditionProfile divByZero,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -1780,7 +1780,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static double logPID(PInt value, double base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
                         @Shared @Cached InlinedConditionProfile divByZero,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -1793,7 +1793,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static double logLPI(long value, PInt base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
                         @Shared @Cached InlinedConditionProfile divByZero,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -1806,7 +1806,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static double logPIPI(PInt value, PInt base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile doNotFit,
                         @Shared @Cached InlinedConditionProfile divByZero,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -1819,35 +1819,35 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         double logO(VirtualFrame frame, Object value, PNone novalue,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
             return executeRecursiveLogNode(frame, asDoubleNode.execute(frame, inliningTarget, value), novalue);
         }
 
         @Specialization(guards = {"!isNumber(value)", "!isNoValue(base)"})
         double logOO(VirtualFrame frame, Object value, Object base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
             return executeRecursiveLogNode(frame, asDoubleNode.execute(frame, inliningTarget, value), asDoubleNode.execute(frame, inliningTarget, base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
         double logLO(VirtualFrame frame, long value, Object base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
             return executeRecursiveLogNode(frame, value, asDoubleNode.execute(frame, inliningTarget, base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
         double logDO(VirtualFrame frame, double value, Object base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
             return executeRecursiveLogNode(frame, value, asDoubleNode.execute(frame, inliningTarget, base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
         double logPIO(VirtualFrame frame, PInt value, Object base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
             return executeRecursiveLogNode(frame, value, asDoubleNode.execute(frame, inliningTarget, base));
         }
@@ -1869,7 +1869,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, Log1pNode::compute);
         }
@@ -1905,7 +1905,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPInt(value)")
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, Log2Node::compute);
         }
@@ -1953,7 +1953,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPInt(value)")
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, Log10Node::compute);
         }
@@ -2057,7 +2057,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object sumprod(VirtualFrame frame, Object p, Object q,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter pyObjectGetIter,
                         @Cached PyIterNextNode nextNode,
                         @Cached PyLongAsLongAndOverflowNode pyLongAsLongAndOverflowNode,
@@ -2200,7 +2200,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class PowNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         static double pow(double left, double right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             double result = 0;
             if (!Double.isFinite(left) || !Double.isFinite(right)) {
@@ -2257,7 +2257,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object trunc(VirtualFrame frame, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("create(T___TRUNC__)") LookupAndCallUnaryNode callTrunc,
                         @Cached PRaiseNode raiseNode) {
             Object result = callTrunc.executeObject(frame, obj);
@@ -2291,7 +2291,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, DegreesNode::compute);
         }
@@ -2308,7 +2308,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, RadiansNode::compute);
         }
@@ -2326,7 +2326,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "arguments.length == 2")
         public double hypot2(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached PyFloatAsDoubleNode xAsDouble,
                         @Exclusive @Cached PyFloatAsDoubleNode yAsDouble) {
@@ -2341,7 +2341,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("truffle-static-method")
         double hypotGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached PyFloatAsDoubleNode asDoubleNode) {
             if (keywords.length != 0) {
@@ -2445,7 +2445,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, ErfNode::compute);
         }
@@ -2472,7 +2472,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         // Adapted implementation from CPython
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, ErfcNode::compute);
         }
@@ -2592,7 +2592,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, GammaNode::compute);
         }
@@ -2685,7 +2685,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MathUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, LgammaNode::compute);
         }
@@ -2741,7 +2741,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object isqrtLong(long x,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached NarrowBigIntegerNode makeInt,
                         @Shared @Cached PRaiseNode raiseNode) {
             raiseIfNegative(inliningTarget, x < 0, raiseNode);
@@ -2750,7 +2750,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object isqrtPInt(PInt x,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached NarrowBigIntegerNode makeInt,
                         @Shared @Cached PRaiseNode raiseNode) {
             raiseIfNegative(inliningTarget, x.isNegative(), raiseNode);
@@ -2759,7 +2759,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isInteger(x)")
         static Object doGeneral(VirtualFrame frame, Object x,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached IsqrtNode recursiveNode) {
             return recursiveNode.execute(frame, indexNode.execute(frame, inliningTarget, x));
@@ -2804,7 +2804,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object doGeneric(VirtualFrame frame, Object iterable, Object startIn,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile startIsNoValueProfile,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode nextNode,
@@ -2832,7 +2832,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneric(VirtualFrame frame, Object p, Object q,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached TupleNodes.ConstructTupleNode tupleCtor,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArray,

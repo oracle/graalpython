@@ -150,7 +150,7 @@ public final class PythonCextDictBuiltins {
 
         @Specialization
         static int next(PDict dict, Object posPtr, Object keyPtr, Object valuePtr, Object hashPtr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached CStructAccess.ReadI64Node readI64Node,
                         @Cached CStructAccess.WriteLongNode writeLongNode,
@@ -276,7 +276,7 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_Size extends CApiUnaryBuiltinNode {
         @Specialization
         static int size(PDict dict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageLen lenNode) {
             return lenNode.execute(inliningTarget, dict.getDictStorage());
         }
@@ -291,7 +291,7 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_Copy extends CApiUnaryBuiltinNode {
         @Specialization
         static Object copy(PDict dict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageCopy copyNode,
                         @Bind PythonLanguage language) {
             return PFactory.createDict(language, copyNode.execute(inliningTarget, dict.getDictStorage()));
@@ -308,7 +308,7 @@ public final class PythonCextDictBuiltins {
 
         @Specialization
         static Object getItem(PDict dict, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageGetItem getItem,
                         @Cached PromoteBorrowedValue promoteNode,
                         @Cached SetItemNode setItemNode,
@@ -333,7 +333,7 @@ public final class PythonCextDictBuiltins {
 
         @Specialization(guards = "!isDict(obj)")
         static Object getItem(Object obj, @SuppressWarnings("unused") Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StringBuiltins.StrNewNode strNode) {
             return PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(null, obj), obj);
         }
@@ -347,7 +347,7 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_GetItemWithError extends CApiBinaryBuiltinNode {
         @Specialization
         static Object getItem(PDict dict, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageGetItem getItem,
                         @Cached PromoteBorrowedValue promoteNode,
                         @Cached SetItemNode setItemNode,
@@ -375,7 +375,7 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_SetItem extends CApiTernaryBuiltinNode {
         @Specialization
         static int setItem(PDict dict, Object key, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SetItemNode setItemNode) {
             setItemNode.execute(null, inliningTarget, dict, key, value);
             return 0;
@@ -392,7 +392,7 @@ public final class PythonCextDictBuiltins {
     abstract static class _PyDict_SetItem_KnownHash extends CApiQuaternaryBuiltinNode {
         @Specialization
         static int setItem(PDict dict, Object key, Object value, Object givenHash,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectHashNode hashNode,
                         @Cached CastToJavaLongExactNode castToLong,
                         @Cached SetItemNode setItemNode,
@@ -417,7 +417,7 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_SetDefault extends CApiTernaryBuiltinNode {
         @Specialization
         static Object setItem(PDict dict, Object key, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyDictSetDefault setDefault) {
             return setDefault.execute(null, inliningTarget, dict, key, value);
         }
@@ -432,7 +432,7 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_DelItem extends CApiBinaryBuiltinNode {
         @Specialization
         static int delItem(PDict dict, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyDictDelItem delItemNode) {
             delItemNode.execute(null, inliningTarget, dict, key);
             return 0;
@@ -463,7 +463,7 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_Contains extends CApiBinaryBuiltinNode {
         @Specialization
         static int contains(PDict dict, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageGetItem getItem) {
             return PInt.intValue(getItem.hasKey(null, inliningTarget, dict.getDictStorage(), key));
         }
@@ -523,7 +523,7 @@ public final class PythonCextDictBuiltins {
 
         @Specialization(guards = {"override != 0"})
         static int merge(PDict a, Object b, @SuppressWarnings("unused") int override,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyObjectGetAttr getKeys,
                         @Cached PyObjectGetAttr getUpdate,
                         @Shared @Cached CallNode callNode,
@@ -539,7 +539,7 @@ public final class PythonCextDictBuiltins {
 
         @Specialization(guards = "override == 0")
         static int merge(PDict a, PDict b, @SuppressWarnings("unused") int override,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageGetIterator getBIter,
                         @Cached HashingStorageIteratorNext itBNext,
                         @Cached HashingStorageIteratorKey itBKey,
@@ -563,7 +563,7 @@ public final class PythonCextDictBuiltins {
 
         @Specialization(guards = {"override == 0", "!isDict(b)"})
         static int merge(PDict a, Object b, @SuppressWarnings("unused") int override,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyObjectGetAttr getKeys,
                         @Shared @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
@@ -603,7 +603,7 @@ public final class PythonCextDictBuiltins {
 
         @Specialization
         static int doPDict(@SuppressWarnings("unused") PDict self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageNodes.HashingStorageForEach forEachNode,
                         @Cached DictTraverseCallback traverseCallback) {
             HashingStorage dictStorage = self.getDictStorage();

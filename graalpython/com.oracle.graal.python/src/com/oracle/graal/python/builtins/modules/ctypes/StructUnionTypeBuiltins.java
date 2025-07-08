@@ -152,7 +152,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object StructUnionTypeNew(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached HashingStorageGetItem getItemResDict,
@@ -219,7 +219,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
         @SuppressWarnings("fallthrough")
         @Specialization
         static void PyCStructUnionType_update_stgdict(VirtualFrame frame, Object type, Object fields, boolean isStruct,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached PyCFieldFromDesc cFieldFromDesc,

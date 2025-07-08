@@ -162,7 +162,7 @@ public class TpSlotSizeArgFun {
         @Specialization(replaces = "doIntIndex")
         @SuppressWarnings("truffle-static-method")
         Object doGeneric(VirtualFrame frame, Object self, Object index,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             int size = asSizeNode.executeExact(frame, inliningTarget, index, PythonBuiltinClassType.OverflowError);
             if (size < 0) {
@@ -197,7 +197,7 @@ public class TpSlotSizeArgFun {
         @Specialization(replaces = "doIntIndex")
         @SuppressWarnings("truffle-static-method")
         Object doGeneric(VirtualFrame frame, Object self, Object index,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             int size = asSizeNode.executeExact(frame, inliningTarget, index, PythonBuiltinClassType.OverflowError);
             return slotNode.execute(frame, self, size);
@@ -210,7 +210,7 @@ public class TpSlotSizeArgFun {
 
         @Specialization
         static int doIt(VirtualFrame frame, int indexAsSize, Object indexObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectSlotsNode getIndexSlots,
                         @Cached CallSlotLenNode callSlotLen) {
             assert indexAsSize < 0;

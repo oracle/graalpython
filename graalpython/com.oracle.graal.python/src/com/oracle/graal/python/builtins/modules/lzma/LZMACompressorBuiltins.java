@@ -155,21 +155,21 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
         @Specialization(guards = "badIntegrity(format, check)")
         @SuppressWarnings("unused")
         static PNone integrityError(LZMACompressor self, int format, int check, Object preset, Object filters,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, INTEGRITY_CHECKS_ONLY_SUPPORTED_BY);
         }
 
         @Specialization(guards = {"!badIntegrity(format, check)", "badPresetFilters(preset, filters)"})
         @SuppressWarnings("unused")
         static PNone presetError(LZMACompressor self, int format, int check, Object preset, Object filters,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN);
         }
 
         @Specialization(guards = {"!badIntegrity(format, check)", "!badPresetFilters(preset, filters)", "badRawFilter(format, filters)"})
         @SuppressWarnings("unused")
         static PNone rawError(LZMACompressor self, int format, int check, Object preset, PNone filters,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, MUST_SPECIFY_FILTERS);
         }
 
@@ -196,7 +196,7 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isFlushed()"})
         static PBytes doBytes(VirtualFrame frame, LZMACompressor self, Object data,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached GetArrayAndLengthHelperNode getArrayAndLengthHelperNode,
                         @Cached LZMANodes.CompressNode compress) {
@@ -207,7 +207,7 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isFlushed()")
         static PNone error(LZMACompressor self, Object data,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, COMPRESSOR_HAS_BEEN_FLUSHED);
         }
 
@@ -243,7 +243,7 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isFlushed()"})
         static PBytes doit(LZMACompressor self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached LZMANodes.CompressNode compress) {
             self.setFlushed();
@@ -253,7 +253,7 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isFlushed()")
         static PNone error(LZMACompressor self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, REPEATED_CALL_TO_FLUSH);
         }
     }

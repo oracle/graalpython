@@ -67,7 +67,7 @@ public abstract class ExitWithNode extends PNodeWithContext {
 
     @Specialization
     int exit(VirtualFrame virtualFrame, int stackTopIn, boolean rootNodeVisible,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CallQuaternaryMethodNode callExit,
                     @Cached GetClassNode getClassNode,
                     @Cached ExceptionNodes.GetTracebackNode getTracebackNode,

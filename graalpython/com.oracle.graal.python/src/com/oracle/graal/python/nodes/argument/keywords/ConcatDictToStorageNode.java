@@ -81,7 +81,7 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
 
     @Specialization(guards = "hasBuiltinDictIter(inliningTarget, other, getClassNode, getSlots)", limit = "1")
     static HashingStorage doBuiltinDictEmptyDest(@SuppressWarnings("unused") EmptyStorage dest, PDict other,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
                     @SuppressWarnings("unused") @Shared @Cached GetCachedTpSlotsNode getSlots,
                     @Cached HashingStorageNodes.HashingStorageCopy copyNode) {
@@ -90,7 +90,7 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
 
     @Specialization(guards = "hasBuiltinDictIter(inliningTarget, other, getClassNode, getSlots)", limit = "1")
     static HashingStorage doBuiltinDict(VirtualFrame frame, HashingStorage dest, PDict other,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
                     @SuppressWarnings("unused") @Shared @Cached GetCachedTpSlotsNode getSlots,
                     @Exclusive @Cached HashingStorageNodes.HashingStorageGetItem resultGetItem,
@@ -125,7 +125,7 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
 
     @Specialization(guards = "isFallback(inliningTarget, other, getClassNode, getSlots)", limit = "1")
     static HashingStorage doMapping(VirtualFrame frame, HashingStorage dest, Object other,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
                     @SuppressWarnings("unused") @Shared @Cached GetCachedTpSlotsNode getSlots,
                     @Exclusive @Cached InlinedBranchProfile sameKeyProfile,

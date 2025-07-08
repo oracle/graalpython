@@ -76,7 +76,7 @@ public final class TracemallocModuleBuiltins extends PythonBuiltins {
     abstract static class GetObjectTracebackNode extends PythonBuiltinNode {
         @Specialization
         static Object getObjectTraceback(Object obj,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.NotImplementedError);
         }
     }
@@ -86,7 +86,7 @@ public final class TracemallocModuleBuiltins extends PythonBuiltins {
     abstract static class GetTracesNode extends PythonBuiltinNode {
         @Specialization
         static Object getTraces(
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.NotImplementedError);
         }
     }

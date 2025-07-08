@@ -338,7 +338,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     abstract static class DefaultIntHandlerNode extends PythonBuiltinNode {
         @Specialization
         static Object defaultIntHandler(@SuppressWarnings("unused") Object[] args,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.KeyboardInterrupt);
         }
     }
@@ -350,7 +350,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static Object signalHandler(PythonModule self, Object signal, Object handler,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             ModuleData data = self.getModuleState(ModuleData.class);
             int signum = PyNumberAsSizeNode.executeExactUncached(signal);
             if (PyCallableCheckNode.executeUncached(handler)) {
@@ -423,7 +423,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     abstract static class SigInterruptNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         static PNone doInt(VirtualFrame frame, @SuppressWarnings("unused") int signalnum, boolean flag,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             if (flag) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EINVAL);
@@ -466,7 +466,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doIt(VirtualFrame frame, PythonModule self, int which, Object seconds, Object interval,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTimeFromObjectNode timeFromObjectNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Bind PythonLanguage language) {
@@ -535,7 +535,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doIt(VirtualFrame frame, PythonModule self, int which,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Bind PythonLanguage language) {
             ModuleData moduleData = self.getModuleState(ModuleData.class);

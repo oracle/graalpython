@@ -91,14 +91,14 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithContext {
     @Specialization
     @SuppressWarnings("unused")
     static Object doString(VirtualFrame frame, TruffleString object, Object encoding, Object errors,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
     }
 
     @Specialization
     @SuppressWarnings("unused")
     static Object doPString(VirtualFrame frame, PString object, Object encoding, Object errors,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
     }
 

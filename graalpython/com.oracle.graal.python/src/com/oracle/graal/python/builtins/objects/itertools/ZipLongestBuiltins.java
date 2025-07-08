@@ -101,7 +101,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
     public abstract static class ZipLongestNode extends PythonBuiltinNode {
         @Specialization
         static Object construct(VirtualFrame frame, Object cls, Object[] args, Object fillValueIn,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIterNode,
                         @Cached InlinedConditionProfile fillIsNone,
                         @Cached InlinedLoopConditionProfile loopProfile,
@@ -155,7 +155,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!zeroSize(self)")
         static Object next(VirtualFrame frame, PZipLongest self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyIterNextNode nextNode,
                         @Cached InlinedConditionProfile noItProfile,
                         @Cached InlinedConditionProfile noActiveProfile,
@@ -204,7 +204,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reduce(PZipLongest self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClass,
                         @Cached InlinedConditionProfile noFillValueProfile,
                         @Cached InlinedLoopConditionProfile loopProfile,

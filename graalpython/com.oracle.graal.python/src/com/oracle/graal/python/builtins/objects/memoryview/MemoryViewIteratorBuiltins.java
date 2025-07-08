@@ -85,7 +85,7 @@ public final class MemoryViewIteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         static Object memoryiterNext(VirtualFrame frame, MemoryViewIterator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CExtNodes.PCallCapiFunction capiFunction,
                         @Cached MemoryViewNodes.ReadItemAtNode readItemAtNode,
                         @Cached PRaiseNode raiseNode) {

@@ -64,7 +64,7 @@ public abstract class DeleteDictNode extends PNodeWithContext {
 
     @Specialization
     static void doPythonObject(PythonObject object,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached HiddenAttr.ReadNode readHiddenAttrNode,
                     @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                     @Cached HashingStorageCopy copyNode) {

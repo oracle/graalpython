@@ -79,7 +79,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends LenBuiltinNode {
         @Specialization
         static int run(PDictView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageLen lenNode) {
             return lenNode.execute(inliningTarget, self.getWrappedStorage());
         }
@@ -90,7 +90,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doPDictValuesView(PDictValuesView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetIterator getIterator,
                         @Bind PythonLanguage language) {
@@ -104,7 +104,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doPDictValuesView(PDictValuesView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetReverseIterator getReverseIter,
                         @Bind PythonLanguage language) {

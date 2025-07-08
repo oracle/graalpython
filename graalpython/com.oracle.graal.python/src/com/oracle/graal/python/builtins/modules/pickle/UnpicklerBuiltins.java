@@ -130,7 +130,7 @@ public class UnpicklerBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object load(VirtualFrame frame, PUnpickler self, Object file, boolean fixImports, TruffleString encoding, TruffleString errors, Object buffers,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached PyObjectGetIter getIter,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -150,7 +150,7 @@ public class UnpicklerBuiltins extends PythonBuiltins {
     public abstract static class UnpicklerLoadNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object load(VirtualFrame frame, PUnpickler self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PUnpickler.LoadNode loadNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             if (self.getRead() == null) {
@@ -182,7 +182,7 @@ public class UnpicklerBuiltins extends PythonBuiltins {
     public abstract static class UnpicklerPersistentLoadNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
         static Object get(PUnpickler self, @SuppressWarnings("unused") PNone none,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             final Object persFunc = self.getPersFunc();
@@ -194,7 +194,7 @@ public class UnpicklerBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(obj)")
         static Object set(PUnpickler self, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyCallableCheckNode callableCheck,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             if (PGuards.isDeleteMarker(obj)) {
@@ -220,7 +220,7 @@ public class UnpicklerBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(obj)", "!isDeleteMarker(obj)"})
         static Object set(VirtualFrame frame, PUnpickler self, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached HashingStorageGetIterator getStorageIter,

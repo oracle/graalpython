@@ -65,7 +65,7 @@ public abstract class ReadFromDictOrGlobalsNode extends PNodeWithContext {
 
     @Specialization
     static int read(VirtualFrame frame, int initialStackTop, Object globals, TruffleString name,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PyObjectGetItem getItemNode,
                     @Cached ReadGlobalOrBuiltinNode readGlobal,
                     @Cached IsBuiltinObjectProfile errorProfile) {

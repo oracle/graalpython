@@ -112,7 +112,7 @@ public final class TypeVarTupleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTypeVarTuple newTypeVarTuple(VirtualFrame frame, Object cls, TruffleString name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached CallerNode callerNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
@@ -148,7 +148,7 @@ public final class TypeVarTupleBuiltins extends PythonBuiltins {
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PythonObject iter(VirtualFrame frame, PTypeVarTuple self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached UnpackNode unpackNode) {
             Object unpacked = unpackNode.execute(frame, inliningTarget, self);
@@ -162,7 +162,7 @@ public final class TypeVarTupleBuiltins extends PythonBuiltins {
     abstract static class TypingSubstNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doTypingSubst(@SuppressWarnings("unused") PTypeVarTuple self, @SuppressWarnings("unused") Object arg,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, SUBSTITUTION_OF_BARE_TYPEVARTUPLE_IS_NOT_SUPPORTED);
         }
     }
@@ -174,7 +174,7 @@ public final class TypeVarTupleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doTypingPrepareSubst(VirtualFrame frame, PTypeVarTuple self, Object alias, Object args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallTypingFuncObjectNode callTypingFuncObjectNode) {
             return callTypingFuncObjectNode.execute(frame, inliningTarget, T_TYPEVARTUPLE_PREPARE_SUBST, self, alias, args);
         }
@@ -185,7 +185,7 @@ public final class TypeVarTupleBuiltins extends PythonBuiltins {
     abstract static class MroEntriesNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object mro(@SuppressWarnings("unused") PTypeVarTuple self, @SuppressWarnings("unused") Object bases,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, CANNOT_SUBCLASS_AN_INSTANCE_OF_TYPEVARTUPLE);
         }
     }

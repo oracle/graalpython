@@ -173,7 +173,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
     protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization
         static Object Pointer_new(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
                         @Cached PRaiseNode raiseNode) {
@@ -192,7 +192,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object Pointer_init(VirtualFrame frame, CDataObject self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PointerSetContentsNode setContentsNode) {
             if (args.length > 0) {
                 setContentsNode.execute(frame, inliningTarget, self, args[0]);
@@ -207,7 +207,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static Object get_contents(CDataObject self, @SuppressWarnings("unused") PNone value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CtypesNodes.PyCDataFromBaseObjNode fromBaseObjNode,
                         @Cached PointerNodes.ReadPointerNode readPointerNode,
@@ -224,7 +224,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object set_contents(VirtualFrame frame, CDataObject self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PointerSetContentsNode setContentsNode) {
             setContentsNode.execute(frame, inliningTarget, self, value);
             return PNone.NONE;
@@ -249,7 +249,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
 
         @Specialization
         static void Pointer_ass_item(VirtualFrame frame, CDataObject self, int index, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyCDataSetNode pyCDataSetNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
@@ -285,7 +285,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object Pointer_item(CDataObject self, int index,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyCDataGetNode pyCDataGetNode,
                         @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
@@ -321,7 +321,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doInt(CDataObject self, int index,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyCDataGetNode pyCDataGetNode,
                         @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
@@ -333,7 +333,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         static Object doSubscript(VirtualFrame frame, CDataObject self, PSlice slice,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached PyCDataGetNode pyCDataGetNode,
@@ -426,7 +426,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPSlice(item)", replaces = "doInt")
         static Object doGeneric(VirtualFrame frame, CDataObject self, Object item,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyCDataGetNode pyCDataGetNode,
                         @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,

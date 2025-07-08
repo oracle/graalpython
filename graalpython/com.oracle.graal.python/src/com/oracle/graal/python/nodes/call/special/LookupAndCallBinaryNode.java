@@ -113,7 +113,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     @Specialization(guards = {"clazz != null", "function != null", "isClazz(inliningTarget, clazz, left, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callObjectBuiltin(VirtualFrame frame, Object left, Object right,
-                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached("getBuiltinClass(this, left, getClassNode)") PythonBuiltinClassType clazz,
                     @Cached("getBinaryBuiltin(clazz)") PythonBinaryBuiltinNode function) {
@@ -123,7 +123,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     @Specialization(guards = {"left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
     @SuppressWarnings("truffle-static-method")
     Object callObjectGeneric(VirtualFrame frame, Object left, Object right,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
                     @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
                     @Exclusive @Cached GetClassNode getClassNode,
@@ -135,7 +135,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     @Megamorphic
     @SuppressWarnings("truffle-static-method")
     Object callObjectMegamorphic(VirtualFrame frame, Object left, Object right,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached GetClassNode getClassNode,
                     @Exclusive @Cached("create(name)") LookupSpecialMethodNode getattr) {
         return doCallObject(frame, inliningTarget, left, right, getClassNode, getattr);

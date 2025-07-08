@@ -78,7 +78,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
 
     @Specialization
     Object match(VirtualFrame frame, Object subject, Object type, int nargs, @NeverDefault @SuppressWarnings("unused") TruffleString[] kwArgsArg,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached(value = "kwArgsArg", dimensions = 1) TruffleString[] kwArgs,
                     @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,

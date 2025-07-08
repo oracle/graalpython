@@ -72,7 +72,7 @@ public class ArrowArrayCapsuleDestructor implements TruffleObject {
 
         @Specialization(guards = "isPointer(args, interopLib)")
         static Object doRelease(ArrowArrayCapsuleDestructor self, Object[] args,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached NativeToPythonNode nativeToPythonNode,
                         @Cached PyCapsuleGetPointerNode capsuleGetPointerNode,

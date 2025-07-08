@@ -195,7 +195,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "args.length == 0")
         static Object simple(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Exclusive @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -211,7 +211,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == 1", "isLong(this, args, longCheckNode)"}, limit = "1")
         static Object usingNativePointer(Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckNode longCheckNode,
                         @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @Exclusive @Cached PointerNodes.WritePointerNode writePointerNode,
@@ -227,7 +227,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length > 0", "!isPTuple(args)", "!isLong(this, args, longCheckNode)"}, limit = "1")
         static Object callback(VirtualFrame frame, Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckNode longCheckNode,
                         @Exclusive @Cached PointerNodes.WritePointerNode writePointerNode,
                         @Cached KeepRefNode keepRefNode,
@@ -256,7 +256,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         @Specialization(guards = {"args.length > 1", "!isPTuple(args)", "isLong(this, args, longCheckNode)"}, limit = "1")
         static Object error(@SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckNode longCheckNode,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS);
         }
 
@@ -331,7 +331,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
     abstract static class BoolNode extends NbBoolBuiltinNode {
         @Specialization
         static boolean bool(PyCFuncPtrObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PointerNodes.ReadPointerNode readPointerNode) {
             Pointer value = readPointerNode.execute(inliningTarget, self.b_ptr);
             return !value.isNull();
@@ -352,7 +352,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object PyCFuncPtr_set_errcheck(PyCFuncPtrObject self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyCallableCheckNode callableCheck,
                         @Cached PRaiseNode raiseNode) {
             if (value != PNone.NONE && !callableCheck.execute(inliningTarget, value)) {
@@ -370,7 +370,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object PyCFuncPtr_get_restype(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode) {
             if (self.restype != null) {
                 return self.restype;
@@ -386,7 +386,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object PyCFuncPtr_set_restype(VirtualFrame frame, PyCFuncPtrObject self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyCallableCheckNode callableCheck,
@@ -420,7 +420,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(value)", "self.argtypes == null"})
         static Object PyCFuncPtr_get_argtypes(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Bind PythonLanguage language) {
             StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, self);
@@ -441,7 +441,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object PyCFuncPtr_set_argtypes(VirtualFrame frame, PyCFuncPtrObject self, PTuple value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyObjectLookupAttr lookupAttr,
                         @Shared @Cached GetInternalObjectArrayNode getArray,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -454,7 +454,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object PyCFuncPtr_set_argtypes(VirtualFrame frame, PyCFuncPtrObject self, PList value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyObjectLookupAttr lookupAttr,
                         @Shared @Cached GetInternalObjectArrayNode getArray,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -467,7 +467,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object error(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
         }
 
@@ -479,7 +479,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString PyCFuncPtr_repr(CDataObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetNameNode getNameNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
@@ -496,7 +496,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization
         Object PyCFuncPtr_call(VirtualFrame frame, PyCFuncPtrObject self, Object[] inargs, PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached CallNode callNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
@@ -806,7 +806,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object PyCFuncPtr_FromDll(VirtualFrame frame, Object type, Object[] args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached CtypesDlSymNode dlSymNode,
                         @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,

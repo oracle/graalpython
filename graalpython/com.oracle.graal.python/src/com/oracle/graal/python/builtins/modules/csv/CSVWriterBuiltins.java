@@ -93,7 +93,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
     public abstract static class WriteRowNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doIt(VirtualFrame frame, CSVWriter self, Object seq,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetClassNode getClass,
                         @Cached IsBuiltinObjectProfile errorProfile,
@@ -305,7 +305,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
     public abstract static class WriteRowsNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doIt(VirtualFrame frame, CSVWriter self, Object seq,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode nextNode,
                         @Cached WriteRowNode writeRow) {

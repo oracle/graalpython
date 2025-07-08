@@ -334,7 +334,7 @@ public abstract class IteratorNodes {
 
         @Specialization(guards = "isString(iterableObj)")
         public static Object[] doIt(Object iterableObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastBuiltinStringToTruffleStringNode castToStringNode,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -355,7 +355,7 @@ public abstract class IteratorNodes {
 
         @Specialization
         public static Object[] doIt(PSequence iterable,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetSequenceStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
             SequenceStorage storage = getStorageNode.execute(inliningTarget, iterable);
@@ -364,7 +364,7 @@ public abstract class IteratorNodes {
 
         @Fallback
         public static Object[] doIt(VirtualFrame frame, Object iterable,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode nextNode) {
             Object it = getIter.execute(frame, inliningTarget, iterable);

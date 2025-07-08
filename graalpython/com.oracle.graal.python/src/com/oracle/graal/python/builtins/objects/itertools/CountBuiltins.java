@@ -113,7 +113,7 @@ public final class CountBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object construct(Object cls, Object start, Object step,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberCheckNode checkNode,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Bind PythonLanguage language,
@@ -161,7 +161,7 @@ public final class CountBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString reprPos(VirtualFrame frame, PCount self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached PyObjectReprAsObjectNode reprNode,
@@ -186,7 +186,7 @@ public final class CountBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reducePos(PCount self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached CastToJavaLongExactNode castLongNode,
                         @Cached PyObjectTypeCheck typeCheckNode,

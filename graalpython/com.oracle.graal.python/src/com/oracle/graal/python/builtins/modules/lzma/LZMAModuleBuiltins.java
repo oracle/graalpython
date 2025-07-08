@@ -254,7 +254,7 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doInt(VirtualFrame frame, Object checkID,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached LZMANodes.IsCheckSupported isCheckSupported) {
             return isCheckSupported.execute(inliningTarget, asSizeNode.executeExact(frame, inliningTarget, checkID, ValueError));
@@ -279,7 +279,7 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PDict encode(VirtualFrame frame, Object id, Object encodedProps,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached CastToJavaLongLossyNode toLong,
                         @Cached BytesNodes.ToBytesNode toBytes,

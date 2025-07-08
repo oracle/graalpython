@@ -73,7 +73,7 @@ public final class PythonCextNamespaceBuiltins {
     abstract static class _PyNamespace_New extends CApiUnaryBuiltinNode {
         @Specialization
         static Object impDict(PDict dict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getIt") @Cached HashingStorageGetIterator getIterator,
                         @Shared("itNext") @Cached HashingStorageIteratorNext itNext,
                         @Shared("itKey") @Cached HashingStorageIteratorKey itKey,
@@ -98,7 +98,7 @@ public final class PythonCextNamespaceBuiltins {
 
         @Specialization(guards = "!isDict(dict)")
         static Object impGeneric(Object dict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InitNode initNode,
                         @Shared("getIt") @Cached HashingStorageGetIterator getIterator,
                         @Shared("itNext") @Cached HashingStorageIteratorNext itNext,

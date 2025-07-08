@@ -86,7 +86,7 @@ public class DequeRevIterBuiltins extends PythonBuiltins {
     public abstract static class DequeRevIterNode extends PythonTernaryBuiltinNode {
         @Specialization
         static PDequeIter doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object deque, Object indexObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile dequeProfile,
                         @Cached InlinedConditionProfile indexNoneProfile,
                         @Cached PyNumberIndexNode toIndexNode,

@@ -103,7 +103,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class ReadNode extends PythonTernaryClinicBuiltinNode {
         @Specialization(guards = "isNoValue(buffer)")
         static Object read(VirtualFrame frame, PSSLSocket self, int len, @SuppressWarnings("unused") PNone buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Shared @Cached SSLOperationNode sslOperationNode,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -120,7 +120,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(bufferObj)", limit = "3")
         static Object readInto(VirtualFrame frame, PSSLSocket self, int len, Object bufferObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
@@ -169,7 +169,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
         static Object write(VirtualFrame frame, PSSLSocket self, Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached SSLOperationNode sslOperationNode) {
@@ -195,7 +195,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class DoHandshakeNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doHandshake(VirtualFrame frame, PSSLSocket self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SSLOperationNode sslOperationNode) {
             sslOperationNode.handshake(frame, inliningTarget, self);
             return PNone.NONE;
@@ -207,7 +207,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class ShutdownNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object shutdown(VirtualFrame frame, PSSLSocket self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SSLOperationNode sslOperationNode) {
             sslOperationNode.shutdown(frame, inliningTarget, self);
             return self.getSocket() != null ? self.getSocket() : PNone.NONE;
@@ -294,7 +294,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(obj)")
         static Object set(@SuppressWarnings("unused") PSSLSocket self, @SuppressWarnings("unused") Object obj,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             // JDK API doesn't support setting session ID
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
@@ -315,7 +315,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class GetPeerCertNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(guards = "der")
         static Object getPeerCertDER(PSSLSocket self, @SuppressWarnings("unused") boolean der,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Shared @Cached PRaiseNode raiseNode) {
             if (!self.isHandshakeComplete()) {
@@ -336,7 +336,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!der")
         static PDict getPeerCertDict(PSSLSocket self, @SuppressWarnings("unused") boolean der,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Shared @Cached PRaiseNode raiseNode) {
             if (!self.isHandshakeComplete()) {
@@ -387,7 +387,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object getChannelBinding(PSSLSocket self, TruffleString sbType,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             // JDK doesn't have an API to access what we need. BouncyCastle could provide this
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.S_CHANNEL_BINDING_NOT_IMPLEMENTED, sbType);
         }

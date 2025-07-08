@@ -150,7 +150,7 @@ public final class PByteArray extends PBytesLike {
 
     @ExportMessage
     public void writeArrayElement(long index, Object value,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
                     @Exclusive @Cached PForeignToPTypeNode convert,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
@@ -169,7 +169,7 @@ public final class PByteArray extends PBytesLike {
 
     @ExportMessage
     public void removeArrayElement(long index,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();

@@ -73,7 +73,7 @@ public abstract class DeleteGlobalNode extends PNodeWithContext {
 
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
     static void deleteDictCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals, TruffleString attributeId,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Shared("delItem") @Cached PyObjectDelItem deleteNode) {
         deleteNode.execute(frame, inliningTarget, cachedGlobals, attributeId);
@@ -81,14 +81,14 @@ public abstract class DeleteGlobalNode extends PNodeWithContext {
 
     @Specialization(replaces = "deleteDictCached")
     static void deleteDict(VirtualFrame frame, PDict globals, TruffleString attributeId,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("delItem") @Cached PyObjectDelItem deleteNode) {
         deleteNode.execute(frame, inliningTarget, globals, attributeId);
     }
 
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
     static void deleteModuleCached(VirtualFrame frame, @SuppressWarnings("unused") PythonModule globals, TruffleString attributeId,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached(value = "globals", weak = true) PythonModule cachedGlobals,
                     @Shared @Cached PyObjectSetAttr setAttr) {
         setAttr.delete(frame, inliningTarget, cachedGlobals, attributeId);
@@ -96,7 +96,7 @@ public abstract class DeleteGlobalNode extends PNodeWithContext {
 
     @Specialization(replaces = "deleteModuleCached")
     static void deleteModule(VirtualFrame frame, PythonModule globals, TruffleString attributeId,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared @Cached PyObjectSetAttr setAttr) {
         setAttr.delete(frame, inliningTarget, globals, attributeId);
     }

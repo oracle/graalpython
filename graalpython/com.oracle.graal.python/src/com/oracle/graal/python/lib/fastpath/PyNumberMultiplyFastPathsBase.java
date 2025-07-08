@@ -82,7 +82,7 @@ public abstract class PyNumberMultiplyFastPathsBase extends BinaryOpNode {
 
     @Specialization(replaces = "doLL")
     public static Object doLongWithOverflow(long x, long y,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         /* Inlined version of Math.multiplyExact(x, y) with BigInteger fallback. */
         long r = x * y;
         long ax = Math.abs(x);

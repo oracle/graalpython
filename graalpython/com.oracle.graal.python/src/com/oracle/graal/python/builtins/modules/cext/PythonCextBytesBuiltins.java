@@ -116,14 +116,14 @@ public final class PythonCextBytesBuiltins {
     abstract static class PyBytes_Size extends CApiUnaryBuiltinNode {
         @Specialization
         static long doPBytes(PBytes obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode) {
             return sizeNode.execute(null, inliningTarget, obj);
         }
 
         @Specialization
         static long doOther(PythonAbstractNativeObject obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyBytesCheckNode check,
                         @Cached CStructAccess.ReadI64Node readI64Node) {
             if (check.execute(inliningTarget, obj)) {
@@ -135,7 +135,7 @@ public final class PythonCextBytesBuiltins {
         @Fallback
         @TruffleBoundary
         static long fallback(Object obj,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, obj);
         }
     }
@@ -178,7 +178,7 @@ public final class PythonCextBytesBuiltins {
 
         @Fallback
         static Object fromObject(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BytesNodes.BytesFromObject fromObject) {
             byte[] bytes = fromObject.execute(null, obj);
             return PFactory.createBytes(PythonLanguage.get(inliningTarget), bytes);
@@ -210,7 +210,7 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization(guards = "!isNativeWrapper(nativePointer)")
         static Object doNativePointer(Object nativePointer, long size,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached GetByteArrayNode getByteArrayNode,
                         @Cached PRaiseNode raiseNode) {
@@ -243,7 +243,7 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization(guards = "!isNativeWrapper(nativePointer)")
         static Object doNativePointer(Object nativePointer, long size,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached GetByteArrayNode getByteArrayNode,
                         @Cached PRaiseNode raiseNode) {
@@ -263,7 +263,7 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization
         static int resize(PBytesLike self, long newSizeL,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached CastToByteNode castToByteNode) {
@@ -281,7 +281,7 @@ public final class PythonCextBytesBuiltins {
 
         @Fallback
         static int fallback(Object self, @SuppressWarnings("unused") Object o,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a bytes object", self);
         }
     }
@@ -303,7 +303,7 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization(replaces = "doLong")
         static PBytes doLongOvf(long size,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
@@ -321,7 +321,7 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization(replaces = "doPInt")
         static PBytes doPIntOvf(PInt size,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
@@ -349,7 +349,7 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization(replaces = "doLong")
         static PByteArray doLongOvf(long size,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
@@ -367,7 +367,7 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization(replaces = "doPInt")
         static PByteArray doPIntOvf(PInt size,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
@@ -383,7 +383,7 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization
         static int doBytes(Object bytes,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetBytesStorage getBytesStorage,
                         @Cached GetItemScalarNode getItemScalarNode) {
             SequenceStorage sequenceStorage = getBytesStorage.execute(inliningTarget, bytes);
@@ -410,7 +410,7 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization
         static Object doNative(PythonAbstractNativeObject obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached CStructAccess.GetElementPtrNode getArray,
@@ -423,7 +423,7 @@ public final class PythonCextBytesBuiltins {
 
         @Fallback
         static Object doError(Object obj,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytes", obj);
         }
     }

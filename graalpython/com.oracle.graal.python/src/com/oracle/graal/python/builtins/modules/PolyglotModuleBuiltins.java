@@ -351,7 +351,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isModuleMethod(fun)")
         static Object exportSymbol(VirtualFrame frame, Object fun, @SuppressWarnings("unused") PNone name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("create(T___NAME__)") GetAttributeNode.GetFixedAttributeNode getNameAttributeNode,
                         @Cached CastToJavaStringNode castToStringNode,
                         @Cached PRaiseNode raiseNode) {
@@ -368,7 +368,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object exportSymbol(Object value, Object name,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_ARG_TYPES_S_S_BUT_NOT_P_P, "function", "object, str", value, name);
         }
 
@@ -407,7 +407,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isSupportedNumber(number)"})
         static boolean unsupported(PythonAbstractObject number,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ARG_MUST_BE_NUMBER, "given", number);
         }
     }
@@ -630,7 +630,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     public abstract static class GetRegisteredInteropBehaviorNode extends PythonUnaryBuiltinNode {
         @Specialization
         PList get(PythonAbstractObject klass,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode,
@@ -712,7 +712,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                         Object remove_array_element, Object write_array_element, Object has_iterator, Object has_iterator_next_element, Object get_iterator, Object get_iterator_next_element,
                         Object has_hash_entries, Object get_hash_entries_iterator, Object get_hash_keys_iterator, Object get_hash_size, Object get_hash_values_iterator, Object is_hash_entry_readable,
                         Object is_hash_entry_modifiable, Object is_hash_entry_insertable, Object is_hash_entry_removable, Object read_hash_value, Object write_hash_entry, Object remove_hash_entry,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached PRaiseNode raiseNode) {
             if (isTypeNode.execute(inliningTarget, receiver)) {
@@ -831,7 +831,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object register(Object foreignClass, PythonClass pythonClass, boolean allowMethodOverwrites,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isClassTypeNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interopLibrary,
                         @Cached ObjectHashMap.PutNode putNode,
@@ -1003,7 +1003,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     public abstract static class executeNode extends PythonBuiltinNode {
         @Specialization
         static Object exec(Object receiver, Object[] arguments,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             try {
                 return getInterop().execute(receiver, arguments);
@@ -1018,7 +1018,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     public abstract static class newNode extends PythonBuiltinNode {
         @Specialization
         static Object instantiate(Object receiver, Object[] arguments,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             try {
                 return getInterop().instantiate(receiver, arguments);
@@ -1033,7 +1033,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     public abstract static class invokeNode extends PythonBuiltinNode {
         @Specialization
         static Object invoke(Object receiver, TruffleString key, Object[] arguments,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -1067,7 +1067,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     public abstract static class GetSizeNode extends PythonBuiltinNode {
         @Specialization
         static Object getSize(Object receiver,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             try {
                 return getInterop().getArraySize(receiver);
@@ -1134,7 +1134,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     public abstract static class KeysNode extends PythonBuiltinNode {
         @Specialization
         static Object remove(Object receiver,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             try {
                 return getInterop().getMembers(receiver);
@@ -1175,7 +1175,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static Object doSequence(PSequence seq,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             SequenceStorage storage = seq.getSequenceStorage();
             Object arrayObject;
             if (storage instanceof EmptySequenceStorage) {
@@ -1190,7 +1190,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object doError(Object object,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_P, object);
         }
     }

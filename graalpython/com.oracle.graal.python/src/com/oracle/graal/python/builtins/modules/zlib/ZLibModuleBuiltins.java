@@ -259,7 +259,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isPNone(value)", "!isInteger(value)"})
         static Object doOthers(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyLongAsIntNode asIntNode) {
             return asIntNode.execute(frame, inliningTarget, value);
         }
@@ -305,7 +305,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static byte[] error(@SuppressWarnings("unused") VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, value);
         }
 
@@ -348,7 +348,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "useNative()")
         long doNativeBytes(PBytesLike data, int value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes,
                         @Shared @Cached NativeLibrary.InvokeNativeFunction invoke) {
             byte[] bytes = toBytes.execute(inliningTarget, data);
@@ -366,7 +366,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!useNative()")
         static long doJavaBytes(PBytesLike data, int value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes) {
             byte[] bytes = toBytes.execute(inliningTarget, data);
             int len = data.getSequenceStorage().length();
@@ -382,7 +382,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static long error(Object data, @SuppressWarnings("unused") Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, EXPECTED_BYTESLIKE_GOT_P, data);
         }
 
@@ -428,7 +428,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "useNative()")
         long doNativeBytes(PBytesLike data, int value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes,
                         @Shared @Cached NativeLibrary.InvokeNativeFunction invoke) {
             byte[] bytes = toBytes.execute(inliningTarget, data);
@@ -446,7 +446,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!useNative()")
         long doJavaBytes(PBytesLike data, int value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes) {
             byte[] bytes = toBytes.execute(inliningTarget, data);
             int len = data.getSequenceStorage().length();
@@ -501,7 +501,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBytes compress(VirtualFrame frame, Object buffer, int level, int wbits,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
@@ -538,13 +538,13 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
             @Specialization(guards = {"!useNative()", "isValidLevel(level)"})
             static byte[] doJava(byte[] bytes, int length, int level, int wbits,
-                            @Bind("this") Node inliningTarget) {
+                            @Bind Node inliningTarget) {
                 return JavaCompress.compressFinish(bytes, length, level, wbits, inliningTarget);
             }
 
             @Specialization(guards = {"!useNative()", "!isValidLevel(level)"})
             static byte[] doJavaLevelError(byte[] bytes, int length, int level, int wbits,
-                            @Bind("this") Node inliningTarget) {
+                            @Bind Node inliningTarget) {
                 throw PRaiseNode.raiseStatic(inliningTarget, ZLibError, ErrorMessages.BAD_COMPRESSION_LEVEL);
             }
         }
@@ -565,7 +565,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBytes decompress(VirtualFrame frame, Object buffer, int wbits, int bufsize,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
@@ -637,7 +637,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"method == DEFLATED", "useNative()"})
         static Object doNative(int level, int method, int wbits, int memLevel, int strategy, byte[] zdict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached NativeLibrary.InvokeNativeFunction createCompObject,
                         @Cached NativeLibrary.InvokeNativeFunction compressObjInit,
@@ -675,14 +675,14 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"method == DEFLATED", "!useNative()", "!isValidWBitRange(wbits)"})
         static Object invalid(int level, int method, int wbits, int memLevel, int strategy, byte[] zdict,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.INVALID_INITIALIZATION_OPTION);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"method != DEFLATED"})
         static Object methodErr(int level, int method, int wbits, int memLevel, int strategy, byte[] zdict,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.ONLY_DEFLATED_ALLOWED_AS_METHOD, DEFLATED, method);
         }
     }
@@ -709,7 +709,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"useNative()"})
         static Object doNative(int wbits, byte[] zdict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached NativeLibrary.InvokeNativeFunction createCompObject,
                         @Cached NativeLibrary.InvokeNativeFunction decompressObjInit,
@@ -749,7 +749,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"!useNative()", "!isValidWBitRange(wbits)"})
         static Object invalid(int wbits, byte[] zdict,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.INVALID_INITIALIZATION_OPTION);
         }
     }

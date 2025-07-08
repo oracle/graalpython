@@ -123,7 +123,7 @@ public abstract class GetFrameLocalsNode extends Node {
         @Specialization(guards = {"cachedFd == locals.getFrameDescriptor()", "count < 32"}, limit = "1")
         @ExplodeLoop
         void doCachedFd(MaterializedFrame locals, PDict dict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached("locals.getFrameDescriptor()") FrameDescriptor cachedFd,
                         @Bind("getInfo(cachedFd)") FrameInfo info,
                         @Bind("info.getVariableCount()") int count,
@@ -147,7 +147,7 @@ public abstract class GetFrameLocalsNode extends Node {
 
         @Specialization(replaces = "doCachedFd")
         void doGeneric(MaterializedFrame locals, PDict dict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("setItem") @Cached HashingStorageSetItem setItem,
                         @Shared("delItem") @Cached HashingStorageDelItem delItem) {
             FrameInfo info = getInfo(locals.getFrameDescriptor());

@@ -119,7 +119,7 @@ public final class TypeAliasTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTypeAliasType newTypeAliasType(VirtualFrame frame, Object cls, TruffleString name, Object value, Object typeParams,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached CheckTypeParamsNode checkNode,
                         @Cached CallerNode callerNode,
@@ -147,7 +147,7 @@ public final class TypeAliasTypeBuiltins extends PythonBuiltins {
 
             @Fallback
             static PTuple doError(@SuppressWarnings("unused") Object o,
-                            @Bind("this") Node inliningTarget) {
+                            @Bind Node inliningTarget) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, TYPE_PARAMS_MUST_BE_A_TUPLE);
             }
         }
@@ -205,7 +205,7 @@ public final class TypeAliasTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.module == null", "self.computeValue != null"})
         static Object doComputed(VirtualFrame frame, PTypeAliasType self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetItem getItemNode) {
             if (self.computeValue instanceof PFunction fun && fun.getGlobals() != null) {
                 return getItemNode.execute(frame, inliningTarget, fun.getGlobals(), T___NAME__);
@@ -224,7 +224,7 @@ public final class TypeAliasTypeBuiltins extends PythonBuiltins {
     public abstract static class GetParametersNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.typeParams != null")
         static PTuple doTypeParams(VirtualFrame frame, PTypeAliasType self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached UnpackTypeVarTuplesNode unpackTypeVarTuplesNode) {
             return unpackTypeVarTuplesNode.execute(frame, inliningTarget, self.typeParams);
         }
@@ -276,7 +276,7 @@ public final class TypeAliasTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.typeParams == null")
         static Object doError(@SuppressWarnings("unused") PTypeAliasType self, @SuppressWarnings("unused") Object args,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ONLY_GENERIC_TYPE_ALIASES_ARE_SUBSCRIPTABLE);
         }
     }

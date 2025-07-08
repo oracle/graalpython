@@ -353,7 +353,7 @@ public class NativeLibrary {
 
         @Specialization(replaces = "doSingleContext")
         static Object doMultiContext(NativeLibrary lib, NativeFunction functionIn, Object[] args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedExactClassProfile functionClassProfile,
                         @CachedLibrary(limit = "1") SignatureLibrary funInterop) {
             NativeFunction function = functionClassProfile.profile(inliningTarget, functionIn);

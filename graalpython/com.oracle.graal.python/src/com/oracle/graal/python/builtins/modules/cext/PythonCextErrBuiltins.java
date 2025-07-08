@@ -157,7 +157,7 @@ public final class PythonCextErrBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object doClear(@SuppressWarnings("unused") Object threadState, PNone val,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             PythonLanguage lang = context.getLanguage(inliningTarget);
             context.getThreadState(lang).setCaughtException(PException.NO_EXCEPTION);
@@ -166,7 +166,7 @@ public final class PythonCextErrBuiltins {
 
         @Specialization
         static Object doFull(@SuppressWarnings("unused") Object threadState, PBaseException val,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PException e = PException.fromExceptionInfo(val, PythonOptions.isPExceptionWithJavaStacktrace(language));
@@ -198,13 +198,13 @@ public final class PythonCextErrBuiltins {
         static Object create(Object type, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Shared @Cached IsTypeNode isTypeNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubClassNode isSubClassNode,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.SystemError, EXCEPTION_NOT_BASEEXCEPTION, new Object[]{type});
         }
 
         @Specialization(guards = "isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")
         static Object create(Object type, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached IsTypeNode isTypeNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubClassNode isSubClassNode,
                         @Cached PrepareExceptionNode prepareExceptionNode) {
@@ -222,7 +222,7 @@ public final class PythonCextErrBuiltins {
 
         @Specialization
         static Object newEx(TruffleString name, Object base, Object dict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached HashingStorageGetItem getItem,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodepointNode,
@@ -287,7 +287,7 @@ public final class PythonCextErrBuiltins {
     abstract static class PyTruffleErr_GetExcInfo extends CApiNullaryBuiltinNode {
         @Specialization
         Object info(
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @Cached GetClassNode getClassNode,
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
@@ -327,7 +327,7 @@ public final class PythonCextErrBuiltins {
     abstract static class _PyErr_WriteUnraisableMsg extends CApiBinaryBuiltinNode {
         @Specialization
         static Object write(Object msg, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached WriteUnraisableNode writeUnraisableNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
@@ -441,7 +441,7 @@ public final class PythonCextErrBuiltins {
     abstract static class PyException_SetCause extends CApiBinaryBuiltinNode {
         @Specialization
         Object setCause(Object exc, Object cause,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExceptionNodes.SetCauseNode setCauseNode) {
             setCauseNode.execute(inliningTarget, exc, cause != PNone.NO_VALUE ? cause : PNone.NONE);
             return PNone.NO_VALUE;
@@ -452,7 +452,7 @@ public final class PythonCextErrBuiltins {
     abstract static class PyException_GetCause extends CApiUnaryBuiltinNode {
         @Specialization
         Object getCause(Object exc,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExceptionNodes.GetCauseNode getCauseNode) {
             return noneToNativeNull(inliningTarget, getCauseNode.execute(inliningTarget, exc));
         }
@@ -462,7 +462,7 @@ public final class PythonCextErrBuiltins {
     abstract static class PyException_GetContext extends CApiUnaryBuiltinNode {
         @Specialization
         Object setCause(Object exc,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExceptionNodes.GetContextNode getContextNode) {
             return noneToNativeNull(inliningTarget, getContextNode.execute(inliningTarget, exc));
         }
@@ -472,7 +472,7 @@ public final class PythonCextErrBuiltins {
     abstract static class PyException_SetContext extends CApiBinaryBuiltinNode {
         @Specialization
         Object setContext(Object exc, Object context,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExceptionNodes.SetContextNode setContextNode) {
             setContextNode.execute(inliningTarget, exc, context != PNone.NO_VALUE ? context : PNone.NONE);
             return PNone.NO_VALUE;
@@ -484,7 +484,7 @@ public final class PythonCextErrBuiltins {
 
         @Specialization
         Object getTraceback(Object exc,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode) {
             return noneToNativeNull(inliningTarget, getTracebackNode.execute(inliningTarget, exc));
         }
@@ -495,7 +495,7 @@ public final class PythonCextErrBuiltins {
 
         @Specialization
         Object setTraceback(Object exc, Object traceback,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectSetAttr setAttrNode) {
             setAttrNode.execute(inliningTarget, exc, T___TRACEBACK__, traceback);
             return 0;

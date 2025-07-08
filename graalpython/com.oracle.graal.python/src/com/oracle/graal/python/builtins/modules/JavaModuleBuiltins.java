@@ -126,7 +126,7 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isPString(name) || isTruffleString(name)")
         static Object type(Object name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToJavaStringNode castToStringNode,
                         @Cached PRaiseNode raiseNode) {
             Env env = PythonContext.get(inliningTarget).getEnv();
@@ -149,7 +149,7 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object doError(Object object,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_P, object);
         }
     }
@@ -159,7 +159,7 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
     abstract static class AddToClassPathNode extends PythonBuiltinNode {
         @Specialization
         static PNone add(Object[] args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToString,
                         @Cached PRaiseNode raiseNode) {
             Env env = PythonContext.get(inliningTarget).getEnv();
@@ -229,7 +229,7 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
     abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"!isForeign1.execute(inliningTarget, object)", "isForeign2.execute(inliningTarget, klass)"})
         static boolean check(Object object, Object klass,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
                         @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -247,7 +247,7 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isForeign1.execute(inliningTarget, object)", "isForeign2.execute(inliningTarget, klass)"})
         static boolean checkForeign(Object object, Object klass,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
                         @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -266,7 +266,7 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static boolean fallback(Object object, Object klass,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.UNSUPPORTED_INSTANCEOF, object, klass);
         }
     }

@@ -82,7 +82,7 @@ public final class ForeignExecutableBuiltins extends PythonBuiltins {
     public abstract static class NameNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getName(Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached PForeignToPTypeNode toPythonNode,
                         @CachedLibrary(limit = "2") InteropLibrary lib) {
@@ -105,7 +105,7 @@ public final class ForeignExecutableBuiltins extends PythonBuiltins {
     public abstract static class DocNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getName(Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached PForeignToPTypeNode toPythonNode,
                         @CachedLibrary(limit = "2") InteropLibrary lib) {
@@ -127,7 +127,7 @@ public final class ForeignExecutableBuiltins extends PythonBuiltins {
     public abstract static class CallNode extends PythonBuiltinNode {
         @Specialization
         static Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "4") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,

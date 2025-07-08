@@ -85,7 +85,7 @@ public abstract class WriteGlobalNode extends PNodeWithContext {
 
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals", "isBuiltinDict(cachedGlobals)"}, limit = "1")
     void writeDictObjectCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals, TruffleString attributeId, Object value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Shared("setItemDict") @Cached HashingCollectionNodes.SetItemNode storeNode) {
         storeNode.execute(frame, inliningTarget, cachedGlobals, attributeId, value);
@@ -93,14 +93,14 @@ public abstract class WriteGlobalNode extends PNodeWithContext {
 
     @Specialization(replaces = "writeDictObjectCached", guards = "isBuiltinDict(globals)")
     void writeDictObject(VirtualFrame frame, PDict globals, TruffleString attributeId, Object value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("setItemDict") @Cached HashingCollectionNodes.SetItemNode storeNode) {
         storeNode.execute(frame, inliningTarget, globals, attributeId, value);
     }
 
     @Specialization(replaces = {"writeDictObject", "writeDictObjectCached"})
     void writeGenericDict(VirtualFrame frame, PDict globals, TruffleString attributeId, Object value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PyObjectSetItem storeNode) {
         storeNode.execute(frame, inliningTarget, globals, attributeId, value);
     }

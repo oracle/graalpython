@@ -79,7 +79,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object call(Object string, int end, boolean strict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToJavaStringCheckedNode castString,
                         @Bind PythonLanguage language) {
             IntRef nextIdx = new IntRef();
@@ -104,7 +104,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString call(TruffleString string,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
@@ -140,7 +140,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString call(TruffleString string,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,

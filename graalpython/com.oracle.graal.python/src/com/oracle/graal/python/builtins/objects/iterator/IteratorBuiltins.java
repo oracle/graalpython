@@ -130,7 +130,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object exhausted(VirtualFrame frame, Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached NextHelperNode nextHelperNode) {
             return nextHelperNode.execute(frame, inliningTarget, self);
         }
@@ -354,7 +354,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         static int lengthHint(@SuppressWarnings({"unused"}) VirtualFrame frame, PDictView.PBaseDictIterator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached HashingStorageLen lenNode,
                         @Shared @Cached InlinedConditionProfile profile) {
             if (profile.profile(inliningTarget, self.checkSizeChanged(inliningTarget, lenNode))) {
@@ -400,7 +400,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         static int lengthHint(PBaseSetIterator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached HashingStorageLen lenNode,
                         @Shared @Cached InlinedConditionProfile profile) {
             int size = self.getSize();
@@ -421,7 +421,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
         static int lengthHint(PSequenceIterator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SequenceNodes.LenNode lenNode) {
             int len = lenNode.execute(inliningTarget, self.getPSequence()) - self.getIndex();
             return len < 0 ? 0 : len;
@@ -429,7 +429,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"})
         static int lengthHint(VirtualFrame frame, PSequenceIterator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode) {
             int len = sizeNode.execute(frame, inliningTarget, self.getObject()) - self.getIndex();
             return len < 0 ? 0 : len;
@@ -437,7 +437,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, self)", "interop.isIterator(self)"}, limit = "1")
         static int foreign(Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached IsForeignObjectNode isForeignObjectNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
                         @Cached GilNode gil) {
@@ -458,7 +458,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reduce(VirtualFrame frame, PArrayIterator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Shared @Cached InlinedConditionProfile exhaustedProfile,
                         @Shared @Cached PyObjectGetAttr getAttrNode) {
@@ -471,7 +471,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reduce(VirtualFrame frame, PHashingStorageIterator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached SequenceStorageNodes.CreateStorageFromIteratorNode storageNode,
                         // unused profile to avoid mixing shared and non-shared inlined nodes
@@ -489,7 +489,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reduce(VirtualFrame frame, PIntegerSequenceIterator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Shared @Cached PyObjectGetAttr getAttrNode) {
             if (self.isExhausted()) {
@@ -500,7 +500,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reduce(VirtualFrame frame, PPrimitiveIterator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Shared @Cached PyObjectGetAttr getAttrNode) {
             if (self.isExhausted()) {
@@ -511,7 +511,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reduce(VirtualFrame frame, PStringIterator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Shared @Cached PyObjectGetAttr getAttrNode) {
             if (self.isExhausted()) {
@@ -522,7 +522,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reduce(VirtualFrame frame, PIntRangeIterator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Shared @Cached PyObjectGetAttr getAttrNode) {
             int start = self.getStart();
@@ -535,7 +535,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reduce(VirtualFrame frame, PBigRangeIterator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Shared @Cached PyObjectGetAttr getAttrNode) {
             PInt start = self.getStart();
@@ -548,7 +548,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isPSequence()")
         static Object reduce(VirtualFrame frame, PSequenceIterator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Shared @Cached PyObjectGetAttr getAttrNode) {
             if (self.isExhausted()) {
@@ -559,7 +559,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isPSequence()")
         static Object reduceNonSeq(@SuppressWarnings({"unused"}) VirtualFrame frame, PSequenceIterator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Shared @Cached PyObjectGetAttr getAttrNode) {
             if (!self.isExhausted()) {
@@ -571,7 +571,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Fallback
         static int other(Object self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "iterator", self);
         }
 
@@ -599,7 +599,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static Object setstate(PBigRangeIterator self, Object index,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToJavaBigIntegerNode castToJavaBigIntegerNode) {
             BigInteger idx = castToJavaBigIntegerNode.execute(inliningTarget, index);
             if (idx.compareTo(BigInteger.ZERO) < 0) {
@@ -611,7 +611,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPBigRangeIterator(self)")
         static Object setstate(VirtualFrame frame, PBuiltinIterator self, Object index,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             int idx = asSizeNode.executeExact(frame, inliningTarget, index);
             if (idx < 0) {
@@ -623,7 +623,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object other(Object self, Object index,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "iterator", self);
         }
 

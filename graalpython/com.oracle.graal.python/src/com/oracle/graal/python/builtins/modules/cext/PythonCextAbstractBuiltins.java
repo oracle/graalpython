@@ -173,7 +173,7 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PyNumber_Index extends CApiUnaryBuiltinNode {
         @Specialization
         static Object index(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached PRaiseNode raiseNode) {
             checkNonNullArg(inliningTarget, obj, raiseNode);
@@ -186,7 +186,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         static Object nlong(Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberLongNode pyNumberLongNode) {
             return pyNumberLongNode.execute(null, inliningTarget, object);
         }
@@ -196,7 +196,7 @@ public final class PythonCextAbstractBuiltins {
     protected abstract static class PyNumber_ToBase extends CApiBinaryBuiltinNode {
         @Specialization(guards = "base == 2")
         static Object toBase2(Object n, @SuppressWarnings("unused") int base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyNumberIndexNode indexNode,
                         @Cached BinNode binNode) {
             Object i = indexNode.execute(null, inliningTarget, n);
@@ -211,7 +211,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "base == 10")
         static Object toBase10(Object n, @SuppressWarnings("unused") int base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyNumberIndexNode indexNode,
                         @Cached StringBuiltins.StrNewNode strNode) {
             Object i = indexNode.execute(null, inliningTarget, n);
@@ -223,7 +223,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "base == 16")
         static Object toBase16(Object n, @SuppressWarnings("unused") int base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyNumberIndexNode indexNode,
                         @Cached HexNode hexNode) {
             Object i = indexNode.execute(null, inliningTarget, n);
@@ -232,7 +232,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "!checkBase(base)")
         static Object toBase(@SuppressWarnings("unused") Object n, @SuppressWarnings("unused") int base,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BASE_MUST_BE);
         }
 
@@ -256,7 +256,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         static Object doGeneric(Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberFloatNode pyNumberFloat) {
             return pyNumberFloat.execute(inliningTarget, object);
         }
@@ -539,7 +539,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         Object values(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TupleNode tupleNode,
                         @Cached GetClassNode getClassNode) {
             if (getClassNode.execute(inliningTarget, obj) == PythonBuiltinClassType.PTuple) {
@@ -563,7 +563,7 @@ public final class PythonCextAbstractBuiltins {
     public abstract static class PyTruffleSequence_SetItem extends CApiTernaryBuiltinNode {
         @Specialization
         static Object setItem(Object obj, long key, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PySequenceSetItemNode setItemNode) {
             if ((int) key != key) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, key);
@@ -578,7 +578,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "checkNode.execute(inliningTarget, obj)", limit = "1")
         static Object getSlice(Object obj, long iLow, long iHigh,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached PySliceNew sliceNode,
@@ -590,7 +590,7 @@ public final class PythonCextAbstractBuiltins {
         @Specialization(guards = "!checkNode.execute(inliningTarget, obj)", limit = "1")
         static Object getSlice(Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_IS_UNSLICEABLE, obj);
         }
     }
@@ -600,7 +600,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         static int contains(Object haystack, Object needle,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PySequenceContainsNode containsNode) {
             return PInt.intValue(containsNode.execute(null, inliningTarget, haystack, needle));
         }
@@ -610,7 +610,7 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PySequence_InPlaceRepeat extends CApiBinaryBuiltinNode {
         @Specialization
         static Object repeat(Object obj, long n,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached PySequenceInPlaceRepeatNode repeat) {
             if (!PInt.isIntRange(n)) {
@@ -624,7 +624,7 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PySequence_Concat extends CApiBinaryBuiltinNode {
         @Specialization
         Object doIt(Object s1, Object s2,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PySequenceConcatNode pySeqConcat) {
             return pySeqConcat.execute(null, inliningTarget, s1, s2);
         }
@@ -635,7 +635,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         static Object concat(Object s1, Object s2,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PySequenceInPlaceConcatNode concat) {
             return concat.execute(null, inliningTarget, s1, s2);
         }
@@ -645,7 +645,7 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PyTruffleSequence_DelItem extends CApiBinaryBuiltinNode {
         @Specialization
         static Object run(Object o, long i,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PySequenceDelItemNode delItemNode) {
             if ((int) i != i) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, i);
@@ -659,7 +659,7 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PyTruffleSequence_GetItem extends CApiBinaryBuiltinNode {
         @Specialization
         static Object doManaged(Object delegate, long position,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PySequenceGetItemNode getItemNode) {
             if ((int) position != position) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, position);
@@ -673,7 +673,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         static int doSequence(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PySequenceSizeNode sizeNode) {
             return sizeNode.execute(null, inliningTarget, obj);
         }
@@ -683,7 +683,7 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PySequence_SetSlice extends CApiQuaternaryBuiltinNode {
         @Specialization
         static int setSlice(Object sequence, Object iLow, Object iHigh, Object s,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectSlotsNode getSlotsNode,
                         @Cached CallSlotMpAssSubscriptNode callSetItem,
                         @Cached PySliceNew sliceNode,
@@ -703,7 +703,7 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PySequence_DelSlice extends CApiTernaryBuiltinNode {
         @Specialization
         static int setSlice(Object sequence, Object iLow, Object iHigh,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectSlotsNode getSlotsNode,
                         @Cached CallSlotMpAssSubscriptNode callSetItem,
                         @Cached PySliceNew sliceNode,
@@ -724,7 +724,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         static int contains(Object haystack, Object needle,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PySequenceIterSearchNode searchNode) {
             return searchNode.execute(inliningTarget, haystack, needle, PySequenceIterSearchNode.PY_ITERSEARCH_COUNT);
         }
@@ -735,7 +735,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         static int contains(Object haystack, Object needle,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PySequenceIterSearchNode searchNode) {
             return searchNode.execute(inliningTarget, haystack, needle, PySequenceIterSearchNode.PY_ITERSEARCH_INDEX);
         }
@@ -748,7 +748,7 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PyObject_GetItem extends CApiBinaryBuiltinNode {
         @Specialization
         Object doManaged(Object list, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetItem getItem) {
             return getItem.execute(null, inliningTarget, list, key);
         }
@@ -759,7 +759,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         static int doGenericUnboxed(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode) {
             // Native objects are handled in C
             assert !(obj instanceof PythonAbstractNativeObject);
@@ -774,7 +774,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         static long doGenericUnboxed(Object obj, long defaultValue,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached IteratorNodes.GetLength getLength) {
             int len = getLength.execute(null, inliningTarget, obj);
             if (len == -1) {
@@ -797,7 +797,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "!isDict(obj)")
         Object keys(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode,
                         @Shared @Cached ConstructListNode listNode) {
@@ -823,7 +823,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "!isDict(obj)")
         static Object items(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode,
                         @Shared @Cached ConstructListNode listNode) {
@@ -843,7 +843,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "!isDict(obj)")
         static Object values(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode,
                         @Shared @Cached ConstructListNode listNode,
@@ -862,7 +862,7 @@ public final class PythonCextAbstractBuiltins {
         // __len__ method
         @Specialization
         static int doMapping(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode,
                         @Cached IsSameTypeNode isSameType,
                         @Cached GetClassNode getClassNode,
@@ -898,7 +898,7 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PyTruffleIter_Send extends CApiBinaryBuiltinNode {
         @Specialization
         Object send(Object iter, Object arg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyIterCheckNode pyiterCheck,
                         @Cached PyObjectCallMethodObjArgs callMethodNode,
                         @Cached PyIterNextNode nextNode,
@@ -924,7 +924,7 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PyObject_GetDoc extends CApiUnaryBuiltinNode {
         @Specialization
         Object get(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached AsCharPointerNode asCharPointerNode) {
             try {
@@ -966,7 +966,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "isType.execute(inliningTarget, type)", limit = "1")
         static int set(PythonAbstractNativeObject type, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsTypeNode isType,
                         @Cached TruffleString.SwitchEncodingNode switchEncoding,
                         @Cached CStructAccess.WritePointerNode writePointerNode) {

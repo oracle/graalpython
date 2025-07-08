@@ -199,7 +199,7 @@ public abstract class TpSlotHashFun {
 
         @Specialization
         static long doIt(VirtualFrame frame, TpSlotPythonSingle slot, Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached UnaryPythonSlotDispatcherNode dispatcherNode,
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached PyLongAsLongAndOverflowNode asLongNode,

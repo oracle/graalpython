@@ -1194,7 +1194,7 @@ public abstract class CApiTransitions {
 
         @Specialization
         static Object doForeign(Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
                         @Cached InlinedExactClassProfile classProfile,
                         @Cached InlinedConditionProfile isNullProfile,
@@ -1255,7 +1255,7 @@ public abstract class CApiTransitions {
 
         @Specialization
         static Object doNative(PythonAbstractNativeObject obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind("needsTransfer()") boolean needsTransfer,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached InlinedBranchProfile inlinedBranchProfile,
@@ -1308,7 +1308,7 @@ public abstract class CApiTransitions {
         @Specialization(guards = "isOther(obj)")
         static Object doOther(Object obj,
                         @Bind("needsTransfer()") boolean needsTransfer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetNativeWrapperNode getWrapper,
                         @Cached GetReplacementNode getReplacementNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
@@ -1430,7 +1430,7 @@ public abstract class CApiTransitions {
 
         @Specialization
         static Object doWrapper(PythonNativeWrapper value,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached InlinedExactClassProfile wrapperProfile,
                         @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             return handleWrapper(inliningTarget, wrapperProfile, updateRefNode, false, value);
@@ -1439,7 +1439,7 @@ public abstract class CApiTransitions {
         @Specialization(guards = "!isNativeWrapper(value)", limit = "3")
         @SuppressWarnings({"truffle-static-method", "truffle-sharing"})
         Object doNonWrapper(Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
                         @Cached CStructAccess.ReadI32Node readI32Node,
                         @Cached InlinedConditionProfile isNullProfile,
@@ -1637,7 +1637,7 @@ public abstract class CApiTransitions {
         @Specialization
         @SuppressWarnings({"truffle-static-method", "truffle-sharing"})
         Object doNonWrapper(long pointer, boolean stealing,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CStructAccess.ReadI32Node readI32Node,
                         @Cached InlinedConditionProfile isZeroProfile,
                         @Cached InlinedConditionProfile createNativeProfile,
@@ -1915,7 +1915,7 @@ public abstract class CApiTransitions {
 
         @Specialization(guards = "!isNativeWrapper(obj)", limit = "3")
         static PythonNativeWrapper doNonWrapper(Object obj, boolean strict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("obj") InteropLibrary interopLibrary,
                         @Cached NativePtrToPythonWrapperNode nativePtrToPythonWrapperNode,
                         @Cached InlinedConditionProfile isLongProfile) {
@@ -1969,7 +1969,7 @@ public abstract class CApiTransitions {
     public abstract static class WrappedPointerToNativeNode extends CExtToNativeNode {
         @Specialization
         static Object doGeneric(Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile isWrapperProfile,
                         @Cached GetReplacementNode getReplacementNode) {
             if (isWrapperProfile.profile(inliningTarget, object instanceof PythonNativeWrapper)) {

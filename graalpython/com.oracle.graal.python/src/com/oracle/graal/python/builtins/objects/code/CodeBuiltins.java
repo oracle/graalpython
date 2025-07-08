@@ -129,7 +129,7 @@ public final class CodeBuiltins extends PythonBuiltins {
                         TruffleString filename, TruffleString name, TruffleString qualname,
                         int firstlineno, PBytes linetable, @SuppressWarnings("unused") PBytes exceptiontable,
                         PTuple freevars, PTuple cellvars,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
@@ -159,7 +159,7 @@ public final class CodeBuiltins extends PythonBuiltins {
                         Object filename, Object name, Object qualname,
                         Object firstlineno, Object linetable, Object exceptiontable,
                         Object freevars, Object cellvars,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INVALID_ARGS, "code");
         }
 
@@ -174,7 +174,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetFreeVarsNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PCode self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
             return internStrings(inliningTarget, self.getFreeVars(), internStringNode);
         }
@@ -185,7 +185,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetCellVarsNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PCode self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
             return internStrings(inliningTarget, self.getCellVars(), internStringNode);
         }
@@ -196,7 +196,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetFilenameNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PCode self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
             TruffleString filename = self.getFilename();
             if (filename != null) {
@@ -220,7 +220,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetNameNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PCode self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
             return internStringNode.execute(inliningTarget, self.co_name());
         }
@@ -231,7 +231,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetQualNameNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PCode self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
             return internStringNode.execute(inliningTarget, self.co_qualname());
         }
@@ -306,7 +306,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetConstsNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PCode self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
             return internStrings(inliningTarget, self.getConstants(), internStringNode);
         }
@@ -317,7 +317,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetNamesNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PCode self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
             return internStrings(inliningTarget, self.getNames(), internStringNode);
         }
@@ -328,7 +328,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetVarNamesNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PCode self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
             return internStrings(inliningTarget, self.getVarnames(), internStringNode);
         }
@@ -585,7 +585,7 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class CodeHashNode extends HashBuiltinNode {
         @Specialization
         static long hash(VirtualFrame frame, PCode self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PyObjectHashNode hashNode) {
             long h, h0, h1, h2, h3, h4, h5, h6;
@@ -646,7 +646,7 @@ public final class CodeBuiltins extends PythonBuiltins {
                         Object[] coCellvars, TruffleString coFilename,
                         TruffleString coName, TruffleString coQualname,
                         Object coLnotab, @SuppressWarnings("unused") Object coExceptiontable,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,

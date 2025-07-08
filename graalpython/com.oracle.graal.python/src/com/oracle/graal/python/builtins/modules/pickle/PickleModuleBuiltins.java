@@ -104,7 +104,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object dump(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object obj, Object file, int protocol, boolean fixImports, Object bufferCallback,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PPickler.DumpNode dumpNode,
                         @Cached PPickler.FlushToFileNode flushToFileNode,
@@ -134,7 +134,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object dump(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object obj, int protocol, boolean fixImports, Object bufferCallback,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PPickler.DumpNode dumpNode,
                         @Cached PRaiseNode raiseNode) {
@@ -161,7 +161,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object load(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object file, @SuppressWarnings("unused") boolean fixImports, TruffleString encoding, TruffleString errors,
                         Object buffers,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PUnpickler.LoadNode loadNode,
                         @Cached PyObjectLookupAttr lookup,
@@ -192,7 +192,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static Object loads(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object buffer, boolean fixImports, TruffleString encoding, TruffleString errors, Object buffers,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PUnpickler.LoadNode loadNode,

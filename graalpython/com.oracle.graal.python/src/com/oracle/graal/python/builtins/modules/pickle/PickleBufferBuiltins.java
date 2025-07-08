@@ -107,7 +107,7 @@ public class PickleBufferBuiltins extends PythonBuiltins {
     public abstract static class PickleBufferRawNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object raw(VirtualFrame frame, PPickleBuffer self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyMemoryViewFromObject memoryViewFromObject,
                         @Cached MemoryViewNodes.ReleaseNode releaseNode,
                         @Bind PythonLanguage language,

@@ -97,7 +97,7 @@ public final class BatchedBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBatched batched(VirtualFrame frame, Object cls, Object iterable, int n,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
@@ -132,7 +132,7 @@ public final class BatchedBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object next(VirtualFrame frame, PBatched bo,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PyIterNextNode nextNode,
                         @Cached PRaiseNode raiseNode) {

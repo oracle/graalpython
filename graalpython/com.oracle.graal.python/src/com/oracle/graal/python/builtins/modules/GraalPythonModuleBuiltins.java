@@ -427,7 +427,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class ReadFileNode extends PythonUnaryBuiltinNode {
         @Specialization
         PBytes doString(VirtualFrame frame, Object filenameObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.EqualNode eqNode,
@@ -529,7 +529,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class BuiltinNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object doIt(VirtualFrame frame, PFunction func,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached PyObjectGetItem getItem) {
             PFunction builtinFunc = convertToBuiltin(func);
@@ -565,7 +565,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class BuiltinMethodNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object doIt(PFunction func,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CodeNodes.GetCodeRootNode getRootNode) {
             RootNode rootNode = getRootNode.execute(inliningTarget, func.getCode());
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
@@ -764,7 +764,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class JavaExtendNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doIt(Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PRaiseNode raiseNode) {
             if (getContext(inliningTarget).getEnv().isPreInitialization()) {
@@ -896,7 +896,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     abstract static class DumpHeapNode extends PythonBuiltinNode {
         @Specialization
         TruffleString doit(VirtualFrame frame,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -1044,7 +1044,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doArray(PArray array,
                         @Shared @Cached ToNativePrimitiveStorageNode toNativePrimitiveNode,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             NativePrimitiveSequenceStorage newStorage = toNativePrimitiveNode.execute(inliningTarget, array.getSequenceStorage());
             array.setSequenceStorage(newStorage);
             return array;
@@ -1053,7 +1053,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doSequence(PSequence sequence,
                         @Shared @Cached ToNativePrimitiveStorageNode toNativePrimitiveNode,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             NativePrimitiveSequenceStorage newStorage = toNativePrimitiveNode.execute(inliningTarget, sequence.getSequenceStorage());
             sequence.setSequenceStorage(newStorage);
             return sequence;
@@ -1090,7 +1090,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static Object replicate(TruffleString venvPath, int count,
-                        @Bind("$node") Node node,
+                        @Bind Node node,
                         @Bind PythonContext context) {
             try {
                 NativeLibraryLocator.replicate(context.getEnv().getPublicTruffleFile(venvPath.toJavaStringUncached()), context, count);
@@ -1234,7 +1234,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTuple doCreate(long arrowArrayAddr, long arrowSchemaAddr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PythonCextCapsuleBuiltins.PyCapsuleNewNode pyCapsuleNewNode) {
             var ctx = getContext(inliningTarget);
 

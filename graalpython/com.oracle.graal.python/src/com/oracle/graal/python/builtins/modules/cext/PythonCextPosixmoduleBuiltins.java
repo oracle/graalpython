@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,7 +58,7 @@ public final class PythonCextPosixmoduleBuiltins {
     abstract static class PyOS_FSPath extends CApiUnaryBuiltinNode {
         @Specialization
         static Object doit(Object path,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyOSFSPathNode fspathNode) {
             return fspathNode.execute(null, inliningTarget, path);
         }

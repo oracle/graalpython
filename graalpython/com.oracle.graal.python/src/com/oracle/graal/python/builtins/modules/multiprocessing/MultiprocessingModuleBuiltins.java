@@ -76,7 +76,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         PNone doit(VirtualFrame frame, TruffleString name,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
                         @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 posixLib.semUnlink(posixSupport, posixLib.createPathFromString(posixSupport, name));

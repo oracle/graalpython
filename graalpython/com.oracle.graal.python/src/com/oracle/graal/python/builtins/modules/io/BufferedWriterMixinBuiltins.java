@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -83,7 +83,7 @@ public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltin
     abstract static class WritableNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             return callMethod.execute(frame, inliningTarget, self.getRaw(), T_WRITABLE);
         }
@@ -97,7 +97,7 @@ public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltin
 
         @Specialization(guards = "self.isOK()")
         static Object write(@SuppressWarnings("unused") VirtualFrame frame, PBuffered self, Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached EnterBufferedNode lock,
@@ -126,7 +126,7 @@ public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltin
 
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached EnterBufferedNode lock,
                         @Cached("create(T_FLUSH)") CheckIsClosedNode checkIsClosedNode,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {

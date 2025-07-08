@@ -100,7 +100,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
     abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doObject(VirtualFrame frame, Object value, Object index,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetItem getItem) {
             return getItem.execute(frame, inliningTarget, value, index);
         }
@@ -111,7 +111,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
     abstract static class ConcatNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doObject(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PySequenceConcatNode concatNode) {
             return concatNode.execute(frame, inliningTarget, left, right);
         }
@@ -122,7 +122,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
     abstract static class IConcatNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doObject(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PySequenceInPlaceConcatNode concatNode) {
             return concatNode.execute(frame, inliningTarget, left, right);
         }
@@ -145,7 +145,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean compare(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached CastToJavaStringNode cast,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
@@ -210,7 +210,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object asIndex(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberIndexNode index) {
             return index.execute(frame, inliningTarget, value);
         }

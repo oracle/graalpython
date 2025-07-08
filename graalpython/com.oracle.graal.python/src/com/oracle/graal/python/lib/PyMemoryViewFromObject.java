@@ -88,7 +88,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
 
     @Specialization
     static PMemoryView fromMemoryView(PMemoryView object,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached PRaiseNode raiseNode) {
         object.checkReleased(inliningTarget, raiseNode);
         PythonContext context = PythonContext.get(inliningTarget);
@@ -100,14 +100,14 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
 
     @Specialization
     static PMemoryView fromNative(PythonNativeObject object,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CExtNodes.CreateMemoryViewFromNativeNode fromNativeNode) {
         return fromNativeNode.execute(inliningTarget, object, BufferFlags.PyBUF_FULL_RO);
     }
 
     @Specialization
     static PMemoryView fromPickleBuffer(VirtualFrame frame, PPickleBuffer object,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                     @Cached PyMemoryViewFromObject recursive,
                     @Exclusive @Cached PRaiseNode raiseNode) {
@@ -127,7 +127,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
 
     @Fallback
     static PMemoryView fromManaged(VirtualFrame frame, Object object,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached("createFor(this)") IndirectCallData indirectCallData,
                     @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                     @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,

@@ -101,7 +101,7 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
     abstract static class InitNode extends PythonBinaryBuiltinNode {
         @Specialization
         protected PNone init(VirtualFrame frame, PDecoratedMethod self, Object callable,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached PyObjectSetAttr setAttr) {
             self.setCallable(callable);
@@ -120,7 +120,7 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
 
         @Specialization
         Object repr(VirtualFrame frame, PDecoratedMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached TruffleStringBuilder.AppendStringNode append,
                         @Cached TruffleStringBuilder.ToStringNode toString) {

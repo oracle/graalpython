@@ -241,7 +241,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         @ExplodeLoop
         static PException doCached(Object[] scope_w, Object callable, Signature signature, int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount, int ndefaults, int avail,
                         boolean methodcall, int adjustCount,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raise,
                         @Shared @Cached TruffleString.EqualNode equalNode,
                         @Cached("co_kwonlyargcount") int cachedKwOnlyArgCount) {
@@ -258,7 +258,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @Specialization(replaces = "doCached")
         static PException doUncached(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall, int adjustCount,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raise,
                         @Shared @Cached TruffleString.EqualNode equalNode) {
             int kwonly_given = 0;
@@ -417,7 +417,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         @Specialization(guards = {"kwLen == keywords.length", "calleeSignature == cachedSignature", "kwLen <= 32"}, limit = "3")
         @ExplodeLoop
         static Object[] applyCached(Object callee, @SuppressWarnings("unused") Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         // TODO: GR-46101 make lazy once this Truffle DSL issue is fixed
                         @Shared @Cached PRaiseNode raise,
                         @Cached("keywords.length") int kwLen,
@@ -477,7 +477,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @Specialization(replaces = "applyCached")
         static Object[] applyUncached(Object callee, Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raise,
                         @Exclusive @Cached InlinedBranchProfile posArgOnlyPassedAsKeywordProfile,
                         @Exclusive @Cached InlinedBranchProfile kwOnlyIdxFoundProfile,
@@ -666,7 +666,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         @Specialization(guards = {"input_argcount == cachedInputArgcount", "co_argcount == cachedArgcount", "checkIterations(input_argcount, co_argcount)"}, limit = "3")
         @ExplodeLoop
         static void doCached(Object callable, Signature signature, Object[] scope_w, Object[] defaults, @SuppressWarnings("unused") int input_argcount, @SuppressWarnings("unused") int co_argcount,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raise,
                         @Cached("input_argcount") int cachedInputArgcount,
                         @Cached("co_argcount") int cachedArgcount,
@@ -692,7 +692,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @Specialization(replaces = "doCached")
         static void doUncached(Object callable, Signature signature, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raise,
                         @Shared @Cached InlinedConditionProfile missingProfile) {
             TruffleString[] missingNames = new TruffleString[co_argcount - input_argcount];
@@ -740,7 +740,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         @ExplodeLoop
         static void doCached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, @SuppressWarnings("unused") int co_argcount,
                         @SuppressWarnings("unused") int co_kwonlyargcount,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raise,
                         @Exclusive @Cached FindKwDefaultNode findKwDefaultNode,
                         @Cached("co_argcount") int cachedArgcount,
@@ -768,7 +768,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @Specialization(replaces = "doCached")
         static void doUncached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raise,
                         @Exclusive @Cached FindKwDefaultNode findKwDefaultNode,
                         @Exclusive @Cached InlinedConditionProfile missingProfile) {

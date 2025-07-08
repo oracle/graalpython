@@ -171,7 +171,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString noDecoder(VirtualFrame frame, PNLDecoder self, Object inputIn, boolean isFinal,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile hasDecoderProfile,
                         @Cached InlinedConditionProfile len0Profile,
                         @Cached CastToTruffleStringNode toString,
@@ -314,7 +314,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.hasDecoder()")
         static Object withDecoder(VirtualFrame frame, PNLDecoder self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached PyIndexCheckNode indexCheckNode,
@@ -344,7 +344,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.hasDecoder()")
         static Object noDecoder(VirtualFrame frame, PNLDecoder self, PTuple state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Exclusive @Cached PyIndexCheckNode indexCheckNode,
                         @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
@@ -360,7 +360,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.hasDecoder()")
         static Object withDecoder(VirtualFrame frame, PNLDecoder self, PTuple state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Exclusive @Cached PyIndexCheckNode indexCheckNode,
@@ -380,7 +380,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object err(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object state,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, STATE_ARGUMENT_MUST_BE_A_TUPLE);
         }
     }
@@ -398,7 +398,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.hasDecoder()")
         static Object withDecoder(VirtualFrame frame, PNLDecoder self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             noDecoder(self);
             return callMethod.execute(frame, inliningTarget, self.getDecoder(), T_RESET);
@@ -410,7 +410,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
     abstract static class NewlineNode extends PythonBuiltinNode {
         @Specialization
         static Object newline(PNLDecoder self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             switch (self.getSeenNewline()) {
                 case SEEN_CR:
                     return T_CR;

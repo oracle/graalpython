@@ -104,7 +104,7 @@ public final class ClassmethodCommonBuiltins extends PythonBuiltins {
         // If self.getCallable() is null, let the next @Specialization handle that
         @Specialization(guards = {"isSingleContext()", "isNoValue(type)", "cachedSelf == self", "cachedCallable != null"}, limit = "3")
         static Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
                         @SuppressWarnings("unused") @Cached(value = "self.getCallable()", weak = true) Object cachedCallable,
                         @Shared @Cached GetClassNode getClass,
@@ -114,7 +114,7 @@ public final class ClassmethodCommonBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(type)", replaces = "getCached")
         static Object get(PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetClassNode getClass,
                         @Shared @Cached MakeMethodNode makeMethod,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -124,7 +124,7 @@ public final class ClassmethodCommonBuiltins extends PythonBuiltins {
         // If self.getCallable() is null, let the next @Specialization handle that
         @Specialization(guards = {"isSingleContext()", "!isNoValue(type)", "cachedSelf == self", "cachedCallable != null"}, limit = "3")
         static Object getTypeCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
                         @SuppressWarnings("unused") @Cached(value = "self.getCallable()", weak = true) Object cachedCallable,
                         @Shared @Cached MakeMethodNode makeMethod) {
@@ -133,7 +133,7 @@ public final class ClassmethodCommonBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(type)", replaces = "getTypeCached")
         static Object getType(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached MakeMethodNode makeMethod,
                         @Shared @Cached PRaiseNode raiseNode) {
             return doGet(inliningTarget, self, type, makeMethod, raiseNode);

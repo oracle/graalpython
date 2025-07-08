@@ -132,7 +132,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
     protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization
         static Object newCData(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CtypesNodes.GenericPyCDataNewNode newNode,
                         @Cached PRaiseNode raiseNode) {
@@ -148,7 +148,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object Array_init(VirtualFrame frame, CDataObject self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectSetItem pySequenceSetItem) {
             int n = args.length;
             for (int i = 0; i < n; ++i) {
@@ -164,7 +164,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static void Array_ass_item(VirtualFrame frame, CDataObject self, int index, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyCDataSetNode pyCDataSetNode,
                         @Cached PRaiseNode raiseNode) {
@@ -183,7 +183,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "isNoValue(value)")
         static void error(CDataObject self, int index, PNone value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ARRAY_DOES_NOT_SUPPORT_ITEM_DELETION);
         }
     }
@@ -194,7 +194,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(value)", "!isPSlice(indexObj)"})
         static void Array_ass_subscript(VirtualFrame frame, CDataObject self, Object indexObj, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSint,
                         @Shared @Cached PyCArraySetItemNode setItemNode,
@@ -212,7 +212,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static void Array_ass_subscript(VirtualFrame frame, CDataObject self, PSlice slice, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectSizeNode pySequenceLength,
                         @Cached PyObjectGetItem pySequenceGetItem,
                         @Cached SliceUnpack sliceUnpack,
@@ -236,7 +236,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "isNoValue(value)")
         static void error(CDataObject self, Object index, PNone value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ARRAY_DOES_NOT_SUPPORT_ITEM_DELETION);
         }
     }
@@ -246,7 +246,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
     abstract static class PyCArrayGetItemNode extends SqItemBuiltinNode {
         @Specialization
         static Object doIt(CDataObject self, int index,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyCDataGetNode pyCDataGetNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode) {
@@ -284,7 +284,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isInvalid(self, index)")
         static Object doInt(CDataObject self, int index,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyCDataGetNode pyCDataGetNode,
                         @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode) {
             return PyCArrayGetItemNode.getItem(inliningTarget, self, index, pyCDataGetNode, pyObjectStgDictNode);
@@ -293,7 +293,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         static Object doSlice(CDataObject self, PSlice slice,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached PyCDataGetNode pyCDataGetNode,
                         @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
@@ -356,7 +356,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPSlice(item)", replaces = "doInt")
         static Object doGeneric(VirtualFrame frame, CDataObject self, Object item,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,

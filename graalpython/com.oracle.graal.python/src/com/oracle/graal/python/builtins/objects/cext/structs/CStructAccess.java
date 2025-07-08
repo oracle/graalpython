@@ -134,7 +134,7 @@ public class CStructAccess {
 
         @Specialization(guards = {"!allocatePyMem", "nativeAccess()"})
         static Object allocLong(long count, long size, @SuppressWarnings("unused") boolean allocatePyMem,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile overflowProfile) {
             assert count >= 0;
             assert size >= 0;
@@ -1216,7 +1216,7 @@ public class CStructAccess {
 
         @Specialization
         static void writeLong(long pointer, long offset, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached CoerceNativePointerToLongNode coerceToLongNode) {
             assert offset >= 0;
             UNSAFE.putLong(pointer + offset, coerceToLongNode.execute(inliningTarget, value));
@@ -1224,7 +1224,7 @@ public class CStructAccess {
 
         @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static void writePointer(Object pointer, long offset, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("pointer") InteropLibrary lib,
                         @Shared @Cached CoerceNativePointerToLongNode coerceToLongNode) {
             writeLong(asPointer(pointer, lib), offset, value, inliningTarget, coerceToLongNode);
@@ -1281,7 +1281,7 @@ public class CStructAccess {
 
         @Specialization
         static void writeLong(long pointer, long offset, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached NativePtrToPythonNode toPython,
                         @Shared @Cached PythonToNativeNewRefNode toNative,
                         @Shared @Cached CoerceNativePointerToLongNode coerceToLongNode) {
@@ -1296,7 +1296,7 @@ public class CStructAccess {
 
         @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
         static void writePointer(Object pointer, long offset, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached NativePtrToPythonNode toPython,
                         @Shared @Cached PythonToNativeNewRefNode toNative,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,

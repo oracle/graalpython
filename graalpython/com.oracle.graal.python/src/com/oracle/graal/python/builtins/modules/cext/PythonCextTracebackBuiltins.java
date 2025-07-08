@@ -84,7 +84,7 @@ public final class PythonCextTracebackBuiltins {
     abstract static class PyTraceBack_Here extends CApiUnaryBuiltinNode {
         @Specialization
         static int tbHere(PFrame frame,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached CExtCommonNodes.ReadAndClearNativeException readAndClearNativeException,
                         @Cached CExtCommonNodes.TransformExceptionToNativeNode transformExceptionToNativeNode) {

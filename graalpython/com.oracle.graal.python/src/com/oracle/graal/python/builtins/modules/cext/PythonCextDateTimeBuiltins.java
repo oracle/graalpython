@@ -127,7 +127,7 @@ public final class PythonCextDateTimeBuiltins {
     abstract static class PyTruffleDateTimeCAPI_DateTime_FromTimestamp extends CApiTernaryBuiltinNode {
         @Specialization
         static Object values(Object type, Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExecutePositionalStarargsNode starArgsNode,
                         @Cached ExpandKeywordStarargsNode kwArgsNode,
                         @Cached PyObjectLookupAttr lookupNode,
@@ -143,7 +143,7 @@ public final class PythonCextDateTimeBuiltins {
     abstract static class PyTruffleDateTimeCAPI_Date_FromTimestamp extends CApiBinaryBuiltinNode {
         @Specialization
         static Object values(Object type, Object args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExecutePositionalStarargsNode starArgsNode,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode call) {
@@ -175,7 +175,7 @@ public final class PythonCextDateTimeBuiltins {
     abstract static class PyTruffle_PyDateTime_GET_TZINFO extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
             return getAttr.execute(inliningTarget, obj, PyDateTimeCAPIWrapper.T_TZINFO);
         }

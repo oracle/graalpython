@@ -106,7 +106,7 @@ public final class TeeBuiltins extends PythonBuiltins {
     public abstract static class NewNode extends PythonBinaryBuiltinNode {
         @Specialization
         public static PTee teeFromIterable(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object iterable,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached InlinedConditionProfile isTeeInstanceProfile,
                         @Bind PythonLanguage language) {
@@ -150,7 +150,7 @@ public final class TeeBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object doIt(VirtualFrame frame, PTee self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile indexConditionProfile,
                         @Cached PyIterNextNode nextNode,
@@ -171,7 +171,7 @@ public final class TeeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reduce(PTee self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClass,
                         @Bind PythonLanguage language) {
             warnPickleDeprecated();
@@ -189,7 +189,7 @@ public final class TeeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object setState(VirtualFrame frame, PTee self, Object state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
                         @Cached CastToJavaIntLossyNode castToIntNode,

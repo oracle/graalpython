@@ -173,7 +173,7 @@ public final class PartialBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(inliningTarget, getDict, args, lenNode, false)"}, limit = "1")
         static Object createFromPartialWoDictWoKw(Object cls, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached GetDictIfExistsNode getDict,
                         @Exclusive @Cached InlinedConditionProfile hasArgsProfile,
                         @Exclusive @Cached InlinedConditionProfile hasKeywordsProfile,
@@ -196,7 +196,7 @@ public final class PartialBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(inliningTarget, getDict, args, lenNode, true)", "!withKeywords(keywords)"}, limit = "1")
         static Object createFromPartialWoDictWKw(Object cls, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached GetDictIfExistsNode getDict,
                         @Exclusive @Cached InlinedConditionProfile hasArgsProfile,
                         @Exclusive @SuppressWarnings("unused") @Cached HashingStorageLen lenNode,
@@ -211,7 +211,7 @@ public final class PartialBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(inliningTarget, getDict, args, lenNode, true)", "withKeywords(keywords)"}, limit = "1")
         static Object createFromPartialWoDictWKwKw(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached GetDictIfExistsNode getDict,
                         @Exclusive @Cached InlinedConditionProfile hasArgsProfile,
                         @Exclusive @Cached HashingStorage.InitNode initNode,
@@ -233,7 +233,7 @@ public final class PartialBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"atLeastOneArg(args)", "!isPartialWithoutDict(getDict, args)"}, limit = "1")
         static Object createGeneric(Object cls, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached GetDictIfExistsNode getDict,
                         @Exclusive @Cached InlinedConditionProfile hasKeywordsProfile,
                         @Cached PyCallableCheckNode callableCheckNode,
@@ -258,7 +258,7 @@ public final class PartialBuiltins extends PythonBuiltins {
         @Specialization(guards = "!atLeastOneArg(args)")
         @SuppressWarnings("unused")
         static Object noCallable(Object cls, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT, "partial");
         }
     }
@@ -288,14 +288,14 @@ public final class PartialBuiltins extends PythonBuiltins {
     public abstract static class PartialDictNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(mapping)")
         static Object getDict(PPartial self, @SuppressWarnings("unused") PNone mapping,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
             return getDict.execute(inliningTarget, self);
         }
 
         @Specialization
         static Object setDict(PPartial self, PDict mapping,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SetDictNode setDict) {
             setDict.execute(inliningTarget, self, mapping);
             return PNone.NONE;
@@ -303,7 +303,7 @@ public final class PartialBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
         static Object setDict(@SuppressWarnings("unused") PPartial self, Object mapping,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
     }
@@ -323,7 +323,7 @@ public final class PartialBuiltins extends PythonBuiltins {
     public abstract static class PartialReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reduce(PPartial self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetDictIfExistsNode getDictIfExistsNode,
                         @Cached GetOrCreateDictNode getOrCreateDictNode,
@@ -347,7 +347,7 @@ public final class PartialBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object setState(VirtualFrame frame, PPartial self, PTuple state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SetDictNode setDictNode,
                         @Cached DeleteDictNode deleteDictNode,
                         @Cached SequenceNodes.GetSequenceStorageNode storageNode,
@@ -408,7 +408,7 @@ public final class PartialBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object fallback(Object self, Object state,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
         }
     }
@@ -432,7 +432,7 @@ public final class PartialBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.hasKw(inliningTarget, lenNode)")
         static Object callWoDict(VirtualFrame frame, PPartial self, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile hasArgsProfile,
                         @Shared @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Shared @Cached HashingStorageLen lenNode) {
@@ -442,7 +442,7 @@ public final class PartialBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.hasKw(inliningTarget, lenNode)", "!withKeywords(keywords)"})
         static Object callWDictWoKw(VirtualFrame frame, PPartial self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached ExpandKeywordStarargsNode starargsNode,
                         @Shared @Cached InlinedConditionProfile hasArgsProfile,
                         @Shared @Cached CallNode callNode,
@@ -453,7 +453,7 @@ public final class PartialBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.hasKw(inliningTarget, lenNode)", "withKeywords(keywords)"})
         static Object callWDictWKw(VirtualFrame frame, PPartial self, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached ExpandKeywordStarargsNode starargsNode,
                         @Shared @Cached InlinedConditionProfile hasArgsProfile,
                         @Shared @Cached CallNode callNode,
@@ -511,7 +511,7 @@ public final class PartialBuiltins extends PythonBuiltins {
 
         @Specialization
         public static TruffleString repr(VirtualFrame frame, PPartial partial,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
                         @Cached GetClassNode classNode,

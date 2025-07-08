@@ -164,7 +164,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization
         static PSSLContext createContext(VirtualFrame frame, Object type, int protocol,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
@@ -285,7 +285,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class WrapSocketNode extends PythonClinicBuiltinNode {
         @Specialization
         static Object wrap(PSSLContext context, PSocket sock, boolean serverSide, Object serverHostnameObj, Object owner, @SuppressWarnings("unused") PNone session,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached StringNodes.CastToTruffleStringCheckedNode cast,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
@@ -305,7 +305,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object wrap(Object context, Object sock, Object serverSide, Object serverHostname, Object owner, Object session,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INVALID_WRAP_SOCKET_CALL);
         }
 
@@ -322,7 +322,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @Specialization
         static Object wrap(PSSLContext context, PMemoryBIO incoming, PMemoryBIO outgoing, boolean serverSide, Object serverHostnameObj, Object owner,
                         @SuppressWarnings("unused") PNone session,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached StringNodes.CastToTruffleStringCheckedNode cast,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
@@ -342,7 +342,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object wrap(Object context, Object incoming, Object outgoing, Object serverSide, Object serverHostname, Object owner, Object session,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INVALID_WRAP_BIO_CALL);
         }
 
@@ -382,7 +382,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(flags)")
         static Object setVerifyFlags(VirtualFrame frame, PSSLContext self, Object flags,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             self.setVerifyFlags(asSizeNode.executeLossy(frame, inliningTarget, flags));
             return PNone.NONE;
@@ -408,7 +408,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(valueObj)")
         static Object setOption(VirtualFrame frame, PSSLContext self, Object valueObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaLongExactNode cast,
                         @Cached PRaiseNode raiseNode) {
@@ -433,7 +433,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object set(VirtualFrame frame, PSSLContext self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PRaiseNode raiseNode) {
             int mode = asSizeNode.executeLossy(frame, inliningTarget, value);
@@ -492,7 +492,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(obj)")
         static Object set(VirtualFrame frame, PSSLContext self, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PRaiseNode raiseNode) {
             setMinMaxVersion(inliningTarget, raiseNode, self, false, asSizeNode.executeExact(frame, inliningTarget, obj));
@@ -510,7 +510,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(obj)")
         static Object set(VirtualFrame frame, PSSLContext self, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PRaiseNode raiseNode) {
             setMinMaxVersion(inliningTarget, raiseNode, self, true, asSizeNode.executeExact(frame, inliningTarget, obj));
@@ -557,7 +557,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "isNoValue(value)")
         static int get(PSSLContext self, PNone value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             // not used yet so rather raise error
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
@@ -565,7 +565,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!isNoValue(value)")
         static Object set(VirtualFrame frame, PSSLContext self, Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             // not used yet so rather raise error
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
             // int num;
@@ -590,7 +590,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class SNICallbackNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object notImplemented(@SuppressWarnings("unused") PSSLContext self, @SuppressWarnings("unused") Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
@@ -614,7 +614,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object set(VirtualFrame frame, PSSLContext self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyUnicodeFSDecoderNode asPath) {
             TruffleFile file = toTruffleFile(frame, asPath, OsEnvironGetNode.executeUncached(T_SSL_CERT_FILE));
             TruffleFile path = toTruffleFile(frame, asPath, OsEnvironGetNode.executeUncached(T_SSL_CERT_DIR));
@@ -659,7 +659,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object storeStats(VirtualFrame frame, PSSLContext self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
@@ -687,7 +687,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class LoadVerifyLocationsNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         Object load(VirtualFrame frame, PSSLContext self, Object cafile, Object capath, Object cadata,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyUnicodeFSDecoderNode asPath,
                         @Cached CastToJavaStringNode castToString,
                         @Cached ToByteArrayNode toBytes,
@@ -809,7 +809,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class LoadCertChainNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         Object load(VirtualFrame frame, PSSLContext self, Object certfile, Object keyfile, Object passwordObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyUnicodeFSDecoderNode asPath,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached GetPasswordNode getPasswordNode,
@@ -907,7 +907,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isString(password)")
         static char[] doString(Object password,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToJavaStringNode cast,
                         @Shared @Cached PRaiseNode raiseNode) {
             String str = cast.execute(password);
@@ -917,7 +917,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         static char[] doBytes(PBytesLike bytes,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("bytes") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached PRaiseNode raiseNode) {
             byte[] data = bufferLib.getInternalOrCopiedByteArray(bytes);
@@ -932,7 +932,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Fallback
         static char[] doCallable(VirtualFrame frame, Object callable,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyCallableCheckNode callableCheckNode,
                         @Cached CallNode callNode,
                         @Cached GetPasswordNode recursive,
@@ -965,7 +965,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static PNone load(VirtualFrame frame, PSSLContext self, Object pathObject,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyUnicodeFSDecoderNode asPath) {
             TruffleString path = asPath.execute(frame, pathObject);
             // not used yet so rather raise error
@@ -1032,7 +1032,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class GetCACerts extends PythonBinaryClinicBuiltinNode {
         @Specialization(guards = "!binary_form")
         Object getCerts(VirtualFrame frame, PSSLContext self, @SuppressWarnings("unused") boolean binary_form,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {

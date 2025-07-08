@@ -95,7 +95,7 @@ public final class PyCStructTypeBuiltins extends PythonBuiltins {
         @Specialization
         @InliningCutoff
         void doGeneric(VirtualFrame frame, Object object, Object keyObject, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringCheckedNode castKeyToStringNode,
                         @Shared @Cached TypeBuiltins.SetattrNode typeSetAttr,
                         @Shared @Cached TruffleString.EqualNode equalNode,

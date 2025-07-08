@@ -163,7 +163,7 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object original, Object result,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtype,
                         @Cached PRaiseNode raiseNode,
@@ -185,7 +185,7 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
@@ -240,7 +240,7 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
         @Specialization
         @InliningCutoff
         static Object doGeneric(VirtualFrame frame, Object object, int base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached PyLongFromUnicodeObject fromString,

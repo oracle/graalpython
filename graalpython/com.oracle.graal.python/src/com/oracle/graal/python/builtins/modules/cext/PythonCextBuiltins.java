@@ -990,7 +990,7 @@ public final class PythonCextBuiltins {
 
         @Specialization
         static Object doI(TruffleString typeName,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached PRaiseNode raiseNode) {
             Python3Core core = PythonContext.get(inliningTarget);
@@ -1039,7 +1039,7 @@ public final class PythonCextBuiltins {
 
         @Specialization
         static int doPythonClass(PythonClass pythonClass, Object nativeGetSets, Object nativeMembers,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HiddenAttr.WriteNode writeAttrNode) {
             writeAttrNode.execute(inliningTarget, pythonClass, NATIVE_SLOTS, new Object[]{nativeGetSets, nativeMembers});
             return 0;
@@ -1061,7 +1061,7 @@ public final class PythonCextBuiltins {
         @TruffleBoundary
         @Specialization
         static Object addInheritedSlots(PythonAbstractNativeObject pythonClass,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached CStructAccess.ReadObjectNode readNativeDict,
                         @Cached CStructAccess.ReadPointerNode readPointer,
@@ -1160,7 +1160,7 @@ public final class PythonCextBuiltins {
         static Object wrap(Object bufferStructPointer, Object ownerObj, long lenObj,
                         Object readonlyObj, Object itemsizeObj, TruffleString format,
                         Object ndimObj, Object bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile zeroDimProfile,
                         @Cached CStructAccess.ReadI64Node readShapeNode,
                         @Cached CStructAccess.ReadI64Node readStridesNode,
@@ -1290,7 +1290,7 @@ public final class PythonCextBuiltins {
 
         @Specialization(limit = "3")
         static PNone doObject(Object ptr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGCDelNode pyObjectGCDelNode,
                         @CachedLibrary("ptr") InteropLibrary lib) {
             // we expect a pointer object here because this is called from native
@@ -1345,7 +1345,7 @@ public final class PythonCextBuiltins {
 
         @Fallback
         Object doNativeWrapper(Object ptr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
@@ -1414,7 +1414,7 @@ public final class PythonCextBuiltins {
 
         @Specialization(guards = "isNativeAccessAllowed()")
         static Object doGeneric(Object pointer, Object listHead, int n,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode readObjectNode,
                         @Cached CStructAccess.ReadPointerNode readPointerNode,
                         @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode,
@@ -1524,7 +1524,7 @@ public final class PythonCextBuiltins {
     abstract static class PyTruffleObject_GC_EnsureWeak extends CApiUnaryBuiltinNode {
         @Specialization(guards = "isNativeAccessAllowed()")
         static Object doNative(Object weakCandidates,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CoerceNativePointerToLongNode coerceToLongNode,
                         @Cached CStructAccess.ReadI64Node readI64Node,
                         @Cached CStructAccess.WriteLongNode writeLongNode,
@@ -1598,7 +1598,7 @@ public final class PythonCextBuiltins {
     abstract static class PyTruffle_IsReferencedFromManaged extends CApiUnaryBuiltinNode {
         @Specialization(guards = "isNativeAccessAllowed()")
         static int doNative(Object pointer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CoerceNativePointerToLongNode coerceToLongNode,
                         @Cached GcNativePtrToPythonNode gcNativePtrToPythonNode) {
             // guaranteed by the guard
@@ -1622,7 +1622,7 @@ public final class PythonCextBuiltins {
     @CApiBuiltin(ret = Void, call = Ignored)
     abstract static class PyTruffle_EnableReferneceQueuePolling extends CApiNullaryBuiltinNode {
         @Specialization
-        static Object doGeneric(@Bind("this") Node inliningTarget) {
+        static Object doGeneric(@Bind Node inliningTarget) {
             assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
             HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
             CApiTransitions.enableReferenceQueuePolling(handleContext);
@@ -1633,7 +1633,7 @@ public final class PythonCextBuiltins {
     @CApiBuiltin(ret = Int, call = Ignored)
     abstract static class PyTruffle_DisableReferneceQueuePolling extends CApiNullaryBuiltinNode {
         @Specialization
-        static int doGeneric(@Bind("this") Node inliningTarget) {
+        static int doGeneric(@Bind Node inliningTarget) {
             assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
             HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
             return PInt.intValue(CApiTransitions.disableReferenceQueuePolling(handleContext));
@@ -1918,7 +1918,7 @@ public final class PythonCextBuiltins {
 
         @Specialization
         Object get(PMMap object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy raiseNode) {
             try {

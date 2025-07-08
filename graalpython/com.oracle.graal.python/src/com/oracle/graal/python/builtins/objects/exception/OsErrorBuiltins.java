@@ -266,7 +266,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
     protected abstract static class OSErrorNewNode extends PythonBuiltinNode {
         @Specialization
         static Object newCData(VirtualFrame frame, Object subType, Object[] args, PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetCachedTpSlotsNode getSlots,
                         @Cached PyNumberCheckNode pyNumberCheckNode,
                         @Cached PyNumberAsSizeNode pyNumberAsSizeNode,
@@ -313,7 +313,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object initNoArgs(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetCachedTpSlotsNode getSlots,
                         @Cached PyNumberCheckNode pyNumberCheckNode,
@@ -409,7 +409,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         @Specialization(guards = "isInvalid(self)")
         @SuppressWarnings("unused")
         static Object generic(PBaseException self, Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.AttributeError, ErrorMessages.CHARACTERS_WRITTEN);
         }
 
@@ -430,7 +430,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
     public abstract static class OSErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object str(VirtualFrame frame, PBaseException self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached BaseExceptionBuiltins.StrNode baseStrNode,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
@@ -467,7 +467,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
     public abstract static class OSErrorReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reduce(PBaseException self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExceptionNodes.GetArgsNode getArgsNode,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached GetClassNode getClassNode,

@@ -80,7 +80,7 @@ public abstract class ImportFromNode extends PNodeWithContext {
 
     @Specialization
     Object doImport(VirtualFrame frame, Object module, TruffleString name,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PyObjectLookupAttr lookupAttr,
                     @Cached InlinedBranchProfile maybeCircularProfile) {
         Object result = lookupAttr.execute(frame, inliningTarget, module, name);

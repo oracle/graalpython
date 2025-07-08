@@ -232,7 +232,7 @@ public final class DynamicObjectStorage extends HashingStorage {
             @Specialization(guards = {"cachedShape == self.store.getShape()", "keyList.length < EXPLODE_LOOP_SIZE_LIMIT"}, limit = "1")
             @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
             static Object notString(Frame frame, DynamicObjectStorage self, Object key, long hashIn,
-                            @Bind("this") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @Shared("readKey") @Cached ReadAttributeFromPythonObjectNode readKey,
                             @Exclusive @Cached("self.store.getShape()") Shape cachedShape,
                             @Exclusive @Cached(value = "keyArray(cachedShape)", dimensions = 1) Object[] keyList,
@@ -253,7 +253,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
             @Specialization(replaces = "notString")
             static Object notStringLoop(Frame frame, DynamicObjectStorage self, Object key, long hashIn,
-                            @Bind("this") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @Shared("readKey") @Cached ReadAttributeFromPythonObjectNode readKey,
                             @Shared("eqNode") @Cached PyObjectRichCompareBool eqNode,
                             @Shared("hashNode") @Cached PyObjectHashNode hashNode,

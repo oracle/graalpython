@@ -114,7 +114,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
     public abstract static class IsliceNode extends PythonVarargsBuiltinNode {
         @Specialization
         static Object constructOne(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyNumberAsSizeNode asIntNode,
@@ -233,7 +233,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNone(self.getIterable())")
         static Object next(VirtualFrame frame, PIslice self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectSlotsNode getSlots,
                         @Cached CallSlotTpIterNextNode callIterNext,
                         @Cached InlinedLoopConditionProfile loopProfile,
@@ -272,7 +272,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "isNone(self.getIterable())")
         static Object reduceNoIterable(VirtualFrame frame, PIslice self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter,
                         @Bind PythonLanguage language) {
@@ -285,7 +285,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNone(self.getIterable())")
         static Object reduce(PIslice self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Bind PythonLanguage language) {
             Object type = getClassNode.execute(inliningTarget, self);
@@ -300,7 +300,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object setState(PIslice self, Object state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToJavaIntLossyNode castInt,
                         @Cached PRaiseNode raiseNode) {
             warnPickleDeprecated();

@@ -137,7 +137,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
         static Object doManaged(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached.Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
@@ -153,7 +153,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
         static Object doNativeSubtype(Object cls, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached.Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Bind PythonLanguage language,
                         @Cached CExtNodes.PCallCapiFunction callCapiFunction,
@@ -190,7 +190,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = {"doNoArguments", "doWithArguments"})
         static Object doGeneric(PBaseException self, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
             if (keywords.length != 0) {
@@ -206,7 +206,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doNative(PythonAbstractNativeObject self, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExceptionNodes.SetArgsNode setArgsNode,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
@@ -228,14 +228,14 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(none)")
         static Object args(Object self, @SuppressWarnings("unused") PNone none,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExceptionNodes.GetArgsNode getArgsNode) {
             return getArgsNode.execute(inliningTarget, self);
         }
 
         @Specialization(guards = "!isNoValue(value)")
         static Object args(VirtualFrame frame, Object self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToListNode castToList,
                         @Cached SequenceStorageNodes.CopyInternalArrayNode copy,
                         @Cached ExceptionNodes.SetArgsNode setArgsNode,
@@ -251,14 +251,14 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class CauseNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
         public static Object getCause(Object self, @SuppressWarnings("unused") PNone value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExceptionNodes.GetCauseNode getCauseNode) {
             return getCauseNode.execute(inliningTarget, self);
         }
 
         @Specialization(guards = {"!isNoValue(value)", "check.execute(inliningTarget, value)"})
         public static Object setCause(Object self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
                         @Shared @Cached ExceptionNodes.SetCauseNode setCauseNode) {
             setCauseNode.execute(inliningTarget, self, value);
@@ -267,7 +267,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNone(value)")
         public static Object setCause(Object self, @SuppressWarnings("unused") PNone value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached ExceptionNodes.SetCauseNode setCauseNode) {
             setCauseNode.execute(inliningTarget, self, PNone.NONE);
             return PNone.NONE;
@@ -276,7 +276,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(value)", "!check.execute(inliningTarget, value)"})
         public static Object cause(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX);
         }
     }
@@ -286,14 +286,14 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class ContextNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
         public static Object getContext(Object self, @SuppressWarnings("unused") PNone value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExceptionNodes.GetContextNode getContextNode) {
             return getContextNode.execute(inliningTarget, self);
         }
 
         @Specialization(guards = {"!isNoValue(value)", "check.execute(inliningTarget, value)"})
         public static Object setContext(Object self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
                         @Shared @Cached ExceptionNodes.SetContextNode setContextNode) {
             setContextNode.execute(inliningTarget, self, value);
@@ -302,7 +302,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNone(value)")
         public static Object setContext(Object self, @SuppressWarnings("unused") PNone value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached ExceptionNodes.SetContextNode setContextNode) {
             setContextNode.execute(inliningTarget, self, PNone.NONE);
             return PNone.NONE;
@@ -311,7 +311,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(value)", "!check.execute(inliningTarget, value)"})
         public static Object context(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXCEPTION_CONTEXT_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX);
         }
     }
@@ -321,14 +321,14 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class SuppressContextNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
         static Object getSuppressContext(Object self, @SuppressWarnings("unused") PNone value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExceptionNodes.GetSuppressContextNode getSuppressContextNode) {
             return getSuppressContextNode.execute(inliningTarget, self);
         }
 
         @Specialization(guards = "!isNoValue(valueObj)")
         static Object setSuppressContext(Object self, Object valueObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExceptionNodes.SetSuppressContextNode setSuppressContextNode,
                         @Cached CastToJavaBooleanNode castToJavaBooleanNode,
                         @Cached PRaiseNode raiseNode) {
@@ -349,14 +349,14 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(tb)")
         static Object getTraceback(Object self, @SuppressWarnings("unused") Object tb,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode) {
             return getTracebackNode.execute(inliningTarget, self);
         }
 
         @Specialization(guards = "!isNoValue(tb)")
         static Object setTraceback(Object self, @SuppressWarnings("unused") PNone tb,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached ExceptionNodes.SetTracebackNode setTracebackNode) {
             setTracebackNode.execute(inliningTarget, self, PNone.NONE);
             return PNone.NONE;
@@ -364,7 +364,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object setTraceback(Object self, PTraceback tb,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached ExceptionNodes.SetTracebackNode setTracebackNode) {
             setTracebackNode.execute(inliningTarget, self, tb);
             return PNone.NONE;
@@ -372,7 +372,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object setTraceback(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object tb,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.MUST_BE_S_OR_S, "__traceback__", "a traceback", "None");
         }
     }
@@ -383,7 +383,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doClearTraceback(Object self, @SuppressWarnings("unused") PNone tb,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached ExceptionNodes.SetTracebackNode setTracebackNode) {
             setTracebackNode.execute(inliningTarget, self, PNone.NONE);
             return self;
@@ -391,7 +391,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doSetTraceback(Object self, PTraceback tb,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached ExceptionNodes.SetTracebackNode setTracebackNode) {
             setTracebackNode.execute(inliningTarget, self, tb);
             return self;
@@ -403,7 +403,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
     abstract static class DictNode extends PythonBinaryBuiltinNode {
         @Specialization
         static PNone dict(Object self, PDict mapping,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SetDictNode setDict) {
             setDict.execute(inliningTarget, self, mapping);
             return PNone.NONE;
@@ -411,14 +411,14 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(mapping)")
         static Object dict(Object self, @SuppressWarnings("unused") PNone mapping,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
             return getDict.execute(inliningTarget, self);
         }
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
         static PNone dict(@SuppressWarnings("unused") Object self, Object mapping,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
     }
@@ -428,7 +428,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reduce(VirtualFrame frame, Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached ExceptionNodes.GetArgsNode argsNode,
                         @Cached DictNode dictNode,
@@ -445,7 +445,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object repr(VirtualFrame frame, Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile noArgsProfile,
                         @Cached InlinedBranchProfile oneArgProfile,
                         @Cached InlinedBranchProfile moreArgsProfile,
@@ -483,7 +483,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object str(VirtualFrame frame, Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile noArgsProfile,
                         @Cached InlinedBranchProfile oneArgProfile,
                         @Cached InlinedBranchProfile moreArgsProfile,
@@ -528,7 +528,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
             @Specialization
             public static ExcState doIt(Frame frame, @SuppressWarnings("unused") Node node, HashingStorage storage, HashingStorageIterator it, ExcState state,
-                            @Bind("this") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @Cached PyObjectSetAttrO setAttr,
                             @Cached HashingStorageIteratorKey itKey,
                             @Cached HashingStorageIteratorKeyHash itKeyHash,
@@ -542,7 +542,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object setDict(VirtualFrame frame, Object self, PDict state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ForEachKW forEachKW,
                         @Cached HashingStorageForEach forEachNode) {
             final HashingStorage dictStorage = state.getDictStorage();
@@ -552,7 +552,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isDict(state)")
         static Object generic(@SuppressWarnings("unused") Object self, Object state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (state != PNone.NONE) {
                 throw raiseNode.raise(inliningTarget, TypeError, STATE_IS_NOT_A_DICT);
@@ -566,7 +566,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
     abstract static class AddNoteNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object addNote(VirtualFrame frame, Object self, Object note,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectSetAttr setAttr,

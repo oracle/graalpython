@@ -125,7 +125,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object[] doSequence(VirtualFrame frame, Object processArgs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached FastConstructListNode fastConstructListNode,
                         @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
@@ -170,7 +170,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPNone(env)")
         static Object doSequence(VirtualFrame frame, Object env,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached ToBytesNode toBytesNode,
@@ -255,7 +255,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         boolean restoreSignals, boolean callSetsid, int pgidToSet, Object gidObject, Object groupsList,
                         Object uidObject, int childUmask, Object preexecFn, boolean allowVFork,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createNotNormalized()") GetItemNode tupleGetItem,
                         @Cached PyObjectGetItem getItem,
                         @Cached CastToJavaIntExactNode castToIntNode,

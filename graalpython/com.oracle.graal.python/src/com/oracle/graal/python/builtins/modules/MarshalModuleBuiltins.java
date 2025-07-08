@@ -172,7 +172,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doit(VirtualFrame frame, Object value, Object file, int version,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PyObjectCallMethodObjArgs callMethod,
@@ -205,7 +205,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doit(VirtualFrame frame, Object value, int version,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PRaiseNode raiseNode) {
@@ -234,7 +234,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doit(VirtualFrame frame, Object file,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createCallReadNode()") LookupAndCallBinaryNode callNode,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferLib,
@@ -260,7 +260,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doit(VirtualFrame frame, Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,

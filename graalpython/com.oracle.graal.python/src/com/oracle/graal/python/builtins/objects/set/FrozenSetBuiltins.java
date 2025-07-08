@@ -99,14 +99,14 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinClass(inliningTarget, cls)")
         static PFrozenSet frozensetIdentity(@SuppressWarnings("unused") Object cls, PFrozenSet arg,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Shared("isBuiltinProfile") @SuppressWarnings("unused") @Cached BuiltinClassProfiles.IsAnyBuiltinClassProfile isBuiltinClass) {
             return arg;
         }
 
         @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinClass(inliningTarget, cls)")
         static PFrozenSet subFrozensetIdentity(Object cls, PFrozenSet arg,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Shared("isBuiltinProfile") @SuppressWarnings("unused") @Cached BuiltinClassProfiles.IsAnyBuiltinClassProfile isBuiltinClass,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
@@ -115,7 +115,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPFrozenSet(iterable)"})
         static PFrozenSet frozensetIterable(VirtualFrame frame, Object cls, Object iterable,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
@@ -135,7 +135,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isBuiltinFrozenSet(self)")
         static PFrozenSet doGeneric(PFrozenSet self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached HashingStorageNodes.HashingStorageCopy copy) {
             return PFactory.createFrozenSet(language, copy.execute(inliningTarget, self.getDictStorage()));
@@ -154,7 +154,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
         static PBaseSet doCached(VirtualFrame frame, PFrozenSet self, Object[] args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("args.length") int len,
                         @Shared @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
@@ -169,7 +169,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "doCached")
         static PBaseSet doGeneric(VirtualFrame frame, PFrozenSet self, Object[] args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetSetStorageNode getSetStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
                         @Shared @Cached HashingStorageIntersect intersectNode,
@@ -187,7 +187,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isOther(other)")
         static PFrozenSet doSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
                         @Shared @Cached HashingStorageIntersect intersectNode,
                         @Bind PythonLanguage language) {
@@ -202,7 +202,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization
         static PFrozenSet doSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingCollectionNodes.GetSetStorageNode getHashingStorage,
                         @Cached HashingStorageXor xorNode,
                         @Bind PythonLanguage language) {
@@ -223,7 +223,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
         static PBaseSet doCached(VirtualFrame frame, PFrozenSet self, Object[] args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("args.length") int len,
                         @Shared @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
@@ -238,7 +238,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "doCached")
         static PBaseSet doGeneric(VirtualFrame frame, PFrozenSet self, Object[] args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
                         @Shared @Cached HashingStorageDiff diffNode,
@@ -256,7 +256,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isOther(other)")
         static PFrozenSet doSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetSetStorageNode getSetStorageNode,
                         @Shared @Cached HashingStorageDiff diffNode,
                         @Bind PythonLanguage language) {
@@ -271,7 +271,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
         static PBaseSet doCached(VirtualFrame frame, PBaseSet self, Object[] args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("args.length") int len,
                         @Shared @Cached GetSetStorageNode getHashingStorage,
                         @Shared @Cached HashingStorageCopy copyNode,
@@ -286,7 +286,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "doCached")
         static PBaseSet doGeneric(VirtualFrame frame, PBaseSet self, Object[] args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetSetStorageNode getHashingStorage,
                         @Shared @Cached HashingStorageCopy copyNode,
                         @Shared @Cached HashingStorageAddAllToOther addAllToOther,
@@ -311,7 +311,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.getHash() == HASH_UNSET"})
         public static long computeHash(VirtualFrame frame, PFrozenSet self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageGetIterator getIter,
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached HashingStorageIteratorKey iterKey,

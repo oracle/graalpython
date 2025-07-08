@@ -58,7 +58,7 @@ public abstract class GetTPFlagsNode extends PNodeWithContext {
 
     @Specialization
     long get(Object object,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached TypeNodes.GetTypeFlagsNode getTypeFlagsNode,
                     @Cached GetClassNode getClassNode) {
         return getTypeFlagsNode.execute(getClassNode.execute(inliningTarget, object));

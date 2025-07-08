@@ -115,7 +115,7 @@ public final class StructureBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object GenericPyCDataNew(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
                         @Cached PRaiseNode raiseNode) {
@@ -132,7 +132,7 @@ public final class StructureBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object Struct_init(VirtualFrame frame, CDataObject self, Object[] args, PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") com.oracle.graal.python.runtime.IndirectCallData indirectCallData,
                         @Cached PyObjectSetAttr setAttr,
                         @Cached GetClassNode getClassNode,

@@ -95,7 +95,7 @@ public final class MapBuiltins extends PythonBuiltins {
     public abstract static class MapNode extends PythonVarargsBuiltinNode {
         @Specialization
         static PMap doit(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached PyObjectGetIter getIter,

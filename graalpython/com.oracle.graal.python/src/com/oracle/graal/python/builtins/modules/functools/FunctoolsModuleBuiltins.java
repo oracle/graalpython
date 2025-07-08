@@ -118,7 +118,7 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object doReduce(VirtualFrame frame, Object function, Object sequence, Object initialIn,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode nextNode,
                         @Cached CallNode callNode,

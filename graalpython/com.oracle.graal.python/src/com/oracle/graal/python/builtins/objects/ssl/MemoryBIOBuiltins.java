@@ -140,7 +140,7 @@ public final class MemoryBIOBuiltins extends PythonBuiltins {
     abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
         static int write(VirtualFrame frame, PMemoryBIO self, Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,

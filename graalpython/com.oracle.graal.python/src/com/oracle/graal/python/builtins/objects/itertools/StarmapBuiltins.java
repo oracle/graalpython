@@ -95,7 +95,7 @@ public final class StarmapBuiltins extends PythonBuiltins {
     public abstract static class StarmapNode extends PythonVarargsBuiltinNode {
         @Specialization
         static PStarmap construct(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
@@ -151,7 +151,7 @@ public final class StarmapBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reducePos(PStarmap self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Bind PythonLanguage language) {
             warnPickleDeprecated();

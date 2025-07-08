@@ -107,7 +107,7 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object mbstreamwriterNew(VirtualFrame frame, Object type, Object stream, Object err,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual,
@@ -154,7 +154,7 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
         // _multibytecodec_MultibyteStreamWriter_write
         @Specialization
         static Object write(VirtualFrame frame, MultibyteStreamWriterObject self, Object strobj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MultibyteIncrementalEncoderBuiltins.EncodeStatefulNode encodeStatefulNode,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             // mbstreamwriter_iwrite
@@ -171,7 +171,7 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
         // _multibytecodec_MultibyteStreamWriter_writelines
         @Specialization
         static Object writelines(VirtualFrame frame, MultibyteStreamWriterObject self, PSequence lines,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MultibyteIncrementalEncoderBuiltins.EncodeStatefulNode encodeStatefulNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceStorageNodes.GetItemNode getItem,
@@ -191,7 +191,7 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
         // assuming !pySequenceCheck.execute(lines)
         @Fallback
         static Object writelines(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object lines,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ARG_MUST_BE_A_SEQUENCE_OBJECT);
         }
     }
@@ -203,7 +203,7 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
         // _multibytecodec_MultibyteStreamWriter_reset_impl
         @Specialization
         static Object reset(VirtualFrame frame, MultibyteStreamWriterObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached MultibyteCodecUtil.EncodeNode encodeNode) {

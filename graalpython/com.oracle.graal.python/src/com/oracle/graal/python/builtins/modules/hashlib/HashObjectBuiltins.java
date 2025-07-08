@@ -77,7 +77,7 @@ public final class HashObjectBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString repr(VirtualFrame frame, DigestObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             TruffleString fqcn = getFullyQualifiedClassNameNode.execute(frame, inliningTarget, self);

@@ -116,7 +116,7 @@ public final class MultibyteCodecBuiltins extends PythonBuiltins {
         // _multibytecodec_MultibyteCodec_encode_impl
         @Specialization
         static Object ts(VirtualFrame frame, MultibyteCodecObject self, TruffleString ucvt, TruffleString errors,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached MultibyteCodecUtil.EncodeNode encodeNode,
                         @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared @Cached TruffleString.EqualNode isEqual,
@@ -134,7 +134,7 @@ public final class MultibyteCodecBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isTruffleString(input)")
         static Object notTS(VirtualFrame frame, MultibyteCodecObject self, Object input, TruffleString errors,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyUnicodeCheckNode unicodeCheck,
                         @Cached PyObjectStrAsObjectNode strNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,

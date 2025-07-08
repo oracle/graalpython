@@ -122,7 +122,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object nextPos(VirtualFrame frame, CSVReader self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode stringNextNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,

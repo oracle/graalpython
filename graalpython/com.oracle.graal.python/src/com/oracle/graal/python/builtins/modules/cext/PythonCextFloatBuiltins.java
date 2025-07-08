@@ -71,7 +71,7 @@ public final class PythonCextFloatBuiltins {
 
         @Specialization(guards = "!isDouble(obj)")
         static Object fromDouble(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StringBuiltins.StrNewNode strNode) {
             // cpython PyFloat_FromDouble takes only 'double'
             throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(null, obj), obj);
@@ -93,7 +93,7 @@ public final class PythonCextFloatBuiltins {
 
         @Specialization(guards = {"!isLong(object)", "!isDouble(object)"})
         static double doGenericErr(Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode) {
             return asDoubleNode.execute(null, inliningTarget, object);
         }
@@ -104,7 +104,7 @@ public final class PythonCextFloatBuiltins {
 
         @Specialization
         static Object fromString(Object string,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyFloatFromString pyFloatFromString) {
             return pyFloatFromString.execute(null, inliningTarget, string);
         }

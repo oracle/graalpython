@@ -107,7 +107,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
         @Specialization(replaces = "starredTupleCachedLength", guards = "isBuiltinTuple(v)")
         static PList starredTuple(PTuple v,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             return PFactory.createList(language, getObjectArrayNode.execute(inliningTarget, v).clone());
@@ -120,7 +120,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
         @Specialization(rewriteOn = PException.class)
         static PList starredIterable(VirtualFrame frame, PythonObject value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Shared @Cached ConstructListNode constructListNode) {
             PythonContext context = PythonContext.get(inliningTarget);
@@ -135,7 +135,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
         @Specialization
         static PList starredGeneric(VirtualFrame frame, Object v,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Shared @Cached ConstructListNode constructListNode,
                         @Cached IsBuiltinObjectProfile attrProfile,

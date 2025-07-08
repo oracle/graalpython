@@ -97,7 +97,7 @@ public class CombinationsWithReplacementBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object construct(VirtualFrame frame, Object cls, Object iterable, int r,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached IteratorNodes.ToArrayNode toArrayNode,
                         @Cached InlinedConditionProfile wrongTypeProfile,

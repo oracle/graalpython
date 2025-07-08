@@ -67,7 +67,7 @@ public abstract class SetupAwithNode extends PNodeWithContext {
 
     @Specialization
     static int setup(VirtualFrame frame, int stackTopIn,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached GetClassNode getClassNode,
                     @Cached LookupSpecialMethodNode.Dynamic lookupAEnter,
                     @Cached LookupSpecialMethodNode.Dynamic lookupAExit,

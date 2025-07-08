@@ -119,7 +119,7 @@ public final class BuiltinFunctionOrMethodBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isBuiltinFunction(self)")
         static TruffleString reprBuiltinMethod(VirtualFrame frame, PBuiltinMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
                         @Shared @Cached GetNameNode getTypeNameNode,
@@ -131,7 +131,7 @@ public final class BuiltinFunctionOrMethodBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isBuiltinFunction(self)")
         static TruffleString reprBuiltinMethod(VirtualFrame frame, PMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
                         @Shared @Cached GetNameNode getTypeNameNode,
@@ -153,7 +153,7 @@ public final class BuiltinFunctionOrMethodBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public Object doIt(Object fun,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             Signature signature = GetSignatureNode.executeUncached(fun);
             if (signature.isHidden()) {
                 throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, fun, T___SIGNATURE__);

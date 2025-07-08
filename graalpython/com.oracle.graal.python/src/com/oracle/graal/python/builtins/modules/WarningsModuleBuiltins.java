@@ -1040,7 +1040,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doWarn(VirtualFrame frame, PythonModule mod, Object message, Object category, Object flname,
                         int lineno, Object module, Object registry, Object globals, Object source,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached WarningsModuleNode moduleFunctionsNode,

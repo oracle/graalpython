@@ -194,7 +194,7 @@ public abstract class CExtCommonNodes {
 
         @Specialization
         static byte[] doGeneric(Charset charset, Object unicodeObject, TruffleString errors,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached PRaiseNode raiseNode) {
@@ -430,7 +430,7 @@ public abstract class CExtCommonNodes {
 
         @Specialization(guards = "!isNativeWrapper(value)")
         static double runGeneric(Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode) {
             // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it
             // is a float object, use the value and do *NOT* call '__float__'.
@@ -697,7 +697,7 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"targetTypeSize == 4", "signed == 0"}, replaces = "doIntToUInt32Pos")
         @SuppressWarnings("unused")
         static int doIntToUInt32(int value, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
             if (exact && value < 0) {
                 throw raiseNegativeValue(inliningTarget, raiseNativeNode);
@@ -720,7 +720,7 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doIntToUInt64Pos")
         @SuppressWarnings("unused")
         static long doIntToUInt64(int value, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
             if (exact && value < 0) {
                 throw raiseNegativeValue(inliningTarget, raiseNativeNode);
@@ -743,7 +743,7 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doLongToUInt64Pos")
         @SuppressWarnings("unused")
         static long doLongToUInt64(long value, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
             if (exact && value < 0) {
                 throw raiseNegativeValue(inliningTarget, raiseNativeNode);
@@ -754,7 +754,7 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"exact", "targetTypeSize == 4", "signed != 0"})
         @SuppressWarnings("unused")
         static int doLongToInt32Exact(long obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return PInt.intValueExact(obj);
@@ -766,7 +766,7 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"exact", "targetTypeSize == 4", "signed == 0", "obj >= 0"})
         @SuppressWarnings("unused")
         static int doLongToUInt32PosExact(long obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             if (Integer.toUnsignedLong((int) obj) == obj) {
                 return (int) obj;
@@ -778,7 +778,7 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"exact", "targetTypeSize == 4", "signed == 0"}, replaces = "doLongToUInt32PosExact")
         @SuppressWarnings("unused")
         static int doLongToUInt32Exact(long obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             if (obj < 0) {
                 throw raiseNegativeValue(inliningTarget, raiseNode);
@@ -802,7 +802,7 @@ public abstract class CExtCommonNodes {
         @SuppressWarnings("unused")
         @TruffleBoundary
         static int doPIntTo32Bit(PInt obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 if (signed != 0) {
@@ -823,7 +823,7 @@ public abstract class CExtCommonNodes {
         @SuppressWarnings("unused")
         @TruffleBoundary
         static long doPIntTo64Bit(PInt obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 if (signed != 0) {
@@ -860,7 +860,7 @@ public abstract class CExtCommonNodes {
                                         "doVoidPtrToI64", //
                                         "doPIntTo32Bit", "doPIntTo64Bit", "doPIntToInt32Lossy", "doPIntToInt64Lossy"})
         static Object doGeneric(Object obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             Object result = indexNode.execute(null, inliningTarget, obj);
@@ -882,7 +882,7 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
         @SuppressWarnings("unused")
         static int doUnsupportedTargetSize(Object obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
         }
 
@@ -1151,7 +1151,7 @@ public abstract class CExtCommonNodes {
 
         @Specialization
         static byte doGeneric(Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
                         @Cached PRaiseNode raiseNode) {
             byte[] encoded = encodeNativeStringNode.execute(StandardCharsets.UTF_8, value, T_STRICT);
@@ -1195,7 +1195,7 @@ public abstract class CExtCommonNodes {
 
         @Specialization
         static int doIt(Object self, Object indexObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile indexLt0Branch,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached CallSlotLenNode callLenNode,

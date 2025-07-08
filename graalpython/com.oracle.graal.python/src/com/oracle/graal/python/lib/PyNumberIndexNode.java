@@ -135,7 +135,7 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object original, Object result,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtype,
                         @Cached PRaiseNode raiseNode,

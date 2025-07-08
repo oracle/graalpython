@@ -115,7 +115,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
     @Specialization(replaces = "getConstant")
     @InliningCutoff
     static PDict doPythonObject(PythonObject object,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached HiddenAttr.ReadNode readHiddenAttrNode) {
         return (PDict) readHiddenAttrNode.execute(inliningTarget, object, HiddenAttr.DICT, null);
     }
@@ -123,7 +123,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
     @Specialization
     @InliningCutoff
     PDict doNativeObject(PythonAbstractNativeObject object,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @CachedLibrary(limit = "1") InteropLibrary lib,
                     @Cached PythonToNativeNode toNative,
                     @Cached CStructAccess.ReadObjectNode readObjectNode,

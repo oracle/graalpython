@@ -121,7 +121,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
         @Specialization
         static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs,
                         PTuple closure,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
                         @Bind PythonLanguage language) {
             return PFactory.createFunction(language, T_LAMBDA_NAME, code, globals, PCell.toCellArray(getObjectArrayNode.execute(inliningTarget, closure)));
@@ -137,7 +137,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
 
         @Specialization
         static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
                         @Bind PythonLanguage language) {
             return PFactory.createFunction(language, name, code, globals, PCell.toCellArray(getObjectArrayNode.execute(inliningTarget, closure)));
@@ -146,7 +146,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
         @Specialization
         static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, PTuple defaultArgs,
                         @SuppressWarnings("unused") PNone closure,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
                         @Bind PythonLanguage language) {
             // TODO split defaults of positional args from kwDefaults
@@ -155,7 +155,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
 
         @Specialization
         static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
                         @Bind PythonLanguage language) {
             // TODO split defaults of positional args from kwDefaults
@@ -164,7 +164,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
 
         @Specialization
         static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, PTuple defaultArgs, PTuple closure,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
                         @Bind PythonLanguage language) {
             // TODO split defaults of positional args from kwDefaults
@@ -175,7 +175,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static PFunction function(@SuppressWarnings("unused") Object cls, Object code, Object globals, Object name, Object defaultArgs, Object closure,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.FUNC_CONSTRUCTION_NOT_SUPPORTED, cls, code, globals, name, defaultArgs, closure);
         }
     }
@@ -222,7 +222,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object setName(PFunction self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StringNodes.CastToTruffleStringCheckedNode cast) {
             return setName(self, cast.cast(inliningTarget, value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, T___NAME__, "string"));
         }
@@ -244,7 +244,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object setQualname(PFunction self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StringNodes.CastToTruffleStringCheckedNode cast) {
             return setQualname(self, cast.cast(inliningTarget, value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, T___QUALNAME__, "string"));
         }
@@ -263,7 +263,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object setDefaults(PFunction self, PTuple defaults,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             self.setDefaults(getObjectArrayNode.execute(inliningTarget, defaults));
             return PNone.NONE;
@@ -284,7 +284,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object setDefaults(Object self, Object defaults,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.MUST_BE_SET_TO_S_NOT_P, T___DEFAULTS__, "tuple", defaults);
         }
     }
@@ -353,7 +353,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object doGeneric(Object object,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.GETTING_THER_SOURCE_NOT_SUPPORTED_FOR_P, object);
         }
     }
@@ -363,7 +363,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
     public abstract static class GetCodeNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"isNoValue(none)"})
         static Object getCodeU(PFunction self, @SuppressWarnings("unused") PNone none,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetFunctionCodeNode getFunctionCodeNode) {
             return getFunctionCodeNode.execute(inliningTarget, self);
         }
@@ -371,7 +371,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static Object setCode(PFunction self, PCode code,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             int closureLength = self.getClosure() == null ? 0 : self.getClosure().length;
             int freeVarsLength = code.getFreeVars().length;
@@ -428,7 +428,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object error(Object self, Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.MUST_BE_SET_TO_S_NOT_P, T___TYPE_PARAMS__, "tuple", value);
         }
     }

@@ -319,7 +319,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     protected abstract static class CodecInitNode extends PythonVarargsBuiltinNode {
         @Specialization
         static Object init(VirtualFrame frame, PythonObject self, Object[] args, PKeyword[] kw,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectSetAttr setAttrNode,
                         @Cached GetPythonObjectClassNode getClass,
                         @Cached GetBaseClassNode getBaseClassNode,
@@ -339,7 +339,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     protected abstract static class CallApplyNode extends PythonVarargsBuiltinNode {
         @Specialization
         Object call(VirtualFrame frame, PythonObject self, Object[] args, PKeyword[] kw,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode) {
             Object[] callArgs = new Object[args.length + 1];
@@ -354,7 +354,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     protected abstract static class EncodeNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object encode(VirtualFrame frame, PythonObject self, Object input, Object errors,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CodecsEncodeNode encode) {
             return encode.execute(frame, input, getAttrNode.execute(frame, inliningTarget, self, T_ATTR_ENCODING), errors);
@@ -366,7 +366,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     protected abstract static class CodecDecodeNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object decode(VirtualFrame frame, PythonObject self, Object input, Object errors,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CodecsDecodeNode decode) {
             return decode.execute(frame, input, getAttrNode.execute(frame, inliningTarget, self, T_ATTR_ENCODING), errors, true);
@@ -378,7 +378,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     protected abstract static class IncrementalEncodeNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object encode(VirtualFrame frame, PythonObject self, Object input, @SuppressWarnings("unused") Object ffinal,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CodecsEncodeNode encode,
                         @Cached PyTupleGetItem getItemNode) {
@@ -392,7 +392,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     protected abstract static class IncrementalDecodeNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         Object decode(VirtualFrame frame, PythonObject self, Object input, Object errors, Object ffinal,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CodecsDecodeNode decode) {
             return decode.execute(frame, input, getAttrNode.execute(frame, inliningTarget, self, T_ATTR_ENCODING), errors, ffinal);
@@ -404,7 +404,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     protected abstract static class StreamDecodeNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object decode(VirtualFrame frame, PythonObject self, Object input, Object errors,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CodecsDecodeNode decode) {
             return decode.execute(frame, input, getAttrNode.execute(frame, inliningTarget, self, T_ATTR_ENCODING), errors, false);
@@ -421,7 +421,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object lookup(VirtualFrame frame, TruffleString encoding, TruffleString alternateCommand,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CodecsModuleBuiltins.PyCodecLookupNode lookupNode,
                         @Cached PyObjectGetAttr getAttributeNode,
                         @Cached PRaiseNode raiseNode) {
@@ -444,7 +444,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString getpreferredencoding(VirtualFrame frame,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethodNode,
                         @Cached PyObjectStrAsTruffleStringNode strNode) {
 
@@ -464,14 +464,14 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getIncEncoder(VirtualFrame frame, Object codecInfo, @SuppressWarnings("unused") PNone errors, TruffleString attrName,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod) {
             return callMethod.execute(frame, inliningTarget, codecInfo, attrName);
         }
 
         @Specialization(guards = "!isPNone(errors)")
         static Object getIncEncoder(VirtualFrame frame, Object codecInfo, Object errors, TruffleString attrName,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod) {
             return callMethod.execute(frame, inliningTarget, codecInfo, attrName, errors);
         }

@@ -158,7 +158,7 @@ public final class PythonCextStructSeqBuiltins {
 
         @Specialization
         static Object doGeneric(Object cls,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readRealSizeNode,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Bind PythonLanguage language,

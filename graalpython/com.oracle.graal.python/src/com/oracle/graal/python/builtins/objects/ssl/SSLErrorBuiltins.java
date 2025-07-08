@@ -181,7 +181,7 @@ public final class SSLErrorBuiltins extends PythonBuiltins {
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object str(VirtualFrame frame, PBaseException self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectStrAsObjectNode strNode,
                         @Cached ExceptionNodes.GetArgsNode getArgsNode) {
             Object strerror = self.getExceptionAttribute(IDX_STRERROR);

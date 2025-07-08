@@ -424,14 +424,14 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "errorAction == T_STRICT")
         static void doStrict(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached RaiseDecodingErrorNode raiseDecodingErrorNode) {
             raiseDecodingErrorNode.raise(inliningTarget, decoder, inputObject);
         }
 
         @Specialization(guards = "errorAction == T_BACKSLASHREPLACE")
         void doBackslashreplace(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached RaiseDecodingErrorNode raiseDecodingErrorNode) {
             try {
                 // Ignore and replace are handled by Java Charset
@@ -446,7 +446,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "errorAction == T_SURROGATEPASS")
         static void doSurrogatepass(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.EqualNode equalNode,
                         @Shared @Cached RaiseDecodingErrorNode raiseDecodingErrorNode) {
             try {
@@ -462,7 +462,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "errorAction == T_SURROGATEESCAPE")
         static void doSurrogateescape(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached RaiseDecodingErrorNode raiseDecodingErrorNode) {
             try {
                 // Ignore and replace are handled by Java Charset
@@ -477,7 +477,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static void doCustom(VirtualFrame frame, TruffleDecoder decoder, TruffleString errorAction, Object inputObject,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached GetInternalObjectArrayNode getArray,
@@ -603,7 +603,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         byte[] encode(Object self, TruffleString encoding, TruffleString errors,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToJavaStringNode castStr,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached HandleEncodingErrorNode errorHandler,
@@ -645,7 +645,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isString(self)"})
         static Object encode(Object self, TruffleString encoding, TruffleString errors,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -657,7 +657,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object encode(Object str, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANT_CONVERT_TO_STR_IMPLICITLY, str);
         }
     }
@@ -681,7 +681,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static Object decode(VirtualFrame frame, Object input, TruffleString encoding, TruffleString errors, boolean finalData,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("input") PythonBufferAcquireLibrary acquireLib,
@@ -883,7 +883,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         Object encode(PBytes data, @SuppressWarnings("unused") TruffleString errors,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached GetInternalByteArrayNode getInternalByteArrayNode) {
             byte[] bytes = getInternalByteArrayNode.execute(inliningTarget, data.getSequenceStorage());
@@ -924,7 +924,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object encode(Object data, @SuppressWarnings("unused") Object errors,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, BYTESLIKE_OBJ_REQUIRED, data);
         }
     }
@@ -934,7 +934,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class CodecsLookupNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object lookup(TruffleString encoding,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached NormalizeEncodingNameNode normalizeEncodingNameNode) {
             if (hasTruffleEncodingNormalized(normalizeEncodingNameNode.execute(inliningTarget, encoding))) {
                 return true;
@@ -954,7 +954,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class LookupNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
         static PTuple lookup(VirtualFrame frame, TruffleString encoding,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyCodecLookupNode lookup) {
             return lookup.execute(frame, inliningTarget, encoding);
         }
@@ -1041,7 +1041,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class RegisterNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object lookup(Object searchFunction,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyCallableCheckNode callableCheckNode,
                         @Cached PRaiseNode raiseNode) {
             if (callableCheckNode.execute(inliningTarget, searchFunction)) {
@@ -1109,7 +1109,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object register(TruffleString name, Object handler,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyCodecRegisterErrorNode registerErrorNode) {
             registerErrorNode.execute(inliningTarget, name, handler);
             return PNone.NONE;
@@ -1128,7 +1128,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object lookup(TruffleString name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyCodecLookupErrorNode errorNode) {
             return errorNode.execute(inliningTarget, name);
         }
@@ -1147,7 +1147,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object encode(VirtualFrame frame, Object obj, TruffleString encoding, TruffleString errors,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached SequenceStorageNodes.GetItemNode getResultItemNode,
                         @Cached LookupNode lookupNode,
@@ -1180,7 +1180,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object decode(VirtualFrame frame, Object obj, TruffleString encoding, TruffleString errors,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached SequenceStorageNodes.GetItemNode getResultItemNode,
                         @Cached LookupNode lookupNode,
@@ -1317,7 +1317,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static Object encode(VirtualFrame frame, Object obj, Object errors, Object byteorder, Object ffinal,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, toTruffleStringUncached("utf_16_ex_decode"));
         }
     }
@@ -1508,7 +1508,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doIt(VirtualFrame frame, TruffleString str, TruffleString errors, Object mapping,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached PyUnicodeEncodeCharmapNode encodeCharmapNode) {
@@ -1530,7 +1530,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         Object doIt(VirtualFrame frame, Object data, TruffleString errors, Object mapping,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
@@ -1601,7 +1601,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static Object decode(Object obj, Object errors, Object ffinal,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, toTruffleStringUncached("oem_decode"));
         }
     }
@@ -1612,7 +1612,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static Object encode(Object code_page, Object string, Object errors,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, toTruffleStringUncached("code_page_encode"));
         }
     }
@@ -1623,7 +1623,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static Object decode(Object code_page, Object obj, Object errors, Object ffinal,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, toTruffleStringUncached("code_page_decode"));
         }
     }
@@ -1640,7 +1640,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doIt(VirtualFrame frame, TruffleString map,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyUnicodeBuildEncodingMapNode buildEncodingMapNode) {
             return buildEncodingMapNode.execute(frame, inliningTarget, map);
         }

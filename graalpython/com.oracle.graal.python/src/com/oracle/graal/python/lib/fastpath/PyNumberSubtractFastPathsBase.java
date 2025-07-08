@@ -77,7 +77,7 @@ public abstract class PyNumberSubtractFastPathsBase extends BinaryOpNode {
 
     @Specialization(replaces = "doLL")
     public static Object doLongWithOverflow(long x, long y,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         /* Inlined version of Math.subtractExact(x, y) with BigInteger fallback. */
         long r = x - y;
         // HD 2-12 Overflow iff the arguments have different signs and

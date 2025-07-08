@@ -199,7 +199,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     abstract static class CompareDigestNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"isString(a)", "isString(b)"})
         static Object cmpStrings(Object a, Object b,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.CopyToByteArrayNode getByteArrayNode,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached CastToTruffleStringNode castA,
@@ -219,7 +219,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isString(a) || !isString(b)"})
         static boolean cmpBuffers(VirtualFrame frame, Object a, Object b,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary accessLib,
@@ -254,7 +254,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     abstract static class HmacDigestNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         static Object hmacDigest(VirtualFrame frame, PythonModule self, Object key, Object msg, Object digest,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HmacNewNode newNode,
                         @Cached DigestObjectBuiltins.DigestNode digestNode,
                         @Cached PRaiseNode raiseNode) {
@@ -275,13 +275,13 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static Object hmacNewError(PythonModule self, Object key, Object msg, PNone digest,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_POS, "hmac_new", "digestmod", 3);
         }
 
         @Specialization(guards = "!isString(digestmod)")
         static Object hmacNewFromFunction(VirtualFrame frame, PythonModule self, Object key, Object msg, Object digestmod,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageNodes.HashingStorageGetItem getItemNode,
                         @Exclusive @Cached CastToTruffleStringNode castStr,
                         @Exclusive @Cached CastToJavaStringNode castJStr,
@@ -302,7 +302,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isString(digestmodObj)")
         static Object hmacNew(@SuppressWarnings("unused") PythonModule self, Object keyObj, Object msgObj, Object digestmodObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached CastToTruffleStringNode castStr,
                         @Exclusive @Cached CastToJavaStringNode castJStr,
                         @Shared("concatStr") @Cached TruffleString.ConcatNode concatStr,
@@ -416,7 +416,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object newDigest(VirtualFrame frame, TruffleString name, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CreateDigestNode createNode,
                         @Cached CastToJavaStringNode castStr) {
             String pythonDigestName = getPythonName(castStr.execute(name));
@@ -469,7 +469,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static Object pbkdf2(VirtualFrame frame, TruffleString hashName, Object password, Object salt, long iterations, Object dklenObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @CachedLibrary("password") PythonBufferAccessLibrary passwordLib,
                         @CachedLibrary("salt") PythonBufferAccessLibrary saltLib,
