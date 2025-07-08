@@ -87,6 +87,7 @@ import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 public abstract class ExecutionContext {
     @GenerateUncached
     public abstract static class CallContext extends Node {
+        @NeverDefault
         public static CallContext create() {
             return CallContextNodeGen.create();
         }

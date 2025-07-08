@@ -1198,10 +1198,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             throw raiseSyntaxError(ParserCallbacks.ErrorType.Syntax, sourceRange, message, source, PythonOptions.isPExceptionWithJavaStacktrace(context.getLanguage()));
         }
 
+        @NeverDefault
         public static CompileNode create(boolean mapFilenameToUri) {
             return BuiltinFunctionsFactory.CompileNodeFactory.create(mapFilenameToUri, false, new ReadArgumentNode[]{});
         }
 
+        @NeverDefault
         public static CompileNode create(boolean mapFilenameToUri, boolean lstrip) {
             return BuiltinFunctionsFactory.CompileNodeFactory.create(mapFilenameToUri, lstrip, new ReadArgumentNode[]{});
         }
