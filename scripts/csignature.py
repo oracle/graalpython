@@ -79,7 +79,7 @@ with tempfile.NamedTemporaryFile('w') as f:
     ast = parse_file(f.name, use_cpp=True, cpp_args=cpp_args)
 
 lib_path = os.path.join(sysconfig.get_config_var('LIBDIR'), sysconfig.get_config_var('LDLIBRARY'))
-out = subprocess.check_output(['nm', '--defined-only', '--format=just-symbols', lib_path], text=True)
+out = subprocess.check_output(['nm', '--defined-only', '--dynamic', '--format=just-symbols', lib_path], text=True)
 exported_symbols = out.rstrip().splitlines()
 
 

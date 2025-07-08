@@ -606,7 +606,6 @@ PySet_Discard;int;PyObject*|PyObject*
 PySet_New;PyObject*;PyObject*
 PySet_Pop;PyObject*;PyObject*
 PySet_Size;Py_ssize_t;PyObject*
-PySignal_SetWakeupFd;int;int
 PySlice_AdjustIndices;Py_ssize_t;Py_ssize_t|Py_ssize_t*|Py_ssize_t*|Py_ssize_t
 PySlice_GetIndices;int;PyObject*|Py_ssize_t|Py_ssize_t*|Py_ssize_t*|Py_ssize_t*
 PySlice_GetIndicesEx;int;PyObject*|Py_ssize_t|Py_ssize_t*|Py_ssize_t*|Py_ssize_t*|Py_ssize_t*
@@ -815,7 +814,6 @@ PyUnicode_IsIdentifier;int;PyObject*
 PyUnicode_Join;PyObject*;PyObject*|PyObject*
 PyUnicode_New;PyObject*;Py_ssize_t|Py_UCS4
 PyUnicode_Partition;PyObject*;PyObject*|PyObject*
-PyUnicode_READ_CHAR;Py_UCS4;PyObject*|Py_ssize_t
 PyUnicode_RPartition;PyObject*;PyObject*|PyObject*
 PyUnicode_RSplit;PyObject*;PyObject*|PyObject*|Py_ssize_t
 PyUnicode_ReadChar;Py_UCS4;PyObject*|Py_ssize_t
@@ -914,10 +912,8 @@ Py_SetProgramName;void;const wchar_t*
 Py_SetPythonHome;void;const wchar_t*
 Py_SetRecursionLimit;void;int
 Py_SetStandardStreamEncoding;int;const char*|const char*
-Py_UNICODE_ISALNUM;int;Py_UCS4
 Py_UniversalNewlineFgets;char*;char*|int|FILE*|PyObject*
 Py_VaBuildValue;PyObject*;const char*|va_list
-Py_XDECREF;void;PyObject*
 Py_XNewRef;PyObject*;PyObject*
 _PyArg_BadArgument;void;const char*|const char*|const char*|PyObject*
 _PyArg_CheckPositional;int;const char*|Py_ssize_t|Py_ssize_t|Py_ssize_t
@@ -995,7 +991,6 @@ _PyErr_GetTopmostException;_PyErr_StackItem*;PyThreadState*
 _PyErr_ProgramDecodedTextObject;PyObject*;PyObject*|int|const char*
 _PyErr_SetFromPyStatus;PyObject*;PyStatus
 _PyErr_SetHandledException;void;PyThreadState*|PyObject*
-_PyErr_SetImportErrorWithNameFrom;PyObject*;PyObject*|PyObject*|PyObject*|PyObject*
 _PyErr_SetKeyError;void;PyObject*
 _PyErr_WriteUnraisableMsg;void;const char*|PyObject*
 _PyEval_EvalFrameDefault;PyObject*;PyThreadState*|struct _PyInterpreterFrame*|int
