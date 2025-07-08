@@ -2305,12 +2305,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         bci++;
                         continue;
                     }
-                    default: {
-                        long r = infrequentBytecodes(virtualFrame, localFrame, bc, bci, stackTop, beginBci, oparg, localBC, globals, locals, localNames, localNodes, bciSlot, localCelloffset,
+                    case OpCodesConstants.LOAD_FROM_DICT_OR_DEREF:
+                    case OpCodesConstants.LOAD_FROM_DICT_OR_GLOBALS:
+                    case OpCodesConstants.MAKE_TYPE_PARAM:
+                        stackTop = infrequentBytecodes(virtualFrame, localFrame, bc, bci, stackTop, beginBci, oparg, localBC, globals, locals, localNames, localNodes, bciSlot, localCelloffset,
                                         useCachedNodes);
-                        stackTop = (int) (r >> 32);
-                        bci = (int) r;
-                    }
+                        bci++;
+                        break;
+                    case OpCodesConstants.LOAD_LOCALS:
+                    case OpCodesConstants.MAKE_TYPE_ALIAS:
+                    case OpCodesConstants.MAKE_GENERIC:
+                        stackTop = infrequentBytecodes(virtualFrame, localFrame, bc, bci, stackTop, beginBci, oparg, localBC, globals, locals, localNames, localNodes, bciSlot, localCelloffset,
+                                        useCachedNodes);
+                        break;
+                    default:
+                        throw raiseUnknownBytecodeError(bc);
                 }
                 // prepare next loop
                 oparg = 0;
@@ -2400,7 +2409,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    private long infrequentBytecodes(VirtualFrame virtualFrame, Frame localFrame, byte bc, int bci, int stackTop, int beginBci, int oparg, byte[] localBC, Object globals, Object locals,
+    private int infrequentBytecodes(VirtualFrame virtualFrame, Frame localFrame, byte bc, int bci, int stackTop, int beginBci, int oparg, byte[] localBC, Object globals, Object locals,
                     TruffleString[] localNames, Node[] localNodes, int bciSlot, int localCelloffset, boolean useCachedNodes) {
         switch (bc) {
             case OpCodesConstants.LOAD_LOCALS: {
@@ -2443,7 +2452,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 throw raiseUnknownBytecodeError(bc);
 
         }
-        return (long) stackTop << 32 | bci;
+        return stackTop;
     }
 
     @BytecodeInterpreterSwitch
