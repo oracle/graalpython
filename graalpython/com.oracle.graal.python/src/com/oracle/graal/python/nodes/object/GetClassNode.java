@@ -91,16 +91,6 @@ public abstract class GetClassNode extends PNodeWithContext {
         return GetClassNodeGen.getUncached().execute(null, object);
     }
 
-    @SuppressWarnings("static-method")
-    public final Object execute(@SuppressWarnings("unused") int i) {
-        return PythonBuiltinClassType.PInt;
-    }
-
-    @SuppressWarnings("static-method")
-    public final Object execute(@SuppressWarnings("unused") double d) {
-        return PythonBuiltinClassType.PFloat;
-    }
-
     @Specialization
     static Object getBoolean(@SuppressWarnings("unused") Boolean object) {
         return PythonBuiltinClassType.Boolean;
