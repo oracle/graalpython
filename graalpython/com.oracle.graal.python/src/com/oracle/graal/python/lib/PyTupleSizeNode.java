@@ -67,6 +67,10 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateInline
 @GenerateCached(false)
 public abstract class PyTupleSizeNode extends PNodeWithContext {
+    public static int executeUncached(Object tuple) {
+        return PyTupleSizeNodeGen.getUncached().execute(null, tuple);
+    }
+
     public abstract int execute(Node inliningTarget, Object tuple);
 
     @Specialization

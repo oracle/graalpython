@@ -15,7 +15,6 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -29,8 +28,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class StringFormatProcessor extends FormatProcessor<String> {
     private final String formatText;
 
-    public StringFormatProcessor(Python3Core core, TupleBuiltins.GetItemNode getTupleItemNode, String format, Node raisingNode) {
-        super(core, getTupleItemNode, new FormattingBuffer.StringFormattingBuffer(format.length() + 100), raisingNode);
+    public StringFormatProcessor(Python3Core core, String format, Node raisingNode) {
+        super(core, new FormattingBuffer.StringFormattingBuffer(format.length() + 100), raisingNode);
         index = 0;
         this.formatText = format;
     }
