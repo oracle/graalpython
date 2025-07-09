@@ -43,6 +43,7 @@ test.test_warnings.CWarnTests.test_gh86298_loader_is_none_and_no_spec @ darwin-a
 test.test_warnings.CWarnTests.test_gh86298_no_loader_and_no_spec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_warnings.CWarnTests.test_gh86298_no_loader_with_spec_loader_okay @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_warnings.CWarnTests.test_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_warnings.CWarnTests.test_skip_file_prefixes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_warnings.CWarnTests.test_skip_file_prefixes_type_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_warnings.CWarnTests.test_stacklevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_warnings.CWarnTests.test_warn_explicit_non_ascii_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

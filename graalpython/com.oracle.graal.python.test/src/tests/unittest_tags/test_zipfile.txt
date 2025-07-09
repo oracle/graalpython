@@ -172,7 +172,7 @@ test.test_zipfile.test_core.LzmaTestsWithSourceFile.test_truncated_zipfile @ dar
 test.test_zipfile.test_core.LzmaTestsWithSourceFile.test_writestr_compression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipfile.test_core.LzmaTestsWithSourceFile.test_writestr_compresslevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipfile.test_core.LzmaTestsWithSourceFile.test_writing_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_zipfile.test_core.LzmaTestsWithSourceFile.test_zipextfile_attrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.test_core.LzmaTestsWithSourceFile.test_zipextfile_attrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_zipfile.test_core.LzmaWriterTests.test_close_after_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipfile.test_core.LzmaWriterTests.test_issue44439 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipfile.test_core.LzmaWriterTests.test_write_after_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

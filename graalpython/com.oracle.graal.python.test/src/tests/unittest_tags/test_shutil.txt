@@ -67,7 +67,7 @@ test.test_shutil.TestGetTerminalSize.test_bad_environ @ darwin-arm64,darwin-x86_
 test.test_shutil.TestGetTerminalSize.test_does_not_crash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_shutil.TestGetTerminalSize.test_fallback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_shutil.TestGetTerminalSize.test_os_environ_first @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_shutil.TestMisc.test_disk_usage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMisc.test_disk_usage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_shutil.TestMove.test_destinsrc_false_negative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_shutil.TestMove.test_destinsrc_false_positive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_shutil.TestMove.test_dont_move_dir_in_itself @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
