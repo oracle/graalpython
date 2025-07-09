@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.CallSlo
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -85,7 +86,7 @@ public abstract class GetFixedAttributeNode extends PNodeWithContext {
     abstract Object executeImpl(VirtualFrame frame, Object object, TpSlots slots);
 
     protected static boolean hasNoGetAttr(Object obj) {
-        // only used in asserts
+        CompilerAsserts.neverPartOfCompilation("only used in asserts");
         return LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.executeUncached(obj), T___GETATTR__) == PNone.NO_VALUE;
     }
 
