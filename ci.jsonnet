@@ -222,7 +222,7 @@
             "linux:amd64:jdk-latest"     : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "linux:aarch64:jdk-latest"   : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "darwin:aarch64:jdk-latest"  : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
-            "windows:amd64:jdk-latest"   : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST) + batches(2),
+            "windows:amd64:jdk-latest"   : post_merge                + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST) + batches(2),
         }),
         "python-junit-vfsutils": gpgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3                      + require(GPY_JVM_STANDALONE),
