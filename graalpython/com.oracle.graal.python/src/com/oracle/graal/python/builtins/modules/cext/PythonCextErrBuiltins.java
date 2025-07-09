@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.exception.PBaseException.T_CODE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_EXCEPTHOOK;
@@ -118,7 +119,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.nodes.Node;
@@ -151,11 +151,12 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {PyObject, PyObject, PyObject}, call = Direct)
-    abstract static class PyErr_SetExcInfo extends CApiTernaryBuiltinNode {
+    @CApiBuiltin(ret = Void, args = {PyThreadState, PyObject}, call = Direct)
+    abstract static class _PyErr_SetHandledException extends CApiBinaryBuiltinNode {
+
         @Specialization
         @SuppressWarnings("unused")
-        Object doClear(Object typ, PNone val, Object tb,
+        static Object doClear(@SuppressWarnings("unused") Object threadState, PNone val,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonContext context) {
             PythonLanguage lang = context.getLanguage(inliningTarget);
@@ -164,20 +165,12 @@ public final class PythonCextErrBuiltins {
         }
 
         @Specialization
-        Object doFull(@SuppressWarnings("unused") Object typ, PBaseException val, @SuppressWarnings("unused") Object tb,
+        static Object doFull(@SuppressWarnings("unused") Object threadState, PBaseException val,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonContext context) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PException e = PException.fromExceptionInfo(val, PythonOptions.isPExceptionWithJavaStacktrace(language));
             context.getThreadState(language).setCaughtException(e);
-            return PNone.NONE;
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        Object doFallback(Object typ, Object val, Object tb) {
-            // TODO we should still store the values to return them with 'PyErr_GetExcInfo' (or
-            // 'sys.exc_info')
             return PNone.NONE;
         }
     }
@@ -310,6 +303,23 @@ public final class PythonCextErrBuiltins {
             Object exception = getEscapedExceptionNode.execute(inliningTarget, currentException);
             Object traceback = noneToNativeNull(inliningTarget, getTracebackNode.execute(inliningTarget, exception));
             return PFactory.createTuple(language, new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyThreadState}, call = Direct)
+    abstract static class _PyErr_GetHandledException extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static Object get(@SuppressWarnings("unused") Object threadState,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetCaughtExceptionNode getCaughtExceptionNode,
+                        @Cached GetEscapedExceptionNode getEscapedExceptionNode) {
+            AbstractTruffleException caughtException = getCaughtExceptionNode.executeFromNative();
+            if (caughtException == null) {
+                return PythonContext.get(inliningTarget).getNativeNull();
+            }
+            assert caughtException != PException.NO_EXCEPTION;
+            return getEscapedExceptionNode.execute(inliningTarget, caughtException);
         }
     }
 
@@ -489,6 +499,29 @@ public final class PythonCextErrBuiltins {
                         @Cached PyObjectSetAttr setAttrNode) {
             setAttrNode.execute(inliningTarget, exc, T___TRACEBACK__, traceback);
             return 0;
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    abstract static class PyException_GetArgs extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static Object get(Object exc,
+                        @Bind Node inliningTarget,
+                        @Cached ExceptionNodes.GetArgsNode getArgsNode) {
+            return getArgsNode.execute(inliningTarget, exc);
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct)
+    abstract static class PyException_SetArgs extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object set(PBaseException exc, PTuple args,
+                        @Bind Node inliningTarget,
+                        @Cached ExceptionNodes.SetArgsNode setArgsNode) {
+            setArgsNode.execute(inliningTarget, exc, args);
+            return PNone.NO_VALUE;
         }
     }
 }

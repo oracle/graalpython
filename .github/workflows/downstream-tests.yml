@@ -12,36 +12,40 @@ jobs:
         name:
         - pybind11
         - virtualenv
-        # Currently fails
-        # - pyo3
+        - pyo3
         os:
         - id: ubuntu-latest
-          graalpy_platform: linux-amd64
+          platform: linux
+          arch: amd64
         - id: macos-latest
-          graalpy_platform: darwin-aarch64
+          platform: darwin
+          arch: aarch64
 
     runs-on: ${{ matrix.os.id }}
 
     steps:
-    - name: Install CMake
-      if: ${{ matrix.name == 'pybind11' }}
-      uses: lukka/get-cmake@latest
-      with:
-        cmakeVersion: 3.30.8
-        ninjaVersion: 1.12.1
+    - name: Install CMake (Linux)
+      if: ${{ matrix.os.platform == 'linux' && matrix.name == 'pybind11' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake
+
+    - name: Install CMake (Darwin)
+      if: ${{ matrix.os.platform == 'darwin' && matrix.name == 'pybind11' }}
+      run: brew install cmake
 
     - name: Install Rust toolchain
       if: ${{ matrix.name == 'pyo3' }}
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
 
     - name: Checkout main repository
       uses: actions/checkout@v4
 
     - name: Get GraalPy EA build
       run: |
-        tarball="$(curl -sfL https://raw.githubusercontent.com/graalvm/graal-languages-ea-builds/refs/heads/main/graalpy/versions/latest-native-${{ matrix.os.graalpy_platform }}.url)"
+        tarball="$(curl -sfL https://raw.githubusercontent.com/graalvm/graal-languages-ea-builds/refs/heads/main/graalpy/versions/latest-native-${{ matrix.os.platform }}-${{ matrix.os.arch}}.url)"
         curl -sfL "$tarball" | tar xz
 
     - name: Run downstream tests for ${{ matrix.name }}

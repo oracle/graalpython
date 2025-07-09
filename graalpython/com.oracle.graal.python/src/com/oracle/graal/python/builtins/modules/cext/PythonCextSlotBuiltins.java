@@ -590,8 +590,9 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = Pointer, args = {PyModuleObject}, call = Ignored)
     abstract static class Py_get_PyModuleObject_md_state extends CApiUnaryBuiltinNode {
         @Specialization
-        static Object get(PythonModule object) {
-            return object.getNativeModuleState();
+        static Object get(PythonModule object,
+                        @Bind Node inliningTarget) {
+            return object.getNativeModuleState() != null ? object.getNativeModuleState() : PythonContext.get(inliningTarget).getNativeNull();
         }
     }
 
@@ -743,7 +744,7 @@ public final class PythonCextSlotBuiltins {
             object.setNativeCharSequence(nativeSequence);
             /*
              * Create a native sequence storage to manage the lifetime of the native memory.
-             * 
+             *
              * TODO it would be nicer if the native char sequence could manage its own memory
              */
             writeAttribute.execute(inliningTarget, object, NATIVE_STORAGE, NativeByteSequenceStorage.create(ptr, byteLength, byteLength, true));

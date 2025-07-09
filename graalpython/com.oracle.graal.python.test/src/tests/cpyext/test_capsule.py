@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,10 +37,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import gc
+import re
+
 import os
 import time
 
 from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtType
+
+
+def _capsule_repr_cmpfunc(a, b):
+    if isinstance(a, str) and (b, str):
+        a = re.sub("0x[a-f0-9]+", "0xaaa", a)
+        b = re.sub("0x[a-f0-9]+", "0xaaa", b)
+    return unhandled_error_compare(a, b)
 
 
 class TestPyCapsule(CPyExtTestCase):
@@ -150,6 +159,24 @@ class TestPyCapsule(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyCapsule__repr__ = CPyExtFunction(
+        lambda args: f'<capsule object "{args[0]}" at 0xaaaa>',
+        lambda: (
+            ("hello", 0xDEADBEEF),
+        ),
+        code='''
+        PyObject* wrap_PyCapsule__repr__(char * name, Py_ssize_t ptr) {
+            PyObject* capsule = PyCapsule_New((void*)ptr, name, NULL);
+            return PyObject_Repr(capsule);
+        }
+        ''',
+        resultspec="O",
+        argspec='sn',
+        arguments=["char* name", "Py_ssize_t ptr"],
+        callfunction="wrap_PyCapsule__repr__",
+        cmpfunc=_capsule_repr_cmpfunc,
+    )
+
     if os.environ.get('GRAALPYTEST_RUN_GC_TESTS'):
         def test_capsule_destructor(self):
             Tester = CPyExtType(
@@ -161,7 +188,7 @@ class TestPyCapsule(CPyExtTestCase):
                     PyDict_SetItemString(contents, "destructor_was_here", Py_NewRef(Py_True));
                     Py_DECREF(contents);
                 }
-                
+
                 static PyObject* create_capsule(PyObject* unused, PyObject* contents) {
                     return PyCapsule_New(Py_NewRef(contents), "capsule", capsule_destructor);
                 }

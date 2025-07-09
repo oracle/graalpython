@@ -216,7 +216,7 @@ public final class PythonCextPyStateBuiltins {
     @CApiBuiltin(ret = PyFrameObjectTransfer, args = {PyThreadState}, call = Direct)
     abstract static class PyThreadState_GetFrame extends CApiUnaryBuiltinNode {
         @Specialization
-        PFrame get(
+        PFrame get(@SuppressWarnings("unused") Object threadState,
                         @Bind("this") Node inliningTarget,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Cached ReadCallerFrameNode readCallerFrameNode) {

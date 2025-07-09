@@ -34,3 +34,4 @@ repos:
     language: python
     types: [text]
     files: '\.(java|py|md|c|h|sh)$'
+    exclude: '^graalpython/lib-python/.*'

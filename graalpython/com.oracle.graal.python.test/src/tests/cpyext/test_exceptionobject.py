@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -47,86 +47,6 @@ try:
 except TypeError as e:
     TB = sys.exc_info()[2]
     exception_with_traceback = e
-
-
-class TestExceptionobject(unittest.TestCase):
-    def test_exc_info(self):
-        TestExcInfo = CPyExtType("TestExcInfo",
-                             """
-                             PyObject* get_exc_info(PyObject* self) {
-                                 PyObject* typ;
-                                 PyObject* val;
-                                 PyObject* tb;
-                                 PyErr_GetExcInfo(&typ, &val, &tb);
-                                 Py_XDECREF(val);
-                                 Py_XDECREF(tb);
-                                 if (typ == NULL) {
-                                     Py_RETURN_NONE;
-                                }
-                                 return typ;
-                             }
-                             """,
-                             tp_methods='{"get_exc_info", (PyCFunction)get_exc_info, METH_NOARGS, ""}'
-        )
-        tester = TestExcInfo()
-        try:
-            raise IndexError
-        except IndexError:
-            exc_type = tester.get_exc_info()
-            assert exc_type == IndexError
-
-            # do a second time because this time we won't do a stack walk
-            # disabled due to GR-34711
-            # exc_type = tester.get_exc_info()
-            # assert exc_type == IndexError
-        else:
-            assert False
-
-    def test_set_exc_info(self):
-        TestSetExcInfo = CPyExtType("TestSetExcInfo",
-                             """
-                             PyObject* set_exc_info(PyObject* self, PyObject* args) {
-                                 PyObject* typ = PyTuple_GetItem(args, 0);
-                                 PyObject* val = PyTuple_GetItem(args, 1);
-                                 PyObject* tb = PyTuple_GetItem(args, 2);
-                                 PyObject* typ1 = NULL;
-                                 PyObject* val1 = NULL;
-                                 PyObject* tb1 = NULL;
-
-                                 Py_XINCREF(typ);
-                                 Py_XINCREF(val);
-                                 Py_XINCREF(tb);
-                                 PyErr_SetExcInfo(typ, val, tb);
-
-                                 PyErr_GetExcInfo(&typ1, &val1, &tb1);
-                                 // ignore the traceback for now
-                                 if(typ == typ1 && val == val1) {
-                                     return Py_True;
-                                 }
-                                 return Py_False;
-                             }
-                             """,
-                             tp_methods='{"set_exc_info", (PyCFunction)set_exc_info, METH_O, ""}'
-        )
-        tester = TestSetExcInfo()
-        try:
-            raise IndexError
-        except:
-            typ, val, tb = sys.exc_info()
-            assert typ == IndexError
-
-
-
-            # overwrite exception info
-            expected = (ValueError, ValueError(), None)
-            res = tester.set_exc_info(expected)
-            assert res
-
-            # TODO uncomment once supported
-            # actual = sys.exc_info()
-            # assert actual == expected
-        else:
-            assert False
 
 
 def raise_exception_with_cause():
