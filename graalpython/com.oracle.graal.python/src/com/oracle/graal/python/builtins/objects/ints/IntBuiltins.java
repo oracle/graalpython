@@ -1852,9 +1852,10 @@ public final class IntBuiltins extends PythonBuiltins {
         static PInt doPiL(PInt left, long right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
+            raiseNegativeShiftCount(inliningTarget, right < 0, raiseNode);
             int rightI = (int) right;
             if (rightI == right) {
-                return doPiI(left, rightI, inliningTarget, raiseNode);
+                return doGuardedBiI(inliningTarget, left.getValue(), rightI, raiseNode);
             } else {
                 throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError);
             }
