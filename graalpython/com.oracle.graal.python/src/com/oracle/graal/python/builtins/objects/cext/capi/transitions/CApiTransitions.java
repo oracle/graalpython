@@ -514,10 +514,10 @@ public abstract class CApiTransitions {
     }
 
     /**
-     * Calls function {@link NativeCAPISymbol#FUN_PY_TRUFFLE_OBJECT_ARRAY_RELEASE} to decrement the
-     * reference counts of the stored objects by one and frees the native array. Therefore, this
-     * operation may run guest code because if the stored objects where exclusively owned by this
-     * storage, then they will be freed by calling the element object's destructor.
+     * Calls function {@link NativeCAPISymbol#FUN_OBJECT_ARRAY_RELEASE} to decrement the reference
+     * counts of the stored objects by one and frees the native array. Therefore, this operation may
+     * run guest code because if the stored objects where exclusively owned by this storage, then
+     * they will be freed by calling the element object's destructor.
      */
     private static void processNativeStorageReference(NativeStorageReference reference) {
         /*
@@ -525,7 +525,7 @@ public abstract class CApiTransitions {
          * GC.
          */
         if (reference.type == StorageType.Generic && reference.size > 0) {
-            PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_RELEASE, reference.ptr, reference.size);
+            PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_OBJECT_ARRAY_RELEASE, reference.ptr, reference.size);
         }
         assert !InteropLibrary.getUncached().isNull(reference.ptr);
         freeNativeStorage(reference);
@@ -536,7 +536,7 @@ public abstract class CApiTransitions {
         if (reference.data.getDestructor() != null) {
             // Our capsule is dead, so create a temporary copy that doesn't have a reference anymore
             PyCapsule capsule = PFactory.createCapsule(PythonLanguage.get(null), reference.data);
-            PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TRUFFLE_CAPSULE_CALL_DESTRUCTOR, PythonToNativeNode.executeUncached(capsule), capsule.getDestructor());
+            PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_GRAALPY_CAPSULE_CALL_DESTRUCTOR, PythonToNativeNode.executeUncached(capsule), capsule.getDestructor());
         }
     }
 

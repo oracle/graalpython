@@ -502,7 +502,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             }
         }
 
-        lines.add("PyAPI_FUNC(int64_t*) PyTruffle_constants() {");
+        lines.add("PyAPI_FUNC(int64_t*) GraalPy_Private_Constants() {");
         lines.add("    static int64_t constants[] = {");
         for (var constant : constants) {
             lines.add("        (int64_t) " + constant + ",");
@@ -511,7 +511,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("    };");
         lines.add("    return constants;");
         lines.add("}");
-        lines.add("PyAPI_FUNC(Py_ssize_t*) PyTruffle_struct_offsets() {");
+        lines.add("PyAPI_FUNC(Py_ssize_t*) GraalPy_Private_StructOffsets() {");
         lines.add("    static Py_ssize_t offsets[] = {");
         for (var field : fields) {
             int delim = field.indexOf("__");
@@ -525,7 +525,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("    };");
         lines.add("    return offsets;");
         lines.add("}");
-        lines.add("PyAPI_FUNC(Py_ssize_t*) PyTruffle_struct_sizes() {");
+        lines.add("PyAPI_FUNC(Py_ssize_t*) GraalPy_Private_StructSizes() {");
         lines.add("    static Py_ssize_t sizes[] = {");
         for (var struct : structs) {
             lines.add("        sizeof(" + struct.replace("__", " ") + "),");

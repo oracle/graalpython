@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -239,8 +239,8 @@ PyComplex_FromCComplex(Py_complex cval)
 	return GraalPyComplex_FromDoubles(cval.real, cval.imag);
 }
 
-PyAPI_FUNC(PyObject *) // GraalPy change: expose the function for downcalls
-complex_subtype_from_doubles(PyTypeObject *type, double real, double imag)
+PyAPI_FUNC(PyObject *) // GraalPy change: expose the function for downcalls, rename
+GraalPy_Private_Complex_SubtypeFromDoubles(PyTypeObject *type, double real, double imag)
 {
     Py_complex c;
     c.real = real;

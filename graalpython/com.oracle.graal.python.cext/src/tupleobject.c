@@ -767,10 +767,11 @@ tuple_vectorcall(PyObject *type, PyObject * const*args,
 
 #endif // GraalPy change
 
+// GraalPy change
 PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems);
 
-PyAPI_FUNC(PyObject *) // GraalPy change: export for downcall
-tuple_subtype_new(PyTypeObject *type, PyObject *iterable)
+PyAPI_FUNC(PyObject *) // GraalPy change: export for downcall, rename
+GraalPy_Private_Tuple_SubtypeNew(PyTypeObject *type, PyObject *iterable)
 {
     // GraalPy change: different implementation
     PyObject *tmp, *newobj, *item;
@@ -935,7 +936,7 @@ PyTypeObject PyTuple_Type = {
     0,                                          /* tp_init */
     PyTruffle_Tuple_Alloc,                      /* tp_alloc */ // GraalPy change
     0,                                          /* tp_new */ // GraalPy change: nulled
-    GraalPyObject_GC_Del,                       /* tp_free */ // GraalPy change: different function
+    GraalPy_Private_Object_GC_Del,              /* tp_free */ // GraalPy change: different function
 #if 0 // GraalPy change
     .tp_vectorcall = tuple_vectorcall,
 #endif // GraalPy change

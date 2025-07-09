@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SET_PY_DATETIME_TYPES;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_INIT_NATIVE_DATETIME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATETIME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;
@@ -112,7 +112,7 @@ public abstract class PyDateTimeCAPIWrapper {
         CompilerAsserts.neverPartOfCompilation();
 
         PCallCapiFunction callCapiFunction = PCallCapiFunction.getUncached();
-        callCapiFunction.call(FUN_SET_PY_DATETIME_TYPES);
+        callCapiFunction.call(FUN_INIT_NATIVE_DATETIME);
 
         Object datetimeModule = AbstractImportNode.importModule(T_DATETIME);
         capiContext.timezoneType = PyObjectGetAttr.executeUncached(datetimeModule, T_TIMEZONE);

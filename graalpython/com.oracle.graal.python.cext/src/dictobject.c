@@ -3871,7 +3871,7 @@ PyTypeObject PyDict_Type = {
     0,                                          /* tp_init */ // GraalPy change: nulled
     0,                                          /* tp_alloc */ // GraalPy change: nulled
     0,                                          /* tp_new */ // GraalPy change: nulled
-    GraalPyObject_GC_Del,                       /* tp_free */ // GraalPy change: different function
+    GraalPy_Private_Object_GC_Del,              /* tp_free */ // GraalPy change: different function
 #if 0 // GraalPy change
     .tp_vectorcall = dict_vectorcall,
 #endif // GraalPy change

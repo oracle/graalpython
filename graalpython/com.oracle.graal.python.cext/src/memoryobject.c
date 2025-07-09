@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -3409,13 +3409,13 @@ PyTypeObject PyMemoryView_Type = {
 // GraalPy additions
 /* called from memoryview implementation to do pointer arithmetics currently not possible from Java */
 PyAPI_FUNC(int8_t *)
-truffle_add_suboffset(int8_t *ptr, Py_ssize_t offset, Py_ssize_t suboffset)
+GraalPy_Private_AddSuboffset(int8_t *ptr, Py_ssize_t offset, Py_ssize_t suboffset)
 {
         return *(int8_t**)(ptr + offset) + suboffset;
 }
 
 PyAPI_FUNC(PyObject *)
-PyTruffle_MemoryViewFromObject(PyObject *v, int flags)
+GraalPy_Private_MemoryViewFromObject(PyObject *v, int flags)
 {
     if (PyObject_CheckBuffer(v)) {
         Py_buffer* buffer = malloc(sizeof(Py_buffer));
@@ -3454,9 +3454,9 @@ PyTruffle_MemoryViewFromObject(PyObject *v, int flags)
     return NULL;
 }
 
-/* Release buffer struct allocated in PyTruffle_MemoryViewFromObject */
+/* Release buffer struct allocated in GraalPy_Private_MemoryViewFromObject */
 PyAPI_FUNC(void)
-PyTruffle_ReleaseBuffer(Py_buffer* buffer)
+GraalPy_Private_ReleaseBuffer(Py_buffer* buffer)
 {
     if (buffer->obj != NULL) {
         PyBufferProcs *pb;

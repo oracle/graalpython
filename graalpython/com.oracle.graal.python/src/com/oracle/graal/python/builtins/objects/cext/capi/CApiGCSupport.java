@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -216,8 +216,8 @@ public abstract class CApiGCSupport {
             } else {
                 /*
                  * This is a valid case because objects can manually be untracked or removed from GC
-                 * lists and if then 'GraalPyObject_GC_Del' is called on the native object stub, it
-                 * is checked if that still needs to be done.
+                 * lists and if then 'GraalPy_Private_Object_GC_Del' is called on the native object
+                 * stub, it is checked if that still needs to be done.
                  */
                 if (GC_LOGGER.isLoggable(Level.FINER)) {
                     GC_LOGGER.finer(PythonUtils.formatJString("removing 0x%x from GC generation skipped; not tracked", opUntagged));

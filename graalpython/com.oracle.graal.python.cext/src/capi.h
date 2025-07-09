@@ -299,10 +299,7 @@ static inline int get_method_flags_wrapper(int flags) {
     return JWRAPPER_UNSUPPORTED;
 }
 
-// looked up by NFI, so exported
-PyAPI_FUNC(void) register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members);
-
-PyAPI_FUNC(void) GraalPyObject_GC_Del(void *op);
+PyAPI_FUNC(void) GraalPy_Private_Object_GC_Del(void *op);
 
 // export the SizeT arg parse functions, because we use them in contrast to cpython on windows for core modules that we link dynamically
 PyAPI_FUNC(int) _PyArg_Parse_SizeT(PyObject *, const char *, ...);

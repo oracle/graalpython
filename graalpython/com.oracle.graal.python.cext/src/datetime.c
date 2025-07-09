@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -7432,10 +7432,10 @@ error:
 
 /** to be used from Java code only; returns the type ID for a PyDateTime_CAPI */
 PyAPI_FUNC(void)
-set_PyDateTime_types()
+GraalPy_Private_InitNativeDateTime()
 {
     /* safe native get/set descriptors */
-    PyGetSetDef* getsets_date= PyDateTime_DateType.tp_getset;
+    PyGetSetDef* getsets_date = PyDateTime_DateType.tp_getset;
     PyGetSetDef* getsets_time = PyDateTime_TimeType.tp_getset;
     PyGetSetDef* getsets_datetime = PyDateTime_DateTimeType.tp_getset;
     PyMemberDef* members_delta = PyDateTime_DeltaType.tp_members;
@@ -7448,11 +7448,11 @@ set_PyDateTime_types()
         &PyDateTime_TZInfoType, "datetime.timezone",
         NULL, NULL
     };
-	GraalPyTruffle_InitBuiltinTypesAndStructs(datetime_types);
+    GraalPyTruffle_InitBuiltinTypesAndStructs(datetime_types);
 
     /* register native get/set descriptors to managed types */
-    register_native_slots(&PyDateTime_DateType, getsets_date, NULL);
-    register_native_slots(&PyDateTime_DateTimeType, getsets_datetime, NULL);
-    register_native_slots(&PyDateTime_TimeType, getsets_time, NULL);
-    register_native_slots(&PyDateTime_DeltaType, NULL, members_delta);
+    GraalPyTruffle_Set_Native_Slots(&PyDateTime_DateType, getsets_date, NULL);
+    GraalPyTruffle_Set_Native_Slots(&PyDateTime_DateTimeType, getsets_datetime, NULL);
+    GraalPyTruffle_Set_Native_Slots(&PyDateTime_TimeType, getsets_time, NULL);
+    GraalPyTruffle_Set_Native_Slots(&PyDateTime_DeltaType, NULL, members_delta);
 }

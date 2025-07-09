@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -372,7 +372,7 @@ static void
 slice_dealloc(PySliceObject *r)
 {
     // GraalPy change: different implementation
-    GraalPyObject_GC_Del(r);
+    GraalPy_Private_Object_GC_Del(r);
 }
 
 #if 0 // GraalPy change

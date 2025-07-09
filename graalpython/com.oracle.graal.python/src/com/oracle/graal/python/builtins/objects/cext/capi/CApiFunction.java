@@ -117,7 +117,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyDict_WatchCallback;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectBorrowed;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFunctionObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFunction_WatchCallback;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyGetSetDef;
@@ -933,8 +932,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyThread_set_stacksize", ret = Int, args = {SIZE_T}, call = NotImplemented)
     @CApiBuiltin(name = "PyThread_start_new_thread", ret = UNSIGNED_LONG, args = {func_voidvoidptr, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "PyTraceBack_Print", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyTruffleFrame_New", ret = PyFrameObjectTransfer, args = {PyThreadState, PyCodeObject, PyObject, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyTruffle_SeqIter_New", ret = PyObjectTransfer, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyType_ClearCache", ret = UNSIGNED_INT, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyType_SUPPORTS_WEAKREFS", ret = Int, args = {PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyUnicodeDecodeError_GetEncoding", ret = PyObject, args = {PyObject}, call = NotImplemented)

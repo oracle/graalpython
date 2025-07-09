@@ -667,7 +667,7 @@ is_referenced_from_managed(PyGC_Head *gc)
  * a Java array that is then referenced from each wrapper of native objects in
  * the reference cycle. Therefore, if a native object of the cycle is then again
  * used in managed code, it will keep all objects of the cycle alive.
- * 
+ *
  * see `GraalPyTruffleObject_ReplicateNativeReferences`
  */
 
@@ -2917,7 +2917,7 @@ done:
 
 
 void
-GraalPyObject_GC_Del(void *op)
+GraalPy_Private_Object_GC_Del(void *op)
 {
     if (is_managed(op)) {
         GraalPyTruffleObject_GC_Del(op);
@@ -2928,7 +2928,7 @@ GraalPyObject_GC_Del(void *op)
 
 /* Exposes 'gc_collect_impl' such that we can call it from Java. */
 PyAPI_FUNC(Py_ssize_t)
-GraalPyGC_Collect(int generation)
+GraalPy_Private_GC_Collect(int generation)
 {
     return gc_collect_impl(NULL, generation);
 }

@@ -1803,11 +1803,11 @@ traverse_slots(PyTypeObject *type, PyObject *self, visitproc visit, void *arg)
     return 0;
 }
 
-/* GraalPy change: replaced 'static' with 'PyAPI_FUNC' because we lookup the
+/* GraalPy change: replaced 'static' with 'PyAPI_FUNC' and renamed because we lookup the
  * symbol in Java to use it if a type receives 'toNative'.
  */
 PyAPI_FUNC(int)
-subtype_traverse(PyObject *self, visitproc visit, void *arg)
+GraalPy_Private_SubtypeTraverse(PyObject *self, visitproc visit, void *arg)
 {
     PyTypeObject *type, *base;
     traverseproc basetraverse;
@@ -1821,7 +1821,8 @@ subtype_traverse(PyObject *self, visitproc visit, void *arg)
        and traverse slots while we're at it */
     type = Py_TYPE(self);
     base = type;
-    while ((basetraverse = base->tp_traverse) == subtype_traverse) {
+    // GraalPy change: renamed
+    while ((basetraverse = base->tp_traverse) == GraalPy_Private_SubtypeTraverse) {
         if (Py_SIZE(base)) {
             int err = traverse_slots(base, self, visit, arg);
             if (err)
@@ -5471,7 +5472,7 @@ PyTypeObject PyType_Type = {
     0,                                          /* tp_init */ // GraalPy change: nulled
     PyType_GenericAlloc,                        /* tp_alloc */ // GraalPy change: added 'PyType_GenericAlloc'
     0,                                          /* tp_new */ // GraalPy change: nulled
-    GraalPyObject_GC_Del,                       /* tp_free */ // GraalPy change: different function
+    GraalPy_Private_Object_GC_Del,              /* tp_free */ // GraalPy change: different function
     (inquiry)type_is_gc,                        /* tp_is_gc */
 #if 0 // GraalPy change
     .tp_vectorcall = type_vectorcall,
