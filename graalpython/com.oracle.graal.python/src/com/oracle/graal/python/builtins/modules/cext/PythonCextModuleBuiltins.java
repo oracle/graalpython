@@ -47,6 +47,8 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleDef;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
@@ -320,6 +322,24 @@ public final class PythonCextModuleBuiltins {
         static Object error(@SuppressWarnings("unused") Object module,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+        }
+    }
+
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, PyModuleDef}, call = Ignored)
+    abstract static class PyTruffle_Module_SetDef extends CApiBinaryBuiltinNode {
+        @Specialization
+        static Object set(PythonModule object, Object value) {
+            object.setNativeModuleDef(value);
+            return PNone.NO_VALUE;
+        }
+    }
+
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, Pointer}, call = Ignored)
+    abstract static class PyTruffle_Module_SetState extends CApiBinaryBuiltinNode {
+        @Specialization
+        static Object set(PythonModule object, Object value) {
+            object.setNativeModuleState(value);
+            return PNone.NO_VALUE;
         }
     }
 }

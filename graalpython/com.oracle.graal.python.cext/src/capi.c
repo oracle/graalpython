@@ -115,10 +115,6 @@ static void capsule_dealloc(PyObject *o) {
 // taken from CPython "Objects/bytesobject.c"
 #define PyBytesObject_SIZE (offsetof(PyBytesObject, ob_sval) + 1)
 
-/* prototype */
-PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems);
-void PyTruffle_Tuple_Dealloc(PyTupleObject* tuple);
-
 PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 PyAPI_DATA(PyTypeObject) _PyExc_StopIteration;
 PyAPI_DATA(PyTypeObject) mmap_object_type;
@@ -253,7 +249,7 @@ PyAPI_FUNC(void) GraalPy_Private_MMap_InitBufferProtocol(PyObject* mmap_type) {
 	    (getbufferproc)mmap_getbuffer,
 	    (releasebufferproc)NULL,
 	};
-	GraalPy_set_PyTypeObject_tp_as_buffer((PyTypeObject *) mmap_type, &mmap_as_buffer);
+	GraalPyTruffle_Type_SetBufferProcs((PyTypeObject *) mmap_type, &mmap_as_buffer);
 	((PyTypeObject*) mmap_type)->tp_as_buffer = &mmap_as_buffer;
 }
 
@@ -270,7 +266,7 @@ PyAPI_FUNC(void) PyTruffleCData_InitBufferProtocol(PyObject* type) {
         cdata_getbuffer,
         cdata_releasebuffer,
     };
-    GraalPy_set_PyTypeObject_tp_as_buffer(((PyTypeObject*) type), &cdata_as_buffer);
+    GraalPyTruffle_Type_SetBufferProcs(((PyTypeObject*) type), &cdata_as_buffer);
     ((PyTypeObject*) type)->tp_as_buffer = &cdata_as_buffer;
 }
 
@@ -326,33 +322,33 @@ static void initialize_bufferprocs() {
         (releasebufferproc)NULL,                     /* bf_releasebuffer */
     };
     PyBytes_Type.tp_as_buffer = &bytes_as_buffer;
-    GraalPy_set_PyTypeObject_tp_as_buffer(&PyBytes_Type, &bytes_as_buffer);
+    GraalPyTruffle_Type_SetBufferProcs(&PyBytes_Type, &bytes_as_buffer);
 
     static PyBufferProcs bytearray_as_buffer = {
         (getbufferproc)bytearray_getbuffer,          /* bf_getbuffer */
         (releasebufferproc)bytearray_releasebuffer,  /* bf_releasebuffer */
     };
     PyByteArray_Type.tp_as_buffer = &bytearray_as_buffer;
-    GraalPy_set_PyTypeObject_tp_as_buffer(&PyByteArray_Type, &bytearray_as_buffer);
+    GraalPyTruffle_Type_SetBufferProcs(&PyByteArray_Type, &bytearray_as_buffer);
 
     static PyBufferProcs memory_as_buffer = {
         (getbufferproc)memory_getbuf,         /* bf_getbuffer */
         (releasebufferproc)memory_releasebuf, /* bf_releasebuffer */
     };
     PyMemoryView_Type.tp_as_buffer = &memory_as_buffer;
-    GraalPy_set_PyTypeObject_tp_as_buffer(&PyMemoryView_Type, &memory_as_buffer);
+    GraalPyTruffle_Type_SetBufferProcs(&PyMemoryView_Type, &memory_as_buffer);
 
     static PyBufferProcs array_as_buffer;
     array_as_buffer.bf_getbuffer = GraalPyTruffle_Array_getbuffer,
     array_as_buffer.bf_releasebuffer = GraalPyTruffle_Array_releasebuffer,
     Arraytype.tp_as_buffer = &array_as_buffer;
-    GraalPy_set_PyTypeObject_tp_as_buffer(&Arraytype, &array_as_buffer);
+    GraalPyTruffle_Type_SetBufferProcs(&Arraytype, &array_as_buffer);
 
     static PyBufferProcs picklebuf_as_buffer;
     picklebuf_as_buffer.bf_getbuffer = (getbufferproc)picklebuf_getbuf,
     picklebuf_as_buffer.bf_releasebuffer = empty_releasebuf,
     PyPickleBuffer_Type.tp_as_buffer = &picklebuf_as_buffer;
-    GraalPy_set_PyTypeObject_tp_as_buffer(&PyPickleBuffer_Type, &picklebuf_as_buffer);
+    GraalPyTruffle_Type_SetBufferProcs(&PyPickleBuffer_Type, &picklebuf_as_buffer);
 
 }
 

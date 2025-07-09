@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyASCIIObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyBufferProcs;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyByteArrayObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCFunctionObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCMethodObject;
@@ -67,7 +66,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PySetObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PySliceObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTupleObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyUnicodeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyVarObject;
@@ -75,20 +73,9 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINTPTR_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_INT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.destructor;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.getattrfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.getattrofunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.getiterfunc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.getter;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.inquiry;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.iternextfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.newfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.setattrfunc;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.setattrofunc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.setter;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.traverseproc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.vectorcallfunc;
-import static com.oracle.graal.python.nodes.HiddenAttr.AS_BUFFER;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.HiddenAttr.NATIVE_STORAGE;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_START;
@@ -101,9 +88,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
-import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
@@ -113,15 +98,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyMethodDefHelper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
@@ -138,18 +115,13 @@ import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.nodes.object.SetDictNode;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
@@ -158,7 +130,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -775,149 +746,6 @@ public final class PythonCextSlotBuiltins {
                         @Bind Node inliningTarget,
                         @Cached CExtNodes.LvTagNode lvTagNode) {
             return lvTagNode.execute(inliningTarget, n);
-        }
-    }
-
-    @CApiBuiltin(ret = Void, args = {PyFrameObject, Int}, call = Ignored)
-    abstract static class Py_set_PyFrameObject_f_lineno extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object set(PFrame frame, int value) {
-            frame.setLine(value);
-            return PNone.NONE;
-        }
-    }
-
-    @CApiBuiltin(ret = Void, args = {PyModuleObject, PyModuleDef}, call = Ignored)
-    abstract static class Py_set_PyModuleObject_md_def extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object set(PythonModule object, Object value) {
-            object.setNativeModuleDef(value);
-            return PNone.NO_VALUE;
-        }
-    }
-
-    @CApiBuiltin(ret = Void, args = {PyModuleObject, Pointer}, call = Ignored)
-    abstract static class Py_set_PyModuleObject_md_state extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object set(PythonModule object, Object value) {
-            object.setNativeModuleState(value);
-            return PNone.NO_VALUE;
-        }
-    }
-
-    @CApiBuiltin(ret = Void, args = {PyObjectWrapper, Py_ssize_t}, call = Ignored)
-    abstract static class Py_set_PyObject_ob_refcnt extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object set(PythonAbstractObjectNativeWrapper wrapper, long value) {
-            /*
-             * We are allocating native object stubs for each wrapper. Therefore, reference counting
-             * should only be done on the native side.
-             */
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-    }
-
-    @CApiBuiltin(ret = Void, args = {PyTypeObject, PyBufferProcs}, call = Ignored)
-    abstract static class Py_set_PyTypeObject_tp_as_buffer extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object setBuiltinClassType(PythonBuiltinClassType clazz, Object bufferProcs,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached HiddenAttr.WriteNode writeAttrNode) {
-            writeAttrNode.execute(inliningTarget, PythonContext.get(inliningTarget).lookupType(clazz), AS_BUFFER, bufferProcs);
-            return PNone.NO_VALUE;
-        }
-
-        @Specialization(guards = "isPythonClass(object)")
-        static Object set(PythonAbstractObject object, Object bufferProcs,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached HiddenAttr.WriteNode writeAttrNode) {
-            writeAttrNode.execute(inliningTarget, object, AS_BUFFER, bufferProcs);
-            return PNone.NO_VALUE;
-        }
-    }
-
-    @CApiBuiltin(ret = Void, args = {PyTypeObject, PyObject}, call = Ignored)
-    abstract static class Py_set_PyTypeObject_tp_dict extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doTpDict(PythonManagedClass object, Object value,
-                        @Bind Node inliningTarget,
-                        @Cached GetDictIfExistsNode getDict,
-                        @Cached SetDictNode setDict,
-                        @Cached CastToTruffleStringNode castNode,
-                        @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached HashingStorageGetIterator getIterator,
-                        @Cached HashingStorageIteratorNext itNext,
-                        @Cached HashingStorageIteratorKey itKey,
-                        @Cached HashingStorageIteratorValue itValue) {
-            if (value instanceof PDict dict && (PGuards.isBuiltinDict(dict) || value instanceof StgDictObject)) {
-                // special and fast case: commit items and change store
-                HashingStorage storage = dict.getDictStorage();
-                HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
-                while (itNext.execute(inliningTarget, storage, it)) {
-                    writeAttrNode.execute(object, castNode.castKnownString(inliningTarget, itKey.execute(inliningTarget, storage, it)), itValue.execute(inliningTarget, storage, it));
-                }
-                PDict existing = getDict.execute(object);
-                if (existing != null) {
-                    dict.setDictStorage(existing.getDictStorage());
-                } else {
-                    dict.setDictStorage(new DynamicObjectStorage(object));
-                }
-                setDict.execute(inliningTarget, object, dict);
-            } else {
-                // TODO custom mapping object
-            }
-            return PNone.NO_VALUE;
-        }
-    }
-
-    @CApiBuiltin(ret = Void, args = {PyTypeObject, Py_ssize_t}, call = Ignored)
-    abstract static class Py_set_PyTypeObject_tp_dictoffset extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doTpDictoffset(PythonManagedClass object, long value,
-                        @Bind Node inliningTarget,
-                        @Cached TypeNodes.SetDictOffsetNode setDictOffsetNode) {
-            setDictOffsetNode.execute(inliningTarget, object, value);
-            return PNone.NO_VALUE;
-        }
-
-    }
-
-    @CApiBuiltin(name = "Py_get_dummy", ret = Pointer, args = {Pointer}, call = Ignored)
-    abstract static class PyGetSlotDummyPtr extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        Object get(@SuppressWarnings("unused") Object object) {
-            return getNULL();
-        }
-    }
-
-    @CApiBuiltin(name = "Py_set_PyVarObject_ob_size", ret = Void, args = {PyVarObject, Py_ssize_t}, call = Ignored)
-    @CApiBuiltin(name = "Py_set_PyTypeObject_tp_getattr", ret = Void, args = {PyTypeObject, getattrfunc}, call = Ignored)
-    @CApiBuiltin(name = "Py_set_PyTypeObject_tp_getattro", ret = Void, args = {PyTypeObject, getattrofunc}, call = Ignored)
-    @CApiBuiltin(name = "Py_set_PyTypeObject_tp_setattr", ret = Void, args = {PyTypeObject, setattrfunc}, call = Ignored)
-    @CApiBuiltin(name = "Py_set_PyTypeObject_tp_setattro", ret = Void, args = {PyTypeObject, setattrofunc}, call = Ignored)
-    @CApiBuiltin(name = "Py_set_PyTypeObject_tp_subclasses", ret = Void, args = {PyTypeObject, PyObject}, call = Ignored)
-    @CApiBuiltin(name = "Py_set_PyTypeObject_tp_finalize", ret = Void, args = {PyTypeObject, destructor}, call = Ignored)
-    @CApiBuiltin(name = "Py_set_PyTypeObject_tp_iter", ret = Void, args = {PyTypeObject, getiterfunc}, call = Ignored)
-    @CApiBuiltin(name = "Py_set_PyTypeObject_tp_iternext", ret = Void, args = {PyTypeObject, iternextfunc}, call = Ignored)
-    @CApiBuiltin(name = "Py_set_PyTypeObject_tp_base", ret = Void, args = {PyTypeObject, PyTypeObject}, call = Ignored)
-    @CApiBuiltin(name = "Py_set_PyTypeObject_tp_bases", ret = Void, args = {PyTypeObject, PyObject}, call = Ignored)
-    @CApiBuiltin(name = "Py_set_PyTypeObject_tp_clear", ret = Void, args = {PyTypeObject, inquiry}, call = Ignored)
-    @CApiBuiltin(name = "Py_set_PyTypeObject_tp_mro", ret = Void, args = {PyTypeObject, PyObject}, call = Ignored)
-    @CApiBuiltin(name = "Py_set_PyTypeObject_tp_new", ret = Void, args = {PyTypeObject, newfunc}, call = Ignored)
-    @CApiBuiltin(name = "Py_set_PyTypeObject_tp_traverse", ret = Void, args = {PyTypeObject, traverseproc}, call = Ignored)
-    @CApiBuiltin(name = "Py_set_PyTypeObject_tp_weaklistoffset", ret = Void, args = {PyTypeObject, Py_ssize_t}, call = Ignored)
-    abstract static class PySetSlotDummyPtr extends CApiBinaryBuiltinNode {
-
-        @SuppressWarnings("unused")
-        @Specialization
-        static Object set(Object object, Object value) {
-            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 }

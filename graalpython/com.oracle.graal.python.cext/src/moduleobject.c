@@ -240,7 +240,7 @@ _PyModule_CreateInitialized(PyModuleDef* module, int module_api_version)
             return NULL;
         }
         memset(md_state, 0, module->m_size);
-        GraalPy_set_PyModuleObject_md_state(m, md_state);
+        GraalPyTruffle_Module_SetState(m, md_state);
     }
 
     if (module->m_methods != NULL) {
@@ -255,7 +255,7 @@ _PyModule_CreateInitialized(PyModuleDef* module, int module_api_version)
             return NULL;
         }
     }
-    GraalPy_set_PyModuleObject_md_def(m, module);
+    GraalPyTruffle_Module_SetDef(m, module);
     return (PyObject*)m;
 }
 
@@ -384,8 +384,8 @@ PyModule_FromDefAndSpec2(PyModuleDef* def, PyObject *spec, int module_api_versio
 
     if (PyModule_Check(m)) {
         // GraalPy change: avoid direct struct access
-        GraalPy_set_PyModuleObject_md_state((PyModuleObject *)m, NULL);
-        GraalPy_set_PyModuleObject_md_def((PyModuleObject *)m, def);
+        GraalPyTruffle_Module_SetState((PyModuleObject *)m, NULL);
+        GraalPyTruffle_Module_SetDef((PyModuleObject *)m, def);
         // End of GraalPy change, CPython code was next two lines
         // ((PyModuleObject*)m)->md_state = NULL;
         // ((PyModuleObject*)m)->md_def = def;
@@ -458,7 +458,7 @@ PyModule_ExecDef(PyObject *module, PyModuleDef *def)
                 return -1;
             }
             memset(md_state, 0, def->m_size);
-            GraalPy_set_PyModuleObject_md_state(md, md_state);
+            GraalPyTruffle_Module_SetState(md, md_state);
         }
         // End GraalPy change, original code below
         // if (md->md_state == NULL) {

@@ -610,7 +610,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyErr_FormatFromCause", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "_PyErr_GetExcInfo", ret = Void, args = {PyThreadState, PyObjectPtr, PyObjectPtr, PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "_PyEval_SliceIndex", ret = Int, args = {PyObject, PY_SSIZE_T_PTR}, call = CImpl)
-    @CApiBuiltin(name = "_PyFrame_SetLineNumber", ret = Void, args = {PyFrameObject, Int}, call = CImpl)
     @CApiBuiltin(name = "_PyGen_FetchStopIterationValue", ret = Int, args = {PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "_PyGen_Finalize", ret = Void, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyGen_SetStopIterationValue", ret = Int, args = {PyObject}, call = CImpl)
