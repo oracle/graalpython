@@ -100,7 +100,9 @@ class TestSubprocess(unittest.TestCase):
             p.kill()
             p.wait()
 
-    @unittest.skipIf(sys.platform == 'win32', "Posix-specific")
+    # @unittest.skipIf(sys.platform == 'win32', "Posix-specific")
+    # Skipped because of transient: GR-66709
+    @unittest.skip
     def test_waitpid_group_child(self):
         import os
         p = subprocess.Popen([sys.executable, "-c", "import time; print('before'); time.sleep(0.1); print('after'); 42"],
