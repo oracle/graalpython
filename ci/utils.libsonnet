@@ -44,6 +44,36 @@ local graal_common = import "graal/ci/common.jsonnet";
         )
         for b in builds
     ],
+
+    ensure_tier_time_and_machine_limits(builds):: [
+        b  + (
+            if std.count(b.targets, "tier1") > 0 then
+                (
+                    assert !std.objectHas(b, "timelimit") : b.name + " should not have a custom timelimit";
+                    assert b.os == "linux" : "Only linux is allowed in tier1, move " + b.name + " to another tier";
+                    assert b.arch == "amd64" : "Only amd64 is allowed in tier1, move " + b.name + " to another tier";
+                    {timelimit: "00:10:00"}
+                )
+            else if std.count(b.targets, "tier2") > 0 then
+                (
+                    assert !std.objectHas(b, "timelimit") : b.name + " should not have a custom timelimit";
+                    assert b.os == "linux" : "Only linux is allowed in tier2, move " + b.name + " to another tier";
+                    assert b.arch == "amd64" : "Only amd64 is allowed in tier2, move " + b.name + " to another tier";
+                    {timelimit: "00:20:00"}
+                )
+            else if std.count(b.targets, "tier3") > 0 then
+                (
+                    assert !std.objectHas(b, "timelimit") : b.name + " should not have a custom timelimit";
+                    if std.count(["linux", "windows"], b.os) > 0 then
+                        {timelimit: "01:00:00"}
+                    else
+                        {timelimit: "00:30:00"}
+                )
+            else
+                {}
+        )
+        for b in builds
+    ],
 }
 
 // Local Variables:

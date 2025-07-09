@@ -259,15 +259,10 @@
       "tier4": graal_common.frequencies.post_merge.targets[0],
     },
     tierConfig: tierConfig,
-    // Until buildbot issues around CI tiers are resolved, we cannot use them
-    // tier1:: $.target("tier1"),
-    // tier2:: $.target("tier2"),
-    // tier3:: $.target("tier3"),
-    // post_merge:: $.target("tier4") + task_spec({name_target:: "post_merge"}),
-    tier1:: $.target("gate"),
-    tier2:: $.target("gate"),
-    tier3:: $.target("gate"),
-    post_merge:: $.target(graal_common.frequencies.post_merge.targets[0]) + task_spec({name_target:: "post_merge"}),
+    tier1:: $.target("tier1"),
+    tier2:: $.target("tier2"),
+    tier3:: $.target("tier3"),
+    post_merge:: $.target("tier4") + task_spec({name_target:: "post_merge"}),
 
     bench:: $.target(graal_common.frequencies.bench.targets[0]),
     on_demand:: $.target(graal_common.frequencies.on_demand.targets[0]) + task_spec({name_target:: "on_demand"}),
@@ -315,6 +310,9 @@
             else 
                 ["set-export", "GRAAL_JDK_HOME", "../graal/sdk/mxbuild/*/GRAALVM_COMMUNITY_JAVA" + jdk_version + "/graalvm-community-*"]
         ],
+        environment+: {
+            MX_BUILD_SHALLOW_DEPENDENCY_CHECKS: "true",
+        },
         requireArtifacts+: [{
             name: artifact_name,
             autoExtract: false,
@@ -374,24 +372,6 @@
     packages(os, arch)::
         get(PACKAGES, os, arch),
 
-    gcc_8:: task_spec({
-        // we replace devtoolset with gcc 8.3.0
-        local pkgs = if self.os == "linux" then
-                std.prune(super.packages + {
-                    "00:devtoolset": null,
-                    "01:binutils": null,
-                    gcc: "==8.3.0",
-                    binutils: "==2.34",
-                })
-            else
-                super.packages,
-        packages: pkgs,
-    }),
-
-    with_dy(dynamic_imports):: task_spec({
-        dynamic_imports +:: if std.type(dynamic_imports) == "array" then dynamic_imports else [dynamic_imports],
-    }),
-
     local eclipse = task_spec(evaluate_late({
         // late evaluation of the eclipse mixin, conditional import based on platform
         // eclipse downloads are not provided for aarch64
@@ -404,24 +384,6 @@
     })),
 
     logs(os, arch):: LOGS,
-
-    graal_core:: task_spec({
-        environment +: {
-            HOST_VM_CONFIG: "graal-core",
-        },
-    }),
-
-    // gcc_8 needed for the OL8 (gfortran is missing)
-    blas:: $.ol8 + $.gcc_8 + task_spec({
-        packages: {
-            openblas: ">=0.3.21",
-            lapack: ">=3.8.0",
-        }
-    }),
-
-    notify:: task_spec({
-        notify_groups: const.NOTIFY_GROUPS,
-    }),
 
     //------------------------------------------------------------------------------------------------------------------
     // graalpy gates
@@ -611,9 +573,7 @@
           "pip:pylint": "==2.4.4",
         }
     }),
-    style_gate:: base_style_gate + task_spec({
-        tags +:: ",fullbuild,python-license",
-    }),
+    style_gate:: base_style_gate,
 }
 
 // Local Variables:
