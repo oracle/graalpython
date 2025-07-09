@@ -100,7 +100,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "bufferSize <= 0")
         static void bufferSizeError(PBuffered self, int bufferSize,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, BUF_SIZE_POS);
         }
 
@@ -165,7 +165,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isOK()")
         static Object initError(PBuffered self, Object o,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             if (self.isDetached()) {
                 throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_STREAM_DETACHED);
             } else {
@@ -179,7 +179,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isOK()")
         static Object initError(PBuffered self, Object buffer,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             if (self.isDetached()) {
                 throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_STREAM_DETACHED);
             } else {
@@ -192,7 +192,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isOK()")
         static Object initError(PBuffered self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             if (self.isDetached()) {
                 throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_STREAM_DETACHED);
             } else {

@@ -52,7 +52,6 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.StackWalkResult;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
-import com.oracle.graal.python.runtime.ExecutionContextFactory.CallContextNodeGen;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -87,10 +86,6 @@ import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 public abstract class ExecutionContext {
     @GenerateUncached
     public abstract static class CallContext extends Node {
-        public static CallContext create() {
-            return CallContextNodeGen.create();
-        }
-
         /**
          * Prepare an indirect call from a Python frame to a Python function.
          */

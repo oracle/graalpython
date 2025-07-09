@@ -999,7 +999,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doWarn(VirtualFrame frame, PythonModule mod, Object message, Object category, int stacklevel, Object source, Object skipFilePrefixesObj,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached StringNodes.CastToTruffleStringCheckedNode castToStringChecked,
                         @Cached PRaiseNode raiseNode,
@@ -1040,8 +1040,8 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doWarn(VirtualFrame frame, PythonModule mod, Object message, Object category, Object flname,
                         int lineno, Object module, Object registry, Object globals, Object source,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached WarningsModuleNode moduleFunctionsNode,
                         @Cached PRaiseNode raiseNode) {

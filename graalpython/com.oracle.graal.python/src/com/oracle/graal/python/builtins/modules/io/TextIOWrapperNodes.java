@@ -169,13 +169,13 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = {"self.isFileIO()", "self.getFileIO().isClosed()"})
         static void error(@SuppressWarnings("unused") PTextIO self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.IO_CLOSED);
         }
 
         @Specialization(guards = "!self.isFileIO()")
         static void checkGeneric(VirtualFrame frame, PTextIO self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached PRaiseNode raiseNode) {
@@ -363,7 +363,7 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization
         static TruffleString readline(VirtualFrame frame, PTextIO self, int limit,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ReadChunkNode readChunkNode,
                         @Cached WriteFlushNode writeFlushNode,
                         @Cached FindLineEndingNode findLineEndingNode,
@@ -495,7 +495,7 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = "self.hasDecoder()")
         static boolean readChunk(VirtualFrame frame, Node inliningTarget, PTextIO self, int hint,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached SequenceNodes.GetObjectArrayNode getArray,
                         @Cached(inline = false) DecodeNode decodeNode,
                         @Cached PyObjectCallMethodObjArgs callMethodGetState,
@@ -598,7 +598,7 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = "!self.hasDecoder()")
         static boolean error(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") int size_hint,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, NOT_READABLE);
         }
     }
@@ -619,7 +619,7 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization
         static TruffleString decodeGeneric(VirtualFrame frame, Object decoder, Object o, boolean eof,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringCheckedNode castNode,
                         @Cached PyObjectCallMethodObjArgs callMethodDecode) {
             Object decoded = callMethodDecode.execute(frame, inliningTarget, decoder, T_DECODE, o, eof);

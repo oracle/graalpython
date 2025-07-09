@@ -83,7 +83,7 @@ public abstract class CodePointConversionNode extends ArgumentCastNode {
     @Specialization(guards = "!isHandledPNone(useDefaultForNone, value)")
     @SuppressWarnings("truffle-static-method")
     int doOthers(Object value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CastToTruffleStringNode castToStringNode,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,

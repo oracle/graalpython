@@ -144,7 +144,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
     // Specializations for no dict & PythonManagedClass -> requires calling onAttributeUpdate
     @Specialization(guards = {"isAttrWritable(klass)", "getDict.execute(klass) == null"})
     boolean writeToDynamicStorageBuiltinType(PythonBuiltinClass klass, TruffleString key, Object value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Shared("callAttrUpdate") @Cached InlinedBranchProfile callAttrUpdate,
                     @Shared("dylib") @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib,
@@ -159,7 +159,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
 
     @Specialization(guards = {"isAttrWritable(klass)", "getDict.execute(klass) == null"})
     static boolean writeToDynamicStoragePythonClass(PythonClass klass, TruffleString key, Object value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Exclusive @Cached InlinedBranchProfile callAttrUpdate,
                     @Exclusive @Cached InlinedBranchProfile updateFlags,
@@ -190,7 +190,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
     // write to the dict: the basic specialization for non-classes
     @Specialization(guards = {"dict != null", "!isManagedClass(object)", "!isNoValue(value)"})
     static boolean writeToDictNoType(@SuppressWarnings("unused") PythonObject object, TruffleString key, Object value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(object)") PDict dict,
                     @Shared("updateStorage") @Cached InlinedBranchProfile updateStorage,
@@ -201,7 +201,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
     // write to the dict & PythonManagedClass -> requires calling onAttributeUpdate
     @Specialization(guards = {"dict != null", "!isNoValue(value)"})
     boolean writeToDictBuiltinType(PythonBuiltinClass klass, TruffleString key, Object value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(klass)") PDict dict,
                     @Shared("callAttrUpdate") @Cached InlinedBranchProfile callAttrUpdate,
@@ -218,7 +218,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
 
     @Specialization(guards = {"dict != null", "!isNoValue(value)"})
     static boolean writeToDictClass(PythonClass klass, TruffleString key, Object value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(klass)") PDict dict,
                     @Shared("callAttrUpdate") @Cached InlinedBranchProfile callAttrUpdate,
@@ -231,7 +231,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
 
     @Specialization(guards = {"dict != null", "isNoValue(value)", "!isPythonBuiltinClass(obj)"})
     static boolean deleteFromPythonObject(PythonObject obj, TruffleString key, Object value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(obj)") PDict dict,
                     @Shared("callAttrUpdate") @Cached InlinedBranchProfile callAttrUpdate,
@@ -253,7 +253,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
 
     @Specialization(guards = {"dict != null", "isNoValue(value)"})
     static boolean deleteFromPythonBuiltinClass(PythonBuiltinClass klass, TruffleString key, Object value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(klass)") PDict dict) {
         throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, key, klass);
@@ -318,7 +318,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
     protected abstract static class WriteAttributeToObjectNotTypeNode extends WriteAttributeToObjectNode {
         @Specialization
         static boolean writeNativeObject(PythonAbstractNativeObject object, TruffleString key, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                         @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
                         @Shared("updateStorage") @Cached InlinedBranchProfile updateStorage,
@@ -338,7 +338,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
         @Specialization(guards = "isErrorCase(getDict, object)")
         static boolean doError(Object object, TruffleString key, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
     }
@@ -363,7 +363,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
          */
         @Specialization(guards = "!canBeSpecialMethod(key, codePointLengthNode, codePointAtIndexNode)")
         static boolean writeNativeClassSimple(PythonAbstractNativeObject object, TruffleString key, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached CStructAccess.ReadI64Node getNativeFlags,
                         @Shared @Cached CStructAccess.ReadObjectNode getNativeDict,
                         @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
@@ -387,7 +387,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
 
         @Specialization(replaces = "writeNativeClassSimple")
         static boolean writeNativeClassGeneric(PythonAbstractNativeObject object, TruffleString key, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached CStructAccess.ReadI64Node getNativeFlags,
                         @Shared @Cached CStructAccess.ReadObjectNode getNativeDict,
                         @Exclusive @Cached HashingStorageSetItem setHashingStorageItem,
@@ -427,7 +427,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
         @Specialization(guards = "isErrorCase(getDict, object)")
         static boolean doError(Object object, TruffleString key, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
     }

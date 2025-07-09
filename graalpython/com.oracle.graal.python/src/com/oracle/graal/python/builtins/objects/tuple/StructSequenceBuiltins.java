@@ -190,7 +190,7 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString repr(VirtualFrame frame, PTuple self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetFieldNamesNode getFieldNamesNode,
                         @Cached ObjectNodes.GetFullyQualifiedNameNode getQName,
@@ -227,7 +227,7 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTuple reduce(VirtualFrame frame, PTuple self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClass,
                         @Cached GetSizeNode getSizeNode,
                         @Cached GetFieldNamesNode getFieldNamesNode,

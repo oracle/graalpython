@@ -252,7 +252,7 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(cls)")
         PNone init(VirtualFrame frame, SuperObject self, Object cls, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (!(obj instanceof PNone)) {
                 Object type = supercheck(frame, inliningTarget, cls, obj, raiseNode);
@@ -273,7 +273,7 @@ public final class SuperBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = {"!isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
         PNone initInPlace(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode,
                         @Shared @Cached CellBuiltins.GetRefNode getRefNode) {
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
@@ -294,7 +294,7 @@ public final class SuperBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = {"isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
         PNone init(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode,
                         @Cached ReadCallerFrameNode readCaller,
                         @Shared @Cached CellBuiltins.GetRefNode getRefNode) {
@@ -435,7 +435,7 @@ public final class SuperBuiltins extends PythonBuiltins {
     public abstract static class GetNode extends DescrGetBuiltinNode {
         @Specialization
         static Object doNoneOrBound(SuperObject self, Object obj, @SuppressWarnings("unused") Object type,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile objIsNoneProfile,
                         @Cached InlinedConditionProfile selfObjIsNullProfile,
                         @Cached GetObjectNode getObject,
@@ -489,7 +489,7 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         @Specialization
         Object get(VirtualFrame frame, SuperObject self, Object attr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectSlotsNode getSlotsNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached GetObjectTypeNode getObjectType,
@@ -595,7 +595,7 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getClass(SuperObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetTypeNode getType) {
             Object type = getType.execute(inliningTarget, self);
             if (type == null) {
@@ -611,7 +611,7 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getClass(SuperObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectNode getObject) {
             Object object = getObject.execute(inliningTarget, self);
             if (object == null) {
@@ -626,7 +626,7 @@ public final class SuperBuiltins extends PythonBuiltins {
     public abstract static class SelfClassNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getClass(SuperObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectTypeNode getObjectType) {
             Object objectType = getObjectType.execute(inliningTarget, self);
             if (objectType == null) {
@@ -641,7 +641,7 @@ public final class SuperBuiltins extends PythonBuiltins {
     public abstract static class SuperReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         TruffleString repr(SuperObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetTypeNode getType,
                         @Cached GetObjectTypeNode getObjectType,

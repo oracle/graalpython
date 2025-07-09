@@ -158,7 +158,7 @@ public abstract class PSequence extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public final long getArraySize(@Bind("$node") Node inliningTarget,
+    public final long getArraySize(@Bind Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -171,7 +171,7 @@ public abstract class PSequence extends PythonBuiltinObject {
 
     @ExportMessage
     public final Object readArrayElement(long index,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItem,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
@@ -190,7 +190,7 @@ public abstract class PSequence extends PythonBuiltinObject {
 
     @ExportMessage
     public final void writeArrayElement(long index, Object value,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Exclusive @Cached PForeignToPTypeNode convert,
                     @Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
@@ -210,7 +210,7 @@ public abstract class PSequence extends PythonBuiltinObject {
 
     @ExportMessage
     public final void removeArrayElement(long index,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
@@ -229,7 +229,7 @@ public abstract class PSequence extends PythonBuiltinObject {
 
     @ExportMessage
     public final boolean isArrayElementReadable(long idx,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.IsInBoundsNode isInBoundsNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -242,7 +242,7 @@ public abstract class PSequence extends PythonBuiltinObject {
 
     @ExportMessage
     public final boolean isArrayElementModifiable(long idx,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.IsInBoundsNode isInBoundsNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -255,7 +255,7 @@ public abstract class PSequence extends PythonBuiltinObject {
 
     @ExportMessage
     public final boolean isArrayElementInsertable(long idx,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.IsInBoundsNode isInBoundsNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -268,7 +268,7 @@ public abstract class PSequence extends PythonBuiltinObject {
 
     @ExportMessage
     public final boolean isArrayElementRemovable(long idx,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.IsInBoundsNode isInBoundsNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();

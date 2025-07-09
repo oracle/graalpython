@@ -126,7 +126,7 @@ public final class BufferedRandomBuiltins extends AbstractBufferedIOBuiltins {
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization
         static Object doIt(VirtualFrame frame, PBuffered self, Object raw, Object bufferSize,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InitBufferSizeNode initBufferSizeNode,
                         @Cached BufferedRandomInit init) {
             int size = initBufferSizeNode.execute(frame, inliningTarget, bufferSize);

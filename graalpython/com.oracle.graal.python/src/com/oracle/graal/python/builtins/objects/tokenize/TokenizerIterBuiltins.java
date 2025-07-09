@@ -146,7 +146,7 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTokenizerIter tokenizerIterBytes(Object cls, Object readline, boolean extraTokens, TruffleString encoding,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
@@ -228,7 +228,7 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTuple next(PTokenizerIter self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayUTF32Node,
                         @Bind PythonLanguage language,

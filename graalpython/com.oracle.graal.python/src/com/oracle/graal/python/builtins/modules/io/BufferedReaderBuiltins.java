@@ -134,7 +134,7 @@ public final class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization
         static Object doIt(VirtualFrame frame, PBuffered self, Object raw, Object bufferSize,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InitBufferSizeNode initBufferSizeNode,
                         @Cached BufferedReaderInit init) {
             int size = initBufferSizeNode.execute(frame, inliningTarget, bufferSize);
@@ -148,7 +148,7 @@ public final class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class FlushNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             return callMethod.execute(frame, inliningTarget, self.getRaw(), T_FLUSH);
         }

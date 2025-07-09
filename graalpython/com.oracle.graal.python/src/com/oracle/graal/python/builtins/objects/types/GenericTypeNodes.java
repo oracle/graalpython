@@ -348,7 +348,7 @@ public abstract class GenericTypeNodes {
 
         @Specialization(guards = {"isUnionable(inliningTarget, typeCheck, self)", "isUnionable(inliningTarget, typeCheck, other)"}, limit = "1")
         static Object union(Object self, Object other,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyObjectTypeCheck typeCheck,
                         @Bind PythonLanguage language) {
             Object[] args = dedupAndFlattenArgs(new Object[]{self, other});

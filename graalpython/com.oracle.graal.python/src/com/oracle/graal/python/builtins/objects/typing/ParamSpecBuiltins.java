@@ -116,7 +116,7 @@ public final class ParamSpecBuiltins extends PythonBuiltins {
 
         @Specialization
         static PParamSpec newParamSpec(VirtualFrame frame, Object cls, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached CheckBoundNode checkBoundNode,
                         @Cached CallerNode callerNode,
@@ -230,7 +230,7 @@ public final class ParamSpecBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doTypingSubst(VirtualFrame frame, PParamSpec self, Object arg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallTypingFuncObjectNode callTypingFuncObjectNode) {
             return callTypingFuncObjectNode.execute(frame, inliningTarget, T_PARAMSPEC_SUBST, self, arg);
         }
@@ -243,7 +243,7 @@ public final class ParamSpecBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doTypingPrepareSubst(VirtualFrame frame, PParamSpec self, Object alias, Object args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallTypingFuncObjectNode callTypingFuncObjectNode) {
             return callTypingFuncObjectNode.execute(frame, inliningTarget, T_PARAMSPEC_PREPARE_SUBST, self, alias, args);
         }
@@ -254,7 +254,7 @@ public final class ParamSpecBuiltins extends PythonBuiltins {
     abstract static class MroEntriesNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object mro(@SuppressWarnings("unused") PParamSpec self, @SuppressWarnings("unused") Object bases,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, CANNOT_SUBCLASS_AN_INSTANCE_OF_PARAMSPEC);
         }
     }
@@ -275,7 +275,7 @@ public final class ParamSpecBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object union(VirtualFrame frame, Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallTypingFuncObjectNode callTypingFuncObjectNode) {
             return callTypingFuncObjectNode.execute(frame, inliningTarget, T_MAKE_UNION, self, other);
         }

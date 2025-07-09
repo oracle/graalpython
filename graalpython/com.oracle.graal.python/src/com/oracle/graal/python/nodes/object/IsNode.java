@@ -115,7 +115,7 @@ public abstract class IsNode extends Node implements BinaryOp {
 
     @Specialization
     public static boolean doBP(boolean left, PInt right,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         Python3Core core = PythonContext.get(inliningTarget);
         if (left) {
             return right == core.getTrue();
@@ -136,7 +136,7 @@ public abstract class IsNode extends Node implements BinaryOp {
 
     @Specialization
     public static boolean doIP(int left, PInt right,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
         if (isBuiltin.profileIsAnyBuiltinObject(inliningTarget, right)) {
             try {
@@ -161,7 +161,7 @@ public abstract class IsNode extends Node implements BinaryOp {
 
     @Specialization
     public static boolean doLP(long left, PInt right,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
         if (isBuiltin.profileIsAnyBuiltinObject(inliningTarget, right)) {
             try {
@@ -183,20 +183,20 @@ public abstract class IsNode extends Node implements BinaryOp {
 
     @Specialization
     public static boolean doPB(PInt left, boolean right,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         return doBP(right, left, inliningTarget);
     }
 
     @Specialization
     public static boolean doPI(PInt left, int right,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
         return doIP(right, left, inliningTarget, isBuiltin);
     }
 
     @Specialization
     public static boolean doPL(PInt left, long right,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
         return doLP(right, left, inliningTarget, isBuiltin);
     }
@@ -228,7 +228,7 @@ public abstract class IsNode extends Node implements BinaryOp {
     @Specialization
     @InliningCutoff
     public static boolean doCode(PCode left, PCode right,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CodeNodes.GetCodeCallTargetNode getCt) {
         // Special case for code objects: Frames create them on-demand even if they refer to the
         // same function. So we need to compare the root nodes.
@@ -276,7 +276,7 @@ public abstract class IsNode extends Node implements BinaryOp {
     // none
     @Specialization(guards = "someIsNone(left, right)")
     public static boolean doPNone(Object left, Object right,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared @Cached IsForeignObjectNode isForeignObjectNode,
                     @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
         if (left == right) {
@@ -299,7 +299,7 @@ public abstract class IsNode extends Node implements BinaryOp {
     // pstring (may be interned)
     @Specialization
     public static boolean doPString(PString left, PString right,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached StringNodes.StringMaterializeNode materializeNode,
                     @Cached StringNodes.IsInternedStringNode isInternedStringNode,
                     @Cached TruffleString.EqualNode equalNode) {
@@ -313,7 +313,7 @@ public abstract class IsNode extends Node implements BinaryOp {
     @Fallback
     @InliningCutoff
     public static boolean doOther(Object left, Object right,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared @Cached IsForeignObjectNode isForeignObjectNode,
                     @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
         if (left == right) {

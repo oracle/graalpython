@@ -264,7 +264,7 @@ public abstract class SortNodes {
         @Specialization
         @SuppressWarnings("truffle-static-method")
         void sortObjSeqStorage(VirtualFrame frame, ObjectSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile isStringOnlyProfile,
                         @Cached InlinedLoopConditionProfile isStringOnlyLoopProfile,
                         @Cached InlinedCountingConditionProfile isStringOnlyBreakProfile,
@@ -289,7 +289,7 @@ public abstract class SortNodes {
         @Fallback
         @SuppressWarnings("truffle-static-method")
         void sort(VirtualFrame frame, SequenceStorage storage, Object keyfunc, boolean reverse,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached CallContext callContext,
                         @Shared @Cached CallNode callNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,

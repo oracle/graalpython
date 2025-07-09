@@ -873,7 +873,7 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorageIterator foreign(@SuppressWarnings("unused") ForeignHashingStorage self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             // InteropLibrary does not provide a reverse HashEntriesIterator
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, FOREIGN_OBJ_ISNT_REVERSE_ITERABLE);
         }
@@ -1004,7 +1004,7 @@ public class HashingStorageNodes {
 
         @Specialization(guards = "it.isReverse")
         static boolean foreignReverse(@SuppressWarnings("unused") ForeignHashingStorage self, HashingStorageIterator it,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             // InteropLibrary does not provide a reverse HashEntriesIterator
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, FOREIGN_OBJ_ISNT_REVERSE_ITERABLE);
         }
@@ -1285,7 +1285,7 @@ public class HashingStorageNodes {
 
         @Specialization
         static Object doIt(Frame frame, Node callbackInliningTarget, HashingStorage storage, HashingStorageForEachCallback<Object> callback, Object accumulatorIn,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageGetIterator getIter,
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached InlinedLoopConditionProfile loopProfile) {

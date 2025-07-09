@@ -68,9 +68,9 @@ public abstract class WritableBufferConversionNode extends ArgumentCastNode {
     @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
     @SuppressWarnings("truffle-static-method")
     Object doObject(VirtualFrame frame, Object value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Bind PythonContext context,
-                    @Cached("createFor(this)") IndirectCallData indirectCallData,
+                    @Cached("createFor($node)") IndirectCallData indirectCallData,
                     @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib,
                     @Cached PRaiseNode raiseNode) {
         try {

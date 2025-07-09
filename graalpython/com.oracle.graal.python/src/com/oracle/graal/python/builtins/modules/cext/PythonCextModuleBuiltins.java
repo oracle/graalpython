@@ -166,7 +166,7 @@ public final class PythonCextModuleBuiltins {
     abstract static class PyModule_GetNameObject extends CApiUnaryBuiltinNode {
         @Specialization
         static Object getName(PythonModule module,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PythonCextBuiltins.PromoteBorrowedValue promoteBorrowedValue,
                         @Cached PyUnicodeCheckNode pyUnicodeCheckNode,
                         // CPython reads from the module dict directly
@@ -201,7 +201,7 @@ public final class PythonCextModuleBuiltins {
     abstract static class PyModule_AddObjectRef extends CApiTernaryBuiltinNode {
         @Specialization(guards = "isModuleSubtype(inliningTarget, m, getClassNode, isSubtypeNode)")
         static Object addObject(Object m, TruffleString k, Object o,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached WriteAttributeToObjectNode writeAtrrNode) {
@@ -214,7 +214,7 @@ public final class PythonCextModuleBuiltins {
         static Object pop(Object m, Object key, Object defaultValue,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddObjectRef", "module");
         }
     }
@@ -224,7 +224,7 @@ public final class PythonCextModuleBuiltins {
     abstract static class PyModule_AddIntConstant extends CApiTernaryBuiltinNode {
         @Specialization(guards = "isModuleSubtype(inliningTarget, m, getClassNode, isSubtypeNode)")
         static Object addObject(Object m, TruffleString k, long o,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached WriteAttributeToObjectNode writeAtrrNode) {
@@ -236,7 +236,7 @@ public final class PythonCextModuleBuiltins {
         static Object pop(@SuppressWarnings("unused") Object m, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object defaultValue,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddIntConstant", "module");
         }
     }
@@ -246,7 +246,7 @@ public final class PythonCextModuleBuiltins {
 
         @Specialization
         static Object moduleFunction(Object methodDefPtr, PythonModule mod, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ObjectBuiltins.SetattrNode setattrNode,
                         @Cached ReadAttributeFromPythonObjectNode readAttrNode,
                         @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode) {
@@ -266,7 +266,7 @@ public final class PythonCextModuleBuiltins {
 
         @Specialization
         static int doGeneric(PythonModule self, Object visitFun, Object arg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CStructAccess.ReadPointerNode readPointerNode,
                         @Cached CStructAccess.ReadI64Node readI64Node,
                         @CachedLibrary(limit = "1") InteropLibrary lib,

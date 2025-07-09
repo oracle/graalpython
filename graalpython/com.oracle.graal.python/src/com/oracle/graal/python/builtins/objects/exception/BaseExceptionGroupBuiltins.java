@@ -146,7 +146,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doManaged(VirtualFrame frame, Object cls, Object messageObj, Object exceptionsObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached CastToTruffleStringNode castToStringNode,
@@ -393,8 +393,8 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
     abstract static class SplitNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object split(VirtualFrame frame, PBaseExceptionGroup self, Object matcherValue,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData) {
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData) {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
@@ -419,8 +419,8 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
     abstract static class SubgroupNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object subgroup(VirtualFrame frame, PBaseExceptionGroup self, Object matcherValue,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData) {
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData) {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);

@@ -202,7 +202,7 @@ public final class TpSlotMpAssSubscript {
 
         @Specialization
         static void callNative(VirtualFrame frame, TpSlotNative slot, Object self, Object key, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached PythonToNativeNode selfToNativeNode,
                         @Cached PythonToNativeNode keyToNativeNode,

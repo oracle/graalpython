@@ -86,14 +86,14 @@ public abstract class ExecutePositionalStarargsNode extends Node {
 
     @Specialization
     static Object[] doTuple(PTuple starargs,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("toArray") @Cached SequenceStorageNodes.ToArrayNode toArray) {
         return toArray.execute(inliningTarget, starargs.getSequenceStorage());
     }
 
     @Specialization
     static Object[] doList(PList starargs,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("toArray") @Cached SequenceStorageNodes.ToArrayNode toArray) {
         return toArray.execute(inliningTarget, starargs.getSequenceStorage());
     }
@@ -103,27 +103,27 @@ public abstract class ExecutePositionalStarargsNode extends Node {
 
     @Specialization
     static Object[] doDict(PDict starargs,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("doHashingStorage") @Cached ExecutePositionalStarargsDictStorageNode node) {
         return node.execute(inliningTarget, starargs.getDictStorage());
     }
 
     @Specialization
     static Object[] doSet(PSet starargs,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("doHashingStorage") @Cached ExecutePositionalStarargsDictStorageNode node) {
         return node.execute(inliningTarget, starargs.getDictStorage());
     }
 
     @Specialization
     static Object[] doNone(PNone none,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, none);
     }
 
     @Specialization
     static Object[] starargs(VirtualFrame frame, Object object,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PRaiseNode raise,
                     @Cached PyObjectGetIter getIter,
                     @Cached PyIterNextNode nextNode) {

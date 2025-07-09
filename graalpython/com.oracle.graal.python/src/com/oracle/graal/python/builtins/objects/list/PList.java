@@ -166,7 +166,7 @@ public final class PList extends PSequence {
 
     @ExportMessage
     public void writeArrayElement(long index, Object value,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PForeignToPTypeNode convert,
                     @Exclusive @Cached SequenceStorageNodes.SetItemScalarGeneralizingNode setItem,
                     @Cached SequenceStorageNodes.AppendNode appendNode,
@@ -198,7 +198,7 @@ public final class PList extends PSequence {
 
     @ExportMessage
     public void removeArrayElement(long index,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();

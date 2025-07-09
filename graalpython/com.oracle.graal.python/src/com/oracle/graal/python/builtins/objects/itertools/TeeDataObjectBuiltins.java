@@ -107,7 +107,7 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         PTeeDataObject construct(Object cls, Object[] arguments, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached InlinedBranchProfile errorProfile,
                         @Bind PythonLanguage language) {
@@ -155,7 +155,7 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object init(VirtualFrame frame, PTeeDataObject self, Object it, PList values, Object nxt,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalObjectArrayNode,
                         @Cached InlinedBranchProfile numreadLCProfile,
@@ -185,7 +185,7 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isList(values)", "!isNone(values)"})
         static Object init(VirtualFrame frame, PTeeDataObject self, Object it, Object values, Object nxt,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ARG_D_MUST_BE_S_NOT_P, "teedataobject()", 2, "list", values);
         }
     }
@@ -197,7 +197,7 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reduce(PTeeDataObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClass,
                         @Bind PythonLanguage language) {
             warnPickleDeprecated();

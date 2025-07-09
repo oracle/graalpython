@@ -230,7 +230,7 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (read == null) {
                 return PNone.NONE;
@@ -283,7 +283,7 @@ public class CApiMemberAccessNodes {
         @Specialization
         @SuppressWarnings("unused")
         Object doGeneric(Object self, Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, propertyName, self);
         }
 
@@ -303,7 +303,7 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static Object doGeneric(Object self, @SuppressWarnings("unused") Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             if (value == DescriptorDeleteMarker.INSTANCE) {
                 // This node is actually only used for T_NONE, so this error message is right.
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
@@ -364,7 +364,7 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(Object pointer, Object newValue,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached AsNativePrimitiveNode asLong,
                         @Cached CStructAccess.WriteLongNode write,
                         @Cached IsBuiltinObjectProfile exceptionProfile) {
@@ -388,7 +388,7 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(Object pointer, Object newValue,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached AsNativePrimitiveNode asLong,
                         @Cached CStructAccess.WriteIntNode write,
                         @Cached IsBuiltinObjectProfile exceptionProfile) {
@@ -414,7 +414,7 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(Object pointer, Object newValue,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached AsNativePrimitiveNode asLong,
                         @Cached CStructAccess.WriteLongNode write,
                         @Cached IsBuiltinObjectProfile exceptionProfile) {
@@ -438,7 +438,7 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(Object pointer, Object newValue,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached AsNativeDoubleNode asDouble,
                         @Cached CStructAccess.WriteDoubleNode write,
                         @Cached IsBuiltinObjectProfile exceptionProfile) {
@@ -483,7 +483,7 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(Object pointer, Object newValue,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode read,
                         @Cached CStructAccess.WriteObjectNewRefNode write,
                         @Cached PRaiseNode raise) {
@@ -574,7 +574,7 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         Object doGeneric(Object self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             Object selfPtr = toSulongNode.execute(self);
             selfPtr = getElement.readGeneric(selfPtr, offset);

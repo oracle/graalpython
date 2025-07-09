@@ -77,7 +77,7 @@ public final class KeyErrorBuiltins extends PythonBuiltins {
     abstract static class KeyErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object str(VirtualFrame frame, PBaseException self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExceptionNodes.GetArgsNode argsNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached BaseExceptionBuiltins.StrNode baseStrNode,

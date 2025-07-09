@@ -339,7 +339,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object send(VirtualFrame frame, PGenerator self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ResumeGeneratorNode resumeGeneratorNode,
                         @Cached PRaiseNode raiseNode) {
             // even though this isn't a builtin for async generators, SendNode is used on async
@@ -363,7 +363,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, Object tb,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile hasTbProfile,
                         @Cached InlinedConditionProfile hasValProfile,
                         @Cached InlinedConditionProfile startedProfile,
@@ -437,7 +437,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
     public abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object close(VirtualFrame frame, PGenerator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached IsBuiltinObjectProfile isGeneratorExit,
                         @Cached IsBuiltinObjectProfile isStopIteration,
                         @Cached ResumeGeneratorNode resumeGeneratorNode,

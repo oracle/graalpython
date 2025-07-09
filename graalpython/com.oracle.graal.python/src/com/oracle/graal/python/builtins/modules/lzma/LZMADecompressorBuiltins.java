@@ -134,7 +134,7 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isRaw(format)", "validFormat(format)", "!isPNone(memlimitObj)"})
         static PNone notRaw(VirtualFrame frame, LZMADecompressor self, int format, Object memlimitObj, @SuppressWarnings("unused") PNone filters,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToJavaIntExactNode cast,
                         @Shared("d") @Cached LZMANodes.LZMADecompressInit decompressInit,
                         @Cached PRaiseNode raiseNode) {
@@ -165,7 +165,7 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"isRaw(format)", "!isPNone(filters)"})
         static PNone raw(VirtualFrame frame, LZMADecompressor self, int format, PNone memlimit, Object filters,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached LZMANodes.LZMARawDecompressInit decompressInit) {
             self.setCheck(CHECK_NONE);
             decompressInit.execute(frame, inliningTarget, self, filters);
@@ -175,28 +175,28 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"isRaw(format)", "!isPNone(memlimit)"})
         static PNone rawError(LZMADecompressor self, int format, Object memlimit, Object filters,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.CANNOT_SPECIFY_MEM_LIMIT);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isRaw(format)")
         static PNone rawFilterError(LZMADecompressor self, int format, Object memlimit, PNone filters,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.MUST_SPECIFY_FILTERS);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isRaw(format)", "!isPNone(filters)"})
         static PNone rawFilterError(LZMADecompressor self, int format, Object memlimit, Object filters,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.CANNOT_SPECIFY_FILTERS);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!validFormat(format)")
         static PNone invalidFormat(LZMADecompressor self, int format, Object memlimit, Object filters,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.INVALID_CONTAINER_FORMAT, format);
         }
 
@@ -224,7 +224,7 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isEOF()"})
         static PBytes doBytes(LZMADecompressor self, PBytesLike data, int maxLength,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
                         @Exclusive @Cached LZMANodes.DecompressNode decompress) {
@@ -236,7 +236,7 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isEOF()"})
         static PBytes doObject(VirtualFrame frame, LZMADecompressor self, Object data, int maxLength,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Exclusive @Cached LZMANodes.DecompressNode decompress) {
@@ -248,7 +248,7 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.isEOF()"})
         static Object err(LZMADecompressor self, Object data, int maxLength,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, EOFError, ALREADY_AT_END_OF_STREAM);
         }
     }
@@ -286,7 +286,7 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
 
         @Specialization
         static int doCheck(@SuppressWarnings("unused") LZMADecompressor.Java self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, SystemError, T_LZMA_JAVA_ERROR);
         }
 

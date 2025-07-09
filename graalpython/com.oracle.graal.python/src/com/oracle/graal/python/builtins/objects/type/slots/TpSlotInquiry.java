@@ -149,7 +149,7 @@ public abstract class TpSlotInquiry {
 
         @Specialization
         static boolean doIt(VirtualFrame frame, TpSlotPythonSingle slot, Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached UnaryPythonSlotDispatcherNode dispatcherNode,
                         @Cached PyBoolCheckNode pyBoolCheckNode,
                         @Cached PRaiseNode raiseNode,

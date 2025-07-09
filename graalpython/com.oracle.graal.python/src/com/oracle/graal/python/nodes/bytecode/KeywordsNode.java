@@ -62,7 +62,7 @@ public abstract class KeywordsNode extends AbstractKwargsNode {
 
     @Specialization
     static PKeyword[] kwords(VirtualFrame frame, Object sourceCollection, int stackTop,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached MappingToKeywordsNode expandKeywordStarargsNode,
                     @Cached InlinedBranchProfile keywordsError1,
                     @Cached InlinedBranchProfile keywordsError2,

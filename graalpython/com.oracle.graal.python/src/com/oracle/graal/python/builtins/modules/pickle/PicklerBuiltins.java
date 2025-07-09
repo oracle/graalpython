@@ -138,7 +138,7 @@ public class PicklerBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object init(VirtualFrame frame, PPickler self, Object file, int protocol, boolean fixImports, Object bufferCallback,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached PRaiseNode raiseNode) {
             self.setProtocol(inliningTarget, raiseNode, protocol, fixImports);
@@ -156,7 +156,7 @@ public class PicklerBuiltins extends PythonBuiltins {
     public abstract static class PicklerDumpNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object dump(VirtualFrame frame, PPickler self, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PPickler.FlushToFileNode flushToFileNode,
                         @Cached PPickler.DumpNode dumpNode,
                         @Cached PRaiseNode raiseNode) {
@@ -196,7 +196,7 @@ public class PicklerBuiltins extends PythonBuiltins {
     public abstract static class PicklerDispatchTableNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
         static Object get(PPickler self, @SuppressWarnings("unused") PNone none,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
             final Object dispatchTable = self.getDispatchTable();
             if (dispatchTable == null) {
@@ -207,7 +207,7 @@ public class PicklerBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isDeleteMarker(marker)")
         static Object delete(PPickler self, @SuppressWarnings("unused") Object marker,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
             final Object dispatchTable = self.getDispatchTable();
             if (dispatchTable == null) {
@@ -234,7 +234,7 @@ public class PicklerBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
         Object set(VirtualFrame frame, PPickler self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyLongAsLongNode asLongNode) {
             // truncation is fine - we are only interested in the boolean nature of this int (same
             // as cPython)
@@ -253,7 +253,7 @@ public class PicklerBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
         Object set(VirtualFrame frame, PPickler self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyLongAsLongNode asLongNode) {
             // truncation is fine - we are only interested in the boolean nature of this int (same
             // as cPython)
@@ -273,7 +273,7 @@ public class PicklerBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(obj)", "!isDeleteMarker(obj)"})
         static Object set(VirtualFrame frame, PPickler self, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -313,7 +313,7 @@ public class PicklerBuiltins extends PythonBuiltins {
     public abstract static class PicklerPersistentIdNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
         static Object get(PPickler self, @SuppressWarnings("unused") PNone none,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             final Object persFunc = self.getPersFunc();
@@ -325,7 +325,7 @@ public class PicklerBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(obj)", "!isDeleteMarker(obj)"})
         static Object set(PPickler self, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyCallableCheckNode callableCheck,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             if (PGuards.isDeleteMarker(obj)) {

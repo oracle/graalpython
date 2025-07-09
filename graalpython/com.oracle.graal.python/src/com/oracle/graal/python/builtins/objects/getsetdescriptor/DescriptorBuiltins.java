@@ -156,7 +156,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raiseNode,
                         @Cached CallUnaryMethodNode callNode) {
             if (descr.getGet() != null) {
@@ -168,7 +168,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doIndexedSlotDescriptor(IndexedSlotDescriptor descr, PythonAbstractObject obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raiseNode,
                         @Cached GetOrCreateIndexedSlots getSlotsNode) {
             Object[] slots = getSlotsNode.execute(inliningTarget, obj);
@@ -186,7 +186,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached CallBinaryMethodNode callNode) {
             if (descr.getSet() != null) {
@@ -198,7 +198,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doIndexedSlotDescriptor(IndexedSlotDescriptor descr, PythonAbstractObject obj, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetOrCreateIndexedSlots getSlotsNode) {
             getSlotsNode.execute(inliningTarget, obj)[descr.getIndex()] = value;
             return true;
@@ -211,7 +211,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raiseNode,
                         @Cached CallBinaryMethodNode callNode,
                         @Cached InlinedBranchProfile branchProfile) {
@@ -229,7 +229,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doIndexedSlotDescriptor(IndexedSlotDescriptor descr, PythonAbstractObject obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raiseNode,
                         @Cached GetOrCreateIndexedSlots getSlotsNode,
                         @Cached InlinedConditionProfile profile) {

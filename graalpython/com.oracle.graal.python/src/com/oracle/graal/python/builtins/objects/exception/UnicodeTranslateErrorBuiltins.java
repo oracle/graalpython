@@ -96,7 +96,7 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object initNoArgs(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached CastToJavaIntExactNode toJavaIntExactNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode,
@@ -121,7 +121,7 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
     public abstract static class UnicodeTranslateErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         TruffleString str(VirtualFrame frame, PBaseException self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,

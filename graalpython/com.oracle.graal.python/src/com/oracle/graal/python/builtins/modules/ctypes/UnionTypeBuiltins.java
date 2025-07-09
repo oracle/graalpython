@@ -97,7 +97,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     protected abstract static class SetattrNode extends SetAttrBuiltinNode {
         @Specialization
         static void doStringKey(VirtualFrame frame, Object object, TruffleString key, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
                         @Shared @Cached WriteAttributeToObjectNode write,
                         @Shared @Cached TruffleString.EqualNode equalNode,
@@ -110,7 +110,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
         @Specialization
         @InliningCutoff
         static void doGenericKey(VirtualFrame frame, Object object, Object keyObject, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castKeyNode,
                         @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,

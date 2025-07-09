@@ -122,7 +122,7 @@ public final class PythonCextPyStateBuiltins {
 
         @Specialization(limit = "1")
         static Object get(Object tstateCurrentPtr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("tstateCurrentPtr") InteropLibrary lib) {
             PythonThreadState pythonThreadState = context.getThreadState(context.getLanguage(inliningTarget));
@@ -149,7 +149,7 @@ public final class PythonCextPyStateBuiltins {
         @Specialization
         @TruffleBoundary
         static PDict get(
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
             PDict threadStateDict = threadState.getDict();
@@ -217,7 +217,7 @@ public final class PythonCextPyStateBuiltins {
     abstract static class PyThreadState_GetFrame extends CApiUnaryBuiltinNode {
         @Specialization
         PFrame get(@SuppressWarnings("unused") Object threadState,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Cached ReadCallerFrameNode readCallerFrameNode) {
             PFrame.Reference frameRef = getCurrentFrameRef.execute(null, inliningTarget);

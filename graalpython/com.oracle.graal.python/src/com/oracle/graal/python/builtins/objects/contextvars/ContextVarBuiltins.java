@@ -101,7 +101,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
 
         @Specialization
         protected static Object constructDef(@SuppressWarnings("unused") Object cls, TruffleString name, Object def,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile noValueProfile,
                         @Bind PythonLanguage language) {
             if (noValueProfile.profile(inliningTarget, isNoValue(def))) {
@@ -116,7 +116,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     public abstract static class GetNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object get(PContextVar self, Object def,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile defIsNoValueProfile,
                         @Cached PRaiseNode raiseNode) {
             Object defValue = defIsNoValueProfile.profile(inliningTarget, isNoValue(def)) ? PContextVar.NO_DEFAULT : def;
@@ -135,7 +135,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     public abstract static class SetNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object set(PContextVar self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonContext.PythonThreadState threadState = context.getThreadState(language);
@@ -150,7 +150,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     public abstract static class ResetNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object reset(PContextVar self, PContextVarsToken token,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext pythonContext,
                         @Shared @Cached PRaiseNode raise) {
             if (self == token.getVar()) {
@@ -170,7 +170,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isToken(token)")
         Object doError(@SuppressWarnings("unused") PContextVar self, Object token,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raise) {
             throw raise.raise(inliningTarget, TypeError, ErrorMessages.INSTANCE_OF_TOKEN_EXPECTED, token);
         }

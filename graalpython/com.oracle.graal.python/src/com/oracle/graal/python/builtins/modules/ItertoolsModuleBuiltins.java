@@ -81,7 +81,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "n < 0")
         static Object negativeN(Object iterable, int n,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, S_MUST_BE_S, "n", ">=0");
         }
 
@@ -94,7 +94,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "n > 0")
         static Object tee(VirtualFrame frame, Object iterable, int n,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached InlinedConditionProfile isTeeInstanceProfile,
                         @Bind PythonLanguage language) {

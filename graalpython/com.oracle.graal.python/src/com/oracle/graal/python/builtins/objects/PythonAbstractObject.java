@@ -238,7 +238,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public void writeMember(String key, Object value,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared @Cached PForeignToPTypeNode convert,
                     @Exclusive @Cached PyObjectSetAttr setAttributeNode,
@@ -259,7 +259,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object readMember(String key,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PyObjectLookupAttr lookup,
@@ -281,7 +281,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean hasArrayElements(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -308,7 +308,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Object readArrayElement(long key,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Cached PySequenceGetItemNode sequenceGetItem,
@@ -336,7 +336,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void writeArrayElement(long key, Object value,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Shared @Cached PForeignToPTypeNode convert,
@@ -366,7 +366,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void removeArrayElement(long key,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Cached PySequenceDelItemNode sequenceDelItemNode,
@@ -394,7 +394,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public long getArraySize(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
@@ -433,7 +433,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementReadable(long idx,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
@@ -463,7 +463,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementModifiable(long idx,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
@@ -493,7 +493,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementInsertable(long idx,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -523,7 +523,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementRemovable(long idx,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -613,7 +613,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object invokeMember(String member, Object[] arguments,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                     @Exclusive @Cached CallBinaryMethodNode callGetattributeNode,
@@ -649,7 +649,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isExecutable(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -676,7 +676,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Object execute(Object[] arguments,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Exclusive @Cached PExecuteNode executeNode,
@@ -698,7 +698,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @TruffleBoundary
     public Object getMembers(boolean includeInternal,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CastToListInteropNode castToList,
                     @Shared("getClass") @Cached(inline = false) GetClassNode getClass,
                     @Cached PyMappingCheckNode checkMapping,
@@ -759,7 +759,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public void removeMember(String member,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached PyObjectSetAttr deleteAttributeNode,
                     @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     // GR-44020: make shared:
@@ -779,7 +779,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isInstantiable(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     // GR-44020: use inlined:
                     @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
                     @Exclusive @Cached GilNode gil) {
@@ -842,7 +842,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isDate(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -868,7 +868,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public LocalDate asDate(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -915,7 +915,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isTime(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -941,7 +941,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public LocalTime asTime(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -989,7 +989,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isTimeZone(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -1015,7 +1015,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public ZoneId asTimeZone(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -1077,7 +1077,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isDuration(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -1103,7 +1103,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Duration asDuration(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -1165,7 +1165,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         static boolean access(Object object, TruffleString attrKeyName, int type,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readTypeAttrNode,
                         @Cached ReadAttributeFromObjectNode readObjectAttrNode,
                         @Cached PyCallableCheckNode callableCheck,
@@ -1290,7 +1290,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         static Object doExecute(Object receiver, Object[] arguments,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyCallableCheckNode callableCheck,
                         @Exclusive @Cached CallNode callNode,
                         @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode,
@@ -1426,7 +1426,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         @ExportMessage
         Object readArrayElement(long index,
                         @Cached InlinedBranchProfile outOfBoundsProfile,
-                        @Bind("$node") Node inliningTarget) throws InvalidArrayIndexException {
+                        @Bind Node inliningTarget) throws InvalidArrayIndexException {
             if (Long.compareUnsigned(index, keys.length) < 0) {
                 return keys[(int) index];
             } else {
@@ -1514,7 +1514,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization(guards = "allowSideEffects")
         public static TruffleString doSideEffecting(PythonAbstractObject receiver, boolean allowSideEffects,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ToDisplaySideEffectingNode toDisplayCallNode,
                         @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
@@ -1563,7 +1563,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean hasMetaParents(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Exclusive @Cached TypeNodes.GetBaseClassesNode getBaseClassNode,
                     @Exclusive @Cached GilNode gil) {
@@ -1577,7 +1577,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object getMetaParents(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Exclusive @Cached TypeNodes.GetBaseClassesNode getBaseClassNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
@@ -1597,7 +1597,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public int identityHashCode(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached ObjectNodes.GetIdentityHashNode getIdentityHashNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -1652,7 +1652,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean hasIterator(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -1681,7 +1681,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Object getIterator(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Cached PyObjectGetIter getIter,
@@ -1708,7 +1708,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isIterator(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -1735,7 +1735,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean hasIteratorNextElement(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -1778,7 +1778,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Object getIteratorNextElement(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @CachedLibrary("this") InteropLibrary ilib,
@@ -1808,7 +1808,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public boolean isBoolean(@Bind("$node") Node inliningTarget,
+    public boolean isBoolean(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -1833,7 +1833,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public boolean isNumber(@Bind("$node") Node inliningTarget,
+    public boolean isNumber(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -1858,7 +1858,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public boolean isString(@Bind("$node") Node inliningTarget,
+    public boolean isString(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -1883,7 +1883,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public boolean fitsInByte(@Bind("$node") Node inliningTarget,
+    public boolean fitsInByte(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -1908,7 +1908,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public boolean fitsInShort(@Bind("$node") Node inliningTarget,
+    public boolean fitsInShort(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -1933,7 +1933,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public boolean fitsInInt(@Bind("$node") Node inliningTarget,
+    public boolean fitsInInt(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -1958,7 +1958,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public boolean fitsInLong(@Bind("$node") Node inliningTarget,
+    public boolean fitsInLong(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -1983,7 +1983,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public boolean fitsInFloat(@Bind("$node") Node inliningTarget,
+    public boolean fitsInFloat(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2008,7 +2008,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public boolean fitsInDouble(@Bind("$node") Node inliningTarget,
+    public boolean fitsInDouble(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2033,7 +2033,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public boolean fitsInBigInteger(@Bind("$node") Node inliningTarget,
+    public boolean fitsInBigInteger(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2058,7 +2058,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public boolean asBoolean(@Bind("$node") Node inliningTarget,
+    public boolean asBoolean(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2083,7 +2083,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public byte asByte(@Bind("$node") Node inliningTarget,
+    public byte asByte(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2108,7 +2108,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public short asShort(@Bind("$node") Node inliningTarget,
+    public short asShort(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2133,7 +2133,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public int asInt(@Bind("$node") Node inliningTarget,
+    public int asInt(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2158,7 +2158,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public long asLong(@Bind("$node") Node inliningTarget,
+    public long asLong(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2183,7 +2183,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public float asFloat(@Bind("$node") Node inliningTarget,
+    public float asFloat(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2208,7 +2208,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public double asDouble(@Bind("$node") Node inliningTarget,
+    public double asDouble(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2233,7 +2233,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public BigInteger asBigInteger(@Bind("$node") Node inliningTarget,
+    public BigInteger asBigInteger(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Cached CastToJavaBigIntegerNode toBigIntegerNode,
@@ -2256,7 +2256,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public String asString(@Bind("$node") Node inliningTarget,
+    public String asString(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Cached CastToJavaStringNode toStringNode,
@@ -2280,7 +2280,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public boolean hasHashEntries(@Bind("$node") Node inliningTarget,
+    public boolean hasHashEntries(@Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2306,7 +2306,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public long getHashSize(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2332,7 +2332,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Object getHashEntriesIterator(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2354,7 +2354,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Object getHashKeysIterator(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2376,7 +2376,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Object getHashValuesIterator(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2398,7 +2398,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Object readHashValue(Object key,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2420,7 +2420,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isHashEntryReadable(Object key,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2446,7 +2446,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isHashEntryRemovable(Object key,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2472,7 +2472,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void removeHashEntry(Object key,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2494,7 +2494,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isHashEntryModifiable(Object key,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
@@ -2520,7 +2520,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isHashEntryInsertable(Object key,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
@@ -2546,7 +2546,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void writeHashEntry(Object key, Object value,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2591,7 +2591,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public byte readBufferByte(long byteOffset,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
@@ -2607,7 +2607,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public void writeBufferByte(long byteOffset, byte value, @Bind("$node") Node inliningTarget,
+    public void writeBufferByte(long byteOffset, byte value, @Bind Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
@@ -2624,7 +2624,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public short readBufferShort(ByteOrder order, long byteOffset,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
@@ -2640,7 +2640,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public void writeBufferShort(ByteOrder order, long byteOffset, short value, @Bind("$node") Node inliningTarget,
+    public void writeBufferShort(ByteOrder order, long byteOffset, short value, @Bind Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
@@ -2657,7 +2657,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public int readBufferInt(ByteOrder order, long byteOffset,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
@@ -2673,7 +2673,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public void writeBufferInt(ByteOrder order, long byteOffset, int value, @Bind("$node") Node inliningTarget,
+    public void writeBufferInt(ByteOrder order, long byteOffset, int value, @Bind Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
@@ -2690,7 +2690,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public long readBufferLong(ByteOrder order, long byteOffset,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
@@ -2706,7 +2706,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
-    public void writeBufferLong(ByteOrder order, long byteOffset, long value, @Bind("$node") Node inliningTarget,
+    public void writeBufferLong(ByteOrder order, long byteOffset, long value, @Bind Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
@@ -2723,7 +2723,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public float readBufferFloat(ByteOrder order, long byteOffset,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
@@ -2740,7 +2740,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void writeBufferFloat(ByteOrder order, long byteOffset, float value,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
@@ -2757,7 +2757,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public double readBufferDouble(ByteOrder order, long byteOffset,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
@@ -2774,7 +2774,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void writeBufferDouble(ByteOrder order, long byteOffset, double value,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
@@ -2791,7 +2791,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void readBuffer(long byteOffset, byte[] destination, int destinationOffset, int length,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:

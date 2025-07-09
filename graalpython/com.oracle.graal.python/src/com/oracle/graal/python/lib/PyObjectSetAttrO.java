@@ -112,7 +112,7 @@ public abstract class PyObjectSetAttrO extends PNodeWithContext {
 
         @Specialization
         static void doIt(Frame frame, Object self, Object nameObj, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached PRaiseNode raise,
                         @Cached GetObjectSlotsNode getSlotsNode,

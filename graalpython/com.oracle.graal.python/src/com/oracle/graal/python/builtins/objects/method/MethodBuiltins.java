@@ -114,7 +114,7 @@ public final class MethodBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object methodGeneric(@SuppressWarnings("unused") Object cls, Object func, Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PyCallableCheckNode callableCheck,
                         @Cached PRaiseNode raiseNode) {
@@ -140,7 +140,7 @@ public final class MethodBuiltins extends PythonBuiltins {
     public abstract static class CodeNode extends PythonBuiltinNode {
         @Specialization
         protected Object doIt(VirtualFrame frame, PMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getCode) {
             return getCode.execute(frame, inliningTarget, self.getFunction(), T___CODE__);
         }
@@ -151,7 +151,7 @@ public final class MethodBuiltins extends PythonBuiltins {
     public abstract static class DictNode extends PythonBuiltinNode {
         @Specialization
         protected Object doIt(PMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
             return getDict.execute(inliningTarget, self.getFunction());
         }
@@ -163,7 +163,7 @@ public final class MethodBuiltins extends PythonBuiltins {
     public abstract static class GetattributeNode extends GetAttrBuiltinNode {
         @Specialization
         static Object doIt(VirtualFrame frame, PMethod self, Object keyObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached CastToTruffleStringNode castKeyToStringNode,
@@ -188,7 +188,7 @@ public final class MethodBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPMethod(self)")
         @InliningCutoff
         static Object getattribute(Object self, @SuppressWarnings("unused") Object key,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETATTRIBUTE__, "method", self);
         }
     }
@@ -198,7 +198,7 @@ public final class MethodBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString reprMethod(VirtualFrame frame, PMethod method,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached PyObjectLookupAttr lookup,
@@ -224,7 +224,7 @@ public final class MethodBuiltins extends PythonBuiltins {
     public abstract static class GetMethodDefaultsNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object defaults(PMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetDefaultsNode getDefaultsNode) {
             Object[] argDefaults = getDefaultsNode.execute(inliningTarget, self);
             assert argDefaults != null;
@@ -237,7 +237,7 @@ public final class MethodBuiltins extends PythonBuiltins {
     public abstract static class GetMethodKwdefaultsNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object kwDefaults(PMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetKeywordDefaultsNode getKeywordDefaultsNode) {
             PKeyword[] kwdefaults = getKeywordDefaultsNode.execute(inliningTarget, self);
             return (kwdefaults.length > 0) ? PFactory.createDict(PythonLanguage.get(inliningTarget), kwdefaults) : PNone.NONE;

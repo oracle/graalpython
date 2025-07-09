@@ -82,7 +82,7 @@ public final class PythonCextDescrBuiltins {
 
         @Specialization
         static Object doNativeCallable(TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CreateGetSetNode createGetSetNode) {
             return createGetSetNode.execute(inliningTarget, name, cls, getter, setter, doc, closure);
         }
@@ -93,7 +93,7 @@ public final class PythonCextDescrBuiltins {
 
         @Specialization
         static Object doNativeCallable(Object methodDefPtr, TruffleString name, Object doc, int flags, Object wrapper, Object methObj, Object type,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached NewClassMethodNode newClassMethodNode,
                         @Bind PythonLanguage language) {
             Object func = newClassMethodNode.execute(inliningTarget, methodDefPtr, name, methObj, flags, wrapper, type, doc);

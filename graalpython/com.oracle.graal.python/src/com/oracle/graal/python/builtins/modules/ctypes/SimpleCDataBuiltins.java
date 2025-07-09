@@ -130,7 +130,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
     protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization
         static Object newCData(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
                         @Cached PRaiseNode raiseNode) {
@@ -146,7 +146,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object Simple_init(VirtualFrame frame, CDataObject self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SetFuncNode setFuncNode,
                         @Cached KeepRefNode keepRefNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
@@ -164,7 +164,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static Object Simple_get_value(CDataObject self, @SuppressWarnings("unused") PNone value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached GetFuncNode getFuncNode) {
             StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, self);
@@ -175,7 +175,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object set_value(VirtualFrame frame, CDataObject self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SetFuncNode setFuncNode,
                         @Cached KeepRefNode keepRefNode,
                         @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
@@ -191,7 +191,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object Simple_from_outparm(CDataObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached GetBaseClassNode getBaseClassNode,
@@ -215,7 +215,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static boolean Simple_bool(CDataObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PointerNodes.ReadBytesNode read) {
             if (self.b_ptr.isNull()) {
                 return false;
@@ -236,7 +236,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString Simple_repr(CDataObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached GetNameNode getNameNode,

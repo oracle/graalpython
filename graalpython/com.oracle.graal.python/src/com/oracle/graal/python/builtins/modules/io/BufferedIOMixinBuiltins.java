@@ -152,7 +152,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BufferedIONodes.IsClosedNode isClosedNode,
                         @Cached PyObjectCallMethodObjArgs callMethodFlush,
                         @Cached PyObjectCallMethodObjArgs callMethodClose,
@@ -193,7 +193,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class DetachNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethodFlush) {
             callMethodFlush.execute(frame, inliningTarget, self, T_FLUSH);
             Object raw = self.getRaw();
@@ -209,7 +209,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class SeekableNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             return callMethod.execute(frame, inliningTarget, self.getRaw(), T_SEEKABLE);
         }
@@ -220,7 +220,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class FileNoNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             return callMethod.execute(frame, inliningTarget, self.getRaw(), T_FILENO);
         }
@@ -231,7 +231,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class IsAttyNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             return callMethod.execute(frame, inliningTarget, self.getRaw(), T_ISATTY);
         }
@@ -242,7 +242,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class DeallocWarnNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"self.isOK()", "self.getRaw() != null"})
         static Object doit(VirtualFrame frame, PBuffered self, Object source,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             callMethod.execute(frame, inliningTarget, self.getRaw(), T__DEALLOC_WARN, source);
             return PNone.NONE;
@@ -271,7 +271,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = {"self.isOK()", "isSupportedWhence(whence)"})
         static long doit(VirtualFrame frame, PBuffered self, Object off, int whence,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("create(T_SEEK)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedIONodes.CheckIsSeekabledNode checkIsSeekabledNode,
                         @Cached BufferedIONodes.AsOffNumberNode asOffNumberNode,
@@ -284,13 +284,13 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = {"self.isOK()", "!isSupportedWhence(whence)"})
         static Object whenceError(@SuppressWarnings("unused") PBuffered self, @SuppressWarnings("unused") int off, int whence,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, UNSUPPORTED_WHENCE, whence);
         }
 
         @Specialization(guards = "!self.isOK()")
         static Object initError(PBuffered self, @SuppressWarnings("unused") int off, @SuppressWarnings("unused") int whence,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             if (self.isDetached()) {
                 throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_STREAM_DETACHED);
             } else {
@@ -304,7 +304,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class TellNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static long doit(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached RawTellNode rawTellNode) {
             long pos = rawTellNode.execute(frame, inliningTarget, self);
             pos -= rawOffset(self);
@@ -325,7 +325,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = {"self.isOK()", "self.isWritable()"})
         static Object doit(VirtualFrame frame, PBuffered self, Object pos,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached EnterBufferedNode lock,
                         @Cached("create(T_TRUNCATE)") CheckIsClosedNode checkIsClosedNode,
                         @Cached RawTellNode rawTellNode,
@@ -346,7 +346,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = {"self.isOK()", "!self.isWritable()"})
         static Object notWritable(@SuppressWarnings("unused") PBuffered self, @SuppressWarnings("unused") Object pos,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, T_TRUNCATE);
         }
     }
@@ -374,7 +374,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class ClosedNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BufferedIONodes.IsClosedNode isClosedNode) {
             return isClosedNode.execute(frame, inliningTarget, self);
         }
@@ -385,7 +385,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class NameNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
             return getAttr.execute(frame, inliningTarget, self.getRaw(), T_NAME);
         }
@@ -396,7 +396,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class ModeNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
             return getAttr.execute(frame, inliningTarget, self.getRaw(), T_MODE);
         }
@@ -407,7 +407,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString repr(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetClassNode getClassNode,

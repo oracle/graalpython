@@ -64,7 +64,7 @@ abstract class PyObjectSizeGenericNode extends Node {
 
     @Specialization
     static int doIt(VirtualFrame frame, Object object,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached GetObjectSlotsNode getTpSlotsNode,
                     @Cached TpSlotLen.CallSlotLenNode callSlotLenNode,
                     @Cached PRaiseNode raiseNode) {

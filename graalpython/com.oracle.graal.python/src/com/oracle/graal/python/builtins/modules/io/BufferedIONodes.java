@@ -108,7 +108,7 @@ public class BufferedIONodes {
 
         @Specialization
         boolean isClosedBuffered(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached IsClosedNode isClosedNode) {
             if (isClosedNode.execute(frame, inliningTarget, self)) {
@@ -152,7 +152,7 @@ public class BufferedIONodes {
 
         @Specialization
         static boolean isSeekable(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectIsTrueNode isTrue,
                         @Cached PRaiseNode raiseNode) {
@@ -277,7 +277,7 @@ public class BufferedIONodes {
 
         @Specialization
         static long bufferedRawSeek(VirtualFrame frame, PBuffered self, long target, int whence,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raise,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached AsOffNumberNode asOffNumberNode) {
@@ -344,7 +344,7 @@ public class BufferedIONodes {
 
         @Specialization
         static long seek(VirtualFrame frame, @SuppressWarnings("unused") Node ignored, PBuffered self, long off, int whence,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached EnterBufferedNode lock,
                         @Cached(inline = false) BufferedWriterNodes.FlushUnlockedNode flushUnlockedNode,
                         @Cached(inline = false) RawSeekNode rawSeekNode,

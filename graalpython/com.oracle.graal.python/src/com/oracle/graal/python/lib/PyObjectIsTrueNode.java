@@ -166,7 +166,7 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
 
         @Specialization
         static boolean doIt(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectSlotsNode getTpSlotsNode,
                         @Cached CallSlotNbBoolNode callBoolNode,
                         @Cached InlinedBranchProfile lenLookupBranch,

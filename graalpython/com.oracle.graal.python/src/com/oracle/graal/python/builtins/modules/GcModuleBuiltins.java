@@ -125,7 +125,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static long collect(VirtualFrame frame, PythonModule self, @SuppressWarnings("unused") Object level,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectGetIter getIter,
                         @Cached(neverDefault = true) PyIterNextNode next,

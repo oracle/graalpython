@@ -218,7 +218,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
     abstract static class ReadableNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             return callMethod.execute(frame, inliningTarget, self.getRaw(), T_READABLE);
         }
@@ -289,7 +289,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         @Specialization(guards = {"self.isOK()", "size > 0", "!isReadFast(self, size)"})
         @SuppressWarnings("truffle-static-method") // checkIsClosedNode
         Object bufferedreaderReadGeneric(VirtualFrame frame, PBuffered self, int size,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached EnterBufferedNode lock,
                         @Cached RawReadNode rawReadNode,
@@ -389,7 +389,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         @Specialization(guards = {"self.isOK()", "isReadAll(size)"})
         @SuppressWarnings("truffle-static-method") // checkIsClosedNode
         Object bufferedreaderReadAll(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int size,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached EnterBufferedNode lock,
                         @Exclusive @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
@@ -478,7 +478,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.isOK()", "!isValidSize(size)"})
         static Object initError(VirtualFrame frame, PBuffered self, int size,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, MUST_BE_NON_NEG_OR_NEG_1);
         }
     }
@@ -495,7 +495,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
 
         @Specialization(guards = "self.isOK()")
         static PBytes doit(VirtualFrame frame, PBuffered self, int size,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached EnterBufferedNode lock,
                         @Cached("create(T_READ)") CheckIsClosedNode checkIsClosedNode,
@@ -542,8 +542,8 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         @Specialization(guards = "self.isOK()", limit = "3")
         @SuppressWarnings("truffle-static-method")
         Object bufferedReadintoGeneric(VirtualFrame frame, PBuffered self, Object buffer,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached EnterBufferedNode lock,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
@@ -753,7 +753,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
 
         @Specialization(guards = "self.isOK()")
         static PBytes doit(VirtualFrame frame, PBuffered self, int size,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached("create(T_READLINE)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedReadlineNode readlineNode) {
@@ -801,7 +801,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
 
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int size,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached EnterBufferedNode lock,
                         @Cached("create(T_PEEK)") CheckIsClosedNode checkIsClosedNode,
@@ -827,7 +827,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
 
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("create(T_READLINE)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedReadlineNode readlineNode) {
             checkIsClosedNode.execute(frame, self);

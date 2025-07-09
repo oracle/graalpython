@@ -189,7 +189,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object init(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached TupleNodes.ConstructTupleNode constructTupleNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
@@ -310,7 +310,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
     public abstract static class SyntaxErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         TruffleString str(VirtualFrame frame, PBaseException self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
                         @Cached CastToTruffleStringNode castToStringNode,

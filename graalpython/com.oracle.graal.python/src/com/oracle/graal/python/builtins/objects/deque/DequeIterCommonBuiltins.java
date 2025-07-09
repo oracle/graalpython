@@ -139,7 +139,7 @@ public final class DequeIterCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTuple doGeneric(PDequeIter self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Bind PythonLanguage language) {
             Object clazz = getClassNode.execute(inliningTarget, self);

@@ -112,7 +112,7 @@ public final class GroupByBuiltins extends PythonBuiltins {
 
         @Specialization
         static PGroupBy construct(VirtualFrame frame, Object cls, Object iterable, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Bind PythonLanguage language,
@@ -142,7 +142,7 @@ public final class GroupByBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PGroupBy self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyIterNextNode nextNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectRichCompareBool eqNode,
@@ -179,7 +179,7 @@ public final class GroupByBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reduceMarkerNotSet(PGroupBy self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile noKeyFuncProfile,
                         @Cached InlinedConditionProfile noValuesProfile,
                         @Cached GetClassNode getClassNode,
@@ -209,7 +209,7 @@ public final class GroupByBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object setState(VirtualFrame frame, PGroupBy self, Object state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TupleBuiltins.LenNode lenNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
                         @Cached PRaiseNode raiseNode) {

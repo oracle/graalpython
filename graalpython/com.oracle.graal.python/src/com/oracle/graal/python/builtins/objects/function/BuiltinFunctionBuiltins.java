@@ -89,7 +89,7 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static TruffleString setName(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__name__", "builtin function");
         }
     }
@@ -104,7 +104,7 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static TruffleString setQualname(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__qualname__", "builtin function");
         }
     }
@@ -114,7 +114,7 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
     public abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getEnclosingType() == null")
         static Object objclassMissing(@SuppressWarnings("unused") PBuiltinFunction self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__objclass__");
         }
 
@@ -129,7 +129,7 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doBuiltinFunc(VirtualFrame frame, PBuiltinFunction func,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
                         @Bind PythonLanguage language) {
             PythonModule builtins = getContext().getBuiltins();
@@ -146,7 +146,7 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static Object doIt(PBuiltinFunction fun,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             if (fun.getSignature().isHidden()) {
                 throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, fun, T___SIGNATURE__);
             }

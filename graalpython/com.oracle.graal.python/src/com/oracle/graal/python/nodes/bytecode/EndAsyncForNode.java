@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -75,7 +75,7 @@ public abstract class EndAsyncForNode extends PNodeWithContext {
 
     @Specialization
     static void doPException(PException exception, boolean rootNodeVisible,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached IsBuiltinObjectProfile isStopAsyncIteration) {
         if (!isStopAsyncIteration.profileException(inliningTarget, exception, PythonBuiltinClassType.StopAsyncIteration)) {
             throw exception.getExceptionForReraise(rootNodeVisible);

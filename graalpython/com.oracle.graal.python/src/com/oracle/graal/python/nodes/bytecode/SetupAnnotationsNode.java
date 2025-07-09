@@ -83,7 +83,7 @@ public abstract class SetupAnnotationsNode extends PNodeWithContext {
 
     @Specialization
     public static void doLocals(VirtualFrame frame,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached InlinedConditionProfile hasLocals,
                     @Cached SetupAnnotationsFromDictOrModuleNode setup) {
         Object locals = getSpecialArgument(frame);

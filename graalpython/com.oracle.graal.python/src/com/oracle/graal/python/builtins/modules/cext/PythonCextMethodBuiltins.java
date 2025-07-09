@@ -116,7 +116,7 @@ public final class PythonCextMethodBuiltins {
 
         @Specialization
         static Object doNativeCallable(Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object self, Object module, Object cls, Object doc,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode) {
             return cFunctionNewExMethodNode.execute(inliningTarget, methodDefPtr, name, methObj, flags, wrapper, self, module, cls, doc);
         }

@@ -109,9 +109,9 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
     abstract static class AsciiBufferConverter extends ArgumentCastNode {
         @Specialization(guards = "acquireLib.hasBuffer(value)", limit = "getCallSiteInlineCacheMaxDepth()")
         static Object doObject(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib) {
             return acquireLib.acquireReadonly(value, frame, context, context.getLanguage(inliningTarget), indirectCallData);
         }
@@ -154,14 +154,14 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isAscii(value, getCodeRangeNode)")
         static Object nonAsciiString(@SuppressWarnings("unused") TruffleString value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.STRING_ARG_SHOULD_CONTAIN_ONLY_ASCII);
         }
 
         @Specialization
         static Object string(PString value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached InlinedConditionProfile asciiProfile) {
@@ -175,7 +175,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object error(@SuppressWarnings("unused") Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ARG_SHOULD_BE_BYTES_BUFFER_OR_ASCII_NOT_P, value);
         }
 
@@ -193,7 +193,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
     abstract static class A2bBase64Node extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
         PBytes doConvert(VirtualFrame frame, Object buffer, boolean strictMode,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonLanguage language) {
             try {
@@ -278,7 +278,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
     abstract static class A2bHexNode extends PythonUnaryClinicBuiltinNode {
         @Specialization(limit = "3")
         PBytes a2b(VirtualFrame frame, Object buffer,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonLanguage language) {
             try {
@@ -342,7 +342,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         PBytes b2aBuffer(VirtualFrame frame, Object buffer, boolean newline,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonLanguage language) {
             try {
@@ -368,8 +368,8 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static PBytes b2a(VirtualFrame frame, Object buffer, Object sep, int bytesPerSep,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
@@ -409,7 +409,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static long b2a(VirtualFrame frame, Object buffer, long crc,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 return crc32((int) crc, bufferLib.getInternalOrCopiedByteArray(buffer), 0, bufferLib.getBufferLength(buffer));
@@ -432,7 +432,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static long b2a(VirtualFrame frame, Object buffer, long crc,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 return crcHqx((int) crc, bufferLib.getInternalOrCopiedByteArray(buffer), 0, bufferLib.getBufferLength(buffer));

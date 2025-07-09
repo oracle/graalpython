@@ -114,14 +114,14 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "size < 0")
         static Object readall(VirtualFrame frame, Object self, @SuppressWarnings("unused") int size,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethod) {
             return callMethod.execute(frame, inliningTarget, self, T_READALL);
         }
 
         @Specialization(guards = "size >= 0")
         static Object read(VirtualFrame frame, Object self, int size,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodReadInto,
@@ -152,7 +152,7 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
          */
         @Specialization
         static Object readall(VirtualFrame frame, Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethodRead,
                         @Cached InlinedConditionProfile dataNoneProfile,
                         @Cached InlinedConditionProfile chunksSize0Profile,
@@ -193,7 +193,7 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
          */
         @Specialization
         static Object readinto(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
@@ -207,7 +207,7 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
          */
         @Specialization
         static Object write(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }

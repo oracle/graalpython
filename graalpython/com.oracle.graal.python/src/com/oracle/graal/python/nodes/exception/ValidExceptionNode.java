@@ -88,7 +88,7 @@ public abstract class ValidExceptionNode extends PNodeWithContext {
 
     @Specialization(guards = "isTypeNode.execute(inliningTarget, type)", limit = "1", replaces = {"isPythonExceptionTypeCached", "isPythonExceptionClassCached"})
     static boolean isPythonException(Object type,
-                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Cached IsSubtypeNode isSubtype) {
         return isSubtype.execute(type, PythonBuiltinClassType.PBaseException);
@@ -96,7 +96,7 @@ public abstract class ValidExceptionNode extends PNodeWithContext {
 
     @Specialization(guards = "isForeignObjectNode.execute(inliningTarget, type)", limit = "1")
     static boolean isForeign(Object type,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached IsForeignObjectNode isForeignObjectNode,
                     @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop) {
         /*

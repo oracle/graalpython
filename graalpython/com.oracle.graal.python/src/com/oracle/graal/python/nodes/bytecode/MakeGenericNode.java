@@ -60,7 +60,7 @@ public abstract class MakeGenericNode extends PNodeWithContext {
 
     @Specialization
     static int makeGeneric(VirtualFrame frame, int initialStackTop,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached UnpackTypeVarTuplesNode unpackTypeVarTuplesNode,
                     @Cached CallTypingFuncObjectNode callTypingFuncObjectNode) {
         int stackTop = initialStackTop;

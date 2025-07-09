@@ -67,7 +67,7 @@ public abstract class PyImportGetModule extends PNodeWithContext {
 
     @Specialization
     static Object doGeneric(VirtualFrame frame, Node node, Object name,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached InlinedConditionProfile noSysModulesProfile,
                     @Cached(inline = false) DictBuiltins.GetItemNode getDictItemNode,
                     @Cached PRaiseNode raise) {

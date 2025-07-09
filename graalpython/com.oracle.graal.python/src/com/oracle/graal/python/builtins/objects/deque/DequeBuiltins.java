@@ -174,7 +174,7 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(iterable)")
         static PNone doIterable(VirtualFrame frame, PDeque self, Object iterable, @SuppressWarnings("unused") PNone maxlen,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached InlinedConditionProfile sizeZeroProfile,
                         @Exclusive @Cached PyObjectGetIter getIter,
                         @Exclusive @Cached PyIterNextNode nextNode) {
@@ -195,7 +195,7 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = {"doNothing", "doIterable"})
         static PNone doGeneric(VirtualFrame frame, PDeque self, Object iterable, Object maxlenObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached InlinedConditionProfile sizeZeroProfile,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Exclusive @Cached PyObjectGetIter getIter,
@@ -288,7 +288,7 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         static PDeque doGeneric(PDeque self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached GetClassNode getClassNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
@@ -344,7 +344,7 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone doGeneric(VirtualFrame frame, PDeque self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile selfIsOtherProfile,
                         @Cached InlinedConditionProfile maxLenZeroProfile,
                         @Cached PyObjectGetIter getIter,
@@ -398,7 +398,7 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(start)", "isNoValue(stop)"})
         static int doWithoutSlice(VirtualFrame frame, PDeque self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone stop,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool eqNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             return doWithIntSlice(frame, self, value, 0, self.getSize(), inliningTarget, eqNode, raiseNode);
@@ -406,7 +406,7 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         static int doWithIntSlice(VirtualFrame frame, PDeque self, Object value, int start, int stop,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool eqNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             int size = self.getSize();
@@ -440,7 +440,7 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         static int doGeneric(VirtualFrame frame, PDeque self, Object value, Object start, Object stop,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyObjectRichCompareBool eqNode,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached PyNumberAsSizeNode startIndexNode,
@@ -520,7 +520,7 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doGeneric(PDeque self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             Object value = self.pop();
             if (value == null) {
@@ -537,7 +537,7 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doGeneric(PDeque self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             Object value = self.popLeft();
             if (value == null) {
@@ -687,7 +687,7 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         static PDeque doOther(VirtualFrame frame, PDeque self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode nextNode) {
             if (other instanceof PDeque) {
@@ -727,7 +727,7 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "doDeque")
         static PDeque doGeneric(PDeque self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (!(other instanceof PDeque)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CAN_ONLY_CONCATENATE_DEQUE_NOT_P_TO_DEQUE, other);
@@ -907,7 +907,7 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGeneric(VirtualFrame frame, PDeque self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyObjectGetStateNode getStateNode,
                         @Cached GetClassNode getClassNode,
@@ -948,7 +948,7 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isGenericCase(self, other, op)")
         static Object doGeneric(VirtualFrame frame, PDeque self, PDeque other, RichCmpOp op,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIterSelf,
                         @Cached PyObjectGetIter getIterOther,
                         @Cached PyIterNextNode selfItNextNode,

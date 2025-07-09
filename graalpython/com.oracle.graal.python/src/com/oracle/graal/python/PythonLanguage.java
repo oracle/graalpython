@@ -405,6 +405,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     private final ConcurrentHashMap<Object, Source> sourceCache = new ConcurrentHashMap<>();
 
+    @Idempotent
     public static PythonLanguage get(Node node) {
         return REFERENCE.get(node);
     }

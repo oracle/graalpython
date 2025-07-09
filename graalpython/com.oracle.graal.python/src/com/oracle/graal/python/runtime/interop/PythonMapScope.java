@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -117,7 +117,7 @@ public final class PythonMapScope implements TruffleObject {
 
     @ExportMessage
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
                     @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile)
                     throws UnsupportedMessageException {
@@ -131,7 +131,7 @@ public final class PythonMapScope implements TruffleObject {
 
     @ExportMessage
     boolean isMemberReadable(String member,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
                     @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile) {
         int length = lengthProfile.profile(inliningTarget, names.length);
@@ -147,7 +147,7 @@ public final class PythonMapScope implements TruffleObject {
 
     @ExportMessage
     Object readMember(String member,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
                     @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile)
                     throws UnknownIdentifierException, UnsupportedMessageException {
@@ -163,7 +163,7 @@ public final class PythonMapScope implements TruffleObject {
 
     @ExportMessage
     boolean isMemberModifiable(String member,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
                     @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile) {
         int length = lengthProfile.profile(inliningTarget, names.length);
@@ -180,7 +180,7 @@ public final class PythonMapScope implements TruffleObject {
 
     @ExportMessage
     boolean isMemberInsertable(String member,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
                     @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile) {
         int length = lengthProfile.profile(inliningTarget, names.length);
@@ -197,7 +197,7 @@ public final class PythonMapScope implements TruffleObject {
 
     @ExportMessage
     boolean hasMemberReadSideEffects(String member,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
                     @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile) {
         int length = lengthProfile.profile(inliningTarget, names.length);
@@ -212,7 +212,7 @@ public final class PythonMapScope implements TruffleObject {
 
     @ExportMessage
     boolean hasMemberWriteSideEffects(String member,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
                     @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile) {
         int length = lengthProfile.profile(inliningTarget, names.length);
@@ -227,7 +227,7 @@ public final class PythonMapScope implements TruffleObject {
 
     @ExportMessage
     void writeMember(String member, Object value,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
                     @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile)
                     throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException {
@@ -248,7 +248,7 @@ public final class PythonMapScope implements TruffleObject {
 
     @ExportMessage
     boolean isMemberRemovable(String member,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
                     @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile) {
         int length = lengthProfile.profile(inliningTarget, names.length);
@@ -265,7 +265,7 @@ public final class PythonMapScope implements TruffleObject {
 
     @ExportMessage
     void removeMember(String member,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
                     @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile)
                     throws UnsupportedMessageException, UnknownIdentifierException {

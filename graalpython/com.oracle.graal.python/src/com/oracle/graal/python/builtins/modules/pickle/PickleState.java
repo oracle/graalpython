@@ -98,7 +98,7 @@ public class PickleState {
 
         @Specialization
         void init(PickleState state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyCallableCheckNode callableCheck) {

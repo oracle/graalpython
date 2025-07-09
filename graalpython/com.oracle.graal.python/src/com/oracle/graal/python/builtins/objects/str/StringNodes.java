@@ -168,7 +168,7 @@ public abstract class StringNodes {
         @Specialization(guards = {"x.isNativeCharSequence()", "!isKnownLength(elements)"})
         static int doNativeUnknownLength(PString x,
                         @SuppressWarnings("unused") @Bind("x.getNativeCharSequence().getElements()") int elements,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StringMaterializeNode materializeNode,
                         @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             return doString(materializeNode.execute(inliningTarget, x), codePointLengthNode);
@@ -182,7 +182,7 @@ public abstract class StringNodes {
         @Specialization
         @InliningCutoff
         static int doNativeObject(PythonNativeObject x,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PCallCapiFunction callNativeUnicodeAsStringNode,
@@ -201,7 +201,7 @@ public abstract class StringNodes {
         @Specialization
         @InliningCutoff
         static int other(Object x,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringCheckedNode cast,
                         @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             TruffleString tstring = cast.cast(inliningTarget, x, ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "str", x);
@@ -301,7 +301,7 @@ public abstract class StringNodes {
         // semantics, see CPython's 'abstract.c' function 'PySequence_Fast'
         @Specialization(guards = "isExactlyListOrTuple(inliningTarget, getClassNode, sequence)", limit = "1")
         static TruffleString doPSequence(TruffleString self, PSequence sequence,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached InlinedConditionProfile isEmptyProfile,
@@ -347,7 +347,7 @@ public abstract class StringNodes {
 
         @Specialization
         static TruffleString doGeneric(VirtualFrame frame, TruffleString string, Object iterable,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raise,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode nextNode,
@@ -414,7 +414,7 @@ public abstract class StringNodes {
 
         @Specialization
         static void doInt(TruffleStringBuilder sb, int translated,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
             if (Character.isValidCodePoint(translated)) {
@@ -426,7 +426,7 @@ public abstract class StringNodes {
 
         @Specialization
         static void doLong(TruffleStringBuilder sb, long translated,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
             try {
@@ -438,7 +438,7 @@ public abstract class StringNodes {
 
         @Specialization
         static void doPInt(TruffleStringBuilder sb, PInt translated,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
             try {
@@ -456,7 +456,7 @@ public abstract class StringNodes {
 
         @Specialization(guards = {"!isInteger(translated)", "!isPInt(translated)", "!isNone(translated)"})
         static void doObject(TruffleStringBuilder sb, Object translated,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {

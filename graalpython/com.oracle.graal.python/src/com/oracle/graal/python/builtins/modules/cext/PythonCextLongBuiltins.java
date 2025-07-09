@@ -161,7 +161,7 @@ public final class PythonCextLongBuiltins {
 
         @Specialization
         static int sign(PInt n,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile zeroProfile,
                         @Cached InlinedBranchProfile negProfile) {
             if (n.isNegative()) {
@@ -178,7 +178,7 @@ public final class PythonCextLongBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"!canBeInteger(obj)", "isPIntSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
         static Object signNative(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached IsSubtypeNode isSubtypeNode) {
             // function returns int, but -1 is expected result for 'n < 0'
@@ -187,7 +187,7 @@ public final class PythonCextLongBuiltins {
 
         @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)", "!isPIntSubtype(inliningTarget, obj,getClassNode,isSubtypeNode)"})
         static Object sign(@SuppressWarnings("unused") Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
             // assert(PyLong_Check(v));
@@ -204,7 +204,7 @@ public final class PythonCextLongBuiltins {
 
         @Specialization
         static long getDC(Object n,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CExtNodes.LvTagNode lvTagNode) {
             return lvTagNode.getDigitCount(inliningTarget, n);
         }
@@ -215,7 +215,7 @@ public final class PythonCextLongBuiltins {
 
         @Specialization
         static Object fromDouble(double d,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
             return pyLongFromDoubleNode.execute(inliningTarget, d);
         }
@@ -226,7 +226,7 @@ public final class PythonCextLongBuiltins {
 
         @Specialization
         Object fromString(Object s, int base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyLongFromUnicodeObject fromUnicodeObject) {
             return fromUnicodeObject.execute(inliningTarget, s, base);
         }
@@ -237,7 +237,7 @@ public final class PythonCextLongBuiltins {
 
         @Specialization
         static Object doGeneric(Object object, int mode, long targetTypeSize,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached GetClassNode getClassNode,
                         @Cached ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode,
@@ -364,7 +364,7 @@ public final class PythonCextLongBuiltins {
 
         @Specialization
         long doPointer(PInt n,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile overflowProfile,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             try {
@@ -387,7 +387,7 @@ public final class PythonCextLongBuiltins {
 
         @Fallback
         long doGeneric(Object n,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             if (asPrimitiveNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -426,7 +426,7 @@ public final class PythonCextLongBuiltins {
 
         @Specialization
         static Object get(int value, Object bytes, long n, int littleEndian, int isSigned,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
                         @Shared @Cached CStructAccess.WriteByteNode write,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -438,7 +438,7 @@ public final class PythonCextLongBuiltins {
 
         @Specialization
         static Object get(long value, Object bytes, long n, int littleEndian, int isSigned,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
                         @Shared @Cached CStructAccess.WriteByteNode write,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -450,7 +450,7 @@ public final class PythonCextLongBuiltins {
 
         @Specialization
         static Object get(PInt value, Object bytes, long n, int littleEndian, int isSigned,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
                         @Shared @Cached CStructAccess.WriteByteNode write,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -465,7 +465,7 @@ public final class PythonCextLongBuiltins {
     abstract static class PyLong_FromUnicodeObject extends CApiBinaryBuiltinNode {
         @Specialization
         static Object convert(Object s, int base,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyLongFromUnicodeObject pyLongFromUnicodeObject) {
             return pyLongFromUnicodeObject.execute(inliningTarget, s, base);
         }
@@ -475,7 +475,7 @@ public final class PythonCextLongBuiltins {
     abstract static class _PyLong_FromByteArray extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object convert(Object charPtr, long size, int littleEndian, int signed,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached IntNodes.PyLongFromByteArray fromByteArray,
                         @Cached PRaiseNode raiseNode) {

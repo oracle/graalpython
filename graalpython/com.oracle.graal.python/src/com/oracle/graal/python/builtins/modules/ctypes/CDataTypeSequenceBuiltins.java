@@ -109,7 +109,7 @@ public final class CDataTypeSequenceBuiltins extends PythonBuiltins {
         // TODO: weakref ctypes.cache values
         @Specialization(guards = "length >= 0")
         static Object PyCArrayType_from_ctype(VirtualFrame frame, Object itemtype, int length,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached HashingStorageSetItem setItem,
                         @Cached HashingStorageGetItem getItem,
@@ -140,7 +140,7 @@ public final class CDataTypeSequenceBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "length < 0")
         static Object error(@SuppressWarnings("unused") Object self, int length,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ARRAY_LENGTH_MUST_BE_0_NOT_D, length);
         }
     }

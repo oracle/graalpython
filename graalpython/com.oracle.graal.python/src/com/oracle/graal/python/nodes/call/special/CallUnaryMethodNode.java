@@ -135,7 +135,7 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
     @Megamorphic
     @InliningCutoff
     static Object call(VirtualFrame frame, Object func, Object receiver,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CallNode callNode,
                     @Exclusive @Cached InlinedConditionProfile isBoundProfile) {
         if (isBoundProfile.profile(inliningTarget, func instanceof BoundDescriptor)) {

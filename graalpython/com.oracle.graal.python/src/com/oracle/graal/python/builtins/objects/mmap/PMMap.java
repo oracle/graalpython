@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -131,14 +131,14 @@ public final class PMMap extends PythonObject {
 
     @ExportMessage
     int getBufferLength(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached CastToJavaIntExactNode castToIntNode) {
         return castToIntNode.execute(inliningTarget, ref.length);
     }
 
     @ExportMessage
     byte readByte(int byteOffset,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Shared("raiseNode") @Cached PConstructAndRaiseNode.Lazy raiseNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
@@ -152,7 +152,7 @@ public final class PMMap extends PythonObject {
 
     @ExportMessage
     void writeByte(int byteOffset, byte value,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Shared("raiseNode") @Cached PConstructAndRaiseNode.Lazy raiseNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
@@ -215,13 +215,13 @@ public final class PMMap extends PythonObject {
 
     @ExportMessage
     boolean isNative(
-                    @Bind("$node") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         return PythonContext.get(inliningTarget).getPosixSupport() instanceof NFIPosixSupport;
     }
 
     @ExportMessage
     Object getNativePointer(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
         try {
             return posixLib.mmapGetPointer(PythonContext.get(inliningTarget).getPosixSupport(), getPosixSupportHandle());

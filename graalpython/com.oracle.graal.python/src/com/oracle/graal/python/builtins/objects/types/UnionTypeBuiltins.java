@@ -176,7 +176,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     abstract static class HashNode extends HashBuiltinNode {
         @Specialization
         static long hash(VirtualFrame frame, PUnionType self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectHashNode hashNode,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
                         @Bind PythonLanguage language) {
@@ -191,7 +191,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getattribute(VirtualFrame frame, PUnionType self, Object nameObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached GetClassNode getClassNode,
@@ -215,7 +215,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     abstract static class InstanceCheckNode extends PythonBinaryBuiltinNode {
         @Specialization
         static boolean check(VirtualFrame frame, PUnionType self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItem,
                         @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
                         @Cached PRaiseNode raiseNode) {
@@ -240,7 +240,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     abstract static class SubclassCheckNode extends PythonBinaryBuiltinNode {
         @Specialization
         static boolean check(VirtualFrame frame, PUnionType self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItem,
                         @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
@@ -269,7 +269,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     abstract static class EqNode extends RichCmpBuiltinNode {
         @Specialization(guards = "op.isEqOrNe()")
         static boolean eq(VirtualFrame frame, PUnionType self, PUnionType other, RichCmpOp op,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
                         @Cached PyObjectRichCompareBool eqNode,
                         @Bind PythonLanguage language) {
@@ -291,7 +291,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getitem(VirtualFrame frame, PUnionType self, Object item,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile createProfile,
                         @Cached PyNumberOrNode orNode) {
             if (self.getParameters() == null) {

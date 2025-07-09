@@ -271,7 +271,7 @@ public abstract class TypeNodes {
 
         @Specialization
         static long doBuiltinClassType(PythonBuiltinClassType clazz,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("read") @Cached HiddenAttr.ReadNode readHiddenFlagsNode,
                         @Shared("write") @Cached HiddenAttr.WriteNode writeHiddenFlagsNode,
                         @Shared("profile") @Cached InlinedCountingConditionProfile profile) {
@@ -280,7 +280,7 @@ public abstract class TypeNodes {
 
         @Specialization
         static long doManaged(PythonManagedClass clazz,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("read") @Cached HiddenAttr.ReadNode readHiddenFlagsNode,
                         @Shared("write") @Cached HiddenAttr.WriteNode writeHiddenFlagsNode,
                         @Shared("profile") @Cached InlinedCountingConditionProfile profile) {
@@ -1118,7 +1118,7 @@ public abstract class TypeNodes {
 
         @Specialization
         boolean isCompatible(VirtualFrame frame, Object oldBase, Object newBase,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile errorSlotsBranch,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached GetBaseClassNode getBaseClassNode) {
@@ -1798,7 +1798,7 @@ public abstract class TypeNodes {
 
         @Specialization
         static boolean doNativeClass(PythonAbstractNativeObject obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached IsTypeNode isType,
                         @Cached GetTypeFlagsNode getFlags) {
             if (isType.execute(inliningTarget, obj)) {
@@ -1863,7 +1863,7 @@ public abstract class TypeNodes {
         @Specialization
         @InliningCutoff
         protected static Shape doNativeClass(PythonAbstractNativeObject clazz,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode getTpDictNode,
                         @Cached HiddenAttr.ReadNode readAttrNode) {
             Object tpDictObj = getTpDictNode.readFromObj(clazz, CFields.PyTypeObject__tp_dict);
@@ -1884,7 +1884,7 @@ public abstract class TypeNodes {
         @Specialization(guards = {"!isManagedClass(clazz)", "!isPythonBuiltinClassType(clazz)"})
         @InliningCutoff
         protected static Shape doError(@SuppressWarnings("unused") Object clazz,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_GET_SHAPE_OF_NATIVE_CLS);
         }
 
@@ -1927,7 +1927,7 @@ public abstract class TypeNodes {
 
         @Specialization
         protected PythonClass makeType(VirtualFrame frame, PDict namespaceOrig, TruffleString name, PTuple bases, Object metaclass, PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorage.InitNode initNode,
                         @Cached HashingStorageGetItem getItemGlobals,
                         @Cached HashingStorageGetItem getItemNamespace,
@@ -2104,8 +2104,8 @@ public abstract class TypeNodes {
 
         @Specialization
         static PythonClass typeMetaclass(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespace, Object metaclass,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached HashingStorageSetItemWithHash setHashingStorageItem,
                         @Cached GetOrCreateDictNode getOrCreateDictNode,
                         @Cached HashingStorageGetIterator getHashingStorageIterator,

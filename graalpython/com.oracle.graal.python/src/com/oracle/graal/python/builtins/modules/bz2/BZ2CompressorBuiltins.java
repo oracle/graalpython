@@ -122,7 +122,7 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"compresslevel >= 1", "compresslevel <= 9"})
         PNone init(BZ2Object.BZ2Compressor self, int compresslevel,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction compressInit,
                         @Cached GilNode gil,
@@ -145,7 +145,7 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         static Object err(Object self, Object compresslevel,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, COMPRESSLEVEL_MUST_BE_BETWEEN_1_AND_9);
         }
     }
@@ -156,7 +156,7 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isFlushed()"})
         static PBytes doNativeBytes(BZ2Object.BZ2Compressor self, PBytesLike data,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
                         @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
@@ -167,7 +167,7 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isFlushed()"})
         static PBytes doNativeObject(VirtualFrame frame, BZ2Object.BZ2Compressor self, Object data,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
@@ -179,7 +179,7 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isFlushed()")
         static PNone error(BZ2Object.BZ2Compressor self, Object data,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, COMPRESSOR_HAS_BEEN_FLUSHED);
         }
     }
@@ -190,7 +190,7 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isFlushed()"})
         static PBytes doit(BZ2Object.BZ2Compressor self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached Bz2Nodes.Bz2NativeCompress compress) {
             self.setFlushed();
@@ -200,7 +200,7 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isFlushed()")
         static PNone error(BZ2Object.BZ2Compressor self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, REPEATED_CALL_TO_FLUSH);
         }
     }

@@ -134,7 +134,7 @@ public final class TpSlotRepr {
 
         @Specialization
         static Object doIt(VirtualFrame frame, TpSlotPythonSingle slot, Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ReprPythonSlotDispatcherNode dispatcherNode) {
             return dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.getType(), self);
         }

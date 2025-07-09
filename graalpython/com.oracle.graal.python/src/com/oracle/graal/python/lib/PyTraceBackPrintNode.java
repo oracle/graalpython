@@ -384,7 +384,7 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
 
     @Specialization
     public void printTraceBack(VirtualFrame frame, PythonModule sys, Object out, PTraceback tb,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached TracebackBuiltins.GetTracebackFrameNode getTbFrameNode,
                     @Cached TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
                     @Cached TruffleString.EqualNode equalNode) {
@@ -403,7 +403,7 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
     @Specialization(guards = "!isPTraceback(tb)")
     @SuppressWarnings("unused")
     public void printTraceBack(VirtualFrame frame, PythonModule sys, Object out, Object tb,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.SystemError, BAD_ARG_TO_INTERNAL_FUNC);
     }
 

@@ -161,7 +161,7 @@ public final class CDataBuiltins extends PythonBuiltins {
     protected abstract static class HashNode extends HashBuiltinNode {
         @Specialization
         static long hash(@SuppressWarnings("unused") CDataObject self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, UNHASHABLE_TYPE);
         }
     }
@@ -172,7 +172,7 @@ public final class CDataBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reduce(VirtualFrame frame, CDataObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached("create(T___DICT__)") GetAttributeNode getAttributeNode,
@@ -207,7 +207,7 @@ public final class CDataBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object PyCData_setstate(VirtualFrame frame, CDataObject self, PTuple args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached("create(T___DICT__)") GetAttributeNode getAttributeNode,
                         @Cached PyNumberAsSizeNode asSizeNode,

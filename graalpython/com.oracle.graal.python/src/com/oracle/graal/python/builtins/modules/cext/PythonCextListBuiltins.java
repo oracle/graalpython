@@ -98,7 +98,7 @@ public final class PythonCextListBuiltins {
     abstract static class PyList_New extends CApiUnaryBuiltinNode {
         @Specialization(guards = "size < 0")
         static Object newListError(long size,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, size);
         }
 
@@ -127,7 +127,7 @@ public final class PythonCextListBuiltins {
 
         @Specialization
         static Object doPList(PList list, long key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PromoteBorrowedValue promoteNode,
                         @Cached ListGeneralizationNode generalizationNode,
                         @Cached SetItemScalarNode setItemNode,
@@ -193,7 +193,7 @@ public final class PythonCextListBuiltins {
     abstract static class PyList_GetSlice extends CApiTernaryBuiltinNode {
         @Specialization
         Object getSlice(PList list, Object iLow, Object iHigh,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.GetItemNode getItemNode,
                         @Cached PySliceNew sliceNode) {
             return getItemNode.execute(null, list, sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE));
@@ -210,7 +210,7 @@ public final class PythonCextListBuiltins {
 
         @Specialization
         static int getSlice(PList list, Object iLow, Object iHigh, Object s,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ListBuiltins.SetSubscriptNode setItemNode,
                         @Cached PySliceNew sliceNode) {
             setItemNode.executeVoid(null, list, sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE), s);
@@ -300,7 +300,7 @@ public final class PythonCextListBuiltins {
 
         @Specialization
         static long doGeneric(PList self, Object outItems,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CStructAccess.WritePointerNode writePointerNode,
                         @Cached XDecRefPointerNode xDecRefPointerNode) {
             SequenceStorage sequenceStorage = self.getSequenceStorage();
@@ -331,7 +331,7 @@ public final class PythonCextListBuiltins {
 
         @Specialization
         static long doGeneric(PList self, Object outItems,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CStructAccess.WritePointerNode writePointerNode,
                         @Cached PySequenceArrayWrapper.ToNativeStorageNode toNativeStorageNode) {
             SequenceStorage sequenceStorage = self.getSequenceStorage();

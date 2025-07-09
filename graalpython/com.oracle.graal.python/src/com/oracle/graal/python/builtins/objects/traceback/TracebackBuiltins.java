@@ -116,14 +116,14 @@ public final class TracebackBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isPTraceback(next)", "!isNone(next)"})
         @SuppressWarnings("unused")
         static Object errorNext(Object cls, Object next, Object frame, Object lasti, Object lineno,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.EXPECTED_TRACEBACK_OBJ_OR_NONE, next);
         }
 
         @Specialization(guards = "!isPFrame(frame)")
         @SuppressWarnings("unused")
         static Object errorFrame(Object cls, Object next, Object frame, Object lasti, Object lineno,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.TRACEBACK_TYPE_ARG_MUST_BE_FRAME, frame);
         }
 
@@ -253,7 +253,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         // stack
         @Specialization(guards = {"!hasPFrame(tb)", "hasFrameInfo(tb)", "!isMaterialized(tb.getFrameInfo())", "hasVisibleFrame(tb)"})
         static PFrame doOnStack(VirtualFrame frame, PTraceback tb,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MaterializeFrameNode materializeNode,
                         @Cached ReadCallerFrameNode readCallerFrame,
                         @Cached InlinedConditionProfile isCurFrameProfile) {
@@ -289,7 +289,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         // stacktrace instead
         @Specialization(guards = "!hasVisibleFrame(tb)")
         static PFrame doFromTruffle(PTraceback tb,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
             materializeTruffleStacktraceNode.execute(inliningTarget, tb);
             return tb.getFrame();
@@ -317,7 +317,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
     public abstract static class GetTracebackNextNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
         static Object get(PTraceback self, @SuppressWarnings("unused") PNone none,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
             materializeTruffleStacktraceNode.execute(inliningTarget, self);
             return (self.getNext() != null) ? self.getNext() : PNone.NONE;
@@ -325,7 +325,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(next)")
         static Object set(PTraceback self, PTraceback next,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Exclusive @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode,
                         @Cached PRaiseNode raiseNode) {
@@ -346,7 +346,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNone(next)")
         static Object clear(PTraceback self, @SuppressWarnings("unused") PNone next,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
             // Realize whatever was in the truffle stacktrace, so that we don't overwrite the
             // user-set next later
@@ -357,7 +357,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isPNone(next)", "!isPTraceback(next)"})
         static Object setError(@SuppressWarnings("unused") PTraceback self, Object next,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXPECTED_TRACEBACK_OBJ, next);
         }
     }
@@ -367,7 +367,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
     public abstract static class GetTracebackLastINode extends PythonBuiltinNode {
         @Specialization
         Object get(VirtualFrame frame, PTraceback self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetTracebackFrameNode getTracebackFrameNode,
                         @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
             materializeTruffleStacktraceNode.execute(inliningTarget, self);
@@ -381,7 +381,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
     public abstract static class GetTracebackLinenoNode extends PythonBuiltinNode {
         @Specialization
         Object get(PTraceback self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
             materializeTruffleStacktraceNode.execute(inliningTarget, self);
             return self.getLineno();

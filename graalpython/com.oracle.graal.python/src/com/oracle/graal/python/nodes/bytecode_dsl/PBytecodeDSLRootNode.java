@@ -2414,7 +2414,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static Object doLoadCell(VirtualFrame frame, TruffleString name, Object dict,
                         @Bind PBytecodeDSLRootNode rootNode,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetItem getItemNode,
                         @Cached ReadGlobalOrBuiltinNode readGlobal,
                         @Cached IsBuiltinObjectProfile errorProfile) {
@@ -3121,7 +3121,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @Fallback
         public static Object doOther(VirtualFrame frame, Object receiver, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectSlotsNode getSlotsNode,
                         @Cached PyObjectGetItem.PyObjectGetItemGeneric getItemNode) {
             TpSlots slots = getSlotsNode.execute(inliningTarget, receiver);
@@ -3481,7 +3481,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MakeGeneric {
         @Specialization
         static Object makeGeneric(VirtualFrame frame, PTuple params,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached UnpackTypeVarTuplesNode unpackTypeVarTuplesNode,
                         @Cached CallTypingFuncObjectNode callTypingFuncObjectNode) {
             params = unpackTypeVarTuplesNode.execute(frame, inliningTarget, params);

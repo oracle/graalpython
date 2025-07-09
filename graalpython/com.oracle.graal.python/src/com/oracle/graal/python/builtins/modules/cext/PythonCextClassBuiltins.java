@@ -62,7 +62,7 @@ public final class PythonCextClassBuiltins {
     abstract static class PyInstanceMethod_New extends CApiUnaryBuiltinNode {
         @Specialization
         static Object staticmethod(Object func,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
             checkNonNullArg(inliningTarget, func, raiseNode);
@@ -76,7 +76,7 @@ public final class PythonCextClassBuiltins {
     abstract static class PyMethod_New extends CApiBinaryBuiltinNode {
         @Specialization
         static Object methodNew(Object func, Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
             checkNonNullArg(inliningTarget, func, self, raiseNode);

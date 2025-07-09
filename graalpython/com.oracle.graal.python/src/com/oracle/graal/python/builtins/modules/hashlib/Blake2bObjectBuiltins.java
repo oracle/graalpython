@@ -119,7 +119,7 @@ public final class Blake2bObjectBuiltins extends PythonBuiltins {
         @Specialization
         static Object newDigest(VirtualFrame frame, Object type, Object data, int digestSize,
                         PNone key, PNone salt, PNone person, int fanout, int depth, int leafSize, int nodeOffset, int nodeDepth, int innerSize, boolean lastNode, boolean usedforsecurity,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode,
                         @Cached PRaiseNode raiseNode) {
             if (fanout != 1 || depth != 1 || leafSize != 0 || nodeOffset != 0 || nodeDepth != 0 || innerSize != 0 || lastNode) {
@@ -156,7 +156,7 @@ public final class Blake2bObjectBuiltins extends PythonBuiltins {
         static PException fail(VirtualFrame frame, Object type, Object data, Object digestSize,
                         Object key, Object salt, Object person, Object fanout, Object depth, Object leafSize, Object nodeOffset, Object nodeDepth, Object innerSize, Object lastNode,
                         Object usedforsecurity,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DIGEST_SIZE_BLAKE_ARGUMENT);
         }
     }

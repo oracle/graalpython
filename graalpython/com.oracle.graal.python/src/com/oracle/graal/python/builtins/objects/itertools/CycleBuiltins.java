@@ -114,7 +114,7 @@ public final class CycleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PCycle construct(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
@@ -154,7 +154,7 @@ public final class CycleBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PCycle self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyIterNextNode nextNode,
                         @Cached InlinedBranchProfile iterableProfile,
                         @Cached InlinedBranchProfile firstPassProfile) {
@@ -208,7 +208,7 @@ public final class CycleBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "hasIterable(self)")
         static Object reduce(PCycle self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached GetClassNode getClass,
                         @Bind PythonLanguage language) {
             warnPickleDeprecated();
@@ -220,7 +220,7 @@ public final class CycleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!hasIterable(self)")
         static Object reduceNoIterable(VirtualFrame frame, PCycle self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached GetClassNode getClass,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached CallUnaryMethodNode callNode,
@@ -259,7 +259,7 @@ public final class CycleBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object setState(VirtualFrame frame, PCycle self, Object state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached GetItemNode getItemNode,
                         @Cached IsBuiltinObjectProfile isTypeErrorProfile,

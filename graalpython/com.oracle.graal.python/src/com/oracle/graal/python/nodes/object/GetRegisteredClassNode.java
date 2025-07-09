@@ -132,7 +132,7 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
 
     @Specialization(replaces = "getCachedClassLookup", guards = {"!objectLibrary.isMetaObject(foreignObject)", "objectLibrary.hasMetaObject(foreignObject)"})
     static Object getFullLookupNode(Object foreignObject,
-                    @Bind("$node") Node node,
+                    @Bind Node node,
                     @Cached InlinedConditionProfile inlinedConditionProfile,
                     @Cached ObjectHashMap.GetNode getNode,
                     @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") @Exclusive InteropLibrary objectLibrary,

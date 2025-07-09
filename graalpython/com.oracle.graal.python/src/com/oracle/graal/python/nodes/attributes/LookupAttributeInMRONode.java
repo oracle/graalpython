@@ -107,7 +107,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         @Specialization(replaces = "lookupConstantMRO")
         @InliningCutoff
         protected static Object lookupGeneric(Object klass, TruffleString key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached(value = "createForceType()", uncached = "getUncachedForceType()") ReadAttributeFromObjectNode readAttrNode) {
             return lookup(key, getMroNode.execute(inliningTarget, klass), readAttrNode, false, DynamicObjectLibrary.getUncached());

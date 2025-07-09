@@ -79,7 +79,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
 
     @Specialization(guards = "isBuiltinSequence(sequence)")
     static int doUnpackSequence(VirtualFrame frame, int initialStackTop, PSequence sequence, int countBefore, int countAfter,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                     @Exclusive @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
@@ -104,7 +104,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
 
     @Fallback
     static int doUnpackIterable(VirtualFrame frame, int initialStackTop, Object collection, int countBefore, int countAfter,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PyObjectGetIter getIter,
                     @Cached PyIterNextNode nextNode,
                     @Cached IsBuiltinObjectProfile notIterableProfile,

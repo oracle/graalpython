@@ -115,7 +115,7 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object PyCArrayType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttrType,
                         @Cached PyObjectLookupAttr lookupAttrLength,
                         @Cached IsBuiltinObjectProfile profile,

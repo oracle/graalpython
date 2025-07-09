@@ -63,7 +63,7 @@ public abstract class ThreadLocalNodes {
 
         @Specialization
         static PDict get(VirtualFrame frame, PThreadLocal self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile create,
                         @Cached GetObjectSlotsNode getSlots,
                         @Cached CallSlotTpInitNode callInit) {

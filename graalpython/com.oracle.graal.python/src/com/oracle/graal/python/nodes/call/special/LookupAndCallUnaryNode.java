@@ -125,7 +125,7 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
 
     @Specialization(guards = {"clazz != null", "function != null", "isClazz(inliningTarget, clazz, receiver, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callObjectBuiltin(VirtualFrame frame, Object receiver,
-                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached("getBuiltinClass(this, receiver, getClassNode)") PythonBuiltinClassType clazz,
                     @Cached("getUnaryBuiltin(clazz)") PythonUnaryBuiltinNode function) {
@@ -134,7 +134,7 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
 
     @Specialization(guards = "getObjectClass(receiver) == cachedClass", limit = "3")
     Object callObjectGeneric(VirtualFrame frame, Object receiver,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Cached("receiver.getClass()") Class<?> cachedClass,
                     @Shared @Cached GetClassNode getClassNode,
                     @Shared @Cached("create(name)") LookupSpecialMethodNode getattr,
@@ -146,7 +146,7 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
     @Megamorphic
     @SuppressWarnings("truffle-static-method")
     Object callObjectMegamorphic(VirtualFrame frame, Object receiver,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared @Cached GetClassNode getClassNode,
                     @Shared @Cached("create(name)") LookupSpecialMethodNode getattr,
                     @Shared @Cached CallUnaryMethodNode dispatchNode) {
@@ -181,7 +181,7 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
 
         @Specialization
         static Object doObject(Object receiver, TruffleString name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached LookupSpecialMethodNode.Dynamic getattr,
                         @Cached CallUnaryMethodNode dispatchNode,

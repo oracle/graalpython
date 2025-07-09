@@ -127,7 +127,7 @@ public final class CThunkObject extends PythonBuiltinObject {
                         @Cached GilNode gil,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyTypeCheck pyTypeCheck,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached SetFuncNode setFuncNode,

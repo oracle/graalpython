@@ -77,7 +77,7 @@ public abstract class GetAIterNode extends PNodeWithContext {
 
     @Specialization
     Object doGeneric(VirtualFrame frame, Object receiver,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached GetClassNode getAsyncIterType,
                     @Cached GetCachedTpSlotsNode getSlots,
                     @Cached CallSlotUnaryNode callSlot,

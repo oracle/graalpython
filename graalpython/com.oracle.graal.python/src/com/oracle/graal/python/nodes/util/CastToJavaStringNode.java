@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -84,7 +84,7 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
 
     @Specialization(guards = "!x.isMaterialized()")
     static String doPStringGeneric(PString x,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached StringMaterializeNode materializeNode,
                     @Shared @Cached TruffleString.ToJavaStringNode toJavaString) {
         return toJavaString.execute(materializeNode.execute(inliningTarget, x));
@@ -92,7 +92,7 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
 
     @Specialization
     static String doNativeObject(PythonNativeObject x,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode,
                     @Shared @Cached TruffleString.ToJavaStringNode toJavaString,

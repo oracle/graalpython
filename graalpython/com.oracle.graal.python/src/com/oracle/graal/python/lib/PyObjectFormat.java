@@ -137,7 +137,7 @@ public abstract class PyObjectFormat extends PNodeWithContext {
         // Note: PRaiseNode is @Exclusive to workaround a bug in DSL
         @Fallback
         static Object doNonStringFormat(Object obj, Object formatSpec,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.S_MUST_BE_S_NOT_P, "Format specifier", "a string", formatSpec);
         }
     }

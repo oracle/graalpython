@@ -467,7 +467,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object call(VirtualFrame frame, PythonObject patternObject, Object pattern, Object flags,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyLongAsIntNode flagsToIntNode,
                         @Cached HiddenAttr.WriteNode writeCacheNode) {
             int flagsStr = flagsToIntNode.execute(frame, inliningTarget, flags);
@@ -519,7 +519,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance", "getTRegexCache(pattern).isLocaleSensitive()"}, limit = "SPECIALIZATION_LIMIT", replaces = "cached")
         @SuppressWarnings("truffle-static-method")
         Object localeSensitive(VirtualFrame frame, PythonObject pattern, PythonMethod method, boolean mustAdvance,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("method") @SuppressWarnings("unused") PythonMethod cachedMethod,
                         @Cached("mustAdvance") @SuppressWarnings("unused") boolean cachedMustAdvance,
                         @Cached("lookupGetLocaleFunction()") Object getLocale,
@@ -558,7 +558,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static void check(Object input, boolean expectBytes,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached BytesNodes.BytesLikeCheck bytesLikeCheck,
                         @Cached PRaiseNode unexpectedStrRaise,
@@ -652,7 +652,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isSingleContext()", "pattern == cachedPattern", "method == cachedMethod", "mustAdvance == cachedMustAdvance", "!tRegexCache.isLocaleSensitive()"}, limit = "1")
         @SuppressWarnings({"truffle-static-method", "unused"})
         protected Object doCached(VirtualFrame frame, PythonObject pattern, Object input, Object posArg, Object endPosArg, PythonMethod method, boolean mustAdvance,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached(value = "pattern", weak = true) PythonObject cachedPattern,
                         @SuppressWarnings("unused") @Cached("method") PythonMethod cachedMethod,
                         @SuppressWarnings("unused") @Cached("mustAdvance") boolean cachedMustAdvance,
@@ -703,7 +703,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         "mustAdvance == cachedMustAdvance", "!tRegexCache.isLocaleSensitive()"}, limit = "1", replaces = "doCached")
         @SuppressWarnings("truffle-static-method")
         protected Object doCachedRegex(VirtualFrame frame, PythonObject pattern, Object input, Object posArg, Object endPosArg, PythonMethod method, boolean mustAdvance,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("method") PythonMethod cachedMethod,
                         @Cached("mustAdvance") @SuppressWarnings("unused") boolean cachedMustAdvance,
                         @Cached @Shared TRegexCompile tRegexCompileNode,
@@ -728,7 +728,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         @ReportPolymorphism.Megamorphic
         protected Object doDynamic(VirtualFrame frame, PythonObject pattern, Object input, Object posArg, Object endPosArg, PythonMethod method, boolean mustAdvance,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("method") PythonMethod cachedMethod,
                         @Cached @Shared TRegexCompile tRegexCompileNode,
                         @Cached @Shared PyNumberIndexNode indexNode,
@@ -804,8 +804,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "callable == cachedCallable", limit = "2")
         @SuppressWarnings("truffle-static-method")
         Object doCached(VirtualFrame frame, @SuppressWarnings("unused") Object callable, Object inputStringOrBytes, Number fromIndex,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached(value = "callable", weak = true) Object cachedCallable,
                         @Cached @Shared CastToTruffleStringNode cast,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAcquireLibrary bufferAcquireLib,
@@ -839,8 +839,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "1", replaces = "doCached")
         @ReportPolymorphism.Megamorphic
         Object doUncached(VirtualFrame frame, Object callable, Object inputStringOrBytes, Number fromIndex,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached @Shared CastToTruffleStringNode cast,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") @Shared PythonBufferAccessLibrary bufferLib,
@@ -864,7 +864,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
             @Specialization(limit = "4")
             static TruffleString convert(Object buffer,
-                            @Bind("this") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @CachedLibrary(value = "buffer") PythonBufferAccessLibrary bufferLib,
                             @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                             @Cached TruffleString.FromNativePointerNode fromNativePointerNode,

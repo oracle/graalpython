@@ -117,7 +117,7 @@ public final class PythonCextComplexBuiltins {
 
         @Specialization(guards = "!isPComplex(obj)")
         static Object asDouble(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile isComplexSubtypeProfile,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached CallNode callNode,
@@ -151,7 +151,7 @@ public final class PythonCextComplexBuiltins {
 
         @Specialization(guards = {"!isPComplex(obj)", "isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
         static Object asDouble(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
@@ -162,7 +162,7 @@ public final class PythonCextComplexBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isPComplex(obj)", "!isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
         static Object asDouble(Object obj,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached IsSubtypeNode isSubtypeNode) {
             return 0.0;

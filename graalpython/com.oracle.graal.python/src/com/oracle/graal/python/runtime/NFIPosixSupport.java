@@ -2394,7 +2394,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     boolean semTimedWait(long handle, long deadlineNs,
-                    @Bind("$node") Node node,
+                    @Bind Node node,
                     @CachedLibrary("this") PosixSupportLibrary thisLib,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         if (PythonOS.getPythonOS() == PythonOS.PLATFORM_LINUX) {

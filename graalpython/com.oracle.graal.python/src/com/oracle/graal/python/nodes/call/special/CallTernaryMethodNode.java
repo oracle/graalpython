@@ -128,7 +128,7 @@ public abstract class CallTernaryMethodNode extends AbstractCallMethodNode {
     @Megamorphic
     @InliningCutoff
     static Object call(VirtualFrame frame, Object func, Object arg1, Object arg2, Object arg3,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CallNode callNode,
                     @Cached InlinedConditionProfile isBoundProfile) {
         if (isBoundProfile.profile(inliningTarget, func instanceof BoundDescriptor)) {

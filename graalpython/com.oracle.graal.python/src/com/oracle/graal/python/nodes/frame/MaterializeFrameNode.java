@@ -143,7 +143,7 @@ public abstract class MaterializeFrameNode extends Node {
 
     @Specialization(guards = "getPFrame(frameToMaterialize) != null")
     static PFrame alreadyEscapedFrame(@SuppressWarnings("unused") Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode,
                     @Cached InlinedConditionProfile syncProfile) {
         PFrame pyFrame = getPFrame(frameToMaterialize);

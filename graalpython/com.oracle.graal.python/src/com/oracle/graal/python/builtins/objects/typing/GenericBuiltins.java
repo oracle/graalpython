@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -87,7 +87,7 @@ public final class GenericBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object classGetItem(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallTypingArgsKwargsNode callTypingNode) {
             return callTypingNode.execute(frame, inliningTarget, T_GENERIC_CLASS_ITEM, cls, args, kwargs);
         }
@@ -100,7 +100,7 @@ public final class GenericBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object initSubclass(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallTypingArgsKwargsNode callTypingNode) {
             return callTypingNode.execute(frame, inliningTarget, T_GENERIC_INIT_SUBCLASS, cls, args, kwargs);
         }

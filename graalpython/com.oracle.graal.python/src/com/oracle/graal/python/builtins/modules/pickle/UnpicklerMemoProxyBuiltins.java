@@ -106,7 +106,7 @@ public class UnpicklerMemoProxyBuiltins extends PythonBuiltins {
     public abstract static class UnpicklerMemoProxyCopyNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object copy(PUnpicklerMemoProxy self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageSetItem setItem,
                         @Bind PythonLanguage language) {
             return PFactory.createDict(language, self.getUnpickler().copyMemoToHashingStorage(inliningTarget, setItem));
@@ -118,7 +118,7 @@ public class UnpicklerMemoProxyBuiltins extends PythonBuiltins {
     public abstract static class UnpicklerMemoProxyReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(PUnpicklerMemoProxy self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageSetItem setItem,
                         @Bind PythonLanguage language) {
             final PDict dictMemoCopy = PFactory.createDict(language, self.getUnpickler().copyMemoToHashingStorage(inliningTarget, setItem));

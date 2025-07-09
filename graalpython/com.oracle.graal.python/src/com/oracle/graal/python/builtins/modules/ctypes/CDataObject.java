@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -110,7 +110,7 @@ public class CDataObject extends PythonBuiltinObject {
 
     @ExportMessage
     TruffleString getFormatString(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared @Cached GetClassNode getClassNode,
                     @Shared @Cached StgDictBuiltins.PyTypeStgDictNode stgDictNode) {
         Object itemType = getClassNode.execute(inliningTarget, this);
@@ -120,7 +120,7 @@ public class CDataObject extends PythonBuiltinObject {
 
     @ExportMessage
     int getItemSize(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared @Cached GetClassNode getClassNode,
                     @Shared @Cached StgDictBuiltins.PyTypeStgDictNode stgDictNode,
                     @Cached PyObjectTypeCheck typeCheck) {
@@ -135,14 +135,14 @@ public class CDataObject extends PythonBuiltinObject {
 
     @ExportMessage
     byte readByte(int byteIndex,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PointerNodes.ReadByteNode readByteNode) {
         return readByteNode.execute(inliningTarget, b_ptr.withOffset(byteIndex));
     }
 
     @ExportMessage
     void readIntoByteArray(int srcOffset, byte[] dest, int destOffset, int length,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PointerNodes.ReadBytesNode readBytesNode) {
         readBytesNode.execute(inliningTarget, dest, destOffset, b_ptr.withOffset(srcOffset), length);
     }
@@ -155,28 +155,28 @@ public class CDataObject extends PythonBuiltinObject {
 
     @ExportMessage
     void writeByte(int byteIndex, byte value,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared @Cached PointerNodes.WriteBytesNode writeBytesNode) {
         writeBytesNode.execute(inliningTarget, b_ptr.withOffset(byteIndex), new byte[]{value});
     }
 
     @ExportMessage
     void writeFromByteArray(int destOffset, byte[] src, int srcOffset, int length,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared @Cached PointerNodes.WriteBytesNode writeBytesNode) {
         writeBytesNode.execute(inliningTarget, b_ptr.withOffset(destOffset), src, srcOffset, length);
     }
 
     @ExportMessage
     boolean isNative(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PointerNodes.PointerIsNativeNode pointerIsNativeNode) {
         return pointerIsNativeNode.execute(inliningTarget, b_ptr);
     }
 
     @ExportMessage
     Object getNativePointer(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PointerNodes.GetPointerValueAsObjectNode getPointerValue) {
         return getPointerValue.execute(inliningTarget, b_ptr);
     }
@@ -278,7 +278,7 @@ public class CDataObject extends PythonBuiltinObject {
 
         @ExportMessage
         void toNative(
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile isNativeProfile,
                         @Cached CApiTransitions.FirstToNativeNode firstToNativeNode) {
             if (!isNative(inliningTarget, isNativeProfile)) {

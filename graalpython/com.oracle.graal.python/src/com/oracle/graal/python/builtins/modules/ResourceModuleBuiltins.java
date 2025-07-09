@@ -153,7 +153,7 @@ public final class ResourceModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTuple getruusage(VirtualFrame frame, int who,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,

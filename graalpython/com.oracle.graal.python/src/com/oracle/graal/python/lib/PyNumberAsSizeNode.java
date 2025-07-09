@@ -155,7 +155,7 @@ public abstract class PyNumberAsSizeNode extends PNodeWithContext {
 
         @Specialization
         static int doObjectExact(VirtualFrame frame, Object object, PythonBuiltinClassType errorClass,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyNumberIndexNode indexNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached CastToJavaIntExactNode cast) {
@@ -171,7 +171,7 @@ public abstract class PyNumberAsSizeNode extends PNodeWithContext {
 
         @Specialization
         static int doObjectLossy(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone errorClass,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaIntLossyNode cast) {
             Object index = indexNode.execute(frame, inliningTarget, object);

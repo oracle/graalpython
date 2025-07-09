@@ -132,7 +132,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PNone register(VirtualFrame frame, PythonModule module, Object nameObj, Object dialectObj, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode nameNode,
                         @Cached ReadAttributeFromObjectNode readNode,
                         @Cached CallNode callNode,
@@ -163,7 +163,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
     public abstract static class CSVUnregisterDialectNode extends PythonBuiltinNode {
         @Specialization
         static PNone unregister(VirtualFrame frame, PythonModule module, Object nameObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode readNode,
                         @Cached PyDictDelItem delItem,
                         @Cached HashingStorageGetItem getItem,
@@ -196,7 +196,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static CSVDialect get(VirtualFrame frame, PythonModule module, Object nameObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyDictGetItem getItemNode,
                         @Cached ReadAttributeFromObjectNode readNode,
                         @Cached PRaiseNode raiseNode) {
@@ -233,7 +233,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
     public abstract static class CSVReaderNode extends PythonBuiltinNode {
         @Specialization
         static Object createReader(VirtualFrame frame, Object csvfile, Object dialectObj, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached CallNode callNode,
                         @Bind PythonLanguage language) {
@@ -248,7 +248,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
     public abstract static class CSVWriterNode extends PythonBuiltinNode {
         @Specialization
         static Object createReader(VirtualFrame frame, Object outputFile, Object dialectObj, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyCallableCheckNode checkCallable,
@@ -272,7 +272,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static long getOrSetFieldSizeLimit(VirtualFrame frame, PythonModule self, Object newLimit,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyLongCheckExactNode checkLongNode,
                         @Cached PyLongAsLongNode castToLong,
                         @Cached PRaiseNode raiseNode) {

@@ -203,7 +203,7 @@ public class LZMANodes {
 
         @Specialization
         long ll(long l,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             if (l < 0) {
                 throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.CANT_CONVERT_NEG_INT_TO_UNSIGNED);
@@ -217,7 +217,7 @@ public class LZMANodes {
         @Specialization
         @SuppressWarnings("truffle-static-method")
         long o(Object o,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToJavaLongExactNode cast,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             try {
@@ -245,7 +245,7 @@ public class LZMANodes {
 
         @Specialization
         static HashingStorage fast(VirtualFrame frame, PDict dict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getItem") @Cached HashingStorageGetItem getItem,
                         @Shared @Cached PRaiseNode raiseNode) {
             HashingStorage storage = dict.getDictStorage();
@@ -257,7 +257,7 @@ public class LZMANodes {
 
         @Specialization(guards = "!isDict(object)")
         static HashingStorage slow(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getItem") @Cached HashingStorageGetItem getItem,
                         @Cached GetDictIfExistsNode getDict,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -415,7 +415,7 @@ public class LZMANodes {
 
         @Specialization
         static long[] converter(VirtualFrame frame, Object spec,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ForEachOption getOptions,
                         @Cached CastToJavaLongLossyNode toLong,
                         @Cached GetOptionsDict getOptionsDict,
@@ -467,7 +467,7 @@ public class LZMANodes {
 
         @Specialization
         long[][] parseFilter(VirtualFrame frame, Object filterSpecs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetItem getItemNode,
                         @Cached LZMAFilterConverter converter,
                         @Cached SequenceNodes.CheckIsSequenceNode checkIsSequenceNode,
@@ -493,7 +493,7 @@ public class LZMANodes {
 
         @Specialization
         static void parseFilterChainSpec(VirtualFrame frame, Object lzmast, PythonContext context, Object filterSpecs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction setFilterSpecLZMA,
                         @Cached NativeLibrary.InvokeNativeFunction setFilterSpecDelta,
                         @Cached NativeLibrary.InvokeNativeFunction setFilterSpecBCJ,
@@ -687,7 +687,7 @@ public class LZMANodes {
 
         @Specialization(guards = "format == FORMAT_XZ")
         static void xz(LZMACompressor.Native self, @SuppressWarnings("unused") int format, long preset, @SuppressWarnings("unused") PNone filters,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Exclusive @Cached NativeLibrary.InvokeNativeFunction lzmaEasyEncoder,
                         @Shared @Cached InlinedConditionProfile errProfile,
@@ -703,7 +703,7 @@ public class LZMANodes {
 
         @Specialization(guards = {"format == FORMAT_XZ", "!isPNone(filters)"})
         static void xz(VirtualFrame frame, LZMACompressor.Native self, @SuppressWarnings("unused") int format, @SuppressWarnings("unused") long preset, Object filters,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Exclusive @Cached NativeLibrary.InvokeNativeFunction lzmaStreamEncoder,
                         @Exclusive @Cached NativeFilterChain filterChain,
@@ -723,7 +723,7 @@ public class LZMANodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "format == FORMAT_ALONE")
         static void alone(LZMACompressor.Native self, int format, long preset, PNone filters,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Exclusive @Cached NativeLibrary.InvokeNativeFunction lzmaAloneEncoderPreset,
                         @Shared @Cached InlinedConditionProfile errProfile,
@@ -740,7 +740,7 @@ public class LZMANodes {
         @SuppressWarnings("unused")
         @Specialization(guards = {"format == FORMAT_ALONE", "!isPNone(filters)"})
         static void alone(VirtualFrame frame, LZMACompressor.Native self, int format, long preset, Object filters,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Exclusive @Cached NativeLibrary.InvokeNativeFunction lzmaAloneEncoder,
                         @Exclusive @Cached NativeFilterChain filterChain,
@@ -760,7 +760,7 @@ public class LZMANodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "format == FORMAT_RAW")
         static void raw(VirtualFrame frame, LZMACompressor.Native self, int format, long preset, Object filters,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Exclusive @Cached NativeLibrary.InvokeNativeFunction lzmaRawEncoder,
                         @Exclusive @Cached NativeFilterChain filterChain,
@@ -779,7 +779,7 @@ public class LZMANodes {
 
         @Specialization(guards = "format == FORMAT_XZ")
         static void xz(LZMACompressor.Java self, @SuppressWarnings("unused") int format, long preset, @SuppressWarnings("unused") PNone filters,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 self.lzmaEasyEncoder(parseLZMAOptions(preset));
@@ -790,7 +790,7 @@ public class LZMANodes {
 
         @Specialization(guards = {"format == FORMAT_XZ", "!isPNone(filters)"})
         static void xz(VirtualFrame frame, LZMACompressor.Java self, @SuppressWarnings("unused") int format, @SuppressWarnings("unused") long preset, Object filters,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached JavaFilterChain filterChain,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
@@ -803,7 +803,7 @@ public class LZMANodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "format == FORMAT_ALONE")
         static void alone(LZMACompressor.Java self, int format, long preset, PNone filters,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 self.lzmaAloneEncoder(parseLZMAOptions(preset));
@@ -815,7 +815,7 @@ public class LZMANodes {
         @SuppressWarnings("unused")
         @Specialization(guards = {"format == FORMAT_ALONE", "!isPNone(filters)"})
         static void alone(VirtualFrame frame, LZMACompressor.Java self, int format, long preset, Object filters,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached JavaFilterChain filterChain,
                         @Shared @Cached PRaiseNode raiseNode) {
             FilterOptions[] optionsChain = filterChain.execute(frame, inliningTarget, filters);
@@ -832,7 +832,7 @@ public class LZMANodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "format == FORMAT_RAW")
         static void raw(VirtualFrame frame, LZMACompressor.Java self, int format, long preset, Object filters,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached JavaFilterChain filterChain,
                         @Shared @Cached PRaiseNode raiseNode) {
             FilterOptions[] optionsChain = filterChain.execute(frame, inliningTarget, filters);
@@ -849,7 +849,7 @@ public class LZMANodes {
         @Fallback
         @SuppressWarnings("unused")
         static void error(VirtualFrame frame, LZMACompressor self, int format, long preset, Object filters,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, INVALID_CONTAINER_FORMAT, format);
         }
     }
@@ -923,7 +923,7 @@ public class LZMANodes {
 
         @Specialization(guards = "format == FORMAT_AUTO")
         static void auto(LZMADecompressor.Native self, @SuppressWarnings("unused") int format, int memlimit,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Exclusive @Cached NativeLibrary.InvokeNativeFunction lzmaAutoDecoder,
                         @Shared @Cached InlinedConditionProfile errProfile,
@@ -940,7 +940,7 @@ public class LZMANodes {
 
         @Specialization(guards = "format == FORMAT_XZ")
         static void xz(LZMADecompressor.Native self, @SuppressWarnings("unused") int format, int memlimit,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Exclusive @Cached NativeLibrary.InvokeNativeFunction lzmaStreamDecoder,
                         @Shared @Cached InlinedConditionProfile errProfile,
@@ -957,7 +957,7 @@ public class LZMANodes {
 
         @Specialization(guards = "format == FORMAT_ALONE")
         static void alone(LZMADecompressor.Native self, @SuppressWarnings("unused") int format, int memlimit,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Exclusive @Cached NativeLibrary.InvokeNativeFunction lzmaAloneDecoder,
                         @Shared @Cached InlinedConditionProfile errProfile,
@@ -982,7 +982,7 @@ public class LZMANodes {
         @SuppressWarnings("unused")
         @Specialization
         static void rawJava(VirtualFrame frame, LZMADecompressor.Java self, Object filters,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, SystemError, T_LZMA_JAVA_ERROR);
         }
 
@@ -1287,7 +1287,7 @@ public class LZMANodes {
 
         @Specialization(guards = "useNativeContext()")
         static byte[] encodeNative(VirtualFrame frame, Object filter,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached LZMAFilterConverter filterConverter,
                         @Cached GetOutputNativeBufferNode getBuffer,
                         @Cached NativeLibrary.InvokeNativeFunction createStream,
@@ -1315,7 +1315,7 @@ public class LZMANodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "!useNativeContext()")
         static byte[] encodeJava(Object filter,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, SystemError, T_LZMA_JAVA_ERROR);
         }
     }
@@ -1332,7 +1332,7 @@ public class LZMANodes {
 
         @Specialization(guards = "useNativeContext()")
         static void decodeNative(VirtualFrame frame, long id, byte[] encoded, PDict dict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction decodeFilter,
                         @Cached HashingStorageSetItem setItem,
                         @Cached InlinedConditionProfile errProfile,
@@ -1354,7 +1354,7 @@ public class LZMANodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "!useNativeContext()")
         static void decodeJava(long id, byte[] encoded, PDict dict,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, SystemError, T_LZMA_JAVA_ERROR);
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,7 +62,7 @@ public abstract class StoreSubscrSeq extends Node {
 
         @Specialization(guards = "isBuiltinList(sequence)")
         void doList(PList sequence, int index, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile updateStorageProfile,
                         @Cached("createForList()") SequenceStorageNodes.SetItemNode setItemNode) {
             updateStorage(inliningTarget, updateStorageProfile, sequence, setItemNode.execute(sequence.getSequenceStorage(), index, value));
@@ -86,7 +86,7 @@ public abstract class StoreSubscrSeq extends Node {
 
         @Specialization(guards = "isBuiltinList(sequence)")
         void doList(PList sequence, int index, int value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile updateStorageProfile,
                         @Cached("createForList()") SequenceStorageNodes.SetItemNode setItemNode) {
             updateStorage(inliningTarget, updateStorageProfile, sequence, setItemNode.execute(sequence.getSequenceStorage(), index, value));
@@ -110,7 +110,7 @@ public abstract class StoreSubscrSeq extends Node {
 
         @Specialization(guards = "isBuiltinList(sequence)")
         void doList(PList sequence, int index, double value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile updateStorageProfile,
                         @Cached("createForList()") SequenceStorageNodes.SetItemNode setItemNode) {
             updateStorage(inliningTarget, updateStorageProfile, sequence, setItemNode.execute(sequence.getSequenceStorage(), index, value));

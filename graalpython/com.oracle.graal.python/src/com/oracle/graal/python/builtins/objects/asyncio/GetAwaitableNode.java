@@ -68,7 +68,7 @@ public abstract class GetAwaitableNode extends Node {
 
     @Specialization
     public static Object doGenerator(PGenerator generator,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached PRaiseNode raise,
                     @Exclusive @Cached PRaiseNode raiseReusedCoro) {
         if (generator.isCoroutine()) {
@@ -84,7 +84,7 @@ public abstract class GetAwaitableNode extends Node {
 
     @Fallback
     public static Object doGeneric(VirtualFrame frame, Object awaitable,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached PRaiseNode raiseNoAwait,
                     @Exclusive @Cached PRaiseNode raiseNotIter,
                     @Cached GetCachedTpSlotsNode getSlots,

@@ -246,7 +246,7 @@ public abstract class CExtNodes {
 
         @Specialization
         Object callNativeConstructor(Object object, Object arg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PythonToNativeNode toSulongNode,
                         @Cached NativeToPythonTransferNode toJavaNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
@@ -337,7 +337,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static Double doDouble(PythonAbstractNativeObject object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetPythonObjectClassNode getClass,
                         @Cached IsSubtypeNode isSubtype,
                         @Cached CStructAccess.ReadDoubleNode read) {
@@ -473,7 +473,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object doPString(PString str, boolean allocatePyMem,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Shared @Cached TruffleString.CopyToByteArrayNode toBytes,
                         @Shared @Cached TruffleString.SwitchEncodingNode switchEncoding,
@@ -500,7 +500,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object doBytes(PBytes bytes, boolean allocatePyMem,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached SequenceStorageNodes.ToByteArrayNode toBytesNode,
                         @Shared @Cached CStructAccess.AllocateNode alloc,
                         @Shared @Cached CStructAccess.WriteByteNode write) {
@@ -509,7 +509,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object doBytes(PByteArray bytes, boolean allocatePyMem,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached SequenceStorageNodes.ToByteArrayNode toBytesNode,
                         @Shared @Cached CStructAccess.AllocateNode alloc,
                         @Shared @Cached CStructAccess.WriteByteNode write) {
@@ -839,7 +839,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object doWithoutContext(NativeCAPISymbol symbol, Object[] args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
             try {
@@ -992,7 +992,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static long doSingleContext(Object cls, CFields nativeMember, HiddenAttr managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached HiddenAttr.ReadNode readAttrNode,
                         @Cached CStructAccess.ReadI64Node getTypeMemberNode,
@@ -1053,7 +1053,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static int doInt(int errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             raiseNative(inliningTarget, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
@@ -1062,7 +1062,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object doObject(Object errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             raiseNative(inliningTarget, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
@@ -1667,7 +1667,7 @@ public abstract class CExtNodes {
         @Specialization
         @TruffleBoundary
         static Object doGeneric(CApiContext capiContext, ModuleSpec moduleSpec, Object moduleDefWrapper, Object library,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached CStructAccess.ReadPointerNode readPointer,
                         @Cached CStructAccess.ReadI64Node readI64,
@@ -1813,7 +1813,7 @@ public abstract class CExtNodes {
         @Specialization
         @TruffleBoundary
         static int doGeneric(CApiContext capiContext, PythonModule module, Object moduleDef,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ModuleGetNameNode getNameNode,
                         @Cached CStructAccess.ReadI64Node readI64,
                         @Cached CStructAccess.AllocateNode alloc,

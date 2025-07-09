@@ -136,7 +136,7 @@ public abstract class DictNodes {
 
         @Specialization
         static void updateDictGeneric(VirtualFrame frame, Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BuiltinClassProfiles.IsBuiltinObjectProfile isDictNode,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached UpdateInnerNode updateInnerNode) {

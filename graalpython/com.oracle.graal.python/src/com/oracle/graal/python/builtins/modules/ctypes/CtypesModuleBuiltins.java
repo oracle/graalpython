@@ -433,7 +433,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getErrno(@SuppressWarnings("unused") PythonModule module,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached AuditNode auditNode) {
             auditNode.audit(inliningTarget, "ctypes.get_errno");
@@ -455,7 +455,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object setErrno(int newErrno,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached AuditNode auditNode) {
             auditNode.audit(inliningTarget, "ctypes.set_errno", newErrno);
@@ -476,7 +476,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object POINTER(VirtualFrame frame, Object cls,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached HashingStorageGetItem getItem,
                         @Cached HashingStorageSetItem setItem,
@@ -520,7 +520,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object pointer(VirtualFrame frame, Object arg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached HashingStorageGetItem getItem,
                         @Cached PointerTypeNode callPOINTER,
@@ -561,7 +561,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object buffer_info(Object arg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Bind PythonLanguage language,
@@ -594,7 +594,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object resize(CDataObject obj, int size,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PRaiseNode raiseNode) {
             StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, obj);
@@ -675,7 +675,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         static Object py_dl_open(PythonModule self, TruffleString name, int m,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached AuditNode auditNode) {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
@@ -717,7 +717,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object py_dl_close(Object pointerObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CtypesNodes.HandleFromLongNode handleFromLongNode,
                         @Cached PRaiseNode raiseNode) {
             DLHandler handle = handleFromLongNode.getDLHandler(inliningTarget, pointerObj);
@@ -736,7 +736,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object ctypes_dlsym(VirtualFrame frame, Pointer handlePtr, Object n, PythonBuiltinClassType error,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached CtypesNodes.HandleFromPointerNode handleFromPointerNode,
                         @Cached PyObjectHashNode hashNode,
@@ -767,7 +767,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object py_dl_sym(VirtualFrame frame, Object obj, Object name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @Cached AuditNode auditNode,
                         @Cached CtypesDlSymNode dlSymNode) {
@@ -815,7 +815,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doBytes(PythonModule self, PBytes path,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ToBytesNode toBytesNode,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
                         @CachedLibrary(limit = "1") InteropLibrary resultLib,
@@ -872,7 +872,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object align_func(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PRaiseNode raiseNode) {
@@ -896,7 +896,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doit(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PRaiseNode raiseNode) {
@@ -924,7 +924,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doit(CDataObject obj, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -943,7 +943,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         static Object error(VirtualFrame frame, Object obj, Object off,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(inliningTarget, TypeError, BYREF_ARGUMENT_MUST_BE_A_CTYPES_INSTANCE_NOT_P, obj);
         }
@@ -962,7 +962,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object call_function(VirtualFrame frame, Object pointerObj, PTuple arguments,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached AuditNode auditNode,
                         @Cached CallProcNode callProcNode,
                         @Cached GetInternalObjectArrayNode getArray,
@@ -985,7 +985,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doit(CDataObject obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached AuditNode auditNode,
@@ -999,7 +999,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object error(@SuppressWarnings("unused") Object o,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, INVALID_TYPE);
         }
     }
@@ -1010,7 +1010,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object call_function(VirtualFrame frame, Object pointerObj, PTuple arguments,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached AuditNode auditNode,
                         @Cached CallProcNode callProcNode,
                         @Cached GetInternalObjectArrayNode getArray,
@@ -1032,7 +1032,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     protected abstract static class FormatErrorNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doit(@SuppressWarnings("unused") Object errorCode,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
@@ -1049,7 +1049,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object check(VirtualFrame frame, int hresult,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             if (hresult >= 0) {
                 return hresult;
@@ -1096,7 +1096,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object _ctypes_callproc(VirtualFrame frame, NativeFunction pProc, Object[] argarray, @SuppressWarnings("unused") int flags, Object[] argtypes, Object[] converters, Object restype,
                         Object checker,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ConvParamNode convParamNode,
                         @Cached ConvertParameterToBackendValueNode convertParameterToBackendValueNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
@@ -1314,7 +1314,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"restype != null", "!isNone(restype)", "dict == null"}, limit = "1")
         static Object callResType(VirtualFrame frame, Object restype, @SuppressWarnings("unused") FFIType rtype, Object result, @SuppressWarnings("unused") Object checker,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @CachedLibrary("result") InteropLibrary ilib,
                         @SuppressWarnings("unused") @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @SuppressWarnings("unused") @Bind("getStgDict(inliningTarget, restype, pyTypeStgDictNode)") StgDictObject dict,
@@ -1328,7 +1328,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"restype != null", "!isNone(restype)", "dict != null"}, limit = "1")
         static Object callGetFunc(VirtualFrame frame, Object restype, FFIType rtype, Object result, Object checker,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("result") InteropLibrary ilib,
                         @SuppressWarnings("unused") @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Bind("getStgDict(inliningTarget, restype, pyTypeStgDictNode)") StgDictObject dict,
@@ -1421,7 +1421,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         void convParam(VirtualFrame frame, Object obj, int index, CTypesCallArgument pa, boolean allowRecursion,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
@@ -1617,7 +1617,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doit(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached AuditNode auditNode) {
             Object ob = converter(obj);
             auditNode.audit(inliningTarget, "ctypes.PyObj_FromPtr", "(O)", ob);
@@ -1676,7 +1676,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @CachedLibrary("this.llvmSym") InteropLibrary ilib) {
             try {
@@ -1701,7 +1701,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         static void raiseError(Object arg,
                         @Cached PRaiseNode raiseNode,
                         @Cached IsTypeNode isTypeNode,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode) {
             Object clazz = isTypeNode.execute(inliningTarget, arg) ? arg : getClassNode.execute(inliningTarget, arg);
             throw raiseNode.raise(inliningTarget, TypeError, CAST_ARGUMENT_2_MUST_BE_A_POINTER_TYPE_NOT_N, clazz);
@@ -1759,7 +1759,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object cast(Pointer ptr, Pointer srcObj, Pointer ctypeObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached HashingStorageSetItem setItem,
                         @Cached PyTypeCheck pyTypeCheck,
@@ -1878,7 +1878,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
             @Specialization
             static Object managed(@SuppressWarnings("unused") MemMoveFunction self, Object[] arguments,
-                            @Bind("$node") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @Cached MemmoveNode memmoveNode) {
                 return memmoveNode.execute(inliningTarget, arguments[0], arguments[1], arguments[2]);
             }
@@ -1956,7 +1956,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
             @Specialization
             static Object managed(@SuppressWarnings("unused") MemSetFunction self, Object[] arguments,
-                            @Bind("$node") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @Cached MemsetNode memsetNode) {
                 return memsetNode.execute(inliningTarget, arguments[0], arguments[1], arguments[2]);
             }
@@ -1971,7 +1971,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object string_at(Pointer ptr, int size,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PointerNodes.ReadBytesNode read,
                         @Cached PointerNodes.StrLenNode strLenNode,
@@ -2014,7 +2014,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString wstring_at(Pointer ptr, int size,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached AuditNode auditNode,
                         @Cached PointerNodes.ReadBytesNode read,

@@ -139,7 +139,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doit(VirtualFrame frame, StgDictObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached ObjectBuiltins.SizeOfNode sizeOfNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -176,7 +176,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
          */
         @Specialization
         static void MakeFields(VirtualFrame frame, Object type, CFieldObject descr, int index, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetAttrO getAttributeNode,
                         @Cached PyObjectSetAttrO setAttributeNode,
@@ -186,7 +186,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached("create(T__FIELDS_)") GetAttributeNode getAttrString,
                         @Cached MakeFieldsNode recursiveNode,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached PRaiseNode raiseNode) {
             Object fields = getAttrString.executeObject(frame, descr.proto);
             if (!sequenceCheckNode.execute(inliningTarget, fields)) {
@@ -302,7 +302,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
          */
         @Specialization
         static void MakeAnonFields(VirtualFrame frame, Object type,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PySequenceCheckNode sequenceCheckNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectGetItem getItemNode,

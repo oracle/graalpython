@@ -99,7 +99,7 @@ public final class GenericAliasIteratorBuiltins extends PythonBuiltins {
     abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reduce(VirtualFrame frame, PGenericAliasIterator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
                         @Bind PythonLanguage language) {
             PythonModule builtins = PythonContext.get(inliningTarget).getBuiltins();

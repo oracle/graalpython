@@ -134,7 +134,7 @@ public abstract class PyObjectSetItem extends Node {
         @Fallback
         @InliningCutoff
         static void error(Object object, @SuppressWarnings("unused") TpSlots slots, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, object);
         }
     }

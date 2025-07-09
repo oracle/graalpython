@@ -121,7 +121,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object init(PBaseException self, Object[] args, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached PRaiseNode raiseNode) {
@@ -198,7 +198,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reduce(PBaseException self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetDictIfExistsNode getDictIfExistsNode,
@@ -221,7 +221,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
     public abstract static class ImportErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object str(VirtualFrame frame, PBaseException self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached BaseExceptionBuiltins.StrNode exStrNode,
                         @Cached PyUnicodeCheckExactNode unicodeCheckExactNode) {

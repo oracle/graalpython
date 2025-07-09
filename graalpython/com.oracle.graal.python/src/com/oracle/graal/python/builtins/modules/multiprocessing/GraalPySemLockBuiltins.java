@@ -111,7 +111,7 @@ public final class GraalPySemLockBuiltins extends PythonBuiltins {
     abstract static class SemLockNode extends PythonClinicBuiltinNode {
         @Specialization
         static PGraalPySemLock construct(Object cls, int kind, int value, @SuppressWarnings("unused") int maxValue, TruffleString name, boolean unlink,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
@@ -241,7 +241,7 @@ public final class GraalPySemLockBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isFast(self)")
         static boolean slow(VirtualFrame frame, PGraalPySemLock self, boolean blocking, Object timeoutObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached GilNode gil) {
             boolean hasDeadline = !(timeoutObj instanceof PNone);
@@ -294,7 +294,7 @@ public final class GraalPySemLockBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doEnter(@SuppressWarnings("unused") Object handle, int kind, @SuppressWarnings("unused") Object maxvalue, TruffleString name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language) {
             SharedMultiprocessingData multiprocessing = PythonContext.get(inliningTarget).getSharedMultiprocessingData();
             Semaphore semaphore = multiprocessing.getNamedSemaphore(name);
@@ -317,7 +317,7 @@ public final class GraalPySemLockBuiltins extends PythonBuiltins {
     abstract static class ReleaseLockNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doRelease(PGraalPySemLock self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (self.getKind() == PGraalPySemLock.RECURSIVE_MUTEX) {
                 if (!self.isMine()) {

@@ -92,7 +92,7 @@ public abstract class ReadNameNode extends PNodeWithContext implements AccessNam
 
     @Specialization(guards = "hasLocals(frame)")
     protected static Object readFromLocalsDict(VirtualFrame frame, TruffleString attributeId,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached ReadGlobalOrBuiltinNode.Lazy readGlobalOrBuiltinNode,
                     @Cached ReadFromLocalsNode readFromLocals) {
         Object result = readFromLocals.execute(frame, inliningTarget, PArguments.getSpecialArgument(frame), attributeId);

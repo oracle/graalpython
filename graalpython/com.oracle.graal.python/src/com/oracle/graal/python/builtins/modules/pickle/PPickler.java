@@ -1964,8 +1964,8 @@ public class PPickler extends PythonBuiltinObject {
 
         @Specialization
         void saveGeneric(VirtualFrame frame, PPickler pickler, Object objArg, int persSave,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectCallMethodObjArgs callMethod) {

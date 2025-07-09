@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -79,7 +79,7 @@ public abstract class ThrowNode extends PNodeWithContext {
 
     @Specialization
     static boolean doGenerator(VirtualFrame frame, int stackTop, PGenerator generator, AbstractTruffleException exception,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CommonGeneratorBuiltins.ThrowNode throwNode,
                     @Cached CommonGeneratorBuiltins.CloseNode closeNode,
                     @Exclusive @Cached GetEscapedExceptionNode getEscapedExceptionNode,
@@ -104,7 +104,7 @@ public abstract class ThrowNode extends PNodeWithContext {
 
     @Fallback
     static boolean doOther(VirtualFrame frame, int stackTop, Object obj, AbstractTruffleException exception,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PyObjectLookupAttr lookupThrow,
                     @Cached PyObjectLookupAttr lookupClose,
                     @Cached CallNode callThrow,

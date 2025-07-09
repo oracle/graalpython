@@ -268,13 +268,13 @@ public final class ErrorHandlers {
     abstract static class StrictErrorHandlerNode extends ErrorHandlerBaseNode {
         @Specialization
         static Object doException(PBaseException exception,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseExceptionObject(inliningTarget, exception);
         }
 
         @Fallback
         static Object doFallback(@SuppressWarnings("unused") Object o,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CODEC_MUST_PASS_EXCEPTION_INSTANCE);
         }
     }
@@ -284,7 +284,7 @@ public final class ErrorHandlers {
     abstract static class IgnoreErrorHandlerNode extends ErrorHandlerBaseNode {
         @Specialization(guards = "isDecode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doDecodeException(PBaseException exception,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeDecodeErrorGetEndNode getEndNode) {
@@ -293,7 +293,7 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "isEncodeOrTranslate(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doEncodeOrTranslateException(PBaseException exception,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetEndNode getEndNode) {
@@ -302,7 +302,7 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "isNeither(inliningTarget, o, pyObjectTypeCheck)", limit = "1")
         static Object doFallback(Object o,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck) {
             throw wrongExceptionType(inliningTarget, o);
         }
@@ -316,7 +316,7 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "isDecode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doDecodeException(PBaseException exception,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeDecodeErrorGetEndNode getEndNode) {
@@ -325,7 +325,7 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "isEncodeOrTranslate(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doEncodeOrTranslateException(PBaseException exception,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetStartNode getStartNode,
@@ -342,7 +342,7 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "isNeither(inliningTarget, o, pyObjectTypeCheck)", limit = "1")
         static Object doFallback(Object o,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck) {
             throw wrongExceptionType(inliningTarget, o);
         }
@@ -354,7 +354,7 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doEncode(PBaseException exception,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetObjectNode getObjectNode,
@@ -381,7 +381,7 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "!isEncode(inliningTarget, o, pyObjectTypeCheck)", limit = "1")
         static Object doFallback(Object o,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck) {
             throw wrongExceptionType(inliningTarget, o);
         }
@@ -393,9 +393,9 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "isDecode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doDecodeException(VirtualFrame frame, PBaseException exception,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeDecodeErrorGetStartNode getStartNode,
@@ -427,7 +427,7 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "isEncodeOrTranslate(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doEncodeOrTranslateException(PBaseException exception,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetObjectNode getObjectNode,
@@ -465,7 +465,7 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "isNeither(inliningTarget, o, pyObjectTypeCheck)", limit = "1")
         static Object doFallback(Object o,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck) {
             throw wrongExceptionType(inliningTarget, o);
         }
@@ -477,7 +477,7 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doEncode(PBaseException exception,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetObjectNode getObjectNode,
@@ -517,7 +517,7 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "!isEncode(inliningTarget, o, pyObjectTypeCheck)", limit = "1")
         static Object doFallback(Object o,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck) {
             throw wrongExceptionType(inliningTarget, o);
         }
@@ -529,7 +529,7 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doEncode(PBaseException exception,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Exclusive @Cached PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetObjectNode getObjectNode,
@@ -565,9 +565,9 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "isDecode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doDecode(VirtualFrame frame, PBaseException exception,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @SuppressWarnings("unused") @Exclusive @Cached PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeDecodeErrorGetStartNode getStartNode,
@@ -604,7 +604,7 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "!isEncodeOrDecode(inliningTarget, o, pyObjectTypeCheck)", limit = "1")
         static Object doFallback(Object o,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck) {
             throw wrongExceptionType(inliningTarget, o);
         }
@@ -665,7 +665,7 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doEncode(PBaseException exception,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Exclusive @Cached PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetObjectNode getObjectNode,
@@ -693,9 +693,9 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "isDecode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doDecode(VirtualFrame frame, PBaseException exception,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @SuppressWarnings("unused") @Exclusive @Cached PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeDecodeErrorGetStartNode getStartNode,
@@ -732,7 +732,7 @@ public final class ErrorHandlers {
 
         @Specialization(guards = "!isEncodeOrDecode(inliningTarget, o, pyObjectTypeCheck)", limit = "1")
         static Object doFallback(Object o,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck) {
             throw wrongExceptionType(inliningTarget, o);
         }

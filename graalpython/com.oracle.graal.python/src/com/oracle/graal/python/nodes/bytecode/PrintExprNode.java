@@ -68,7 +68,7 @@ public abstract class PrintExprNode extends PNodeWithContext {
 
     @Specialization
     void print(VirtualFrame frame, Object object,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PyObjectLookupAttr lookupAttr,
                     @Cached CallNode callNode) {
         PythonModule sysModule = getContext().getSysModule();

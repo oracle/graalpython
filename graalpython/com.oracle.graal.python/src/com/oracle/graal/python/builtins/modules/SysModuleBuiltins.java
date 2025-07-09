@@ -804,7 +804,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTuple run(VirtualFrame frame,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetEscapedExceptionNode getEscapedExceptionNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
@@ -828,7 +828,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object run(VirtualFrame frame,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetEscapedExceptionNode getEscapedExceptionNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode) {
             AbstractTruffleException currentException = getCaughtExceptionNode.execute(frame);
@@ -855,7 +855,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PFrame counted(VirtualFrame frame, int num,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ReadCallerFrameNode readCallerNode,
                         @Cached InlinedConditionProfile callStackDepthProfile,
                         @Cached PRaiseNode raiseNode) {
@@ -879,7 +879,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     abstract static class CurrentFrames extends PythonBuiltinNode {
         @Specialization
         Object currentFrames(VirtualFrame frame,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached AuditNode auditNode,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached ReadCallerFrameNode readCallerFrameNode,
@@ -924,7 +924,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isPString(s) || isTruffleString(s)")
         static Object doPString(Object s,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StringNodes.InternStringNode internNode,
                         @Cached PRaiseNode raiseNode) {
             final PString interned = internNode.execute(inliningTarget, s);
@@ -936,7 +936,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object doOthers(Object obj,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "intern()", "str", obj);
         }
     }
@@ -986,7 +986,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     public abstract static class GetsizeofNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(dflt)")
         static Object doGeneric(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone dflt,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached("createWithError()") LookupAndCallUnaryNode callSizeofNode,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -995,7 +995,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(dflt)")
         static Object doGeneric(VirtualFrame frame, Object object, Object dflt,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached("createWithoutError()") LookupAndCallUnaryNode callSizeofNode,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -1099,7 +1099,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     abstract static class SetTrace extends PythonBuiltinNode {
         @Specialization
         static Object settrace(Object function,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonContext.PythonThreadState state = context.getThreadState(language);
@@ -1118,7 +1118,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     abstract static class SetProfile extends PythonBuiltinNode {
         @Specialization
         static Object settrace(Object function,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonContext.PythonThreadState state = context.getThreadState(language);
@@ -1136,7 +1136,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     abstract static class GetTrace extends PythonBuiltinNode {
         @Specialization
         static Object gettrace(
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             PythonContext.PythonThreadState state = context.getThreadState(context.getLanguage(inliningTarget));
             Object trace = state.getTraceFun();
@@ -1150,7 +1150,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     abstract static class GetProfile extends PythonBuiltinNode {
         @Specialization
         static Object getProfile(
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             PythonContext.PythonThreadState state = context.getThreadState(context.getLanguage(inliningTarget));
             Object trace = state.getProfileFun();
@@ -1163,7 +1163,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     abstract static class SetAsyncgenHooks extends PythonBuiltinNode {
         @Specialization
         static Object setAsyncgenHooks(Object firstIter, Object finalizer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             if (firstIter != PNone.NO_VALUE && firstIter != PNone.NONE) {
                 context.getThreadState(context.getLanguage(inliningTarget)).setAsyncgenFirstIter(firstIter);
@@ -1180,7 +1180,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     abstract static class GetAsyncgenHooks extends PythonBuiltinNode {
         @Specialization
         static Object setAsyncgenHooks(
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Bind PythonLanguage language) {
             // TODO: use asyncgen_hooks object
@@ -1300,7 +1300,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doit(VirtualFrame frame, PythonModule sys, Object args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTupleGetItem getItemNode,
                         @Cached PRaiseNode raiseNode) {
             final Object cls = getObjectClass(args);
@@ -1635,7 +1635,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doHook(VirtualFrame frame, PythonModule sys, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectSetAttr setAttr,
                         @Cached IsBuiltinObjectProfile unicodeEncodeErrorProfile,
                         @Cached PyObjectLookupAttr lookupAttr,
@@ -1705,7 +1705,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doHook(VirtualFrame frame, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyImportImport importNode,
@@ -1795,7 +1795,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     abstract static class SetRecursionLimitNode extends PythonBuiltinNode {
         @Specialization
         static Object setRecLim(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object limit,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyLongAsIntNode longAsIntNode,
                         @Cached PyFloatCheckExactNode floatCheckExactNode,
                         @Cached PRaiseNode raiseNode) {
@@ -1847,7 +1847,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     abstract static class SetCheckIntervalNode extends PythonBuiltinNode {
         @Specialization
         static Object setCheckInterval(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object arg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached PyLongAsIntNode longAsIntNode,
                         @Cached PyFloatCheckExactNode floatCheckExactNode,
@@ -1897,7 +1897,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object setCheckInterval(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object arg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyFloatAsDoubleNode floatAsDoubleNode,
                         @Cached PRaiseNode raiseNode) {
             double interval = floatAsDoubleNode.execute(frame, inliningTarget, arg);
@@ -1923,13 +1923,13 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object exitNoCode(PythonModule sys, PNone status,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseSystemExitStatic(inliningTarget, PNone.NONE);
         }
 
         @Specialization(guards = "!isPNone(status)")
         static Object exit(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object status,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached TupleBuiltins.LenNode tupleLenNode,
                         @Cached PyTupleGetItem getItemNode) {

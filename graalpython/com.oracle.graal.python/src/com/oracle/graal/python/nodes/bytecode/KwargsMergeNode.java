@@ -63,7 +63,7 @@ public abstract class KwargsMergeNode extends AbstractKwargsNode {
 
     @Specialization
     static int merge(VirtualFrame frame, int initialStackTop,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached ConcatDictToStorageNode concatNode,
                     @Cached PRaiseNode raise,
                     @Cached InlinedBranchProfile keywordsError1,

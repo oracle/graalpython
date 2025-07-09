@@ -140,7 +140,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object doGeneric(Object cls, Object[] varargs, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             return PFactory.createPythonModule(language, cls, getInstanceShape.execute(cls));
@@ -159,7 +159,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public PNone module(PythonModule self, TruffleString name, Object doc,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached WriteAttributeToObjectNode writeName,
                         @Cached WriteAttributeToObjectNode writeDoc,
                         @Cached WriteAttributeToObjectNode writePackage,
@@ -188,7 +188,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
     public abstract static class ModuleDirNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object dir(VirtualFrame frame, PythonModule self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyDictGetItem pyDictGetItem,
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached CallNode callNode,
@@ -214,7 +214,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(none)")
         static Object doManaged(PythonModule self, @SuppressWarnings("unused") PNone none,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict) {
             PDict dict = getDict.execute(self);
@@ -226,7 +226,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(none)")
         static Object doNativeObject(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached GetDictIfExistsNode getDict,
                         @Cached PRaiseNode raiseNode) {
             PDict dict = getDict.execute(self);
@@ -238,7 +238,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object doError(Object self, @SuppressWarnings("unused") Object dict,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.DESCRIPTOR_DICT_FOR_MOD_OBJ_DOES_NOT_APPLY_FOR_P, self);
         }
 
@@ -266,7 +266,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
         @Specialization(replaces = "getattributeStr")
         @InliningCutoff
         static Object getattribute(VirtualFrame frame, PythonModule self, Object keyObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringCheckedNode castKeyToStringNode,
                         @Shared @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
                         @Shared @Cached HandleGetattrExceptionNode handleException) {
@@ -287,7 +287,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
 
             @Specialization
             static Object getattribute(VirtualFrame frame, PythonModule self, TruffleString key, PException e,
-                            @Bind("this") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @Cached IsBuiltinObjectProfile isAttrError,
                             @Cached ReadAttributeFromObjectNode readGetattr,
                             @Cached InlinedConditionProfile customGetAttr,
@@ -324,7 +324,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPythonModule(self)")
         static Object getattribute(Object self, @SuppressWarnings("unused") Object key,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETATTRIBUTE__, "module", self);
         }
     }
@@ -334,7 +334,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
     abstract static class AnnotationsNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
         static Object get(Object self, @SuppressWarnings("unused") Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("read") @Cached ReadAttributeFromObjectNode read,
                         @Shared("write") @Cached WriteAttributeToObjectNode write,
                         @Cached InlinedBranchProfile createAnnotations) {
@@ -349,7 +349,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isDeleteMarker(value)")
         static Object delete(Object self, @SuppressWarnings("unused") Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("read") @Cached ReadAttributeFromObjectNode read,
                         @Shared("write") @Cached WriteAttributeToObjectNode write,
                         @Cached PRaiseNode raiseNode) {

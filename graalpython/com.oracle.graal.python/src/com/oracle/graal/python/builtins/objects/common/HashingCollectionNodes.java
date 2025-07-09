@@ -275,7 +275,7 @@ public abstract class HashingCollectionNodes {
 
             @Specialization
             static HashingStorage doHashingCollection(VirtualFrame frame, HashingStorage other, Object value,
-                            @Bind("this") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @Cached SetValueHashingStorageNode setValue,
                             @Cached HashingStorageCopy copyNode) {
                 assert !PGuards.isNoValue(value);

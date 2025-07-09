@@ -77,7 +77,7 @@ public abstract class LookupSpecialMethodNode extends PNodeWithContext {
 
     @Specialization
     Object lookup(VirtualFrame frame, Object type, Object receiver,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached(parameters = "name") LookupAttributeInMRONode lookupMethod,
                     @Cached MaybeBindDescriptorNode bind) {
         return bind.execute(frame, inliningTarget, lookupMethod.execute(type), receiver, type);

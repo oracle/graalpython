@@ -77,7 +77,7 @@ public abstract class ImportStarNode extends AbstractImportNode {
 
     @Specialization
     void doImport(VirtualFrame frame, TruffleString moduleName, int level,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached ImportName importNameNode,
                     @Cached PyObjectSetItem setItemNode,
                     @Cached PyObjectSetAttr setAttrNode,

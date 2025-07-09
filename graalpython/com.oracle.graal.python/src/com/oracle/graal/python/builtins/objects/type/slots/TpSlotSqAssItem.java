@@ -161,7 +161,7 @@ public final class TpSlotSqAssItem {
         @Specialization(replaces = "doIntIndex")
         @SuppressWarnings("truffle-static-method")
         Object doGeneric(VirtualFrame frame, Object self, Object index, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             int size = asSizeNode.executeExact(frame, inliningTarget, index, PythonBuiltinClassType.OverflowError);
             if (size < 0) {
@@ -196,7 +196,7 @@ public final class TpSlotSqAssItem {
         @Specialization(replaces = "doIntIndex")
         @SuppressWarnings("truffle-static-method")
         Object doGeneric(VirtualFrame frame, Object self, Object index,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             int size = asSizeNode.executeExact(frame, inliningTarget, index, PythonBuiltinClassType.OverflowError);
             if (size < 0) {
@@ -280,7 +280,7 @@ public final class TpSlotSqAssItem {
 
         @Specialization
         static void callNative(VirtualFrame frame, TpSlotNative slot, Object self, long key, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached PythonToNativeNode selfToNativeNode,
                         @Cached PythonToNativeNode valueToNativeNode,

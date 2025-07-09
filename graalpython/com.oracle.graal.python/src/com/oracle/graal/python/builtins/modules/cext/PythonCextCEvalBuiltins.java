@@ -97,7 +97,7 @@ public final class PythonCextCEvalBuiltins {
 
         @Specialization
         static Object save(@Cached GilNode gil,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             Object threadState = PThreadState.getOrCreateNativeThreadState(context.getLanguage(inliningTarget), context);
             LOGGER.fine("C extension releases GIL");
@@ -112,7 +112,7 @@ public final class PythonCextCEvalBuiltins {
 
         @Specialization
         static Object restore(@SuppressWarnings("unused") Object ptr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached GilNode gil) {
             /*
@@ -140,7 +140,7 @@ public final class PythonCextCEvalBuiltins {
     abstract static class PyEval_GetFrame extends CApiNullaryBuiltinNode {
         @Specialization
         Object getFrame(
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Cached ReadCallerFrameNode readCallerFrameNode) {
             PFrame.Reference reference = getCurrentFrameRef.execute(null, inliningTarget);
@@ -154,7 +154,7 @@ public final class PythonCextCEvalBuiltins {
         static Object doGeneric(PCode code, Object globals, Object locals,
                         Object argumentArrayPtr, int argumentCount, Object kwsPtr, int kwsCount, Object defaultValueArrayPtr, int defaultValueCount,
                         Object kwdefaultsWrapper, Object closureObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached CStructAccess.ReadObjectNode readNode,
                         @Cached PythonCextBuiltins.CastKwargsNode castKwargsNode,
@@ -210,7 +210,7 @@ public final class PythonCextCEvalBuiltins {
     abstract static class PyEval_GetGlobals extends CApiNullaryBuiltinNode {
         @Specialization
         Object get(
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Cached ReadCallerFrameNode readCallerFrameNode) {
             PFrame.Reference frameRef = getCurrentFrameRef.execute(null, inliningTarget);

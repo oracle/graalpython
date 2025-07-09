@@ -162,7 +162,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static long getStackSize(VirtualFrame frame, Object stackSizeObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PRaiseNode raiseNode) {
             int stackSize = asSizeNode.executeExact(frame, inliningTarget, stackSizeObj);
@@ -183,7 +183,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("try")
         static long start(VirtualFrame frame, Object callable, Object args, Object kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached CallNode callNode,
                         @Cached ExecutePositionalStarargsNode getArgsNode,
@@ -274,7 +274,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     abstract static class ExitThreadNode extends PythonBuiltinNode {
         @Specialization
         static Object exit(
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseSystemExitStatic(inliningTarget, PNone.NONE);
         }
     }

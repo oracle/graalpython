@@ -159,7 +159,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean closed(VirtualFrame frame, PythonObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup) {
             return isClosed(inliningTarget, self, frame, lookup);
         }
@@ -218,7 +218,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class CheckClosedNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doCheckClosed(VirtualFrame frame, PythonObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CheckClosedHelperNode helper) {
             return helper.execute(frame, inliningTarget, self);
         }
@@ -262,7 +262,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class CheckSeekableNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doCheckSeekable(VirtualFrame frame, PythonObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CheckBoolMethodHelperNode helper) {
             return helper.checkSeekable(frame, inliningTarget, self);
         }
@@ -273,7 +273,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class CheckReadableNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doCheckReadable(VirtualFrame frame, PythonObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CheckBoolMethodHelperNode helper) {
             return helper.checkReadable(frame, inliningTarget, self);
         }
@@ -284,7 +284,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class CheckWritableNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doCheckWritable(VirtualFrame frame, PythonObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CheckBoolMethodHelperNode helper) {
             return helper.checkWriteable(frame, inliningTarget, self);
         }
@@ -296,7 +296,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PNone close(VirtualFrame frame, PythonObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached PyObjectSetAttr setAttributeNode,
@@ -326,7 +326,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
 
         @Specialization
         static PNone flush(VirtualFrame frame, PythonObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached PRaiseNode raiseNode) {
             if (isClosed(inliningTarget, self, frame, lookup)) {
@@ -341,7 +341,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class SeekNode extends PythonTernaryBuiltinNode {
         @Specialization
         static Object seek(@SuppressWarnings("unused") PythonObject self, @SuppressWarnings("unused") Object offset, @SuppressWarnings("unused") Object whence,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             throw unsupported(inliningTarget, raiseNode, T_SEEK);
         }
@@ -352,7 +352,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class TruncateNode extends PythonBuiltinNode {
         @Specialization
         static Object truncate(@SuppressWarnings("unused") PythonObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             throw unsupported(inliningTarget, raiseNode, T_TRUNCATE);
         }
@@ -363,7 +363,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class TellNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object tell(VirtualFrame frame, PythonObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             return callMethod.execute(frame, inliningTarget, self, T_SEEK, 0, 1);
         }
@@ -374,7 +374,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class EnterNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PythonObject enter(VirtualFrame frame, PythonObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CheckClosedHelperNode checkClosedNode) {
             checkClosedNode.execute(frame, inliningTarget, self);
             return self;
@@ -386,7 +386,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class ExitNode extends PythonBuiltinNode {
         @Specialization
         static Object exit(VirtualFrame frame, PythonObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             return callMethod.execute(frame, inliningTarget, self, T_CLOSE);
         }
@@ -397,7 +397,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class FilenoNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object fileno(@SuppressWarnings("unused") PythonObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             throw unsupported(inliningTarget, raiseNode, T_FILENO);
         }
@@ -408,7 +408,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class IsattyNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean isatty(VirtualFrame frame, PythonObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CheckClosedHelperNode checkClosedNode) {
             checkClosedNode.execute(frame, inliningTarget, self);
             return false;
@@ -420,7 +420,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PythonObject iter(VirtualFrame frame, PythonObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CheckClosedHelperNode checkClosedNode) {
             checkClosedNode.execute(frame, inliningTarget, self);
             return self;
@@ -432,7 +432,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PythonObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectSizeNode sizeNode) {
             Object line = callMethod.execute(frame, inliningTarget, self, T_READLINE);
@@ -448,7 +448,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class WriteLinesNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object writeLines(VirtualFrame frame, PythonObject self, Object lines,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CheckClosedHelperNode checkClosedNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectGetIter getIter,
@@ -484,7 +484,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
          */
         @Specialization
         static PBytes readline(VirtualFrame frame, Object self, int limit,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PyObjectLookupAttr lookupPeek,
                         @Cached CallNode callPeek,
@@ -548,7 +548,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object withHint(VirtualFrame frame, Object self, int hintIn,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile isNegativeHintProfile,
                         @Cached PyObjectGetIter getIter,

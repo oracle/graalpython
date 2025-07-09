@@ -67,7 +67,7 @@ public abstract class GetYieldFromIterNode extends Node {
 
     @Specialization
     public static Object getGeneric(VirtualFrame frame, Object arg,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PyObjectGetIter getIter,
                     @Cached IsBuiltinObjectExactProfile isCoro) {
         if (isCoro.profileObject(inliningTarget, arg, PythonBuiltinClassType.PCoroutine)) {

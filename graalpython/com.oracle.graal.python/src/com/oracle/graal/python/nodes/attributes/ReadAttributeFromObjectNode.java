@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -116,7 +116,7 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     }, limit = "1")
     @SuppressWarnings("unused")
     protected static Object readFromBuiltinModuleDict(PythonModule object, TruffleString key,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached(value = "object", weak = true) PythonModule cachedObject,
                     @Cached(value = "getDict(object)", weak = true) PHashingCollection cachedDict,
                     @Cached(value = "getStorage(object, getDict(object))", weak = true) HashingStorage cachedStorage,
@@ -133,7 +133,7 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     // any python object attribute read
     @Specialization
     protected static Object readObjectAttribute(PythonObject object, TruffleString key,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached InlinedConditionProfile profileHasDict,
                     @Exclusive @Cached GetDictIfExistsNode getDict,
                     @Cached ReadAttributeFromPythonObjectNode readAttributeFromPythonObjectNode,
@@ -172,7 +172,7 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     protected abstract static class ReadAttributeFromObjectNotTypeNode extends ReadAttributeFromObjectNode {
         @Specialization(insertBefore = "readForeignOrPrimitive")
         protected static Object readNativeObject(PythonAbstractNativeObject object, TruffleString key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached GetDictIfExistsNode getDict,
                         @Exclusive @Cached HashingStorageGetItem getItem) {
             return readNative(inliningTarget, key, getDict.execute(object), getItem);
@@ -184,7 +184,7 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     protected abstract static class ReadAttributeFromObjectTpDictNode extends ReadAttributeFromObjectNode {
         @Specialization(insertBefore = "readForeignOrPrimitive")
         protected static Object readNativeClass(PythonAbstractNativeObject object, TruffleString key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode getNativeDict,
                         @Exclusive @Cached HashingStorageGetItem getItem) {
             return readNative(inliningTarget, key, getNativeDict.readFromObj(object, PyTypeObject__tp_dict), getItem);

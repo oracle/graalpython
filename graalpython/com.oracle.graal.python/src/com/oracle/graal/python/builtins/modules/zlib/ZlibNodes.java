@@ -253,7 +253,7 @@ public class ZlibNodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "err == Z_VERSION_ERROR")
         static void doVersionError(Object zst, int err, TruffleString msg, NFIZlibSupport zlibSupport, boolean deallocate,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("r") @Cached PRaiseNode raise) {
             /*
@@ -266,7 +266,7 @@ public class ZlibNodes {
 
         @Specialization(guards = "err != Z_VERSION_ERROR")
         static void doError(Object zst, int err, TruffleString msg, NFIZlibSupport zlibSupport, boolean deallocate,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Exclusive @Cached NativeLibrary.InvokeNativeFunction hasStreamErrorMsg,
@@ -305,7 +305,7 @@ public class ZlibNodes {
 
         @Specialization(guards = "function == DEFLATE_INIT_ERROR")
         static void deflateInitError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
@@ -323,7 +323,7 @@ public class ZlibNodes {
 
         @Specialization(guards = "function == DEFLATE_OBJ_ERROR")
         static void deflateObjInitError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
@@ -341,7 +341,7 @@ public class ZlibNodes {
 
         @Specialization(guards = "function == DEFLATE_COPY_ERROR")
         static void deflateCopyError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
@@ -359,7 +359,7 @@ public class ZlibNodes {
 
         @Specialization(guards = "function == INFLATE_COPY_ERROR")
         static void inflateCopyError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
@@ -378,7 +378,7 @@ public class ZlibNodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "function == DEFLATE_DICT_ERROR")
         static void deflateDictError(Object zst, int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("r") @Cached PRaiseNode raise) {
             if (err == Z_STREAM_ERROR) {
@@ -391,7 +391,7 @@ public class ZlibNodes {
 
         @Specialization(guards = "function == INFLATE_INIT_ERROR")
         static void inflateInitError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
@@ -406,7 +406,7 @@ public class ZlibNodes {
 
         @Specialization(guards = "function == INFLATE_OBJ_ERROR")
         static void inflateObjInitError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
@@ -471,7 +471,7 @@ public class ZlibNodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "function == MEMORY_ERROR")
         static void memError(Object zst, int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("r") @Cached PRaiseNode raise) {
             deallocateStream(zst, zlibSupport, deallocateStream, deallocate);

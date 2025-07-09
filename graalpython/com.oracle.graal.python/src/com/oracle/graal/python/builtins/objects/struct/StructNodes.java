@@ -76,7 +76,7 @@ public final class StructNodes {
 
         @Specialization
         static long get(VirtualFrame frame, Object value, boolean unsigned,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyLongCheckNode pyLongCheckNode,
@@ -234,7 +234,7 @@ public final class StructNodes {
 
         @Specialization(guards = {"isFmtInteger(formatCode)", "numericSupport == getNumericSupport(formatAlignment)"}, limit = "3")
         static void packLong(FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, long value, byte[] buffer, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("getNumericSupport(formatAlignment)") NumericSupport numericSupport,
                         @Shared @Cached InlinedConditionProfile profileSigned,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -243,7 +243,7 @@ public final class StructNodes {
 
         @Specialization(guards = {"isFmtInteger(formatCode)", "numericSupport == getNumericSupport(formatAlignment)"}, limit = "3")
         static void packInt(FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, int value, byte[] buffer, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("getNumericSupport(formatAlignment)") NumericSupport numericSupport,
                         @Shared @Cached InlinedConditionProfile profileSigned,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -252,7 +252,7 @@ public final class StructNodes {
 
         @Specialization(guards = {"isFmtInteger(formatCode)", "numericSupport == getNumericSupport(formatAlignment)"}, limit = "3")
         static void packPInt(FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, PInt value, byte[] buffer, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("getNumericSupport(formatAlignment)") NumericSupport numericSupport,
                         @Shared @Cached CastToJavaBigIntegerNode toJavaBigIntegerNode,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -266,7 +266,7 @@ public final class StructNodes {
 
         @Specialization(guards = {"isFmtFloat(formatCode)", "numericSupport == getNumericSupport(formatAlignment)"}, limit = "3")
         static void packFloat(FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, double value, byte[] buffer, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("getNumericSupport(formatAlignment)") NumericSupport numericSupport,
                         @Shared @Cached PRaiseNode raiseNode) {
             numericSupport.putDouble(inliningTarget, buffer, offset, value, formatCode.numBytes(), raiseNode);
@@ -274,7 +274,7 @@ public final class StructNodes {
 
         @Specialization(guards = {"isFmtFloat(formatCode)", "numericSupport == getNumericSupport(formatAlignment)"}, limit = "3")
         static void packPFloat(FormatCode formatCode, FormatAlignment formatAlignment, PFloat value, byte[] buffer, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("getNumericSupport(formatAlignment)") NumericSupport numericSupport,
                         @Shared @Cached PRaiseNode raiseNode) {
             packFloat(formatCode, formatAlignment, value.getValue(), buffer, offset, inliningTarget, numericSupport, raiseNode);
@@ -288,7 +288,7 @@ public final class StructNodes {
 
         @Specialization(guards = "isFmtBytes(formatCode)", limit = "getCallSiteInlineCacheMaxDepth()")
         static void packBytes(FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, PBytesLike value, byte[] buffer, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached("createEqualityProfile()") PrimitiveValueProfile formatProfile,
                         @CachedLibrary("value") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -335,7 +335,7 @@ public final class StructNodes {
 
         @Specialization(guards = {"numericSupport == getNumericSupport(formatAlignment)"}, limit = "1")
         static void packObjectCached(VirtualFrame frame, FormatCode formatCode, FormatAlignment formatAlignment, Object value, byte[] buffer, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetLongNode getLongNode,
                         @Shared @Cached CastToJavaBigIntegerNode toJavaBigIntegerNode,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
@@ -385,7 +385,7 @@ public final class StructNodes {
 
         @Specialization(replaces = "packObjectCached")
         static void packObject(VirtualFrame frame, FormatCode formatCode, FormatAlignment formatAlignment, Object value, byte[] buffer, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetLongNode getLongNode,
                         @Shared @Cached CastToJavaBigIntegerNode toJavaBigIntegerNode,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
@@ -409,7 +409,7 @@ public final class StructNodes {
 
         @Specialization(guards = {"isFmtInteger(formatCode)", "numBytes == formatCode.numBytes()", "numericSupport == getNumericSupport(formatAlignment)"}, limit = "getNumBytesLimit()")
         static Object unpack8Cached(FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, byte[] buffer, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("formatCode.numBytes()") int numBytes,
                         @Cached("getNumericSupport(formatAlignment)") NumericSupport numericSupport,
                         @Shared @Cached InlinedConditionProfile profilePIntResult,
@@ -429,7 +429,7 @@ public final class StructNodes {
 
         @Specialization(guards = "isFmtInteger(formatCode)", replaces = "unpack8Cached")
         static Object unpack8(FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, byte[] buffer, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profilePIntResult,
                         @Shared @Cached InlinedConditionProfile profileSigned) {
             return unpack8Cached(formatCode, formatAlignment, buffer, offset, inliningTarget, formatCode.numBytes(),
@@ -445,7 +445,7 @@ public final class StructNodes {
         @Specialization(guards = {"isFmtVoidPtr(formatCode)", "formatAlignment.isNative()"})
         @SuppressWarnings("unused")
         static Object unpackVoidPtr(FormatCode formatCode, FormatAlignment formatAlignment, byte[] buffer, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profilePIntResult) {
             long num = getNumericSupport(formatAlignment).getLongUnsigned(buffer, offset, formatCode.numBytes());
             if (profilePIntResult.profile(inliningTarget, num < 0)) {
@@ -461,7 +461,7 @@ public final class StructNodes {
 
         @Specialization(guards = "isFmtBytes(formatCode)")
         static Object unpackBytes(@SuppressWarnings("unused") FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, byte[] buffer, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached(value = "createIdentityProfile()", inline = false) ValueProfile formatProfile) {
             byte[] bytes;
             switch (formatProfile.profile(formatCode.formatDef.format)) {
@@ -494,7 +494,7 @@ public final class StructNodes {
         @Specialization(guards = "!isSupportedFormat(formatCode)")
         @SuppressWarnings("unused")
         static byte[] unpackUnsupported(FormatCode formatCode, FormatAlignment formatAlignment, byte[] buffer, int offset,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, STRUCT_FMT_NOT_YET_SUPPORTED, formatCode);
         }
     }
