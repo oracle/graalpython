@@ -26,6 +26,7 @@
 
 package com.oracle.graal.python.builtins.objects.object;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_NEW;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_OBJECT;
 import static com.oracle.graal.python.nodes.PGuards.isDeleteMarker;
@@ -52,8 +53,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REDUCE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SINGLE_QUOTE_COMMA_SPACE;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
 
@@ -93,6 +92,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
@@ -144,9 +144,9 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -499,73 +499,65 @@ public final class ObjectBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_getattro, isComplex = true)
     @GenerateNodeFactory
     public abstract static class GetAttributeNode extends GetAttrBuiltinNode {
-        @CompilationFinal private int profileFlags = 0;
-        private static final int HAS_DESCR = 1;
-        private static final int HAS_VALUE = 2;
-        private static final int HAS_NO_VALUE = 4;
-
         @Child private CallSlotDescrGet callSlotDescrGet;
         @Child private ReadAttributeFromObjectNode attrRead;
 
+        /** Keep in sync with {@link TypeBuiltins.GetattributeNode} */
         @Specialization
         @SuppressWarnings("truffle-static-method")
         Object doIt(VirtualFrame frame, Object object, Object keyObj,
                         @Bind Node inliningTarget,
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetObjectSlotsNode getDescrSlotsNode,
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
-                        @Exclusive @Cached GetClassNode getClassNode,
-                        @Exclusive @Cached GetObjectSlotsNode getSlotsNode,
-                        @Cached CastToTruffleStringNode castKeyToStringNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Cached CastToTruffleStringNode castToString,
+                        @Cached InlinedBranchProfile hasDescProfile,
+                        @Cached InlinedConditionProfile hasDescrGetProfile,
+                        @Cached InlinedBranchProfile hasValueProfile,
+                        @Cached PRaiseNode raiseNode) {
             TruffleString key;
             try {
-                key = castKeyToStringNode.execute(inliningTarget, keyObj);
+                key = castToString.execute(inliningTarget, keyObj);
             } catch (CannotCastException e) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
 
             Object type = getClassNode.execute(inliningTarget, object);
             Object descr = lookup.execute(type, key);
-            return fullLookup(frame, inliningTarget, object, key, type, descr, getSlotsNode, raiseNode);
-        }
-
-        private Object fullLookup(VirtualFrame frame, Node inliningTarget, Object object, TruffleString key, Object type, Object descr, GetObjectSlotsNode getSlotsNode, PRaiseNode raiseNode) {
             boolean hasDescr = descr != PNone.NO_VALUE;
-            if (hasDescr && (profileFlags & HAS_DESCR) == 0) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                profileFlags |= HAS_DESCR;
-            }
-            TpSlot descrGetSlot = null;
+
+            TpSlot get = null;
+            boolean hasDescrGet = false;
             if (hasDescr) {
-                var descrSlots = getSlotsNode.execute(inliningTarget, descr);
-                descrGetSlot = descrSlots.tp_descr_get();
-                if (descrGetSlot != null && TpSlotDescrSet.PyDescr_IsData(descrSlots)) {
-                    return dispatch(frame, object, type, descr, descrGetSlot);
+                hasDescProfile.enter(inliningTarget);
+                var descrSlots = getDescrSlotsNode.execute(inliningTarget, descr);
+                get = descrSlots.tp_descr_get();
+                hasDescrGet = hasDescrGetProfile.profile(inliningTarget, get != null);
+                if (hasDescrGet && TpSlotDescrSet.PyDescr_IsData(descrSlots)) {
+                    return dispatchDescrGet(frame, object, type, descr, get);
                 }
             }
-            Object value = readAttribute(object, key);
-            boolean hasValue = value != PNone.NO_VALUE;
-            if (hasValue && (profileFlags & HAS_VALUE) == 0) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                profileFlags |= HAS_VALUE;
-            }
-            if (hasValue) {
+
+            // The difference with TypeBuiltins.GetattributeNode (+ error message below)
+            Object value = readAttributeOfObject(object, key);
+            if (value != PNone.NO_VALUE) {
+                hasValueProfile.enter(inliningTarget);
                 return value;
             }
-            if ((profileFlags & HAS_NO_VALUE) == 0) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                profileFlags |= HAS_NO_VALUE;
-            }
+
             if (hasDescr) {
-                if (descrGetSlot == null) {
+                hasDescProfile.enter(inliningTarget);
+                if (!hasDescrGet) {
                     return descr;
                 } else {
-                    return dispatch(frame, object, type, descr, descrGetSlot);
+                    return dispatchDescrGet(frame, object, type, descr, get);
                 }
             }
-            throw raiseNode.raiseAttributeError(inliningTarget, object, key);
+
+            throw raiseNode.raiseAttributeError(inliningTarget, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
 
-        private Object readAttribute(Object object, TruffleString key) {
+        private Object readAttributeOfObject(Object object, TruffleString key) {
             if (attrRead == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 attrRead = insert(ReadAttributeFromObjectNode.create());
@@ -573,7 +565,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
             return attrRead.execute(object, key);
         }
 
-        private Object dispatch(VirtualFrame frame, Object object, Object type, Object descr, TpSlot getSlot) {
+        private Object dispatchDescrGet(VirtualFrame frame, Object object, Object type, Object descr, TpSlot getSlot) {
             if (callSlotDescrGet == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callSlotDescrGet = insert(CallSlotDescrGet.create());
@@ -725,7 +717,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @Exclusive @Cached IsOtherBuiltinClassProfile otherBuiltinClassProfile,
                         @Exclusive @Cached IsBuiltinClassExactProfile isBuiltinClassProfile,
                         @Exclusive @Cached GetClassNode getClassNode) {
-            throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, self, "__dict__");
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, self, "__dict__");
         }
 
         static boolean isFallback(Object self, Object mapping, Node inliningTarget,
@@ -883,7 +875,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
             if (klass != PNone.NO_VALUE) {
                 Object state = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
                 try {
-                    com.oracle.graal.python.builtins.objects.type.TypeBuiltins.DirNode.dir(names, klass);
+                    TypeBuiltins.DirNode.dir(names, klass);
                 } finally {
                     IndirectCallContext.exit(frame, inliningTarget, indirectCallData, state);
                 }

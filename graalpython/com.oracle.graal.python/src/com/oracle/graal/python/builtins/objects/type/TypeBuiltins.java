@@ -95,10 +95,10 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.AttributeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins.UpdateSingleNode;
@@ -522,6 +522,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Child private CallSlotDescrGet callSlotValueGet;
         @Child private LookupAttributeInMRONode.Dynamic lookupAsClass;
 
+        /** Keep in sync with {@link ObjectBuiltins.GetAttributeNode} */
         @Specialization
         protected Object doIt(VirtualFrame frame, Object object, Object keyObj,
                         @Bind Node inliningTarget,
@@ -534,7 +535,6 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile hasDescrGetProfile,
                         @Cached InlinedBranchProfile hasValueProfile,
                         @Cached InlinedBranchProfile hasNonDescriptorValueProfile,
-                        @Cached InlinedBranchProfile errorProfile,
                         @Cached PRaiseNode raiseNode) {
             TruffleString key;
             try {
@@ -543,20 +543,24 @@ public final class TypeBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
 
-            Object metatype = getClassNode.execute(inliningTarget, object);
-            Object descr = lookup.execute(metatype, key);
+            Object type = getClassNode.execute(inliningTarget, object);
+            Object descr = lookup.execute(type, key);
+            boolean hasDescr = descr != PNone.NO_VALUE;
+
             TpSlot get = null;
             boolean hasDescrGet = false;
-            if (descr != NO_VALUE) {
-                // acts as a branch profile
+            if (hasDescr) {
+                hasDescProfile.enter(inliningTarget);
                 var descrSlots = getDescrSlotsNode.execute(inliningTarget, descr);
                 get = descrSlots.tp_descr_get();
                 hasDescrGet = hasDescrGetProfile.profile(inliningTarget, get != null);
                 if (hasDescrGet && TpSlotDescrSet.PyDescr_IsData(descrSlots)) {
-                    return dispatchDescrGet(frame, object, metatype, descr, get);
+                    return dispatchDescrGet(frame, object, type, descr, get);
                 }
             }
-            Object value = readAttribute(object, key);
+
+            // The difference with ObjectBuiltins.GetAttributeNode (+ error message below)
+            Object value = readAttributeOfClass(object, key);
             if (value != NO_VALUE) {
                 hasValueProfile.enter(inliningTarget);
                 var valueSlots = getValueSlotsNode.execute(inliningTarget, value);
@@ -568,19 +572,20 @@ public final class TypeBuiltins extends PythonBuiltins {
                     return dispatchValueGet(frame, object, value, valueGet);
                 }
             }
-            if (descr != NO_VALUE) {
+
+            if (hasDescr) {
                 hasDescProfile.enter(inliningTarget);
                 if (!hasDescrGet) {
                     return descr;
                 } else {
-                    return dispatchDescrGet(frame, object, metatype, descr, get);
+                    return dispatchDescrGet(frame, object, type, descr, get);
                 }
             }
-            errorProfile.enter(inliningTarget);
-            throw raiseNode.raiseWithData(inliningTarget, AttributeError, AttributeErrorBuiltins.dataForObjKey(object, key), ErrorMessages.OBJ_N_HAS_NO_ATTR_S, object, key);
+
+            throw raiseNode.raiseAttributeError(inliningTarget, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, object, key);
         }
 
-        private Object readAttribute(Object object, TruffleString key) {
+        private Object readAttributeOfClass(Object object, TruffleString key) {
             if (lookupAsClass == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupAsClass = insert(LookupAttributeInMRONode.Dynamic.create());

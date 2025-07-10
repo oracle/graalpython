@@ -130,13 +130,13 @@ public abstract class PRaiseNode extends Node {
         throw raiseExceptionObjectStatic(node, pythonException, language);
     }
 
-    public final PException raiseAttributeError(Node inliningTarget, Object obj, Object key) {
+    public final PException raiseAttributeError(Node inliningTarget, TruffleString errorMessage, Object obj, Object key) {
         executeEnterProfile(inliningTarget);
-        throw raiseAttributeErrorStatic(inliningTarget, obj, key);
+        throw raiseAttributeErrorStatic(inliningTarget, errorMessage, obj, key);
     }
 
-    public static PException raiseAttributeErrorStatic(Node inliningTarget, Object obj, Object key) {
-        throw raiseWithDataStatic(inliningTarget, PythonBuiltinClassType.AttributeError, AttributeErrorBuiltins.dataForObjKey(obj, key), ErrorMessages.OBJ_P_HAS_NO_ATTR_S, obj, key);
+    public static PException raiseAttributeErrorStatic(Node inliningTarget, TruffleString errorMessage, Object obj, Object key) {
+        throw raiseWithDataStatic(inliningTarget, PythonBuiltinClassType.AttributeError, AttributeErrorBuiltins.dataForObjKey(obj, key), errorMessage, obj, key);
     }
 
     public final PException raiseWithData(Node inliningTarget, PythonBuiltinClassType type, Object[] data, TruffleString format, Object... formatArgs) {
