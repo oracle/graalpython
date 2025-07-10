@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.AttributeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.CallSlotGetAttrNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -106,7 +107,7 @@ public abstract class PyObjectGetAttr extends Node {
             Object result = PyObjectLookupAttr.readAttributeQuickly(type, slots, receiver, name, codePointLengthNode, codePointAtIndexNode);
             if (result != null) {
                 if (result == PNone.NO_VALUE) {
-                    throw PRaiseNode.raiseAttributeErrorStatic(inliningTarget, receiver, name);
+                    throw PRaiseNode.raiseAttributeErrorStatic(inliningTarget, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
                 }
                 return result;
             }

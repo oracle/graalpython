@@ -184,7 +184,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                     return dispatch(frame, object, type, descr, descrGetSlot);
                 }
             }
-            throw raiseNode.raiseAttributeError(inliningTarget, object, key);
+            throw raiseNode.raiseAttributeError(inliningTarget, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
 
         private Object dispatch(VirtualFrame frame, Object object, Object type, Object descr, TpSlot get) {
