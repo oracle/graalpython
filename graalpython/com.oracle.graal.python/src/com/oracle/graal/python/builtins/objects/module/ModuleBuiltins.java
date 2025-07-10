@@ -105,7 +105,6 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -253,23 +252,11 @@ public final class ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ModuleGetattributeNode extends GetAttrBuiltinNode {
         @Specialization
-        static Object getattributeStr(VirtualFrame frame, PythonModule self, TruffleString key,
-                        @Shared @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
-                        @Shared @Cached HandleGetattrExceptionNode handleException) {
-            try {
-                return objectGetattrNode.execute(frame, self, key);
-            } catch (PException e) {
-                return handleException.execute(frame, self, key, e);
-            }
-        }
-
-        @Specialization(replaces = "getattributeStr")
-        @InliningCutoff
         static Object getattribute(VirtualFrame frame, PythonModule self, Object keyObj,
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringChecked1Node castKeyToStringNode,
-                        @Shared @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
-                        @Shared @Cached HandleGetattrExceptionNode handleException) {
+                        @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
+                        @Cached HandleGetattrExceptionNode handleException) {
             TruffleString key = castKeyToStringNode.cast(inliningTarget, keyObj, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             try {
                 return objectGetattrNode.execute(frame, self, key);
