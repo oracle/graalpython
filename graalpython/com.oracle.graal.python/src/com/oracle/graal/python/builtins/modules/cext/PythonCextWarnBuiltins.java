@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,7 +59,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 public final class PythonCextWarnBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Py_ssize_t, PyObject}, call = Ignored)
-    abstract static class _PyTruffleErr_Warn extends CApiQuaternaryBuiltinNode {
+    abstract static class PyTruffleErr_Warn extends CApiQuaternaryBuiltinNode {
         @Specialization
         Object warn(Object message, Object category, long stackLevel, @SuppressWarnings("unused") Object source,
                         @Cached CallNode callNode) {

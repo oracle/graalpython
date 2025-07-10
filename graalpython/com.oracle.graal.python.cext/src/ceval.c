@@ -1794,7 +1794,7 @@ fail:
         PyErr_SetString(PyExc_SystemError, "PyEval_EvalCodeEx: NULL globals");
         return NULL;
     }
-    return _PyTruffleEval_EvalCodeEx(_co, globals, locals != NULL ? locals : Py_None,
+    return PyTruffleEval_EvalCodeEx(_co, globals, locals != NULL ? locals : Py_None,
                                   args, argcount,
                                   kws, kwcount,
                                   defs, defcount,

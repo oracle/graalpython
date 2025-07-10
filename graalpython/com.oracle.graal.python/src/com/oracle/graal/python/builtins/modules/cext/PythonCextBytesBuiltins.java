@@ -259,7 +259,7 @@ public final class PythonCextBytesBuiltins {
 
     @CApiBuiltin(name = "PyByteArray_Resize", ret = Int, args = {PyObject, Py_ssize_t}, call = Direct)
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t}, call = Ignored)
-    abstract static class _PyTruffleBytes_Resize extends CApiBinaryBuiltinNode {
+    abstract static class PyTruffleBytes_Resize extends CApiBinaryBuiltinNode {
 
         @Specialization
         static int resize(PBytesLike self, long newSizeL,

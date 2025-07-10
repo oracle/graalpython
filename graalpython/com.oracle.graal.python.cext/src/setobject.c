@@ -42,7 +42,7 @@
 
 
 int _PySet_NextEntry(PyObject *set, Py_ssize_t *pos, PyObject **key, Py_hash_t *hash) {
-    PyObject *tresult = _PyTruffleSet_NextEntry(set, *pos);
+    PyObject *tresult = PyTruffleSet_NextEntry(set, *pos);
     if (tresult == NULL) {
         *key = NULL;
         *hash = 0;

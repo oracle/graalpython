@@ -263,7 +263,7 @@ _PyErr_SetObject(PyThreadState *tstate, PyObject *exception, PyObject *value)
         tb = PyException_GetTraceback(value);
     _PyErr_Restore(tstate, Py_NewRef(Py_TYPE(value)), value, tb);
 #else // GraalPy change: different implementation
-	_PyTruffleErr_CreateAndSetException(exception, value);
+	PyTruffleErr_CreateAndSetException(exception, value);
 #endif // GraalPy change
 }
 

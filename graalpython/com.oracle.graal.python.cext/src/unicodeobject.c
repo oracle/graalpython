@@ -15250,11 +15250,11 @@ unsigned int PyTruffleUnicode_IS_COMPACT(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_compact, state.compact);
 }
 
-int _PyTruffleUnicode_KIND(PyObject* op) {
+int PyTruffleUnicode_KIND(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_kind, state.kind);
 }
 
-void* _PyTruffleUnicode_NONCOMPACT_DATA(PyObject* op) {
+void* PyTruffleUnicode_NONCOMPACT_DATA(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyUnicodeObject, data, data.any);
 }
 

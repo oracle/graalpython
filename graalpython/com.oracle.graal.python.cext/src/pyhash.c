@@ -110,7 +110,7 @@ _Py_HashDouble(PyObject *inst, double v)
             return _Py_HashPointer(inst);
     }
     // GraalPy change: different implementation
-    return _PyTruffle_HashDouble(v);
+    return PyTruffle_HashDouble(v);
 }
 
 Py_hash_t

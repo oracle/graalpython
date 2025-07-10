@@ -130,7 +130,7 @@ public final class PythonCextModuleBuiltins {
     }
 
     @CApiBuiltin(ret = PyModuleObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Ignored)
-    abstract static class _PyTruffleModule_CreateInitialized_PyModule_New extends CApiUnaryBuiltinNode {
+    abstract static class PyTruffleModule_CreateInitialized_PyModule_New extends CApiUnaryBuiltinNode {
 
         @Specialization
         Object run(TruffleString name,

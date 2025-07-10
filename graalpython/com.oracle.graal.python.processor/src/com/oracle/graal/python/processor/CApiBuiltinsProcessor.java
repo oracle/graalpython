@@ -823,7 +823,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
         names.removeIf(n -> n.startsWith("GraalPy"));
         names.removeIf(n -> n.startsWith("PyTruffle"));
-        names.removeIf(n -> n.startsWith("_PyTruffle"));
         names.removeAll(Arrays.asList(ADDITIONAL));
         if (!names.isEmpty()) {
             processingEnv.getMessager().printError("extra builtins (defined in GraalPy, but not in CPython - some of these are necessary for internal modules like 'math'):");

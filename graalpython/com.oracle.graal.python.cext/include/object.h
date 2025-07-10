@@ -289,18 +289,18 @@ static inline void Py_SET_REFCNT(PyObject *ob, Py_ssize_t refcnt) {
 #endif
 
 
-PyAPI_FUNC(void) PyTruffle_SET_TYPE(PyObject *ob, PyTypeObject *type);
+PyAPI_FUNC(void) GraalPy_SET_TYPE(PyObject *ob, PyTypeObject *type);
 static inline void Py_SET_TYPE(PyObject *ob, PyTypeObject *type) {
-    PyTruffle_SET_TYPE(ob, type);
+    GraalPy_SET_TYPE(ob, type);
 }
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_SET_TYPE(ob, type) Py_SET_TYPE(_PyObject_CAST(ob), type)
 #endif
 
 
-PyAPI_FUNC(void) PyTruffle_SET_SIZE(PyVarObject *ob, Py_ssize_t size);
+PyAPI_FUNC(void) GraalPy_SET_SIZE(PyVarObject *ob, Py_ssize_t size);
 static inline void Py_SET_SIZE(PyVarObject *ob, Py_ssize_t size) {
-    PyTruffle_SET_SIZE(ob, size);
+    GraalPy_SET_SIZE(ob, size);
 }
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_SET_SIZE(ob, size) Py_SET_SIZE(_PyVarObject_CAST(ob), (size))
@@ -1037,7 +1037,7 @@ static inline int PyType_CheckExact(PyObject *op) {
 #endif
 
 // GraalPy additions
-PyAPI_FUNC(void) _PyTruffle_DebugTrace(void);
+PyAPI_FUNC(void) PyTruffle_DebugTrace(void);
 
 typedef struct {
     PyObject_HEAD

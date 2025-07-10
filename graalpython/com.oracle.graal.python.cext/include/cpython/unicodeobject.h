@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -244,14 +244,14 @@ enum PyUnicode_Kind {
     PyUnicode_4BYTE_KIND = 4
 };
 
-PyAPI_FUNC(int) _PyTruffleUnicode_KIND(PyObject*);
+PyAPI_FUNC(int) PyTruffleUnicode_KIND(PyObject*);
 // PyUnicode_KIND(): Return one of the PyUnicode_*_KIND values defined above.
 //
 // gh-89653: Converting this macro to a static inline function would introduce
 // new compiler warnings on "kind < PyUnicode_KIND(str)" (compare signed and
 // unsigned numbers) where kind type is an int or on
 // "unsigned int kind = PyUnicode_KIND(str)" (cast signed to unsigned).
-#define PyUnicode_KIND(op) ((enum PyUnicode_Kind)_PyTruffleUnicode_KIND(_PyObject_CAST(op)))
+#define PyUnicode_KIND(op) ((enum PyUnicode_Kind)PyTruffleUnicode_KIND(_PyObject_CAST(op)))
 
 /* Return a void pointer to the raw unicode buffer. */
 static inline void* _PyUnicode_COMPACT_DATA(PyObject *Py_UNUSED(op)) {
@@ -259,9 +259,9 @@ static inline void* _PyUnicode_COMPACT_DATA(PyObject *Py_UNUSED(op)) {
     return NULL;
 }
 
-PyAPI_FUNC(void*) _PyTruffleUnicode_NONCOMPACT_DATA(PyObject *op);
+PyAPI_FUNC(void*) PyTruffleUnicode_NONCOMPACT_DATA(PyObject *op);
 static inline void* _PyUnicode_NONCOMPACT_DATA(PyObject *op) {
-    return _PyTruffleUnicode_NONCOMPACT_DATA(op);
+    return PyTruffleUnicode_NONCOMPACT_DATA(op);
 }
 
 static inline void* PyUnicode_DATA(PyObject *op) {

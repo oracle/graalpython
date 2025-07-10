@@ -531,7 +531,7 @@ int
 _PyObject_IsFreed(PyObject *op)
 {
     if (points_to_py_handle_space(op)) {
-        return _PyTruffleObject_IsFreed(op);
+        return PyTruffleObject_IsFreed(op);
     }
 #if 0 // GraalPy change
     if (_PyMem_IsPtrFreed(op) || _PyMem_IsPtrFreed(Py_TYPE(op))) {
@@ -556,7 +556,7 @@ void
 _PyObject_Dump(PyObject* op)
 {
     if (points_to_py_handle_space(op)) {
-        _PyTruffleObject_Dump(op);
+        PyTruffleObject_Dump(op);
         return;
     }
     if (_PyObject_IsFreed(op)) {
@@ -2946,7 +2946,7 @@ PyAPI_FUNC(Py_ssize_t) _Py_SIZE(PyObject *obj) {
 }
 
 void
-PyTruffle_SET_TYPE(PyObject *a, PyTypeObject *b)
+GraalPy_SET_TYPE(PyObject *a, PyTypeObject *b)
 {
     if (points_to_py_handle_space(a)) {
         PyTruffle_Log(PY_TRUFFLE_LOG_INFO,
@@ -2957,10 +2957,10 @@ PyTruffle_SET_TYPE(PyObject *a, PyTypeObject *b)
 }
 
 void
-PyTruffle_SET_SIZE(PyVarObject *a, Py_ssize_t b)
+GraalPy_SET_SIZE(PyVarObject *a, Py_ssize_t b)
 {
     if (points_to_py_handle_space(a)) {
-        _PyTruffle_SET_SIZE(a, b);
+        PyTruffle_SET_SIZE(a, b);
     } else {
         a->ob_size = b;
     }

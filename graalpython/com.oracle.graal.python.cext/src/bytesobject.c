@@ -2927,7 +2927,7 @@ int
 _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize)
 {
     // GraalPy change: different implementation
-    return _PyTruffleBytes_Resize(*pv, newsize);
+    return PyTruffleBytes_Resize(*pv, newsize);
 }
 
 

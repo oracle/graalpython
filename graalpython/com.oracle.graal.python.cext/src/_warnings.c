@@ -1065,7 +1065,7 @@ warn_unicode(PyObject *category, PyObject *message,
         category = PyExc_RuntimeWarning;
 
     // GraalPy change
-    res = _PyTruffleErr_Warn(message, category, stack_level, source);
+    res = PyTruffleErr_Warn(message, category, stack_level, source);
     if (res == NULL)
         return -1;
     Py_DECREF(res);

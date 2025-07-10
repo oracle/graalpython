@@ -149,7 +149,7 @@ public final class PythonCextCEvalBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, PyObjectConstPtr, Int, PyObjectConstPtr, Int, PyObjectConstPtr, Int, PyObject, PyObject}, call = Ignored)
-    abstract static class _PyTruffleEval_EvalCodeEx extends CApi11BuiltinNode {
+    abstract static class PyTruffleEval_EvalCodeEx extends CApi11BuiltinNode {
         @Specialization
         static Object doGeneric(PCode code, Object globals, Object locals,
                         Object argumentArrayPtr, int argumentCount, Object kwsPtr, int kwsCount, Object defaultValueArrayPtr, int defaultValueCount,

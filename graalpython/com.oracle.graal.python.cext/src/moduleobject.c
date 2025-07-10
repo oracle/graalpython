@@ -229,7 +229,7 @@ _PyModule_CreateInitialized(PyModuleDef* module, int module_api_version)
         return NULL;
     }
     // GraalPy change
-    m = _PyTruffleModule_CreateInitialized_PyModule_New(name);
+    m = PyTruffleModule_CreateInitialized_PyModule_New(name);
 
     if (module->m_size > 0) {
         // GraalPy change: avoid direct struct access

@@ -214,7 +214,7 @@ public abstract class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Int}, call = Ignored)
-    abstract static class _PyTruffleObject_Call1 extends CApiQuaternaryBuiltinNode {
+    abstract static class PyTruffleObject_Call1 extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object callable, Object argsObj, Object kwargsObj, int singleArg,
                         @Bind Node inliningTarget,
@@ -297,7 +297,7 @@ public abstract class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString, PyObject, Int}, call = Ignored)
-    abstract static class _PyTruffleObject_CallMethod1 extends CApiQuaternaryBuiltinNode {
+    abstract static class PyTruffleObject_CallMethod1 extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object receiver, TruffleString methodName, Object argsObj, int singleArg,
                         @Bind Node inliningTarget,
@@ -572,7 +572,7 @@ public abstract class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyVarObject, Py_ssize_t}, call = Ignored)
-    abstract static class _PyTruffle_SET_SIZE extends CApiBinaryBuiltinNode {
+    abstract static class PyTruffle_SET_SIZE extends CApiBinaryBuiltinNode {
         @Specialization
         static PNone set(PSequence obj, long size,
                         @Bind Node inliningTarget,
@@ -599,7 +599,7 @@ public abstract class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = Ignored)
-    abstract static class _PyTruffleObject_IsFreed extends CApiUnaryBuiltinNode {
+    abstract static class PyTruffleObject_IsFreed extends CApiUnaryBuiltinNode {
         @Specialization
         int doGeneric(Object pointer,
                         @Cached ToPythonWrapperNode toPythonWrapperNode) {
@@ -608,7 +608,7 @@ public abstract class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyObjectWrapper}, call = Ignored)
-    abstract static class _PyTruffleObject_Dump extends CApiUnaryBuiltinNode {
+    abstract static class PyTruffleObject_Dump extends CApiUnaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
