@@ -909,8 +909,7 @@ public final class PythonCextBuiltins {
          * then the Java builtin should be named {@code PyTruffle<namespace>_<function>} (e.g.
          * {@code PyTruffleBytes_FromStringAndSize}). The corresponding C function must be
          * implemented manually and can then call the Java builtin using generated native symbol
-         * {@code GraalPy<namespace>_<function>} (e.g.
-         * {@code GraalPyTruffleBytes_FromStringAndSize}).
+         * {@code GraalPy<namespace>_<function>} (e.g. {@code PyTruffleBytes_FromStringAndSize}).
          * </p>
          */
         Ignored,

@@ -236,7 +236,7 @@ PyObject *
 PyComplex_FromCComplex(Py_complex cval)
 {
     // GraalPy change: different implementation
-	return GraalPyComplex_FromDoubles(cval.real, cval.imag);
+    return PyComplex_FromDoubles(cval.real, cval.imag);
 }
 
 PyAPI_FUNC(PyObject *) // GraalPy change: expose the function for downcalls, rename
@@ -267,7 +267,7 @@ PyComplex_RealAsDouble(PyObject *op)
         return ((PyComplexObject *)op)->cval.real;
     }
     else {
-        return GraalPyTruffleComplex_RealAsDouble(op);
+        return PyTruffleComplex_RealAsDouble(op);
     }
 }
 
@@ -279,7 +279,7 @@ PyComplex_ImagAsDouble(PyObject *op)
         return ((PyComplexObject *)op)->cval.imag;
     }
     else {
-        return GraalPyTruffleComplex_ImagAsDouble(op);
+        return PyTruffleComplex_ImagAsDouble(op);
     }
 }
 
@@ -327,7 +327,7 @@ PyComplex_AsCComplex(PyObject *op)
         return ((PyComplexObject*) op)->cval;
     }
     Py_complex result;
-    if (GraalPyTruffleComplex_AsCComplex(op, &result) == 0) {
+    if (PyTruffleComplex_AsCComplex(op, &result) == 0) {
         return result;
     }
     Py_complex c_error = { -1., 0. };

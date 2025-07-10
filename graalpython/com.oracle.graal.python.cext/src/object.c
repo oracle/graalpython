@@ -314,7 +314,7 @@ _Py_IncRef(PyObject *o)
         Py_SET_REFCNT(o, refcnt + 1);
         if (refcnt == MANAGED_REFCNT) {
             if (points_to_py_handle_space(o)) {
-                GraalPyTruffle_NotifyRefCount(o, refcnt + 1);
+                PyTruffle_NotifyRefCount(o, refcnt + 1);
             } else if (_PyObject_IS_GC(o)) {
                 _GraalPyObject_GC_NotifyOwnershipTransfer(o);
             }
@@ -531,7 +531,7 @@ int
 _PyObject_IsFreed(PyObject *op)
 {
     if (points_to_py_handle_space(op)) {
-        return Graal_PyTruffleObject_IsFreed(op);
+        return _PyTruffleObject_IsFreed(op);
     }
 #if 0 // GraalPy change
     if (_PyMem_IsPtrFreed(op) || _PyMem_IsPtrFreed(Py_TYPE(op))) {
@@ -556,7 +556,7 @@ void
 _PyObject_Dump(PyObject* op)
 {
     if (points_to_py_handle_space(op)) {
-        Graal_PyTruffleObject_Dump(op);
+        _PyTruffleObject_Dump(op);
         return;
     }
     if (_PyObject_IsFreed(op)) {
@@ -1630,7 +1630,7 @@ PyObject_GenericGetAttr(PyObject *obj, PyObject *name)
     if (tp->tp_dict == NULL && PyType_Ready(tp) < 0) {
     	return NULL;
     }
-	return GraalPyTruffleObject_GenericGetAttr(obj, name);
+	return PyTruffleObject_GenericGetAttr(obj, name);
 }
 
 #if 0 // GraalPy change
@@ -1734,7 +1734,7 @@ PyObject_GenericSetAttr(PyObject *obj, PyObject *name, PyObject *value)
     if (tp->tp_dict == NULL && PyType_Ready(tp) < 0) {
         return -1;
     }
-    return (int) GraalPyTruffleObject_GenericSetAttr(obj, name, value);
+    return (int) PyTruffleObject_GenericSetAttr(obj, name, value);
 }
 
 int
@@ -2822,7 +2822,7 @@ int Py_Is(PyObject *x, PyObject *y)
     return (x == y);
 #else
     return (x == y) ||
-        (points_to_py_handle_space(x) && points_to_py_handle_space(y) && GraalPyTruffle_Is(x, y));
+        (points_to_py_handle_space(x) && points_to_py_handle_space(y) && PyTruffle_Is(x, y));
 #endif
 }
 
@@ -2922,7 +2922,7 @@ Py_ssize_t PyTruffle_SIZE(PyObject *ob) {
         if (ptr->ob_type == &PyTuple_Type) {
             res = ((GraalPyVarObject *) ptr)->ob_size;
 #ifndef NDEBUG
-            if (PyTruffle_Debug_CAPI() && GraalPy_get_PyVarObject_ob_size(a) != res)
+            if (PyTruffle_Debug_CAPI() && GraalPy_Private_Get_PyVarObject_ob_size(a) != res)
             {
                 Py_FatalError("ob_size of native stub and managed object differ");
             }
@@ -2930,7 +2930,7 @@ Py_ssize_t PyTruffle_SIZE(PyObject *ob) {
         }
         else
         {
-            res = GraalPy_get_PyVarObject_ob_size(a);
+            res = GraalPy_Private_Get_PyVarObject_ob_size(a);
         }
     }
     else
@@ -2960,7 +2960,7 @@ void
 PyTruffle_SET_SIZE(PyVarObject *a, Py_ssize_t b)
 {
     if (points_to_py_handle_space(a)) {
-        Graal_PyTruffle_SET_SIZE(a, b);
+        _PyTruffle_SET_SIZE(a, b);
     } else {
         a->ob_size = b;
     }
@@ -2984,11 +2984,11 @@ _decref_notify(const PyObject *op, const Py_ssize_t updated_refcnt)
         deferred_notify_ops[deferred_notify_cur++] = op;
         if (deferred_notify_cur >= DEFERRED_NOTIFY_SIZE) {
             deferred_notify_cur = 0;
-            GraalPyTruffle_BulkNotifyRefCount(deferred_notify_ops, DEFERRED_NOTIFY_SIZE);
+            PyTruffle_BulkNotifyRefCount(deferred_notify_ops, DEFERRED_NOTIFY_SIZE);
         }
 #else
         PyObject *nonConstOp = (PyObject *)op;
-        GraalPyTruffle_BulkNotifyRefCount(&nonConstOp, 1);
+        PyTruffle_BulkNotifyRefCount(&nonConstOp, 1);
 #endif
     }
 }

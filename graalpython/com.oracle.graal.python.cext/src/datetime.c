@@ -7448,11 +7448,11 @@ GraalPy_Private_InitNativeDateTime()
         &PyDateTime_TZInfoType, "datetime.timezone",
         NULL, NULL
     };
-    GraalPyTruffle_InitBuiltinTypesAndStructs(datetime_types);
+    PyTruffle_InitBuiltinTypesAndStructs(datetime_types);
 
     /* register native get/set descriptors to managed types */
-    GraalPyTruffle_Set_Native_Slots(&PyDateTime_DateType, getsets_date, NULL);
-    GraalPyTruffle_Set_Native_Slots(&PyDateTime_DateTimeType, getsets_datetime, NULL);
-    GraalPyTruffle_Set_Native_Slots(&PyDateTime_TimeType, getsets_time, NULL);
-    GraalPyTruffle_Set_Native_Slots(&PyDateTime_DeltaType, NULL, members_delta);
+    PyTruffle_Set_Native_Slots(&PyDateTime_DateType, getsets_date, NULL);
+    PyTruffle_Set_Native_Slots(&PyDateTime_DateTimeType, getsets_datetime, NULL);
+    PyTruffle_Set_Native_Slots(&PyDateTime_TimeType, getsets_time, NULL);
+    PyTruffle_Set_Native_Slots(&PyDateTime_DeltaType, NULL, members_delta);
 }

@@ -1356,18 +1356,18 @@ PyUnicode_New(Py_ssize_t size, Py_UCS4 maxchar)
     if (maxchar < 128) {
         /* We intentionally use 'size' (which is one element less than the allocated array)
          * because interop users should not see the null character. */
-        return GraalPyTruffleUnicode_New((Py_UCS1 *) calloc(size + 1, PyUnicode_1BYTE_KIND), size, PyUnicode_1BYTE_KIND, 1);
+        return PyTruffleUnicode_New((Py_UCS1 *) calloc(size + 1, PyUnicode_1BYTE_KIND), size, PyUnicode_1BYTE_KIND, 1);
     } else if (maxchar < 256) {
-        return GraalPyTruffleUnicode_New((Py_UCS1 *) calloc(size + 1, PyUnicode_1BYTE_KIND), size, PyUnicode_1BYTE_KIND, 0);
+        return PyTruffleUnicode_New((Py_UCS1 *) calloc(size + 1, PyUnicode_1BYTE_KIND), size, PyUnicode_1BYTE_KIND, 0);
     } else if (maxchar < 65536) {
-        return GraalPyTruffleUnicode_New((Py_UCS2 *) calloc(size + 1, PyUnicode_2BYTE_KIND), size, PyUnicode_2BYTE_KIND, 0);
+        return PyTruffleUnicode_New((Py_UCS2 *) calloc(size + 1, PyUnicode_2BYTE_KIND), size, PyUnicode_2BYTE_KIND, 0);
     } else {
         if (maxchar > MAX_UNICODE) {
             PyErr_SetString(PyExc_SystemError,
                             "invalid maximum character passed to PyUnicode_New");
             return NULL;
         }
-        return GraalPyTruffleUnicode_New((Py_UCS4 *) calloc(size + 1, PyUnicode_4BYTE_KIND), size, PyUnicode_4BYTE_KIND, 0);
+        return PyTruffleUnicode_New((Py_UCS4 *) calloc(size + 1, PyUnicode_4BYTE_KIND), size, PyUnicode_4BYTE_KIND, 0);
     }
     /* should never be reached */
     return NULL;
@@ -1781,7 +1781,7 @@ unicode_modifiable(PyObject *unicode)
     assert(_PyUnicode_CHECK(unicode));
     // GraalPy change
     if (points_to_py_handle_space(unicode) && Py_REFCNT(unicode) != MANAGED_REFCNT) // GraalPy change
-        return GraalPyTruffleUnicode_IsMaterialized(unicode) == 0;
+        return PyTruffleUnicode_IsMaterialized(unicode) == 0;
     if (Py_REFCNT(unicode) != 1)
         return 0;
     if (_PyUnicode_HASH(unicode) != -1)
@@ -2033,7 +2033,7 @@ PyUnicode_FromStringAndSize(const char *u, Py_ssize_t size)
         return NULL;
     }
     // GraalPy change
-    return GraalPyTruffleUnicode_FromUTF((void*) u, size, 1);
+    return PyTruffleUnicode_FromUTF((void*) u, size, 1);
 }
 
 #if 0 // GraalPy change
@@ -2127,7 +2127,7 @@ static PyObject*
 _PyUnicode_FromUCS1(const Py_UCS1* u, Py_ssize_t size)
 {
     // GraalPy change: different implementation
-    return GraalPyTruffleUnicode_FromUCS((int8_t *)u, size, PyUnicode_1BYTE_KIND);
+    return PyTruffleUnicode_FromUCS((int8_t *)u, size, PyUnicode_1BYTE_KIND);
 }
 
 static PyObject*
@@ -2135,7 +2135,7 @@ _PyUnicode_FromUCS2(const Py_UCS2 *u, Py_ssize_t size)
 {
     // GraalPy change: different implementation
     const Py_ssize_t byte_size = size * PyUnicode_2BYTE_KIND;
-    return GraalPyTruffleUnicode_FromUCS((int8_t *)u, byte_size, PyUnicode_2BYTE_KIND);
+    return PyTruffleUnicode_FromUCS((int8_t *)u, byte_size, PyUnicode_2BYTE_KIND);
 }
 
 static PyObject*
@@ -2143,7 +2143,7 @@ _PyUnicode_FromUCS4(const Py_UCS4 *u, Py_ssize_t size)
 {
     // GraalPy change: different implementation
     const Py_ssize_t byte_size = size * PyUnicode_4BYTE_KIND;
-    return GraalPyTruffleUnicode_FromUCS((int8_t *)u, byte_size, PyUnicode_4BYTE_KIND);
+    return PyTruffleUnicode_FromUCS((int8_t *)u, byte_size, PyUnicode_4BYTE_KIND);
 }
 
 PyObject*
@@ -3300,7 +3300,7 @@ PyUnicode_Decode(const char *s,
     if (!mv) {
         return NULL;
     }
-	return GraalPyTruffleUnicode_Decode(mv, encoding, errors != NULL ? errors : "strict");
+	return PyTruffleUnicode_Decode(mv, encoding, errors != NULL ? errors : "strict");
 }
 
 #if 0 // GraalPy change
@@ -3675,7 +3675,7 @@ PyUnicode_DecodeFSDefaultAndSize(const char *s, Py_ssize_t size)
 {
     // GraalPy change: different implementation
     // TODO: this implementation does not honor Py_FileSystemDefaultEncoding and Py_FileSystemDefaultEncodeErrors
-    return GraalPyTruffleUnicode_FromUTF((void*) s, size, 1);
+    return PyTruffleUnicode_FromUTF((void*) s, size, 1);
 }
 
 
@@ -3785,12 +3785,12 @@ PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *psize)
     }
     // GraalPy change: upcall for managed objects
     if (points_to_py_handle_space(unicode)) {
-        return GraalPyTruffleUnicode_AsUTF8AndSize(unicode, psize);
+        return PyTruffleUnicode_AsUTF8AndSize(unicode, psize);
     }
 
     if (PyUnicode_UTF8(unicode) == NULL) {
         // GraalPy change: upcall
-        if (GraalPyTruffleUnicode_FillUtf8(unicode) == -1) {
+        if (PyTruffleUnicode_FillUtf8(unicode) == -1) {
             return NULL;
         }
     }
@@ -4799,7 +4799,7 @@ PyUnicode_DecodeUTF8Stateful(const char *s,
                              Py_ssize_t *consumed)
 {
     // GraalPy change: different implementation
-	PyObject* result = GraalPyTruffleUnicode_DecodeUTF8Stateful(
+	PyObject* result = PyTruffleUnicode_DecodeUTF8Stateful(
                                                 (void*) s, size,
                                                 errors != NULL ? errors : "strict",
                                                 consumed != NULL ? 1 : 0);
@@ -5250,7 +5250,7 @@ PyUnicode_DecodeUTF32Stateful(const char *s,
     }
     q += skip;
     size -= skip;
-    PyObject* result = GraalPyTruffleUnicode_DecodeUTF32Stateful(
+    PyObject* result = PyTruffleUnicode_DecodeUTF32Stateful(
                                                 (void*) q, size,
                                                 errors != NULL ? errors : "strict",
                                                 bo,
@@ -5461,7 +5461,7 @@ PyUnicode_DecodeUTF16Stateful(const char *s,
     }
     q += skip;
     size -= skip;
-    PyObject* result = GraalPyTruffleUnicode_DecodeUTF16Stateful(
+    PyObject* result = PyTruffleUnicode_DecodeUTF16Stateful(
                                                 (void*) q, size,
                                                 errors != NULL ? errors : "strict",
                                                 bo,
@@ -8909,7 +8909,7 @@ PyUnicode_Find(PyObject *str,
                Py_ssize_t end,
                int direction)
 {
-    Py_ssize_t result = GraalPyTruffle_PyUnicode_Find(str, substr, start, end, direction);
+    Py_ssize_t result = PyTruffle_PyUnicode_Find(str, substr, start, end, direction);
     if (result == -1) {
         return -2;
     }
@@ -14436,7 +14436,7 @@ _PyUnicode_InternStatic(PyInterpreterState *interp, PyObject **p)
         return;
     }
 
-    PyObject *t = GraalPyTruffleUnicode_LookupAndIntern(s);
+    PyObject *t = PyTruffleUnicode_LookupAndIntern(s);
 #if 0 // GraalPy change
     // This should only be called as part of runtime initialization
     assert(!Py_IsInitialized());

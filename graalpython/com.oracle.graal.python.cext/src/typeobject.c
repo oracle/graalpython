@@ -6705,7 +6705,7 @@ static int
 type_add_method(PyTypeObject *type, PyMethodDef *meth)
 {
     // GraalPy change: different implementation
-    return GraalPyTruffleType_AddFunctionToType(
+    return PyTruffleType_AddFunctionToType(
            meth,
            type,
            type->tp_dict,
@@ -6752,7 +6752,7 @@ type_add_members(PyTypeObject *type)
     PyObject *dict = lookup_tp_dict(type);
     for (; memb->name != NULL; memb++) {
         // GraalPy change
-        if (GraalPyTruffleType_AddMember(type, dict, memb->name, memb->type, memb->offset, (memb->flags & READONLY) == 0, memb->doc) < 0)
+        if (PyTruffleType_AddMember(type, dict, memb->name, memb->type, memb->offset, (memb->flags & READONLY) == 0, memb->doc) < 0)
             return -1;
     }
     return 0;
@@ -6770,7 +6770,7 @@ type_add_getset(PyTypeObject *type)
     PyObject *dict = lookup_tp_dict(type);
     for (; gsp->name != NULL; gsp++) {
         // GraalPy change
-        if (GraalPyTruffleType_AddGetSet(type,
+        if (PyTruffleType_AddGetSet(type,
                         dict,
                         gsp->name,
                         gsp->get,
@@ -7177,7 +7177,7 @@ type_ready_set_dict(PyTypeObject *type)
     }
 
     // GraalPy change
-    PyObject *dict = GraalPyTruffle_NewTypeDict(type);
+    PyObject *dict = PyTruffle_NewTypeDict(type);
     if (dict == NULL) {
         return -1;
     }
@@ -7315,7 +7315,7 @@ type_ready_mro(PyTypeObject *type)
         }
     }
 #else // GraalPy change
-    PyObject* mro = GraalPyTruffle_Compute_Mro(type, type->tp_name);
+    PyObject* mro = PyTruffle_Compute_Mro(type, type->tp_name);
     type->tp_mro = mro;
 #endif // GraalPy change
     return 0;
@@ -7625,7 +7625,7 @@ type_ready(PyTypeObject *type, int rerunbuiltin)
      * dynamic slots from a managed Python class. Since the managed Python class may be created
      * when the C API is not loaded, we need to do that later.
      */
-    GraalPyTruffle_AddInheritedSlots(type);
+    PyTruffle_AddInheritedSlots(type);
 
     if (type_ready_set_hash(type) < 0) {
         goto error;
@@ -7675,7 +7675,7 @@ PyType_Ready(PyTypeObject *type)
 
     // GraalPy change
     if (PyTruffle_Trace_Memory()) {
-        GraalPyTruffle_Trace_Type(type);
+        PyTruffle_Trace_Type(type);
     }
 
     return type_ready(type, 0);
@@ -10377,7 +10377,7 @@ add_operators(PyTypeObject *type)
     }
     return 0;
 #else // GraalPy change
-    return GraalPyTruffleType_AddOperators(type);
+    return PyTruffleType_AddOperators(type);
 #endif // GraalPy change
 }
 

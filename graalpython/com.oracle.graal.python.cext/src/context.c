@@ -49,7 +49,7 @@ PyObject marker_struct = {
 
 int PyContextVar_Get(PyObject *var, PyObject *default_value, PyObject **value) {
     static void *error_marker = &marker_struct;
-    PyObject *res = GraalPyTruffleContextVar_Get(var, default_value, error_marker);
+    PyObject *res = PyTruffleContextVar_Get(var, default_value, error_marker);
     if ((void *)res == error_marker) {
         *value = NULL;
         return -1;

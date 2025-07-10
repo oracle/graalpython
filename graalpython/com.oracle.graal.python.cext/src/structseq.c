@@ -551,7 +551,7 @@ initialize_static_type(PyTypeObject *type, PyStructSequence_Desc *desc,
 #endif // GraalPy change
 
     // GraalPy change: upcall to set the members and methods
-    return GraalPyTruffleStructSequence_InitType2(type, desc->fields, desc->n_in_sequence);
+    return PyTruffleStructSequence_InitType2(type, desc->fields, desc->n_in_sequence);
 }
 
 int
@@ -752,5 +752,5 @@ PyTypeObject *
 PyStructSequence_NewType(PyStructSequence_Desc *desc)
 {
     // GraalPy change: different implementation
-	return GraalPyTruffleStructSequence_NewType(desc->name, desc->doc, desc->fields, desc->n_in_sequence);
+	return PyTruffleStructSequence_NewType(desc->name, desc->doc, desc->fields, desc->n_in_sequence);
 }

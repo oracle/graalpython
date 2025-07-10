@@ -134,9 +134,9 @@ PyBytes_FromStringAndSize(const char *str, Py_ssize_t size)
         return NULL;
     }
     if (str != NULL) {
-        return GraalPyTruffleBytes_FromStringAndSize(str, size);
+        return PyTruffleBytes_FromStringAndSize(str, size);
     }
-    return GraalPyTruffle_Bytes_EmptyWithCapacity(size);
+    return PyTruffle_Bytes_EmptyWithCapacity(size);
 }
 
 PyObject *
@@ -144,9 +144,9 @@ PyBytes_FromString(const char *str)
 {
     // GraalPy change: different implementation
 	if (str != NULL) {
-		return GraalPyTruffleBytes_FromStringAndSize(str, strlen(str));
+		return PyTruffleBytes_FromStringAndSize(str, strlen(str));
 	}
-	return GraalPyTruffle_Bytes_EmptyWithCapacity(0);
+	return PyTruffle_Bytes_EmptyWithCapacity(0);
 }
 
 PyObject *
@@ -293,7 +293,7 @@ PyBytes_FromFormatV(const char *format, va_list vargs)
     	}
     	PyTuple_SET_ITEM(args, i, entry);
     }
-    PyObject* result = GraalPyTruffleBytes_FromFormat(format, args);
+    PyObject* result = PyTruffleBytes_FromFormat(format, args);
   	Py_DecRef(args);
     return result;
 }
@@ -1165,10 +1165,10 @@ PyBytes_AsStringAndSize(PyObject *obj,
         return -1;
     }
     if (len != NULL) {
-        *len = GraalPyBytes_Size(obj);
+        *len = PyBytes_Size(obj);
         return 0;
     } else {
-    	return GraalPyTruffle_Bytes_CheckEmbeddedNull(obj);
+    	return PyTruffle_Bytes_CheckEmbeddedNull(obj);
     }
 }
 
@@ -2898,7 +2898,7 @@ void
 PyBytes_Concat(PyObject **pv, PyObject *w)
 {
     // GraalPy change: different implementation
-    *pv = GraalPyTruffleBytes_Concat(*pv, w);
+    *pv = PyTruffleBytes_Concat(*pv, w);
 }
 
 void
@@ -2927,7 +2927,7 @@ int
 _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize)
 {
     // GraalPy change: different implementation
-    return Graal_PyTruffleBytes_Resize(*pv, newsize);
+    return _PyTruffleBytes_Resize(*pv, newsize);
 }
 
 

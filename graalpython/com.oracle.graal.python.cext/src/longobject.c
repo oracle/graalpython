@@ -337,7 +337,7 @@ PyLong_FromLong(long ival)
     if (IS_SMALL_INT(ival)) {
         return get_small_int((sdigit)ival);
     }
-    return GraalPyTruffleLong_FromLongLong((long long) ival);
+    return PyTruffleLong_FromLongLong((long long) ival);
 }
 
 #if 0 // GraalPy change
@@ -477,7 +477,7 @@ PyLong_AsLongAndOverflow(PyObject *vv, int *overflow)
         PyErr_BadInternalCall();
         return -1;
     }
-    long result = (long) GraalPyTruffleLong_AsPrimitive(vv, MODE_COERCE_SIGNED, sizeof(long));
+    long result = (long) PyTruffleLong_AsPrimitive(vv, MODE_COERCE_SIGNED, sizeof(long));
     if (result == -1L && PyErr_Occurred() && PyErr_ExceptionMatches(PyExc_OverflowError)) {
         PyErr_Clear();
         *overflow = _PyLong_Sign(vv);
@@ -494,7 +494,7 @@ long
 PyLong_AsLong(PyObject *obj)
 {
     // GraalPy change: different implementation
-    return (long) GraalPyTruffleLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
+    return (long) PyTruffleLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
 }
 
 /* Get a C int from an int object or any object that has an __index__
@@ -520,7 +520,7 @@ _PyLong_AsInt(PyObject *obj)
 
 Py_ssize_t
 PyLong_AsSsize_t(PyObject *vv) {
-    return (Py_ssize_t) GraalPyTruffleLong_AsPrimitive(vv, MODE_PINT_SIGNED, sizeof(Py_ssize_t));
+    return (Py_ssize_t) PyTruffleLong_AsPrimitive(vv, MODE_PINT_SIGNED, sizeof(Py_ssize_t));
 }
 
 /* Get a C unsigned long int from an int object.
@@ -534,7 +534,7 @@ PyLong_AsUnsignedLong(PyObject *vv)
         PyErr_BadInternalCall();
         return (unsigned long) -1;
     }
-    return (unsigned long) GraalPyTruffleLong_AsPrimitive(vv, MODE_PINT_UNSIGNED, sizeof(unsigned long));
+    return (unsigned long) PyTruffleLong_AsPrimitive(vv, MODE_PINT_UNSIGNED, sizeof(unsigned long));
 }
 
 /* Get a C size_t from an int object. Returns (size_t)-1 and sets
@@ -544,7 +544,7 @@ size_t
 PyLong_AsSize_t(PyObject *vv)
 {
     // GraalPy change: different implementation
-    return (size_t) GraalPyTruffleLong_AsPrimitive(vv, MODE_PINT_UNSIGNED, sizeof(size_t));
+    return (size_t) PyTruffleLong_AsPrimitive(vv, MODE_PINT_UNSIGNED, sizeof(size_t));
 }
 
 #if 0 // GraalPy change
@@ -588,7 +588,7 @@ PyLong_AsUnsignedLongMask(PyObject *op)
         PyErr_BadInternalCall();
         return (unsigned long) -1;
     }
-    return (unsigned long) GraalPyTruffleLong_AsPrimitive(op, MODE_COERCE_MASK, sizeof(unsigned long));
+    return (unsigned long) PyTruffleLong_AsPrimitive(op, MODE_COERCE_MASK, sizeof(unsigned long));
 }
 
 #if 0 // GraalPy change
@@ -902,7 +902,7 @@ PyLong_FromVoidPtr(void *p)
 {
     // GraalPy change: different implementation
     // directly do the upcall to avoid a cast to primitive and reference counting
-    return GraalPyLong_FromUnsignedLongLong((uint64_t)p);
+    return PyLong_FromUnsignedLongLong((uint64_t)p);
 }
 
 #if 0 // GraalPy change
@@ -957,7 +957,7 @@ PyLong_FromLongLong(long long ival)
     if (IS_SMALL_INT(ival)) {
         return get_small_int((sdigit)ival);
     }
-    return GraalPyTruffleLong_FromLongLong(ival);
+    return PyTruffleLong_FromLongLong(ival);
 }
 
 /* Create a new int object from a C Py_ssize_t. */
@@ -969,7 +969,7 @@ PyLong_FromSsize_t(Py_ssize_t ival)
     if (IS_SMALL_INT(ival)) {
         return get_small_int((sdigit)ival);
     }
-    return GraalPyTruffleLong_FromLongLong((long long) ival);
+    return PyTruffleLong_FromLongLong((long long) ival);
 }
 
 /* Get a C long long int from an int object or any object that has an
@@ -983,7 +983,7 @@ PyLong_AsLongLong(PyObject *vv)
         PyErr_BadInternalCall();
         return -1;
     }
-    return (long long) GraalPyTruffleLong_AsPrimitive(vv, MODE_COERCE_SIGNED, sizeof(long long));
+    return (long long) PyTruffleLong_AsPrimitive(vv, MODE_COERCE_SIGNED, sizeof(long long));
 }
 
 /* Get a C unsigned long long int from an int object.
@@ -997,7 +997,7 @@ PyLong_AsUnsignedLongLong(PyObject *vv)
         PyErr_BadInternalCall();
         return (unsigned long long)-1;
     }
-    return (unsigned long long) GraalPyTruffleLong_AsPrimitive(vv, MODE_PINT_UNSIGNED, sizeof(unsigned long long));
+    return (unsigned long long) PyTruffleLong_AsPrimitive(vv, MODE_PINT_UNSIGNED, sizeof(unsigned long long));
 }
 
 #if 0 // GraalPy change
@@ -1042,7 +1042,7 @@ PyLong_AsUnsignedLongLongMask(PyObject *op)
         PyErr_BadInternalCall();
         return (unsigned long long)-1;
     }
-    return (unsigned long long) GraalPyTruffleLong_AsPrimitive(op, MODE_COERCE_MASK, sizeof(unsigned long long));
+    return (unsigned long long) PyTruffleLong_AsPrimitive(op, MODE_COERCE_MASK, sizeof(unsigned long long));
 }
 
 /* Get a C long long int from an int object or any object that has an
@@ -2502,7 +2502,7 @@ PyLong_FromString(const char *str, char **pend, int base)
         }
     }
     if (!z) {
-        z = GraalPyTruffleLong_FromString((char *)orig_str, base);
+        z = PyTruffleLong_FromString((char *)orig_str, base);
         if (z) {
             // TODO: we should probably set the **pend out argument
         }

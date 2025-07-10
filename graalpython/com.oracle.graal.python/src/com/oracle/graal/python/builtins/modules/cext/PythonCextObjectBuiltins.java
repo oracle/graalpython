@@ -213,7 +213,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Int}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Int}, call = Ignored)
     abstract static class _PyTruffleObject_Call1 extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object callable, Object argsObj, Object kwargsObj, int singleArg,
@@ -296,7 +296,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString, PyObject, Int}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString, PyObject, Int}, call = Ignored)
     abstract static class _PyTruffleObject_CallMethod1 extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object receiver, TruffleString methodName, Object argsObj, int singleArg,

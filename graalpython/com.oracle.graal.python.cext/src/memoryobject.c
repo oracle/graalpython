@@ -751,7 +751,7 @@ PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
     assert(mem != NULL);
     assert(flags == PyBUF_READ || flags == PyBUF_WRITE);
     int readonly = (flags == PyBUF_WRITE) ? 0 : 1;
-    return GraalPyTruffle_MemoryViewFromBuffer(
+    return PyTruffle_MemoryViewFromBuffer(
             NULL, NULL, size, readonly, 1, "B", 1, (int8_t*)mem, NULL, NULL, NULL);
 }
 
@@ -769,7 +769,7 @@ PyMemoryView_FromBuffer(const Py_buffer *info)
             "PyMemoryView_FromBuffer(): info->buf must not be NULL");
         return NULL;
     }
-    return GraalPyTruffle_MemoryViewFromBuffer(
+    return PyTruffle_MemoryViewFromBuffer(
             NULL,
             NULL,
             info->len,
@@ -3430,7 +3430,7 @@ GraalPy_Private_MemoryViewFromObject(PyObject *v, int flags)
                 needs_release = pb->bf_releasebuffer != NULL;
             }
         }
-        PyObject *mv = GraalPyTruffle_MemoryViewFromBuffer(
+        PyObject *mv = PyTruffle_MemoryViewFromBuffer(
                 needs_release ? buffer : NULL, /* We only need the ptr for the release */
                 buffer->obj,
                 buffer->len,

@@ -1147,7 +1147,7 @@ _PyDict_MaybeUntrack(PyObject *op)
         return;
 
     // GraalPy change: do an upcall to consider all dict elements
-    if (!GraalPyTruffleDict_MaybeUntrack(op))
+    if (!PyTruffleDict_MaybeUntrack(op))
         return;
 
     mp = (PyDictObject *) op;
@@ -1631,7 +1631,7 @@ _PyDict_NewPresized(Py_ssize_t minused)
 {
     // GraalPy change: different implementation
     // GraalPy: we ignore requests to capacity for now
-    return GraalPyDict_New();
+    return PyDict_New();
 }
 
 #if 0 // GraalPy change
@@ -5634,7 +5634,7 @@ PyObject_GenericGetDict(PyObject *obj, void *context)
 {
     // GraalPy change: upcall for managed
     if (points_to_py_handle_space(obj)) {
-        return GraalPyTruffleObject_GenericGetDict(obj);
+        return PyTruffleObject_GenericGetDict(obj);
     }
     PyObject *dict;
     // GraalPy change: we don't have inlined values in managed dict

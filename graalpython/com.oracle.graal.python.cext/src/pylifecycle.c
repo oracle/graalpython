@@ -74,7 +74,7 @@ _Py_IsFinalizing(void)
 }
 
 void _Py_NO_RETURN  _Py_FatalErrorFunc(const char *func, const char *msg) {
-	GraalPyTruffle_FatalErrorFunc(func, msg, -1);
+	PyTruffle_FatalErrorFunc(func, msg, -1);
 	/* If the above upcall returns, then we just fall through to the 'abort' call. */
 	abort();
 }

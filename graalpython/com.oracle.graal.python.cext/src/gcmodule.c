@@ -527,7 +527,7 @@ push_native_references_to_managed(PyObject *op, GraalPyGC_Cycle *cycle)
             }
         }
         if (!dead) {
-            GraalPyTruffleObject_ReplicateNativeReferences(op, cycle->head, cycle->n);
+            PyTruffleObject_ReplicateNativeReferences(op, cycle->head, cycle->n);
         }
     }
 
@@ -622,7 +622,7 @@ visit_strong_reachable(PyObject *op, void *unused)
     if (!_PyObject_GC_IS_TRACKED(op)) {
         _PyObject_GC_TRACK(op);
     }
-    GraalPyTruffle_NotifyRefCount(op, Py_REFCNT(op));
+    PyTruffle_NotifyRefCount(op, Py_REFCNT(op));
     return 0;
 }
 
@@ -632,7 +632,7 @@ visit_strong_reachable(PyObject *op, void *unused)
 static inline int
 is_referenced_from_managed(PyGC_Head *gc)
 {
-    return is_managed(gc) || GraalPyTruffle_IsReferencedFromManaged(FROM_GC(gc));
+    return is_managed(gc) || PyTruffle_IsReferencedFromManaged(FROM_GC(gc));
 }
 
 /* Breaks a reference cycle that involves managed objects. This is done by
@@ -668,7 +668,7 @@ is_referenced_from_managed(PyGC_Head *gc)
  * the reference cycle. Therefore, if a native object of the cycle is then again
  * used in managed code, it will keep all objects of the cycle alive.
  *
- * see `GraalPyTruffleObject_ReplicateNativeReferences`
+ * see `PyTruffleObject_ReplicateNativeReferences`
  */
 
 /* GraalPy change: additions end */
@@ -1052,7 +1052,7 @@ commit_weak_candidate(PyGC_Head *weak_candidates)
          * longer used after that but just to be sure, we re-init it to have a
          * valid head.
          */
-        GraalPyTruffleObject_GC_EnsureWeak(weak_candidates);
+        PyTruffleObject_GC_EnsureWeak(weak_candidates);
         gc_list_init(weak_candidates);
     }
 }
@@ -1622,7 +1622,7 @@ gc_collect_main(PyThreadState *tstate, int generation,
     // _PyTime_t t1 = 0;   /* initialize to prevent a compiler warning */
     GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
 
-    if (GraalPyTruffle_DisableReferneceQueuePolling()) {
+    if (PyTruffle_DisableReferneceQueuePolling()) {
         // reference queue polling is currently active; cannot proceed
         return m + n;
     }
@@ -1779,7 +1779,7 @@ gc_collect_main(PyThreadState *tstate, int generation,
         PyDTrace_GC_DONE(n + m);
     }
 
-    GraalPyTruffle_EnableReferneceQueuePolling();
+    PyTruffle_EnableReferneceQueuePolling();
 
     assert(!_PyErr_Occurred(tstate));
     return n + m;
@@ -2676,7 +2676,7 @@ PyObject_GC_Track(void *op_raw)
 {
     // GraalPy change
     if (PyTruffle_Trace_Memory()) {
-        GraalPyTruffleObject_GC_Track(op_raw);
+        PyTruffleObject_GC_Track(op_raw);
     }
     PyObject *op = _PyObject_CAST(op_raw);
     if (_PyObject_GC_IS_TRACKED(op)) {
@@ -2699,7 +2699,7 @@ PyObject_GC_UnTrack(void *op_raw)
 {
     // GraalPy change
     if (PyTruffle_Trace_Memory()) {
-        GraalPyTruffleObject_GC_UnTrack(op_raw);
+        PyTruffleObject_GC_UnTrack(op_raw);
     }
     PyObject *op = _PyObject_CAST(op_raw);
     /* Obscure:  the Py_TRASHCAN mechanism requires that we be able to
@@ -2920,7 +2920,7 @@ void
 GraalPy_Private_Object_GC_Del(void *op)
 {
     if (is_managed(op)) {
-        GraalPyTruffleObject_GC_Del(op);
+        PyTruffleObject_GC_Del(op);
     } else {
         PyObject_GC_Del(op);
     }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -635,7 +635,7 @@ warn_explicit(PyThreadState *tstate, PyObject *category, PyObject *message,
               PyObject *source)
 {
     // GraalPy change: different implementation
-    return GraalPyTruffleErr_WarnExplicit(category, message, filename, lineno, module, registry);
+    return PyTruffleErr_WarnExplicit(category, message, filename, lineno, module, registry);
 }
 
 #if 0 // GraalPy change
@@ -1065,7 +1065,7 @@ warn_unicode(PyObject *category, PyObject *message,
         category = PyExc_RuntimeWarning;
 
     // GraalPy change
-    res = Graal_PyTruffleErr_Warn(message, category, stack_level, source);
+    res = _PyTruffleErr_Warn(message, category, stack_level, source);
     if (res == NULL)
         return -1;
     Py_DECREF(res);

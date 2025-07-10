@@ -229,7 +229,7 @@ _PyModule_CreateInitialized(PyModuleDef* module, int module_api_version)
         return NULL;
     }
     // GraalPy change
-    m = Graal_PyTruffleModule_CreateInitialized_PyModule_New(name);
+    m = _PyTruffleModule_CreateInitialized_PyModule_New(name);
 
     if (module->m_size > 0) {
         // GraalPy change: avoid direct struct access
@@ -240,7 +240,7 @@ _PyModule_CreateInitialized(PyModuleDef* module, int module_api_version)
             return NULL;
         }
         memset(md_state, 0, module->m_size);
-        GraalPyTruffle_Module_SetState(m, md_state);
+        PyTruffle_Module_SetState(m, md_state);
     }
 
     if (module->m_methods != NULL) {
@@ -255,7 +255,7 @@ _PyModule_CreateInitialized(PyModuleDef* module, int module_api_version)
             return NULL;
         }
     }
-    GraalPyTruffle_Module_SetDef(m, module);
+    PyTruffle_Module_SetDef(m, module);
     return (PyObject*)m;
 }
 
@@ -384,8 +384,8 @@ PyModule_FromDefAndSpec2(PyModuleDef* def, PyObject *spec, int module_api_versio
 
     if (PyModule_Check(m)) {
         // GraalPy change: avoid direct struct access
-        GraalPyTruffle_Module_SetState((PyModuleObject *)m, NULL);
-        GraalPyTruffle_Module_SetDef((PyModuleObject *)m, def);
+        PyTruffle_Module_SetState((PyModuleObject *)m, NULL);
+        PyTruffle_Module_SetDef((PyModuleObject *)m, def);
         // End of GraalPy change, CPython code was next two lines
         // ((PyModuleObject*)m)->md_state = NULL;
         // ((PyModuleObject*)m)->md_def = def;
@@ -451,14 +451,14 @@ PyModule_ExecDef(PyObject *module, PyModuleDef *def)
     if (def->m_size >= 0) {
         PyModuleObject *md = (PyModuleObject*)module;
         // GraalPy change: avoid direct struct access
-        if (GraalPy_get_PyModuleObject_md_state(md) == NULL) {
+        if (GraalPy_Private_Get_PyModuleObject_md_state(md) == NULL) {
             void* md_state = PyMem_Malloc(def->m_size);
             if (!md_state) {
                 PyErr_NoMemory();
                 return -1;
             }
             memset(md_state, 0, def->m_size);
-            GraalPyTruffle_Module_SetState(md, md_state);
+            PyTruffle_Module_SetState(md, md_state);
         }
         // End GraalPy change, original code below
         // if (md->md_state == NULL) {
@@ -523,7 +523,7 @@ PyModule_AddFunctions(PyObject *m, PyMethodDef *functions)
         return -1;
     }
     for (PyMethodDef* def = functions; def->ml_name != NULL; def++) {
-        GraalPyTruffleModule_AddFunctionToModule(def,
+        PyTruffleModule_AddFunctionToModule(def,
                        m,
                        def->ml_name,
                        def->ml_meth,
@@ -558,7 +558,7 @@ PyModule_GetDict(PyObject *m)
         return NULL;
     }
     // GraalPy change
-    return GraalPy_get_PyModuleObject_md_dict((PyModuleObject*) m);
+    return GraalPy_Private_Get_PyModuleObject_md_dict((PyModuleObject*) m);
 }
 
 #if 0 // GraalPy change
@@ -642,7 +642,7 @@ PyModule_GetDef(PyObject* m)
         return NULL;
     }
     // GraalPy change
-    return GraalPy_get_PyModuleObject_md_def((PyModuleObject*) m);
+    return GraalPy_Private_Get_PyModuleObject_md_def((PyModuleObject*) m);
 }
 
 void*
@@ -653,7 +653,7 @@ PyModule_GetState(PyObject* m)
         return NULL;
     }
     // GraalPy change
-    return GraalPy_get_PyModuleObject_md_state((PyModuleObject*) m);
+    return GraalPy_Private_Get_PyModuleObject_md_state((PyModuleObject*) m);
 }
 
 #if 0 // GraalPy change
@@ -931,7 +931,7 @@ module_traverse(PyModuleObject *m, visitproc visit, void *arg)
 {
     // GraalPy change
     if (points_to_py_handle_space(m)) {
-        return GraalPyTruffleModule_Traverse((PyObject *)m, visit, arg);
+        return PyTruffleModule_Traverse((PyObject *)m, visit, arg);
     }
     /* bpo-39824: Don't call m_traverse() if m_size > 0 and md_state=NULL */
     if (m->md_def && m->md_def->m_traverse

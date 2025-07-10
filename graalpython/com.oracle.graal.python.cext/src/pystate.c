@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -84,7 +84,7 @@ static inline PyThreadState *
 _get_thread_state() {
     PyThreadState *ts = tstate_current;
     if (UNLIKELY(ts == NULL)) {
-         ts = GraalPyTruffleThreadState_Get(&tstate_current);
+         ts = PyTruffleThreadState_Get(&tstate_current);
          tstate_current = ts;
     }
     return ts;
@@ -2296,7 +2296,7 @@ PyGILState_Check(void)
             attached = 1;
         }
     }
-    int ret = GraalPyTruffleGILState_Check();
+    int ret = PyTruffleGILState_Check();
     if (attached) {
         (*TRUFFLE_CONTEXT)->detachCurrentThread(TRUFFLE_CONTEXT);
     }
@@ -2362,7 +2362,7 @@ PyGILState_Ensure(void)
         }
         graalpy_gilstate_counter++;
     }
-    return GraalPyTruffleGILState_Ensure() ? PyGILState_UNLOCKED : PyGILState_LOCKED;
+    return PyTruffleGILState_Ensure() ? PyGILState_UNLOCKED : PyGILState_LOCKED;
 #endif // GraalPy change
 }
 
@@ -2419,16 +2419,16 @@ PyGILState_Release(PyGILState_STATE oldstate)
     }
 #else // GraalPy change
     if (oldstate == PyGILState_UNLOCKED) {
-        GraalPyTruffleGILState_Release();
+        PyTruffleGILState_Release();
     }
     if (TRUFFLE_CONTEXT) {
         graalpy_gilstate_counter--;
         if (graalpy_gilstate_counter == 0 && graalpy_attached_thread) {
-            GraalPyTruffleBeforeThreadDetach();
+            PyTruffleBeforeThreadDetach();
             (*TRUFFLE_CONTEXT)->detachCurrentThread(TRUFFLE_CONTEXT);
             graalpy_attached_thread = 0;
             /*
-             * The thread state on the Java-side is cleared in GraalPyTruffleBeforeThreadDetach.
+             * The thread state on the Java-side is cleared in PyTruffleBeforeThreadDetach.
              * As part of that the tstate_current pointer should have been set to NULL to make
              * sure to fetch a fresh pointer the next time we attach. Just to be sure, we clear
              * it here too:
@@ -3223,7 +3223,7 @@ PyObject* PyState_FindModule(struct PyModuleDef* module) {
     } else if (index == 0) {
         return NULL;
     } else {
-        return GraalPyTruffleState_FindModule(index);
+        return PyTruffleState_FindModule(index);
     }
 }
 

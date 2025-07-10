@@ -87,7 +87,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 
 public final class PythonCextPyStateBuiltins {
 
-    @CApiBuiltin(ret = Int, args = {}, acquireGil = false, call = Direct)
+    @CApiBuiltin(ret = Int, args = {}, acquireGil = false, call = Ignored)
     abstract static class PyTruffleGILState_Check extends CApiNullaryBuiltinNode {
 
         @Specialization
@@ -96,7 +96,7 @@ public final class PythonCextPyStateBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {}, acquireGil = false, call = Direct)
+    @CApiBuiltin(ret = Int, args = {}, acquireGil = false, call = Ignored)
     abstract static class PyTruffleGILState_Ensure extends CApiNullaryBuiltinNode {
 
         @Specialization
@@ -106,7 +106,7 @@ public final class PythonCextPyStateBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {}, acquireGil = false, call = Direct)
+    @CApiBuiltin(ret = Void, args = {}, acquireGil = false, call = Ignored)
     abstract static class PyTruffleGILState_Release extends CApiNullaryBuiltinNode {
 
         @Specialization

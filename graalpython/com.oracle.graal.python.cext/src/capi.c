@@ -196,15 +196,19 @@ PY_TYPE_OBJECTS
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
 
 
-#define BUILTIN(NAME, RET, ...) RET (*Graal##NAME)(__VA_ARGS__);
+#define PUBLIC_BUILTIN(NAME, RET, ...) RET (*GraalPy_Internal_Upcall_##NAME)(__VA_ARGS__);
+#define PRIVATE_BUILTIN(NAME, RET, ...) RET (*NAME)(__VA_ARGS__);
 CAPI_BUILTINS
-#undef BUILTIN
+#undef PUBLIC_BUILTIN
+#undef PRIVATE_BUILTIN
 
 static inline void initialize_builtins(void *builtin_closures[]) {
     int id = 0;
-#define BUILTIN(NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) builtin_closures[id++];
+#define PUBLIC_BUILTIN(NAME, RET, ...) GraalPy_Internal_Upcall_##NAME = (RET(*)(__VA_ARGS__)) builtin_closures[id++];
+#define PRIVATE_BUILTIN(NAME, RET, ...) NAME = (RET(*)(__VA_ARGS__)) builtin_closures[id++];
 CAPI_BUILTINS
-#undef BUILTIN
+#undef PUBLIC_BUILTIN
+#undef PRIVATE_BUILTIN
 }
 
 uint32_t Py_Truffle_Options;
@@ -224,7 +228,7 @@ static void initialize_builtin_types_and_structs() {
         NULL, NULL
 	};
 
-	GraalPyTruffle_InitBuiltinTypesAndStructs(builtin_types);
+	PyTruffle_InitBuiltinTypesAndStructs(builtin_types);
 
 	// fix up for circular dependency:
 	PyType_Type.tp_base = &PyBaseObject_Type;
@@ -234,7 +238,7 @@ static void initialize_builtin_types_and_structs() {
 
 int mmap_getbuffer(PyObject *self, Py_buffer *view, int flags) {
 	// TODO(fa) readonly flag
-    char* data = GraalPyTruffle_GetMMapData(self);
+    char* data = PyTruffle_GetMMapData(self);
     if (!data) {
         return -1;
     }
@@ -249,16 +253,16 @@ PyAPI_FUNC(void) GraalPy_Private_MMap_InitBufferProtocol(PyObject* mmap_type) {
 	    (getbufferproc)mmap_getbuffer,
 	    (releasebufferproc)NULL,
 	};
-	GraalPyTruffle_Type_SetBufferProcs((PyTypeObject *) mmap_type, &mmap_as_buffer);
+	PyTruffle_Type_SetBufferProcs((PyTypeObject *) mmap_type, &mmap_as_buffer);
 	((PyTypeObject*) mmap_type)->tp_as_buffer = &mmap_as_buffer;
 }
 
 static int cdata_getbuffer(PyObject* type, Py_buffer* view, int flags) {
-    return GraalPyTruffleCData_NewGetBuffer(type, view, flags);
+    return PyTruffleCData_NewGetBuffer(type, view, flags);
 }
 
 static void cdata_releasebuffer(PyObject* obj, Py_buffer* view) {
-    GraalPyTruffleCData_ReleaseBuffer(obj, view);
+    PyTruffleCData_ReleaseBuffer(obj, view);
 }
 
 PyAPI_FUNC(void) PyTruffleCData_InitBufferProtocol(PyObject* type) {
@@ -266,7 +270,7 @@ PyAPI_FUNC(void) PyTruffleCData_InitBufferProtocol(PyObject* type) {
         cdata_getbuffer,
         cdata_releasebuffer,
     };
-    GraalPyTruffle_Type_SetBufferProcs(((PyTypeObject*) type), &cdata_as_buffer);
+    PyTruffle_Type_SetBufferProcs(((PyTypeObject*) type), &cdata_as_buffer);
     ((PyTypeObject*) type)->tp_as_buffer = &cdata_as_buffer;
 }
 
@@ -287,12 +291,12 @@ THREAD_LOCAL PyThreadState *tstate_current = NULL;
 
 static void initialize_globals() {
     // store the thread state into a thread local variable
-    tstate_current = GraalPyTruffleThreadState_Get(&tstate_current);
-    _Py_NoneStructReference = GraalPyTruffle_None();
-    _Py_NotImplementedStructReference = GraalPyTruffle_NotImplemented();
-    _Py_EllipsisObjectReference = GraalPyTruffle_Ellipsis();
-    _Py_TrueStructReference = (struct _longobject*)GraalPyTruffle_True();
-    _Py_FalseStructReference = (struct _longobject*)GraalPyTruffle_False();
+    tstate_current = PyTruffleThreadState_Get(&tstate_current);
+    _Py_NoneStructReference = PyTruffle_None();
+    _Py_NotImplementedStructReference = PyTruffle_NotImplemented();
+    _Py_EllipsisObjectReference = PyTruffle_Ellipsis();
+    _Py_TrueStructReference = (struct _longobject*)PyTruffle_True();
+    _Py_FalseStructReference = (struct _longobject*)PyTruffle_False();
 }
 
 /* internal functions to avoid unnecessary managed <-> native conversions */
@@ -310,7 +314,7 @@ void memory_releasebuf(PyMemoryViewObject *self, Py_buffer *view);
 static int
 picklebuf_getbuf(PyPickleBufferObject *self, Py_buffer *view, int flags)
 {
-    PyObject *self_view_obj = GraalPyTruffle_PickleBuffer_viewobj((PyObject*) self);
+    PyObject *self_view_obj = PyTruffle_PickleBuffer_viewobj((PyObject*) self);
     return PyObject_GetBuffer(self_view_obj, view, flags);
 }
 
@@ -322,33 +326,33 @@ static void initialize_bufferprocs() {
         (releasebufferproc)NULL,                     /* bf_releasebuffer */
     };
     PyBytes_Type.tp_as_buffer = &bytes_as_buffer;
-    GraalPyTruffle_Type_SetBufferProcs(&PyBytes_Type, &bytes_as_buffer);
+    PyTruffle_Type_SetBufferProcs(&PyBytes_Type, &bytes_as_buffer);
 
     static PyBufferProcs bytearray_as_buffer = {
         (getbufferproc)bytearray_getbuffer,          /* bf_getbuffer */
         (releasebufferproc)bytearray_releasebuffer,  /* bf_releasebuffer */
     };
     PyByteArray_Type.tp_as_buffer = &bytearray_as_buffer;
-    GraalPyTruffle_Type_SetBufferProcs(&PyByteArray_Type, &bytearray_as_buffer);
+    PyTruffle_Type_SetBufferProcs(&PyByteArray_Type, &bytearray_as_buffer);
 
     static PyBufferProcs memory_as_buffer = {
         (getbufferproc)memory_getbuf,         /* bf_getbuffer */
         (releasebufferproc)memory_releasebuf, /* bf_releasebuffer */
     };
     PyMemoryView_Type.tp_as_buffer = &memory_as_buffer;
-    GraalPyTruffle_Type_SetBufferProcs(&PyMemoryView_Type, &memory_as_buffer);
+    PyTruffle_Type_SetBufferProcs(&PyMemoryView_Type, &memory_as_buffer);
 
     static PyBufferProcs array_as_buffer;
-    array_as_buffer.bf_getbuffer = GraalPyTruffle_Array_getbuffer,
-    array_as_buffer.bf_releasebuffer = GraalPyTruffle_Array_releasebuffer,
+    array_as_buffer.bf_getbuffer = PyTruffle_Array_getbuffer,
+    array_as_buffer.bf_releasebuffer = PyTruffle_Array_releasebuffer,
     Arraytype.tp_as_buffer = &array_as_buffer;
-    GraalPyTruffle_Type_SetBufferProcs(&Arraytype, &array_as_buffer);
+    PyTruffle_Type_SetBufferProcs(&Arraytype, &array_as_buffer);
 
     static PyBufferProcs picklebuf_as_buffer;
     picklebuf_as_buffer.bf_getbuffer = (getbufferproc)picklebuf_getbuf,
     picklebuf_as_buffer.bf_releasebuffer = empty_releasebuf,
     PyPickleBuffer_Type.tp_as_buffer = &picklebuf_as_buffer;
-    GraalPyTruffle_Type_SetBufferProcs(&PyPickleBuffer_Type, &picklebuf_as_buffer);
+    PyTruffle_Type_SetBufferProcs(&PyPickleBuffer_Type, &picklebuf_as_buffer);
 
 }
 
@@ -722,7 +726,7 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures,
      */
     initialize_builtins(builtin_closures);
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtins: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
-    Py_Truffle_Options = GraalPyTruffle_Native_Options();
+    Py_Truffle_Options = PyTruffle_Native_Options();
 
     initialize_builtin_types_and_structs();
     // initialize global variables like '_Py_NoneStruct', etc.
@@ -734,7 +738,7 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures,
     _PyFloat_InitState(NULL);
 
     // TODO: initialize during cext initialization doesn't work at the moment
-    Py_FileSystemDefaultEncoding = "utf-8"; // strdup(PyUnicode_AsUTF8(GraalPyTruffle_FileSystemDefaultEncoding()));
+    Py_FileSystemDefaultEncoding = "utf-8"; // strdup(PyUnicode_AsUTF8(PyTruffle_FileSystemDefaultEncoding()));
 
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_graal_capi: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
 }
@@ -743,7 +747,7 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures,
  * This function is called from Java during C API initialization to get the
  * pointer `_graalpy_finalizing`.
  */
-PyAPI_FUNC(int8_t *) GraalPy_get_finalize_capi_pointer() {
+PyAPI_FUNC(int8_t *) GraalPy_Private_GetFinalizeCApiPointer() {
     assert(!_graalpy_finalizing);
     // We actually leak this memory on purpose. On the Java side, this is
     // written to in a VM shutdown hook. Once such a hook is registered it
@@ -758,7 +762,7 @@ static void unimplemented(const char* name) {
     print_c_stacktrace();
 }
 
-#define FUNC_NOT_IMPLEMENTED unimplemented(__func__); GraalPyTrufflePrintStacktrace(); exit(-1);
+#define FUNC_NOT_IMPLEMENTED unimplemented(__func__); PyTrufflePrintStacktrace(); exit(-1);
 
 // {{start CAPI_BUILTINS}}
 #include "capi.gen.c.h"

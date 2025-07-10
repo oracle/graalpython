@@ -3051,14 +3051,14 @@ expand_template(TemplateObject *self, MatchObject *match)
 #if 0 // GraalPy change
         result = _PyUnicode_JoinArray(&_Py_STR(empty), out, count);
 #else // GraalPy change: different implementation
-        count = GraalPyTruffleList_TryGetItems(list, &out);
+        count = PyTruffleList_TryGetItems(list, &out);
         result = _PyUnicode_JoinArray(PyUnicode_FromString(""), out, count);
 #endif // GraalPy change
     }
     else {
         // Py_SET_SIZE(list, count); // GraalPy change
-        // GraalPy change: replace '&_Py_SINGLETON(bytes_empty)' with 'GraalPyTruffle_Bytes_EmptyWithCapacity(0)'
-        result = _PyBytes_Join(GraalPyTruffle_Bytes_EmptyWithCapacity(0), list);
+        // GraalPy change: replace '&_Py_SINGLETON(bytes_empty)' with 'PyTruffle_Bytes_EmptyWithCapacity(0)'
+        result = _PyBytes_Join(PyTruffle_Bytes_EmptyWithCapacity(0), list);
     }
 
 cleanup:

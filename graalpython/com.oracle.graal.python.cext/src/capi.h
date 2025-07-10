@@ -131,11 +131,13 @@ typedef struct gc_generation GCGeneration;
 #include "capi.gen.h"
 
 
-#define BUILTIN(NAME, RET, ...) extern PyAPI_FUNC(RET) (*Graal##NAME)(__VA_ARGS__);
+#define PUBLIC_BUILTIN(NAME, RET, ...) extern PyAPI_FUNC(RET) (*GraalPy_Internal_Upcall_##NAME)(__VA_ARGS__);
+#define PRIVATE_BUILTIN(NAME, RET, ...) extern PyAPI_FUNC(RET) (*NAME)(__VA_ARGS__);
 CAPI_BUILTINS
-#undef BUILTIN
+#undef PUBLIC_BUILTIN
+#undef PRIVATE_BUILTIN
 
-#define GET_SLOT_SPECIAL(OBJ, RECEIVER, NAME, SPECIAL) ( points_to_py_handle_space(OBJ) ? GraalPy_get_##RECEIVER##_##NAME((RECEIVER*) (OBJ)) : ((RECEIVER*) (OBJ))->SPECIAL )
+#define GET_SLOT_SPECIAL(OBJ, RECEIVER, NAME, SPECIAL) ( points_to_py_handle_space(OBJ) ? GraalPy_Private_Get_##RECEIVER##_##NAME((RECEIVER*) (OBJ)) : ((RECEIVER*) (OBJ))->SPECIAL )
 
 PyAPI_DATA(uint32_t) Py_Truffle_Options;
 
@@ -159,7 +161,7 @@ static void print_c_stacktrace() {
 
 static void attach_gdb() {
     pid_t my_pid = getpid();
-    char pathname = "/bin/sh";
+    char* pathname = "/bin/sh";
     char gdbcmd[28] = {'\0'};
     snprintf(gdbcmd, sizeof(gdbcmd) - 1, "gdb -p %u", my_pid);
     char *argv[4];
@@ -219,7 +221,7 @@ PyTruffle_Log(int level, const char *format, ...)
         va_list args;
         va_start(args, format);
         vsprintf(buffer, format, args);
-        GraalPyTruffle_LogString(level, buffer);
+        PyTruffle_LogString(level, buffer);
         va_end(args);
     }
 }

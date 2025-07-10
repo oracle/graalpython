@@ -137,7 +137,7 @@ PyObject_CallNoArgs(PyObject *func)
     PyThreadState *tstate = _PyThreadState_GET();
     return _PyObject_VectorcallTstate(tstate, func, NULL, 0, NULL);
 #else // GraalPy change
-    return Graal_PyTruffleObject_Call1(func, NULL, NULL, 0);
+    return _PyTruffleObject_Call1(func, NULL, NULL, 0);
 #endif // GraalPy change
 }
 
@@ -417,7 +417,7 @@ PyObject *
 PyObject_Call(PyObject *callable, PyObject *args, PyObject *kwargs)
 {
     // GraalPy change: different implementation
-    return Graal_PyTruffleObject_Call1(callable, args, kwargs, 0);
+    return _PyTruffleObject_Call1(callable, args, kwargs, 0);
 }
 
 
@@ -514,7 +514,7 @@ PyObject *
 PyObject_CallObject(PyObject *callable, PyObject *args)
 {
     // GraalPy change: different implementation
-    return Graal_PyTruffleObject_Call1(callable, args, NULL, 0);
+    return _PyTruffleObject_Call1(callable, args, NULL, 0);
 }
 
 
@@ -621,7 +621,7 @@ PyObject_CallFunction(PyObject *callable, const char *format, ...)
 {
     // GraalPy change: different implementation
     if (format == NULL || format[0] == '\0') {
-        return Graal_PyTruffleObject_Call1(callable, NULL, NULL, 0);
+        return _PyTruffleObject_Call1(callable, NULL, NULL, 0);
     }
     va_list va;
     va_start(va, format);
@@ -629,9 +629,9 @@ PyObject_CallFunction(PyObject *callable, const char *format, ...)
     va_end(va);
     // A special case in CPython for backwards compatibility
     if (is_single_arg(format) && PyTuple_Check(args)) {
-        return Graal_PyTruffleObject_Call1(callable, args, NULL, 0);
+        return _PyTruffleObject_Call1(callable, args, NULL, 0);
     }
-    return Graal_PyTruffleObject_Call1(callable, args, NULL, is_single_arg(format));
+    return _PyTruffleObject_Call1(callable, args, NULL, is_single_arg(format));
 }
 
 
@@ -660,7 +660,7 @@ _PyObject_CallFunction_SizeT(PyObject *callable, const char *format, ...)
 {
     // GraalPy change: different implementation
     if (format == NULL || format[0] == '\0') {
-        return Graal_PyTruffleObject_Call1(callable, NULL, NULL, 0);
+        return _PyTruffleObject_Call1(callable, NULL, NULL, 0);
     }
     va_list va;
     va_start(va, format);
@@ -668,9 +668,9 @@ _PyObject_CallFunction_SizeT(PyObject *callable, const char *format, ...)
     va_end(va);
     // A special case in CPython for backwards compatibility
     if (is_single_arg(format) && PyTuple_Check(args)) {
-        return Graal_PyTruffleObject_Call1(callable, args, NULL, 0);
+        return _PyTruffleObject_Call1(callable, args, NULL, 0);
     }
-    return Graal_PyTruffleObject_Call1(callable, args, NULL, is_single_arg(format));
+    return _PyTruffleObject_Call1(callable, args, NULL, is_single_arg(format));
 }
 
 
@@ -696,13 +696,13 @@ PyObject_CallMethod(PyObject *obj, const char *name, const char *format, ...)
     // GraalPy change: different implementation
     PyObject* args;
     if (format == NULL || format[0] == '\0') {
-        return Graal_PyTruffleObject_CallMethod1(obj, name, NULL, 0);
+        return _PyTruffleObject_CallMethod1(obj, name, NULL, 0);
     }
     va_list va;
     va_start(va, format);
     args = Py_VaBuildValue(format, va);
     va_end(va);
-    return Graal_PyTruffleObject_CallMethod1(obj, name, args, is_single_arg(format));
+    return _PyTruffleObject_CallMethod1(obj, name, args, is_single_arg(format));
 }
 
 
@@ -800,13 +800,13 @@ _PyObject_CallMethod_SizeT(PyObject *obj, const char *name,
     // GraalPy change: different implementation
     PyObject* args;
     if (format == NULL || format[0] == '\0') {
-        return Graal_PyTruffleObject_CallMethod1(obj, name, NULL, 0);
+        return _PyTruffleObject_CallMethod1(obj, name, NULL, 0);
     }
     va_list va;
     va_start(va, format);
     args = _Py_VaBuildValue_SizeT(format, va);
     va_end(va);
-    return Graal_PyTruffleObject_CallMethod1(obj, name, args, is_single_arg(format));
+    return _PyTruffleObject_CallMethod1(obj, name, args, is_single_arg(format));
 }
 
 
@@ -944,7 +944,7 @@ PyObject_CallMethodObjArgs(PyObject *obj, PyObject *name, ...)
     va_list vargs;
     va_start(vargs, name);
     // the arguments are given as a variable list followed by NULL
-    PyObject *result = GraalPyTruffleObject_CallMethodObjArgs(obj, name, &vargs);
+    PyObject *result = PyTruffleObject_CallMethodObjArgs(obj, name, &vargs);
     va_end(vargs);
     return result;
 }
@@ -957,7 +957,7 @@ _PyObject_CallMethodIdObjArgs(PyObject *obj, _Py_Identifier *name, ...)
     va_list vargs;
     va_start(vargs, name);
     // the arguments are given as a variable list followed by NULL
-    PyObject *result = GraalPyTruffleObject_CallMethodObjArgs(obj, _PyUnicode_FromId(name), &vargs);
+    PyObject *result = PyTruffleObject_CallMethodObjArgs(obj, _PyUnicode_FromId(name), &vargs);
     va_end(vargs);
     return result;
 }
@@ -970,7 +970,7 @@ PyObject_CallFunctionObjArgs(PyObject *callable, ...)
     va_list vargs;
     va_start(vargs, callable);
     // the arguments are given as a variable list followed by NULL
-    PyObject *result = GraalPyTruffleObject_CallFunctionObjArgs(callable, &vargs);
+    PyObject *result = PyTruffleObject_CallFunctionObjArgs(callable, &vargs);
     va_end(vargs);
     return result;
 }

@@ -48,7 +48,7 @@ _list_clear(PyListObject *a)
 
     /* Because XDECREF can recursively invoke operations on
        this list, we make it empty first. */
-    i = GraalPyTruffleList_TryGetItems((PyObject *)a, &item);
+    i = PyTruffleList_TryGetItems((PyObject *)a, &item);
     if (i > 0) {
         assert(item != NULL);
         while (--i >= 0) {
@@ -75,7 +75,7 @@ list_traverse(PyListObject *o, visitproc visit, void *arg)
      * explanation, see 'dictobject.c: dict_traverse'.
      */
     if (points_to_py_handle_space(o)) {
-        size = GraalPyTruffleList_TryGetItems((PyObject *)o, &ob_item);
+        size = PyTruffleList_TryGetItems((PyObject *)o, &ob_item);
     } else {
         size = Py_SIZE(o);
         ob_item = o->ob_item;

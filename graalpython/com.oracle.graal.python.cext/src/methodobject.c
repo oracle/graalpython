@@ -57,7 +57,7 @@ PyObject *PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
 
 
 PyObject* PyCMethod_New(PyMethodDef *ml, PyObject *self, PyObject *module, PyTypeObject *cls) {
-    return GraalPyTruffleCMethod_NewEx(ml, ml->ml_name,
+    return PyTruffleCMethod_NewEx(ml, ml->ml_name,
                                            ml->ml_meth,
                                            ml->ml_flags,
                                            get_method_flags_wrapper(ml->ml_flags),
@@ -113,6 +113,6 @@ void
 GraalPyCFunction_SetDoc(PyObject *func, const char *doc) {
     GraalPy_Private_GET_PyCFunctionObject_m_ml(func)->ml_doc = doc;
     if (points_to_py_handle_space(func)) {
-        GraalPyTruffleCFunction_SetDoc(func, doc);
+        PyTruffleCFunction_SetDoc(func, doc);
     }
 }

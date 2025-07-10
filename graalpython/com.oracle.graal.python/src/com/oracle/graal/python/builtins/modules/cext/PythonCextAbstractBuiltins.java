@@ -894,7 +894,7 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
     abstract static class PyTruffleIter_Send extends CApiBinaryBuiltinNode {
         @Specialization
         Object send(Object iter, Object arg,

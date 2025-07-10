@@ -488,7 +488,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 line += ") {";
                 lines.add(line);
                 if (value.call.equals("Direct")) {
-                    line = "    " + (isVoid(value.returnType) ? "" : "return ") + "Graal" + name + "(";
+                    line = "    " + (isVoid(value.returnType) ? "" : "return ") + "GraalPy_Internal_Upcall_" + name + "(";
                     for (int i = 0; i < value.arguments.length; i++) {
                         line += (i == 0 ? "" : ", ");
                         line += argName(i);
@@ -559,7 +559,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
     /**
      * Generates the builtin specification in capi.h, which includes only the builtins implemented
-     * in Java code. Additionally, it generates helpers for all "Py_get_" and "Py_set_" builtins.
+     * in Java code. Additionally, it generates helpers for all "GraalPy_Private_Get_" and
+     * "GraalPy_Private_Set_" builtins.
      */
     private void generateCApiHeader(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
         List<String> lines = new ArrayList<>();
@@ -567,7 +568,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         int id = 0;
         for (var entry : javaBuiltins) {
             assert (id++) == entry.id;
-            String line = "    BUILTIN(" + entry.name + ", " + getCSignature(entry.returnType);
+            String prefix = entry.call.equals("Direct") ? "PUBLIC" : "PRIVATE";
+            String line = "    " + prefix + "_BUILTIN(" + entry.name + ", " + getCSignature(entry.returnType);
             for (var arg : entry.arguments) {
                 line += ", " + getCSignature(arg);
             }
@@ -579,23 +581,27 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         for (var entry : javaBuiltins) {
             String name = entry.name;
             if (!name.endsWith("_dummy")) {
-                if (name.startsWith("Py_get_")) {
+                String getPrefix = "GraalPy_Private_Get_";
+                String setPrefix = "GraalPy_Private_Set_";
+                if (name.startsWith(getPrefix)) {
                     assert entry.arguments.length == 1 : name;
                     String type = name(entry.arguments[0]).replace("Wrapper", "");
                     StringBuilder macro = new StringBuilder();
-                    assert name.charAt(7 + type.length()) == '_' : name;
-                    String field = name.substring(7 + type.length() + 1); // after "_"
-                    macro.append("#define GraalPy_Private_GET_" + name.substring(7) +
-                                    "(OBJ) ( points_to_py_handle_space(OBJ) ? Graal" + name + "((" + type + "*) (OBJ)) : ((" + type + "*) (OBJ))->" + field + ")");
+                    assert name.charAt(getPrefix.length() + type.length()) == '_' : name;
+                    String unprefixed = name.substring(getPrefix.length());
+                    String field = unprefixed.substring(type.length() + 1);
+                    macro.append("#define GraalPy_Private_GET_" + unprefixed +
+                                    "(OBJ) ( points_to_py_handle_space(OBJ) ? " + name + "((" + type + "*) (OBJ)) : ((" + type + "*) (OBJ))->" + field + ")");
                     lines.add(macro.toString());
-                } else if (name.startsWith("Py_set_")) {
+                } else if (name.startsWith(setPrefix)) {
                     assert entry.arguments.length == 2 : name;
                     String type = name(entry.arguments[0]).replace("Wrapper", "");
                     StringBuilder macro = new StringBuilder();
-                    assert name.charAt(7 + type.length()) == '_' : name;
-                    String field = name.substring(7 + type.length() + 1); // after "_"
-                    macro.append("#define GraalPy_Private_SET_" + name.substring(7) +
-                                    "(OBJ, VALUE) { if (points_to_py_handle_space(OBJ)) Graal" + name + "((" + type + "*) (OBJ), (VALUE)); else  ((" + type + "*) (OBJ))->" + field + " = (VALUE); }");
+                    assert name.charAt(setPrefix.length() + type.length()) == '_' : name;
+                    String unprefixed = name.substring(setPrefix.length());
+                    String field = unprefixed.substring(type.length() + 1);
+                    macro.append("#define GraalPy_Private_SET_" + unprefixed +
+                                    "(OBJ, VALUE) { if (points_to_py_handle_space(OBJ)) " + name + "((" + type + "*) (OBJ), (VALUE)); else  ((" + type + "*) (OBJ))->" + field + " = (VALUE); }");
                     lines.add(macro.toString());
                 }
             }
@@ -667,10 +673,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             lines.add("        hasMember = reallyHasMember(capiLibrary, \"" + builtin.name + "\");");
             if (builtin.call.equals("CImpl") || builtin.call.equals("Direct") || builtin.call.equals("NotImplemented")) {
                 lines.add("        if (!hasMember) messages.add(\"missing implementation: " + builtin.name + "\");");
-            } else if (builtin.call.equals("Ignored")) {
-                lines.add("        if (hasMember) messages.add(\"unexpected C impl: " + builtin.name + "\");");
-            } else {
-                lines.add("        messages.add(hasMember ? \"unexpected C impl: " + builtin.name + "\" : \"missing implementation: " + builtin.name + "\");");
             }
         }
         lines.add("");
@@ -707,9 +709,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                                 }
 
                                 /**
-                                 * Checks whether the "not implemented" state of builtins matches whether they exist in the capi
-                                 * library: CApiCallPath#NotImplemented and CApiCallPath#Ignored builtins cannot have an
-                                 * implementation, and all others need to be present.
+                                 * Checks whether the expected builtins exist in the library.
                                  */
                                 public static boolean assertBuiltins(Object capiLibrary) {
                                     boolean hasMember = false;
@@ -821,8 +821,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             newBuiltins.stream().forEach(processingEnv.getMessager()::printError);
         }
 
-        names.removeIf(n -> n.startsWith("Py_get_"));
-        names.removeIf(n -> n.startsWith("Py_set_"));
+        names.removeIf(n -> n.startsWith("GraalPy"));
         names.removeIf(n -> n.startsWith("PyTruffle"));
         names.removeIf(n -> n.startsWith("_PyTruffle"));
         names.removeAll(Arrays.asList(ADDITIONAL));

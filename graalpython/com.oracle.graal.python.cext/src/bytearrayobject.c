@@ -128,9 +128,9 @@ PyByteArray_FromStringAndSize(const char *bytes, Py_ssize_t size)
     }
     // GraalPy change: different implementation
     if (bytes != NULL) {
-        return GraalPyTruffleByteArray_FromStringAndSize(bytes, size);
+        return PyTruffleByteArray_FromStringAndSize(bytes, size);
     }
-    return GraalPyTruffle_ByteArray_EmptyWithCapacity(size);
+    return PyTruffle_ByteArray_EmptyWithCapacity(size);
 }
 
 Py_ssize_t

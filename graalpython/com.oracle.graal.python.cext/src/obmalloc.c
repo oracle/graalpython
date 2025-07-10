@@ -377,8 +377,8 @@ _GraalPyMem_PrepareAlloc(GraalPyMem_t *state, size_t size)
     while ((state->allocated_memory + size) > state->native_memory_gc_barrier) {
         if (state->max_native_memory == 0) {
             state->allocated_memory = 0;
-            state->max_native_memory = GraalPyTruffle_GetMaxNativeMemory();
-            state->native_memory_gc_barrier = GraalPyTruffle_GetInitialNativeMemory();
+            state->max_native_memory = PyTruffle_GetMaxNativeMemory();
+            state->native_memory_gc_barrier = PyTruffle_GetInitialNativeMemory();
             continue;
         }
         PyTruffle_Log(PY_TRUFFLE_LOG_CONFIG,
@@ -388,7 +388,7 @@ _GraalPyMem_PrepareAlloc(GraalPyMem_t *state, size_t size)
         size_t delay = 0;
         for (int iteration = 0; iteration < MAX_COLLECTION_RETRIES;
                 iteration++) {
-            GraalPyTruffle_TriggerGC(delay);
+            PyTruffle_TriggerGC(delay);
             delay += COLLECTION_DELAY_INCREMENT;
             if ((state->allocated_memory + size)
                     <= state->native_memory_gc_barrier) {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -1794,7 +1794,7 @@ fail:
         PyErr_SetString(PyExc_SystemError, "PyEval_EvalCodeEx: NULL globals");
         return NULL;
     }
-    return Graal_PyTruffleEval_EvalCodeEx(_co, globals, locals != NULL ? locals : Py_None,
+    return _PyTruffleEval_EvalCodeEx(_co, globals, locals != NULL ? locals : Py_None,
                                   args, argcount,
                                   kws, kwcount,
                                   defs, defcount,

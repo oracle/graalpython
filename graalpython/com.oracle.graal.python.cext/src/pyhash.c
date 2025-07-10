@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -110,7 +110,7 @@ _Py_HashDouble(PyObject *inst, double v)
             return _Py_HashPointer(inst);
     }
     // GraalPy change: different implementation
-    return Graal_PyTruffle_HashDouble(v);
+    return _PyTruffle_HashDouble(v);
 }
 
 Py_hash_t
@@ -492,10 +492,10 @@ long _PyHASH_IMAG;
 void
 initialize_hashes()
 {
-    _PyHASH_INF = GraalPyTruffle_HashConstant(0);
-    _PyHASH_MODULUS = GraalPyTruffle_HashConstant(1);
-    _PyHASH_IMAG = GraalPyTruffle_HashConstant(2);
-    GraalPyTruffleHash_InitSecret((int8_t *)&_Py_HashSecret);
+    _PyHASH_INF = PyTruffle_HashConstant(0);
+    _PyHASH_MODULUS = PyTruffle_HashConstant(1);
+    _PyHASH_IMAG = PyTruffle_HashConstant(2);
+    PyTruffleHash_InitSecret((int8_t *)&_Py_HashSecret);
 }
 
 #ifdef __cplusplus

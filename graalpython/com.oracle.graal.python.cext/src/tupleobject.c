@@ -121,7 +121,7 @@ PyTuple_GetItem(PyObject *op, Py_ssize_t i) {
         ob_item = ((GraalPyVarObject *) ptr)->ob_item;
         if (ob_item == NULL) {
             // native data ptr not set; do upcall
-            return GraalPyTruffleTuple_GetItem(op, i);
+            return PyTruffleTuple_GetItem(op, i);
         }
     } else {
         ob_item = ((PyTupleObject *) op)->ob_item;
@@ -993,7 +993,7 @@ _PyTuple_Resize(PyObject **pv, Py_ssize_t newsize)
     // Begin GraalPy change
     if (points_to_py_handle_space(v)) {
         GraalPyVarObject *o = (GraalPyVarObject *)pointer_to_stub(v);
-        PyObject** new_items = GraalPyTruffleTuple_Resize((PyObject *)v, newsize, o->ob_item);
+        PyObject** new_items = PyTruffleTuple_Resize((PyObject *)v, newsize, o->ob_item);
         if (new_items == NULL && o->ob_item != NULL) {
             *pv = NULL;
             return -1;
@@ -1377,7 +1377,7 @@ PyTruffleTuple_GetItems(PyObject *op)
            if we can optimize for something, it should be the path without the
            upcall. */
         if (UNLIKELY(ob_item == NULL)) {
-            ptr->ob_item = (ob_item = GraalPy_get_PyTupleObject_ob_item((PyTupleObject *)op));
+            ptr->ob_item = (ob_item = GraalPy_Private_Get_PyTupleObject_ob_item((PyTupleObject *)op));
         }
     } else {
         ob_item = ((PyTupleObject *) op)->ob_item;
