@@ -67,7 +67,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetTypeNodeGen;
@@ -494,7 +494,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                         @Cached GetObjectSlotsNode getSlotsNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached GetObjectTypeNode getObjectType,
-                        @Cached CastToTruffleStringCheckedNode castToTruffleStringNode,
+                        @Cached CastToTruffleStringChecked1Node castToTruffleStringNode,
                         @Cached InlinedConditionProfile hasDescrGetProfile,
                         @Cached InlinedConditionProfile getObjectIsStartObjectProfile,
                         @Cached IsForeignObjectNode isForeignObjectNode,
