@@ -75,10 +75,6 @@ public abstract class GetFixedAttributeNode extends PNodeWithContext {
         return key;
     }
 
-    public final Object executeObject(VirtualFrame frame, Object object) {
-        return execute(frame, object);
-    }
-
     public final Object execute(VirtualFrame frame, Object object) {
         return executeImpl(frame, object, getSlotsNode.executeCached(object));
     }

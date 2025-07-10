@@ -93,13 +93,13 @@ public final class AbstractBuiltinMethodBuiltins extends PythonBuiltins {
         @Specialization
         static Object getName(VirtualFrame frame, PBuiltinMethod method,
                         @Shared @Cached("create(T___NAME__)") GetFixedAttributeNode getNameAttrNode) {
-            return getNameAttrNode.executeObject(frame, method.getFunction());
+            return getNameAttrNode.execute(frame, method.getFunction());
         }
 
         @Specialization
         static Object getName(VirtualFrame frame, PMethod method,
                         @Shared @Cached("create(T___NAME__)") GetFixedAttributeNode getNameAttrNode) {
-            return getNameAttrNode.executeObject(frame, method.getFunction());
+            return getNameAttrNode.execute(frame, method.getFunction());
         }
     }
 
@@ -141,7 +141,7 @@ public final class AbstractBuiltinMethodBuiltins extends PythonBuiltins {
                         SimpleTruffleStringFormatNode simpleTruffleStringFormatNode, PRaiseNode raiseNode) {
             TruffleString methodName;
             try {
-                methodName = castToStringNode.execute(inliningTarget, getNameAttrNode.executeObject(frame, method));
+                methodName = castToStringNode.execute(inliningTarget, getNameAttrNode.execute(frame, method));
             } catch (CannotCastException e) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_UNICODE_OBJECT, T___NAME__);
             }
@@ -152,7 +152,7 @@ public final class AbstractBuiltinMethodBuiltins extends PythonBuiltins {
             Object type = isTypeNode.execute(inliningTarget, self) ? self : getClassNode.execute(inliningTarget, self);
             TruffleString typeQualName;
             try {
-                typeQualName = castToStringNode.execute(inliningTarget, getQualNameAttrNode.executeObject(frame, type));
+                typeQualName = castToStringNode.execute(inliningTarget, getQualNameAttrNode.execute(frame, type));
             } catch (CannotCastException e) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_UNICODE_OBJECT, T___QUALNAME__);
             }

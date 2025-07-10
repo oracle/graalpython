@@ -100,7 +100,7 @@ public final class MethodWrapperBuiltins extends PythonBuiltins {
                         @Shared @Cached GetNameNode getTypeNameNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             TruffleString typeName = getTypeNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self.getSelf()));
-            return simpleTruffleStringFormatNode.format("<method-wrapper '%s' of %s object at 0x%s>", getNameNode.executeObject(frame, self.getFunction()), typeName,
+            return simpleTruffleStringFormatNode.format("<method-wrapper '%s' of %s object at 0x%s>", getNameNode.execute(frame, self.getFunction()), typeName,
                             PythonAbstractObject.systemHashCodeAsHexString(self.getSelf()));
         }
 
@@ -112,7 +112,7 @@ public final class MethodWrapperBuiltins extends PythonBuiltins {
                         @Shared @Cached GetNameNode getTypeNameNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             TruffleString typeName = getTypeNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self.getSelf()));
-            return simpleTruffleStringFormatNode.format("<method-wrapper '%s' of %s object at 0x%s>", getNameNode.executeObject(frame, self.getFunction()), typeName,
+            return simpleTruffleStringFormatNode.format("<method-wrapper '%s' of %s object at 0x%s>", getNameNode.execute(frame, self.getFunction()), typeName,
                             PythonAbstractObject.systemHashCodeAsHexString(self.getSelf()));
         }
 

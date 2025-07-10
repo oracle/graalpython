@@ -99,14 +99,14 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         static TruffleString doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor self,
                         @Shared @Cached("create(T___QUALNAME__)") GetFixedAttributeNode readQualNameNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("%s.%s", toStr(readQualNameNode.executeObject(frame, self.getType())), self.getName());
+            return simpleTruffleStringFormatNode.format("%s.%s", toStr(readQualNameNode.execute(frame, self.getType())), self.getName());
         }
 
         @Specialization
         static TruffleString doIndexedSlotDescriptor(VirtualFrame frame, IndexedSlotDescriptor self,
                         @Shared @Cached("create(T___QUALNAME__)") GetFixedAttributeNode readQualNameNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("%s.%s", toStr(readQualNameNode.executeObject(frame, self.getType())), self.getName());
+            return simpleTruffleStringFormatNode.format("%s.%s", toStr(readQualNameNode.execute(frame, self.getType())), self.getName());
         }
 
         @TruffleBoundary

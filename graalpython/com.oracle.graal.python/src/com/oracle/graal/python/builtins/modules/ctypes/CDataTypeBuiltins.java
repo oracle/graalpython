@@ -334,7 +334,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached CtypesDlSymNode dlSymNode,
                         @Cached PRaiseNode raiseNode) {
             auditNode.audit(inliningTarget, "ctypes.dlsym", dll, name);
-            Object obj = getAttributeNode.executeObject(frame, dll);
+            Object obj = getAttributeNode.execute(frame, dll);
             if (!longCheckNode.execute(inliningTarget, obj)) {
                 throw raiseNode.raise(inliningTarget, TypeError, THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER);
             }

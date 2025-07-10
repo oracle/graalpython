@@ -2062,7 +2062,7 @@ public abstract class TypeNodes {
             // Call __init_subclass__ on the parent of a newly generated type
             SuperObject superObject = PFactory.createSuperObject(language);
             superObject.init(newType, newType, newType);
-            callInitSubclassNode.execute(frame, getInitSubclassNode.executeObject(frame, superObject), PythonUtils.EMPTY_OBJECT_ARRAY, kwds);
+            callInitSubclassNode.execute(frame, getInitSubclassNode.execute(frame, superObject), PythonUtils.EMPTY_OBJECT_ARRAY, kwds);
 
             newType.initializeMroShape(language);
 

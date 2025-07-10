@@ -188,7 +188,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
                         @Cached MakeFieldsNode recursiveNode,
                         @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached PRaiseNode raiseNode) {
-            Object fields = getAttrString.executeObject(frame, descr.proto);
+            Object fields = getAttrString.execute(frame, descr.proto);
             if (!sequenceCheckNode.execute(inliningTarget, fields)) {
                 throw raiseNode.raise(inliningTarget, TypeError, FIELDS_MUST_BE_A_SEQUENCE);
             }
