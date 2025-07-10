@@ -244,7 +244,7 @@ PySlice_Unpack(PyObject *_r,
                   "-PY_SSIZE_T_MAX < PY_SSIZE_T_MIN + 1");
 
     // GraalPy change: use our accessor functions
-    PyObject* rstep = PySliceObject_step(r);
+    PyObject* rstep = GraalPy_Private_GET_PySliceObject_step(r);
     if (rstep == Py_None) {
         *step = 1;
     }
@@ -264,7 +264,7 @@ PySlice_Unpack(PyObject *_r,
             *step = -PY_SSIZE_T_MAX;
     }
 
-    PyObject* rstart =  PySliceObject_start(r);
+    PyObject* rstart =  GraalPy_Private_GET_PySliceObject_start(r);
     if (rstart == Py_None) {
         *start = *step < 0 ? PY_SSIZE_T_MAX : 0;
     }
@@ -272,7 +272,7 @@ PySlice_Unpack(PyObject *_r,
         if (!_PyEval_SliceIndex(rstart, start)) return -1;
     }
 
-    PyObject* rstop = PySliceObject_stop(r);
+    PyObject* rstop = GraalPy_Private_GET_PySliceObject_stop(r);
     if (rstop == Py_None) {
         *stop = *step < 0 ? PY_SSIZE_T_MIN : PY_SSIZE_T_MAX;
     }
@@ -724,13 +724,13 @@ PyTypeObject PySlice_Type = {
 // GraalPy additions
 
 PyObject* PySlice_Start(PySliceObject *slice) {
-    return PySliceObject_start(slice);
+    return GraalPy_Private_GET_PySliceObject_start(slice);
 }
 
 PyObject* PySlice_Stop(PySliceObject *slice) {
-    return PySliceObject_stop(slice);
+    return GraalPy_Private_GET_PySliceObject_stop(slice);
 }
 
 PyObject* PySlice_Step(PySliceObject *slice) {
-    return PySliceObject_step(slice);
+    return GraalPy_Private_GET_PySliceObject_step(slice);
 }

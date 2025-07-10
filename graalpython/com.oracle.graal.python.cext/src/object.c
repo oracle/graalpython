@@ -2848,7 +2848,7 @@ Py_ssize_t PyTruffle_REFCNT(PyObject *obj) {
     {
         res = pointer_to_stub(obj)->ob_refcnt;
 #ifndef NDEBUG
-        if (PyTruffle_Debug_CAPI() && PyObject_ob_refcnt(obj) != res)
+        if (PyTruffle_Debug_CAPI() && GraalPy_Private_GET_PyObject_ob_refcnt(obj) != res)
         {
             Py_FatalError("Refcount of native stub and managed object differ");
         }
@@ -2891,7 +2891,7 @@ PyTypeObject* PyTruffle_TYPE(PyObject *a) {
     {
         res = pointer_to_stub(a)->ob_type;
 #ifndef NDEBUG
-        if (PyTruffle_Debug_CAPI() && PyObject_ob_type(a) != res)
+        if (PyTruffle_Debug_CAPI() && GraalPy_Private_GET_PyObject_ob_type(a) != res)
         {
             Py_FatalError("Type of native stub and managed object differ");
         }

@@ -15239,7 +15239,7 @@ unsigned int PyTruffleUnicode_CHECK_INTERNED(PyObject *op) {
 }
 
 Py_ssize_t PyTruffleUnicode_GET_LENGTH(PyObject* op) {
-	return PyASCIIObject_length(op);
+	return GraalPy_Private_GET_PyASCIIObject_length(op);
 }
 
 unsigned int PyTruffleUnicode_IS_ASCII(PyObject* op) {

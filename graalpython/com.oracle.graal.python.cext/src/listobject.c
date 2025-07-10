@@ -175,5 +175,5 @@ PyList_SetItem(PyObject *op, Py_ssize_t i,
 PyObject **
 PyTruffleList_GetItems(PyObject *op)
 {
-    return PyListObject_ob_item(op);
+    return GraalPy_Private_GET_PyListObject_ob_item(op);
 }

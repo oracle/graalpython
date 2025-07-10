@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -64,7 +64,7 @@ bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags)
     /* cannot fail if view != NULL and readonly == 0 */
     (void)PyBuffer_FillInfo(view, (PyObject*)obj, ptr, Py_SIZE(obj), 0, flags);
     // GraalPy change
-    set_PyByteArrayObject_ob_exports(obj, PyByteArrayObject_ob_exports(obj) + 1);
+    GraalPy_Private_SET_PyByteArrayObject_ob_exports(obj, GraalPy_Private_GET_PyByteArrayObject_ob_exports(obj) + 1);
     return 0;
 }
 
@@ -72,7 +72,7 @@ void // GraalPy change: not static
 bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view)
 {
     // GraalPy change
-    set_PyByteArrayObject_ob_exports(obj, PyByteArrayObject_ob_exports(obj) - 1);
+    GraalPy_Private_SET_PyByteArrayObject_ob_exports(obj, GraalPy_Private_GET_PyByteArrayObject_ob_exports(obj) - 1);
 }
 
 #if 0 // GraalPy change

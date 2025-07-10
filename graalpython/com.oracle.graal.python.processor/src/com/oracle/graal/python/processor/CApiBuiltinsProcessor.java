@@ -585,7 +585,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                     StringBuilder macro = new StringBuilder();
                     assert name.charAt(7 + type.length()) == '_' : name;
                     String field = name.substring(7 + type.length() + 1); // after "_"
-                    macro.append("#define " + name.substring(7) + "(OBJ) ( points_to_py_handle_space(OBJ) ? Graal" + name + "((" + type + "*) (OBJ)) : ((" + type + "*) (OBJ))->" + field + " )");
+                    macro.append("#define GraalPy_Private_GET_" + name.substring(7) +
+                                    "(OBJ) ( points_to_py_handle_space(OBJ) ? Graal" + name + "((" + type + "*) (OBJ)) : ((" + type + "*) (OBJ))->" + field + ")");
                     lines.add(macro.toString());
                 } else if (name.startsWith("Py_set_")) {
                     assert entry.arguments.length == 2 : name;
@@ -593,8 +594,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                     StringBuilder macro = new StringBuilder();
                     assert name.charAt(7 + type.length()) == '_' : name;
                     String field = name.substring(7 + type.length() + 1); // after "_"
-                    macro.append("#define set_" + name.substring(7) + "(OBJ, VALUE) { if (points_to_py_handle_space(OBJ)) Graal" + name + "((" + type + "*) (OBJ), (VALUE)); else  ((" + type +
-                                    "*) (OBJ))->" + field + " = (VALUE); }");
+                    macro.append("#define GraalPy_Private_SET_" + name.substring(7) +
+                                    "(OBJ, VALUE) { if (points_to_py_handle_space(OBJ)) Graal" + name + "((" + type + "*) (OBJ), (VALUE)); else  ((" + type + "*) (OBJ))->" + field + " = (VALUE); }");
                     lines.add(macro.toString());
                 }
             }

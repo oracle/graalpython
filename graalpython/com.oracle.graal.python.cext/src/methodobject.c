@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,50 +68,50 @@ PyObject* PyCMethod_New(PyMethodDef *ml, PyObject *self, PyObject *module, PyTyp
 }
 
 PyCFunction PyCFunction_GetFunction(PyObject *func) {
-    PyMethodDef* def = PyCFunctionObject_m_ml(func);
+    PyMethodDef* def = GraalPy_Private_GET_PyCFunctionObject_m_ml(func);
     return def->ml_meth;
 }
 
 PyObject * PyCFunction_GetSelf(PyObject *func) {
-    PyMethodDef* def = PyCFunctionObject_m_ml(func);
-    return def->ml_flags & METH_STATIC ? NULL : PyCFunctionObject_m_self(func);
+    PyMethodDef* def = GraalPy_Private_GET_PyCFunctionObject_m_ml(func);
+    return def->ml_flags & METH_STATIC ? NULL : GraalPy_Private_GET_PyCFunctionObject_m_self(func);
 }
 
 int PyCFunction_GetFlags(PyObject *func) {
-    PyMethodDef* def = PyCFunctionObject_m_ml(func);
+    PyMethodDef* def = GraalPy_Private_GET_PyCFunctionObject_m_ml(func);
     return def->ml_flags;
 }
 
 PyTypeObject * PyCMethod_GetClass(PyObject *func) {
-    PyMethodDef* def = PyCFunctionObject_m_ml(func);
-    return def->ml_flags & METH_METHOD ? PyCMethodObject_mm_class(func) : NULL;
+    PyMethodDef* def = GraalPy_Private_GET_PyCFunctionObject_m_ml(func);
+    return def->ml_flags & METH_METHOD ? GraalPy_Private_GET_PyCMethodObject_mm_class(func) : NULL;
 }
 
 PyObject* _PyCFunction_GetModule(PyObject *func) {
-    return PyCFunctionObject_m_module(func);
+    return GraalPy_Private_GET_PyCFunctionObject_m_module(func);
 }
 
 PyMethodDef* _PyCFunction_GetMethodDef(PyObject *func) {
-    return PyCFunctionObject_m_ml(func);
+    return GraalPy_Private_GET_PyCFunctionObject_m_ml(func);
 }
 
 void _PyCFunction_SetModule(PyObject *func, PyObject *mod) {
-    set_PyCFunctionObject_m_module(func, mod);
+    GraalPy_Private_SET_PyCFunctionObject_m_module(func, mod);
 }
 
 void _PyCFunction_SetMethodDef(PyObject *func, PyMethodDef *def) {
-    set_PyCFunctionObject_m_ml(func, def);
+    GraalPy_Private_SET_PyCFunctionObject_m_ml(func, def);
 }
 
 // GraalPy additions
 const char *
 GraalPyCFunction_GetDoc(PyObject *func) {
-    return PyCFunctionObject_m_ml(func)->ml_doc;
+    return GraalPy_Private_GET_PyCFunctionObject_m_ml(func)->ml_doc;
 }
 
 void
 GraalPyCFunction_SetDoc(PyObject *func, const char *doc) {
-    PyCFunctionObject_m_ml(func)->ml_doc = doc;
+    GraalPy_Private_GET_PyCFunctionObject_m_ml(func)->ml_doc = doc;
     if (points_to_py_handle_space(func)) {
         GraalPyTruffleCFunction_SetDoc(func, doc);
     }
