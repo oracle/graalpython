@@ -44,6 +44,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.MroShape.MroShapeLookupResult;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -89,23 +90,24 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     public abstract static class Dynamic extends PNodeWithContext {
         public abstract Object execute(Object klass, TruffleString key);
 
-        @Specialization(guards = "stringEquals(key, cachedKey, equalNode)", limit = "2")
-        protected static Object lookupConstantMRO(Object klass, @SuppressWarnings("unused") TruffleString key,
+        @Specialization(guards = "equalNode.execute(inliningTarget, key, cachedKey)", limit = "2")
+        protected static Object lookupConstantMROEquals(Object klass, @SuppressWarnings("unused") TruffleString key,
+                        @Bind Node inliningTarget,
                         @Cached("key") @SuppressWarnings("unused") TruffleString cachedKey,
-                        @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
-                        @Cached("create(key)") LookupAttributeInMRONode lookup) {
+                        @Cached @Shared @SuppressWarnings("unused") StringUtils.EqualNode equalNode,
+                        @Cached("create(cachedKey)") LookupAttributeInMRONode lookup) {
             return lookup.execute(klass);
         }
 
-        @Specialization(replaces = "lookupConstantMRO")
         @InliningCutoff
+        @Specialization(replaces = "lookupConstantMROEquals")
         protected Object lookupInBuiltinType(PythonBuiltinClassType klass, TruffleString key,
                         @Cached ReadAttributeFromPythonObjectNode readAttrNode) {
             return findAttr(PythonContext.get(this), klass, key, readAttrNode);
         }
 
-        @Specialization(replaces = "lookupConstantMRO")
         @InliningCutoff
+        @Specialization(replaces = "lookupConstantMROEquals")
         protected static Object lookupGeneric(Object klass, TruffleString key,
                         @Bind Node inliningTarget,
                         @Cached GetMroStorageNode getMroNode,
