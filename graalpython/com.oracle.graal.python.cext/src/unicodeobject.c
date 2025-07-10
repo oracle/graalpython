@@ -3719,7 +3719,6 @@ PyUnicode_FSConverter(PyObject* arg, void* addr)
 }
 
 
-#if 0 // GraalPy change
 int
 PyUnicode_FSDecoder(PyObject* arg, void* addr)
 {
@@ -3729,6 +3728,7 @@ PyUnicode_FSDecoder(PyObject* arg, void* addr)
         return 1;
     }
 
+#if 0 // GraalPy change: 'findchar' not supported
     PyObject *path = PyOS_FSPath(arg);
     if (path == NULL) {
         return 0;
@@ -3760,11 +3760,19 @@ PyUnicode_FSDecoder(PyObject* arg, void* addr)
         Py_DECREF(output);
         return 0;
     }
+#else // GraalPy change: different implementation
+    PyObject *output = NULL;
+    output = GraalPyTruffleUnicode_FSDecoder(arg);
+    if (!output) {
+        return 0;
+    }
+#endif // GraalPy change
     *(PyObject**)addr = output;
     return Py_CLEANUP_SUPPORTED;
 }
 
 
+#if 0 // GraalPy change
 static int unicode_fill_utf8(PyObject *unicode);
 #endif // GraalPy change
 

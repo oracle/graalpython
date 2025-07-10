@@ -144,6 +144,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
+import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -877,6 +878,16 @@ public final class PythonCextUnicodeBuiltins {
             } catch (OverflowException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Ignored)
+    abstract static class PyTruffleUnicode_FSDecoder extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static Object fsDecoder(Object arg,
+                        @Cached PyUnicodeFSDecoderNode fsDecoderNode) {
+            return fsDecoderNode.execute(null, arg);
         }
     }
 
