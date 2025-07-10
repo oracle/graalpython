@@ -2527,7 +2527,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
             Object ns;
             try {
-                Object prep = getPrepare.executeObject(frame, init.meta);
+                Object prep = getPrepare.execute(frame, init.meta);
                 ns = callPrep.execute(frame, prep, new Object[]{name, init.bases}, init.mkw);
             } catch (PException p) {
                 p.expectAttributeError(inliningTarget, noAttributeProfile);

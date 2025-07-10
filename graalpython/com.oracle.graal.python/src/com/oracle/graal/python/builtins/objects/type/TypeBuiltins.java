@@ -202,8 +202,8 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            Object moduleNameObj = readModuleNode.executeObject(frame, self);
-            Object qualNameObj = readQualNameNode.executeObject(frame, self);
+            Object moduleNameObj = readModuleNode.execute(frame, self);
+            Object qualNameObj = readQualNameNode.execute(frame, self);
             TruffleString moduleName = null;
             if (moduleNameObj != NO_VALUE) {
                 try {

@@ -184,7 +184,7 @@ public final class CDataBuiltins extends PythonBuiltins {
             if ((stgDict.flags & (TYPEFLAG_ISPOINTER | TYPEFLAG_HASPOINTER)) != 0) {
                 throw raiseNode.raise(inliningTarget, ValueError, CTYPES_OBJECTS_CONTAINING_POINTERS_CANNOT_BE_PICKLED);
             }
-            Object dict = getAttributeNode.executeObject(frame, self);
+            Object dict = getAttributeNode.execute(frame, self);
             Object[] t1 = new Object[]{dict, null};
             t1[1] = PFactory.createBytes(language, readBytesNode.execute(inliningTarget, self.b_ptr, self.b_size));
             Object clazz = getClassNode.execute(inliningTarget, self);
@@ -227,7 +227,7 @@ public final class CDataBuiltins extends PythonBuiltins {
                 len = self.b_size;
             }
             memmove(inliningTarget, self.b_ptr, data, len);
-            Object mydict = getAttributeNode.executeObject(frame, self);
+            Object mydict = getAttributeNode.execute(frame, self);
             if (!PGuards.isDict(mydict)) {
                 throw raiseNode.raise(inliningTarget, TypeError, P_DICT_MUST_BE_A_DICTIONARY_NOT_P, self, mydict);
             }

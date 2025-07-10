@@ -548,7 +548,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached("create(T___NEW__)") LookupAndCallUnaryNode lookupAndCallUnaryNode,
                         @Cached("create(T___SETSTATE__)") GetFixedAttributeNode setStateAttr) {
             Object obj = lookupAndCallUnaryNode.executeObject(frame, typ);
-            Object meth = setStateAttr.executeObject(frame, obj);
+            Object meth = setStateAttr.execute(frame, obj);
             callNode.execute(frame, meth, state);
             return obj;
         }

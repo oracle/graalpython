@@ -686,8 +686,9 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             reCheckInputTypeNode.execute(frame, input, tRegexCache.isBinary());
 
             if (fallbackProfile.profile(inliningTarget, libCompiledRegex.isNull(compiledRegex))) {
-                Object fallbackRegex = getCallFallbackCompileNode().executeWithoutFrame(getGetFallbackCompileNode().executeObject(frame, pattern));
-                return getCallFallbackMethodNode().executeWithoutFrame(getFallbackMethodNode.executeObject(frame, fallbackRegex), input, pos, endPos);
+                GetFixedAttributeNode getFixedAttributeNode = getGetFallbackCompileNode();
+                Object fallbackRegex = getCallFallbackCompileNode().executeWithoutFrame(getFixedAttributeNode.execute(frame, pattern));
+                return getCallFallbackMethodNode().executeWithoutFrame(getFallbackMethodNode.execute(frame, fallbackRegex), input, pos, endPos);
             }
 
             Object truncatedInput = input;

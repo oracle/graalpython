@@ -355,7 +355,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                         @Cached("create(T___NAME__)") GetFixedAttributeNode getNameAttributeNode,
                         @Cached CastToJavaStringNode castToStringNode,
                         @Cached PRaiseNode raiseNode) {
-            Object attrNameValue = getNameAttributeNode.executeObject(frame, fun);
+            Object attrNameValue = getNameAttributeNode.execute(frame, fun);
             String methodName;
             try {
                 methodName = castToStringNode.execute(attrNameValue);

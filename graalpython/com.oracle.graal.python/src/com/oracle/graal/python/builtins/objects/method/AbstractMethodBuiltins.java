@@ -257,7 +257,7 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(value)")
         static Object getModule(VirtualFrame frame, PMethod self, @SuppressWarnings("unused") Object value,
                         @Cached("create(T___MODULE__)") GetFixedAttributeNode getAttributeNode) {
-            return getAttributeNode.executeObject(frame, self.getFunction());
+            return getAttributeNode.execute(frame, self.getFunction());
         }
 
         @Specialization(guards = "!isNoValue(value)")
