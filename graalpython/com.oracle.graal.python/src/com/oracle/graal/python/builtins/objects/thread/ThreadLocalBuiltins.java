@@ -73,6 +73,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.MergedObjectTypeModuleGetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -142,7 +143,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
 
         /**
          * Keep in sync with {@link ObjectBuiltins.GetAttributeNode} and
-         * {@link TypeBuiltins.GetattributeNode}
+         * {@link TypeBuiltins.GetattributeNode} and {@link MergedObjectTypeModuleGetAttributeNode}
          */
         @Specialization
         Object doIt(VirtualFrame frame, PThreadLocal object, Object keyObj,

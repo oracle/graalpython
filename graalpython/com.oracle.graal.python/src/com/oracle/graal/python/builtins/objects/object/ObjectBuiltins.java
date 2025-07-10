@@ -119,6 +119,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.MergedObjectTypeModuleGetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -505,7 +506,8 @@ public final class ObjectBuiltins extends PythonBuiltins {
 
         /**
          * Keep in sync with {@link TypeBuiltins.GetattributeNode} and
-         * {@link ThreadLocalBuiltins.GetAttributeNode}
+         * {@link ThreadLocalBuiltins.GetAttributeNode} and
+         * {@link MergedObjectTypeModuleGetAttributeNode}
          */
         @Specialization
         @SuppressWarnings("truffle-static-method")
