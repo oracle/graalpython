@@ -496,7 +496,7 @@ public final class CApiContext extends CExtContext {
             if (singletonNativeWrapper.ref != null) {
                 CApiTransitions.nativeStubLookupRemove(handleContext, singletonNativeWrapper.ref);
             }
-            PyTruffleObjectFree.releaseNativeWrapperUncached(singletonNativeWrapper);
+            CApiTransitions.releaseNativeWrapperUncached(singletonNativeWrapper);
         }
     }
 
@@ -560,7 +560,7 @@ public final class CApiContext extends CExtContext {
             if (wrapper.ref != null) {
                 CApiTransitions.nativeStubLookupRemove(handleContext, wrapper.ref);
             }
-            PyTruffleObjectFree.releaseNativeWrapperUncached(wrapper);
+            CApiTransitions.releaseNativeWrapperUncached(wrapper);
         }
     }
 

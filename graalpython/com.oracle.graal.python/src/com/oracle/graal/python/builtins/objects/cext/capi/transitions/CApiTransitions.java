@@ -574,6 +574,46 @@ public abstract class CApiTransitions {
         }
     }
 
+    @TruffleBoundary
+    public static void releaseNativeWrapperUncached(PythonNativeWrapper nativeWrapper) {
+        releaseNativeWrapper(nativeWrapper, FreeNode.getUncached());
+    }
+
+    /**
+     * Releases a native wrapper. This requires to remove the native wrapper from any lookup tables
+     * and to free potentially allocated native resources. If native wrappers receive
+     * {@code toNative}, either a <it>handle pointer</it> is allocated or some off-heap memory is
+     * allocated. This method takes care of that and will also free any off-heap memory.
+     */
+    public static void releaseNativeWrapper(PythonNativeWrapper nativeWrapper, FreeNode freeNode) {
+
+        // If wrapper already received toNative, release the handle or free the native memory.
+        if (nativeWrapper.isNative()) {
+            long nativePointer = nativeWrapper.getNativePointer();
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine(PythonUtils.formatJString("Freeing pointer: 0x%x (wrapper: %s ;; object: %s)", nativePointer, nativeWrapper, nativeWrapper.getDelegate()));
+            }
+            if (HandlePointerConverter.pointsToPyHandleSpace(nativePointer)) {
+                // In this case, we are up to free a native object stub.
+                assert tableEntryRemoved(PythonContext.get(freeNode).nativeContext, nativeWrapper);
+                nativePointer = HandlePointerConverter.pointerToStub(nativePointer);
+            } else {
+                nativeLookupRemove(PythonContext.get(freeNode).nativeContext, nativePointer);
+            }
+            freeNode.free(nativePointer);
+        }
+    }
+
+    private static boolean tableEntryRemoved(HandleContext context, PythonNativeWrapper nativeWrapper) {
+        PythonObjectReference ref = nativeWrapper.ref;
+        if (ref != null) {
+            int id = ref.getHandleTableIndex();
+            return id <= 0 || nativeStubLookupGet(context, nativeWrapper.getNativePointer(), id) == null;
+        }
+        // there cannot be a table entry if the wrapper does not have a PythonObjectReference
+        return true;
+    }
+
     public static void freeClassReplacements(HandleContext handleContext) {
         assert PythonContext.get(null).ownsGil();
         handleContext.nativeLookup.forEach((l, ref) -> {
