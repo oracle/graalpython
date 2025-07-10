@@ -40,18 +40,10 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.AttributeErrorBuiltins;
-import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.CallSlotGetAttrNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -60,75 +52,24 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
-
-@SuppressWarnings("truffle-static-method")
 public abstract class GetFixedAttributeNode extends PNodeWithContext {
     private final TruffleString key;
-    @Child private GetObjectSlotsNode getSlotsNode = GetObjectSlotsNode.create();
 
-    public GetFixedAttributeNode(TruffleString key) {
+    GetFixedAttributeNode(TruffleString key) {
         this.key = key;
     }
 
-    public final TruffleString getKey() {
-        return key;
-    }
+    public abstract Object execute(VirtualFrame frame, Object object);
 
-    public final Object execute(VirtualFrame frame, Object object) {
-        return executeImpl(frame, object, getSlotsNode.executeCached(object));
-    }
-
-    abstract Object executeImpl(VirtualFrame frame, Object object, TpSlots slots);
-
-    protected static boolean hasNoGetAttr(Object obj) {
-        CompilerAsserts.neverPartOfCompilation("only used in asserts");
-        return LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.executeUncached(obj), T___GETATTR__) == PNone.NO_VALUE;
-    }
-
-    protected static boolean isObjectGetAttribute(TpSlots slots) {
-        return slots.tp_getattro() == ObjectBuiltins.SLOTS.tp_getattro();
-    }
-
-    protected static boolean isModuleGetAttribute(TpSlots slots) {
-        return slots.tp_getattro() == ModuleBuiltins.SLOTS.tp_getattro();
-    }
-
-    protected static boolean isTypeGetAttribute(TpSlots slots) {
-        return slots.tp_getattro() == TypeBuiltins.SLOTS.tp_getattro();
-    }
-
-    @Specialization(guards = "isObjectGetAttribute(slots)")
-    final Object doBuiltinObject(VirtualFrame frame, Object object, @SuppressWarnings("unused") TpSlots slots,
-                    @Cached ObjectBuiltins.GetAttributeNode getAttributeNode) {
-        assert hasNoGetAttr(object);
-        return getAttributeNode.execute(frame, object, key);
-    }
-
-    @Specialization(guards = "isTypeGetAttribute(slots)")
-    final Object doBuiltinType(VirtualFrame frame, Object object, @SuppressWarnings("unused") TpSlots slots,
-                    @Cached TypeBuiltins.GetattributeNode getAttributeNode) {
-        assert hasNoGetAttr(object);
-        return getAttributeNode.execute(frame, object, key);
-    }
-
-    @Specialization(guards = "isModuleGetAttribute(slots)")
-    final Object doBuiltinModule(VirtualFrame frame, Object object, @SuppressWarnings("unused") TpSlots slots,
-                    @Cached ModuleBuiltins.ModuleGetattributeNode getAttributeNode) {
-        assert hasNoGetAttr(object);
-        return getAttributeNode.execute(frame, object, key);
-    }
-
-    @Specialization(replaces = {"doBuiltinObject", "doBuiltinType", "doBuiltinModule"})
-    final Object doGeneric(VirtualFrame frame, Object object, TpSlots slots,
-                    @Bind("this") Node inliningTarget,
-                    @Cached CallSlotGetAttrNode callGetAttrNode,
-                    @Cached AttributeErrorBuiltins.SetAttributeErrorContext setContext) {
-        try {
-            return callGetAttrNode.execute(frame, inliningTarget, slots, object, key);
-        } catch (PException e) {
-            throw setContext.execute(inliningTarget, e, object, key);
-        }
+    @Specialization
+    Object doIt(VirtualFrame frame, Object object,
+                    @Bind Node inliningTarget,
+                    @Cached GetClassNode getClassNode,
+                    @Cached GetCachedTpSlotsNode getSlotsNode,
+                    @Cached MergedObjectTypeModuleGetAttributeInnerNode innerNode) {
+        Object type = getClassNode.execute(inliningTarget, object);
+        TpSlots slots = getSlotsNode.execute(inliningTarget, type);
+        return innerNode.execute(frame, inliningTarget, object, key, type, slots);
     }
 
     @NeverDefault

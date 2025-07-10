@@ -139,6 +139,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.MergedObjectTypeModuleGetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
@@ -526,7 +527,8 @@ public final class TypeBuiltins extends PythonBuiltins {
 
         /**
          * Keep in sync with {@link ObjectBuiltins.GetAttributeNode} and
-         * {@link ThreadLocalBuiltins.GetAttributeNode}
+         * {@link ThreadLocalBuiltins.GetAttributeNode} and
+         * {@link MergedObjectTypeModuleGetAttributeNode}
          */
         @Specialization
         protected Object doIt(VirtualFrame frame, Object object, Object keyObj,
@@ -561,10 +563,9 @@ public final class TypeBuiltins extends PythonBuiltins {
 
             // The only difference between all 3 nodes
             Object value = readAttributeOfClass(object, key);
-            if (value != NO_VALUE) {
+            if (value != PNone.NO_VALUE) {
                 hasValueProfile.enter(inliningTarget);
-                var valueSlots = getValueSlotsNode.execute(inliningTarget, value);
-                var valueGet = valueSlots.tp_descr_get();
+                var valueGet = getValueSlotsNode.execute(inliningTarget, value).tp_descr_get();
                 if (valueGet == null) {
                     hasNonDescriptorValueProfile.enter(inliningTarget);
                     return value;
@@ -608,7 +609,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             }
             // NO_VALUE 2nd argument indicates the descriptor was found on the target object itself
             // (or a base)
-            return callSlotValueGet.executeCached(frame, getSlot, descr, NO_VALUE, type);
+            return callSlotValueGet.executeCached(frame, getSlot, descr, PNone.NO_VALUE, type);
         }
     }
 
