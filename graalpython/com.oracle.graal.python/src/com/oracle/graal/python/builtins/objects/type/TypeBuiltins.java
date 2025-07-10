@@ -105,6 +105,7 @@ import com.oracle.graal.python.builtins.objects.set.SetBuiltins.UpdateSingleNode
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
@@ -523,7 +524,10 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Child private CallSlotDescrGet callSlotValueGet;
         @Child private LookupAttributeInMRONode.Dynamic lookupAsClass;
 
-        /** Keep in sync with {@link ObjectBuiltins.GetAttributeNode} */
+        /**
+         * Keep in sync with {@link ObjectBuiltins.GetAttributeNode} and
+         * {@link ThreadLocalBuiltins.GetAttributeNode}
+         */
         @Specialization
         protected Object doIt(VirtualFrame frame, Object object, Object keyObj,
                         @Bind Node inliningTarget,
@@ -555,7 +559,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                 }
             }
 
-            // The difference with ObjectBuiltins.GetAttributeNode (+ error message below)
+            // The only difference between all 3 nodes
             Object value = readAttributeOfClass(object, key);
             if (value != NO_VALUE) {
                 hasValueProfile.enter(inliningTarget);

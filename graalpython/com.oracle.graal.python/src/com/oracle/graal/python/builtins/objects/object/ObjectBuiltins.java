@@ -88,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.Get
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
+import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -502,7 +503,10 @@ public final class ObjectBuiltins extends PythonBuiltins {
         @Child private CallSlotDescrGet callSlotDescrGet;
         @Child private ReadAttributeFromObjectNode attrRead;
 
-        /** Keep in sync with {@link TypeBuiltins.GetattributeNode} */
+        /**
+         * Keep in sync with {@link TypeBuiltins.GetattributeNode} and
+         * {@link ThreadLocalBuiltins.GetAttributeNode}
+         */
         @Specialization
         @SuppressWarnings("truffle-static-method")
         Object doIt(VirtualFrame frame, Object object, Object keyObj,
@@ -533,7 +537,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
                 }
             }
 
-            // The difference with TypeBuiltins.GetattributeNode (+ error message below)
+            // The only difference between all 3 nodes
             Object value = readAttributeOfObject(object, key);
             if (value != PNone.NO_VALUE) {
                 hasValueProfile.enter(inliningTarget);

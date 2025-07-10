@@ -122,8 +122,8 @@ public class TpSlotGetAttr {
         // "__getattr__" can be AST inlined, and such that when the Python wrapper is explicitly
         // called, the builtin does the conversion of the second argument to TruffleString itself.
         //
-        // The builtins should have a @Specialization that does the coercion to TruffleString and
-        // also fast-path specialization for TruffleString as the 2nd argument.
+        // The builtins should have a single @Specialization that does the coercion to
+        // TruffleString.
     }
 
     public static final class TpSlotGetAttrPython extends TpSlotPython {
