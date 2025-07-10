@@ -2057,6 +2057,8 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
                 '--vm.Xss16777216', # request 16M of stack
                 '--vm.-enable-native-access=org.graalvm.shadowed.jline',
             ],
+            # Force launcher and jline on ImageModulePath (needed for --enable-native-access=org.graalvm.shadowed.jline)
+            use_modules='image',
         ),
     ],
     priority=5,
