@@ -254,10 +254,10 @@ public final class ModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object getattribute(VirtualFrame frame, PythonModule self, Object keyObj,
                         @Bind Node inliningTarget,
-                        @Cached CastToTruffleStringChecked1Node castKeyToStringNode,
+                        @Cached CastToTruffleStringChecked1Node castToString,
                         @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
                         @Cached HandleGetattrExceptionNode handleException) {
-            TruffleString key = castKeyToStringNode.cast(inliningTarget, keyObj, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+            TruffleString key = castToString.cast(inliningTarget, keyObj, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             try {
                 return objectGetattrNode.execute(frame, self, key);
             } catch (PException e) {
