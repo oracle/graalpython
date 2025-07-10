@@ -75,7 +75,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsClinicProviders.ModuleNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
@@ -267,7 +267,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
         @InliningCutoff
         static Object getattribute(VirtualFrame frame, PythonModule self, Object keyObj,
                         @Bind Node inliningTarget,
-                        @Cached CastToTruffleStringCheckedNode castKeyToStringNode,
+                        @Cached CastToTruffleStringChecked1Node castKeyToStringNode,
                         @Shared @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
                         @Shared @Cached HandleGetattrExceptionNode handleException) {
             TruffleString key = castKeyToStringNode.cast(inliningTarget, keyObj, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);

@@ -223,7 +223,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(value)")
         static Object setName(PFunction self, Object value,
                         @Bind Node inliningTarget,
-                        @Cached StringNodes.CastToTruffleStringCheckedNode cast) {
+                        @Cached StringNodes.CastToTruffleStringChecked2Node cast) {
             return setName(self, cast.cast(inliningTarget, value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, T___NAME__, "string"));
         }
     }
@@ -245,7 +245,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(value)")
         static Object setQualname(PFunction self, Object value,
                         @Bind Node inliningTarget,
-                        @Cached StringNodes.CastToTruffleStringCheckedNode cast) {
+                        @Cached StringNodes.CastToTruffleStringChecked2Node cast) {
             return setQualname(self, cast.cast(inliningTarget, value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, T___QUALNAME__, "string"));
         }
     }

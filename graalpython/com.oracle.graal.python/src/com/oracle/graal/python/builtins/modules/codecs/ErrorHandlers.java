@@ -79,7 +79,7 @@ import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuil
 import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuiltins.PyUnicodeEncodeOrTranslateErrorGetEndNode;
 import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuiltins.PyUnicodeEncodeOrTranslateErrorGetObjectNode;
 import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuiltins.PyUnicodeEncodeOrTranslateErrorGetStartNode;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -852,7 +852,7 @@ public final class ErrorHandlers {
         static DecodingErrorHandlerResult doTuple(Node inliningTarget, PTuple result,
                         @Cached SequenceNodes.LenNode lenNode,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
-                        @Cached CastToTruffleStringCheckedNode castToTruffleStringCheckedNode,
+                        @Cached CastToTruffleStringChecked0Node castToTruffleStringCheckedNode,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached PRaiseNode raiseNode) {
             if (lenNode.execute(inliningTarget, result) != 2) {

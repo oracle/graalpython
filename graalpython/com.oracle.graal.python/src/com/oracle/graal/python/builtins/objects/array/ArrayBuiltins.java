@@ -81,7 +81,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -185,7 +185,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile hasInitializerProfile,
                         @Cached IsBuiltinClassExactProfile isNotSubtypeProfile,
-                        @Cached CastToTruffleStringCheckedNode cast,
+                        @Cached CastToTruffleStringChecked1Node cast,
                         @Cached ArrayNodeInternal arrayNodeInternal,
                         @Cached PRaiseNode raise) {
             if (isNotSubtypeProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PArray)) {
