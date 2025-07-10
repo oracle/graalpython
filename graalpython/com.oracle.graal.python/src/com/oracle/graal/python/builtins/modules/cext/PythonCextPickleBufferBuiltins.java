@@ -60,7 +60,7 @@ import com.oracle.truffle.api.nodes.Node;
 public final class PythonCextPickleBufferBuiltins {
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Ignored)
-    abstract static class PyTruffle_PickleBuffer_viewobj extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_PickleBuffer_viewobj extends CApiUnaryBuiltinNode {
         @Specialization
         static Object getviewobj(PPickleBuffer object,
                         @Bind Node inliningTarget,

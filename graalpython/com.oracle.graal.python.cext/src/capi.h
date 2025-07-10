@@ -131,13 +131,13 @@ typedef struct gc_generation GCGeneration;
 #include "capi.gen.h"
 
 
-#define PUBLIC_BUILTIN(NAME, RET, ...) extern PyAPI_FUNC(RET) (*GraalPy_Internal_Upcall_##NAME)(__VA_ARGS__);
+#define PUBLIC_BUILTIN(NAME, RET, ...) extern PyAPI_FUNC(RET) (*GraalPyPrivate_Upcall_##NAME)(__VA_ARGS__);
 #define PRIVATE_BUILTIN(NAME, RET, ...) extern PyAPI_FUNC(RET) (*NAME)(__VA_ARGS__);
 CAPI_BUILTINS
 #undef PUBLIC_BUILTIN
 #undef PRIVATE_BUILTIN
 
-#define GET_SLOT_SPECIAL(OBJ, RECEIVER, NAME, SPECIAL) ( points_to_py_handle_space(OBJ) ? GraalPy_Private_Get_##RECEIVER##_##NAME((RECEIVER*) (OBJ)) : ((RECEIVER*) (OBJ))->SPECIAL )
+#define GET_SLOT_SPECIAL(OBJ, RECEIVER, NAME, SPECIAL) ( points_to_py_handle_space(OBJ) ? GraalPyPrivate_Get_##RECEIVER##_##NAME((RECEIVER*) (OBJ)) : ((RECEIVER*) (OBJ))->SPECIAL )
 
 PyAPI_DATA(uint32_t) Py_Truffle_Options;
 
@@ -187,41 +187,41 @@ static void attach_gdb() {
 #endif
 
 /* Flags definitions representing global (debug) options. */
-static MUST_INLINE int PyTruffle_Trace_Memory() {
+static MUST_INLINE int GraalPyPrivate_Trace_Memory() {
     return Py_Truffle_Options & PY_TRUFFLE_TRACE_MEM;
 }
-static MUST_INLINE int PyTruffle_Log_Info() {
+static MUST_INLINE int GraalPyPrivate_Log_Info() {
     return Py_Truffle_Options & PY_TRUFFLE_LOG_INFO;
 }
-static MUST_INLINE int PyTruffle_Log_Config() {
+static MUST_INLINE int GraalPyPrivate_Log_Config() {
     return Py_Truffle_Options & PY_TRUFFLE_LOG_CONFIG;
 }
-static MUST_INLINE int PyTruffle_Log_Fine() {
+static MUST_INLINE int GraalPyPrivate_Log_Fine() {
     return Py_Truffle_Options & PY_TRUFFLE_LOG_FINE;
 }
-static MUST_INLINE int PyTruffle_Log_Finer() {
+static MUST_INLINE int GraalPyPrivate_Log_Finer() {
     return Py_Truffle_Options & PY_TRUFFLE_LOG_FINER;
 }
-static MUST_INLINE int PyTruffle_Log_Finest() {
+static MUST_INLINE int GraalPyPrivate_Log_Finest() {
     return Py_Truffle_Options & PY_TRUFFLE_LOG_FINEST;
 }
-static MUST_INLINE int PyTruffle_Debug_CAPI() {
+static MUST_INLINE int GraalPyPrivate_Debug_CAPI() {
     return Py_Truffle_Options & PY_TRUFFLE_DEBUG_CAPI;
 }
 
-static MUST_INLINE int PyTruffle_PythonGC() {
+static MUST_INLINE int GraalPyPrivate_PythonGC() {
     return Py_Truffle_Options & PY_TRUFFLE_PYTHON_GC;
 }
 
 static void
-PyTruffle_Log(int level, const char *format, ...)
+GraalPyPrivate_Log(int level, const char *format, ...)
 {
     if (Py_Truffle_Options & level) {
         char buffer[1024];
         va_list args;
         va_start(args, format);
         vsprintf(buffer, format, args);
-        PyTruffle_LogString(level, buffer);
+        GraalPyPrivate_LogString(level, buffer);
         va_end(args);
     }
 }
@@ -301,7 +301,7 @@ static inline int get_method_flags_wrapper(int flags) {
     return JWRAPPER_UNSUPPORTED;
 }
 
-PyAPI_FUNC(void) GraalPy_Private_Object_GC_Del(void *op);
+PyAPI_FUNC(void) GraalPyPrivate_Object_GC_Del(void *op);
 
 // export the SizeT arg parse functions, because we use them in contrast to cpython on windows for core modules that we link dynamically
 PyAPI_FUNC(int) _PyArg_Parse_SizeT(PyObject *, const char *, ...);

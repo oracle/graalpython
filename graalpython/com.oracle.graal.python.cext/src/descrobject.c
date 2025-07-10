@@ -42,7 +42,7 @@
 
 PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
     int flags = method->ml_flags;
-    return PyTruffleDescr_NewClassMethod(method,
+    return GraalPyPrivate_Descr_NewClassMethod(method,
                     method->ml_name,
                     method->ml_doc,
                     flags,
@@ -52,27 +52,27 @@ PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
 }
 
 PyObject* PyDescr_NewGetSet(PyTypeObject *type, PyGetSetDef *getset) {
-    getter getter_fun = GraalPy_Private_GET_PyGetSetDef_get(getset);
-    setter setter_fun = GraalPy_Private_GET_PyGetSetDef_set(getset);
-    return PyTruffleDescr_NewGetSet(GraalPy_Private_GET_PyGetSetDef_name(getset),
+    getter getter_fun = GraalPyPrivate_GET_PyGetSetDef_get(getset);
+    setter setter_fun = GraalPyPrivate_GET_PyGetSetDef_set(getset);
+    return GraalPyPrivate_Descr_NewGetSet(GraalPyPrivate_GET_PyGetSetDef_name(getset),
                     type,
                     getter_fun,
                     setter_fun,
-                    GraalPy_Private_GET_PyGetSetDef_doc(getset),
-                    GraalPy_Private_GET_PyGetSetDef_closure(getset));
+                    GraalPyPrivate_GET_PyGetSetDef_doc(getset),
+                    GraalPyPrivate_GET_PyGetSetDef_closure(getset));
 }
 
 
 PyMethodDef* PyMethodDescrObject_GetMethod(PyObject* descr) {
-    return GraalPy_Private_GET_PyMethodDescrObject_d_method(descr);
+    return GraalPyPrivate_GET_PyMethodDescrObject_d_method(descr);
 }
 
 PyTypeObject* PyDescrObject_GetType(PyObject* descr) {
-    return GraalPy_Private_GET_PyDescrObject_d_type(descr);
+    return GraalPyPrivate_GET_PyDescrObject_d_type(descr);
 }
 
 PyObject* PyDescrObject_GetName(PyObject* descr) {
-    return GraalPy_Private_GET_PyDescrObject_d_name(descr);
+    return GraalPyPrivate_GET_PyDescrObject_d_name(descr);
 }
 
 int PyDescr_IsData(PyObject *ob) {

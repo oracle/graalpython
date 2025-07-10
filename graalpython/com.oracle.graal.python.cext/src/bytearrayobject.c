@@ -64,7 +64,7 @@ bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags)
     /* cannot fail if view != NULL and readonly == 0 */
     (void)PyBuffer_FillInfo(view, (PyObject*)obj, ptr, Py_SIZE(obj), 0, flags);
     // GraalPy change
-    GraalPy_Private_SET_PyByteArrayObject_ob_exports(obj, GraalPy_Private_GET_PyByteArrayObject_ob_exports(obj) + 1);
+    GraalPyPrivate_SET_PyByteArrayObject_ob_exports(obj, GraalPyPrivate_GET_PyByteArrayObject_ob_exports(obj) + 1);
     return 0;
 }
 
@@ -72,7 +72,7 @@ void // GraalPy change: not static
 bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view)
 {
     // GraalPy change
-    GraalPy_Private_SET_PyByteArrayObject_ob_exports(obj, GraalPy_Private_GET_PyByteArrayObject_ob_exports(obj) - 1);
+    GraalPyPrivate_SET_PyByteArrayObject_ob_exports(obj, GraalPyPrivate_GET_PyByteArrayObject_ob_exports(obj) - 1);
 }
 
 #if 0 // GraalPy change
@@ -128,9 +128,9 @@ PyByteArray_FromStringAndSize(const char *bytes, Py_ssize_t size)
     }
     // GraalPy change: different implementation
     if (bytes != NULL) {
-        return PyTruffleByteArray_FromStringAndSize(bytes, size);
+        return GraalPyPrivate_ByteArray_FromStringAndSize(bytes, size);
     }
-    return PyTruffle_ByteArray_EmptyWithCapacity(size);
+    return GraalPyPrivate_ByteArray_EmptyWithCapacity(size);
 }
 
 Py_ssize_t

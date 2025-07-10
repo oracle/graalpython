@@ -44,8 +44,8 @@ int
 PyTraceMalloc_Track(unsigned int domain, uintptr_t ptr,
                     size_t size)
 {
-    if (PyTruffle_Trace_Memory()) {
-        PyTruffleTraceMalloc_Track(domain, ptr, size);
+    if (GraalPyPrivate_Trace_Memory()) {
+        GraalPyPrivate_TraceMalloc_Track(domain, ptr, size);
     }
 
     return 0;
@@ -55,8 +55,8 @@ PyTraceMalloc_Track(unsigned int domain, uintptr_t ptr,
 int
 PyTraceMalloc_Untrack(unsigned int domain, uintptr_t ptr)
 {
-    if (PyTruffle_Trace_Memory()) {
-        PyTruffleTraceMalloc_Untrack(domain, ptr);
+    if (GraalPyPrivate_Trace_Memory()) {
+        GraalPyPrivate_TraceMalloc_Untrack(domain, ptr);
     }
 
     return 0;

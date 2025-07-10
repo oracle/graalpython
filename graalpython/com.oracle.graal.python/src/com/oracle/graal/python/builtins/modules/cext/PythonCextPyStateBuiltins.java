@@ -88,7 +88,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 public final class PythonCextPyStateBuiltins {
 
     @CApiBuiltin(ret = Int, args = {}, acquireGil = false, call = Ignored)
-    abstract static class PyTruffleGILState_Check extends CApiNullaryBuiltinNode {
+    abstract static class GraalPyPrivate_GILState_Check extends CApiNullaryBuiltinNode {
 
         @Specialization
         Object check() {
@@ -97,7 +97,7 @@ public final class PythonCextPyStateBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {}, acquireGil = false, call = Ignored)
-    abstract static class PyTruffleGILState_Ensure extends CApiNullaryBuiltinNode {
+    abstract static class GraalPyPrivate_GILState_Ensure extends CApiNullaryBuiltinNode {
 
         @Specialization
         static Object save(@Cached GilNode gil) {
@@ -107,7 +107,7 @@ public final class PythonCextPyStateBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {}, acquireGil = false, call = Ignored)
-    abstract static class PyTruffleGILState_Release extends CApiNullaryBuiltinNode {
+    abstract static class GraalPyPrivate_GILState_Release extends CApiNullaryBuiltinNode {
 
         @Specialization
         static Object restore(
@@ -118,7 +118,7 @@ public final class PythonCextPyStateBuiltins {
     }
 
     @CApiBuiltin(ret = PyThreadState, args = {Pointer}, call = Ignored)
-    abstract static class PyTruffleThreadState_Get extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_ThreadState_Get extends CApiUnaryBuiltinNode {
 
         @Specialization(limit = "1")
         static Object get(Object tstateCurrentPtr,
@@ -134,7 +134,7 @@ public final class PythonCextPyStateBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {}, call = Ignored)
-    abstract static class PyTruffleBeforeThreadDetach extends CApiNullaryBuiltinNode {
+    abstract static class GraalPyPrivate_BeforeThreadDetach extends CApiNullaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         Object doIt() {
@@ -226,7 +226,7 @@ public final class PythonCextPyStateBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {Py_ssize_t}, call = Ignored)
-    abstract static class PyTruffleState_FindModule extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_State_FindModule extends CApiUnaryBuiltinNode {
 
         @Specialization
         Object doGeneric(long mIndex) {

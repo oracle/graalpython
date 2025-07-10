@@ -95,7 +95,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonCextStructSeqBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyTypeObject, Pointer, Int}, call = Ignored)
-    abstract static class PyTruffleStructSequence_InitType2 extends CApiTernaryBuiltinNode {
+    abstract static class GraalPyPrivate_StructSequence_InitType2 extends CApiTernaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
@@ -131,12 +131,12 @@ public final class PythonCextStructSeqBuiltins {
     }
 
     @CApiBuiltin(ret = PyTypeObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Pointer, Int}, call = Ignored)
-    abstract static class PyTruffleStructSequence_NewType extends CApiQuaternaryBuiltinNode {
+    abstract static class GraalPyPrivate_StructSequence_NewType extends CApiQuaternaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
         Object doGeneric(TruffleString typeName, TruffleString typeDoc, Object fields, int nInSequence,
-                        @Cached PyTruffleStructSequence_InitType2 initNode,
+                        @Cached GraalPyPrivate_StructSequence_InitType2 initNode,
                         @Cached ReadAttributeFromObjectNode readTypeBuiltinNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Cached CallNode callTypeNewNode,

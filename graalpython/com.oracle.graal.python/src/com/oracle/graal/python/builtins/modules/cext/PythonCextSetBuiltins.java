@@ -132,7 +132,7 @@ public final class PythonCextSetBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Ignored)
-    abstract static class PyTruffleSet_NextEntry extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Set_NextEntry extends CApiBinaryBuiltinNode {
         @Specialization(guards = "pos < size(inliningTarget, set, sizeNode)")
         static Object nextEntry(PSet set, long pos,
                         @Bind Node inliningTarget,

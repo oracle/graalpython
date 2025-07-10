@@ -7409,7 +7409,7 @@ pretty bizarre, and a tzinfo subclass can override fromutc() if it is.
 // GraalPy additions
 
 long
-PyTruffle_PyDateTime_GET_LONG_FIELD(PyObject* o, const char* field_name)
+GraalPyPrivate_PyDateTime_GET_LONG_FIELD(PyObject* o, const char* field_name)
 {
     PyObject* attr = PyObject_GetAttrString(o, field_name);
     if (!attr) {
@@ -7432,7 +7432,7 @@ error:
 
 /** to be used from Java code only; returns the type ID for a PyDateTime_CAPI */
 PyAPI_FUNC(void)
-GraalPy_Private_InitNativeDateTime()
+GraalPyPrivate_InitNativeDateTime()
 {
     /* safe native get/set descriptors */
     PyGetSetDef* getsets_date = PyDateTime_DateType.tp_getset;
@@ -7448,11 +7448,11 @@ GraalPy_Private_InitNativeDateTime()
         &PyDateTime_TZInfoType, "datetime.timezone",
         NULL, NULL
     };
-    PyTruffle_InitBuiltinTypesAndStructs(datetime_types);
+    GraalPyPrivate_InitBuiltinTypesAndStructs(datetime_types);
 
     /* register native get/set descriptors to managed types */
-    PyTruffle_Set_Native_Slots(&PyDateTime_DateType, getsets_date, NULL);
-    PyTruffle_Set_Native_Slots(&PyDateTime_DateTimeType, getsets_datetime, NULL);
-    PyTruffle_Set_Native_Slots(&PyDateTime_TimeType, getsets_time, NULL);
-    PyTruffle_Set_Native_Slots(&PyDateTime_DeltaType, NULL, members_delta);
+    GraalPyPrivate_Set_Native_Slots(&PyDateTime_DateType, getsets_date, NULL);
+    GraalPyPrivate_Set_Native_Slots(&PyDateTime_DateTimeType, getsets_datetime, NULL);
+    GraalPyPrivate_Set_Native_Slots(&PyDateTime_TimeType, getsets_time, NULL);
+    GraalPyPrivate_Set_Native_Slots(&PyDateTime_DeltaType, NULL, members_delta);
 }

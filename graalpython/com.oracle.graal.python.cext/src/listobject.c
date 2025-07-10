@@ -48,7 +48,7 @@ _list_clear(PyListObject *a)
 
     /* Because XDECREF can recursively invoke operations on
        this list, we make it empty first. */
-    i = PyTruffleList_TryGetItems((PyObject *)a, &item);
+    i = GraalPyPrivate_List_TryGetItems((PyObject *)a, &item);
     if (i > 0) {
         assert(item != NULL);
         while (--i >= 0) {
@@ -75,7 +75,7 @@ list_traverse(PyListObject *o, visitproc visit, void *arg)
      * explanation, see 'dictobject.c: dict_traverse'.
      */
     if (points_to_py_handle_space(o)) {
-        size = PyTruffleList_TryGetItems((PyObject *)o, &ob_item);
+        size = GraalPyPrivate_List_TryGetItems((PyObject *)o, &ob_item);
     } else {
         size = Py_SIZE(o);
         ob_item = o->ob_item;
@@ -127,7 +127,7 @@ PyTypeObject PyList_Type = {
     0,                                          /* tp_init */ // GraalPy change: nulled
     PyType_GenericAlloc,                        /* tp_alloc */
     PyType_GenericNew,                          /* tp_new */
-    GraalPy_Private_Object_GC_Del,              /* tp_free */ // GraalPy change: different function
+    GraalPyPrivate_Object_GC_Del,              /* tp_free */ // GraalPy change: different function
     .tp_vectorcall = 0, // GraalPy change: nulled
 };
 
@@ -166,14 +166,14 @@ PyList_SetItem(PyObject *op, Py_ssize_t i,
         return -1;
     }
     // GraalPy change: avoid direct struct access
-    p = PyTruffleList_GetItems(op) + i;
+    p = GraalPyPrivate_List_GetItems(op) + i;
     Py_XSETREF(*p, newitem);
     return 0;
 }
 
 // GraalPy-additions
 PyObject **
-PyTruffleList_GetItems(PyObject *op)
+GraalPyPrivate_List_GetItems(PyObject *op)
 {
-    return GraalPy_Private_GET_PyListObject_ob_item(op);
+    return GraalPyPrivate_GET_PyListObject_ob_item(op);
 }

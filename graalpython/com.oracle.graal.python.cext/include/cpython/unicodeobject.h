@@ -201,9 +201,9 @@ PyAPI_FUNC(int) _PyUnicode_CheckConsistency(
 #define SSTATE_INTERNED_IMMORTAL_STATIC 3
 
 /* Use only if you know it's a string */
-PyAPI_FUNC(unsigned int) PyTruffleUnicode_CHECK_INTERNED(PyObject *op);
+PyAPI_FUNC(unsigned int) GraalPyPrivate_Unicode_CHECK_INTERNED(PyObject *op);
 static inline unsigned int PyUnicode_CHECK_INTERNED(PyObject *op) {
-    return PyTruffleUnicode_CHECK_INTERNED(op);
+    return GraalPyPrivate_Unicode_CHECK_INTERNED(op);
 }
 #define PyUnicode_CHECK_INTERNED(op) PyUnicode_CHECK_INTERNED(_PyObject_CAST(op))
 
@@ -216,17 +216,17 @@ static inline unsigned int PyUnicode_IS_READY(PyObject* Py_UNUSED(op)) {
 /* Return true if the string contains only ASCII characters, or 0 if not. The
    string may be compact (PyUnicode_IS_COMPACT_ASCII) or not, but must be
    ready. */
-PyAPI_FUNC(unsigned int) PyTruffleUnicode_IS_ASCII(PyObject *op);
+PyAPI_FUNC(unsigned int) GraalPyPrivate_Unicode_IS_ASCII(PyObject *op);
 static inline unsigned int PyUnicode_IS_ASCII(PyObject *op) {
-    return PyTruffleUnicode_IS_ASCII(op);
+    return GraalPyPrivate_Unicode_IS_ASCII(op);
 }
 #define PyUnicode_IS_ASCII(op) PyUnicode_IS_ASCII(_PyObject_CAST(op))
 
 /* Return true if the string is compact or 0 if not.
    No type checks or Ready calls are performed. */
-PyAPI_FUNC(unsigned int) PyTruffleUnicode_IS_COMPACT(PyObject *op);
+PyAPI_FUNC(unsigned int) GraalPyPrivate_Unicode_IS_COMPACT(PyObject *op);
 static inline unsigned int PyUnicode_IS_COMPACT(PyObject *op) {
-    return PyTruffleUnicode_IS_COMPACT(op);
+    return GraalPyPrivate_Unicode_IS_COMPACT(op);
 }
 #define PyUnicode_IS_COMPACT(op) PyUnicode_IS_COMPACT(_PyObject_CAST(op))
 
@@ -244,14 +244,14 @@ enum PyUnicode_Kind {
     PyUnicode_4BYTE_KIND = 4
 };
 
-PyAPI_FUNC(int) PyTruffleUnicode_KIND(PyObject*);
+PyAPI_FUNC(int) GraalPyPrivate_Unicode_KIND(PyObject*);
 // PyUnicode_KIND(): Return one of the PyUnicode_*_KIND values defined above.
 //
 // gh-89653: Converting this macro to a static inline function would introduce
 // new compiler warnings on "kind < PyUnicode_KIND(str)" (compare signed and
 // unsigned numbers) where kind type is an int or on
 // "unsigned int kind = PyUnicode_KIND(str)" (cast signed to unsigned).
-#define PyUnicode_KIND(op) ((enum PyUnicode_Kind)PyTruffleUnicode_KIND(_PyObject_CAST(op)))
+#define PyUnicode_KIND(op) ((enum PyUnicode_Kind)GraalPyPrivate_Unicode_KIND(_PyObject_CAST(op)))
 
 /* Return a void pointer to the raw unicode buffer. */
 static inline void* _PyUnicode_COMPACT_DATA(PyObject *Py_UNUSED(op)) {
@@ -259,9 +259,9 @@ static inline void* _PyUnicode_COMPACT_DATA(PyObject *Py_UNUSED(op)) {
     return NULL;
 }
 
-PyAPI_FUNC(void*) PyTruffleUnicode_NONCOMPACT_DATA(PyObject *op);
+PyAPI_FUNC(void*) GraalPyPrivate_Unicode_NONCOMPACT_DATA(PyObject *op);
 static inline void* _PyUnicode_NONCOMPACT_DATA(PyObject *op) {
-    return PyTruffleUnicode_NONCOMPACT_DATA(op);
+    return GraalPyPrivate_Unicode_NONCOMPACT_DATA(op);
 }
 
 static inline void* PyUnicode_DATA(PyObject *op) {
@@ -282,9 +282,9 @@ static inline void* PyUnicode_DATA(PyObject *op) {
 #define PyUnicode_4BYTE_DATA(op) _Py_STATIC_CAST(Py_UCS4*, PyUnicode_DATA(op))
 
 /* Returns the length of the unicode string. */
-PyAPI_FUNC(Py_ssize_t) PyTruffleUnicode_GET_LENGTH(PyObject *op);
+PyAPI_FUNC(Py_ssize_t) GraalPyPrivate_Unicode_GET_LENGTH(PyObject *op);
 static inline Py_ssize_t PyUnicode_GET_LENGTH(PyObject *op) {
-    return PyTruffleUnicode_GET_LENGTH(op);
+    return GraalPyPrivate_Unicode_GET_LENGTH(op);
 }
 #define PyUnicode_GET_LENGTH(op) PyUnicode_GET_LENGTH(_PyObject_CAST(op))
 

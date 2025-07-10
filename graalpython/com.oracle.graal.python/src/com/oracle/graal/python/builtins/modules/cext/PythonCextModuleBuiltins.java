@@ -130,7 +130,7 @@ public final class PythonCextModuleBuiltins {
     }
 
     @CApiBuiltin(ret = PyModuleObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Ignored)
-    abstract static class PyTruffleModule_CreateInitialized_PyModule_New extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Module_CreateInitialized_PyModule_New extends CApiUnaryBuiltinNode {
 
         @Specialization
         Object run(TruffleString name,
@@ -244,7 +244,7 @@ public final class PythonCextModuleBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {Pointer, PyObject, ConstCharPtrAsTruffleString, Pointer, Int, Int, ConstCharPtrAsTruffleString}, call = Ignored)
-    abstract static class PyTruffleModule_AddFunctionToModule extends CApi7BuiltinNode {
+    abstract static class GraalPyPrivate_Module_AddFunctionToModule extends CApi7BuiltinNode {
 
         @Specialization
         static Object moduleFunction(Object methodDefPtr, PythonModule mod, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
@@ -261,7 +261,7 @@ public final class PythonCextModuleBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, Pointer, Pointer}, call = Ignored)
-    abstract static class PyTruffleModule_Traverse extends CApiTernaryBuiltinNode {
+    abstract static class GraalPyPrivate_Module_Traverse extends CApiTernaryBuiltinNode {
         private static final String J__M_TRAVERSE = "m_traverse";
         private static final TruffleString T__M_TRAVERSE = tsLiteral(J__M_TRAVERSE);
         private static final CApiTiming TIMING = CApiTiming.create(true, J__M_TRAVERSE);
@@ -326,7 +326,7 @@ public final class PythonCextModuleBuiltins {
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, PyModuleDef}, call = Ignored)
-    abstract static class PyTruffle_Module_SetDef extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Module_SetDef extends CApiBinaryBuiltinNode {
         @Specialization
         static Object set(PythonModule object, Object value) {
             object.setNativeModuleDef(value);
@@ -335,7 +335,7 @@ public final class PythonCextModuleBuiltins {
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, Pointer}, call = Ignored)
-    abstract static class PyTruffle_Module_SetState extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Module_SetState extends CApiBinaryBuiltinNode {
         @Specialization
         static Object set(PythonModule object, Object value) {
             object.setNativeModuleState(value);

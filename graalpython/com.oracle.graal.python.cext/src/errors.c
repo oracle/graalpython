@@ -112,7 +112,7 @@ _PyErr_Restore(PyThreadState *tstate, PyObject *type, PyObject *value,
         }
     }
     // GraalPy change: upcall for setting the traceback
-    PyTruffleErr_SetTraceback(value, traceback);
+    GraalPyPrivate_Err_SetTraceback(value, traceback);
     // GraalPy change: the traceback is now owned by the managed side
     Py_XDECREF(traceback);
     _PyErr_SetRaisedException(tstate, value);
@@ -263,7 +263,7 @@ _PyErr_SetObject(PyThreadState *tstate, PyObject *exception, PyObject *value)
         tb = PyException_GetTraceback(value);
     _PyErr_Restore(tstate, Py_NewRef(Py_TYPE(value)), value, tb);
 #else // GraalPy change: different implementation
-	PyTruffleErr_CreateAndSetException(exception, value);
+	GraalPyPrivate_Err_CreateAndSetException(exception, value);
 #endif // GraalPy change
 }
 
@@ -595,7 +595,7 @@ _PyErr_GetExcInfo(PyThreadState *tstate,
                   PyObject **p_type, PyObject **p_value, PyObject **p_traceback)
 {
     // GraalPy change: different implementation
-    PyObject* result = PyTruffleErr_GetExcInfo();
+    PyObject* result = GraalPyPrivate_Err_GetExcInfo();
     if(result == NULL) {
         *p_type = Py_NewRef(Py_None);
         *p_value = Py_NewRef(Py_None);

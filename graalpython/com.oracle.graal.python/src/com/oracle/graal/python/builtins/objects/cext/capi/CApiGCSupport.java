@@ -216,7 +216,7 @@ public abstract class CApiGCSupport {
             } else {
                 /*
                  * This is a valid case because objects can manually be untracked or removed from GC
-                 * lists and if then 'GraalPy_Private_Object_GC_Del' is called on the native object
+                 * lists and if then 'GraalPyPrivate_Object_GC_Del' is called on the native object
                  * stub, it is checked if that still needs to be done.
                  */
                 if (GC_LOGGER.isLoggable(Level.FINER)) {

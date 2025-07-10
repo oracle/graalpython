@@ -253,11 +253,11 @@ import com.oracle.truffle.api.strings.TruffleString;
  *
  *     Native classes:
  *      - type_ready in typeobject.c calls these helpers in this order:
- *          - type_ready_graalpy_slot_conv: up-calls PyTruffleType_AddSlot to create the Python wrappers for each slot
+ *          - type_ready_graalpy_slot_conv: up-calls GraalPyPrivate_Type_AddSlot to create the Python wrappers for each slot
  *              - eventually will be replaced with one upcall to managed implementation of CPython's add_operators
  *                  that will use the {@link #SLOTDEFS} definitions and unsafe to read the slots
  *          - type_ready_inherit: does the slot inheritance in native
- *          - after type_ready_inherit: up-calls PyTruffle_AddInheritedSlots to:
+ *          - after type_ready_inherit: up-calls GraalPyPrivate_AddInheritedSlots to:
  *              - transfer the native slots to their managed mirror {@link TpSlots}
  *              - re-validate cached lookups in TpSlotPython, see comment in {@link #fromNative(PythonAbstractNativeObject, PythonContext)}
  *              - fixup getsets and members
@@ -1442,8 +1442,8 @@ public record TpSlots(TpSlot nb_bool, //
     @TruffleBoundary
     public static TpSlots.Builder buildInherited(PythonClass klass, PDict namespace, MroSequenceStorage mro, boolean allocateAllGroups) {
         // partially implements CPython:type_ready_inherit
-        // slots of native classes are initialized in PyTruffle_AddInheritedSlots, they are just a
-        // mirror of the native slots initialized and inherited on the native side
+        // slots of native classes are initialized in GraalPyPrivate_AddInheritedSlots, they are
+        // just a mirror of the native slots initialized and inherited on the native side
         assert klass.getTpSlots() == null;
         Builder klassSlots = newBuilder();
         if (allocateAllGroups) {

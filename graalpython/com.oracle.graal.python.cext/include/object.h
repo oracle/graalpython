@@ -215,9 +215,9 @@ PyAPI_FUNC(int) Py_Is(PyObject *x, PyObject *y);
 #endif // GraalPy change
 
 
-PyAPI_FUNC(Py_ssize_t) PyTruffle_REFCNT(PyObject *ob);
+PyAPI_FUNC(Py_ssize_t) GraalPyPrivate_REFCNT(PyObject *ob);
 static inline Py_ssize_t Py_REFCNT(PyObject *ob) {
-    return PyTruffle_REFCNT(ob);
+    return GraalPyPrivate_REFCNT(ob);
 }
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_REFCNT(ob) Py_REFCNT(_PyObject_CAST(ob))
@@ -225,12 +225,12 @@ static inline Py_ssize_t Py_REFCNT(PyObject *ob) {
 
 
 // bpo-39573: The Py_SET_TYPE() function must be used to set an object type.
-PyAPI_FUNC(PyTypeObject*) PyTruffle_TYPE(PyObject *ob);
+PyAPI_FUNC(PyTypeObject*) GraalPyPrivate_TYPE(PyObject *ob);
 static inline PyTypeObject* Py_TYPE(PyObject *ob) {
 #if defined(GRAALVM_PYTHON) && defined(NDEBUG)
     return (pointer_to_stub(ob)->ob_type);
 #else
-    return PyTruffle_TYPE(ob);
+    return GraalPyPrivate_TYPE(ob);
 #endif
 }
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
@@ -241,11 +241,11 @@ PyAPI_DATA(PyTypeObject) PyLong_Type;
 PyAPI_DATA(PyTypeObject) PyBool_Type;
 
 // bpo-39573: The Py_SET_SIZE() function must be used to set an object size.
-PyAPI_FUNC(Py_ssize_t) PyTruffle_SIZE(PyObject *ob);
+PyAPI_FUNC(Py_ssize_t) GraalPyPrivate_SIZE(PyObject *ob);
 static inline Py_ssize_t Py_SIZE(PyObject *ob) {
     assert(Py_TYPE(ob) != &PyLong_Type);
     assert(Py_TYPE(ob) != &PyBool_Type);
-    return PyTruffle_SIZE(ob);
+    return GraalPyPrivate_SIZE(ob);
 }
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_SIZE(ob) Py_SIZE(_PyObject_CAST(ob))
@@ -273,7 +273,7 @@ static inline int Py_IS_TYPE(PyObject *ob, PyTypeObject *type) {
 #endif
 
 
-PyAPI_FUNC(void) PyTruffle_SET_REFCNT(PyObject *ob, Py_ssize_t refcnt);
+PyAPI_FUNC(void) GraalPyPrivate_SET_REFCNT(PyObject *ob, Py_ssize_t refcnt);
 static inline void Py_SET_REFCNT(PyObject *ob, Py_ssize_t refcnt) {
     // This immortal check is for code that is unaware of immortal objects.
     // The runtime tracks these objects and we should avoid as much
@@ -282,7 +282,7 @@ static inline void Py_SET_REFCNT(PyObject *ob, Py_ssize_t refcnt) {
     if (_Py_IsImmortal(ob)) {
         return;
     }
-    PyTruffle_SET_REFCNT(ob, refcnt);
+    GraalPyPrivate_SET_REFCNT(ob, refcnt);
 }
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_SET_REFCNT(ob, refcnt) Py_SET_REFCNT(_PyObject_CAST(ob), (refcnt))
@@ -1037,7 +1037,7 @@ static inline int PyType_CheckExact(PyObject *op) {
 #endif
 
 // GraalPy additions
-PyAPI_FUNC(void) PyTruffle_DebugTrace(void);
+PyAPI_FUNC(void) GraalPyPrivate_DebugTrace(void);
 
 typedef struct {
     PyObject_HEAD

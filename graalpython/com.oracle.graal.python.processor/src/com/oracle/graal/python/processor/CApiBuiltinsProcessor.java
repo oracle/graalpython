@@ -488,7 +488,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 line += ") {";
                 lines.add(line);
                 if (value.call.equals("Direct")) {
-                    line = "    " + (isVoid(value.returnType) ? "" : "return ") + "GraalPy_Internal_Upcall_" + name + "(";
+                    line = "    " + (isVoid(value.returnType) ? "" : "return ") + "GraalPyPrivate_Upcall_" + name + "(";
                     for (int i = 0; i < value.arguments.length; i++) {
                         line += (i == 0 ? "" : ", ");
                         line += argName(i);
@@ -502,7 +502,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             }
         }
 
-        lines.add("PyAPI_FUNC(int64_t*) GraalPy_Private_Constants() {");
+        lines.add("PyAPI_FUNC(int64_t*) GraalPyPrivate_Constants() {");
         lines.add("    static int64_t constants[] = {");
         for (var constant : constants) {
             lines.add("        (int64_t) " + constant + ",");
@@ -511,7 +511,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("    };");
         lines.add("    return constants;");
         lines.add("}");
-        lines.add("PyAPI_FUNC(Py_ssize_t*) GraalPy_Private_StructOffsets() {");
+        lines.add("PyAPI_FUNC(Py_ssize_t*) GraalPyPrivate_StructOffsets() {");
         lines.add("    static Py_ssize_t offsets[] = {");
         for (var field : fields) {
             int delim = field.indexOf("__");
@@ -525,7 +525,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("    };");
         lines.add("    return offsets;");
         lines.add("}");
-        lines.add("PyAPI_FUNC(Py_ssize_t*) GraalPy_Private_StructSizes() {");
+        lines.add("PyAPI_FUNC(Py_ssize_t*) GraalPyPrivate_StructSizes() {");
         lines.add("    static Py_ssize_t sizes[] = {");
         for (var struct : structs) {
             lines.add("        sizeof(" + struct.replace("__", " ") + "),");
@@ -559,8 +559,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
     /**
      * Generates the builtin specification in capi.h, which includes only the builtins implemented
-     * in Java code. Additionally, it generates helpers for all "GraalPy_Private_Get_" and
-     * "GraalPy_Private_Set_" builtins.
+     * in Java code. Additionally, it generates helpers for all "GraalPyPrivate_Get_" and
+     * "GraalPyPrivate_Set_" builtins.
      */
     private void generateCApiHeader(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
         List<String> lines = new ArrayList<>();
@@ -580,9 +580,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
         for (var entry : javaBuiltins) {
             String name = entry.name;
-            if (!name.endsWith("_dummy")) {
-                String getPrefix = "GraalPy_Private_Get_";
-                String setPrefix = "GraalPy_Private_Set_";
+            if (entry.origin.getEnclosingElement().getSimpleName().toString().equals("PythonCextSlotBuiltins")) {
+                String getPrefix = "GraalPyPrivate_Get_";
+                String setPrefix = "GraalPyPrivate_Set_";
                 if (name.startsWith(getPrefix)) {
                     assert entry.arguments.length == 1 : name;
                     String type = name(entry.arguments[0]).replace("Wrapper", "");
@@ -590,7 +590,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                     assert name.charAt(getPrefix.length() + type.length()) == '_' : name;
                     String unprefixed = name.substring(getPrefix.length());
                     String field = unprefixed.substring(type.length() + 1);
-                    macro.append("#define GraalPy_Private_GET_" + unprefixed +
+                    macro.append("#define GraalPyPrivate_GET_" + unprefixed +
                                     "(OBJ) ( points_to_py_handle_space(OBJ) ? " + name + "((" + type + "*) (OBJ)) : ((" + type + "*) (OBJ))->" + field + ")");
                     lines.add(macro.toString());
                 } else if (name.startsWith(setPrefix)) {
@@ -600,7 +600,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                     assert name.charAt(setPrefix.length() + type.length()) == '_' : name;
                     String unprefixed = name.substring(setPrefix.length());
                     String field = unprefixed.substring(type.length() + 1);
-                    macro.append("#define GraalPy_Private_SET_" + unprefixed +
+                    macro.append("#define GraalPyPrivate_SET_" + unprefixed +
                                     "(OBJ, VALUE) { if (points_to_py_handle_space(OBJ)) " + name + "((" + type + "*) (OBJ), (VALUE)); else  ((" + type + "*) (OBJ))->" + field + " = (VALUE); }");
                     lines.add(macro.toString());
                 }
@@ -822,7 +822,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
 
         names.removeIf(n -> n.startsWith("GraalPy"));
-        names.removeIf(n -> n.startsWith("PyTruffle"));
         names.removeAll(Arrays.asList(ADDITIONAL));
         if (!names.isEmpty()) {
             processingEnv.getMessager().printError("extra builtins (defined in GraalPy, but not in CPython - some of these are necessary for internal modules like 'math'):");

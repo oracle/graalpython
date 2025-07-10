@@ -52,12 +52,12 @@ sys_write(int key, FILE *fp, const char *format, va_list va)
     int written;
 
     written = PyOS_vsnprintf(buffer, sizeof(buffer), format, va);
-    if (PyTruffleSys_WriteStd(key, buffer) != 0) {
+    if (GraalPyPrivate_Sys_WriteStd(key, buffer) != 0) {
         fputs(buffer, fp);
     }
     if (written < 0 || (size_t)written >= sizeof(buffer)) {
         const char *truncated = "... truncated";
-        if (PyTruffleSys_WriteStd(key, truncated) != 0)
+        if (GraalPyPrivate_Sys_WriteStd(key, truncated) != 0)
             fputs(truncated, fp);
     }
 }
@@ -91,7 +91,7 @@ PySys_FormatStdout(const char *format, ...)
 
     va_start(va, format);
     // GraalPy change: different implementation
-    PyTruffleSys_FormatStd(0, format, &va);
+    GraalPyPrivate_Sys_FormatStd(0, format, &va);
     va_end(va);
 }
 
@@ -102,6 +102,6 @@ PySys_FormatStderr(const char *format, ...)
 
     va_start(va, format);
     // GraalPy change: different implementation
-    PyTruffleSys_FormatStd(1, format, &va);
+    GraalPyPrivate_Sys_FormatStd(1, format, &va);
     va_end(va);
 }

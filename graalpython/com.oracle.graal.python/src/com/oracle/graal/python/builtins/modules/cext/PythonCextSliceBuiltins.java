@@ -76,7 +76,7 @@ public final class PythonCextSliceBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    abstract static class PyTruffle_Ellipsis extends CApiNullaryBuiltinNode {
+    abstract static class GraalPyPrivate_Ellipsis extends CApiNullaryBuiltinNode {
         @Specialization
         static Object run() {
             return PEllipsis.INSTANCE;

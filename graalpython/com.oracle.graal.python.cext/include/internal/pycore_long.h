@@ -127,7 +127,7 @@ PyAPI_FUNC(char*) _PyLong_FormatBytesWriter(
 #define SIGN_NEGATIVE 2
 #define NON_SIZE_BITS 3
 
-PyAPI_FUNC(uintptr_t) PyTruffleLong_lv_tag(const PyLongObject *op);
+PyAPI_FUNC(uintptr_t) GraalPyPrivate_Long_lv_tag(const PyLongObject *op);
 /* The functions _PyLong_IsCompact and _PyLong_CompactValue are defined
  * in Include/cpython/longobject.h, since they need to be inline.
  *
@@ -156,7 +156,7 @@ _PyLong_IsNonNegativeCompact(const PyLongObject* op) {
 #if 0 // GraalPy change
     return op->long_value.lv_tag <= (1 << NON_SIZE_BITS);
 #else // GraalPy change
-    return PyTruffleLong_lv_tag(op) <= (1 << NON_SIZE_BITS);
+    return GraalPyPrivate_Long_lv_tag(op) <= (1 << NON_SIZE_BITS);
 #endif // GraalPy change
 }
 
@@ -168,7 +168,7 @@ _PyLong_BothAreCompact(const PyLongObject* a, const PyLongObject* b) {
 #if 0 // GraalPy change
     return (a->long_value.lv_tag | b->long_value.lv_tag) < (2 << NON_SIZE_BITS);
 #else // GraalPy change
-    return (PyTruffleLong_lv_tag(a) | PyTruffleLong_lv_tag(b)) < (2 << NON_SIZE_BITS);
+    return (GraalPyPrivate_Long_lv_tag(a) | GraalPyPrivate_Long_lv_tag(b)) < (2 << NON_SIZE_BITS);
 #endif // GraalPy change
 }
 
@@ -178,7 +178,7 @@ _PyLong_IsZero(const PyLongObject *op)
 #if 0 // GraalPy change
     return (op->long_value.lv_tag & SIGN_MASK) == SIGN_ZERO;
 #else // GraalPy change
-    return (PyTruffleLong_lv_tag(op) & SIGN_MASK) == SIGN_ZERO;
+    return (GraalPyPrivate_Long_lv_tag(op) & SIGN_MASK) == SIGN_ZERO;
 #endif // GraalPy change
 }
 
@@ -188,7 +188,7 @@ _PyLong_IsNegative(const PyLongObject *op)
 #if 0 // GraalPy change
     return (op->long_value.lv_tag & SIGN_MASK) == SIGN_NEGATIVE;
 #else // GraalPy change
-    return (PyTruffleLong_lv_tag(op) & SIGN_MASK) == SIGN_NEGATIVE;
+    return (GraalPyPrivate_Long_lv_tag(op) & SIGN_MASK) == SIGN_NEGATIVE;
 #endif // GraalPy change
 }
 
@@ -198,7 +198,7 @@ _PyLong_IsPositive(const PyLongObject *op)
 #if 0 // GraalPy change
     return (op->long_value.lv_tag & SIGN_MASK) == 0;
 #else // GraalPy change
-    return (PyTruffleLong_lv_tag(op) & SIGN_MASK) == 0;
+    return (GraalPyPrivate_Long_lv_tag(op) & SIGN_MASK) == 0;
 #endif // GraalPy change
 }
 
@@ -209,10 +209,10 @@ _PyLong_DigitCount(const PyLongObject *op)
 #if 0 // GraalPy change
     return op->long_value.lv_tag >> NON_SIZE_BITS;
 #else // GraalPy change
-    return PyTruffleLong_lv_tag(op) >> NON_SIZE_BITS;
+    return GraalPyPrivate_Long_lv_tag(op) >> NON_SIZE_BITS;
 #endif // GraalPy change
 }
-    
+
 /* Equivalent to _PyLong_DigitCount(op) * _PyLong_NonCompactSign(op) */
 static inline Py_ssize_t
 _PyLong_SignedDigitCount(const PyLongObject *op)
@@ -222,11 +222,11 @@ _PyLong_SignedDigitCount(const PyLongObject *op)
     Py_ssize_t sign = 1 - (op->long_value.lv_tag & SIGN_MASK);
     return sign * (Py_ssize_t)(op->long_value.lv_tag >> NON_SIZE_BITS);
 #else // GraalPy change
-    Py_ssize_t sign = 1 - (PyTruffleLong_lv_tag(op) & SIGN_MASK);
-    return sign * (Py_ssize_t)(PyTruffleLong_lv_tag(op) >> NON_SIZE_BITS);
+    Py_ssize_t sign = 1 - (GraalPyPrivate_Long_lv_tag(op) & SIGN_MASK);
+    return sign * (Py_ssize_t)(GraalPyPrivate_Long_lv_tag(op) >> NON_SIZE_BITS);
 #endif // GraalPy change
 }
-    
+
 
 static inline int
 _PyLong_CompactSign(const PyLongObject *op)
@@ -236,10 +236,10 @@ _PyLong_CompactSign(const PyLongObject *op)
 #if 0 // GraalPy change
     return 1 - (op->long_value.lv_tag & SIGN_MASK);
 #else // GraalPy change
-    return 1 - (PyTruffleLong_lv_tag(op) & SIGN_MASK);
+    return 1 - (GraalPyPrivate_Long_lv_tag(op) & SIGN_MASK);
 #endif // GraalPy change
 }
-    
+
 
 static inline int
 _PyLong_NonCompactSign(const PyLongObject *op)
@@ -249,10 +249,10 @@ _PyLong_NonCompactSign(const PyLongObject *op)
 #if 0 // GraalPy change
     return 1 - (op->long_value.lv_tag & SIGN_MASK);
 #else // GraalPy change
-    return 1 - (PyTruffleLong_lv_tag(op) & SIGN_MASK);
+    return 1 - (GraalPyPrivate_Long_lv_tag(op) & SIGN_MASK);
 #endif // GraalPy change
 }
-    
+
 
 /* Do a and b have the same sign? */
 static inline int
@@ -261,10 +261,10 @@ _PyLong_SameSign(const PyLongObject *a, const PyLongObject *b)
 #if 0 // GraalPy change
     return (a->long_value.lv_tag & SIGN_MASK) == (b->long_value.lv_tag & SIGN_MASK);
 #else // GraalPy change
-    return (PyTruffleLong_lv_tag(a) & SIGN_MASK) == (PyTruffleLong_lv_tag(b) & SIGN_MASK);
+    return (GraalPyPrivate_Long_lv_tag(a) & SIGN_MASK) == (GraalPyPrivate_Long_lv_tag(b) & SIGN_MASK);
 #endif // GraalPy change
 }
-    
+
 
 #define TAG_FROM_SIGN_AND_SIZE(sign, size) ((1 - (sign)) | ((size) << NON_SIZE_BITS))
 

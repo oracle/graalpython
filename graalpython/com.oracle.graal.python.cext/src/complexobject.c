@@ -240,7 +240,7 @@ PyComplex_FromCComplex(Py_complex cval)
 }
 
 PyAPI_FUNC(PyObject *) // GraalPy change: expose the function for downcalls, rename
-GraalPy_Private_Complex_SubtypeFromDoubles(PyTypeObject *type, double real, double imag)
+GraalPyPrivate_Complex_SubtypeFromDoubles(PyTypeObject *type, double real, double imag)
 {
     Py_complex c;
     c.real = real;
@@ -267,7 +267,7 @@ PyComplex_RealAsDouble(PyObject *op)
         return ((PyComplexObject *)op)->cval.real;
     }
     else {
-        return PyTruffleComplex_RealAsDouble(op);
+        return GraalPyPrivate_Complex_RealAsDouble(op);
     }
 }
 
@@ -279,7 +279,7 @@ PyComplex_ImagAsDouble(PyObject *op)
         return ((PyComplexObject *)op)->cval.imag;
     }
     else {
-        return PyTruffleComplex_ImagAsDouble(op);
+        return GraalPyPrivate_Complex_ImagAsDouble(op);
     }
 }
 
@@ -327,7 +327,7 @@ PyComplex_AsCComplex(PyObject *op)
         return ((PyComplexObject*) op)->cval;
     }
     Py_complex result;
-    if (PyTruffleComplex_AsCComplex(op, &result) == 0) {
+    if (GraalPyPrivate_Complex_AsCComplex(op, &result) == 0) {
         return result;
     }
     Py_complex c_error = { -1., 0. };

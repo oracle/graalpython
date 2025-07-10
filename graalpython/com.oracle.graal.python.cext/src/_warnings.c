@@ -635,7 +635,7 @@ warn_explicit(PyThreadState *tstate, PyObject *category, PyObject *message,
               PyObject *source)
 {
     // GraalPy change: different implementation
-    return PyTruffleErr_WarnExplicit(category, message, filename, lineno, module, registry);
+    return GraalPyPrivate_Err_WarnExplicit(category, message, filename, lineno, module, registry);
 }
 
 #if 0 // GraalPy change
@@ -1065,7 +1065,7 @@ warn_unicode(PyObject *category, PyObject *message,
         category = PyExc_RuntimeWarning;
 
     // GraalPy change
-    res = PyTruffleErr_Warn(message, category, stack_level, source);
+    res = GraalPyPrivate_Err_Warn(message, category, stack_level, source);
     if (res == NULL)
         return -1;
     Py_DECREF(res);

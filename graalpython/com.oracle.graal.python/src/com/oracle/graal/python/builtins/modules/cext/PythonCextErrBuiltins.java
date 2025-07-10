@@ -132,7 +132,7 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class PyTruffleErr_SetTraceback extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Err_SetTraceback extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object set(Object exception, PTraceback tb) {
@@ -193,7 +193,7 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class PyTruffleErr_CreateAndSetException extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Err_CreateAndSetException extends CApiBinaryBuiltinNode {
         @Specialization(guards = "!isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")
         static Object create(Object type, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Shared @Cached IsTypeNode isTypeNode,
@@ -284,7 +284,7 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    abstract static class PyTruffleErr_GetExcInfo extends CApiNullaryBuiltinNode {
+    abstract static class GraalPyPrivate_Err_GetExcInfo extends CApiNullaryBuiltinNode {
         @Specialization
         Object info(
                         @Bind Node inliningTarget,

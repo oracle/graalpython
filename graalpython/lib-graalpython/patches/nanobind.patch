@@ -905,10 +905,10 @@ index 0000000..b61486b
 +-U __Py_SwappedOp
 +-U __Py_TrueStruct
 +-U __Py_VaBuildValue_SizeT
-+-U PyTruffleList_GetItems
-+-U PyTruffleSequence_Fast_ITEMS
-+-U PyTruffleTuple_GetItems
-+-U PyTruffle_SIZE
++-U GraalPyPrivate_List_GetItems
++-U GraalPyPrivate_Sequence_Fast_ITEMS
++-U GraalPyPrivate_Tuple_GetItems
++-U GraalPyPrivate_SIZE
 +-U __PyTuple_GET_ITEM
 +-U __Py_EllipsisObjectReference
 +-U __Py_FalseStructReference

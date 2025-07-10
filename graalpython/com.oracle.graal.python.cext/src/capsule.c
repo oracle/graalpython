@@ -14,7 +14,7 @@ PyAPI_FUNC(PyTypeObject*) getPyCapsuleTypeReference() {
 	return &PyCapsule_Type;
 }
 
-PyAPI_FUNC(void) GraalPy_Private_Capsule_CallDestructor(PyObject* capsule, PyCapsule_Destructor destructor) {
+PyAPI_FUNC(void) GraalPyPrivate_Capsule_CallDestructor(PyObject* capsule, PyCapsule_Destructor destructor) {
     destructor(capsule);
 }
 

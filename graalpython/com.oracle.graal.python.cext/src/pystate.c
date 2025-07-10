@@ -84,7 +84,7 @@ static inline PyThreadState *
 _get_thread_state() {
     PyThreadState *ts = tstate_current;
     if (UNLIKELY(ts == NULL)) {
-         ts = PyTruffleThreadState_Get(&tstate_current);
+         ts = GraalPyPrivate_ThreadState_Get(&tstate_current);
          tstate_current = ts;
     }
     return ts;
@@ -2296,7 +2296,7 @@ PyGILState_Check(void)
             attached = 1;
         }
     }
-    int ret = PyTruffleGILState_Check();
+    int ret = GraalPyPrivate_GILState_Check();
     if (attached) {
         (*TRUFFLE_CONTEXT)->detachCurrentThread(TRUFFLE_CONTEXT);
     }
@@ -2362,7 +2362,7 @@ PyGILState_Ensure(void)
         }
         graalpy_gilstate_counter++;
     }
-    return PyTruffleGILState_Ensure() ? PyGILState_UNLOCKED : PyGILState_LOCKED;
+    return GraalPyPrivate_GILState_Ensure() ? PyGILState_UNLOCKED : PyGILState_LOCKED;
 #endif // GraalPy change
 }
 
@@ -2419,16 +2419,16 @@ PyGILState_Release(PyGILState_STATE oldstate)
     }
 #else // GraalPy change
     if (oldstate == PyGILState_UNLOCKED) {
-        PyTruffleGILState_Release();
+        GraalPyPrivate_GILState_Release();
     }
     if (TRUFFLE_CONTEXT) {
         graalpy_gilstate_counter--;
         if (graalpy_gilstate_counter == 0 && graalpy_attached_thread) {
-            PyTruffleBeforeThreadDetach();
+            GraalPyPrivate_BeforeThreadDetach();
             (*TRUFFLE_CONTEXT)->detachCurrentThread(TRUFFLE_CONTEXT);
             graalpy_attached_thread = 0;
             /*
-             * The thread state on the Java-side is cleared in PyTruffleBeforeThreadDetach.
+             * The thread state on the Java-side is cleared in GraalPyPrivate_BeforeThreadDetach.
              * As part of that the tstate_current pointer should have been set to NULL to make
              * sure to fetch a fresh pointer the next time we attach. Just to be sure, we clear
              * it here too:
@@ -3223,7 +3223,7 @@ PyObject* PyState_FindModule(struct PyModuleDef* module) {
     } else if (index == 0) {
         return NULL;
     } else {
-        return PyTruffleState_FindModule(index);
+        return GraalPyPrivate_State_FindModule(index);
     }
 }
 

@@ -140,9 +140,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextSlotBuiltins {
 
-    @CApiBuiltin(name = "GraalPy_Private_Get_PyListObject_ob_item", ret = PyObjectPtr, args = {PyListObject}, call = Ignored)
-    @CApiBuiltin(name = "GraalPy_Private_Get_PyTupleObject_ob_item", ret = PyObjectPtr, args = {PyTupleObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PSequence_ob_item extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(name = "GraalPyPrivate_Get_PyListObject_ob_item", ret = PyObjectPtr, args = {PyListObject}, call = Ignored)
+    @CApiBuiltin(name = "GraalPyPrivate_Get_PyTupleObject_ob_item", ret = PyObjectPtr, args = {PyTupleObject}, call = Ignored)
+    abstract static class GraalPyPrivate_Get_PSequence_ob_item extends CApiUnaryBuiltinNode {
 
         @Specialization
         static Object get(PSequence object) {
@@ -152,7 +152,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyASCIIObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyASCIIObject_length extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyASCIIObject_length extends CApiUnaryBuiltinNode {
 
         @Specialization
         static long get(Object object,
@@ -162,7 +162,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyASCIIObject_state_ascii extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyASCIIObject_state_ascii extends CApiUnaryBuiltinNode {
 
         @Specialization
         int get(PString object,
@@ -180,7 +180,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyASCIIObject_state_compact extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyASCIIObject_state_compact extends CApiUnaryBuiltinNode {
 
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
@@ -189,7 +189,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyASCIIObject_state_interned extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyASCIIObject_state_interned extends CApiUnaryBuiltinNode {
 
         @Specialization
         static int get(PString object,
@@ -200,7 +200,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyASCIIObject_state_kind extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyASCIIObject_state_kind extends CApiUnaryBuiltinNode {
 
         @Specialization
         static int get(PString object,
@@ -224,7 +224,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyASCIIObject_state_ready extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyASCIIObject_state_ready extends CApiUnaryBuiltinNode {
 
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
@@ -233,7 +233,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyTypeObjectBorrowed, args = {PyCMethodObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyCMethodObject_mm_class extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyCMethodObject_mm_class extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PBuiltinMethod object) {
             return object.getClassObject();
@@ -241,7 +241,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyMethodDef, args = {PyCFunctionObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyCFunctionObject_m_ml extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyCFunctionObject_m_ml extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PythonBuiltinObject object,
                         @Bind Node inliningTarget,
@@ -265,7 +265,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyMethodDef, args = {PyCFunctionObject, PyMethodDef}, call = Ignored)
-    abstract static class GraalPy_Private_Set_PyCFunctionObject_m_ml extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Set_PyCFunctionObject_m_ml extends CApiBinaryBuiltinNode {
         @Specialization
         static Object get(PythonBuiltinObject object, Object methodDefPtr,
                         @Bind Node inliningTarget,
@@ -285,7 +285,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyCFunctionObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyCFunctionObject_m_module extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyCFunctionObject_m_module extends CApiUnaryBuiltinNode {
         @Specialization
         Object get(Object object,
                         @Bind Node inliningTarget,
@@ -296,7 +296,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyCFunctionObject, PyObjectBorrowed}, call = Ignored)
-    abstract static class GraalPy_Private_Set_PyCFunctionObject_m_module extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Set_PyCFunctionObject_m_module extends CApiBinaryBuiltinNode {
         @Specialization
         Object set(Object object, Object value,
                         @Bind Node inliningTarget,
@@ -307,7 +307,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyCFunctionObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyCFunctionObject_m_self extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyCFunctionObject_m_self extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PBuiltinMethod object) {
             return object.getSelf();
@@ -320,7 +320,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyCFunctionObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyCFunctionObject_m_weakreflist extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyCFunctionObject_m_weakreflist extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
             throw CompilerDirectives.shouldNotReachHere();
@@ -328,7 +328,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = vectorcallfunc, args = {PyCFunctionObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyCFunctionObject_vectorcall extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyCFunctionObject_vectorcall extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
             throw CompilerDirectives.shouldNotReachHere();
@@ -336,7 +336,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyByteArrayObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyByteArrayObject_ob_start extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyByteArrayObject_ob_start extends CApiUnaryBuiltinNode {
 
         @Specialization
         static Object doObStart(PByteArray object) {
@@ -346,7 +346,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyByteArrayObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyByteArrayObject_ob_exports extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyByteArrayObject_ob_exports extends CApiUnaryBuiltinNode {
 
         @Specialization
         static long get(PByteArray object) {
@@ -355,7 +355,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyByteArrayObject, Int}, call = Ignored)
-    abstract static class GraalPy_Private_Set_PyByteArrayObject_ob_exports extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Set_PyByteArrayObject_ob_exports extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object set(PByteArray object, int value) {
@@ -365,7 +365,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyDescrObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyDescrObject_d_name extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyDescrObject_d_name extends CApiUnaryBuiltinNode {
 
         @Specialization
         static Object get(PBuiltinFunction object) {
@@ -379,7 +379,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyTypeObjectBorrowed, args = {PyDescrObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyDescrObject_d_type extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyDescrObject_d_type extends CApiUnaryBuiltinNode {
 
         @Specialization
         Object get(PBuiltinFunction object) {
@@ -394,7 +394,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyFrameObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyFrameObject_f_lineno extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyFrameObject_f_lineno extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(PFrame frame) {
             return frame.getLine();
@@ -402,7 +402,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyGetSetDef}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyGetSetDef_closure extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyGetSetDef_closure extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
             throw CompilerDirectives.shouldNotReachHere();
@@ -410,7 +410,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyGetSetDef}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyGetSetDef_doc extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyGetSetDef_doc extends CApiUnaryBuiltinNode {
         @Specialization
         Object get(PythonObject object,
                         @Cached(parameters = "T___DOC__") GetFixedAttributeNode getAttrNode,
@@ -425,7 +425,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = getter, args = {PyGetSetDef}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyGetSetDef_get extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyGetSetDef_get extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
             throw CompilerDirectives.shouldNotReachHere();
@@ -433,7 +433,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyGetSetDef}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyGetSetDef_name extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyGetSetDef_name extends CApiUnaryBuiltinNode {
         @Specialization
         Object get(PythonObject object,
                         @Cached(parameters = "T___NAME__") GetFixedAttributeNode getAttrNode,
@@ -448,7 +448,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = setter, args = {PyGetSetDef}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyGetSetDef_set extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyGetSetDef_set extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
             throw CompilerDirectives.shouldNotReachHere();
@@ -456,7 +456,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyMethodDef, args = {PyMethodDescrObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyMethodDescrObject_d_method extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyMethodDescrObject_d_method extends CApiUnaryBuiltinNode {
 
         @Specialization
         static Object get(PBuiltinFunction builtinFunction,
@@ -475,7 +475,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyInstanceMethodObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyInstanceMethodObject_func extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyInstanceMethodObject_func extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PDecoratedMethod object) {
             return object.getCallable();
@@ -483,7 +483,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyMethodObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyMethodObject_im_func extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyMethodObject_im_func extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PBuiltinMethod object) {
             return object.getFunction();
@@ -496,7 +496,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyMethodObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyMethodObject_im_self extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyMethodObject_im_self extends CApiUnaryBuiltinNode {
 
         @Specialization
         static Object get(PBuiltinMethod object) {
@@ -510,7 +510,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyModuleDef}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyModuleDef_m_doc extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyModuleDef_m_doc extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
             throw CompilerDirectives.shouldNotReachHere();
@@ -518,7 +518,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyMethodDef, args = {PyModuleDef}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyModuleDef_m_methods extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyModuleDef_m_methods extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
             throw CompilerDirectives.shouldNotReachHere();
@@ -526,7 +526,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyModuleDef}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyModuleDef_m_name extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyModuleDef_m_name extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
             throw CompilerDirectives.shouldNotReachHere();
@@ -534,7 +534,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyModuleDef}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyModuleDef_m_size extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyModuleDef_m_size extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
             throw CompilerDirectives.shouldNotReachHere();
@@ -542,7 +542,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyModuleDef, args = {PyModuleObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyModuleObject_md_def extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyModuleObject_md_def extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PythonModule object) {
             return object.getNativeModuleDef();
@@ -550,7 +550,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyModuleObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyModuleObject_md_dict extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyModuleObject_md_dict extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(Object object,
                         @Exclusive @Cached(parameters = "T___DICT__") GetFixedAttributeNode getDictNode) {
@@ -559,7 +559,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyModuleObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyModuleObject_md_state extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyModuleObject_md_state extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PythonModule object,
                         @Bind Node inliningTarget) {
@@ -568,7 +568,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectWrapper}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyObject_ob_refcnt extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyObject_ob_refcnt extends CApiUnaryBuiltinNode {
 
         @Specialization
         static Object get(PythonAbstractObjectNativeWrapper wrapper) {
@@ -585,7 +585,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyTypeObjectBorrowed, args = {PyObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyObject_ob_type extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyObject_ob_type extends CApiUnaryBuiltinNode {
 
         @Specialization
         static Object get(Object object,
@@ -603,7 +603,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PySetObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PySetObject_used extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PySetObject_used extends CApiUnaryBuiltinNode {
 
         @Specialization
         static long get(PBaseSet object,
@@ -636,7 +636,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PySliceObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PySliceObject_start extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PySliceObject_start extends CApiUnaryBuiltinNode {
 
         @Specialization
         static Object doStart(PSlice object,
@@ -647,7 +647,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PySliceObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PySliceObject_step extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PySliceObject_step extends CApiUnaryBuiltinNode {
 
         @Specialization
         static Object doStep(PSlice object,
@@ -658,7 +658,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PySliceObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PySliceObject_stop extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PySliceObject_stop extends CApiUnaryBuiltinNode {
 
         @Specialization
         static Object doStop(PSlice object,
@@ -669,7 +669,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyUnicodeObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyUnicodeObject_data extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyUnicodeObject_data extends CApiUnaryBuiltinNode {
 
         @Specialization
         static Object get(PString object,
@@ -724,7 +724,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyVarObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyVarObject_ob_size extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyVarObject_ob_size extends CApiUnaryBuiltinNode {
 
         @Specialization
         static long get(Object object,
@@ -739,7 +739,7 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = UINTPTR_T, args = {PyLongObject}, call = Ignored)
-    abstract static class GraalPy_Private_Get_PyLongObject_long_value_lv_tag extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Get_PyLongObject_long_value_lv_tag extends CApiUnaryBuiltinNode {
 
         @Specialization
         static long getLvTag(Object n,

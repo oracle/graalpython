@@ -751,7 +751,7 @@ PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
     assert(mem != NULL);
     assert(flags == PyBUF_READ || flags == PyBUF_WRITE);
     int readonly = (flags == PyBUF_WRITE) ? 0 : 1;
-    return PyTruffle_MemoryViewFromBuffer(
+    return GraalPyPrivate_MemoryViewFromBuffer(
             NULL, NULL, size, readonly, 1, "B", 1, (int8_t*)mem, NULL, NULL, NULL);
 }
 
@@ -769,7 +769,7 @@ PyMemoryView_FromBuffer(const Py_buffer *info)
             "PyMemoryView_FromBuffer(): info->buf must not be NULL");
         return NULL;
     }
-    return PyTruffle_MemoryViewFromBuffer(
+    return GraalPyPrivate_MemoryViewFromBuffer(
             NULL,
             NULL,
             info->len,
@@ -3409,13 +3409,13 @@ PyTypeObject PyMemoryView_Type = {
 // GraalPy additions
 /* called from memoryview implementation to do pointer arithmetics currently not possible from Java */
 PyAPI_FUNC(int8_t *)
-GraalPy_Private_AddSuboffset(int8_t *ptr, Py_ssize_t offset, Py_ssize_t suboffset)
+GraalPyPrivate_AddSuboffset(int8_t *ptr, Py_ssize_t offset, Py_ssize_t suboffset)
 {
         return *(int8_t**)(ptr + offset) + suboffset;
 }
 
 PyAPI_FUNC(PyObject *)
-GraalPy_Private_MemoryViewFromObject(PyObject *v, int flags)
+GraalPyPrivate_MemoryViewFromObject(PyObject *v, int flags)
 {
     if (PyObject_CheckBuffer(v)) {
         Py_buffer* buffer = malloc(sizeof(Py_buffer));
@@ -3430,7 +3430,7 @@ GraalPy_Private_MemoryViewFromObject(PyObject *v, int flags)
                 needs_release = pb->bf_releasebuffer != NULL;
             }
         }
-        PyObject *mv = PyTruffle_MemoryViewFromBuffer(
+        PyObject *mv = GraalPyPrivate_MemoryViewFromBuffer(
                 needs_release ? buffer : NULL, /* We only need the ptr for the release */
                 buffer->obj,
                 buffer->len,
@@ -3454,9 +3454,9 @@ GraalPy_Private_MemoryViewFromObject(PyObject *v, int flags)
     return NULL;
 }
 
-/* Release buffer struct allocated in GraalPy_Private_MemoryViewFromObject */
+/* Release buffer struct allocated in GraalPyPrivate_MemoryViewFromObject */
 PyAPI_FUNC(void)
-GraalPy_Private_ReleaseBuffer(Py_buffer* buffer)
+GraalPyPrivate_ReleaseBuffer(Py_buffer* buffer)
 {
     if (buffer->obj != NULL) {
         PyBufferProcs *pb;

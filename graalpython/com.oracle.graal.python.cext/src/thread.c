@@ -214,7 +214,7 @@ PyThread_tss_create(Py_tss_t *key)
     if (key->_is_initialized) {
         return 0;
     }
-    key->_key = PyTruffle_tss_create();
+    key->_key = GraalPyPrivate_tss_create();
     key->_is_initialized = 1;
     return 0;
 }
@@ -222,13 +222,13 @@ PyThread_tss_create(Py_tss_t *key)
 void *
 PyThread_tss_get(Py_tss_t *key)
 {
-    return PyTruffle_tss_get(key->_key);
+    return GraalPyPrivate_tss_get(key->_key);
 }
 
 int
 PyThread_tss_set(Py_tss_t *key, void *value)
 {
-    return PyTruffle_tss_set(key->_key, value);
+    return GraalPyPrivate_tss_set(key->_key, value);
 }
 
 void
@@ -237,6 +237,6 @@ PyThread_tss_delete(Py_tss_t *key)
     if (!key->_is_initialized) {
         return;
     }
-    PyTruffle_tss_delete(key->_key);
+    GraalPyPrivate_tss_delete(key->_key);
     key->_is_initialized = 0;
 }

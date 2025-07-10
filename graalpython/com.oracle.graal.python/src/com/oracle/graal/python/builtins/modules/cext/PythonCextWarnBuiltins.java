@@ -59,7 +59,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 public final class PythonCextWarnBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Py_ssize_t, PyObject}, call = Ignored)
-    abstract static class PyTruffleErr_Warn extends CApiQuaternaryBuiltinNode {
+    abstract static class GraalPyPrivate_Err_Warn extends CApiQuaternaryBuiltinNode {
         @Specialization
         Object warn(Object message, Object category, long stackLevel, @SuppressWarnings("unused") Object source,
                         @Cached CallNode callNode) {
@@ -75,7 +75,7 @@ public final class PythonCextWarnBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Int, PyObject, PyObject}, call = Ignored)
-    abstract static class PyTruffleErr_WarnExplicit extends CApi6BuiltinNode {
+    abstract static class GraalPyPrivate_Err_WarnExplicit extends CApi6BuiltinNode {
         @Specialization
         Object warn(Object category, Object message, Object filename, int lineno, Object module, Object registry,
                         @Cached CallNode callNode) {

@@ -600,7 +600,7 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored)
-    abstract static class PyTruffleDict_MaybeUntrack extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Dict_MaybeUntrack extends CApiUnaryBuiltinNode {
 
         @Specialization
         static int doPDict(@SuppressWarnings("unused") PDict self,

@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -44,11 +44,11 @@ static inline Py_ssize_t PyList_GET_SIZE(PyObject *op) {
 #define PyList_GET_ITEM(op, index) (PyList_GetItem((PyObject*)(op), (index)))
 
 // GraalPy-specific
-PyAPI_FUNC(PyObject **) PyTruffleList_GetItems(PyObject *op);
+PyAPI_FUNC(PyObject **) GraalPyPrivate_List_GetItems(PyObject *op);
 
 static inline void
 PyList_SET_ITEM(PyObject *op, Py_ssize_t index, PyObject *value) {
-    PyTruffleList_GetItems(op)[index] = value;
+    GraalPyPrivate_List_GetItems(op)[index] = value;
 }
 #define PyList_SET_ITEM(op, index, value) \
     PyList_SET_ITEM(_PyObject_CAST(op), (index), _PyObject_CAST(value))

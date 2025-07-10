@@ -976,7 +976,7 @@ public final class CApiContext extends CExtContext {
                  * scenarios we call it during context exit, but when the VM is terminated by a
                  * signal, the context exit is skipped. For that case we set up the shutdown hook.
                  */
-                Object finalizeFunction = U.readMember(capiLibrary, "GraalPy_Private_GetFinalizeCApiPointer");
+                Object finalizeFunction = U.readMember(capiLibrary, "GraalPyPrivate_GetFinalizeCApiPointer");
                 Object finalizeSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
                 Object finalizingPointer = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
                 try {

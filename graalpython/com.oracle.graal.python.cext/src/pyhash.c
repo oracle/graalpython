@@ -110,7 +110,7 @@ _Py_HashDouble(PyObject *inst, double v)
             return _Py_HashPointer(inst);
     }
     // GraalPy change: different implementation
-    return PyTruffle_HashDouble(v);
+    return GraalPyPrivate_HashDouble(v);
 }
 
 Py_hash_t
@@ -492,10 +492,10 @@ long _PyHASH_IMAG;
 void
 initialize_hashes()
 {
-    _PyHASH_INF = PyTruffle_HashConstant(0);
-    _PyHASH_MODULUS = PyTruffle_HashConstant(1);
-    _PyHASH_IMAG = PyTruffle_HashConstant(2);
-    PyTruffleHash_InitSecret((int8_t *)&_Py_HashSecret);
+    _PyHASH_INF = GraalPyPrivate_HashConstant(0);
+    _PyHASH_MODULUS = GraalPyPrivate_HashConstant(1);
+    _PyHASH_IMAG = GraalPyPrivate_HashConstant(2);
+    GraalPyPrivate_Hash_InitSecret((int8_t *)&_Py_HashSecret);
 }
 
 #ifdef __cplusplus

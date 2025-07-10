@@ -116,7 +116,7 @@ public final class PythonCextSysBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {Int, ConstCharPtrAsTruffleString}, call = Ignored)
-    abstract static class PyTruffleSys_WriteStd extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Sys_WriteStd extends CApiBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         static Object doGeneric(int fd, TruffleString msg) {
@@ -130,7 +130,7 @@ public final class PythonCextSysBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {Int, ConstCharPtrAsTruffleString, VA_LIST_PTR}, call = Ignored)
-    abstract static class PyTruffleSys_FormatStd extends CApiTernaryBuiltinNode {
+    abstract static class GraalPyPrivate_Sys_FormatStd extends CApiTernaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         static Object doGeneric(int fd, TruffleString format, Object vaList) {

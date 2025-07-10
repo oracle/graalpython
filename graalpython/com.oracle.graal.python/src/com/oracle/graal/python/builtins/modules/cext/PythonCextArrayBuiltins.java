@@ -98,7 +98,7 @@ public final class PythonCextArrayBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PY_BUFFER_PTR, Int}, call = Ignored)
-    abstract static class PyTruffle_Array_getbuffer extends CApiTernaryBuiltinNode {
+    abstract static class GraalPyPrivate_Array_getbuffer extends CApiTernaryBuiltinNode {
         @Specialization
         static int getbuffer(PArray array, Object pyBufferPtr, int flags,
                         @Bind Node inliningTarget,
@@ -153,7 +153,7 @@ public final class PythonCextArrayBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyObject, PY_BUFFER_PTR}, call = Ignored)
-    abstract static class PyTruffle_Array_releasebuffer extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Array_releasebuffer extends CApiBinaryBuiltinNode {
         @Specialization
         static Object releasebuffer(PArray array, Object pyBufferPtr,
                         @CachedLibrary(limit = "1") InteropLibrary lib,

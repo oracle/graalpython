@@ -1147,7 +1147,7 @@ _PyDict_MaybeUntrack(PyObject *op)
         return;
 
     // GraalPy change: do an upcall to consider all dict elements
-    if (!PyTruffleDict_MaybeUntrack(op))
+    if (!GraalPyPrivate_Dict_MaybeUntrack(op))
         return;
 
     mp = (PyDictObject *) op;
@@ -3871,7 +3871,7 @@ PyTypeObject PyDict_Type = {
     0,                                          /* tp_init */ // GraalPy change: nulled
     0,                                          /* tp_alloc */ // GraalPy change: nulled
     0,                                          /* tp_new */ // GraalPy change: nulled
-    GraalPy_Private_Object_GC_Del,              /* tp_free */ // GraalPy change: different function
+    GraalPyPrivate_Object_GC_Del,              /* tp_free */ // GraalPy change: different function
 #if 0 // GraalPy change
     .tp_vectorcall = dict_vectorcall,
 #endif // GraalPy change
@@ -5634,7 +5634,7 @@ PyObject_GenericGetDict(PyObject *obj, void *context)
 {
     // GraalPy change: upcall for managed
     if (points_to_py_handle_space(obj)) {
-        return PyTruffleObject_GenericGetDict(obj);
+        return GraalPyPrivate_Object_GenericGetDict(obj);
     }
     PyObject *dict;
     // GraalPy change: we don't have inlined values in managed dict

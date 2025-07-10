@@ -49,19 +49,19 @@ call_traverse(traverseproc traverse, PyObject *op, visitproc visit, void *arg)
         return 0;
     }
     if (!traverse) {
-        PyTruffle_Log(PY_TRUFFLE_LOG_FINE,
+        GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINE,
                       "type '%.100s' is a GC type but tp_traverse is NULL",
                       Py_TYPE((op))->tp_name);
         return 0;
     } else {
         if (_PyObject_IsFreed(op)) {
-            PyTruffle_Log(PY_TRUFFLE_LOG_FINE,
+            GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINE,
                           "we tried to call tp_traverse on a freed object at %p (ctx %p)!",
                           op, arg);
             return 0;
         }
         if (_PyObject_IsFreed((PyObject *)Py_TYPE(op))) {
-            PyTruffle_Log(PY_TRUFFLE_LOG_FINE,
+            GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINE,
                           "we tried to call tp_traverse on an object at %p with a freed type at %p (ctx %p)!",
                           op, Py_TYPE(op), arg);
             return 0;
@@ -527,7 +527,7 @@ push_native_references_to_managed(PyObject *op, GraalPyGC_Cycle *cycle)
             }
         }
         if (!dead) {
-            PyTruffleObject_ReplicateNativeReferences(op, cycle->head, cycle->n);
+            GraalPyPrivate_Object_ReplicateNativeReferences(op, cycle->head, cycle->n);
         }
     }
 
@@ -622,7 +622,7 @@ visit_strong_reachable(PyObject *op, void *unused)
     if (!_PyObject_GC_IS_TRACKED(op)) {
         _PyObject_GC_TRACK(op);
     }
-    PyTruffle_NotifyRefCount(op, Py_REFCNT(op));
+    GraalPyPrivate_NotifyRefCount(op, Py_REFCNT(op));
     return 0;
 }
 
@@ -632,7 +632,7 @@ visit_strong_reachable(PyObject *op, void *unused)
 static inline int
 is_referenced_from_managed(PyGC_Head *gc)
 {
-    return is_managed(gc) || PyTruffle_IsReferencedFromManaged(FROM_GC(gc));
+    return is_managed(gc) || GraalPyPrivate_IsReferencedFromManaged(FROM_GC(gc));
 }
 
 /* Breaks a reference cycle that involves managed objects. This is done by
@@ -668,7 +668,7 @@ is_referenced_from_managed(PyGC_Head *gc)
  * the reference cycle. Therefore, if a native object of the cycle is then again
  * used in managed code, it will keep all objects of the cycle alive.
  *
- * see `PyTruffleObject_ReplicateNativeReferences`
+ * see `GraalPyPrivate_Object_ReplicateNativeReferences`
  */
 
 /* GraalPy change: additions end */
@@ -887,7 +887,7 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
                                       "refcount is too small");
             // NOTE: visit_reachable may change gc->_gc_next when
             // young->_gc_prev == gc.  Don't do gc = GC_NEXT(gc) before!
-            if (PyTruffle_PythonGC()) {
+            if (GraalPyPrivate_PythonGC()) {
                 // GraalPy change: this branch, else branch is original CPython code
                 cycle.head = NULL;
                 cycle.n = 0;
@@ -911,7 +911,7 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
 
                 // Assertion is enough because if Python GC is disabled, we will
                 // never track managed objects.
-                assert (PyTruffle_PythonGC());
+                assert (GraalPyPrivate_PythonGC());
                 /* Move gc to weak_candidates *AND* set NEXT_MASK_UNREACHABLE.
                  * However, since we clear PREV_MASK_COLLECTING, it won't be
                  * moved back to 'young' by 'visit_reachable'.
@@ -965,7 +965,7 @@ move_weak_reachable(PyGC_Head *young, PyGC_Head *weak_candidates)
     /* This phase is only necessary if managed objects take part in the Python
      * GC. The caller must already check this option.
      */
-    assert (PyTruffle_PythonGC());
+    assert (GraalPyPrivate_PythonGC());
 
     /* Invariants:  all objects "to the left" of us in young are reachable
      * (directly or indirectly) from outside the young list as it was at entry.
@@ -1052,7 +1052,7 @@ commit_weak_candidate(PyGC_Head *weak_candidates)
          * longer used after that but just to be sure, we re-init it to have a
          * valid head.
          */
-        PyTruffleObject_GC_EnsureWeak(weak_candidates);
+        GraalPyPrivate_Object_GC_EnsureWeak(weak_candidates);
         gc_list_init(weak_candidates);
     }
 }
@@ -1559,7 +1559,7 @@ deduce_unreachable(PyGC_Head *base, PyGC_Head *unreachable) {
     /* Make handle table references of all objects in 'weak_candidates' weak.
      * This *MUST NOT* be done before native references to managed objects are
      * replicated in Java. Otherwise, we might end up with dangling pointers. */
-    if (PyTruffle_PythonGC()) {
+    if (GraalPyPrivate_PythonGC()) {
         /* The replication of native references to Java may have updated
          * reference counts. We now need the updated ones in order to correctly
          * process 'weak_candidates'.
@@ -1622,7 +1622,7 @@ gc_collect_main(PyThreadState *tstate, int generation,
     // _PyTime_t t1 = 0;   /* initialize to prevent a compiler warning */
     GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
 
-    if (PyTruffle_DisableReferneceQueuePolling()) {
+    if (GraalPyPrivate_DisableReferneceQueuePolling()) {
         // reference queue polling is currently active; cannot proceed
         return m + n;
     }
@@ -1779,7 +1779,7 @@ gc_collect_main(PyThreadState *tstate, int generation,
         PyDTrace_GC_DONE(n + m);
     }
 
-    PyTruffle_EnableReferneceQueuePolling();
+    GraalPyPrivate_EnableReferneceQueuePolling();
 
     assert(!_PyErr_Occurred(tstate));
     return n + m;
@@ -2675,8 +2675,8 @@ void
 PyObject_GC_Track(void *op_raw)
 {
     // GraalPy change
-    if (PyTruffle_Trace_Memory()) {
-        PyTruffleObject_GC_Track(op_raw);
+    if (GraalPyPrivate_Trace_Memory()) {
+        GraalPyPrivate_Object_GC_Track(op_raw);
     }
     PyObject *op = _PyObject_CAST(op_raw);
     if (_PyObject_GC_IS_TRACKED(op)) {
@@ -2698,8 +2698,8 @@ void
 PyObject_GC_UnTrack(void *op_raw)
 {
     // GraalPy change
-    if (PyTruffle_Trace_Memory()) {
-        PyTruffleObject_GC_UnTrack(op_raw);
+    if (GraalPyPrivate_Trace_Memory()) {
+        GraalPyPrivate_Object_GC_UnTrack(op_raw);
     }
     PyObject *op = _PyObject_CAST(op_raw);
     /* Obscure:  the Py_TRASHCAN mechanism requires that we be able to
@@ -2917,10 +2917,10 @@ done:
 
 
 void
-GraalPy_Private_Object_GC_Del(void *op)
+GraalPyPrivate_Object_GC_Del(void *op)
 {
     if (is_managed(op)) {
-        PyTruffleObject_GC_Del(op);
+        GraalPyPrivate_ManagedObject_GC_Del(op);
     } else {
         PyObject_GC_Del(op);
     }
@@ -2928,7 +2928,7 @@ GraalPy_Private_Object_GC_Del(void *op)
 
 /* Exposes 'gc_collect_impl' such that we can call it from Java. */
 PyAPI_FUNC(Py_ssize_t)
-GraalPy_Private_GC_Collect(int generation)
+GraalPyPrivate_GC_Collect(int generation)
 {
     return gc_collect_impl(NULL, generation);
 }

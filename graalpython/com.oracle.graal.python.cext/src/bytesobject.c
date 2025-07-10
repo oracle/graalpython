@@ -134,9 +134,9 @@ PyBytes_FromStringAndSize(const char *str, Py_ssize_t size)
         return NULL;
     }
     if (str != NULL) {
-        return PyTruffleBytes_FromStringAndSize(str, size);
+        return GraalPyPrivate_Bytes_FromStringAndSize(str, size);
     }
-    return PyTruffle_Bytes_EmptyWithCapacity(size);
+    return GraalPyPrivate_Bytes_EmptyWithCapacity(size);
 }
 
 PyObject *
@@ -144,9 +144,9 @@ PyBytes_FromString(const char *str)
 {
     // GraalPy change: different implementation
 	if (str != NULL) {
-		return PyTruffleBytes_FromStringAndSize(str, strlen(str));
+		return GraalPyPrivate_Bytes_FromStringAndSize(str, strlen(str));
 	}
-	return PyTruffle_Bytes_EmptyWithCapacity(0);
+	return GraalPyPrivate_Bytes_EmptyWithCapacity(0);
 }
 
 PyObject *
@@ -293,7 +293,7 @@ PyBytes_FromFormatV(const char *format, va_list vargs)
     	}
     	PyTuple_SET_ITEM(args, i, entry);
     }
-    PyObject* result = PyTruffleBytes_FromFormat(format, args);
+    PyObject* result = GraalPyPrivate_Bytes_FromFormat(format, args);
   	Py_DecRef(args);
     return result;
 }
@@ -1168,7 +1168,7 @@ PyBytes_AsStringAndSize(PyObject *obj,
         *len = PyBytes_Size(obj);
         return 0;
     } else {
-    	return PyTruffle_Bytes_CheckEmbeddedNull(obj);
+    	return GraalPyPrivate_Bytes_CheckEmbeddedNull(obj);
     }
 }
 
@@ -2822,7 +2822,7 @@ _Py_COMP_DIAG_POP
 
 // GraalPy change: export for downcall, rename, use C array instead of bytes
 PyAPI_FUNC(PyObject *)
-GraalPy_Private_Bytes_SubtypeNew(PyTypeObject *type, int8_t* contents, Py_ssize_t n) {
+GraalPyPrivate_Bytes_SubtypeNew(PyTypeObject *type, int8_t* contents, Py_ssize_t n) {
     // GraalPy change: different implementation
     PyObject* bytes = type->tp_alloc(type, n);
     if (bytes != NULL) {
@@ -2898,7 +2898,7 @@ void
 PyBytes_Concat(PyObject **pv, PyObject *w)
 {
     // GraalPy change: different implementation
-    *pv = PyTruffleBytes_Concat(*pv, w);
+    *pv = GraalPyPrivate_Bytes_Concat(*pv, w);
 }
 
 void
@@ -2927,7 +2927,7 @@ int
 _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize)
 {
     // GraalPy change: different implementation
-    return PyTruffleBytes_Resize(*pv, newsize);
+    return GraalPyPrivate_Bytes_Resize(*pv, newsize);
 }
 
 

@@ -200,7 +200,7 @@ public final class PythonCextLongBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyLongObject}, call = Ignored)
-    abstract static class PyTruffleLong_DigitCount extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Long_DigitCount extends CApiUnaryBuiltinNode {
 
         @Specialization
         static long getDC(Object n,
@@ -222,7 +222,7 @@ public final class PythonCextLongBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {CharPtrAsTruffleString, Int}, call = Ignored)
-    abstract static class PyTruffleLong_FromString extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Long_FromString extends CApiBinaryBuiltinNode {
 
         @Specialization
         Object fromString(Object s, int base,
@@ -233,7 +233,7 @@ public final class PythonCextLongBuiltins {
     }
 
     @CApiBuiltin(ret = LONG_LONG, args = {PyObject, Int, SIZE_T}, call = Ignored)
-    abstract static class PyTruffleLong_AsPrimitive extends CApiTernaryBuiltinNode {
+    abstract static class GraalPyPrivate_Long_AsPrimitive extends CApiTernaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object object, int mode, long targetTypeSize,
@@ -274,7 +274,7 @@ public final class PythonCextLongBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {LONG_LONG}, call = Ignored)
-    abstract static class PyTruffleLong_FromLongLong extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Long_FromLongLong extends CApiUnaryBuiltinNode {
 
         @Specialization
         static int doSignedInt(int n) {

@@ -18,7 +18,7 @@
 #include "pycore_object.h"        // _PyObject_GC_TRACK(), _Py_FatalRefcountError()
 
 // GraalPy change
-void PyTruffle_Tuple_Dealloc(PyTupleObject* self);
+void GraalPyPrivate_Tuple_Dealloc(PyTupleObject* self);
 
 #if 0 // GraalPy change
 /*[clinic input]
@@ -121,7 +121,7 @@ PyTuple_GetItem(PyObject *op, Py_ssize_t i) {
         ob_item = ((GraalPyVarObject *) ptr)->ob_item;
         if (ob_item == NULL) {
             // native data ptr not set; do upcall
-            return PyTruffleTuple_GetItem(op, i);
+            return GraalPyPrivate_Tuple_GetItem(op, i);
         }
     } else {
         ob_item = ((PyTupleObject *) op)->ob_item;
@@ -152,7 +152,7 @@ PyTuple_SetItem(PyObject *op, Py_ssize_t i, PyObject *newitem)
         return -1;
     }
     // GraalPy change: avoid direct struct access
-    p = PyTruffleTuple_GetItems(op) + i;
+    p = GraalPyPrivate_Tuple_GetItems(op) + i;
     Py_XSETREF(*p, newitem);
     return 0;
 }
@@ -768,10 +768,10 @@ tuple_vectorcall(PyObject *type, PyObject * const*args,
 #endif // GraalPy change
 
 // GraalPy change
-PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems);
+PyObject* GraalPyPrivate_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems);
 
 PyAPI_FUNC(PyObject *) // GraalPy change: export for downcall, rename
-GraalPy_Private_Tuple_SubtypeNew(PyTypeObject *type, PyObject *iterable)
+GraalPyPrivate_Tuple_SubtypeNew(PyTypeObject *type, PyObject *iterable)
 {
     // GraalPy change: different implementation
     PyObject *tmp, *newobj, *item;
@@ -787,7 +787,7 @@ GraalPy_Private_Tuple_SubtypeNew(PyTypeObject *type, PyObject *iterable)
     /* GraalPy note: we cannot call type->tp_alloc here because managed subtypes don't inherit tp_alloc but get a generic one.
      * In CPython tuple uses the generic one to begin with, so they don't have this problem
      */
-    newobj = PyTruffle_Tuple_Alloc(type, n);
+    newobj = GraalPyPrivate_Tuple_Alloc(type, n);
     if (newobj == NULL) {
         return NULL;
     }
@@ -900,7 +900,7 @@ PyTypeObject PyTuple_Type = {
     "tuple",
     sizeof(PyTupleObject) - sizeof(PyObject *),
     sizeof(PyObject *),
-    (destructor)PyTruffle_Tuple_Dealloc,        /* tp_dealloc */ // GraalPy change: different function
+    (destructor)GraalPyPrivate_Tuple_Dealloc,        /* tp_dealloc */ // GraalPy change: different function
     0,                                          /* tp_vectorcall_offset */
     0,                                          /* tp_getattr */
     0,                                          /* tp_setattr */
@@ -934,9 +934,9 @@ PyTypeObject PyTuple_Type = {
     0,                                          /* tp_descr_set */
     0,                                          /* tp_dictoffset */
     0,                                          /* tp_init */
-    PyTruffle_Tuple_Alloc,                      /* tp_alloc */ // GraalPy change
+    GraalPyPrivate_Tuple_Alloc,                      /* tp_alloc */ // GraalPy change
     0,                                          /* tp_new */ // GraalPy change: nulled
-    GraalPy_Private_Object_GC_Del,              /* tp_free */ // GraalPy change: different function
+    GraalPyPrivate_Object_GC_Del,              /* tp_free */ // GraalPy change: different function
 #if 0 // GraalPy change
     .tp_vectorcall = tuple_vectorcall,
 #endif // GraalPy change
@@ -993,7 +993,7 @@ _PyTuple_Resize(PyObject **pv, Py_ssize_t newsize)
     // Begin GraalPy change
     if (points_to_py_handle_space(v)) {
         GraalPyVarObject *o = (GraalPyVarObject *)pointer_to_stub(v);
-        PyObject** new_items = PyTruffleTuple_Resize((PyObject *)v, newsize, o->ob_item);
+        PyObject** new_items = GraalPyPrivate_Tuple_Resize((PyObject *)v, newsize, o->ob_item);
         if (new_items == NULL && o->ob_item != NULL) {
             *pv = NULL;
             return -1;
@@ -1306,7 +1306,7 @@ _PyTuple_DebugMallocStats(FILE *out)
 #endif // GraalPy change
 
 // GraalPy additions
-PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* type, Py_ssize_t nitems) {
+PyObject* GraalPyPrivate_Tuple_Alloc(PyTypeObject* type, Py_ssize_t nitems) {
     /*
      * TODO(fa): For 'PyVarObjects' (i.e. 'nitems > 0') we increase the size by 'sizeof(void *)'
      * because this additional pointer can then be used as pointer to the element array.
@@ -1349,12 +1349,12 @@ PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* type, Py_ssize_t nitems) {
     return obj;
 }
 
-void PyTruffle_Tuple_Dealloc(PyTupleObject* self) {
+void GraalPyPrivate_Tuple_Dealloc(PyTupleObject* self) {
     PyObject_GC_UnTrack(self);
     if (points_to_py_handle_space(self)) {
         return;
     }
-    Py_TRASHCAN_BEGIN(self, PyTruffle_Tuple_Dealloc)
+    Py_TRASHCAN_BEGIN(self, GraalPyPrivate_Tuple_Dealloc)
     Py_ssize_t len =  PyTuple_GET_SIZE(self);
     if (len > 0) {
         Py_ssize_t i = len;
@@ -1367,7 +1367,7 @@ void PyTruffle_Tuple_Dealloc(PyTupleObject* self) {
 }
 
 PyObject **
-PyTruffleTuple_GetItems(PyObject *op)
+GraalPyPrivate_Tuple_GetItems(PyObject *op)
 {
     PyObject **ob_item;
     if (points_to_py_handle_space(op)) {
@@ -1377,7 +1377,7 @@ PyTruffleTuple_GetItems(PyObject *op)
            if we can optimize for something, it should be the path without the
            upcall. */
         if (UNLIKELY(ob_item == NULL)) {
-            ptr->ob_item = (ob_item = GraalPy_Private_Get_PyTupleObject_ob_item((PyTupleObject *)op));
+            ptr->ob_item = (ob_item = GraalPyPrivate_Get_PyTupleObject_ob_item((PyTupleObject *)op));
         }
     } else {
         ob_item = ((PyTupleObject *) op)->ob_item;
@@ -1392,7 +1392,7 @@ PyTruffleTuple_GetItems(PyObject *op)
  */
 PyObject*
 _PyTuple_GET_ITEM(PyObject* a, Py_ssize_t b) {
-    PyObject **ob_item = PyTruffleTuple_GetItems(a);
+    PyObject **ob_item = GraalPyPrivate_Tuple_GetItems(a);
     if (ob_item) {
         return ob_item[b];
     }

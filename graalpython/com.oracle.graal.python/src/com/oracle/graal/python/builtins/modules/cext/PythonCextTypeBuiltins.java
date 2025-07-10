@@ -185,7 +185,7 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyTypeObject, ConstCharPtrAsTruffleString}, call = Ignored)
-    abstract static class PyTruffle_Compute_Mro extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Compute_Mro extends CApiBinaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
@@ -203,7 +203,7 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyTypeObject}, call = Ignored)
-    abstract static class PyTruffle_NewTypeDict extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_NewTypeDict extends CApiUnaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
@@ -241,8 +241,8 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {Pointer}, call = Ignored)
-    abstract static class PyTruffle_Trace_Type extends CApiUnaryBuiltinNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffle_Trace_Type.class);
+    abstract static class GraalPyPrivate_Trace_Type extends CApiUnaryBuiltinNode {
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(GraalPyPrivate_Trace_Type.class);
 
         @Specialization
         @TruffleBoundary
@@ -293,7 +293,7 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {Pointer, PyTypeObject, PyObject, ConstCharPtrAsTruffleString, Pointer, Int, Int, ConstCharPtrAsTruffleString}, call = Ignored)
-    abstract static class PyTruffleType_AddFunctionToType extends CApi8BuiltinNode {
+    abstract static class GraalPyPrivate_Type_AddFunctionToType extends CApi8BuiltinNode {
 
         @Specialization
         static int classMethod(Object methodDefPtr, Object type, Object dict, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
@@ -307,7 +307,7 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyTypeObject}, call = Ignored)
-    abstract static class PyTruffleType_AddOperators extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Type_AddOperators extends CApiUnaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
@@ -318,7 +318,7 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyTypeObject, PyObject, ConstCharPtrAsTruffleString, Int, Py_ssize_t, Int, ConstCharPtrAsTruffleString}, call = CApiCallPath.Ignored)
-    public abstract static class PyTruffleType_AddMember extends CApi7BuiltinNode {
+    public abstract static class GraalPyPrivate_Type_AddMember extends CApi7BuiltinNode {
 
         @Specialization
         @TruffleBoundary
@@ -390,7 +390,7 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyTypeObject, PyObject, ConstCharPtrAsTruffleString, Pointer, Pointer, ConstCharPtrAsTruffleString, Pointer}, call = Ignored)
-    abstract static class PyTruffleType_AddGetSet extends CApi7BuiltinNode {
+    abstract static class GraalPyPrivate_Type_AddGetSet extends CApi7BuiltinNode {
 
         @Specialization
         static int doGeneric(Object cls, PDict dict, TruffleString name, Object getter, Object setter, Object doc, Object closure,
@@ -404,7 +404,7 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyTypeObject, PyBufferProcs}, call = Ignored)
-    abstract static class PyTruffle_Type_SetBufferProcs extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Type_SetBufferProcs extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object setBuiltinClassType(PythonBuiltinClassType clazz, Object bufferProcs,

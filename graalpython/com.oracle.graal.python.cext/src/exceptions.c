@@ -47,13 +47,13 @@ PY_EXCEPTIONS
 #undef EXCEPTION
 
 void initialize_exceptions() {
-#define EXCEPTION(NAME) PyExc_##NAME = (PyObject*) PyTruffle_Type(#NAME);
+#define EXCEPTION(NAME) PyExc_##NAME = (PyObject*) GraalPyPrivate_Type(#NAME);
 	PY_EXCEPTIONS
 #undef EXCEPTION
 }
 
 PyAPI_FUNC(PyObject *)
-GraalPy_Private_Exception_SubtypeNew(PyTypeObject *type, PyObject *args) {
+GraalPyPrivate_Exception_SubtypeNew(PyTypeObject *type, PyObject *args) {
     PyBaseExceptionObject *self;
 
     self = (PyBaseExceptionObject *)type->tp_alloc(type, 0);
