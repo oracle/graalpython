@@ -50,6 +50,8 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -75,6 +77,10 @@ import com.oracle.truffle.api.strings.TruffleString.Encoding;
 /**
  * Casts a Python string to a TruffleString without coercion. <b>ATTENTION:</b> If the cast fails,
  * because the object is not a Python string, the node will throw a {@link CannotCastException}.
+ * <br/>
+ * Prefer {@link CastToTruffleStringChecked0Node}, {@link CastToTruffleStringChecked1Node}, etc when
+ * possible as they are much better for host inlining with only 1 @InliningCutoff vs
+ * 3 @InliningCutoff in this node.
  */
 @GenerateUncached
 @GenerateInline(inlineByDefault = true)

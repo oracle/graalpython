@@ -103,6 +103,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins.UpdateSingleNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
@@ -530,18 +531,13 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached GetObjectSlotsNode getDescrSlotsNode,
                         @Cached GetObjectSlotsNode getValueSlotsNode,
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
-                        @Cached CastToTruffleStringNode castToString,
+                        @Cached CastToTruffleStringChecked1Node castToString,
                         @Cached InlinedBranchProfile hasDescProfile,
                         @Cached InlinedConditionProfile hasDescrGetProfile,
                         @Cached InlinedBranchProfile hasValueProfile,
                         @Cached InlinedBranchProfile hasNonDescriptorValueProfile,
                         @Cached PRaiseNode raiseNode) {
-            TruffleString key;
-            try {
-                key = castToString.execute(inliningTarget, keyObj);
-            } catch (CannotCastException e) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
-            }
+            TruffleString key = castToString.cast(inliningTarget, keyObj, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
 
             Object type = getClassNode.execute(inliningTarget, object);
             Object descr = lookup.execute(type, key);
