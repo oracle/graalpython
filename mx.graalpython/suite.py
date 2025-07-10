@@ -1469,6 +1469,7 @@ suite = {
                 "bin/<exe:graalpy>": "dependency:graalpy_thin_launcher",
                 "bin/<exe:python>": "dependency:graalpy_thin_launcher",
                 "bin/<exe:python3>": "dependency:graalpy_thin_launcher",
+                "bin/<exe:graalpy-config>": "dependency:graalpy_thin_launcher",
                 "libexec/<exe:graalpy-polyglot-get>": "dependency:graalpy_thin_launcher",
                 "release": "dependency:sdk:STANDALONE_JAVA_HOME/release",
             },
