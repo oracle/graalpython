@@ -1245,10 +1245,18 @@ def graalpython_gate_runner(args, tasks):
             env['JAVA_HOME'] = graalvm_jdk(enterprise=True)
             mx.run_maven(mvn_cmd_base + [
                 '-U',
+                '-Pisolate',
                 '-Dpolyglot.engine.AllowExperimentalOptions=true',
                 '-Dpolyglot.engine.SpawnIsolate=true',
                 '-Dpolyglot.engine.IsolateMode=external',
                 'clean',
+                'test',
+            ], env=env)
+
+            mx.log("Running integration JUnit tests on GraalVM SDK with untrusted sandbox policy")
+            mx.run_maven(mvn_cmd_base + [
+                '-Pisolate',
+                '-Dtest=SandboxPolicyUntrustedTest',
                 'test',
             ], env=env)
 
