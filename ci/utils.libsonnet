@@ -67,7 +67,7 @@ local graal_common = import "graal/ci/common.jsonnet";
                     if std.count(["linux", "windows"], b.os) > 0 then
                         {timelimit: "01:00:00"}
                     else
-                        {timelimit: "00:30:00"}
+                        {timelimit: "00:40:00"}
                 )
             else
                 {}
