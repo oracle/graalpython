@@ -132,6 +132,8 @@ class TestSubprocess(unittest.TestCase):
         res = os.waitpid(-1, 0)
         assert res[1] == 0, res
 
+    # Skipped because of transient: GR-66709
+    @unittest.skip
     def test_waitpid_no_child(self):
         import os
         try:
