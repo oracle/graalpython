@@ -845,7 +845,6 @@ suite = {
                 # Configure launcher
                 "-Dorg.graalvm.launcher.class=com.oracle.graal.python.shell.GraalPythonMain",
                 # GraalPy standalone specific flags
-                "-J-Xms14g", # GR-46399: libpythonvm needs more than the default minimum of 8 GB to be built
                 # uncomment to disable JLine FFM provider at native image build time
                 #'-Dorg.graalvm.shadowed.org.jline.terminal.ffm.disable=true',
                  '--enable-native-access=org.graalvm.shadowed.jline',
