@@ -449,9 +449,9 @@ img.pylogo {
 <!-- Benefits -->
 <section class="content-section">
   <div class="wrapper">
+    <h5 class="compatibility-text first-comp-text">The GraalPy team ensures support for widely used Python libraries—especially NumPy, Pandas, and Django—through active testing and maintenance.</h5>
     <div class="langbenefits">
       <div class="container">
-        <!-- <h3 class="langpage__title-02">Advantages</h3> -->
         <div class="langbenefits__row">
           <div class="langbenefits__card">
             <div class="langbenefits__icon langbenefits__icon_pylogo">
@@ -547,13 +547,13 @@ You can extend it with Python code or leverage packages from the Python ecosyste
     <div class="wrapper">
         <div class="compatibility">
             <div class="container">
-                <h5 class="compatibility-text first-comp-text">To ensure GraalPy is compatible with the most popular Python packages, the GraalPy team performs compatibility testing and maintains build-and-patch scripts for many top PyPI libraries—especially of special interest for us—such as NumPy, Pandas, and Django.</h5>
-                <h5 class="compatibility-text">Compatibility testing ensures that
+                <!-- <h5 class="compatibility-text first-comp-text">The GraalPy team ensures support for widely used Python libraries—especially NumPy, Pandas, and Django—through active testing and maintenance.</h5> -->
+                <!-- <h5 class="compatibility-text">Compatibility testing ensures that
                     developers can leverage GraalPy's powerful capabilities in their existing applications.
                     It also enables developers to use GraalPy to create more efficient and productive applications in the areas of
                     machine learning, data analysis, and web development using their familiar Python
-                    toolsets.</h5>
-                <h5 class="compatibility-text">Many more Python packages work on GraalPy than are listed here. If there is a package you are interested in that is not included, chances are that it might just work. If it does not, feel free to reach out to us on <a href="https://github.com/oracle/graalpython/issues" target="_blank">GitHub</a>.</h5>
+                    toolsets.</h5> -->
+                <!-- <h5 class="compatibility-text">Many more Python packages work on GraalPy than are listed here. If there is a package you are interested in that is not included, chances are that it might just work. If it does not, feel free to reach out to us on <a href="https://github.com/oracle/graalpython/issues" target="_blank">GitHub</a>.</h5> -->
             </div>
         </div>
     </div>
@@ -574,6 +574,7 @@ You can extend it with Python code or leverage packages from the Python ecosyste
                     </div>
                 </div>
                         <div class="compatibility__chart">
+                            <h4 class="comp__chart-title">Over 600 Python packages tested for compatibility with GraalPy</h4>
                             <div class="compatibility__chart-row">
                                 <div class="chart" id="pie-chart">
                                 </div>
@@ -607,6 +608,10 @@ You can extend it with Python code or leverage packages from the Python ecosyste
     <div class="wrapper">
         <div class="compatibility">
             <div class="container">
+            <div class="comp-info">
+            <img class="info-icon" src='{{ "/assets/img/python/info-icon.svg" | relative_url }}' alt="info icon">
+            <h5 class="compatibility-text">Many more Python packages work on GraalPy than are listed here. If there is a package you are interested in that is not included, chances are that it might just work. If it does not, feel free to reach out to us on <a href="https://github.com/oracle/graalpython/issues" target="_blank">GitHub</a>.</h5>
+            </div>
                 <div class="package__row">
                     <div class="package__search">
                         <input type="text" id="compatibility_page__search-field" placeholder="Comma-separated list of packages">
