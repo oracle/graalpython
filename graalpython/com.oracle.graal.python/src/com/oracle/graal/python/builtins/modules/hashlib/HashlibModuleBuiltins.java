@@ -42,6 +42,9 @@ package com.oracle.graal.python.builtins.modules.hashlib;
 
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_HASHLIB;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_MD5;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA1;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA2;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA3;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_HASHLIB;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
@@ -140,12 +143,12 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                     "shake_256", "SHAKE256");
 
     private static final String[] DIGEST_ALIASES = new String[]{
-                    "md5", "_md5",
-                    "sha1", "_sha1",
-                    "sha224", "_sha256",
-                    "sha256", "_sha256",
-                    "sha384", "_sha512",
-                    "sha512", "_sha512",
+                    "md5", J_MD5,
+                    "sha1", J_SHA1,
+                    "sha224", J_SHA2,
+                    "sha256", J_SHA2,
+                    "sha384", J_SHA2,
+                    "sha512", J_SHA2,
                     "sha3_224", J_SHA3,
                     "sha3_256", J_SHA3,
                     "sha3_384", J_SHA3,
