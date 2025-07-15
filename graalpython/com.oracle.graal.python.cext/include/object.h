@@ -1036,7 +1036,19 @@ static inline int PyType_CheckExact(PyObject *op) {
 #  define PyType_CheckExact(op) PyType_CheckExact(_PyObject_CAST(op))
 #endif
 
+// GraalPy additions
 PyAPI_FUNC(void) _PyTruffle_DebugTrace(void);
+
+typedef struct {
+    PyObject_HEAD
+    int32_t handle_table_index;
+} GraalPyObject;
+
+typedef struct {
+    GraalPyObject ob_base;
+    Py_ssize_t ob_size;
+    PyObject **ob_item;
+} GraalPyVarObject;
 
 #ifdef __cplusplus
 }
