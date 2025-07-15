@@ -544,21 +544,6 @@ You can extend it with Python code or leverage packages from the Python ecosyste
   </div>
 </section>
 {% endcomment %}
-<section class="content-section compbenefits">
-    <div class="wrapper">
-        <div class="compatibility">
-            <div class="container">
-                <!-- <h5 class="compatibility-text first-comp-text">The GraalPy team ensures support for widely used Python libraries—especially NumPy, Pandas, and Django—through active testing and maintenance.</h5> -->
-                <!-- <h5 class="compatibility-text">Compatibility testing ensures that
-                    developers can leverage GraalPy's powerful capabilities in their existing applications.
-                    It also enables developers to use GraalPy to create more efficient and productive applications in the areas of
-                    machine learning, data analysis, and web development using their familiar Python
-                    toolsets.</h5> -->
-                <!-- <h5 class="compatibility-text">Many more Python packages work on GraalPy than are listed here. If there is a package you are interested in that is not included, chances are that it might just work. If it does not, feel free to reach out to us on <a href="https://github.com/oracle/graalpython/issues" target="_blank">GitHub</a>.</h5> -->
-            </div>
-        </div>
-    </div>
-</section>
 
 <section class="boxes">
     <div class="wrapper">
