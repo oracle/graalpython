@@ -168,7 +168,6 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -1279,7 +1278,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @GenerateUncached
-    @ReportPolymorphism
     @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
     public abstract static class PExecuteNode extends Node {
 
