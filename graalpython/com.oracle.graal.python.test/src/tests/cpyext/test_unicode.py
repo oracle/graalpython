@@ -40,11 +40,13 @@ import codecs
 import locale
 import re
 import sys
+import os
 import unittest
 
 from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, GRAALPYTHON, CPyExtFunctionOutVars, \
     is_native_object
 
+from test.support import os_helper
 
 def _reference_fromobject(args):
     if isinstance(args[0], str):
@@ -1054,6 +1056,27 @@ class TestPyUnicode(CPyExtTestCase):
         resultspec="O",
         argspec="sy#nns",
         arguments=["const char* encoding", "const char* object", "Py_ssize_t length", "Py_ssize_t start", "Py_ssize_t end", "const char* reason"]
+    )
+
+    test_PyUnicode_FSDecoder = CPyExtFunction(
+        lambda args: str(args[0]),
+        lambda: (
+            (os.path.realpath(os_helper.TESTFN),),
+        ),
+        code='''PyObject* wrap_PyUnicode_FSDecoder(PyObject* path) {
+            PyObject* res;
+            int ret = PyUnicode_FSDecoder(path, &res);
+            if (ret <= 0 && PyErr_Occurred()) {
+               return NULL;
+            }
+            return res;
+        }
+        ''',
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* path"],
+        callfunction="wrap_PyUnicode_FSDecoder",
+        cmpfunc=unhandled_error_compare
     )
 
 
