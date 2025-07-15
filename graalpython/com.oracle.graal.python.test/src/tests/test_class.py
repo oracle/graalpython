@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -121,3 +121,18 @@ def test_meta_meta_new():
     # ignore this.
     # assert notAMeta.metatype is NewDescriptor
     # assert notAMeta2.metatype is NewDescriptor
+
+
+def test_subclasses_collection():
+    class A():
+        pass
+
+    for i in range(1, 100):
+        import gc
+        class B(A):
+            pass
+        gc.collect()
+        if len(A.__subclasses__()) < i:
+            break
+
+    assert len(A.__subclasses__()) < i, len(A.__subclasses__())
