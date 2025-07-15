@@ -169,7 +169,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
@@ -261,7 +260,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
             @Specialization(guards = "isNoValue(baseObj)")
             static Object doNoBase(VirtualFrame frame, Node inliningTarget, Object x, @SuppressWarnings("unused") Object baseObj,
-                            @Cached InlinedBranchProfile noX,
+                            @Cached @Exclusive InlinedBranchProfile noX,
                             @Cached PyNumberLongNode pyNumberLongNode) {
                 if (x == PNone.NO_VALUE) {
                     noX.enter(inliningTarget);
@@ -274,9 +273,9 @@ public final class IntBuiltins extends PythonBuiltins {
             @Fallback
             @InliningCutoff
             static Object doWithBase(VirtualFrame frame, Node inliningTarget, Object x, Object baseObj,
-                            @Cached InlinedBranchProfile missingArgument,
-                            @Cached InlinedBranchProfile wrongBase,
-                            @Cached InlinedBranchProfile cannotConvert,
+                            @Cached @Exclusive InlinedBranchProfile missingArgument,
+                            @Cached @Exclusive InlinedBranchProfile wrongBase,
+                            @Cached @Exclusive InlinedBranchProfile cannotConvert,
                             @Cached PyNumberAsSizeNode asSizeNode,
                             @Cached PyUnicodeCheckNode unicodeCheckNode,
                             @Cached PyLongFromUnicodeObject longFromUnicode,
@@ -777,11 +776,11 @@ public final class IntBuiltins extends PythonBuiltins {
         @Specialization
         static Object doII(int left, int right,
                         @Bind Node inliningTarget,
-                        @Shared @Cached BranchProfile overflowValueProfile,
+                        @Shared @Cached InlinedBranchProfile overflowValueProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
             raiseDivisionByZero(inliningTarget, right == 0, raiseNode);
             if (left == Integer.MIN_VALUE && right == -1) {
-                overflowValueProfile.enter();
+                overflowValueProfile.enter(inliningTarget);
                 return INT_OVERFLOW_VALUE;
             }
             return Math.floorDiv(left, right);
@@ -790,11 +789,11 @@ public final class IntBuiltins extends PythonBuiltins {
         @Specialization
         static Object doLL(long left, long right,
                         @Bind Node inliningTarget,
-                        @Shared @Cached BranchProfile overflowValueProfile,
+                        @Shared @Cached InlinedBranchProfile overflowValueProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
             raiseDivisionByZero(inliningTarget, right == 0, raiseNode);
             if (left == Long.MIN_VALUE && right == -1) {
-                overflowValueProfile.enter();
+                overflowValueProfile.enter(inliningTarget);
                 return PFactory.createInt(PythonLanguage.get(inliningTarget), LONG_OVERFLOW_VALUE);
             }
             return Math.floorDiv(left, right);
@@ -803,13 +802,13 @@ public final class IntBuiltins extends PythonBuiltins {
         @Specialization
         static Object doIPi(int left, PInt right,
                         @Bind Node inliningTarget,
-                        @Shared @Cached BranchProfile overflowValueProfile,
+                        @Shared @Cached InlinedBranchProfile overflowValueProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 int rightValue = right.intValueExact();
                 raiseDivisionByZero(inliningTarget, rightValue == 0, raiseNode);
                 if (left == Integer.MIN_VALUE && rightValue == -1) {
-                    overflowValueProfile.enter();
+                    overflowValueProfile.enter(inliningTarget);
                     return INT_OVERFLOW_VALUE;
                 }
                 return Math.floorDiv(left, rightValue);
@@ -821,13 +820,13 @@ public final class IntBuiltins extends PythonBuiltins {
         @Specialization
         static Object doLPi(long left, PInt right,
                         @Bind Node inliningTarget,
-                        @Shared @Cached BranchProfile overflowValueProfile,
+                        @Shared @Cached InlinedBranchProfile overflowValueProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 long rightValue = right.longValueExact();
                 raiseDivisionByZero(inliningTarget, rightValue == 0, raiseNode);
                 if (left == Long.MIN_VALUE && rightValue == -1) {
-                    overflowValueProfile.enter();
+                    overflowValueProfile.enter(inliningTarget);
                     return PFactory.createInt(PythonLanguage.get(inliningTarget), LONG_OVERFLOW_VALUE);
                 }
                 return Math.floorDiv(left, rightValue);
@@ -2306,6 +2305,7 @@ public final class IntBuiltins extends PythonBuiltins {
             return pointerCompareNode.execute(inliningTarget, op, x, y);
         }
 
+        @GenerateInline(false)       // footprint reduction 32 -> 15
         @TypeSystemReference(PythonIntegerTypes.class)
         abstract static class EqNodeNativePtr extends PNodeWithContext {
 

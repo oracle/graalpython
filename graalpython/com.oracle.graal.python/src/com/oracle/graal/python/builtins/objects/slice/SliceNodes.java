@@ -194,7 +194,7 @@ public abstract class SliceNodes {
         }
 
         @Specialization(guards = "length >= 0")
-        PSlice.SliceInfo doSliceObject(VirtualFrame frame, PObjectSlice slice, int length,
+        static PSlice.SliceInfo doSliceObject(VirtualFrame frame, PObjectSlice slice, int length,
                         @Bind Node inliningTarget,
                         @Cached SliceExactCastToInt castStartNode,
                         @Cached SliceExactCastToInt castStopNode,

@@ -229,6 +229,7 @@ public abstract class MaterializeFrameNode extends Node {
      * that we can materialize frames without causing immediate side effects to the locals dict
      * which may have already escaped to python.
      */
+    @GenerateInline(false) // 25 -> 5
     @GenerateUncached
     public abstract static class SyncFrameValuesNode extends Node {
 

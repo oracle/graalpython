@@ -78,7 +78,7 @@ public abstract class ReadBuiltinNode extends PNodeWithContext {
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached InlinedConditionProfile isBuiltinProfile,
                     @Shared @Cached ReadAttributeFromObjectNode readFromBuiltinsNode,
-                    @SuppressWarnings("unused") @Cached("getBuiltins()") PythonModule builtins) {
+                    @Cached(value = "getBuiltins()", allowUncached = true) PythonModule builtins) {
         return readBuiltinFromModule(attributeId, raiseNode, inliningTarget, isBuiltinProfile, builtins, readFromBuiltinsNode);
     }
 

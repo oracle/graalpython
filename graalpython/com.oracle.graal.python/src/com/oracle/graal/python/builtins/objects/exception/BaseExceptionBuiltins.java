@@ -105,6 +105,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -192,7 +193,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
         static Object doGeneric(PBaseException self, Object[] args, PKeyword[] keywords,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (keywords.length != 0) {
                 throw raiseNode.raise(inliningTarget, TypeError, P_TAKES_NO_KEYWORD_ARGS, self);
             }
@@ -209,7 +210,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached ExceptionNodes.SetArgsNode setArgsNode,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (keywords.length != 0) {
                 throw raiseNode.raise(inliningTarget, TypeError, P_TAKES_NO_KEYWORD_ARGS, self);
             }

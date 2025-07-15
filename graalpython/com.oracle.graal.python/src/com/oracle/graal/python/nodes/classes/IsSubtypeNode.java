@@ -290,7 +290,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     "isSubtypeOfCached",
                     "isSubtypeOfVariableTypeCached",
                     "isSubtypeGenericCachedLen"
-    }, limit = "1")
+    })
     @InliningCutoff
     @Megamorphic
     static boolean issubTypeGeneric(Object derived, Object cls,

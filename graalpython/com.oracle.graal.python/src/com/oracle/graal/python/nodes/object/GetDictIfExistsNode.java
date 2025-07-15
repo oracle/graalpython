@@ -123,7 +123,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
 
     @Specialization
     @InliningCutoff
-    PDict doNativeObject(PythonAbstractNativeObject object,
+    static PDict doNativeObject(PythonAbstractNativeObject object,
                     @Bind Node inliningTarget,
                     @CachedLibrary(limit = "1") InteropLibrary lib,
                     @Cached PythonToNativeNode toNative,
@@ -145,7 +145,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
                 return dict;
             } else {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, dictObject);
+                throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, dictObject);
             }
         }
     }

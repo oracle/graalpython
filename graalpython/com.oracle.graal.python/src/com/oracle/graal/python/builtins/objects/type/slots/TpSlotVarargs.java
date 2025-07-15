@@ -105,6 +105,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -262,13 +263,14 @@ public final class TpSlotVarargs {
         @Specialization
         static Object call(VirtualFrame frame, Node inliningTarget, TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached CreateArgumentsNode createArgumentsNode,
-                        @Cached("createDirectCallNode(slot)") DirectCallNode callNode,
+                        @Cached(value = "createDirectCallNode(slot)", inline = false) DirectCallNode callNode,
                         @Cached CallDispatchers.SimpleDirectInvokeNode invoke) {
             CompilerAsserts.partialEvaluationConstant(slot);
             Object[] arguments = createArgumentsNode.execute(inliningTarget, slot.getName(), args, keywords, slot.getSignature(), self, null, slot.getDefaults(), slot.getKwDefaults(), false);
             return invoke.execute(frame, inliningTarget, callNode, arguments);
         }
 
+        @NeverDefault
         protected static DirectCallNode createDirectCallNode(TpSlotVarargsBuiltin<?> slot) {
             return Truffle.getRuntime().createDirectCallNode(PythonLanguage.get(null).getBuiltinSlotCallTarget(slot.callTargetIndex));
         }
@@ -315,7 +317,7 @@ public final class TpSlotVarargs {
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached(inline = false) PythonToNativeNode toNativeNode,
+                        @Cached PythonToNativeNode toNativeNode,
                         @Cached CreateArgsTupleNode createArgsTupleNode,
                         @Cached EagerTupleState eagerTupleState,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode) {

@@ -128,7 +128,7 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
     static Object callObjectBuiltin(VirtualFrame frame, Object receiver,
                     @SuppressWarnings("unused") @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Cached("getBuiltinClass(this, receiver, getClassNode)") PythonBuiltinClassType clazz,
+                    @SuppressWarnings("unused") @Cached("getBuiltinClass($node, receiver, getClassNode)") PythonBuiltinClassType clazz,
                     @Cached("getUnaryBuiltin(clazz)") PythonUnaryBuiltinNode function) {
         return function.execute(frame, receiver);
     }

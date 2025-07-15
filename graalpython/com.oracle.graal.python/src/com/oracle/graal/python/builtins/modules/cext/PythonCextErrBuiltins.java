@@ -311,7 +311,7 @@ public final class PythonCextErrBuiltins {
 
         @Specialization
         static Object get(@SuppressWarnings("unused") Object threadState,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @Cached GetEscapedExceptionNode getEscapedExceptionNode) {
             AbstractTruffleException caughtException = getCaughtExceptionNode.executeFromNative();

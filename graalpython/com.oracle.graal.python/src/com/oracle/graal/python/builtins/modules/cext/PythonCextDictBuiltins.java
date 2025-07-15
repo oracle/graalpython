@@ -525,7 +525,7 @@ public final class PythonCextDictBuiltins {
         static int merge(PDict a, Object b, @SuppressWarnings("unused") int override,
                         @Bind Node inliningTarget,
                         @Shared @Cached PyObjectGetAttr getKeys,
-                        @Cached PyObjectGetAttr getUpdate,
+                        @Exclusive @Cached PyObjectGetAttr getUpdate,
                         @Shared @Cached CallNode callNode,
                         @Cached PRaiseNode raiseNode) {
             // lookup "keys" to raise the right error:

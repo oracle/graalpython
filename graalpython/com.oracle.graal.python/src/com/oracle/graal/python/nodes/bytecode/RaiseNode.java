@@ -129,7 +129,7 @@ public abstract class RaiseNode extends PNodeWithContext {
     @Specialization(guards = "isNoValue(type)")
     static void reraise(VirtualFrame frame, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") Object cause, boolean rootNodeVisible,
                     @Bind Node inliningTarget,
-                    @Cached PRaiseNode raise,
+                    @Exclusive @Cached PRaiseNode raise,
                     @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                     @Cached InlinedConditionProfile hasPException) {
         AbstractTruffleException caughtException = getCaughtExceptionNode.execute(frame);

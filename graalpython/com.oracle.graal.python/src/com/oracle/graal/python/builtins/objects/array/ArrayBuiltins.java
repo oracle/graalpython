@@ -797,7 +797,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Shared @Cached DeleteArraySliceNode deleteSliceNode,
                         @Cached ArrayNodes.ShiftNode shiftNode,
                         @Cached ArrayNodes.SetLengthNode setLengthNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             int length = self.getLength();
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, length, sliceUnpack.execute(inliningTarget, slice));
             int start = sliceInfo.start;

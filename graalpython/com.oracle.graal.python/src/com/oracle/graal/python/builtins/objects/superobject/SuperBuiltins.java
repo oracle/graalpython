@@ -107,6 +107,7 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -253,7 +254,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(cls)")
         PNone init(VirtualFrame frame, SuperObject self, Object cls, Object obj,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached @Exclusive PRaiseNode raiseNode) {
             if (!(obj instanceof PNone)) {
                 Object type = supercheck(frame, inliningTarget, cls, obj, raiseNode);
                 self.init(cls, type, obj);

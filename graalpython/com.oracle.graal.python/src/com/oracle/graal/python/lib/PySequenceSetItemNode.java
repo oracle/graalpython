@@ -74,7 +74,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class PySequenceSetItemNode extends Node {
     public abstract void execute(Frame frame, Node inliningTarget, Object container, int index, Object item);
 
-    @Specialization(guards = "isBuiltinList(object)")
+    @Specialization(guards = "isBuiltinList(object)", excludeForUncached = true)
     static void doList(VirtualFrame frame, PList object, int key, Object value,
                     @Cached(inline = false) ListBuiltins.SetItemNode setItemNode) {
         setItemNode.executeIntKey(frame, object, key, value);

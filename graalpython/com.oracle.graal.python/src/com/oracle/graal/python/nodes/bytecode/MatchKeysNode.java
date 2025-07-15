@@ -153,6 +153,7 @@ public abstract class MatchKeysNode extends PNodeWithContext {
         return PFactory.createTuple(language, PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
+    @NeverDefault
     public static MatchKeysNode create() {
         return MatchKeysNodeGen.create();
     }

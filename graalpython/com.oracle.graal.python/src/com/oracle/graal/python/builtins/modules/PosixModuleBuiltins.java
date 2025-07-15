@@ -2043,7 +2043,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         static long[] timesNotATuple(VirtualFrame frame, Object times, PNone ns,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             throw timesTupleError(inliningTarget, raiseNode);
         }
 

@@ -451,6 +451,7 @@ public abstract class ObjectNodes {
         }
 
         @ImportStatic(PGuards.class)
+        @GenerateInline(false) // 32 -> 13
         abstract static class GetNewArgsInternalNode extends Node {
             public abstract Pair<Object, Object> execute(VirtualFrame frame, Object getNewArgsExAttr, Object getNewArgsAttr);
 

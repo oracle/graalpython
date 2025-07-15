@@ -134,9 +134,9 @@ public final class SliceBuiltins extends PythonBuiltins {
         @Specialization
         static boolean doIntSliceEq(PIntSlice left, PIntSlice right, RichCmpOp op,
                         @Bind Node inliningTarget,
-                        @Cached InlinedConditionProfile startCmpProfile,
-                        @Cached InlinedConditionProfile stopCmpProfile,
-                        @Cached InlinedConditionProfile stepCmpProfile,
+                        @Cached @Shared InlinedConditionProfile startCmpProfile,
+                        @Cached @Shared InlinedConditionProfile stopCmpProfile,
+                        @Cached @Shared InlinedConditionProfile stepCmpProfile,
                         @Cached PRaiseNode raiseNode) {
             // Inlined tuple comparison specialized for ints
             if (startCmpProfile.profile(inliningTarget, left.start != right.start)) {
@@ -176,9 +176,9 @@ public final class SliceBuiltins extends PythonBuiltins {
         @Specialization(guards = {"noIntSlices(left, right)", "left != right"})
         static Object sliceCmpWithLib(VirtualFrame frame, PSlice left, PSlice right, RichCmpOp op,
                         @Bind Node inliningTarget,
-                        @Cached InlinedConditionProfile startCmpProfile,
-                        @Cached InlinedConditionProfile stopCmpProfile,
-                        @Cached InlinedConditionProfile stepCmpProfile,
+                        @Cached @Shared InlinedConditionProfile startCmpProfile,
+                        @Cached @Shared InlinedConditionProfile stopCmpProfile,
+                        @Cached @Shared InlinedConditionProfile stepCmpProfile,
                         @Cached PyObjectRichCompareBool eqNode,
                         @Cached PyObjectRichCompare cmpNode) {
             // Inlined tuple comparison specialized for tuples of 3 items to avoid the tuples

@@ -288,9 +288,9 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached TypeBuiltins.DirNode typeDirNode,
                         @Cached SetNodes.AddNode addNode,
-                        @Cached(inline = false) ListBuiltins.ListSortNode sortNode,
+                        @Cached ListBuiltins.ListSortNode sortNode,
                         @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @Cached(inline = false) ListNodes.ConstructListNode constructListNode) {
+                        @Cached ListNodes.ConstructListNode constructListNode) {
             // Inspired by ObjectBuiltins.DirNode
             var pythonClass = getClassNode.execute(inliningTarget, object);
             PSet attributes = constructSetNode.execute(frame, typeDirNode.execute(frame, pythonClass));
