@@ -55,6 +55,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.graalvm.polyglot.SandboxPolicy;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -139,7 +141,7 @@ public class AsyncHandler {
                     // Avoid pointless stack walks in random places
                     PArguments.setException(args, PException.NO_EXCEPTION);
 
-                    if (debugger == null) {
+                    if (debugger == null && !context.getEnv().getSandboxPolicy().isStricterThan(SandboxPolicy.TRUSTED)) {
                         debugger = Debugger.find(context.getEnv());
                     }
                     if (threadState == null) {
@@ -153,13 +155,17 @@ public class AsyncHandler {
                     if (!alreadyProfiling) {
                         threadState.profilingStart();
                     }
-                    debugger.disableStepping();
+                    if (debugger != null) {
+                        debugger.disableStepping();
+                    }
                     try {
                         CallDispatchers.SimpleIndirectInvokeNode.executeUncached(context.getAsyncHandler().callTarget, args);
                     } catch (PException e) {
                         handleException(e);
                     } finally {
-                        debugger.restoreStepping();
+                        if (debugger != null) {
+                            debugger.restoreStepping();
+                        }
                         if (!alreadyTracing) {
                             threadState.tracingStop();
                         }

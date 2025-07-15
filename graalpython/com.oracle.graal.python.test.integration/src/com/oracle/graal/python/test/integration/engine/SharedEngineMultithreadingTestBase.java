@@ -55,8 +55,6 @@ import java.util.function.Consumer;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
-import org.junit.Assume;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 
 import com.oracle.graal.python.test.integration.CleanupRule;
@@ -74,12 +72,6 @@ public class SharedEngineMultithreadingTestBase extends PythonTests {
     private static final int TIMEOUT = 20;
 
     @Rule public CleanupRule cleanup = new CleanupRule();
-
-    @BeforeClass
-    public static void setupClass() {
-        Assume.assumeFalse("Polyglot isolates may run out of socket descriptors, this is to be investigated",
-                        Boolean.getBoolean("polyglot.engine.SpawnIsolate"));
-    }
 
     protected static void log(String fmt, Object... args) {
         if (LOG) {
