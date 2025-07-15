@@ -440,7 +440,7 @@ img.pylogo {
     <div class="wrapper">
         <div>
             <div class="container">
-                <h3 class="truffle__subtitle">GraalPy: Package Compatibility</h3>
+                <h3 class="truffle__subtitle">Package Compatibility</h3>
                 <p class="truffle__subtitle">GraalPy is compatible with many packages for data science and machine learning, including the popular PyTorch, NumPy, and Huggingface Transformers.</p>
             </div>
         </div>
@@ -449,7 +449,6 @@ img.pylogo {
 <!-- Benefits -->
 <section class="content-section">
   <div class="wrapper">
-    <h5 class="compatibility-text first-comp-text">The GraalPy team ensures support for widely used Python libraries—especially NumPy, Pandas, and Django—through active testing and maintenance.</h5>
     <div class="langbenefits">
       <div class="container">
         <div class="langbenefits__row">
@@ -526,7 +525,8 @@ img.pylogo {
     </div>
   </div>
 </section>
-<!-- <section class="content-section download-homescreen">
+{% comment %}
+<section class="content-section download-homescreen">
   <div class="wrapper">
     <div>
       <div class="container">
@@ -542,7 +542,8 @@ You can extend it with Python code or leverage packages from the Python ecosyste
       </div>
     </div>
   </div>
-</section> -->
+</section>
+{% endcomment %}
 <section class="content-section compbenefits">
     <div class="wrapper">
         <div class="compatibility">
@@ -561,46 +562,43 @@ You can extend it with Python code or leverage packages from the Python ecosyste
 
 <section class="boxes">
     <div class="wrapper">
-        <div class="">
-            <div class="container compatibility_page-box v231 all">
-                <div class="compatibility__mid">
-                    <div class="container">
-                      <h3 id="compattable-container" class="langpage__title-02">Python Packages</h3>
-                      <h5 class="compatibility-text comp-text-mod">To try a package, choose any version. If you encounter issues, consult the table below for recommended compatible versions.</h5>
-                    <div class="compatibility_page-filter">
-                    <div class="compatibility__row">
-                        <p class="compatibility_page-item compatibility_page-module compatibility_page-active" data-filter="v242">GraalPy 24.2</p>
-                        <p class="compatibility_page-item compatibility_page-module" data-filter="v241">GraalPy 24.1</p>
-                    </div>
-                </div>
-                        <div class="compatibility__chart">
-                            <h4 class="comp__chart-title">Over 600 Python packages tested for compatibility with GraalPy</h4>
-                            <div class="compatibility__chart-row">
-                                <div class="chart" id="pie-chart">
-                                </div>
-                                <div class="legend">
-                                    <div>
-                                        <div class="legend-item legend-item-1"
-                                            title="More than 90% of the package's tests run successfully on GraalPy">Compatible: <span id="compatibility-stats-compatible">loading...</span><sup class="info-tooltip"></sup></div>
-                                        <div class="legend-item legend-item-2"
-                                            title="The package either does not install on GraalPy or is not currently tested">
-                                            Currently Untested: <span id="compatibility-stats-untested">loading...</span><sup class="info-tooltip"></sup></div>
-                                    </div>
-                                    <div>
-                                        <div class="legend-item legend-item-3"
-                                            title="Fewer than 90% of the package's tests run successfully on GraalPy">Currently
-                                            Incompatible: <span id="compatibility-stats-incompatible">loading...</span><sup class="info-tooltip"></sup></div>
-                                        <div class="legend-item legend-item-4"
-                                            title="We have no plans to test the package">Not
-                                            Supported: <span id="compatibility-stats-not-supported">loading...</span><sup class="info-tooltip"></sup></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+      <div class="container compatibility_page-box v231 all">
+          <div class="compatibility__mid">
+              <div class="container">
+                <h3 id="compattable-container" class="langpage__title-02">Compatibility per GraalPy Release</h3>
+              <div class="compatibility_page-filter">
+              <div class="compatibility__row">
+                  <p class="compatibility_page-item compatibility_page-module compatibility_page-active" data-filter="v242">GraalPy 24.2</p>
+                  <p class="compatibility_page-item compatibility_page-module" data-filter="v241">GraalPy 24.1</p>
+              </div>
+          </div>
+                  <div class="compatibility__chart">
+                      <h4 class="comp__chart-title">Over 600 Python packages tested for compatibility with GraalPy</h4>
+                      <div class="compatibility__chart-row">
+                          <div class="chart" id="pie-chart">
+                          </div>
+                          <div class="legend">
+                              <div>
+                                  <div class="legend-item legend-item-1"
+                                      title="More than 90% of the package's tests run successfully on GraalPy">Compatible: <span id="compatibility-stats-compatible">loading...</span><sup class="info-tooltip"></sup></div>
+                                  <div class="legend-item legend-item-2"
+                                      title="The package either does not install on GraalPy or is not currently tested">
+                                      Currently Untested: <span id="compatibility-stats-untested">loading...</span><sup class="info-tooltip"></sup></div>
+                              </div>
+                              <div>
+                                  <div class="legend-item legend-item-3"
+                                      title="Fewer than 90% of the package's tests run successfully on GraalPy">Currently
+                                      Incompatible: <span id="compatibility-stats-incompatible">loading...</span><sup class="info-tooltip"></sup></div>
+                                  <div class="legend-item legend-item-4"
+                                      title="We have no plans to test the package">Not
+                                      Supported: <span id="compatibility-stats-not-supported">loading...</span><sup class="info-tooltip"></sup></div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
     </div>
 </section>
 
@@ -610,7 +608,7 @@ You can extend it with Python code or leverage packages from the Python ecosyste
             <div class="container">
             <div class="comp-info">
             <img class="info-icon" src='{{ "/assets/img/python/info-icon.svg" | relative_url }}' alt="info icon">
-            <h5 class="compatibility-text">Many more Python packages work on GraalPy than are listed here. If there is a package you are interested in that is not included, chances are that it might just work. If it does not, feel free to reach out to us on <a href="https://github.com/oracle/graalpython/issues" target="_blank">GitHub</a>.</h5>
+            <h5 class="compatibility-text">Many more Python packages work on GraalPy than are listed here. If there is a package you are interested in that is not included, chances are that it might just work. If it does not, feel free to create an issue for us on <a href="https://github.com/oracle/graalpython/issues" target="_blank">GitHub</a>.</h5>
             </div>
                 <div class="package__row">
                     <div class="package__search">
