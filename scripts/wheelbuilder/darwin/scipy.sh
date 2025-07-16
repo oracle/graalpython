@@ -38,10 +38,17 @@
 # SOFTWARE.
 
 if [ -n "$GITHUB_RUN_ID" ]; then
-    brew install gcc pkg-config
+    brew install lld gcc pkg-config openblas
 fi
-export FFLAGS="-fallow-argument-mismatch"
-export LDFLAGS="-Wl,-ld_classic"
+
+export CC="gcc-15"
+export CXX="g++-15"
+export CXXFLAGS="-fuse-ld=lld"
+export CFLAGS="-fuse-ld=lld"
+export FFLAGS="-fuse-ld=lld"
+export LDFLAGS="-Wl,-platform_version,macos,15.0.0,15.0.0"
+export PKG_CONFIG_PATH="/opt/homebrew/opt/openblas/lib/pkgconfig"
+
 if [ -n "$1" ]; then
     pip wheel "scipy==$1"
 else
