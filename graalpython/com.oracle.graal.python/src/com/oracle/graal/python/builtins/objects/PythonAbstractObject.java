@@ -1264,12 +1264,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         public static boolean isImmutable(Node inliningTarget, Object object,
+                        @Cached GetObjectSlotsNode getSlotsNode,
                         @Cached GetClassNode getClassNode) {
             // TODO(fa) The first condition is too general; we should check if the object's type is
             // 'type'
             if (object instanceof PythonBuiltinClass || object instanceof PythonBuiltinObject || PGuards.isNativeClass(object) || PGuards.isNativeObject(object)) {
                 return true;
             } else if (object instanceof PythonClass || object instanceof PythonModule) {
+                return false;
+            } else if (getSlotsNode.execute(inliningTarget, object).combined_tp_setattro_setattr() != null) {
                 return false;
             } else {
                 Object klass = getClassNode.execute(inliningTarget, object);

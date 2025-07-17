@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.hashlib;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA2;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -56,11 +58,11 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@CoreFunctions(defineModule = "_sha256")
-public final class Sha256ModuleBuiltins extends PythonBuiltins {
+@CoreFunctions(defineModule = J_SHA2)
+public final class Sha2ModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return Sha256ModuleBuiltinsFactory.getFactories();
+        return Sha2ModuleBuiltinsFactory.getFactories();
     }
 
     @Builtin(name = "sha224", minNumOfPositionalArgs = 0, parameterNames = {"string"}, keywordOnlyNames = {"usedforsecurity"})
@@ -82,6 +84,28 @@ public final class Sha256ModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
             return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.SHA256Type, "sha256", "sha256", buffer);
+        }
+    }
+
+    @Builtin(name = "sha384", minNumOfPositionalArgs = 0, parameterNames = {"string"}, keywordOnlyNames = {"usedforsecurity"})
+    @GenerateNodeFactory
+    abstract static class Sha384FunctionNode extends PythonBuiltinNode {
+        @Specialization
+        static Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+                        @Bind Node inliningTarget,
+                        @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
+            return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.SHA384Type, "sha384", "sha384", buffer);
+        }
+    }
+
+    @Builtin(name = "sha512", minNumOfPositionalArgs = 0, parameterNames = {"string"}, keywordOnlyNames = {"usedforsecurity"})
+    @GenerateNodeFactory
+    abstract static class Sha512FunctionNode extends PythonBuiltinNode {
+        @Specialization
+        static Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+                        @Bind Node inliningTarget,
+                        @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
+            return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.SHA512Type, "sha512", "sha512", buffer);
         }
     }
 }

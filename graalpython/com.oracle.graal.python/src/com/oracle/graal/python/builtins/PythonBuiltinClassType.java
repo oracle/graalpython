@@ -41,6 +41,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUEITERATOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUES;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_GENERIC;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_LRU_CACHE_WRAPPER;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_MD5;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ORDERED_DICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PARAM_SPEC;
@@ -50,6 +51,9 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_PARTIAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_POLYGLOT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_POSIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PROPERTY;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA1;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA2;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA3;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SIMPLE_QUEUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TUPLE_GETTER;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPES;
@@ -1173,18 +1177,18 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PEncodingMap("EncodingMap", PythonObject, newBuilder().disallowInstantiation()),
 
     // hashlib
-    MD5Type("md5", PythonObject, newBuilder().publishInModule("_md5").basetype().disallowInstantiation()),
-    SHA1Type("sha1", PythonObject, newBuilder().publishInModule("_sha1").basetype().disallowInstantiation()),
-    SHA224Type("sha224", PythonObject, newBuilder().publishInModule("_sha256").basetype().disallowInstantiation()),
-    SHA256Type("sha256", PythonObject, newBuilder().publishInModule("_sha256").basetype().disallowInstantiation()),
-    SHA384Type("sha384", PythonObject, newBuilder().publishInModule("_sha512").basetype().disallowInstantiation()),
-    SHA512Type("sha512", PythonObject, newBuilder().publishInModule("_sha512").basetype().disallowInstantiation()),
-    Sha3SHA224Type("sha3_224", PythonObject, newBuilder().publishInModule("_sha3").basetype().slots(Sha3Builtins.SLOTS)),
-    Sha3SHA256Type("sha3_256", PythonObject, newBuilder().publishInModule("_sha3").basetype().slots(Sha3Builtins.SLOTS)),
-    Sha3SHA384Type("sha3_384", PythonObject, newBuilder().publishInModule("_sha3").basetype().slots(Sha3Builtins.SLOTS)),
-    Sha3SHA512Type("sha3_512", PythonObject, newBuilder().publishInModule("_sha3").basetype().slots(Sha3Builtins.SLOTS)),
-    Sha3Shake128Type("shake_128", PythonObject, newBuilder().publishInModule("_sha3").basetype().slots(Sha3Builtins.SLOTS)),
-    Sha3Shake256Type("shake_256", PythonObject, newBuilder().publishInModule("_sha3").basetype().slots(Sha3Builtins.SLOTS)),
+    MD5Type("md5", PythonObject, newBuilder().publishInModule(J_MD5).basetype().disallowInstantiation()),
+    SHA1Type("sha1", PythonObject, newBuilder().publishInModule(J_SHA1).basetype().disallowInstantiation()),
+    SHA224Type("SHA224Type", PythonObject, newBuilder().publishInModule(J_SHA2).basetype().disallowInstantiation()),
+    SHA256Type("SHA256Type", PythonObject, newBuilder().publishInModule(J_SHA2).basetype().disallowInstantiation()),
+    SHA384Type("SHA384Type", PythonObject, newBuilder().publishInModule(J_SHA2).basetype().disallowInstantiation()),
+    SHA512Type("SHA512Type", PythonObject, newBuilder().publishInModule(J_SHA2).basetype().disallowInstantiation()),
+    Sha3SHA224Type("sha3_224", PythonObject, newBuilder().publishInModule(J_SHA3).basetype().slots(Sha3Builtins.SLOTS)),
+    Sha3SHA256Type("sha3_256", PythonObject, newBuilder().publishInModule(J_SHA3).basetype().slots(Sha3Builtins.SLOTS)),
+    Sha3SHA384Type("sha3_384", PythonObject, newBuilder().publishInModule(J_SHA3).basetype().slots(Sha3Builtins.SLOTS)),
+    Sha3SHA512Type("sha3_512", PythonObject, newBuilder().publishInModule(J_SHA3).basetype().slots(Sha3Builtins.SLOTS)),
+    Sha3Shake128Type("shake_128", PythonObject, newBuilder().publishInModule(J_SHA3).basetype().slots(Sha3Builtins.SLOTS)),
+    Sha3Shake256Type("shake_256", PythonObject, newBuilder().publishInModule(J_SHA3).basetype().slots(Sha3Builtins.SLOTS)),
     Blake2bType("blake2b", PythonObject, newBuilder().publishInModule("_blake2").basetype().slots(Blake2bObjectBuiltins.SLOTS)),
     /* Note we reuse the blake2b slots */
     Blake2sType("blake2s", PythonObject, newBuilder().publishInModule("_blake2").basetype().slots(Blake2bObjectBuiltins.SLOTS)),

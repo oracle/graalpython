@@ -172,9 +172,8 @@ import com.oracle.graal.python.builtins.modules.hashlib.HashObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Md5ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Sha1ModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.hashlib.Sha256ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.hashlib.Sha2ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Sha3ModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.hashlib.Sha512ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.ShakeDigestObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOMixinBuiltins;
@@ -691,8 +690,7 @@ public abstract class Python3Core {
                         // hashlib
                         PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Md5ModuleBuiltins(),
                         PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Sha1ModuleBuiltins(),
-                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Sha256ModuleBuiltins(),
-                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Sha512ModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Sha2ModuleBuiltins(),
                         PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Sha3ModuleBuiltins(),
                         PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Blake2ModuleBuiltins(),
                         PythonImageBuildOptions.WITHOUT_DIGEST ? null : new DigestObjectBuiltins(),
