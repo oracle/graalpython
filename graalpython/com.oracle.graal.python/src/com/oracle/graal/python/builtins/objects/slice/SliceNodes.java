@@ -183,7 +183,7 @@ public abstract class SliceNodes {
      * Coerce indices computation to lossy integer values
      */
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 18
+    @GenerateInline(false)       // footprint reduction 36 -> 18
     public abstract static class ComputeIndices extends PNodeWithContext {
 
         public abstract PSlice.SliceInfo execute(Frame frame, PSlice slice, int i);
@@ -216,7 +216,7 @@ public abstract class SliceNodes {
      * This is only applicable to slow path <i><b>internal</b></i> computations.
      */
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 48 -> 30
+    @GenerateInline(false)       // footprint reduction 48 -> 30
     public abstract static class CoerceToObjectSlice extends PNodeWithContext {
 
         public abstract PObjectSlice execute(PSlice slice);

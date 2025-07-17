@@ -55,6 +55,7 @@ import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -73,7 +74,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
  **/
 @ReportPolymorphism
 @GenerateUncached
-@SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
+@GenerateInline(false)       // footprint reduction 36 -> 17
 public abstract class MaterializeFrameNode extends Node {
 
     @NeverDefault

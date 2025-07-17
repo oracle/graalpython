@@ -774,7 +774,7 @@ public abstract class BytesNodes {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 72 -> 54
+    @GenerateInline(false)       // footprint reduction 72 -> 54
     public abstract static class IterableToByteNode extends Node {
         public abstract byte[] execute(VirtualFrame frame, Object iterable);
 
@@ -882,7 +882,7 @@ public abstract class BytesNodes {
     }
 
     @ImportStatic(PGuards.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 25
+    @GenerateInline(false)       // footprint reduction 44 -> 25
     public abstract static class HexStringToBytesNode extends Node {
         public abstract byte[] execute(TruffleString str);
 

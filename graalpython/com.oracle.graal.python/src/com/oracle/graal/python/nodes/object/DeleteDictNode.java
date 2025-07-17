@@ -52,13 +52,14 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
-@SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
+@GenerateInline(false)       // footprint reduction 36 -> 17
 public abstract class DeleteDictNode extends PNodeWithContext {
     public abstract void execute(PythonObject object);
 

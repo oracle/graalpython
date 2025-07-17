@@ -328,7 +328,7 @@ public abstract class IteratorNodes {
     }
 
     @ImportStatic(PGuards.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 18
+    @GenerateInline(false)       // footprint reduction 36 -> 18
     public abstract static class ToArrayNode extends Node {
         public abstract Object[] execute(VirtualFrame frame, Object iterable);
 

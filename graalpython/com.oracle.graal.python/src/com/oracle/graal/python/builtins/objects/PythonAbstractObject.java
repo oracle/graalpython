@@ -1150,7 +1150,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 80 -> 62
+    @GenerateInline(false)       // footprint reduction 80 -> 62
     public abstract static class PKeyInfoNode extends Node {
         private static final int READABLE = 0x1;
         private static final int READ_SIDE_EFFECTS = 0x2;
@@ -1278,7 +1278,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
+    @GenerateInline(false)       // footprint reduction 36 -> 17
     public abstract static class PExecuteNode extends Node {
 
         public abstract Object execute(Object receiver, Object[] arguments) throws UnsupportedMessageException;

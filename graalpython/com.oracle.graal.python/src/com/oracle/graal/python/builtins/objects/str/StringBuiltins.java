@@ -2373,7 +2373,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 52 -> 34
+    @GenerateInline(false)       // footprint reduction 52 -> 34
     public abstract static class StrGetItemNodeWithSlice extends Node {
 
         public abstract TruffleString execute(TruffleString value, SliceInfo info);

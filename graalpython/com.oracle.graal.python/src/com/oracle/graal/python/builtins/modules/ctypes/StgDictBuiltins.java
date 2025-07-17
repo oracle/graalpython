@@ -158,7 +158,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(StructUnionTypeBuiltins.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 112 -> 94
+    @GenerateInline(false)       // footprint reduction 112 -> 94
     protected abstract static class MakeFieldsNode extends PNodeWithContext {
 
         abstract void execute(VirtualFrame frame, Object type, CFieldObject descr, int index, int offset);
@@ -292,7 +292,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(StgDictBuiltins.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 132 -> 115
+    @GenerateInline(false)       // footprint reduction 132 -> 115
     protected abstract static class MakeAnonFieldsNode extends Node {
 
         abstract void execute(VirtualFrame frame, Object type);

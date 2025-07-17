@@ -429,7 +429,7 @@ public final class StringUtils {
      * </ul>
      */
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 56 -> 37
+    @GenerateInline(false)       // footprint reduction 56 -> 37
     public abstract static class SimpleTruffleStringFormatNode extends Node {
 
         public final TruffleString format(TruffleString format, Object... args) {

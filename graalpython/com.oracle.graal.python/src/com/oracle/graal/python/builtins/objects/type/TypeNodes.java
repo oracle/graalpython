@@ -260,7 +260,7 @@ public abstract class TypeNodes {
     private static final int SIZEOF_PY_OBJECT_PTR = Long.BYTES;
 
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 21
+    @GenerateInline(false)       // footprint reduction 40 -> 21
     public abstract static class GetTypeFlagsNode extends Node {
 
         public abstract long execute(Object clazz);
@@ -1820,7 +1820,7 @@ public abstract class TypeNodes {
     @ImportStatic(PGuards.class)
     @GenerateUncached
     @ReportPolymorphism
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 18
+    @GenerateInline(false)       // footprint reduction 36 -> 18
     public abstract static class GetInstanceShape extends PNodeWithContext {
 
         public abstract Shape execute(Object clazz);
@@ -2538,7 +2538,6 @@ public abstract class TypeNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 26
     public abstract static class GetBasicSizeNode extends Node {
         public abstract long execute(Node inliningTarget, Object cls);
 

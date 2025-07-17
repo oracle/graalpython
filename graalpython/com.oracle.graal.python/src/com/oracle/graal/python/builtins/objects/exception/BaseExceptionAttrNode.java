@@ -55,7 +55,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PGuards.class)
 @GenerateUncached
-@SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 20
+@GenerateInline(false)       // footprint reduction 36 -> 20
 public abstract class BaseExceptionAttrNode extends Node {
     public interface StorageFactory {
         Object[] create(Object[] args);

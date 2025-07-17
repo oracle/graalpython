@@ -76,6 +76,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
+import com.oracle.truffle.api.dsl.GenerateInline;
 import org.bouncycastle.util.encoders.DecoderException;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -898,7 +899,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
+    @GenerateInline(false)       // footprint reduction 36 -> 17
     abstract static class GetPasswordNode extends PNodeWithContext {
         // PEM_BUFSIZE
         private static final int MAX_LEN = 1024;

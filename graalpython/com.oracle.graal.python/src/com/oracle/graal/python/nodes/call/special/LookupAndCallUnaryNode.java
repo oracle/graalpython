@@ -54,6 +54,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -174,7 +175,7 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
     }
 
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 20
+    @GenerateInline(false)       // footprint reduction 36 -> 20
     public abstract static class LookupAndCallUnaryDynamicNode extends PNodeWithContext {
 
         public abstract Object executeObject(Object receiver, TruffleString name);

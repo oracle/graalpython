@@ -142,7 +142,7 @@ public abstract class StringNodes {
 
     @GenerateUncached
     @ImportStatic(StringNodes.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 21
+    @GenerateInline(false)       // footprint reduction 40 -> 21
     public abstract static class StringLenNode extends PNodeWithContext {
 
         public abstract int execute(Object str);
@@ -271,7 +271,7 @@ public abstract class StringNodes {
     }
 
     @ImportStatic({PGuards.class, PythonOptions.class})
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 56 -> 37
+    @GenerateInline(false)       // footprint reduction 56 -> 37
     public abstract static class JoinInternalNode extends PNodeWithContext {
         public abstract TruffleString execute(VirtualFrame frame, TruffleString self, Object iterable);
 
@@ -402,7 +402,7 @@ public abstract class StringNodes {
     }
 
     @ImportStatic(PGuards.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
+    @GenerateInline(false)       // footprint reduction 36 -> 17
     public abstract static class SpliceNode extends PNodeWithContext {
 
         public abstract void execute(TruffleStringBuilder sb, Object translated);
@@ -529,7 +529,7 @@ public abstract class StringNodes {
     }
 
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 52 -> 33
+    @GenerateInline(false)       // footprint reduction 52 -> 33
     public abstract static class StringReplaceNode extends Node {
         public abstract TruffleString execute(TruffleString str, TruffleString old, TruffleString with, int maxCount);
 
@@ -606,7 +606,7 @@ public abstract class StringNodes {
     }
 
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 25
+    @GenerateInline(false)       // footprint reduction 44 -> 25
     public abstract static class StringReprNode extends Node {
         public abstract TruffleString execute(TruffleString self);
 

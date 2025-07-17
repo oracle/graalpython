@@ -87,6 +87,7 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -160,7 +161,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
      * what it's set to in the frame and globals.
      */
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 48 -> 29
+    @GenerateInline(false)       // footprint reduction 48 -> 29
     public abstract static class ImportName extends Node {
         public abstract Object execute(Frame frame, PythonContext context, PythonModule builtins, TruffleString name, Object globals, TruffleString[] fromList, int level);
 
@@ -198,7 +199,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
      * Equivalent of PyImport_ImportModuleLevelObject
      */
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 68 -> 51
+    @GenerateInline(false)       // footprint reduction 68 -> 51
     public abstract static class PyImportImportModuleLevelObject extends Node {
         public static final TruffleString T__HANDLE_FROMLIST = tsLiteral("_handle_fromlist");
 
@@ -368,7 +369,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
      * not the spec.
      */
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 124 -> 105
+    @GenerateInline(false)       // footprint reduction 124 -> 105
     public abstract static class PyModuleIsInitializing extends Node {
         public abstract boolean execute(Frame frame, Object mod);
 
@@ -404,7 +405,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
      * Equivalent of CPython's import_ensure_initialized
      */
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 88 -> 72
+    @GenerateInline(false)       // footprint reduction 88 -> 72
     abstract static class EnsureInitializedNode extends Node {
 
         public static final TruffleString T_LOCK_UNLOCK_MODULE = tsLiteral("_lock_unlock_module");
@@ -427,7 +428,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
      * Equivalent of resolve_name in CPython's import.c
      */
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 124 -> 106
+    @GenerateInline(false)       // footprint reduction 124 -> 106
     abstract static class ResolveName extends Node {
         private static final byte PKG_IS_HERE = 0b1;
         private static final byte PKG_IS_NULL = 0b01;
@@ -582,7 +583,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
      * Equivalent of import_find_and_load
      */
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 84 -> 68
+    @GenerateInline(false)       // footprint reduction 84 -> 68
     abstract static class FindAndLoad extends Node {
         protected abstract Object execute(Frame frame, PythonContext context, TruffleString absName);
 

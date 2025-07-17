@@ -1997,7 +1997,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(PGuards.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
+    @GenerateInline(false)       // footprint reduction 36 -> 17
     abstract static class UtimeArgsToTimespecNode extends Node {
         abstract long[] execute(VirtualFrame frame, Object times, Object ns);
 

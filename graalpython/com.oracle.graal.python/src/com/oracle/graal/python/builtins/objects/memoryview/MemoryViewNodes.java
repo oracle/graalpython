@@ -262,7 +262,7 @@ public class MemoryViewNodes {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 48 -> 29
+    @GenerateInline(false)       // footprint reduction 48 -> 29
     abstract static class ReadItemAtNode extends Node {
         public abstract Object execute(VirtualFrame frame, PMemoryView self, Object ptr, int offset);
 
@@ -293,7 +293,7 @@ public class MemoryViewNodes {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 48 -> 29
+    @GenerateInline(false)       // footprint reduction 48 -> 29
     abstract static class WriteItemAtNode extends Node {
         public abstract void execute(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object);
 

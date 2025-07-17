@@ -84,7 +84,7 @@ public class BufferedWriterNodes {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 132 -> 115
+    @GenerateInline(false)       // footprint reduction 132 -> 115
     abstract static class WriteNode extends Node {
 
         public abstract int execute(VirtualFrame frame, Node inliningTarget, PBuffered self, Object buffer);

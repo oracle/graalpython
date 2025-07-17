@@ -63,6 +63,7 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -73,7 +74,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
-@SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
+@GenerateInline(false)       // footprint reduction 36 -> 17
 public abstract class GetDictIfExistsNode extends PNodeWithContext {
     public abstract PDict execute(Object object);
 

@@ -57,6 +57,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -65,7 +66,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
-@SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 21
+@GenerateInline(false)       // footprint reduction 40 -> 21
 public abstract class ReadBuiltinNode extends PNodeWithContext {
     public abstract Object execute(TruffleString attributeId);
 

@@ -84,6 +84,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
@@ -260,7 +261,7 @@ public final class SetBuiltins extends PythonBuiltins {
 
     @ImportStatic({PGuards.class, PythonOptions.class})
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 108 -> 90
+    @GenerateInline(false)       // footprint reduction 108 -> 90
     public abstract static class UpdateSingleNode extends Node {
 
         public abstract void execute(VirtualFrame frame, PHashingCollection collection, Object other);

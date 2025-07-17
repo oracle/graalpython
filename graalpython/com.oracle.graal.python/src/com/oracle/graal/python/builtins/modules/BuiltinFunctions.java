@@ -2308,7 +2308,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     @ImportStatic(SpecialMethodNames.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 72 -> 53
+    @GenerateInline(false)       // footprint reduction 72 -> 53
     abstract static class UpdateBasesNode extends Node {
 
         abstract PTuple execute(PTuple bases, Object[] arguments, int nargs);
@@ -2365,7 +2365,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 19
+    @GenerateInline(false)       // footprint reduction 36 -> 19
     abstract static class CalculateMetaclassNode extends Node {
 
         abstract Object execute(Object metatype, PTuple bases);
