@@ -239,7 +239,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
 
                     boolean wantEscape = false;
 
-                    final int c = nextNode.execute(tsi);
+                    final int c = nextNode.execute(tsi, TS_ENCODING);
 
                     if (needsEscape(dialect, c, byteIndexOfCodePointNode)) {
                         if (dialect.quoting == QUOTE_NONE) {

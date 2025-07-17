@@ -1342,7 +1342,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
                 int codePointIndex = 0;
                 while (it.hasNext()) {
-                    TruffleString value = fromCodePointNode.execute(nextNode.execute(it), TS_ENCODING, true);
+                    TruffleString value = fromCodePointNode.execute(nextNode.execute(it, TS_ENCODING), TS_ENCODING, true);
                     putValueNode.execute(frame, inliningTarget, self, self.getLength() + codePointIndex++, value);
                 }
                 setLengthNode.execute(inliningTarget, self, newLength);

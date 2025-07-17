@@ -238,7 +238,7 @@ public abstract class HashingCollectionNodes {
             TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
             while (it.hasNext()) {
                 // TODO: GR-37219: use SubstringNode with lazy=true?
-                int codePoint = nextNode.execute(it);
+                int codePoint = nextNode.execute(it, TS_ENCODING);
                 TruffleString key = fromCodePointNode.execute(codePoint, TS_ENCODING, true);
                 storage = setStorageItem.execute(inliningTarget, storage, key, val);
             }

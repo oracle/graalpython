@@ -932,7 +932,7 @@ public abstract class BytesNodes {
             TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
             int i = 0;
             while (it.hasNext()) {
-                if (nextNode.execute(it) > 127) {
+                if (nextNode.execute(it, TS_ENCODING) > 127) {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
                 }
                 ++i;

@@ -254,7 +254,7 @@ public final class ListBuiltins extends PythonBuiltins {
             TruffleStringIterator iterator = createCodePointIteratorNode.execute(value, TS_ENCODING);
             while (iterator.hasNext()) {
                 // TODO: GR-37219: use SubstringNode with lazy=true?
-                int cp = nextNode.execute(iterator);
+                int cp = nextNode.execute(iterator, TS_ENCODING);
                 appendNode.execute(list, fromCodePointNode.execute(cp, TS_ENCODING, true));
             }
             return PNone.NONE;

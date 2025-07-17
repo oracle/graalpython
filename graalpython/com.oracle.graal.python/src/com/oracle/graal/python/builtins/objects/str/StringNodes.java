@@ -288,10 +288,10 @@ public abstract class StringNodes {
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             TruffleStringIterator it = createCodePointIteratorNode.execute(arg, TS_ENCODING);
             assert it.hasNext();
-            appendCodePointNode.execute(sb, nextNode.execute(it), 1, true);
+            appendCodePointNode.execute(sb, nextNode.execute(it, TS_ENCODING), 1, true);
             while (it.hasNext()) {
                 appendStringNode.execute(sb, self);
-                appendCodePointNode.execute(sb, nextNode.execute(it), 1, true);
+                appendCodePointNode.execute(sb, nextNode.execute(it, TS_ENCODING), 1, true);
             }
             return toStringNode.execute(sb);
         }
@@ -565,7 +565,7 @@ public abstract class StringNodes {
                         return toStringNode.execute(sb);
                     }
                     appendStringNode.execute(sb, with);
-                    int codePoint = nextNode.execute(it);
+                    int codePoint = nextNode.execute(it, TS_ENCODING);
                     appendCodePointNode.execute(sb, codePoint, 1, true);
                     ++i;
                 }
@@ -628,7 +628,7 @@ public abstract class StringNodes {
             byte[] buffer = new byte[12];
             appendCodePointNode.execute(sb, useDoubleQuotes ? '"' : '\'', 1, true);
             while (it.hasNext()) {
-                int codepoint = nextNode.execute(it);
+                int codepoint = nextNode.execute(it, TS_ENCODING);
                 switch (codepoint) {
                     case '"':
                         if (useDoubleQuotes) {
