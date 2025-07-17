@@ -135,10 +135,10 @@ public final class TpSlotVarargs {
             super(nodeFactory);
             this.name = name;
             this.tsName = PythonUtils.tsLiteral(name);
-            Class<T> nodeClass = getNodeFactory().getNodeClass();
+            Class<T> nodeClass = nodeFactory.getNodeClass();
             SlotSignature slotSignature = nodeClass.getAnnotation(SlotSignature.class);
             Slot2Builtin builtin = new Slot2Builtin(slotSignature, name, null);
-            signature = BuiltinFunctionRootNode.createSignature(getNodeFactory(), builtin, true, takesClass);
+            signature = BuiltinFunctionRootNode.createSignature(nodeFactory, builtin, true, takesClass);
             defaults = PBuiltinFunction.generateDefaults(PythonBuiltins.numDefaults(builtin));
             kwDefaults = PBuiltinFunction.generateKwDefaults(signature);
             directInvocation = PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass) || //
