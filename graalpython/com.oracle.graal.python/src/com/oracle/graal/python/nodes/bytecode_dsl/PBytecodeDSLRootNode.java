@@ -1790,7 +1790,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind BytecodeNode bytecode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, sequence);
             int len = storage.length();
             int count = results.getLength();
@@ -1822,7 +1822,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile notIterableProfile,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             int count = results.getLength();
             CompilerAsserts.partialEvaluationConstant(count);
 
@@ -2592,7 +2592,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile notIterableProfile,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
 
             Object iterator;
             try {

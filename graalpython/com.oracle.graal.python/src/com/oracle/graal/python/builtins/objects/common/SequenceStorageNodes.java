@@ -1710,7 +1710,7 @@ public abstract class SequenceStorageNodes {
                         @Exclusive @Cached InlinedConditionProfile memoryError,
                         @Exclusive @Cached InlinedConditionProfile negGrowth,
                         @Exclusive @Cached InlinedConditionProfile posGrowth,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             int start = sinfo.start;
             int stop = sinfo.stop;
             int step = sinfo.step;
@@ -1735,7 +1735,7 @@ public abstract class SequenceStorageNodes {
                         @Exclusive @Cached MemMoveNode memove,
                         @Cached SetItemScalarNode setLeftItemNode,
                         @Cached GetItemScalarNode getRightItemNode,
-                        @Shared @Cached PRaiseNode raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached CopyNode copyNode) {
             int start = sinfo.start;
             int step = sinfo.step;
@@ -2616,7 +2616,7 @@ public abstract class SequenceStorageNodes {
         @SuppressWarnings("truffle-static-method")
         SequenceStorage doGeneric(SequenceStorage s, int times,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PRaiseNode raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached CreateEmptyNode createEmptyNode,
                         @Cached GetItemScalarNode getItemNode,
                         @Cached SetItemScalarNode setItemNode,

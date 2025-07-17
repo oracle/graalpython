@@ -2126,13 +2126,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return result;
             }
 
+            // @Exclusive for truffle-interpreted-performance
             @Fallback
             static Object sumGeneric(VirtualFrame frame, Node inliningTarget, Object iterator, Object start,
-                            @Shared @Cached InlinedLoopConditionProfile loopProfilePrimitive,
-                            @Shared @Cached InlinedLoopConditionProfile loopProfileGeneric,
+                            @Exclusive @Cached InlinedLoopConditionProfile loopProfilePrimitive,
+                            @Exclusive @Cached InlinedLoopConditionProfile loopProfileGeneric,
                             @Cached PyIterNextNode nextNode,
                             @Shared @Cached PyNumberAddNode addNode,
-                            @Shared @Cached InlinedConditionProfile resultFitsInInt,
+                            @Exclusive @Cached InlinedConditionProfile resultFitsInInt,
                             @Exclusive @Cached InlinedBranchProfile seenObject,
                             @Exclusive @Cached InlinedBranchProfile seenInt,
                             @Exclusive @Cached InlinedBranchProfile seenDouble,

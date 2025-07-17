@@ -457,7 +457,7 @@ public abstract class StringNodes {
         @Specialization(guards = {"!isInteger(translated)", "!isPInt(translated)", "!isNone(translated)"})
         static void doObject(TruffleStringBuilder sb, Object translated,
                         @Bind Node inliningTarget,
-                        @Shared("raise") @Cached PRaiseNode raise,
+                        @Exclusive @Cached PRaiseNode raise,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
 

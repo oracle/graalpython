@@ -524,7 +524,7 @@ public final class PythonCextDictBuiltins {
         @Specialization(guards = {"override != 0"})
         static int merge(PDict a, Object b, @SuppressWarnings("unused") int override,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PyObjectGetAttr getKeys,
+                        @Exclusive @Cached PyObjectGetAttr getKeys,
                         @Exclusive @Cached PyObjectGetAttr getUpdate,
                         @Shared @Cached CallNode callNode,
                         @Cached PRaiseNode raiseNode) {
@@ -561,10 +561,11 @@ public final class PythonCextDictBuiltins {
             return 0;
         }
 
+        // @Exclusive for truffle-interpreted-performance
         @Specialization(guards = {"override == 0", "!isDict(b)"})
         static int merge(PDict a, Object b, @SuppressWarnings("unused") int override,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PyObjectGetAttr getKeys,
+                        @Exclusive @Cached PyObjectGetAttr getKeys,
                         @Shared @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
                         @Cached GetItemNode getKeyNode,

@@ -104,7 +104,7 @@ public abstract class PrepareExceptionNode extends Node {
                     @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
                     @Cached InlinedConditionProfile isInstanceProfile,
                     @Shared @Cached IsSubtypeNode isSubtypeNode,
-                    @Shared @Cached PRaiseNode raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("callCtor") @Cached CallNode callConstructor) {
         checkExceptionClass(inliningTarget, type, isSubtypeNode, raiseNode);
         if (isInstanceProfile.profile(inliningTarget, isInstanceNode.executeWith(frame, value, type))) {
@@ -125,7 +125,7 @@ public abstract class PrepareExceptionNode extends Node {
                     @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
                     @Exclusive @Cached PyExceptionInstanceCheckNode check,
                     @Shared @Cached IsSubtypeNode isSubtypeNode,
-                    @Shared @Cached PRaiseNode raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("callCtor") @Cached CallNode callConstructor) {
         checkExceptionClass(inliningTarget, type, isSubtypeNode, raiseNode);
         Object instance = callConstructor.execute(frame, type);
@@ -143,7 +143,7 @@ public abstract class PrepareExceptionNode extends Node {
                     @Exclusive @Cached PyExceptionInstanceCheckNode check,
                     @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                     @Shared @Cached IsSubtypeNode isSubtypeNode,
-                    @Shared @Cached PRaiseNode raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("callCtor") @Cached CallNode callConstructor) {
         checkExceptionClass(inliningTarget, type, isSubtypeNode, raiseNode);
         Object[] args = getObjectArrayNode.execute(inliningTarget, value);

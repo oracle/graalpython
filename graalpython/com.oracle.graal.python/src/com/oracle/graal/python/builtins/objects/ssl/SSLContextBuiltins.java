@@ -76,6 +76,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import org.bouncycastle.util.encoders.DecoderException;
 
@@ -937,7 +938,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         @Cached PyCallableCheckNode callableCheckNode,
                         @Cached CallNode callNode,
                         @Cached GetPasswordNode recursive,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (callableCheckNode.execute(inliningTarget, callable)) {
                 Object result = callNode.execute(frame, callable);
                 if (PGuards.isString(result) || result instanceof PBytesLike) {

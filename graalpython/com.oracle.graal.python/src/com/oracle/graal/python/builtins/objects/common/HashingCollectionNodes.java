@@ -123,13 +123,14 @@ public abstract class HashingCollectionNodes {
 
         @Specialization
         static HashingStorage doEconomicStorage(VirtualFrame frame, Node inliningTarget, EconomicMapStorage map, Object value,
-                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
-                        @Shared("loopProfile") @Cached InlinedLoopConditionProfile loopProfile) {
+                        @Exclusive @Cached ObjectHashMap.PutNode putNode,
+                        @Exclusive @Cached InlinedLoopConditionProfile loopProfile) {
             // We want to avoid calling __hash__() during map.put
             map.setValueForAllKeys(frame, inliningTarget, value, putNode, loopProfile);
             return map;
         }
 
+        // @Exclusive for truffle-interpreted-performance
         @Specialization(guards = "!isEconomicMapStorage(map)")
         @InliningCutoff
         static HashingStorage doGeneric(VirtualFrame frame, Node inliningTarget, HashingStorage map, Object value,
@@ -137,8 +138,8 @@ public abstract class HashingCollectionNodes {
                         @Cached HashingStorageGetIterator getIterator,
                         @Cached HashingStorageIteratorNext itNext,
                         @Cached HashingStorageIteratorKey itKey,
-                        @Shared("putNode") @Cached PutNode putNode,
-                        @Shared("loopProfile") @Cached InlinedLoopConditionProfile loopProfile) {
+                        @Exclusive @Cached PutNode putNode,
+                        @Exclusive @Cached InlinedLoopConditionProfile loopProfile) {
             HashingStorageIterator it = getIterator.execute(inliningTarget, map);
             while (itNext.execute(inliningTarget, map, it)) {
                 Object key = itKey.execute(inliningTarget, map, it);

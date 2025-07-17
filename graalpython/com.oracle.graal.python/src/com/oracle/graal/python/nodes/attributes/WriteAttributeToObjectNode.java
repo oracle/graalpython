@@ -229,12 +229,13 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
         return writeToDictManagedClass(klass, dict, key, value, inliningTarget, callAttrUpdate, updateStorage, setHashingStorageItem, codePointLengthNode, codePointAtIndexNode);
     }
 
+    // @Exclusive for truffle-interpreted-performance
     @Specialization(guards = {"dict != null", "isNoValue(value)", "!isPythonBuiltinClass(obj)"})
     static boolean deleteFromPythonObject(PythonObject obj, TruffleString key, Object value,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(obj)") PDict dict,
-                    @Shared("callAttrUpdate") @Cached InlinedBranchProfile callAttrUpdate,
+                    @Exclusive @Cached InlinedBranchProfile callAttrUpdate,
                     @Cached HashingStorageNodes.HashingStorageDelItem hashingStorageDelItem,
                     @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
@@ -368,7 +369,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
                         @Shared @Cached CStructAccess.ReadObjectNode getNativeDict,
                         @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
                         @Shared("updateStorage") @Cached InlinedBranchProfile updateStorage,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @SuppressWarnings("unused") @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @SuppressWarnings("unused") @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
             checkNativeImmutable(inliningTarget, object, key, getNativeFlags, raiseNode);
@@ -394,7 +395,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
                         @Exclusive @Cached InlinedBranchProfile updateStorage,
                         @Exclusive @Cached InlinedBranchProfile canBeSpecialSlot,
                         @Cached IsTypeNode isTypeNode,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
             try {

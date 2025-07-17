@@ -2783,9 +2783,10 @@ public abstract class TypeNodes {
 
         public abstract boolean execute(VirtualFrame frame, Node inliningTarget, Object instance, Object cls);
 
+        // @Exclusive for truffle-interpreted-performance
         @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)", limit = "1")
         static boolean isInstance(VirtualFrame frame, Node inliningTarget, Object instance, Object cls,
-                        @Cached @Shared PyObjectLookupAttr lookupAttr,
+                        @Cached @Exclusive PyObjectLookupAttr lookupAttr,
                         @Cached IsTypeNode isTypeNode,
                         @Cached InlinedConditionProfile classSameResult,
                         @Cached GetClassNode getClassNode,
@@ -2808,7 +2809,7 @@ public abstract class TypeNodes {
 
         @Fallback
         static boolean isInstance(VirtualFrame frame, Node inliningTarget, Object instance, Object cls,
-                        @Cached @Shared PyObjectLookupAttr lookupAttr,
+                        @Cached @Exclusive PyObjectLookupAttr lookupAttr,
                         @Cached AbstractObjectIsSubclassNode abstractIsSubclassNode,
                         @Cached AbstractObjectGetBasesNode getBasesNode,
                         @Cached PRaiseNode raiseNode) {

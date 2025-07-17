@@ -58,6 +58,7 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -862,7 +863,7 @@ public abstract class CExtCommonNodes {
         static Object doGeneric(Object obj, int signed, int targetTypeSize, boolean exact,
                         @Bind Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             Object result = indexNode.execute(null, inliningTarget, obj);
             /*
              * The easiest would be to recursively use this node and ensure that this generic case

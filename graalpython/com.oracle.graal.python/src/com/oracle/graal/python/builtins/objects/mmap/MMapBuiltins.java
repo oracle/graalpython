@@ -141,7 +141,6 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -431,8 +430,8 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @Cached PyIndexCheckNode checkNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             // NB: sq_ass_item and mp_ass_subscript implementations behave differently even with
             // integer indices
             if (self.isClosed()) {
@@ -467,6 +466,7 @@ public final class MMapBuiltins extends PythonBuiltins {
             }
         }
 
+        // @Exclusive for truffle-interpreted-performance
         @Specialization
         static void doSlice(VirtualFrame frame, PMMap self, PSlice slice, Object valueObj,
                         @Bind Node inliningTarget,
@@ -477,8 +477,8 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices,
                         @Cached InlinedConditionProfile step1Profile,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (self.isClosed()) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, MMAP_CLOSED_OR_INVALID);
             }
