@@ -7650,7 +7650,7 @@ type_ready(PyTypeObject *type, int rerunbuiltin)
     assert(_PyType_CheckConsistency(type));
 
     // GraalPy change: for reason, see first call to Py_INCREF in this function
-	Py_DECREF(type);    
+	Py_DECREF(type);
     return 0;
 
 error:
@@ -7724,8 +7724,7 @@ add_subclass(PyTypeObject *base, PyTypeObject *type)
     if (key == NULL)
         return -1;
 
-    // PyObject *ref = PyWeakref_NewRef((PyObject *)type, NULL);
-    PyObject *ref = Py_NewRef((PyObject *)type);
+    PyObject *ref = PyWeakref_NewRef((PyObject *)type, NULL);
     if (ref == NULL) {
         Py_DECREF(key);
         return -1;

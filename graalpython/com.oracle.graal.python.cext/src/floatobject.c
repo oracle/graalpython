@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -308,20 +308,6 @@ float_dealloc(PyObject *op)
 double
 PyFloat_AsDouble(PyObject *op)
 {
-    // GraalPy change: read from native object stub or upcall for managed
-    if (points_to_py_handle_space(op)) {
-        if (PyFloat_Check(op)) {
-            double val = ((GraalPyFloatObject*) pointer_to_stub(op))->ob_fval;
-#ifndef NDEBUG
-            if (PyTruffle_Debug_CAPI() && GraalPyTruffleFloat_AsDouble(op) != val) {
-                Py_FatalError("ob_size of native stub and managed object differ");
-            }
-#endif
-            return val;
-        }
-        return GraalPyTruffleFloat_AsDouble(op);
-    }
-
     PyNumberMethods *nb;
     PyObject *res;
     double val;
@@ -332,8 +318,12 @@ PyFloat_AsDouble(PyObject *op)
     }
 
     if (PyFloat_Check(op)) {
-        // GraalPy change: avoid macro recursion
-        return ((PyFloatObject*) op)->ob_fval;
+        return PyFloat_AS_DOUBLE(op);
+    }
+
+    // GraalPy change: upcall for managed
+    if (points_to_py_handle_space(op)) {
+        return GraalPyTruffleFloat_AsDouble(op);
     }
 
     nb = Py_TYPE(op)->tp_as_number;
@@ -374,8 +364,7 @@ PyFloat_AsDouble(PyObject *op)
         }
     }
 
-    // GraalPy change: avoid macro recursion
-    val = PyFloat_AsDouble(res);
+    val = PyFloat_AS_DOUBLE(res);
     Py_DECREF(res);
     return val;
 }

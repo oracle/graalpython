@@ -303,7 +303,6 @@
         "python-unittest-retagger": ut_retagger + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : weekly    + t("20:00:00"),
             "linux:aarch64:jdk-latest"   : weekly    + t("20:00:00"),
-            "darwin:amd64:jdk-latest"    : weekly    + t("20:00:00"),
             "darwin:aarch64:jdk-latest"  : weekly    + t("20:00:00"),
             "windows:amd64:jdk-latest"   : weekly    + t("20:00:00"),
         }),

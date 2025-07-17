@@ -112,22 +112,6 @@ typedef struct {
     int getter_doc;
 } propertyobject;
 
-typedef struct {
-    PyObject_HEAD
-    int32_t handle_table_index;
-} GraalPyObject;
-
-typedef struct {
-    GraalPyObject ob_base;
-    Py_ssize_t ob_size;
-    PyObject **ob_item;
-} GraalPyVarObject;
-
-typedef struct {
-    GraalPyObject ob_base;
-    double ob_fval;
-} GraalPyFloatObject;
-
 /* GraalPy GC support */
 
 typedef struct _cycle_node {

@@ -43,7 +43,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
@@ -64,7 +63,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     private boolean abstractClass;
 
-    // Needs to maintain the order. It would make sense to use weakrefs, but CPython doesn't do that
     private final PDict subClasses;
     @CompilationFinal private Shape instanceShape;
     private TruffleString name;
@@ -139,20 +137,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             this.setMRO(mro);
         }
         mroInitialized = true;
-    }
-
-    /**
-     * This method needs to be called if the mro changes. (currently not used)
-     */
-    @Override
-    public void lookupChanged() {
-        CompilerAsserts.neverPartOfCompilation();
-        methodResolutionOrder.lookupChanged();
-        for (PythonAbstractClass subclass : GetSubclassesAsArrayNode.executeUncached(this)) {
-            if (subclass != null) {
-                subclass.lookupChanged();
-            }
-        }
     }
 
     public int getIndexedSlotCount() {
@@ -268,7 +252,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                     Object nativeBase = PythonToNativeNodeGen.getUncached().execute(base);
                     PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_TRUFFLE_CHECK_TYPE_READY, nativeBase);
                 }
-                GetSubclassesNode.unsafeAddSubclass(base, this);
+                GetSubclassesNode.addSubclass(base, this);
             }
         }
     }
@@ -326,25 +310,14 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
         if (this.baseClasses == newBaseClasses) {
             // take no action if bases were replaced through reentrance
-            boolean isCtxInitialized = PythonContext.get(null).isInitialized();
             for (PythonAbstractClass base : oldBaseClasses) {
                 if (base instanceof PythonManagedClass) {
-                    if (isCtxInitialized) {
-                        GetSubclassesNode.executeUncached(base).delItem(this);
-                    } else {
-                        // slots aren't populated yet during context initialization
-                        GetSubclassesNode.unsafeRemoveSubclass(base, this);
-                    }
+                    GetSubclassesNode.removeSubclass(base, this);
                 }
             }
             for (PythonAbstractClass base : newBaseClasses) {
                 if (base instanceof PythonManagedClass) {
-                    if (isCtxInitialized) {
-                        GetSubclassesNode.executeUncached(base).setItem(this, this);
-                    } else {
-                        // slots aren't populated yet during context initialization
-                        GetSubclassesNode.unsafeAddSubclass(base, this);
-                    }
+                    GetSubclassesNode.addSubclass(base, this);
                 }
             }
         }

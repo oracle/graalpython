@@ -873,6 +873,14 @@ public final class PFactory {
         return trace(language, new PMappingproxy(cls, shape, object));
     }
 
+    public static PReferenceType createReferenceType(PythonLanguage language, Object object) {
+        return createReferenceType(language, PythonBuiltinClassType.PReferenceType, PythonBuiltinClassType.PReferenceType.getInstanceShape(language), object);
+    }
+
+    public static PReferenceType createReferenceType(PythonLanguage language, Object cls, Shape shape, Object object) {
+        return createReferenceType(language, cls, shape, object, null, null);
+    }
+
     public static PReferenceType createReferenceType(PythonLanguage language, Object cls, Shape shape, Object object, Object callback, ReferenceQueue<Object> queue) {
         return trace(language, new PReferenceType(cls, shape, object, callback, queue));
     }

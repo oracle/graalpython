@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemWithHashNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetIteratorNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetReverseIteratorNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageIteratorKeyHashNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageIteratorKeyNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageIteratorNextNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageIteratorValueNodeGen;
@@ -1120,6 +1121,9 @@ public class HashingStorageNodes {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class HashingStorageIteratorKeyHash extends PNodeWithContext {
+        public static long executeUncached(HashingStorage storage, HashingStorageIterator it) {
+            return HashingStorageIteratorKeyHashNodeGen.getUncached().execute(null, null, storage, it);
+        }
 
         public abstract long execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it);
 

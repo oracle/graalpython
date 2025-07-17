@@ -823,13 +823,11 @@ public final class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = J___SUBCLASSES__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SubclassesNode extends PythonUnaryBuiltinNode {
-
+        @TruffleBoundary
         @Specialization
         static PList getSubclasses(Object cls,
-                        @Bind Node inliningTarget,
-                        @Cached(inline = true) GetSubclassesAsArrayNode getSubclassesNode) {
-            // TODO: missing: keep track of subclasses
-            PythonAbstractClass[] array = getSubclassesNode.execute(inliningTarget, cls);
+                        @Bind Node inliningTarget) {
+            PythonAbstractClass[] array = GetSubclassesAsArrayNode.executeUncached(cls);
             Object[] classes = new Object[array.length];
             PythonUtils.arraycopy(array, 0, classes, 0, array.length);
             return PFactory.createList(PythonLanguage.get(inliningTarget), classes);
