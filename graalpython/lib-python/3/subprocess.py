@@ -1828,6 +1828,10 @@ class Popen:
                     shell = False
                     comspec = os.environ.get("COMSPEC", "cmd.exe")
                     executable = comspec
+                    # This very specific replace is for the pattern in distutils.
+                    # We really ought to finally implement enough of the winapi
+                    # to use the Windows codepaths...
+                    args = [arg.replace(" && ", " ^&^& ") for arg in args]
                     if len(args) == 1:
                         args = [comspec, "/u", "/c", *args]
                     else:
