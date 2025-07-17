@@ -2046,7 +2046,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             if (!useCachedNodes) {
                                 return new InterpreterContinuation(bci, stackTop);
                             }
-                            if (BytecodeOSRNode.pollOSRBackEdge(osrNode)) {
+                            if (BytecodeOSRNode.pollOSRBackEdge(osrNode, 1)) {
                                 /*
                                  * Beware of race conditions when adding more things to the
                                  * interpreterState argument. It gets stored already at this point,
