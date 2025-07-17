@@ -983,10 +983,9 @@ public final class ErrorHandlers {
 
         @Specialization
         static void doIt(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString encoding, TruffleString srcObj, int startPos, int endPos, TruffleString reason,
-                        @Cached MakeEncodeExceptionNode makeEncodeExceptionNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached MakeEncodeExceptionNode makeEncodeExceptionNode) {
             cache.exceptionObject = makeEncodeExceptionNode.execute(frame, inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
-            raiseNode.raiseExceptionObject(cache.exceptionObject);
+            PRaiseNode.raiseExceptionObject(inliningTarget, cache.exceptionObject);
         }
     }
 

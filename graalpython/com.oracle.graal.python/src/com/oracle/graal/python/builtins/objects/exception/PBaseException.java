@@ -299,11 +299,10 @@ public class PBaseException extends PythonObject {
     @ExportMessage
     RuntimeException throwException(
                     @Bind Node node,
-                    @Cached PRaiseNode raiseNode,
                     @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            throw raiseNode.raiseExceptionObject(this);
+            throw PRaiseNode.raiseExceptionObject(node, this);
         } finally {
             gil.release(mustRelease);
         }

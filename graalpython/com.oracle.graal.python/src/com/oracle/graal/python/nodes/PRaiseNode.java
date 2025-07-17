@@ -229,10 +229,6 @@ public abstract class PRaiseNode extends Node {
         throw raise(inliningTarget, PythonBuiltinClassType.SystemError, BAD_ARG_TO_INTERNAL_FUNC);
     }
 
-    public final PException raiseExceptionObject(Object exc) {
-        throw raiseExceptionObject(this, exc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
-    }
-
     public static PException raiseExceptionObject(Node raisingNode, Object exc) {
         throw raiseExceptionObject(raisingNode, exc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(raisingNode)));
     }
