@@ -182,7 +182,7 @@ public final class PythonCextPyStateBuiltins {
                         @Override
                         protected void perform(Access access) {
                             if (missedCount == MAX_MISSED_COUNT) {
-                                throw PRaiseNode.raiseExceptionObject(null, exceptionObject);
+                                throw PRaiseNode.raiseExceptionObjectStatic(null, exceptionObject);
                             }
                             // If possible, we do not want to raise in some internal code, it could
                             // corrupt internal data structures.
@@ -190,7 +190,7 @@ public final class PythonCextPyStateBuiltins {
                             if (location != null) {
                                 RootNode rootNode = location.getRootNode();
                                 if (rootNode instanceof PRootNode && !rootNode.isInternal()) {
-                                    throw PRaiseNode.raiseExceptionObject(null, exceptionObject);
+                                    throw PRaiseNode.raiseExceptionObjectStatic(null, exceptionObject);
                                 }
                             }
                             // Heuristic fabricated out of thin air:

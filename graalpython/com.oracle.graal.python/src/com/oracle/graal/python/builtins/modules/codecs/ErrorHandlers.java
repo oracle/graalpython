@@ -269,7 +269,7 @@ public final class ErrorHandlers {
         @Specialization
         static Object doException(PBaseException exception,
                         @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseExceptionObject(inliningTarget, exception);
+            throw PRaiseNode.raiseExceptionObjectStatic(inliningTarget, exception);
         }
 
         @Fallback
@@ -985,7 +985,7 @@ public final class ErrorHandlers {
         static void doIt(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString encoding, TruffleString srcObj, int startPos, int endPos, TruffleString reason,
                         @Cached MakeEncodeExceptionNode makeEncodeExceptionNode) {
             cache.exceptionObject = makeEncodeExceptionNode.execute(frame, inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
-            PRaiseNode.raiseExceptionObject(inliningTarget, cache.exceptionObject);
+            PRaiseNode.raiseExceptionObjectStatic(inliningTarget, cache.exceptionObject);
         }
     }
 

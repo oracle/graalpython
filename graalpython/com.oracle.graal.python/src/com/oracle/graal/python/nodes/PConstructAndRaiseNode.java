@@ -108,7 +108,7 @@ public abstract class PConstructAndRaiseNode extends Node {
             error.setContext(cause);
             error.setCause(cause);
         }
-        return PRaiseNode.raiseExceptionObject(this, error);
+        return PRaiseNode.raiseExceptionObjectStatic(this, error);
     }
 
     @Specialization(guards = {"format == null", "formatArgs == null"})

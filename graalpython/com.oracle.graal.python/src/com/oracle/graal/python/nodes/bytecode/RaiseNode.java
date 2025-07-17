@@ -146,7 +146,7 @@ public abstract class RaiseNode extends PNodeWithContext {
     @Specialization(guards = "isNoValue(cause)")
     public static void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") boolean rootNodeVisible,
                     @Bind Node inliningTarget) {
-        throw PRaiseNode.raiseExceptionObject(inliningTarget, exception);
+        throw PRaiseNode.raiseExceptionObjectStatic(inliningTarget, exception);
     }
 
     // raise <native-exception>
@@ -155,7 +155,7 @@ public abstract class RaiseNode extends PNodeWithContext {
                     @SuppressWarnings("unused") boolean rootNodeVisible,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check) {
-        throw PRaiseNode.raiseExceptionObject(inliningTarget, exception);
+        throw PRaiseNode.raiseExceptionObjectStatic(inliningTarget, exception);
     }
 
     // raise <exception> from *
@@ -164,7 +164,7 @@ public abstract class RaiseNode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @Shared @Cached SetExceptionCauseNode setExceptionCauseNode) {
         setExceptionCauseNode.execute(frame, exception, cause);
-        throw PRaiseNode.raiseExceptionObject(inliningTarget, exception);
+        throw PRaiseNode.raiseExceptionObjectStatic(inliningTarget, exception);
     }
 
     // raise <native-exception> from *
@@ -174,7 +174,7 @@ public abstract class RaiseNode extends PNodeWithContext {
                     @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
                     @Shared @Cached SetExceptionCauseNode setExceptionCauseNode) {
         setExceptionCauseNode.execute(frame, exception, cause);
-        throw PRaiseNode.raiseExceptionObject(inliningTarget, exception);
+        throw PRaiseNode.raiseExceptionObjectStatic(inliningTarget, exception);
     }
 
     private static void checkBaseClass(VirtualFrame frame, Node inliningTarget, Object pythonClass, ValidExceptionNode validException, PRaiseNode raise,
@@ -198,7 +198,7 @@ public abstract class RaiseNode extends PNodeWithContext {
         checkBaseClass(frame, inliningTarget, pythonClass, validException, raise, baseCheckFailedProfile);
         Object newException = callConstructor.execute(frame, pythonClass);
         if (check.execute(inliningTarget, newException)) {
-            throw PRaiseNode.raiseExceptionObject(inliningTarget, newException);
+            throw PRaiseNode.raiseExceptionObjectStatic(inliningTarget, newException);
         } else {
             throw raise.raise(inliningTarget, TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, pythonClass, newException);
         }
@@ -219,7 +219,7 @@ public abstract class RaiseNode extends PNodeWithContext {
         Object newException = callConstructor.execute(frame, pythonClass);
         if (check.execute(inliningTarget, newException)) {
             setExceptionCauseNode.execute(frame, newException, cause);
-            throw PRaiseNode.raiseExceptionObject(inliningTarget, newException);
+            throw PRaiseNode.raiseExceptionObjectStatic(inliningTarget, newException);
         } else {
             throw raise.raise(inliningTarget, TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, pythonClass, newException);
         }

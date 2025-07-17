@@ -423,7 +423,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                             PythonModule module = context.lookupBuiltinModule(BuiltinNames.T__SRE);
                             Object errorConstructor = PyObjectLookupAttr.executeUncached(module, T_ERROR);
                             PBaseException exception = (PBaseException) CallNode.executeUncached(errorConstructor, reason, originalPattern, position);
-                            return PRaiseNode.raiseExceptionObject(node, exception);
+                            return PRaiseNode.raiseExceptionObjectStatic(node, exception);
                         }
                     }
                 }

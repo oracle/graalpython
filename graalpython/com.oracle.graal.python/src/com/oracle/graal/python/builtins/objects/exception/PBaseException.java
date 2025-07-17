@@ -302,7 +302,7 @@ public class PBaseException extends PythonObject {
                     @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            throw PRaiseNode.raiseExceptionObject(node, this);
+            throw PRaiseNode.raiseExceptionObjectStatic(node, this);
         } finally {
             gil.release(mustRelease);
         }

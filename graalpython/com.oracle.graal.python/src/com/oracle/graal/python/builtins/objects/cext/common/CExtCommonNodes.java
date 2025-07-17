@@ -614,7 +614,7 @@ public abstract class CExtCommonNodes {
             PythonLanguage language = PythonLanguage.get(null);
             PBaseException sysExc = PFactory.createBaseException(language, SystemError, resultWithErrorMessage, new Object[]{name});
             sysExc.setCause(currentException);
-            throw PRaiseNode.raiseExceptionObject(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(language));
+            throw PRaiseNode.raiseExceptionObjectStatic(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(language));
         }
     }
 
