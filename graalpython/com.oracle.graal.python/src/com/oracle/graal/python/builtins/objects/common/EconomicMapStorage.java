@@ -166,6 +166,11 @@ public class EconomicMapStorage extends HashingStorage {
     }
 
     @TruffleBoundary
+    public void putUncached(Object key, long hash, Object value) {
+        PutNode.putUncached(map, key, hash, value);
+    }
+
+    @TruffleBoundary
     public void putUncached(int key, Object value) {
         PutNode.putUncached(map, key, PyObjectHashNode.hash(key), value);
     }

@@ -814,6 +814,9 @@ public abstract class TypeNodes {
                     Object subclassValue = pref.getObject();
                     if (subclassValue == null) {
                         Object key = HashingStorageIteratorKey.executeUncached(storage, it);
+                        // CPython uses the object pointer as the key, but we cannot so we do not
+                        // really know how the hash is arrived at and need to make sure to remove
+                        // the same hash that was stored.
                         long hash = HashingStorageIteratorKeyHash.executeUncached(storage, it);
                         acc.add(new KeyAndHash(key, hash));
                     }
@@ -833,6 +836,10 @@ public abstract class TypeNodes {
         protected static void addSubclass(PythonAbstractClass base, PythonManagedClass subclass) {
             CompilerAsserts.neverPartOfCompilation();
             PDict dict = executeUncached(base);
+            // CPython uses the object pointer as the key, but we cannot since identity hashes are
+            // not unique. So we need to use the actual weakref as the key here, but not all
+            // classes are hashable. So we use the identity hash code for the map storage hash.
+            long hash = System.identityHashCode(subclass);
             HashingStorage storage = dict.getDictStorage();
             Object weakref = PFactory.createReferenceType(PythonLanguage.get(null), subclass);
             if (!(storage instanceof EconomicMapStorage)) {
@@ -842,7 +849,7 @@ public abstract class TypeNodes {
             } else {
                 clearEmptyReferences((EconomicMapStorage) storage);
             }
-            ((EconomicMapStorage) storage).putUncached(weakref, weakref);
+            ((EconomicMapStorage) storage).putUncached(weakref, hash, weakref);
         }
 
         static final class RemoveSubclassValue extends HashingStorageForEachCallback<PythonManagedClass> {
