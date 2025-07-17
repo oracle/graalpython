@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Speci
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.DictKey;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.RemoveNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -150,18 +151,23 @@ public class EconomicMapStorage extends HashingStorage {
     }
 
     @TruffleBoundary
+    public Object removeUncached(Object key, long hash) {
+        return RemoveNode.removeUncached(map, key, hash);
+    }
+
+    @TruffleBoundary
     public void putUncached(TruffleString key, Object value) {
-        ObjectHashMap.PutNode.putUncached(this.map, key, PyObjectHashNode.hash(key, HashCodeNode.getUncached()), value);
+        PutNode.putUncached(map, key, PyObjectHashNode.hash(key, HashCodeNode.getUncached()), value);
     }
 
     @TruffleBoundary
     public void putUncached(Object key, Object value) {
-        PutNode.putUncached(this.map, key, PyObjectHashNode.executeUncached(key), value);
+        PutNode.putUncached(map, key, PyObjectHashNode.executeUncached(key), value);
     }
 
     @TruffleBoundary
     public void putUncached(int key, Object value) {
-        PutNode.putUncached(this.map, key, PyObjectHashNode.hash(key), value);
+        PutNode.putUncached(map, key, PyObjectHashNode.hash(key), value);
     }
 
     @TruffleBoundary

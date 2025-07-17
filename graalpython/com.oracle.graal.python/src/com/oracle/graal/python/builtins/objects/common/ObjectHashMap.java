@@ -45,6 +45,7 @@ import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMapFactory.PutNodeGen;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMapFactory.RemoveNodeGen;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -677,6 +678,10 @@ public final class ObjectHashMap {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class RemoveNode extends Node {
+        public static Object removeUncached(ObjectHashMap map, Object key, long keyHash) {
+            return RemoveNodeGen.getUncached().execute(null, null, map, key, keyHash);
+        }
+
         public abstract Object execute(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash);
 
         // "public" for testing...

@@ -803,6 +803,33 @@ public abstract class TypeNodes {
     }
 
     public static final class GetSubclassesNode {
+        static record KeyAndHash(Object key, long hash) {
+        }
+
+        static final class CollectEmptyKeys extends HashingStorageForEachCallback<List<KeyAndHash>> {
+            @Override
+            public final List<KeyAndHash> execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, List<KeyAndHash> acc) {
+                Object value = HashingStorageIteratorValue.executeUncached(storage, it);
+                if (value instanceof PReferenceType pref) {
+                    Object subclassValue = pref.getObject();
+                    if (subclassValue == null) {
+                        Object key = HashingStorageIteratorKey.executeUncached(storage, it);
+                        long hash = HashingStorageIteratorKeyHash.executeUncached(storage, it);
+                        acc.add(new KeyAndHash(key, hash));
+                    }
+                }
+                return acc;
+            }
+        }
+
+        static void clearEmptyReferences(EconomicMapStorage storage) {
+            List<KeyAndHash> acc = new ArrayList<>();
+            HashingStorageForEach.executeUncached(storage, new CollectEmptyKeys(), acc);
+            for (KeyAndHash k : acc) {
+                storage.removeUncached(k.key(), k.hash());
+            }
+        }
+
         protected static void addSubclass(PythonAbstractClass base, PythonManagedClass subclass) {
             CompilerAsserts.neverPartOfCompilation();
             PDict dict = executeUncached(base);
@@ -811,9 +838,11 @@ public abstract class TypeNodes {
             if (!(storage instanceof EconomicMapStorage)) {
                 assert storage == EmptyStorage.INSTANCE : "Unexpected storage type!";
                 storage = EconomicMapStorage.create();
+                dict.setDictStorage(storage);
+            } else {
+                clearEmptyReferences((EconomicMapStorage) storage);
             }
             ((EconomicMapStorage) storage).putUncached(weakref, weakref);
-            dict.setDictStorage(storage);
         }
 
         static final class RemoveSubclassValue extends HashingStorageForEachCallback<PythonManagedClass> {
@@ -838,8 +867,9 @@ public abstract class TypeNodes {
             CompilerAsserts.neverPartOfCompilation();
             PDict dict = executeUncached(base);
             HashingStorage storage = dict.getDictStorage();
-            if (storage instanceof EconomicMapStorage) {
-                HashingStorageForEach.executeUncached(storage, new RemoveSubclassValue(), subclass);
+            if (storage instanceof EconomicMapStorage ems) {
+                HashingStorageForEach.executeUncached(ems, new RemoveSubclassValue(), subclass);
+                clearEmptyReferences(ems);
             } else {
                 assert storage == EmptyStorage.INSTANCE : "Unexpected storage type!";
             }
