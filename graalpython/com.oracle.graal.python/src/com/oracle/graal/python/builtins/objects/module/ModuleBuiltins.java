@@ -105,6 +105,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -276,9 +277,14 @@ public final class ModuleBuiltins extends PythonBuiltins {
     // Note: this is similar to the "use __getattribute__, if error fallback to __getattr__"
     // dance that is normally done in the slot wrapper of __getattribute__/__getattr__ Python
     // level methods. This case is, however, slightly different.
-    @GenerateInline(false) // footprint reduction 56 -> 37
+    @GenerateInline(false)
     public abstract static class HandleGetattrExceptionNode extends PNodeWithContext {
-        public abstract Object execute(VirtualFrame frame, PythonModule self, TruffleString key, PException e);
+        @InliningCutoff
+        public final Object execute(VirtualFrame frame, PythonModule self, TruffleString key, PException e) {
+            return executeInternal(frame, self, key, e);
+        }
+
+        abstract Object executeInternal(VirtualFrame frame, PythonModule self, TruffleString key, PException e);
 
         @Specialization
         static Object getattribute(VirtualFrame frame, PythonModule self, TruffleString key, PException e,
