@@ -82,7 +82,6 @@ import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerResult;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
@@ -1043,7 +1042,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public Shape getShapeForClass(PythonAbstractClass klass) {
         if (isSingleContext()) {
-            return Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttr.getClassHiddenKey(), klass, 0).build();
+            return Shape.newBuilder(getEmptyShape()).dynamicType(klass).build();
         } else {
             return getEmptyShape();
         }
@@ -1065,7 +1064,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private Shape createBuiltinShape(PythonBuiltinClassType type, int ordinal) {
         Shape shape;
-        Shape.DerivedBuilder shapeBuilder = Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttr.getClassHiddenKey(), type, 0);
+        Shape.DerivedBuilder shapeBuilder = Shape.newBuilder(getEmptyShape()).dynamicType(type);
         if (!type.isBuiltinWithDict()) {
             shapeBuilder.shapeFlags(PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG);
         }

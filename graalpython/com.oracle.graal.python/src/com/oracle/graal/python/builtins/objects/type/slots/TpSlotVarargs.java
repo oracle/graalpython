@@ -374,7 +374,7 @@ public final class TpSlotVarargs {
         }
 
         protected static boolean isStaticmethod(PDecoratedMethod descriptor) {
-            return descriptor.getInitialPythonClass() == PythonBuiltinClassType.PStaticmethod;
+            return descriptor.getPythonClass() == PythonBuiltinClassType.PStaticmethod;
         }
 
         @Specialization

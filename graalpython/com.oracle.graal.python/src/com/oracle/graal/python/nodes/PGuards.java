@@ -312,12 +312,7 @@ public abstract class PGuards {
     }
 
     public static boolean isBuiltinPInt(PInt obj) {
-        /*
-         * int's __class__ cannot be reassigned and other objects cannot have their class assigned
-         * to builtin int, so it is enough to look at the initial class. PInt constructor ensures
-         * that it cannot be PythonBuiltinClass.
-         */
-        return obj.getInitialPythonClass() == PythonBuiltinClassType.PInt;
+        return obj.getPythonClass() == PythonBuiltinClassType.PInt;
     }
 
     public static boolean isPString(Object obj) {
@@ -465,14 +460,7 @@ public abstract class PGuards {
     }
 
     private static boolean isBuiltinImmutableTypeInstance(PythonObject dict, PythonBuiltinClassType type) {
-        /*
-         * Immutable types' __class__ cannot be reassigned and other objects cannot have their class
-         * assigned to immutable types, so it is enough to look at the initial class. The Java
-         * constructor of the object must ensure that it cannot be PythonBuiltinClass, see PDict for
-         * an example.
-         */
-        assert !(dict.getInitialPythonClass() instanceof PythonBuiltinClass pbc) || pbc.getType() != type;
-        return dict.getInitialPythonClass() == type;
+        return dict.getPythonClass() == type;
     }
 
     public static boolean isBuiltinDict(PythonObject dict) {
