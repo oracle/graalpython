@@ -172,7 +172,7 @@ public abstract class GetClassNode extends PNodeWithContext {
             return klass;
         }
 
-        @Specialization(guards = "hasInitialClass(object.getShape())")
+        @Specialization(guards = "hasInitialClass(object.getShape())", replaces = "doConstantClass")
         static Object doInitialClass(@SuppressWarnings("unused") PythonObject object,
                         @Bind("object.getInitialPythonClass()") Object klass) {
             assert klass != null;
