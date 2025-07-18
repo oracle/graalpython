@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
@@ -135,13 +136,10 @@ public abstract class GetClassNode extends PNodeWithContext {
         return object.getInitialPythonClass();
     }
 
-    // GetPythonObjectClassNode needs 3 references, so we do not inline it here, to save footprint
-    // if only the fast-path specializations are activated
-
     @Specialization(guards = "isPythonObject(object) || isNativeObject(object)")
-    static Object getPythonObjectOrNative(PythonAbstractObject object,
-                    @Cached(inline = false) GetPythonObjectClassNode getClassNode) {
-        return getClassNode.executeCached(object);
+    static Object getPythonObjectOrNative(Node inliningTarget, PythonAbstractObject object,
+                    @Cached GetPythonObjectClassNode getPythonObjectClassNode) {
+        return getPythonObjectClassNode.executeImpl(inliningTarget, object);
     }
 
     /*
@@ -150,19 +148,17 @@ public abstract class GetClassNode extends PNodeWithContext {
      * when not necessary.
      */
     @GenerateUncached
-    @GenerateInline(inlineByDefault = true)
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GetPythonObjectClassNode extends PNodeWithContext {
         public static Object executeUncached(PythonObject object) {
             return GetClassNodeGen.getUncached().execute(null, object);
         }
 
-        // Intended only for internal usage in this node. The caller must make sure that the object
-        // is of one of the expected Java types.
-        final Object executeCached(PythonAbstractObject object) {
-            assert object instanceof PythonObject || object instanceof PythonAbstractNativeObject;
-            return executeImpl(this, object);
-        }
-
+        /*
+         * Intended only for internal usage in the outer node. The caller must make sure that the
+         * object is either a PythonObject or PythonAbstractNativeObject.
+         */
         abstract Object executeImpl(Node inliningTarget, PythonAbstractObject object);
 
         public abstract Object execute(Node inliningTarget, PythonObject object);
