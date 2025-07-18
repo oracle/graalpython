@@ -170,29 +170,29 @@ public abstract class GetClassNode extends PNodeWithContext {
         public abstract Object execute(Node inliningTarget, PythonAbstractNativeObject object);
 
         @Specialization(guards = {"isSingleContext()", "klass != null", "object.getShape() == cachedShape", "hasInitialClass(cachedShape)"}, limit = "1")
-        static Object getPythonObjectConstantClass(@SuppressWarnings("unused") PythonObject object,
+        static Object doConstantClass(@SuppressWarnings("unused") PythonObject object,
                         @SuppressWarnings("unused") @Cached(value = "object.getShape()") Shape cachedShape,
                         @Cached(value = "object.getInitialPythonClass()", weak = true) Object klass) {
             return klass;
         }
 
         @Specialization(guards = "hasInitialClass(object.getShape())")
-        static Object getPythonObject(@SuppressWarnings("unused") PythonObject object,
+        static Object doInitialClass(@SuppressWarnings("unused") PythonObject object,
                         @Bind("object.getInitialPythonClass()") Object klass) {
             assert klass != null;
             return klass;
         }
 
         @InliningCutoff
-        @Specialization(guards = "!hasInitialClass(object.getShape())", replaces = "getPythonObjectConstantClass")
-        static Object getPythonObject(Node inliningTarget, PythonObject object,
+        @Specialization(guards = "!hasInitialClass(object.getShape())", replaces = "doConstantClass")
+        static Object doReadHiddenAttrNode(Node inliningTarget, PythonObject object,
                         @Cached HiddenAttr.ReadNode readHiddenAttrNode) {
             return readHiddenAttrNode.execute(inliningTarget, object, HiddenAttr.CLASS, object.getInitialPythonClass());
         }
 
         @InliningCutoff
         @Specialization
-        static Object getNativeObject(Node inliningTarget, PythonAbstractNativeObject object,
+        static Object doNativeObject(Node inliningTarget, PythonAbstractNativeObject object,
                         @Cached CExtNodes.GetNativeClassNode getNativeClassNode) {
             return getNativeClassNode.execute(inliningTarget, object);
         }
