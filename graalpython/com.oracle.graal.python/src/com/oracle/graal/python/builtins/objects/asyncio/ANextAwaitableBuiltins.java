@@ -95,7 +95,7 @@ public class ANextAwaitableBuiltins extends PythonBuiltins {
         static Object getIter(VirtualFrame frame, Node inliningTarget, PANextAwaitable self,
                         @Cached GetAwaitableNode getAwaitableNode) {
             Object awaitable = getAwaitableNode.execute(frame, self.getWrapped());
-            if (awaitable instanceof PGenerator coroutine && coroutine.getInitialPythonClass() == PythonBuiltinClassType.PCoroutine) {
+            if (awaitable instanceof PGenerator coroutine && coroutine.getPythonClass() == PythonBuiltinClassType.PCoroutine) {
                 return PFactory.createCoroutineWrapper(PythonLanguage.get(inliningTarget), coroutine);
             }
             return awaitable;

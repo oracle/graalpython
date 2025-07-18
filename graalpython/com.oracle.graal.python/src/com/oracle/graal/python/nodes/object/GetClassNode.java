@@ -49,19 +49,15 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -121,21 +117,6 @@ public abstract class GetClassNode extends PNodeWithContext {
         return PythonBuiltinClassType.PNone;
     }
 
-    @Specialization
-    static Object getBuiltinClass(PythonBuiltinClass object) {
-        return object.getInitialPythonClass();
-    }
-
-    @Specialization
-    static Object getFunction(@SuppressWarnings("unused") PFunction object) {
-        return object.getInitialPythonClass();
-    }
-
-    @Specialization
-    static Object getBuiltinFunction(@SuppressWarnings("unused") PBuiltinFunction object) {
-        return object.getInitialPythonClass();
-    }
-
     @Specialization(guards = "isPythonObject(object) || isNativeObject(object)")
     static Object getPythonObjectOrNative(Node inliningTarget, PythonAbstractObject object,
                     @Cached GetPythonObjectClassNode getPythonObjectClassNode) {
@@ -150,6 +131,7 @@ public abstract class GetClassNode extends PNodeWithContext {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
+    @ImportStatic(PythonObject.class)
     public abstract static class GetPythonObjectClassNode extends PNodeWithContext {
         public static Object executeUncached(PythonObject object) {
             return GetClassNodeGen.getUncached().execute(null, object);
@@ -165,25 +147,20 @@ public abstract class GetClassNode extends PNodeWithContext {
 
         public abstract Object execute(Node inliningTarget, PythonAbstractNativeObject object);
 
-        @Specialization(guards = {"isSingleContext()", "klass != null", "object.getShape() == cachedShape", "hasInitialClass(cachedShape)"}, limit = "1")
+        @Idempotent
+        static Object getDynamicType(Shape shape) {
+            return shape.getDynamicType();
+        }
+
+        @Specialization(guards = {"object.getShape() == cachedShape", "getDynamicType(cachedShape) != null"}, limit = "1")
         static Object doConstantClass(@SuppressWarnings("unused") PythonObject object,
-                        @SuppressWarnings("unused") @Cached(value = "object.getShape()") Shape cachedShape,
-                        @Cached(value = "object.getInitialPythonClass()", weak = true) Object klass) {
-            return klass;
+                        @Cached(value = "object.getShape()") Shape cachedShape) {
+            return cachedShape.getDynamicType();
         }
 
-        @Specialization(guards = "hasInitialClass(object.getShape())", replaces = "doConstantClass")
-        static Object doInitialClass(@SuppressWarnings("unused") PythonObject object,
-                        @Bind("object.getInitialPythonClass()") Object klass) {
-            assert klass != null;
-            return klass;
-        }
-
-        @InliningCutoff
-        @Specialization(guards = "!hasInitialClass(object.getShape())", replaces = "doConstantClass")
-        static Object doReadHiddenAttrNode(Node inliningTarget, PythonObject object,
-                        @Cached HiddenAttr.ReadNode readHiddenAttrNode) {
-            return readHiddenAttrNode.execute(inliningTarget, object, HiddenAttr.CLASS, object.getInitialPythonClass());
+        @Specialization(replaces = "doConstantClass")
+        static Object doReadClassField(PythonObject object) {
+            return object.getPythonClass();
         }
 
         @InliningCutoff
@@ -191,11 +168,6 @@ public abstract class GetClassNode extends PNodeWithContext {
         static Object doNativeObject(Node inliningTarget, PythonAbstractNativeObject object,
                         @Cached CExtNodes.GetNativeClassNode getNativeClassNode) {
             return getNativeClassNode.execute(inliningTarget, object);
-        }
-
-        @Idempotent
-        protected static boolean hasInitialClass(Shape shape) {
-            return (shape.getFlags() & PythonObject.CLASS_CHANGED_FLAG) == 0;
         }
     }
 
