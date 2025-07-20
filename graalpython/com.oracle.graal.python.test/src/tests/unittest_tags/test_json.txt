@@ -103,13 +103,13 @@ test.test_json.test_pass3.TestCPass3.test_parse @ darwin-arm64,darwin-x86_64,lin
 test.test_json.test_pass3.TestPyPass3.test_parse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_json.test_recursion.TestCRecursion.test_defaultrecursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_json.test_recursion.TestCRecursion.test_dictrecursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_json.test_recursion.TestCRecursion.test_endless_recursion @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_json.test_recursion.TestCRecursion.test_endless_recursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_json.test_recursion.TestCRecursion.test_highly_nested_objects_decoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_json.test_recursion.TestCRecursion.test_highly_nested_objects_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_json.test_recursion.TestCRecursion.test_listrecursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_json.test_recursion.TestPyRecursion.test_defaultrecursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_json.test_recursion.TestPyRecursion.test_dictrecursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_json.test_recursion.TestPyRecursion.test_endless_recursion @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_json.test_recursion.TestPyRecursion.test_endless_recursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_json.test_recursion.TestPyRecursion.test_highly_nested_objects_decoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_json.test_recursion.TestPyRecursion.test_highly_nested_objects_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_json.test_recursion.TestPyRecursion.test_listrecursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
