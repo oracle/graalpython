@@ -11,7 +11,7 @@ test.test_userstring.UserStringTest.test_expandtabs @ darwin-arm64,darwin-x86_64
 test.test_userstring.UserStringTest.test_extended_getslice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_userstring.UserStringTest.test_find @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_userstring.UserStringTest.test_find_etc_raise_correct_error_messages @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_userstring.UserStringTest.test_find_many_lengths @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userstring.UserStringTest.test_find_many_lengths @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_userstring.UserStringTest.test_find_periodic_pattern @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_userstring.UserStringTest.test_find_shift_table_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_userstring.UserStringTest.test_find_with_memory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -73,6 +73,7 @@ test.test_capi.test_float.CAPIFloatTest.test_asdouble @ darwin-arm64,darwin-x86_
 test.test_capi.test_float.CAPIFloatTest.test_check @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_float.CAPIFloatTest.test_checkexact @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_float.CAPIFloatTest.test_fromdouble @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_capi.test_float.CAPIFloatTest.test_fromstring @ darwin-arm64,linux-x86_64,win32-AMD64
 test.test_capi.test_float.CAPIFloatTest.test_pack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_float.CAPIFloatTest.test_pack_unpack_roundtrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_float.CAPIFloatTest.test_unpack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

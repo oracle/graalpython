@@ -71,6 +71,7 @@ test.test_descr.ClassPropertiesAndMethods.test_python_lists @ darwin-arm64,darwi
 test.test_descr.ClassPropertiesAndMethods.test_qualname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_qualname_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_recursive_call @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_descr.ClassPropertiesAndMethods.test_remove_subclass @ darwin-arm64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_repr_as_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_repr_with_module_str_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_restored_object_new @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
