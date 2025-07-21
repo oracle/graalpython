@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,7 +68,7 @@ public abstract class JSONUtils {
         builder.appendCodePointUncached('"');
         TruffleStringIterator it = ts.createCodePointIteratorUncached(TS_ENCODING);
         while (it.hasNext()) {
-            int c = it.nextUncached();
+            int c = it.nextUncached(TS_ENCODING);
             switch (c) {
                 case '\\':
                     builder.appendStringUncached(T_ESC_BACKSLASH);
@@ -122,7 +122,7 @@ public abstract class JSONUtils {
         int chunkStart = 0;
         int currentIndex = 0;
         while (it.hasNext()) {
-            int c = nextNode.execute(it);
+            int c = nextNode.execute(it, TS_ENCODING);
             switch (c) {
                 case '\\':
                     appendSubstring(builder, s, chunkStart, currentIndex, appendStringNode, substringNode);

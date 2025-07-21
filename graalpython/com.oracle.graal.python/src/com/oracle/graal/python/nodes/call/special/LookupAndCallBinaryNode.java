@@ -115,7 +115,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     static Object callObjectBuiltin(VirtualFrame frame, Object left, Object right,
                     @SuppressWarnings("unused") @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Cached("getBuiltinClass(this, left, getClassNode)") PythonBuiltinClassType clazz,
+                    @SuppressWarnings("unused") @Cached("getBuiltinClass($node, left, getClassNode)") PythonBuiltinClassType clazz,
                     @Cached("getBinaryBuiltin(clazz)") PythonBinaryBuiltinNode function) {
         return function.execute(frame, left, right);
     }

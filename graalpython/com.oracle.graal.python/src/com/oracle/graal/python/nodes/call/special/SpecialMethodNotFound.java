@@ -45,6 +45,7 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 /**
  * Thrown from {@code LookupAndCallNAry} nodes when the method does not exist.
  */
+@SuppressWarnings("serial")
 public final class SpecialMethodNotFound extends ControlFlowException {
     public static final SpecialMethodNotFound INSTANCE = new SpecialMethodNotFound();
 

@@ -51,6 +51,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -60,7 +61,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
-@SuppressWarnings("truffle-inlining")       // footprint reduction 60 -> 42
+@GenerateInline(false)       // footprint reduction 60 -> 42
 public abstract class WriteGlobalNode extends PNodeWithContext {
     public static WriteGlobalNode getUncached() {
         return WriteGlobalNodeGen.getUncached();

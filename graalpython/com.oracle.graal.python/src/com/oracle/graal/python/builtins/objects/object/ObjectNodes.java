@@ -248,7 +248,7 @@ public abstract class ObjectNodes {
      */
     @ImportStatic({PythonOptions.class, PGuards.class})
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 92 -> 73
+    @GenerateInline(false)       // footprint reduction 92 -> 73
     public abstract static class GetIdNode extends PNodeWithContext {
         public abstract Object execute(Object self);
 
@@ -436,7 +436,7 @@ public abstract class ObjectNodes {
     }
 
     @ImportStatic({PythonOptions.class, PGuards.class})
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 64 -> 45
+    @GenerateInline(false)       // footprint reduction 64 -> 45
     abstract static class GetNewArgsNode extends Node {
         public abstract Pair<Object, Object> execute(VirtualFrame frame, Object obj);
 
@@ -451,6 +451,7 @@ public abstract class ObjectNodes {
         }
 
         @ImportStatic(PGuards.class)
+        @GenerateInline(false) // 32 -> 13
         abstract static class GetNewArgsInternalNode extends Node {
             public abstract Pair<Object, Object> execute(VirtualFrame frame, Object getNewArgsExAttr, Object getNewArgsAttr);
 
@@ -742,7 +743,7 @@ public abstract class ObjectNodes {
      */
     @GenerateUncached
     @ImportStatic(SpecialAttributeNames.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 76 -> 57
+    @GenerateInline(false)       // footprint reduction 76 -> 57
     public abstract static class GetFullyQualifiedNameNode extends PNodeWithContext {
         public abstract TruffleString execute(Frame frame, Object cls);
 

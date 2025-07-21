@@ -239,7 +239,7 @@ public class LZMANodes {
     }
 
     @ImportStatic(PGuards.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 48 -> 30
+    @GenerateInline(false)       // footprint reduction 48 -> 30
     public abstract static class GetOptionsDict extends Node {
         public abstract HashingStorage execute(VirtualFrame frame, Object dict);
 
@@ -408,7 +408,7 @@ public class LZMANodes {
     }
 
     // corresponds to 'lzma_filter_converter' in '_lzmamodule.c'
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 108 -> 92
+    @GenerateInline(false)       // footprint reduction 108 -> 92
     public abstract static class LZMAFilterConverter extends Node {
 
         public abstract long[] execute(VirtualFrame frame, Object spec);
@@ -460,7 +460,7 @@ public class LZMANodes {
     }
 
     // corresponds to 'parse_filter_chain_spec' in '_lzmamodule.c'
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 88 -> 69
+    @GenerateInline(false)       // footprint reduction 88 -> 69
     public abstract static class LZMAParseFilterChain extends Node {
 
         public abstract long[][] execute(VirtualFrame frame, Object filterSpecs);
@@ -486,7 +486,7 @@ public class LZMANodes {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 21
+    @GenerateInline(false)       // footprint reduction 40 -> 21
     protected abstract static class NativeFilterChain extends Node {
 
         public abstract void execute(VirtualFrame frame, Object lzmast, PythonContext context, Object filterSpecs);
@@ -680,7 +680,7 @@ public class LZMANodes {
     }
 
     @ImportStatic({LZMAModuleBuiltins.class, PGuards.class})
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 60 -> 42
+    @GenerateInline(false)       // footprint reduction 60 -> 42
     public abstract static class LZMACompressInit extends Node {
 
         public abstract void execute(VirtualFrame frame, LZMACompressor self, int format, long preset, Object filters);
@@ -911,7 +911,7 @@ public class LZMANodes {
     }
 
     @ImportStatic(LZMAModuleBuiltins.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 21
+    @GenerateInline(false)       // footprint reduction 40 -> 21
     public abstract static class LZMADecompressInit extends Node {
 
         public abstract void execute(VirtualFrame frame, LZMADecompressor self, int format, Object memlimit);
@@ -1275,7 +1275,7 @@ public class LZMANodes {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 48 -> 29
+    @GenerateInline(false)       // footprint reduction 48 -> 29
     public abstract static class EncodeFilterProperties extends Node {
 
         public abstract byte[] execute(VirtualFrame frame, Object filter);
@@ -1320,7 +1320,7 @@ public class LZMANodes {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 52 -> 34
+    @GenerateInline(false)       // footprint reduction 52 -> 34
     public abstract static class DecodeFilterProperties extends Node {
 
         public abstract void execute(VirtualFrame frame, long id, byte[] encoded, PDict dict);

@@ -328,7 +328,7 @@ public abstract class IteratorNodes {
     }
 
     @ImportStatic(PGuards.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 18
+    @GenerateInline(false)       // footprint reduction 36 -> 18
     public abstract static class ToArrayNode extends Node {
         public abstract Object[] execute(VirtualFrame frame, Object iterable);
 
@@ -348,7 +348,7 @@ public abstract class IteratorNodes {
             int i = 0;
             while (loopProfile.inject(inliningTarget, it.hasNext())) {
                 // TODO: GR-37219: use SubstringNode with lazy=true?
-                result[i++] = fromCodePointNode.execute(nextNode.execute(it), TS_ENCODING, true);
+                result[i++] = fromCodePointNode.execute(nextNode.execute(it, TS_ENCODING), TS_ENCODING, true);
             }
             return result;
         }

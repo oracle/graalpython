@@ -142,6 +142,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -797,7 +798,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 96 -> 79
+    @GenerateInline(false)       // footprint reduction 96 -> 79
     protected abstract static class PyCFuncPtrFromDllNode extends Node {
 
         private static final char[] PzZ = "PzZ".toCharArray();

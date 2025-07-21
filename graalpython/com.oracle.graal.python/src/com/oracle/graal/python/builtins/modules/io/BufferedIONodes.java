@@ -145,7 +145,7 @@ public class BufferedIONodes {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 104 -> 85
+    @GenerateInline(false)       // footprint reduction 104 -> 85
     abstract static class CheckIsSeekabledNode extends Node {
 
         public abstract boolean execute(VirtualFrame frame, PBuffered self);

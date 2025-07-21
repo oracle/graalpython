@@ -42,6 +42,7 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.runtime.exception.PythonControlFlowException;
 
+@SuppressWarnings("serial")
 public class IteratorExhausted extends PythonControlFlowException {
     public static final IteratorExhausted INSTANCE = new IteratorExhausted();
 

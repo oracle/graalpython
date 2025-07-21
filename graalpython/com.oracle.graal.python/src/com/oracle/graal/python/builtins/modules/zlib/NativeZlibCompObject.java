@@ -47,7 +47,7 @@ import com.oracle.truffle.api.object.Shape;
 // Note: some IDEs mark this class as inaccessible in PFactory, but changing this to
 // public will cause a warning: [this-escape] possible 'this' escape before subclass is fully
 // initialized
-public class NativeZlibCompObject extends ZLibCompObject {
+public final class NativeZlibCompObject extends ZLibCompObject {
     private NFIZlibSupport.Pointer pointer;
     byte[] lastInput;
 

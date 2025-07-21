@@ -83,7 +83,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
 @GenerateUncached
-@SuppressWarnings("truffle-inlining")       // footprint reduction 60 -> 44
+@GenerateInline(false)       // footprint reduction 60 -> 44
 public abstract class CallNode extends PNodeWithContext {
     @NeverDefault
     public static CallNode create() {

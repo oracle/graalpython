@@ -55,6 +55,7 @@ import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -70,7 +71,7 @@ import com.oracle.truffle.api.nodes.Node;
 @ImportStatic(PGuards.class)
 @GenerateUncached
 @OperationProxy.Proxyable
-@SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 25
+@GenerateInline(false)       // footprint reduction 44 -> 25
 public abstract class ExceptMatchNode extends Node {
     public abstract boolean executeMatch(Frame frame, Object exception, Object clause);
 

@@ -72,6 +72,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -459,6 +460,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class ReadI64Node extends ReadBaseNode {
 
         abstract long execute(Object pointer, long offset);
@@ -800,6 +802,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class ReadCharPtrNode extends ReadBaseNode {
         abstract TruffleString execute(Object pointer, long offset);
 

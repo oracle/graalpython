@@ -231,7 +231,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
             attrs[OsErrorBuiltins.IDX_STRERROR] = message;
             attrs[OsErrorBuiltins.IDX_WRITTEN] = written;
             exception.setExceptionAttributes(attrs);
-            return PRaiseNode.raiseExceptionObject(node, exception);
+            return PRaiseNode.raiseExceptionObjectStatic(node, exception);
         }
     }
 

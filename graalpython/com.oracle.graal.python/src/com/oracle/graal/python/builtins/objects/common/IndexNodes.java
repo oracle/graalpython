@@ -51,6 +51,7 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -184,7 +185,7 @@ public abstract class IndexNodes {
     }
 
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 28 -> 10
+    @GenerateInline(false)       // footprint reduction 28 -> 10
     // not inlined because it is always created dynamically by NormalizeIndexNode
     abstract static class NormalizeIndexWithBoundsCheckNode extends NormalizeIndexCustomMessageNode {
 
@@ -269,7 +270,7 @@ public abstract class IndexNodes {
     }
 
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 24 -> 6
+    @GenerateInline(false)       // footprint reduction 24 -> 6
     // not inlined because it is always created dynamically by NormalizeIndexNode
     abstract static class NormalizeIndexWithoutBoundsCheckNode extends NormalizeIndexCustomMessageNode {
 

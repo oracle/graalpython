@@ -286,11 +286,12 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         static PBytesLike add(PBytesLike self, PBytesLike other,
                         @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached BytesNodes.CreateBytesNode create,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached BytesNodes.CreateBytesNode create,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             return concatBuffers(self, self, other, inliningTarget, bufferLib, create, raiseNode);
         }
 
+        // @Exclusive for truffle-interpreted-performance
         @Specialization(limit = "3")
         static PBytesLike add(VirtualFrame frame, Object self, Object other,
                         @Bind Node inliningTarget,
@@ -298,8 +299,8 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                         @Cached GetBytesStorage getBytesStorage,
                         @CachedLibrary("other") PythonBufferAcquireLibrary bufferAcquireLib,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached BytesNodes.CreateBytesNode create,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached BytesNodes.CreateBytesNode create,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             Object otherBuffer;
             try {
                 otherBuffer = bufferAcquireLib.acquireReadonly(other, frame, indirectCallData);

@@ -89,7 +89,7 @@ public abstract class PyObjectSetItem extends Node {
 
     public abstract void execute(Frame frame, Node inliningTarget, Object container, Object index, Object item);
 
-    @Specialization(guards = "isBuiltinList(object)")
+    @Specialization(guards = "isBuiltinList(object)", excludeForUncached = true)
     static void doList(VirtualFrame frame, PList object, Object key, Object value,
                     @Cached(inline = false) ListBuiltins.SetSubscriptNode setItemNode) {
         setItemNode.executeVoid(frame, object, key, value);

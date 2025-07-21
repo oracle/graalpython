@@ -254,7 +254,7 @@ public final class ListBuiltins extends PythonBuiltins {
             TruffleStringIterator iterator = createCodePointIteratorNode.execute(value, TS_ENCODING);
             while (iterator.hasNext()) {
                 // TODO: GR-37219: use SubstringNode with lazy=true?
-                int cp = nextNode.execute(iterator);
+                int cp = nextNode.execute(iterator, TS_ENCODING);
                 appendNode.execute(list, fromCodePointNode.execute(cp, TS_ENCODING, true));
             }
             return PNone.NONE;
@@ -374,7 +374,7 @@ public final class ListBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(value)")
         static void doInt(Object self, int index, Object value,
                         @Bind Node inliningTarget,
-                        @Shared @Cached GetListStorageNode getStorageNode,
+                        @Exclusive @Cached GetListStorageNode getStorageNode,
                         @Cached ListNodes.UpdateListStorageNode updateStorageNode,
                         @Cached("createForList()") SequenceStorageNodes.SetItemNode setItemNode) {
             var sequenceStorage = getStorageNode.execute(inliningTarget, self);
@@ -382,10 +382,11 @@ public final class ListBuiltins extends PythonBuiltins {
             updateStorageNode.execute(inliningTarget, self, sequenceStorage, newStorage);
         }
 
+        // @Exclusive for truffle-interpreted-performance
         @Specialization(guards = "isNoValue(value)")
         static void doGeneric(Object list, int index, @SuppressWarnings("unused") Object value,
                         @Bind Node inliningTarget,
-                        @Shared @Cached GetListStorageNode getStorageNode,
+                        @Exclusive @Cached GetListStorageNode getStorageNode,
                         @Cached NormalizeIndexNode normalizeIndexNode,
                         @Cached SequenceStorageNodes.DeleteItemNode deleteItemNode) {
             var sequenceStorage = getStorageNode.execute(inliningTarget, list);

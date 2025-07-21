@@ -246,7 +246,7 @@ public final class PythonUtils {
         TruffleStringIterator it = ts.createCodePointIteratorUncached(TS_ENCODING);
         int i = 0;
         while (it.hasNext()) {
-            buf[i++] = it.nextUncached();
+            buf[i++] = it.nextUncached(TS_ENCODING);
         }
         return CodePoints.fromBuffer(buf, 0, i);
     }

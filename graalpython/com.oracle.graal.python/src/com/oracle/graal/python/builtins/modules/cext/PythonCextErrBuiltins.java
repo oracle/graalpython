@@ -209,7 +209,7 @@ public final class PythonCextErrBuiltins {
                         @SuppressWarnings("unused") @Shared @Cached IsSubClassNode isSubClassNode,
                         @Cached PrepareExceptionNode prepareExceptionNode) {
             Object exception = prepareExceptionNode.execute(null, type, value);
-            throw PRaiseNode.raiseExceptionObject(inliningTarget, exception);
+            throw PRaiseNode.raiseExceptionObjectStatic(inliningTarget, exception);
         }
 
         protected static boolean isExceptionClass(Node inliningTarget, Object obj, IsTypeNode isTypeNode, IsSubClassNode isSubClassNode) {
@@ -311,7 +311,7 @@ public final class PythonCextErrBuiltins {
 
         @Specialization
         static Object get(@SuppressWarnings("unused") Object threadState,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @Cached GetEscapedExceptionNode getEscapedExceptionNode) {
             AbstractTruffleException caughtException = getCaughtExceptionNode.executeFromNative();

@@ -50,6 +50,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -61,7 +62,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @ImportStatic(PythonOptions.class)
-@SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 26
+@GenerateInline(false)       // footprint reduction 44 -> 26
 public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
     static final int MAX_RECURSION = 3; // Don't use PythonOptions to avoid language reference
 

@@ -406,7 +406,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
 
     @ImportStatic({FFIType.class, FieldSet.class})
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 112 -> 96
+    @GenerateInline(false)       // footprint reduction 112 -> 96
     protected abstract static class SetFuncNode extends Node {
 
         abstract Object execute(VirtualFrame frame, FieldSet setfunc, Pointer ptr, Object value, int size);
@@ -756,7 +756,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
 
     @ImportStatic(FieldGet.class)
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 100 -> 81
+    @GenerateInline(false)       // footprint reduction 100 -> 81
     protected abstract static class GetFuncNode extends Node {
 
         abstract Object execute(FieldGet getfunc, Pointer adr, int size);

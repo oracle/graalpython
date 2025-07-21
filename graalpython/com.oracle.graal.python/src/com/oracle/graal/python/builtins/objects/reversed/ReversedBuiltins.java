@@ -80,7 +80,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -132,7 +132,7 @@ public final class ReversedBuiltins extends PythonBuiltins {
             }
         }
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         private static PBigRangeIterator handleOverflow(PythonLanguage language, int lstart, int lstep, int ulen) {
             BigInteger bstart = BigInteger.valueOf(lstart);
             BigInteger bstep = BigInteger.valueOf(lstep);
@@ -144,7 +144,7 @@ public final class ReversedBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         static PythonObject reversed(@SuppressWarnings("unused") Object cls, PBigRange range) {
             BigInteger lstart = range.getBigIntegerStart();
             BigInteger lstep = range.getBigIntegerStep();
@@ -161,14 +161,14 @@ public final class ReversedBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                        @Cached @Shared TypeNodes.GetInstanceShape getInstanceShape) {
             return PFactory.createStringReverseIterator(language, cls, getInstanceShape.execute(cls), castToStringNode.execute(inliningTarget, value));
         }
 
         @Specialization
         static PythonObject reversed(Object cls, TruffleString value,
                         @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                        @Cached @Shared TypeNodes.GetInstanceShape getInstanceShape) {
             return PFactory.createStringReverseIterator(language, cls, getInstanceShape.execute(cls), value);
         }
 
@@ -182,7 +182,7 @@ public final class ReversedBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile noReversedProfile,
                         @Cached PySequenceCheckNode pySequenceCheck,
                         @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached @Shared TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             Object sequenceKlass = getClassNode.execute(inliningTarget, sequence);
             Object reversed = lookupReversed.execute(frame, sequenceKlass, sequence);

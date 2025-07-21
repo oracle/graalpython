@@ -96,6 +96,7 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -370,6 +371,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
         }
     }
 
+    @GenerateInline(false) // 44 -> 26
     public abstract static class FormatKeyValueDictRepr extends Node {
 
         abstract void execute(Object key, Object value, ReprState s);
@@ -392,6 +394,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
         }
     }
 
+    @GenerateInline(false) // 116 -> 100
     public abstract static class ReprOrderedDictItemsNode extends Node {
         public abstract void execute(VirtualFrame frame, POrderedDict dict, TruffleStringBuilder sb);
 

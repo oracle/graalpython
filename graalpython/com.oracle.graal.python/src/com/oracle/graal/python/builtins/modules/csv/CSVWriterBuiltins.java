@@ -71,6 +71,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -207,6 +208,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
 
     }
 
+    @GenerateInline(false) // 36 -> 17
     protected abstract static class JoinAppendData extends Node {
 
         abstract boolean execute(Node inliningTarget, TruffleStringBuilder sb, CSVDialect dialect, TruffleString field, boolean quoted, boolean copyPhase,
@@ -237,7 +239,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
 
                     boolean wantEscape = false;
 
-                    final int c = nextNode.execute(tsi);
+                    final int c = nextNode.execute(tsi, TS_ENCODING);
 
                     if (needsEscape(dialect, c, byteIndexOfCodePointNode)) {
                         if (dialect.quoting == QUOTE_NONE) {

@@ -2111,7 +2111,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
             @Specialization(guards = "isDouble(start) || isInt(start)")
             static Object sumDoubleIterator(Node inliningTarget, PDoubleSequenceIterator iterator, Object start,
-                            @Cached InlinedConditionProfile startIsDouble,
+                            @Cached @Exclusive InlinedConditionProfile startIsDouble,
                             @Shared @Cached InlinedLoopConditionProfile loopProfilePrimitive) {
                 /*
                  * Need to make sure we keep start type if the iterator was empty
@@ -2126,13 +2126,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return result;
             }
 
+            // @Exclusive for truffle-interpreted-performance
             @Fallback
             static Object sumGeneric(VirtualFrame frame, Node inliningTarget, Object iterator, Object start,
-                            @Shared @Cached InlinedLoopConditionProfile loopProfilePrimitive,
-                            @Shared @Cached InlinedLoopConditionProfile loopProfileGeneric,
+                            @Exclusive @Cached InlinedLoopConditionProfile loopProfilePrimitive,
+                            @Exclusive @Cached InlinedLoopConditionProfile loopProfileGeneric,
                             @Cached PyIterNextNode nextNode,
                             @Shared @Cached PyNumberAddNode addNode,
-                            @Shared @Cached InlinedConditionProfile resultFitsInInt,
+                            @Exclusive @Cached InlinedConditionProfile resultFitsInInt,
                             @Exclusive @Cached InlinedBranchProfile seenObject,
                             @Exclusive @Cached InlinedBranchProfile seenInt,
                             @Exclusive @Cached InlinedBranchProfile seenDouble,
@@ -2308,7 +2309,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     @ImportStatic(SpecialMethodNames.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 72 -> 53
+    @GenerateInline(false)       // footprint reduction 72 -> 53
     abstract static class UpdateBasesNode extends Node {
 
         abstract PTuple execute(PTuple bases, Object[] arguments, int nargs);
@@ -2365,7 +2366,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 19
+    @GenerateInline(false)       // footprint reduction 36 -> 19
     abstract static class CalculateMetaclassNode extends Node {
 
         abstract Object execute(Object metatype, PTuple bases);

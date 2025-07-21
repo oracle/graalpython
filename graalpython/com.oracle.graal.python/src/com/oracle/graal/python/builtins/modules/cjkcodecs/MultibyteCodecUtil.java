@@ -155,7 +155,7 @@ public class MultibyteCodecUtil {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 120 -> 103
+    @GenerateInline(false)       // footprint reduction 120 -> 103
     abstract static class EncodeErrorNode extends Node {
 
         private static final CharBuffer REPLACEMENT = CharBuffer.wrap("?");
@@ -313,7 +313,7 @@ public class MultibyteCodecUtil {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 88 -> 72
+    @GenerateInline(false)       // footprint reduction 88 -> 72
     abstract static class DecodeErrorNode extends Node {
 
         abstract void execute(VirtualFrame frame, MultibyteCodec codec,

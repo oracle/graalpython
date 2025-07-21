@@ -188,6 +188,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
         return false;
     }
 
+    @NeverDefault
     public static MatchClassNode create() {
         return MatchClassNodeGen.create();
     }
