@@ -164,13 +164,6 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return value;
     }
 
-    @Specialization(guards = {"isSingleContext()", "klass == cachedKlass"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected static Object lookupPBCTCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
-                    @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
-                    @Cached("findAttr(getContext(), cachedKlass, key)") Object cachedValue) {
-        return cachedValue;
-    }
-
     @Idempotent
     protected static boolean canCache(Object value) {
         return value instanceof Long ||
@@ -180,8 +173,8 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
                         value instanceof PNone;
     }
 
-    @Specialization(guards = {"klass == cachedKlass", "canCache(cachedValue)"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected static Object lookupPBCTCachedMulti(@SuppressWarnings("unused") PythonBuiltinClassType klass,
+    @Specialization(guards = {"klass == cachedKlass", "isSingleContext() || canCache(cachedValue)"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
+    protected static Object lookupPBCTCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
                     @Cached("findAttr(getContext(), cachedKlass, key)") Object cachedValue) {
         return cachedValue;
@@ -199,7 +192,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return null;
     }
 
-    @Specialization(replaces = {"lookupPBCTCached", "lookupPBCTCachedMulti"}, guards = "klass == cachedKlass", //
+    @Specialization(replaces = "lookupPBCTCached", guards = "klass == cachedKlass", //
                     limit = "getAttributeAccessInlineCacheMaxDepth()")
     @InliningCutoff
     protected Object lookupPBCTCachedOwner(@SuppressWarnings("unused") PythonBuiltinClassType klass,
