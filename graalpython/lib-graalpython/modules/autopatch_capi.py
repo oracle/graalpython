@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -173,8 +173,8 @@ auto_replacements = {
                     r'\W(m_ml\s*->\s*ml_doc)\W': (replace_field_access, 'GraalPyCFunction_GetDoc((PyObject*)(%receiver))', 'GraalPyCFunction_SetDoc((PyObject*)(%receiver), %value)'),
                     # Py_CLEAR/Py_VISIT on a function's module is skipped for us, Java GC takes care of it
                     r'(Py_(?:CLEAR|VISIT)\((?:(?:\(?\([a-zA-Z0-9_]|[a-zA-Z0-9_])(?:[a-zA-Z0-9_]|\)|\*\)|->)*)->m_module\);)': (simple_replace, ''),
-                    r'\W(m_ml)\W': (replace_field_access, '_PyCFunction_GetMethodDef((PyObject*)(%receiver))', '_PyCFunction_SetMethodDef((PyObject*)(%receiver), %value)'),
-                    r'\W(m_module)\W': (replace_field_access, '_PyCFunction_GetModule((PyObject*)(%receiver))', '_PyCFunction_SetModule((PyObject*)(%receiver), %value)'),
+                    r'\W(m_ml)\W': (replace_field_access, 'GraalPyCFunction_GetMethodDef((PyObject*)(%receiver))', 'GraalPyCFunction_SetMethodDef((PyObject*)(%receiver), %value)'),
+                    r'\W(m_module)\W': (replace_field_access, 'GraalPyCFunction_GetModule((PyObject*)(%receiver))', 'GraalPyCFunction_SetModule((PyObject*)(%receiver), %value)'),
                     r'(&PyTuple_GET_ITEM\(([\(\w](?:\w|->|\.|\(|\))*), 0\))': (simple_replace, r'PySequence_Fast_ITEMS(\2)'),
                     # already defined by GraalPy:
                     r'^\s*()#\s*define\s+Py_SET_TYPE\W': (simple_replace, '//'),

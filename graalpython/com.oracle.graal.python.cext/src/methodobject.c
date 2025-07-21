@@ -82,28 +82,27 @@ int PyCFunction_GetFlags(PyObject *func) {
     return def->ml_flags;
 }
 
-PyTypeObject * PyCMethod_GetClass(PyObject *func) {
+PyTypeObject * GraalPyCMethod_GetClass(PyObject *func) {
     PyMethodDef* def = GraalPyPrivate_GET_PyCFunctionObject_m_ml(func);
     return def->ml_flags & METH_METHOD ? GraalPyPrivate_GET_PyCMethodObject_mm_class(func) : NULL;
 }
 
-PyObject* _PyCFunction_GetModule(PyObject *func) {
+PyObject* GraalPyCFunction_GetModule(PyObject *func) {
     return GraalPyPrivate_GET_PyCFunctionObject_m_module(func);
 }
 
-PyMethodDef* _PyCFunction_GetMethodDef(PyObject *func) {
+PyMethodDef* GraalPyCFunction_GetMethodDef(PyObject *func) {
     return GraalPyPrivate_GET_PyCFunctionObject_m_ml(func);
 }
 
-void _PyCFunction_SetModule(PyObject *func, PyObject *mod) {
+void GraalPyCFunction_SetModule(PyObject *func, PyObject *mod) {
     GraalPyPrivate_SET_PyCFunctionObject_m_module(func, mod);
 }
 
-void _PyCFunction_SetMethodDef(PyObject *func, PyMethodDef *def) {
+void GraalPyCFunction_SetMethodDef(PyObject *func, PyMethodDef *def) {
     GraalPyPrivate_SET_PyCFunctionObject_m_ml(func, def);
 }
 
-// GraalPy additions
 const char *
 GraalPyCFunction_GetDoc(PyObject *func) {
     return GraalPyPrivate_GET_PyCFunctionObject_m_ml(func)->ml_doc;

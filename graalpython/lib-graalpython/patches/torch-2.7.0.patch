@@ -513,7 +513,7 @@ index 1ac30fecf..53c5a8c32 100644
 -      return PyErr_Format(
 -          PyExc_RuntimeError,
 -          "function '%s' already has a docstring",
--          _PyCFunction_GetMethodDef((PyObject*)(f))->ml_name);
+-          GraalPyCFunction_GetMethodDef((PyObject*)(f))->ml_name);
 -    }
 -    GraalPyCFunction_SetDoc((PyObject*)(f), doc_str);
 -  } else if (strcmp(Py_TYPE(obj)->tp_name, "method_descriptor") == 0) {

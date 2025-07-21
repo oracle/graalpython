@@ -233,7 +233,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyCFunction_GetSelf", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyCFunction_New", ret = PyObject, args = {PyMethodDef, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyCFunction_NewEx", ret = PyObject, args = {PyMethodDef, PyObject, PyObject}, call = CImpl)
-    @CApiBuiltin(name = "PyCMethod_GetClass", ret = PyTypeObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyCMethod_New", ret = PyObject, args = {PyMethodDef, PyObject, PyObject, PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyUnstable_Code_New", ret = PyCodeObject, args = {Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int,
                     PyObject, PyObject}, call = CImpl)
@@ -590,10 +589,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyBytesWriter_Resize", ret = Pointer, args = {_PYBYTESWRITER_PTR, Pointer, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "_PyBytesWriter_WriteBytes", ret = Pointer, args = {_PYBYTESWRITER_PTR, Pointer, CONST_VOID_PTR, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "_PyBytes_Resize", ret = Int, args = {PyObjectPtr, Py_ssize_t}, call = CImpl)
-    @CApiBuiltin(name = "_PyCFunction_GetMethodDef", ret = PyMethodDef, args = {PyObject}, call = CImpl)
-    @CApiBuiltin(name = "_PyCFunction_GetModule", ret = PyObject, args = {PyObject}, call = CImpl)
-    @CApiBuiltin(name = "_PyCFunction_SetMethodDef", ret = Void, args = {PyObject, PyMethodDef}, call = CImpl)
-    @CApiBuiltin(name = "_PyCFunction_SetModule", ret = Void, args = {PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_ContainsId", ret = Int, args = {PyObject, _PY_IDENTIFIER_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_GetItemIdWithError", ret = PyObject, args = {PyObject, _PY_IDENTIFIER_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_GetItemStringWithError", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString}, call = CImpl)
