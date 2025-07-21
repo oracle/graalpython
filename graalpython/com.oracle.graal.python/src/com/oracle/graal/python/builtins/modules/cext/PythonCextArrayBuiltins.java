@@ -75,7 +75,7 @@ public final class PythonCextArrayBuiltins {
      * Graalpy-specific function implemented for Cython
      */
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t}, call = Direct)
-    abstract static class _PyArray_Resize extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyArray_Resize extends CApiBinaryBuiltinNode {
         @Specialization
         static int resize(PArray array, long newSize,
                         @Bind Node inliningTarget,
@@ -88,7 +88,7 @@ public final class PythonCextArrayBuiltins {
     }
 
     @CApiBuiltin(ret = CHAR_PTR, args = {PyObject}, call = Direct)
-    abstract static class _PyArray_Data extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyArray_Data extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PArray array,
                         @Bind Node inliningTarget,

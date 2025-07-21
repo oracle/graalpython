@@ -198,7 +198,7 @@ index 7b065fca..2c63b85c 100644
 +                getattr(self.type, 'name', None) == '__data_union' and
 +                getattr(self.obj.type, 'name') == 'array'
 +            ):
-+                return self.type.cast_code("_PyArray_Data((PyObject*)%s)" % obj_code)
++                return self.type.cast_code("GraalPyArray_Data((PyObject*)%s)" % obj_code)
              return "%s%s%s" % (obj_code, self.op, self.member)
  
      def generate_result_code(self, code):
@@ -500,7 +500,7 @@ index a9e49237..b15a63b4 100644
  // not designed for filing small increments (but for fast opaque array apps)
  static CYTHON_INLINE int resize(arrayobject *self, Py_ssize_t n) {
 +#ifdef GRAALVM_PYTHON
-+    return _PyArray_Resize((PyObject*)self, n);
++    return GraalPyArray_Resize((PyObject*)self, n);
 +#else
      void *items = (void*) self->data.ob_item;
      PyMem_Resize(items, char, (size_t)(n * self->ob_descr->itemsize));
@@ -515,7 +515,7 @@ index a9e49237..b15a63b4 100644
  // suitable for small increments; over allocation 50% ;
  static CYTHON_INLINE int resize_smart(arrayobject *self, Py_ssize_t n) {
 +#ifdef GRAALVM_PYTHON
-+    return _PyArray_Resize((PyObject*)self, n);
++    return GraalPyArray_Resize((PyObject*)self, n);
 +#else
      void *items = (void*) self->data.ob_item;
      Py_ssize_t newsize;
