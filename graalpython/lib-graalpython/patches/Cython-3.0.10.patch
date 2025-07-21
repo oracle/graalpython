@@ -239,7 +239,7 @@ index d8f60a4..cd61759 100644
  #else
    #define __Pyx_PyCode_HasFreeVars(co)  (PyCode_GetNumFree(co) > 0)
 -  #define __Pyx_PyFrame_SetLineNumber(frame, lineno)  (frame)->f_lineno = (lineno)
-+  #define __Pyx_PyFrame_SetLineNumber(frame, lineno) _PyFrame_SetLineNumber((frame), (lineno))
++  #define __Pyx_PyFrame_SetLineNumber(frame, lineno) GraalPyFrame_SetLineNumber((frame), (lineno))
  #endif
  
  #if CYTHON_COMPILING_IN_LIMITED_API

@@ -129,7 +129,7 @@ public final class PythonCextFrameBuiltins {
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyFrameObject, Int}, call = Direct)
-    abstract static class _PyFrame_SetLineNumber extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyFrame_SetLineNumber extends CApiBinaryBuiltinNode {
         @Specialization
         static Object set(PFrame frame, int value) {
             frame.setLine(value);

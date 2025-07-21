@@ -750,9 +750,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                      * removing
                      */
                     "PySlice_Start", "PySlice_Step", "PySlice_Stop",
-                    "PyObject_GetDoc", "PyObject_SetDoc", "_PyFrame_SetLineNumber",
-                    "PyCode_GetName",
-                    "PyCode_GetFileName", "_PyArray_Resize", "_PyArray_Data",
+                    "PyObject_GetDoc", "PyObject_SetDoc",
+                    "_PyArray_Resize", "_PyArray_Data",
                     "_PyErr_Occurred", "_PyNamespace_New", "_Py_GetErrorHandler",
                     // Not actually additional, only defined on Windows.
                     // TODO: fix generated CAPIFunctions.txt
