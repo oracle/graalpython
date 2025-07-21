@@ -324,7 +324,7 @@ index cfff606..90876c6 100644
      #if PY_VERSION_HEX >= 0x030700A1
      static PY_INT64_T main_interpreter_id = -1;
 -    PY_INT64_T current_id = PyInterpreterState_GetID(PyThreadState_Get()->interp);
-+    PY_INT64_T current_id = PyInterpreterState_GetIDFromThreadState(PyThreadState_Get());
++    PY_INT64_T current_id = GraalPyInterpreterState_GetIDFromThreadState(PyThreadState_Get());
      if (main_interpreter_id == -1) {
          main_interpreter_id = current_id;
          return (unlikely(current_id == -1)) ? -1 : 0;

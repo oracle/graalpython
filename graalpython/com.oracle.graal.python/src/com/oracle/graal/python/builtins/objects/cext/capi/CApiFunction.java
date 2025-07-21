@@ -317,7 +317,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyInstanceMethod_Function", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyInterpreterState_GetDict", ret = PyObject, args = {PyInterpreterState}, call = CImpl)
     @CApiBuiltin(name = "PyInterpreterState_GetID", ret = INT64_T, args = {PyInterpreterState}, call = CImpl)
-    @CApiBuiltin(name = "PyInterpreterState_GetIDFromThreadState", ret = INT64_T, args = {PyThreadState}, call = CImpl)
     @CApiBuiltin(name = "PyInterpreterState_Main", ret = PyInterpreterState, args = {}, call = CImpl)
     @CApiBuiltin(name = "PyIter_Send", ret = PySendResult, args = {PyObject, PyObject, PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "PyList_SetItem", ret = Int, args = {PyObject, Py_ssize_t, PyObjectTransfer}, call = CImpl)

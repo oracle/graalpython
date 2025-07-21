@@ -750,7 +750,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                      * removing
                      */
                     "PySlice_Start", "PySlice_Step", "PySlice_Stop",
-                    "PyInterpreterState_GetIDFromThreadState",
                     "PyObject_GetDoc", "PyObject_SetDoc", "_PyFrame_SetLineNumber",
                     "PyCode_GetName",
                     "PyCode_GetFileName", "_PyArray_Resize", "_PyArray_Data",

@@ -3212,7 +3212,7 @@ _PyThreadState_MustExit(PyThreadState *tstate)
 
 // GraalPy specific
 
-int64_t PyInterpreterState_GetIDFromThreadState(PyThreadState *state) {
+int64_t GraalPyInterpreterState_GetIDFromThreadState(PyThreadState *state) {
 	return 0;
 }
 
