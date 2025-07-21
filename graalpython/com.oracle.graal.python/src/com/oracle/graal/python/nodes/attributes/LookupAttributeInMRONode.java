@@ -75,6 +75,7 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
@@ -96,20 +97,20 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
             return lookup.execute(klass);
         }
 
-        @InliningCutoff
-        @Specialization(replaces = "lookupConstantMROEquals")
-        protected Object lookupInBuiltinType(PythonBuiltinClassType klass, TruffleString key,
-                        @Cached ReadAttributeFromPythonObjectNode readAttrNode) {
-            return findAttr(PythonContext.get(this), klass, key, readAttrNode);
-        }
-
+        // Merged PythonBuiltinClassType and generic cases to have single @InliningCutoff
         @InliningCutoff
         @Specialization(replaces = "lookupConstantMROEquals")
         protected static Object lookupGeneric(Object klass, TruffleString key,
                         @Bind Node inliningTarget,
+                        @Cached InlinedConditionProfile pbctProfile,
+                        @Cached ReadAttributeFromPythonObjectNode readPBCTAttrNode,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached(value = "createForceType()", uncached = "getUncachedForceType()") ReadAttributeFromObjectNode readAttrNode) {
-            return lookup(key, getMroNode.execute(inliningTarget, klass), readAttrNode, false);
+            if (pbctProfile.profile(inliningTarget, klass instanceof PythonBuiltinClassType)) {
+                return findAttr(PythonContext.get(inliningTarget), (PythonBuiltinClassType) klass, key, readPBCTAttrNode);
+            } else {
+                return lookup(key, getMroNode.execute(inliningTarget, klass), readAttrNode, false);
+            }
         }
 
         @NeverDefault
