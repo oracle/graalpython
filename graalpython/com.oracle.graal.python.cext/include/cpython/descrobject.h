@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2023, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2023 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -37,8 +37,8 @@ typedef struct {
 
 #define PyDescr_COMMON PyDescrObject d_common
 
-#define PyDescr_TYPE(x) PyDescrObject_GetType((PyObject*)(x))
-#define PyDescr_NAME(x) PyDescrObject_GetName((PyObject*)(x))
+#define PyDescr_TYPE(x) GraalPyDescrObject_GetType((PyObject*)(x))
+#define PyDescr_NAME(x) GraalPyDescrObject_GetName((PyObject*)(x))
 
 typedef struct {
     PyDescr_COMMON;
@@ -67,3 +67,12 @@ PyAPI_DATA(PyTypeObject) _PyMethodWrapper_Type;
 PyAPI_FUNC(PyObject *) PyDescr_NewWrapper(PyTypeObject *,
                                                 struct wrapperbase *, void *);
 PyAPI_FUNC(int) PyDescr_IsData(PyObject *);
+
+// GraalPy public API to replace struct accessors
+PyAPI_FUNC(PyMethodDef*) GraalPyMethodDescrObject_GetMethod(PyObject*);
+PyAPI_FUNC(PyTypeObject*) GraalPyDescrObject_GetType(PyObject*);
+PyAPI_FUNC(PyObject*) GraalPyDescrObject_GetName(PyObject*);
+// Deprecated aliases kept for current versions of Cython
+// Remove in 27.0
+#define PyDescrObject_GetType GraalPyDescrObject_GetType
+#define PyMethodDescrObject_GetMethod GraalPyMethodDescrObject_GetMethod

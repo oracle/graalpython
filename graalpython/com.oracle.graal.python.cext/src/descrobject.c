@@ -63,15 +63,15 @@ PyObject* PyDescr_NewGetSet(PyTypeObject *type, PyGetSetDef *getset) {
 }
 
 
-PyMethodDef* PyMethodDescrObject_GetMethod(PyObject* descr) {
+PyMethodDef* GraalPyMethodDescrObject_GetMethod(PyObject* descr) {
     return GraalPyPrivate_GET_PyMethodDescrObject_d_method(descr);
 }
 
-PyTypeObject* PyDescrObject_GetType(PyObject* descr) {
+PyTypeObject* GraalPyDescrObject_GetType(PyObject* descr) {
     return GraalPyPrivate_GET_PyDescrObject_d_type(descr);
 }
 
-PyObject* PyDescrObject_GetName(PyObject* descr) {
+PyObject* GraalPyDescrObject_GetName(PyObject* descr) {
     return GraalPyPrivate_GET_PyDescrObject_d_name(descr);
 }
 

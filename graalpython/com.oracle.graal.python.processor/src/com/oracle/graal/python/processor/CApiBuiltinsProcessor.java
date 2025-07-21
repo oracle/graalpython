@@ -746,12 +746,12 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     private static final String[] ADDITIONAL = new String[]{
                     /*
                      * These PySlice builtins are deprecated and scheduled for removal once we no
-                     * longer support old versions of Cython that use them. Grep all patches before
+                     * longer support versions of Cython that use them. Grep all patches before
                      * removing
                      */
                     "PySlice_Start", "PySlice_Step", "PySlice_Stop",
-                    "PyDescrObject_GetName", "PyDescrObject_GetType", "PyInterpreterState_GetIDFromThreadState",
-                    "PyMethodDescrObject_GetMethod", "PyObject_GetDoc", "PyObject_SetDoc", "_PyFrame_SetLineNumber",
+                    "PyInterpreterState_GetIDFromThreadState",
+                    "PyObject_GetDoc", "PyObject_SetDoc", "_PyFrame_SetLineNumber",
                     "PyCode_GetName",
                     "PyCode_GetFileName", "_PyArray_Resize", "_PyArray_Data",
                     "_PyErr_Occurred", "_PyNamespace_New", "_Py_GetErrorHandler",

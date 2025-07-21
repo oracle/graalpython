@@ -575,7 +575,7 @@ class TestPyCFunction(unittest.TestCase):
             #define GraalPyCFunction_SetMethodDef(OBJ, VAL) (((PyCFunctionObject*) (OBJ))->m_ml = (VAL))
             #define GraalPyCFunction_GetModule(OBJ) (((PyCFunctionObject*) (OBJ))->m_module)
             #define GraalPyCFunction_SetModule(OBJ, VAL) (((PyCFunctionObject*) (OBJ))->m_module = (VAL))
-            #define PyMethodDescrObject_GetMethod(OBJ) (((PyMethodDescrObject *) (OBJ))->d_method)
+            #define GraalPyMethodDescrObject_GetMethod(OBJ) (((PyMethodDescrObject *) (OBJ))->d_method)
             #endif
 
             static PyObject *native_meth_noargs(PyObject *self, PyObject *dummy) {
@@ -704,7 +704,7 @@ class TestPyCFunction(unittest.TestCase):
                     PyErr_SetString(PyExc_TypeError, "<callable> is not a PyMethodDescrObject (i.e. method_descriptor)");
                     return NULL;
                 }
-                PyMethodDef *def = PyMethodDescrObject_GetMethod(callable);
+                PyMethodDef *def = GraalPyMethodDescrObject_GetMethod(callable);
                 // returns a borrowed ref
                 return _call_PyCFunction(def, callable_self, callable_args, callable_kwargs);
             }
@@ -756,7 +756,7 @@ class TestPyCFunction(unittest.TestCase):
                 if (PyCFunction_Check(callable)) {
                     def = GraalPyCFunction_GetMethodDef(callable);
                 } else if (PyObject_TypeCheck(callable, &PyMethodDescr_Type)) {
-                    def = PyMethodDescrObject_GetMethod(callable);
+                    def = GraalPyMethodDescrObject_GetMethod(callable);
                 } else {
                     PyErr_SetString(PyExc_TypeError, "<callable> is not a PyCFunction (i.e. builtin_method_or_function) "
                                                      "nor a PyMethodDescrObject (i.e. method_descriptor)");

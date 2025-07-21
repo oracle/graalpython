@@ -316,10 +316,10 @@ index 93f577f6..5dac1d70 100644
          PyTypeObject *d_type = descr->d_type;
          #else
 -        PyTypeObject *d_type = descr->d_common.d_type;
-+        PyTypeObject *d_type = PyDescrObject_GetType(method);
++        PyTypeObject *d_type = GraalPyDescrObject_GetType(method);
          #endif
 -        return PyDescr_NewClassMethod(d_type, descr->d_method);
-+        return PyDescr_NewClassMethod(d_type, PyMethodDescrObject_GetMethod(method));
++        return PyDescr_NewClassMethod(d_type, GraalPyMethodDescrObject_GetMethod(method));
      }
  #endif
      else if (PyMethod_Check(method)) {
@@ -412,8 +412,8 @@ index 5c4d9e16..4cdd29aa 100644
          PyMethodDescrObject *descr = (PyMethodDescrObject*) method;
 -        target->func = descr->d_method->ml_meth;
 -        target->flag = descr->d_method->ml_flags & ~(METH_CLASS | METH_STATIC | METH_COEXIST | METH_STACKLESS);
-+        target->func = PyMethodDescrObject_GetMethod(method)->ml_meth;
-+        target->flag = PyMethodDescrObject_GetMethod(method)->ml_flags & ~(METH_CLASS | METH_STATIC | METH_COEXIST | METH_STACKLESS);
++        target->func = GraalPyMethodDescrObject_GetMethod(method)->ml_meth;
++        target->flag = GraalPyMethodDescrObject_GetMethod(method)->ml_flags & ~(METH_CLASS | METH_STATIC | METH_COEXIST | METH_STACKLESS);
      }
  #endif
      return 0;
