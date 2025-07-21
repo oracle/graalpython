@@ -45,14 +45,21 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.slice.PIntSlice;
+import com.oracle.graal.python.builtins.objects.slice.PObjectSlice;
 import com.oracle.graal.python.lib.PySliceNew;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -80,6 +87,63 @@ public final class PythonCextSliceBuiltins {
         @Specialization
         static Object run() {
             return PEllipsis.INSTANCE;
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    abstract static class GraalPySlice_Start extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object get(PIntSlice slice) {
+            return slice.getStart();
+        }
+
+        @Specialization
+        static Object get(PObjectSlice slice) {
+            return slice.getStart();
+        }
+
+        @Fallback
+        static Object error(Object slice,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_S_NOT_P, "slice", slice);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    abstract static class GraalPySlice_Stop extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object get(PIntSlice slice) {
+            return slice.getStop();
+        }
+
+        @Specialization
+        static Object get(PObjectSlice slice) {
+            return slice.getStop();
+        }
+
+        @Fallback
+        static Object error(Object slice,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_S_NOT_P, "slice", slice);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    abstract static class GraalPySlice_Step extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object get(PIntSlice slice) {
+            return slice.getStep();
+        }
+
+        @Specialization
+        static Object get(PObjectSlice slice) {
+            return slice.getStep();
+        }
+
+        @Fallback
+        static Object error(Object slice,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_S_NOT_P, "slice", slice);
         }
     }
 }

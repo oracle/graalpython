@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -31,6 +31,11 @@ typedef struct {
 } PySliceObject;
 
 // functions introduced by GraalPy as replacements for direct access to the slice struct fields
+PyAPI_FUNC(PyObject*) GraalPySlice_Start(PyObject *slice);
+PyAPI_FUNC(PyObject*) GraalPySlice_Stop(PyObject *slice);
+PyAPI_FUNC(PyObject*) GraalPySlice_Step(PyObject *slice);
+
+// Old versions of the above that return a borrowed reference. To be removed when we no longer have patches using them
 PyAPI_FUNC(PyObject*) PySlice_Start(PySliceObject *slice);
 PyAPI_FUNC(PyObject*) PySlice_Stop(PySliceObject *slice);
 PyAPI_FUNC(PyObject*) PySlice_Step(PySliceObject *slice);

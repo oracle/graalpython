@@ -743,8 +743,15 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
      * These are functions that are introduced by GraalPy, mostly auxiliary functions that we added
      * to avoid direct fields accesses:
      */
-    private static final String[] ADDITIONAL = new String[]{"PyCMethod_GetClass", "PyDescrObject_GetName", "PyDescrObject_GetType", "PyInterpreterState_GetIDFromThreadState",
-                    "PyMethodDescrObject_GetMethod", "PyObject_GetDoc", "PyObject_SetDoc", "PySlice_Start", "PySlice_Step", "PySlice_Stop", "_PyFrame_SetLineNumber",
+    private static final String[] ADDITIONAL = new String[]{
+                    /*
+                     * These PySlice builtins are deprecated and scheduled for removal once we no
+                     * longer support old versions of Cython that use them. Grep all patches before
+                     * removing
+                     */
+                    "PySlice_Start", "PySlice_Step", "PySlice_Stop",
+                    "PyCMethod_GetClass", "PyDescrObject_GetName", "PyDescrObject_GetType", "PyInterpreterState_GetIDFromThreadState",
+                    "PyMethodDescrObject_GetMethod", "PyObject_GetDoc", "PyObject_SetDoc", "_PyFrame_SetLineNumber",
                     "_PyCFunction_GetModule", "_PyCFunction_GetMethodDef", "PyCode_GetName",
                     "_PyCFunction_SetModule", "_PyCFunction_SetMethodDef",
                     "PyCode_GetFileName", "_PyArray_Resize", "_PyArray_Data",
