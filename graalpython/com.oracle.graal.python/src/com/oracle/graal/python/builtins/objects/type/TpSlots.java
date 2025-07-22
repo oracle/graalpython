@@ -1736,7 +1736,7 @@ public record TpSlots(TpSlot nb_bool, //
         // Check that no one is trying to define magic methods directly
         // If the assertion fires: you should define @Slot instead of @Builtin
         // We do not look in MRO, we may have already called addOperatorsToBuiltin on super
-        var readAttr = ReadAttributeFromObjectNode.getUncachedForceType();
+        var readAttr = ReadAttributeFromObjectNode.getUncached();
         PythonBuiltinClass typeObj = core.lookupType(type);
         for (TruffleString name : SPECIAL2SLOT.keySet()) {
             assert readAttr.execute(typeObj, name) == PNone.NO_VALUE : type.name() + ":" + name;

@@ -209,7 +209,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.bytecode.GetAIterNode;
@@ -1730,7 +1730,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     "flush: whether to forcibly flush the stream.")
     @GenerateNodeFactory
     public abstract static class PrintNode extends PythonBuiltinNode {
-        @Child private ReadAttributeFromObjectNode readStdout;
+        @Child private ReadAttributeFromModuleNode readStdout;
         @CompilationFinal private PythonModule cachedSys;
 
         @Specialization
@@ -1836,7 +1836,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             if (readStdout == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readStdout = insert(ReadAttributeFromObjectNode.create());
+                readStdout = insert(ReadAttributeFromModuleNode.create());
             }
             Object stdout = readStdout.execute(sys, T_STDOUT);
             if (stdout == NO_VALUE) {
@@ -1984,7 +1984,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = J_BREAKPOINT, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BreakPointNode extends PythonBuiltinNode {
-        @Child private ReadAttributeFromObjectNode getBreakpointhookNode;
+        @Child private ReadAttributeFromModuleNode getBreakpointhookNode;
         @Child private CallNode callNode;
 
         @Specialization
@@ -1998,11 +1998,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else if (getContext().isInitialized()) {
                 if (callNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getBreakpointhookNode = insert(ReadAttributeFromObjectNode.create());
+                    getBreakpointhookNode = insert(ReadAttributeFromModuleNode.create());
                     callNode = insert(CallNode.create());
                 }
                 PDict sysModules = getContext().getSysModules();
-                Object sysModule = getItem.execute(inliningTarget, sysModules.getDictStorage(), T_SYS);
+                PythonModule sysModule = (PythonModule) getItem.execute(inliningTarget, sysModules.getDictStorage(), T_SYS);
                 Object breakpointhook = getBreakpointhookNode.execute(sysModule, T_BREAKPOINTHOOK);
                 if (breakpointhook == PNone.NO_VALUE) {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.LOST_SYSBREAKPOINTHOOK);

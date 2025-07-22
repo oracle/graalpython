@@ -146,7 +146,7 @@ public abstract class PyObjectLookupAttr extends Node {
                     @Bind("getClass.execute(inliningTarget, object)") Object type,
                     @Cached("create(name)") LookupAttributeInMRONode lookupName,
                     @Bind("lookupName.execute(type)") Object descr,
-                    @Shared @Cached(inline = false) ReadAttributeFromObjectNode readNode) {
+                    @Shared @Cached ReadAttributeFromObjectNode readNode) {
         // It should not have __getattr__, because otherwise it would not have builtin
         // object#tp_getattro, but slot wrapper dispatching to __getattribute__ or __getattr__
         assert hasNoGetAttr(type);

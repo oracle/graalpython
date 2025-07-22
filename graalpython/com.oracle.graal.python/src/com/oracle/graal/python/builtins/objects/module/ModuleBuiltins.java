@@ -86,6 +86,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -290,7 +291,8 @@ public final class ModuleBuiltins extends PythonBuiltins {
         static Object getattribute(VirtualFrame frame, PythonModule self, TruffleString key, PException e,
                         @Bind Node inliningTarget,
                         @Cached IsBuiltinObjectProfile isAttrError,
-                        @Cached ReadAttributeFromObjectNode readGetattr,
+                        @Cached ReadAttributeFromModuleNode readGetattr,
+                        @Cached ReadAttributeFromObjectNode readInitializing,
                         @Cached InlinedConditionProfile customGetAttr,
                         @Cached CallNode callNode,
                         @Cached PyObjectIsTrueNode castToBooleanNode,
@@ -311,7 +313,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
                 if (moduleName != null) {
                     Object moduleSpec = readGetattr.execute(self, T___SPEC__);
                     if (moduleSpec != PNone.NO_VALUE) {
-                        Object isInitializing = readGetattr.execute(moduleSpec, T__INITIALIZING);
+                        Object isInitializing = readInitializing.execute(moduleSpec, T__INITIALIZING);
                         if (isInitializing != PNone.NO_VALUE && castToBooleanNode.execute(frame, isInitializing)) {
                             throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S, moduleName, key);
                         }

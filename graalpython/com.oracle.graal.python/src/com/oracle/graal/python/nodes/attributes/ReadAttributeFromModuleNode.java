@@ -41,90 +41,47 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-/**
- * See {@link ReadAttributeFromModuleNode} which is much simpler for modules.
- */
-@ReportPolymorphism
 @GenerateUncached
-@GenerateInline(false) // footprint reduction 64 -> 47
-public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
+@GenerateInline(false)
+public abstract class ReadAttributeFromModuleNode extends PNodeWithContext {
 
     @NeverDefault
-    public static ReadAttributeFromObjectNode create() {
-        return ReadAttributeFromObjectNodeGen.create();
+    public static ReadAttributeFromModuleNode create() {
+        return ReadAttributeFromModuleNodeGen.create();
     }
 
-    public static ReadAttributeFromObjectNode getUncached() {
-        return ReadAttributeFromObjectNodeGen.getUncached();
+    public static ReadAttributeFromModuleNode getUncached() {
+        return ReadAttributeFromModuleNodeGen.getUncached();
     }
 
-    public abstract Object execute(Object object, TruffleString key);
+    public abstract Object execute(PythonModule object, TruffleString key);
 
-    public abstract Object execute(PythonAbstractNativeObject object, TruffleString key);
-
-    // any python object attribute read
+    // PythonModule always have a dict
     @Specialization
-    static Object readObjectAttribute(PythonObject object, TruffleString key,
+    static Object readModuleAttribute(PythonModule object, TruffleString key,
                     @Bind Node inliningTarget,
-                    @Cached InlinedConditionProfile profileHasDict,
-                    @Exclusive @Cached GetDictIfExistsNode getDict,
-                    @Cached ReadAttributeFromPythonObjectNode readAttributeFromPythonObjectNode,
-                    @Exclusive @Cached HashingStorageGetItem getItem) {
+                    @Cached GetDictIfExistsNode getDict,
+                    @Cached HashingStorageGetItem getItem) {
         var dict = getDict.execute(object);
-        if (profileHasDict.profile(inliningTarget, dict == null)) {
-            return readAttributeFromPythonObjectNode.execute(object, key);
+        Object value = getItem.execute(inliningTarget, dict.getDictStorage(), key);
+        if (value == null) {
+            return PNone.NO_VALUE;
         } else {
-            Object value = getItem.execute(inliningTarget, dict.getDictStorage(), key);
-            if (value == null) {
-                return PNone.NO_VALUE;
-            } else {
-                return value;
-            }
+            return value;
         }
-    }
-
-    @Specialization
-    static Object readNativeObject(PythonAbstractNativeObject object, TruffleString key,
-                    @Bind Node inliningTarget,
-                    @Exclusive @Cached GetDictIfExistsNode getDict,
-                    @Exclusive @Cached HashingStorageGetItem getItem) {
-        PDict dict = getDict.execute(object);
-        if (dict != null) {
-            Object result = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
-            if (result != null) {
-                return result;
-            }
-        }
-        return PNone.NO_VALUE;
-    }
-
-    // foreign object or primitive
-    @InliningCutoff
-    @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)"})
-    static Object readForeignOrPrimitive(Object object, TruffleString key) {
-        // Foreign members are tried after the regular attribute lookup, see
-        // ForeignObjectBuiltins.GetAttributeNode. If we looked them up here
-        // they would get precedence over attributes in the MRO.
-        return PNone.NO_VALUE;
     }
 
 }

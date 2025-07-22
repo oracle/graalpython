@@ -943,7 +943,7 @@ public abstract class CExtNodes {
                 if (managedMemberName instanceof HiddenAttr ha) {
                     attr = HiddenAttr.ReadNode.executeUncached((PythonAbstractObject) mroCls, ha, NO_VALUE);
                 } else {
-                    attr = ReadAttributeFromObjectNode.getUncachedForceType().execute(mroCls, CompilerDirectives.castExact(managedMemberName, TruffleString.class));
+                    attr = ReadAttributeFromObjectNode.getUncached().execute(mroCls, CompilerDirectives.castExact(managedMemberName, TruffleString.class));
                 }
                 if (attr != NO_VALUE) {
                     return PyNumberAsSizeNode.executeExactUncached(attr);

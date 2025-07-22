@@ -105,7 +105,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
                         @Cached InlinedConditionProfile pbctProfile,
                         @Cached ReadAttributeFromPythonObjectNode readPBCTAttrNode,
                         @Cached GetMroStorageNode getMroNode,
-                        @Cached(value = "createForceType()", uncached = "getUncachedForceType()") ReadAttributeFromObjectNode readAttrNode) {
+                        @Cached ReadAttributeFromObjectNode readAttrNode) {
             if (pbctProfile.profile(inliningTarget, klass instanceof PythonBuiltinClassType)) {
                 return findAttr(PythonContext.get(inliningTarget), (PythonBuiltinClassType) klass, key, readPBCTAttrNode);
             } else {
@@ -212,7 +212,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
             if (skipNonStaticBase(clsObj, skipNonStaticBases)) {
                 continue;
             }
-            Object value = ReadAttributeFromObjectNode.getUncachedForceType().execute(clsObj, key);
+            Object value = ReadAttributeFromObjectNode.getUncached().execute(clsObj, key);
             if (value != PNone.NO_VALUE) {
                 result = value;
                 break;
@@ -306,7 +306,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         static ReadAttributeFromObjectNode[] create(int size) {
             ReadAttributeFromObjectNode[] nodes = new ReadAttributeFromObjectNode[size];
             for (int i = 0; i < size; i++) {
-                nodes[i] = ReadAttributeFromObjectNode.createForceType();
+                nodes[i] = ReadAttributeFromObjectNode.create();
             }
             return nodes;
         }
@@ -365,7 +365,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         @Megamorphic
         @InliningCutoff
         Object lookupGeneric(Object klass, TruffleString key, boolean skipNonStaticBases,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
+                        @Cached ReadAttributeFromObjectNode readAttrNode) {
             return lookup(key, getMro(klass), readAttrNode, skipNonStaticBases);
         }
 
@@ -394,16 +394,16 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
     @TruffleBoundary
     public static Object lookupSlowPath(Object klass, TruffleString key) {
-        return lookup(key, GetMroStorageNode.executeUncached(klass), ReadAttributeFromObjectNode.getUncachedForceType(), false);
+        return lookup(key, GetMroStorageNode.executeUncached(klass), ReadAttributeFromObjectNode.getUncached(), false);
     }
 
-    public static Object lookup(TruffleString key, MroSequenceStorage mro, ReadAttributeFromObjectNode readAttrNode, boolean skipNonStaticBases) {
+    public static Object lookup(TruffleString key, MroSequenceStorage mro, ReadAttributeFromObjectNode readTypeAttrNode, boolean skipNonStaticBases) {
         for (int i = 0; i < mro.length(); i++) {
             Object kls = mro.getPythonClassItemNormalized(i);
             if (skipNonStaticBase(kls, skipNonStaticBases)) {
                 continue;
             }
-            Object value = readAttrNode.execute(kls, key);
+            Object value = readTypeAttrNode.execute(kls, key);
             if (value != PNone.NO_VALUE) {
                 return value;
             }

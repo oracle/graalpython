@@ -85,7 +85,7 @@ import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -172,7 +172,7 @@ public final class PythonCextModuleBuiltins {
                         @Cached PythonCextBuiltins.PromoteBorrowedValue promoteBorrowedValue,
                         @Cached PyUnicodeCheckNode pyUnicodeCheckNode,
                         // CPython reads from the module dict directly
-                        @Cached ReadAttributeFromObjectNode read,
+                        @Cached ReadAttributeFromModuleNode read,
                         @Cached WriteAttributeToObjectNode write) {
             /*
              * Even thought the function returns a new reference, CPython assumes that the unicode
@@ -308,7 +308,7 @@ public final class PythonCextModuleBuiltins {
         @Specialization
         static Object getFilename(PythonModule module,
                         @Bind Node inliningTarget,
-                        @Cached ReadAttributeFromObjectNode read,
+                        @Cached ReadAttributeFromModuleNode read,
                         @Cached PyUnicodeCheckNode check,
                         @Cached PRaiseNode raiseNode) {
             Object file = read.execute(module, T___FILE__);
