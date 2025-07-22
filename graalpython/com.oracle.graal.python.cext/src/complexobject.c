@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -236,11 +236,11 @@ PyObject *
 PyComplex_FromCComplex(Py_complex cval)
 {
     // GraalPy change: different implementation
-	return GraalPyComplex_FromDoubles(cval.real, cval.imag);
+    return PyComplex_FromDoubles(cval.real, cval.imag);
 }
 
-PyAPI_FUNC(PyObject *) // GraalPy change: expose the function for downcalls
-complex_subtype_from_doubles(PyTypeObject *type, double real, double imag)
+PyAPI_FUNC(PyObject *) // GraalPy change: expose the function for downcalls, rename
+GraalPyPrivate_Complex_SubtypeFromDoubles(PyTypeObject *type, double real, double imag)
 {
     Py_complex c;
     c.real = real;
@@ -267,7 +267,7 @@ PyComplex_RealAsDouble(PyObject *op)
         return ((PyComplexObject *)op)->cval.real;
     }
     else {
-        return GraalPyTruffleComplex_RealAsDouble(op);
+        return GraalPyPrivate_Complex_RealAsDouble(op);
     }
 }
 
@@ -279,7 +279,7 @@ PyComplex_ImagAsDouble(PyObject *op)
         return ((PyComplexObject *)op)->cval.imag;
     }
     else {
-        return GraalPyTruffleComplex_ImagAsDouble(op);
+        return GraalPyPrivate_Complex_ImagAsDouble(op);
     }
 }
 
@@ -327,7 +327,7 @@ PyComplex_AsCComplex(PyObject *op)
         return ((PyComplexObject*) op)->cval;
     }
     Py_complex result;
-    if (GraalPyTruffleComplex_AsCComplex(op, &result) == 0) {
+    if (GraalPyPrivate_Complex_AsCComplex(op, &result) == 0) {
         return result;
     }
     Py_complex c_error = { -1., 0. };

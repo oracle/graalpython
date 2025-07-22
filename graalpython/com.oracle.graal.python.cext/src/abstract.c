@@ -69,7 +69,7 @@ PyObject_Size(PyObject *o)
 
     // GraalPy change: upcall for managed objects
     if (points_to_py_handle_space(o)) {
-        return GraalPyTruffleObject_Size(o);
+        return GraalPyPrivate_Object_Size(o);
     }
 
     PySequenceMethods *m = Py_TYPE(o)->tp_as_sequence;
@@ -1066,7 +1066,7 @@ ternary_op(PyObject *v,
     PyObject * \
     func(PyObject *v, PyObject *w) { \
         if (points_to_py_handle_space(v) && points_to_py_handle_space(w)) { \
-            return GraalPyTruffle##func(v, w); \
+            return GraalPyPrivate_##func(v, w); \
         } \
         return binary_op(v, w, NB_SLOT(op), op_name); \
     }
@@ -1084,7 +1084,7 @@ PyNumber_Add(PyObject *v, PyObject *w)
 {
     // GraalPy change: upcall when both managed to save on doing multiple upcalls
     if (points_to_py_handle_space(v) && points_to_py_handle_space(w)) {
-        return GraalPyTrufflePyNumber_Add(v, w);
+        return GraalPyPrivate_PyNumber_Add(v, w);
     }
     PyObject *result = BINARY_OP1(v, w, NB_SLOT(nb_add), "+");
     if (result != Py_NotImplemented) {
@@ -1126,7 +1126,7 @@ PyNumber_Multiply(PyObject *v, PyObject *w)
 {
     // GraalPy change: upcall when both managed to save on doing multiple upcalls
     if (points_to_py_handle_space(v) && points_to_py_handle_space(w)) {
-        return GraalPyTrufflePyNumber_Multiply(v, w);
+        return GraalPyPrivate_PyNumber_Multiply(v, w);
     }
     PyObject *result = BINARY_OP1(v, w, NB_SLOT(nb_multiply), "*");
     if (result == Py_NotImplemented) {
@@ -1149,7 +1149,7 @@ PyNumber_MatrixMultiply(PyObject *v, PyObject *w)
 {
     // GraalPy change: upcall when both managed to save on doing multiple upcalls
     if (points_to_py_handle_space(v) && points_to_py_handle_space(w)) {
-        return GraalPyTrufflePyNumber_MatrixMultiply(v, w);
+        return GraalPyPrivate_PyNumber_MatrixMultiply(v, w);
     }
     return binary_op(v, w, NB_SLOT(nb_matrix_multiply), "@");
 }
@@ -1159,7 +1159,7 @@ PyNumber_FloorDivide(PyObject *v, PyObject *w)
 {
     // GraalPy change: upcall when both managed to save on doing multiple upcalls
     if (points_to_py_handle_space(v) && points_to_py_handle_space(w)) {
-        return GraalPyTrufflePyNumber_FloorDivide(v, w);
+        return GraalPyPrivate_PyNumber_FloorDivide(v, w);
     }
     return binary_op(v, w, NB_SLOT(nb_floor_divide), "//");
 }
@@ -1169,7 +1169,7 @@ PyNumber_TrueDivide(PyObject *v, PyObject *w)
 {
     // GraalPy change: upcall when both managed to save on doing multiple upcalls
     if (points_to_py_handle_space(v) && points_to_py_handle_space(w)) {
-        return GraalPyTrufflePyNumber_TrueDivide(v, w);
+        return GraalPyPrivate_PyNumber_TrueDivide(v, w);
     }
     return binary_op(v, w, NB_SLOT(nb_true_divide), "/");
 }
@@ -1179,7 +1179,7 @@ PyNumber_Remainder(PyObject *v, PyObject *w)
 {
     // GraalPy change: upcall when both managed to save on doing multiple upcalls
     if (points_to_py_handle_space(v) && points_to_py_handle_space(w)) {
-        return GraalPyTrufflePyNumber_Remainder(v, w);
+        return GraalPyPrivate_PyNumber_Remainder(v, w);
     }
     return binary_op(v, w, NB_SLOT(nb_remainder), "%");
 }
@@ -1189,7 +1189,7 @@ PyNumber_Power(PyObject *v, PyObject *w, PyObject *z)
 {
     // GraalPy change: upcall when both managed to save on doing multiple upcalls
     if (points_to_py_handle_space(v) && points_to_py_handle_space(w)) {
-        return GraalPyTrufflePyNumber_Power(v, w, z);
+        return GraalPyPrivate_PyNumber_Power(v, w, z);
     }
     return ternary_op(v, w, z, NB_SLOT(nb_power), "** or pow()");
 }
@@ -1283,7 +1283,7 @@ ternary_iop(PyObject *v, PyObject *w, PyObject *z, const int iop_slot, const int
     PyObject * \
     func(PyObject *v, PyObject *w) { \
         if (points_to_py_handle_space(v)) { \
-            return GraalPyTruffle##func(v, w); \
+            return GraalPyPrivate_##func(v, w); \
         } \
         return binary_iop(v, w, NB_SLOT(iop), NB_SLOT(op), op_name); \
     }
@@ -1304,7 +1304,7 @@ PyNumber_InPlaceAdd(PyObject *v, PyObject *w)
 {
     // GraalPy change: upcall when v is managed to avoid multiple upcalls
     if (points_to_py_handle_space(v)) {
-        return GraalPyTrufflePyNumber_InPlaceAdd(v, w);
+        return GraalPyPrivate_PyNumber_InPlaceAdd(v, w);
     }
     PyObject *result = BINARY_IOP1(v, w, NB_SLOT(nb_inplace_add),
                                    NB_SLOT(nb_add), "+=");
@@ -1331,7 +1331,7 @@ PyNumber_InPlaceMultiply(PyObject *v, PyObject *w)
 {
     // GraalPy change: upcall when v is managed to avoid multiple upcalls
     if (points_to_py_handle_space(v)) {
-        return GraalPyTrufflePyNumber_InPlaceMultiply(v, w);
+        return GraalPyPrivate_PyNumber_InPlaceMultiply(v, w);
     }
     PyObject *result = BINARY_IOP1(v, w, NB_SLOT(nb_inplace_multiply),
                                    NB_SLOT(nb_multiply), "*=");
@@ -1364,7 +1364,7 @@ PyNumber_InPlacePower(PyObject *v, PyObject *w, PyObject *z)
 {
     // GraalPy change: upcall when v is managed to avoid multiple upcalls
     if (points_to_py_handle_space(v)) {
-        return GraalPyTrufflePyNumber_InPlacePower(v, w, z);
+        return GraalPyPrivate_PyNumber_InPlacePower(v, w, z);
     }
     return ternary_iop(v, w, z, NB_SLOT(nb_inplace_power),
                                 NB_SLOT(nb_power), "**=");
@@ -1787,7 +1787,7 @@ PySequence_Size(PyObject *s)
 
     // GraalPy change: upcall for managed
     if (points_to_py_handle_space(s)) {
-        return GraalPyTruffleSequence_Size(s);
+        return GraalPyPrivate_Sequence_Size(s);
     }
 
     PySequenceMethods *m = Py_TYPE(s)->tp_as_sequence;
@@ -1946,7 +1946,7 @@ PySequence_GetItem(PyObject *s, Py_ssize_t i)
 
     // GraalPy change: upcall for managed
     if (points_to_py_handle_space(s)) {
-        return GraalPyTruffleSequence_GetItem(s, i);
+        return GraalPyPrivate_Sequence_GetItem(s, i);
     }
 
     PySequenceMethods *m = Py_TYPE(s)->tp_as_sequence;
@@ -2006,7 +2006,7 @@ PySequence_SetItem(PyObject *s, Py_ssize_t i, PyObject *o)
 
     // GraalPy change: upcall for managed
     if (points_to_py_handle_space(s)) {
-        return GraalPyTruffleSequence_SetItem(s, i, o);
+        return GraalPyPrivate_Sequence_SetItem(s, i, o);
     }
 
     PySequenceMethods *m = Py_TYPE(s)->tp_as_sequence;
@@ -2044,7 +2044,7 @@ PySequence_DelItem(PyObject *s, Py_ssize_t i)
 
     // GraalPy change: upcall for managed
     if (points_to_py_handle_space(s)) {
-        return GraalPyTruffleSequence_DelItem(s, i);
+        return GraalPyPrivate_Sequence_DelItem(s, i);
     }
 
     PySequenceMethods *m = Py_TYPE(s)->tp_as_sequence;
@@ -2240,7 +2240,7 @@ PySequence_Fast(PyObject *v, const char *m)
     }
 
     // GraalPy change: different implementation
-    return GraalPySequence_List(v);
+    return PySequence_List(v);
 }
 
 #if 0 // GraalPy change
@@ -2391,7 +2391,7 @@ PyMapping_Size(PyObject *o)
 
     // GraalPy change: upcall for managed
     if (points_to_py_handle_space(o)) {
-        return GraalPyTruffleMapping_Size(o);
+        return GraalPyPrivate_Mapping_Size(o);
     }
 
     PyMappingMethods *m = Py_TYPE(o)->tp_as_mapping;
@@ -2422,7 +2422,7 @@ PyObject *
 PyMapping_GetItemString(PyObject *o, const char *key)
 {
     // GraalPy change: different implementation
-    return GraalPyTruffleObject_GetItemString(o, key);
+    return GraalPyPrivate_Object_GetItemString(o, key);
 }
 
 int
@@ -2954,7 +2954,7 @@ PyIter_Send(PyObject *iter, PyObject *arg, PyObject **result)
         return res;
     }
     // GraalPy change: different implementation
-    *result = GraalPyTruffleIter_Send(iter, arg);
+    *result = GraalPyPrivate_Iter_Send(iter, arg);
     if (*result != NULL) {
         return PYGEN_NEXT;
     }
@@ -3042,21 +3042,3 @@ _Py_FreeCharPArray(char *const array[])
     PyMem_Free((void*)array);
 }
 #endif // GraalPy change
-
-// GraalPy additions
-PyObject **
-PyTruffleSequence_Fast_ITEMS(PyObject *o)
-{
-    if (PyTuple_Check(o)) {
-        return PyTruffleTuple_GetItems(o);
-    } else {
-        return PyTruffleList_GetItems(o);
-    }
-}
-
-PyObject*
-PyTruffleSequence_ITEM(PyObject* obj, Py_ssize_t index)
-{
-        PySequenceMethods* methods = Py_TYPE(obj)->tp_as_sequence;
-        return methods->sq_item(obj, index);
-}

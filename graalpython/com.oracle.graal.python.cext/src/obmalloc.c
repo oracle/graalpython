@@ -377,18 +377,18 @@ _GraalPyMem_PrepareAlloc(GraalPyMem_t *state, size_t size)
     while ((state->allocated_memory + size) > state->native_memory_gc_barrier) {
         if (state->max_native_memory == 0) {
             state->allocated_memory = 0;
-            state->max_native_memory = GraalPyTruffle_GetMaxNativeMemory();
-            state->native_memory_gc_barrier = GraalPyTruffle_GetInitialNativeMemory();
+            state->max_native_memory = GraalPyPrivate_GetMaxNativeMemory();
+            state->native_memory_gc_barrier = GraalPyPrivate_GetInitialNativeMemory();
             continue;
         }
-        PyTruffle_Log(PY_TRUFFLE_LOG_CONFIG,
+        GraalPyPrivate_Log(PY_TRUFFLE_LOG_CONFIG,
                 "%s: exceeding native_memory_gc_barrier (%lu) with allocation of size %lu, current allocated_memory: %lu\n",
                 __func__, state->native_memory_gc_barrier, size, state->allocated_memory);
 
         size_t delay = 0;
         for (int iteration = 0; iteration < MAX_COLLECTION_RETRIES;
                 iteration++) {
-            GraalPyTruffle_TriggerGC(delay);
+            GraalPyPrivate_TriggerGC(delay);
             delay += COLLECTION_DELAY_INCREMENT;
             if ((state->allocated_memory + size)
                     <= state->native_memory_gc_barrier) {
@@ -401,12 +401,12 @@ _GraalPyMem_PrepareAlloc(GraalPyMem_t *state, size_t size)
             if (state->native_memory_gc_barrier > state->max_native_memory) {
                 state->native_memory_gc_barrier = state->max_native_memory;
             }
-            PyTruffle_Log(PY_TRUFFLE_LOG_CONFIG,
+            GraalPyPrivate_Log(PY_TRUFFLE_LOG_CONFIG,
                     "%s: enlarging native_memory_gc_barrier to %lu\n",
                     __func__, state->native_memory_gc_barrier);
         }
         else {
-            PyTruffle_Log(PY_TRUFFLE_LOG_INFO,
+            GraalPyPrivate_Log(PY_TRUFFLE_LOG_INFO,
                     "%s: native memory exhausted while allocating %lu bytes\n",
                     __func__, size);
             return 1;
@@ -509,7 +509,7 @@ _GraalPyMem_RawFree(void *ctx, void *ptr)
     mem_head_t *ptr_with_head = AS_MEM_HEAD(ptr);
     const size_t size = ptr_with_head->size;
     if (state->allocated_memory < size) {
-        PyTruffle_Log(PY_TRUFFLE_LOG_INFO,
+        GraalPyPrivate_Log(PY_TRUFFLE_LOG_INFO,
                 "%s: freed memory size (%lu) is larger than allocated memory size (%lu)\n",
                 __func__, size, state->allocated_memory);
         state->allocated_memory = size;

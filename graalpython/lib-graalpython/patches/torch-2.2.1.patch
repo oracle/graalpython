@@ -299,7 +299,7 @@ index bbf99ce4..0168b101 100644
 -      return PyErr_Format(
 -          PyExc_RuntimeError,
 -          "function '%s' already has a docstring",
--          _PyCFunction_GetMethodDef((PyObject*)(f))->ml_name);
+-          GraalPyCFunction_GetMethodDef((PyObject*)(f))->ml_name);
 -    }
 -    GraalPyCFunction_SetDoc((PyObject*)(f), doc_str);
 -  } else if (strcmp(Py_TYPE(obj)->tp_name, "method_descriptor") == 0) {
@@ -645,9 +645,9 @@ index bdc62d33..e16c3715 100644
      size_t line = PyCode_Addr2Line(code.get(), PyFrame_GetLasti(frame));
 -    std::string filename = THPUtils_unpackString(code->co_filename);
 -    std::string funcname = THPUtils_unpackString(code->co_name);
-+    PyObject* filenameObj = PyCode_GetFileName(code);
++    PyObject* filenameObj = GraalPyCode_GetFileName(code);
 +    std::string filename = THPUtils_unpackString(filenameObj);
-+    PyObject* funcnameObj = PyCode_GetName(code);
++    PyObject* funcnameObj = GraalPyCode_GetName(code);
 +    std::string funcname = THPUtils_unpackString(funcnameObj);
      auto source = std::make_shared<Source>(funcname, filename, line);
      entries.emplace_back(

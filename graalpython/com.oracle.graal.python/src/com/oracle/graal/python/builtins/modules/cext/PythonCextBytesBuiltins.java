@@ -141,7 +141,7 @@ public final class PythonCextBytesBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class PyTruffleBytes_Concat extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Bytes_Concat extends CApiBinaryBuiltinNode {
         @Specialization
         static Object concat(Object original, Object newPart,
                         @Cached BytesCommonBuiltins.ConcatNode addNode) {
@@ -159,7 +159,7 @@ public final class PythonCextBytesBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyObject}, call = Ignored)
-    abstract static class PyTruffleBytes_FromFormat extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Bytes_FromFormat extends CApiBinaryBuiltinNode {
         @Specialization
         static Object fromFormat(TruffleString fmt, Object args,
                         @Cached ModNode modeNode,
@@ -187,7 +187,7 @@ public final class PythonCextBytesBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtr, Py_ssize_t}, call = Ignored)
     @ImportStatic(CApiGuards.class)
-    abstract static class PyTruffleBytes_FromStringAndSize extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Bytes_FromStringAndSize extends CApiBinaryBuiltinNode {
         // n.b.: the specializations for PIBytesLike are quite common on
         // managed, when the PySequenceArrayWrapper that we used never went
         // native, and during the upcall to here it was simply unwrapped again
@@ -226,7 +226,7 @@ public final class PythonCextBytesBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtr, Py_ssize_t}, call = Ignored)
     @ImportStatic(CApiGuards.class)
-    abstract static class PyTruffleByteArray_FromStringAndSize extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_ByteArray_FromStringAndSize extends CApiBinaryBuiltinNode {
         @Specialization
         static Object doGeneric(PythonNativeWrapper object, long size,
                         @Bind PythonLanguage language,
@@ -259,7 +259,7 @@ public final class PythonCextBytesBuiltins {
 
     @CApiBuiltin(name = "PyByteArray_Resize", ret = Int, args = {PyObject, Py_ssize_t}, call = Direct)
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t}, call = Ignored)
-    abstract static class _PyTruffleBytes_Resize extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Bytes_Resize extends CApiBinaryBuiltinNode {
 
         @Specialization
         static int resize(PBytesLike self, long newSizeL,
@@ -287,7 +287,7 @@ public final class PythonCextBytesBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ArgDescriptor.Long}, call = Ignored)
-    abstract static class PyTruffle_Bytes_EmptyWithCapacity extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Bytes_EmptyWithCapacity extends CApiUnaryBuiltinNode {
 
         @Specialization
         static PBytes doInt(int size,
@@ -333,7 +333,7 @@ public final class PythonCextBytesBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Ignored)
-    abstract static class PyTruffle_ByteArray_EmptyWithCapacity extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_ByteArray_EmptyWithCapacity extends CApiUnaryBuiltinNode {
 
         @Specialization
         static PByteArray doInt(int size,
@@ -379,7 +379,7 @@ public final class PythonCextBytesBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = CApiCallPath.Ignored)
-    abstract static class PyTruffle_Bytes_CheckEmbeddedNull extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Bytes_CheckEmbeddedNull extends CApiUnaryBuiltinNode {
 
         @Specialization
         static int doBytes(Object bytes,

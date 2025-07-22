@@ -225,6 +225,10 @@ public class CStructAccess {
         public static FreeNode create() {
             return FreeNodeGen.create();
         }
+
+        public static FreeNode getUncached() {
+            return FreeNodeGen.getUncached();
+        }
     }
 
     public abstract static class ReadBaseNode extends Node implements CStructAccessNode {

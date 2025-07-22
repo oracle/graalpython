@@ -78,7 +78,7 @@ public final class PythonCextDescrBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyTypeObject, Pointer, Pointer, ConstCharPtrAsTruffleString, Pointer}, call = Ignored)
-    abstract static class PyTruffleDescr_NewGetSet extends CApi6BuiltinNode {
+    abstract static class GraalPyPrivate_Descr_NewGetSet extends CApi6BuiltinNode {
 
         @Specialization
         static Object doNativeCallable(TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
@@ -89,7 +89,7 @@ public final class PythonCextDescrBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, Int, Pointer, PyTypeObject}, call = Ignored)
-    abstract static class PyTruffleDescr_NewClassMethod extends CApi7BuiltinNode {
+    abstract static class GraalPyPrivate_Descr_NewClassMethod extends CApi7BuiltinNode {
 
         @Specialization
         static Object doNativeCallable(Object methodDefPtr, TruffleString name, Object doc, int flags, Object wrapper, Object methObj, Object type,

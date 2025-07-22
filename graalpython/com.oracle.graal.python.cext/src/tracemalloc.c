@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,8 +44,8 @@ int
 PyTraceMalloc_Track(unsigned int domain, uintptr_t ptr,
                     size_t size)
 {
-    if (PyTruffle_Trace_Memory()) {
-        GraalPyTruffleTraceMalloc_Track(domain, ptr, size);
+    if (GraalPyPrivate_Trace_Memory()) {
+        GraalPyPrivate_TraceMalloc_Track(domain, ptr, size);
     }
 
     return 0;
@@ -55,8 +55,8 @@ PyTraceMalloc_Track(unsigned int domain, uintptr_t ptr,
 int
 PyTraceMalloc_Untrack(unsigned int domain, uintptr_t ptr)
 {
-    if (PyTruffle_Trace_Memory()) {
-        GraalPyTruffleTraceMalloc_Untrack(domain, ptr);
+    if (GraalPyPrivate_Trace_Memory()) {
+        GraalPyPrivate_TraceMalloc_Untrack(domain, ptr);
     }
 
     return 0;

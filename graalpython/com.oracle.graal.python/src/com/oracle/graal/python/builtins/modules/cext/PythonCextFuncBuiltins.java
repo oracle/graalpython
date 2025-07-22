@@ -86,7 +86,7 @@ public final class PythonCextFuncBuiltins {
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyObject, ConstCharPtrAsTruffleString}, call = Ignored)
-    abstract static class PyTruffleCFunction_SetDoc extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_CFunction_SetDoc extends CApiBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         static Object setString(Object functionObj, TruffleString doc) {

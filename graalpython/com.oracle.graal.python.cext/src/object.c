@@ -314,7 +314,7 @@ _Py_IncRef(PyObject *o)
         Py_SET_REFCNT(o, refcnt + 1);
         if (refcnt == MANAGED_REFCNT) {
             if (points_to_py_handle_space(o)) {
-                GraalPyTruffle_NotifyRefCount(o, refcnt + 1);
+                GraalPyPrivate_NotifyRefCount(o, refcnt + 1);
             } else if (_PyObject_IS_GC(o)) {
                 _GraalPyObject_GC_NotifyOwnershipTransfer(o);
             }
@@ -531,7 +531,7 @@ int
 _PyObject_IsFreed(PyObject *op)
 {
     if (points_to_py_handle_space(op)) {
-        return Graal_PyTruffleObject_IsFreed(op);
+        return GraalPyPrivate_Object_IsFreed(op);
     }
 #if 0 // GraalPy change
     if (_PyMem_IsPtrFreed(op) || _PyMem_IsPtrFreed(Py_TYPE(op))) {
@@ -556,7 +556,7 @@ void
 _PyObject_Dump(PyObject* op)
 {
     if (points_to_py_handle_space(op)) {
-        Graal_PyTruffleObject_Dump(op);
+        GraalPyPrivate_Object_Dump(op);
         return;
     }
     if (_PyObject_IsFreed(op)) {
@@ -1630,7 +1630,7 @@ PyObject_GenericGetAttr(PyObject *obj, PyObject *name)
     if (tp->tp_dict == NULL && PyType_Ready(tp) < 0) {
     	return NULL;
     }
-	return GraalPyTruffleObject_GenericGetAttr(obj, name);
+	return GraalPyPrivate_Object_GenericGetAttr(obj, name);
 }
 
 #if 0 // GraalPy change
@@ -1734,7 +1734,7 @@ PyObject_GenericSetAttr(PyObject *obj, PyObject *name, PyObject *value)
     if (tp->tp_dict == NULL && PyType_Ready(tp) < 0) {
         return -1;
     }
-    return (int) GraalPyTruffleObject_GenericSetAttr(obj, name, value);
+    return (int) GraalPyPrivate_Object_GenericSetAttr(obj, name, value);
 }
 
 int
@@ -2822,7 +2822,7 @@ int Py_Is(PyObject *x, PyObject *y)
     return (x == y);
 #else
     return (x == y) ||
-        (points_to_py_handle_space(x) && points_to_py_handle_space(y) && GraalPyTruffle_Is(x, y));
+        (points_to_py_handle_space(x) && points_to_py_handle_space(y) && GraalPyPrivate_Is(x, y));
 #endif
 }
 
@@ -2842,13 +2842,14 @@ int Py_IsFalse(PyObject *x)
 }
 
 // GraalPy additions
-Py_ssize_t PyTruffle_REFCNT(PyObject *obj) {
+#undef Py_REFCNT
+Py_ssize_t Py_REFCNT(PyObject *obj) {
     Py_ssize_t res;
     if (points_to_py_handle_space(obj))
     {
         res = pointer_to_stub(obj)->ob_refcnt;
 #ifndef NDEBUG
-        if (PyTruffle_Debug_CAPI() && PyObject_ob_refcnt(obj) != res)
+        if (GraalPyPrivate_Debug_CAPI() && GraalPyPrivate_GET_PyObject_ob_refcnt(obj) != res)
         {
             Py_FatalError("Refcount of native stub and managed object differ");
         }
@@ -2861,18 +2862,25 @@ Py_ssize_t PyTruffle_REFCNT(PyObject *obj) {
     return res;
 }
 
-// alias, currently used in PyO3
+// alias, currently used in PyO3, remove after updating to 3.14
 PyAPI_FUNC(Py_ssize_t) _Py_REFCNT(PyObject *obj) {
-    return PyTruffle_REFCNT(obj);
+    return Py_REFCNT(obj);
 }
 
-void PyTruffle_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
+void _Py_SetRefcnt(PyObject* obj, Py_ssize_t cnt) {
+    // This immortal check is for code that is unaware of immortal objects.
+    // The runtime tracks these objects and we should avoid as much
+    // as possible having extensions inadvertently change the refcnt
+    // of an immortalized object.
+    if (_Py_IsImmortal(obj)) {
+        return;
+    }
     PyObject *dest;
     if (points_to_py_handle_space(obj))
     {
         dest = pointer_to_stub(obj);
 #ifndef NDEBUG
-        if (PyTruffle_Debug_CAPI())
+        if (GraalPyPrivate_Debug_CAPI())
         {
             set_PyObject_ob_refcnt(obj, cnt);
         }
@@ -2885,13 +2893,13 @@ void PyTruffle_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
     dest->ob_refcnt = cnt;
 }
 
-PyTypeObject* PyTruffle_TYPE(PyObject *a) {
+PyTypeObject* GraalPy_TYPE(PyObject *a) {
     PyTypeObject *res;
     if (points_to_py_handle_space(a))
     {
         res = pointer_to_stub(a)->ob_type;
 #ifndef NDEBUG
-        if (PyTruffle_Debug_CAPI() && PyObject_ob_type(a) != res)
+        if (GraalPyPrivate_Debug_CAPI() && GraalPyPrivate_GET_PyObject_ob_type(a) != res)
         {
             Py_FatalError("Type of native stub and managed object differ");
         }
@@ -2906,10 +2914,10 @@ PyTypeObject* PyTruffle_TYPE(PyObject *a) {
 
 // alias, currently used in PyO3
 PyAPI_FUNC(PyTypeObject*) _Py_TYPE(PyObject *obj) {
-    return PyTruffle_TYPE(obj);
+    return GraalPy_TYPE(obj);
 }
 
-Py_ssize_t PyTruffle_SIZE(PyObject *ob) {
+Py_ssize_t GraalPy_SIZE(PyObject *ob) {
     PyVarObject* a = (PyVarObject*)ob;
     Py_ssize_t res;
     if (points_to_py_handle_space(a))
@@ -2922,7 +2930,7 @@ Py_ssize_t PyTruffle_SIZE(PyObject *ob) {
         if (ptr->ob_type == &PyTuple_Type) {
             res = ((GraalPyVarObject *) ptr)->ob_size;
 #ifndef NDEBUG
-            if (PyTruffle_Debug_CAPI() && GraalPy_get_PyVarObject_ob_size(a) != res)
+            if (GraalPyPrivate_Debug_CAPI() && GraalPyPrivate_Get_PyVarObject_ob_size(a) != res)
             {
                 Py_FatalError("ob_size of native stub and managed object differ");
             }
@@ -2930,7 +2938,7 @@ Py_ssize_t PyTruffle_SIZE(PyObject *ob) {
         }
         else
         {
-            res = GraalPy_get_PyVarObject_ob_size(a);
+            res = GraalPyPrivate_Get_PyVarObject_ob_size(a);
         }
     }
     else
@@ -2942,14 +2950,14 @@ Py_ssize_t PyTruffle_SIZE(PyObject *ob) {
 
 // alias, currently used in PyO3
 PyAPI_FUNC(Py_ssize_t) _Py_SIZE(PyObject *obj) {
-    return PyTruffle_SIZE(obj);
+    return GraalPy_SIZE(obj);
 }
 
 void
-PyTruffle_SET_TYPE(PyObject *a, PyTypeObject *b)
+GraalPy_SET_TYPE(PyObject *a, PyTypeObject *b)
 {
     if (points_to_py_handle_space(a)) {
-        PyTruffle_Log(PY_TRUFFLE_LOG_INFO,
+        GraalPyPrivate_Log(PY_TRUFFLE_LOG_INFO,
                 "changing the type of an object is not supported\n");
     } else {
         a->ob_type = b;
@@ -2957,10 +2965,10 @@ PyTruffle_SET_TYPE(PyObject *a, PyTypeObject *b)
 }
 
 void
-PyTruffle_SET_SIZE(PyVarObject *a, Py_ssize_t b)
+GraalPy_SET_SIZE(PyVarObject *a, Py_ssize_t b)
 {
     if (points_to_py_handle_space(a)) {
-        Graal_PyTruffle_SET_SIZE(a, b);
+        GraalPyPrivate_SET_SIZE(a, b);
     } else {
         a->ob_size = b;
     }
@@ -2977,18 +2985,18 @@ _decref_notify(const PyObject *op, const Py_ssize_t updated_refcnt)
 {
     if (points_to_py_handle_space(op) && updated_refcnt <= MANAGED_REFCNT) {
 #if DEFERRED_NOTIFY_SIZE > 1
-        if (PyTruffle_Debug_CAPI() && updated_refcnt < MANAGED_REFCNT) {
+        if (GraalPyPrivate_Debug_CAPI() && updated_refcnt < MANAGED_REFCNT) {
             Py_FatalError("Refcount of native stub fell below MANAGED_REFCNT");
         }
         assert(deferred_notify_cur < DEFERRED_NOTIFY_SIZE);
         deferred_notify_ops[deferred_notify_cur++] = op;
         if (deferred_notify_cur >= DEFERRED_NOTIFY_SIZE) {
             deferred_notify_cur = 0;
-            GraalPyTruffle_BulkNotifyRefCount(deferred_notify_ops, DEFERRED_NOTIFY_SIZE);
+            GraalPyPrivate_BulkNotifyRefCount(deferred_notify_ops, DEFERRED_NOTIFY_SIZE);
         }
 #else
         PyObject *nonConstOp = (PyObject *)op;
-        GraalPyTruffle_BulkNotifyRefCount(&nonConstOp, 1);
+        GraalPyPrivate_BulkNotifyRefCount(&nonConstOp, 1);
 #endif
     }
 }

@@ -224,10 +224,10 @@ class TestMisc(CPyExtTestCase):
         code="""
         #ifdef GRAALVM_PYTHON
         // internal function defined in 'capi.c'
-        int PyTruffle_ToNative(void *);
+        int GraalPyPrivate_ToNative(void *);
         #else
         // nothing to do on CPython
-        static inline int PyTruffle_ToNative(void *arg) {
+        static inline int GraalPyPrivate_ToNative(void *arg) {
             return 0;
         }
         #endif
@@ -240,14 +240,14 @@ class TestMisc(CPyExtTestCase):
 
             double dval = PyFloat_AsDouble(val);
 
-            if (PyTruffle_ToNative(val)) {
+            if (GraalPyPrivate_ToNative(val)) {
                 return Py_False;
             }
 
             // a fresh object with the same value
             PyObject *val1 = PyFloat_FromDouble(dval);
 
-            if (PyTruffle_ToNative(val1)) {
+            if (GraalPyPrivate_ToNative(val1)) {
                 return Py_False;
             }
 
@@ -256,7 +256,7 @@ class TestMisc(CPyExtTestCase):
 
             // reset val's refcnt to X
             Py_DECREF(val);
-            
+
             return val_refcnt == Py_REFCNT(val) ? Py_True : Py_False;
         }
         """,

@@ -41,13 +41,13 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GRAALPY_OBJECT_GC_DEL;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_NO_OP_CLEAR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_NO_OP_TRAVERSE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_COMPARE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_DEALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_FREE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TYPE_GENERIC_ALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBTYPE_TRAVERSE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
@@ -236,14 +236,6 @@ public abstract class CExtNodes {
 
         protected abstract Object execute(Object object, Object arg);
 
-        protected static NativeCAPISymbol getFunction(String typenamePrefix) {
-            CompilerAsserts.neverPartOfCompilation();
-            String subtypeNewFunctionName = typenamePrefix + J_SUBTYPE_NEW;
-            NativeCAPISymbol result = NativeCAPISymbol.getByName(subtypeNewFunctionName);
-            assert result != null : "SubtypeNew function not found: " + subtypeNewFunctionName;
-            return result;
-        }
-
         @Specialization
         Object callNativeConstructor(Object object, Object arg,
                         @Bind Node inliningTarget,
@@ -264,11 +256,9 @@ public abstract class CExtNodes {
     @GenerateInline(false) // footprint reduction 44 -> 25
     public abstract static class FloatSubtypeNew extends SubtypeNew {
 
-        private static final NativeCAPISymbol NEW_FUNCTION = getFunction(BuiltinNames.J_FLOAT);
-
         @Override
         protected final NativeCAPISymbol getFunction() {
-            return NEW_FUNCTION;
+            return NativeCAPISymbol.FUN_FLOAT_SUBTYPE_NEW;
         }
 
         public final Object call(Object object, double arg) {
@@ -282,21 +272,19 @@ public abstract class CExtNodes {
 
     public abstract static class TupleSubtypeNew extends SubtypeNew {
 
-        private static final NativeCAPISymbol NEW_FUNCTION = getFunction(BuiltinNames.J_TUPLE);
-
-        @Child private PythonToNativeNode toSulongNode;
+        @Child private PythonToNativeNode toNativeNode;
 
         @Override
         protected final NativeCAPISymbol getFunction() {
-            return NEW_FUNCTION;
+            return NativeCAPISymbol.FUN_TUPLE_SUBTYPE_NEW;
         }
 
         public final Object call(Object object, Object arg) {
-            if (toSulongNode == null) {
+            if (toNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(PythonToNativeNodeGen.create());
+                toNativeNode = insert(PythonToNativeNodeGen.create());
             }
-            return execute(object, toSulongNode.execute(arg));
+            return execute(object, toNativeNode.execute(arg));
         }
 
         @NeverDefault
@@ -307,21 +295,19 @@ public abstract class CExtNodes {
 
     public abstract static class StringSubtypeNew extends SubtypeNew {
 
-        private static final NativeCAPISymbol NEW_FUNCTION = getFunction(J_UNICODE);
-
-        @Child private PythonToNativeNode toSulongNode;
+        @Child private PythonToNativeNode toNativeNode;
 
         @Override
         protected final NativeCAPISymbol getFunction() {
-            return NEW_FUNCTION;
+            return NativeCAPISymbol.FUN_UNICODE_SUBTYPE_NEW;
         }
 
         public final Object call(Object object, Object arg) {
-            if (toSulongNode == null) {
+            if (toNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(PythonToNativeNodeGen.create());
+                toNativeNode = insert(PythonToNativeNodeGen.create());
             }
-            return execute(object, toSulongNode.execute(arg));
+            return execute(object, toNativeNode.execute(arg));
         }
 
         public static StringSubtypeNew create() {
@@ -1980,8 +1966,8 @@ public abstract class CExtNodes {
                         @Cached(inline = false) NativeToPythonTransferNode asPythonObjectNode,
                         @Cached(inline = false) PCallCapiFunction callCapiFunction,
                         @Cached(inline = false) DefaultCheckFunctionResultNode checkFunctionResultNode) {
-            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(buf), flags);
-            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getTsName(), result);
+            Object result = callCapiFunction.call(FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(buf), flags);
+            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT.getTsName(), result);
             return (PMemoryView) asPythonObjectNode.execute(result);
         }
     }

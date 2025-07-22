@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -46,13 +46,13 @@ PyAPI_FUNC(int) PyList_Reverse(PyObject *);
 PyAPI_FUNC(PyObject *) PyList_AsTuple(PyObject *);
 
 /*
- * GraalPy-specific, used to implement cython's array.resize_smart
+ * GraalPy public API, used to implement cython's array.resize_smart
  */
-PyAPI_FUNC(int) _PyArray_Resize(PyObject* array, Py_ssize_t new_size);
+PyAPI_FUNC(int) GraalPyArray_Resize(PyObject* array, Py_ssize_t new_size);
 /*
- * GraalPy-specific, used to implement cython's array.data
+ * GraalPy public API, used to implement cython's array.data
  */
-PyAPI_FUNC(char*) _PyArray_Data(PyObject* array);
+PyAPI_FUNC(char*) GraalPyArray_Data(PyObject* array);
 
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_LISTOBJECT_H

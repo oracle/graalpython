@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -92,11 +92,6 @@ struct PyMemberDef {
 
 PyAPI_FUNC(PyObject *) PyMember_GetOne(const char *, PyMemberDef *);
 PyAPI_FUNC(int) PyMember_SetOne(char *, PyMemberDef *, PyObject *);
-
-// GraalPy-specific
-PyAPI_FUNC(PyMethodDef*) PyMethodDescrObject_GetMethod(PyObject*);
-PyAPI_FUNC(PyTypeObject*) PyDescrObject_GetType(PyObject*);
-PyAPI_FUNC(PyObject*) PyDescrObject_GetName(PyObject*);
 
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_DESCROBJECT_H

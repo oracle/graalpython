@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -75,7 +75,7 @@ class TestDescrObject(unittest.TestCase):
         assert tester.from_param(123) == TestNewClassMethod
 
     def test_new_descr(self):
-        C = CPyExtType("C_", 
+        C = CPyExtType("C_",
                             '''
                             PyTypeObject A_Type = {
                                 PyVarObject_HEAD_INIT(NULL, 0)
@@ -91,7 +91,7 @@ class TestDescrObject(unittest.TestCase):
                             }
 
                             static PyMethodDef foo_method = {
-                                 "foo", foo, METH_O 
+                                 "foo", foo, METH_O
                             };
 
                             static PyObject* B_new(PyTypeObject* type, PyObject* a, PyObject* b) {
@@ -166,11 +166,11 @@ class TestDescrObject(unittest.TestCase):
                                 B_Type.tp_base = &PyType_Type;
                                 if (PyType_Ready(&B_Type) < 0)
                                     return NULL;
-                                    
-                                Py_SET_TYPE(&C_Type, &B_Type); 
+
+                                Py_SET_TYPE(&C_Type, &B_Type);
                                 C_Type.tp_base = &A_Type;''',
                             )
-        
+
         class bar(C):
             pass
         assert bar().foo(None) is None
@@ -306,8 +306,8 @@ class TestDescr(CPyExtTestCase):
             if (PyObject_TypeCheck(method, (PyTypeObject *)methoddescr_type)) {
                 PyMethodDescrObject *descr = (PyMethodDescrObject *)method;
 #ifdef GRAALVM_PYTHON
-                PyTypeObject *d_type = PyDescrObject_GetType(method);
-                PyObject *class_method = PyDescr_NewClassMethod(d_type, PyMethodDescrObject_GetMethod(method));
+                PyTypeObject *d_type = GraalPyDescrObject_GetType(method);
+                PyObject *class_method = PyDescr_NewClassMethod(d_type, GraalPyMethodDescrObject_GetMethod(method));
 #else
                 PyTypeObject *d_type = descr->d_common.d_type;
                 PyObject *class_method = PyDescr_NewClassMethod(d_type, descr->d_method);

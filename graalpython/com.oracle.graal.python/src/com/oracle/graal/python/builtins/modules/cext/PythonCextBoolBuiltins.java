@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,7 +50,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 public final class PythonCextBoolBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    abstract static class PyTruffle_True extends CApiNullaryBuiltinNode {
+    abstract static class GraalPyPrivate_True extends CApiNullaryBuiltinNode {
         @Specialization
         static boolean run() {
             return true;
@@ -58,7 +58,7 @@ public final class PythonCextBoolBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    abstract static class PyTruffle_False extends CApiNullaryBuiltinNode {
+    abstract static class GraalPyPrivate_False extends CApiNullaryBuiltinNode {
         @Specialization
         static boolean run() {
             return false;

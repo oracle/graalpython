@@ -109,8 +109,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -483,12 +483,12 @@ public final class PythonContext extends Python3Core {
             if (dict != null) {
                 PythonAbstractObjectNativeWrapper dictNativeWrapper = dict.getNativeWrapper();
                 if (dictNativeWrapper != null && dictNativeWrapper.ref == null) {
-                    PyTruffleObjectFree.releaseNativeWrapperUncached(dictNativeWrapper);
+                    CApiTransitions.releaseNativeWrapperUncached(dictNativeWrapper);
                 }
             }
             dict = null;
             if (nativeWrapper != null && nativeWrapper.ref == null) {
-                PyTruffleObjectFree.releaseNativeWrapperUncached(nativeWrapper);
+                CApiTransitions.releaseNativeWrapperUncached(nativeWrapper);
                 nativeWrapper = null;
             }
             /*

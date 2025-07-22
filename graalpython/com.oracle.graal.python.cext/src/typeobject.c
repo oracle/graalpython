@@ -1803,11 +1803,11 @@ traverse_slots(PyTypeObject *type, PyObject *self, visitproc visit, void *arg)
     return 0;
 }
 
-/* GraalPy change: replaced 'static' with 'PyAPI_FUNC' because we lookup the
+/* GraalPy change: replaced 'static' with 'PyAPI_FUNC' and renamed because we lookup the
  * symbol in Java to use it if a type receives 'toNative'.
  */
 PyAPI_FUNC(int)
-subtype_traverse(PyObject *self, visitproc visit, void *arg)
+GraalPyPrivate_SubtypeTraverse(PyObject *self, visitproc visit, void *arg)
 {
     PyTypeObject *type, *base;
     traverseproc basetraverse;
@@ -1821,7 +1821,8 @@ subtype_traverse(PyObject *self, visitproc visit, void *arg)
        and traverse slots while we're at it */
     type = Py_TYPE(self);
     base = type;
-    while ((basetraverse = base->tp_traverse) == subtype_traverse) {
+    // GraalPy change: renamed
+    while ((basetraverse = base->tp_traverse) == GraalPyPrivate_SubtypeTraverse) {
         if (Py_SIZE(base)) {
             int err = traverse_slots(base, self, visit, arg);
             if (err)
@@ -5471,7 +5472,7 @@ PyTypeObject PyType_Type = {
     0,                                          /* tp_init */ // GraalPy change: nulled
     PyType_GenericAlloc,                        /* tp_alloc */ // GraalPy change: added 'PyType_GenericAlloc'
     0,                                          /* tp_new */ // GraalPy change: nulled
-    GraalPyObject_GC_Del,                       /* tp_free */ // GraalPy change: different function
+    GraalPyPrivate_Object_GC_Del,              /* tp_free */ // GraalPy change: different function
     (inquiry)type_is_gc,                        /* tp_is_gc */
 #if 0 // GraalPy change
     .tp_vectorcall = type_vectorcall,
@@ -6704,7 +6705,7 @@ static int
 type_add_method(PyTypeObject *type, PyMethodDef *meth)
 {
     // GraalPy change: different implementation
-    return GraalPyTruffleType_AddFunctionToType(
+    return GraalPyPrivate_Type_AddFunctionToType(
            meth,
            type,
            type->tp_dict,
@@ -6751,7 +6752,7 @@ type_add_members(PyTypeObject *type)
     PyObject *dict = lookup_tp_dict(type);
     for (; memb->name != NULL; memb++) {
         // GraalPy change
-        if (GraalPyTruffleType_AddMember(type, dict, memb->name, memb->type, memb->offset, (memb->flags & READONLY) == 0, memb->doc) < 0)
+        if (GraalPyPrivate_Type_AddMember(type, dict, memb->name, memb->type, memb->offset, (memb->flags & READONLY) == 0, memb->doc) < 0)
             return -1;
     }
     return 0;
@@ -6769,7 +6770,7 @@ type_add_getset(PyTypeObject *type)
     PyObject *dict = lookup_tp_dict(type);
     for (; gsp->name != NULL; gsp++) {
         // GraalPy change
-        if (GraalPyTruffleType_AddGetSet(type,
+        if (GraalPyPrivate_Type_AddGetSet(type,
                         dict,
                         gsp->name,
                         gsp->get,
@@ -7176,7 +7177,7 @@ type_ready_set_dict(PyTypeObject *type)
     }
 
     // GraalPy change
-    PyObject *dict = GraalPyTruffle_NewTypeDict(type);
+    PyObject *dict = GraalPyPrivate_NewTypeDict(type);
     if (dict == NULL) {
         return -1;
     }
@@ -7314,7 +7315,7 @@ type_ready_mro(PyTypeObject *type)
         }
     }
 #else // GraalPy change
-    PyObject* mro = GraalPyTruffle_Compute_Mro(type, type->tp_name);
+    PyObject* mro = GraalPyPrivate_Compute_Mro(type, type->tp_name);
     type->tp_mro = mro;
 #endif // GraalPy change
     return 0;
@@ -7624,7 +7625,7 @@ type_ready(PyTypeObject *type, int rerunbuiltin)
      * dynamic slots from a managed Python class. Since the managed Python class may be created
      * when the C API is not loaded, we need to do that later.
      */
-    GraalPyTruffle_AddInheritedSlots(type);
+    GraalPyPrivate_AddInheritedSlots(type);
 
     if (type_ready_set_hash(type) < 0) {
         goto error;
@@ -7673,8 +7674,8 @@ PyType_Ready(PyTypeObject *type)
     }
 
     // GraalPy change
-    if (PyTruffle_Trace_Memory()) {
-        GraalPyTruffle_Trace_Type(type);
+    if (GraalPyPrivate_Trace_Memory()) {
+        GraalPyPrivate_Trace_Type(type);
     }
 
     return type_ready(type, 0);
@@ -10376,7 +10377,7 @@ add_operators(PyTypeObject *type)
     }
     return 0;
 #else // GraalPy change
-    return GraalPyTruffleType_AddOperators(type);
+    return GraalPyPrivate_Type_AddOperators(type);
 #endif // GraalPy change
 }
 

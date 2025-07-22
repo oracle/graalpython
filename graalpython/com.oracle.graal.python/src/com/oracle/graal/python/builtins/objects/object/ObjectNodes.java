@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_CHECK_BASESIZE_FOR_GETSTATE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_CHECK_BASICSIZE_FOR_GETSTATE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_COPYREG;
 import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_PICKLE_OBJECT_TYPE;
@@ -636,7 +636,7 @@ public abstract class ObjectNodes {
         static boolean doNative(@SuppressWarnings("unused") PythonAbstractNativeObject obj, Object type, int slotNum,
                         @Cached(inline = false) PythonToNativeNode toSulongNode,
                         @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
-            Object result = callCapiFunction.call(FUN_CHECK_BASESIZE_FOR_GETSTATE, toSulongNode.execute(type), slotNum);
+            Object result = callCapiFunction.call(FUN_CHECK_BASICSIZE_FOR_GETSTATE, toSulongNode.execute(type), slotNum);
             return (int) result == 0;
         }
 
