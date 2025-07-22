@@ -68,7 +68,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
@@ -79,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonTransferNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
@@ -93,7 +93,6 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
@@ -124,7 +123,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -419,111 +417,82 @@ public abstract class CApiTransitions {
                 int count = 0;
                 long start = 0;
                 NativeObjectReferenceArrayWrapper referencesToBeFreed = handleContext.referencesToBeFreed;
-                PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage());
-                /*
-                 * There can be an active exception. Since we might be calling arbitary python, we
-                 * need to stash it.
-                 */
-                AbstractTruffleException savedException = null;
-                LazyTraceback savedTraceback = null;
-                Object savedNativeException = null;
-                if (threadState.getCurrentException() != null) {
-                    savedException = threadState.getCurrentException();
-                    savedTraceback = threadState.getCurrentTraceback();
-                    threadState.clearCurrentException();
-                    Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
-                    if (nativeThreadState != null) {
-                        savedNativeException = CStructAccess.ReadPointerNode.readUncached(nativeThreadState, CFields.PyThreadState__curexc_type);
-                        CStructAccess.WritePointerNode.writeUncached(nativeThreadState, CFields.PyThreadState__curexc_type, 0L);
-                    }
-                }
-                try {
-                    while (true) {
-                        Object entry = queue.poll();
-                        if (entry == null) {
-                            if (count > 0) {
-                                assert handleContext.referenceQueuePollActive;
-                                releaseNativeObjects(referencesToBeFreed);
-                                handleContext.referenceQueuePollActive = false;
-                                LOGGER.fine("collected " + count + " references from native reference queue in " + ((System.nanoTime() - start) / 1000000) + "ms");
-                            }
-                            return manuallyCollected;
-                        }
-                        if (count == 0) {
-                            assert !handleContext.referenceQueuePollActive;
-                            handleContext.referenceQueuePollActive = true;
-                            start = System.nanoTime();
-                        } else {
+                while (true) {
+                    Object entry = queue.poll();
+                    if (entry == null) {
+                        if (count > 0) {
                             assert handleContext.referenceQueuePollActive;
+                            releaseNativeObjects(context, referencesToBeFreed);
+                            handleContext.referenceQueuePollActive = false;
+                            LOGGER.fine("collected " + count + " references from native reference queue in " + ((System.nanoTime() - start) / 1000000) + "ms");
                         }
-                        count++;
-                        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s, no remaining managed references", entry));
-                        if (entry instanceof PythonObjectReference reference) {
-                            if (HandlePointerConverter.pointsToPyHandleSpace(reference.pointer)) {
-                                assert nativeStubLookupGet(handleContext, reference.pointer, reference.handleTableIndex) != null : Long.toHexString(reference.pointer);
-                                LOGGER.finer(() -> PythonUtils.formatJString("releasing native stub lookup for managed object %x => %s", reference.pointer, reference));
-                                nativeStubLookupRemove(handleContext, reference);
-                                /*
-                                 * We may only free native object stubs if their reference count is
-                                 * zero. We cannot free other structs (e.g. PyDateTime_CAPI) because
-                                 * we don't know if they are still used from native code. Those must
-                                 * be free'd at context finalization.
-                                 */
-                                long stubPointer = HandlePointerConverter.pointerToStub(reference.pointer);
-                                long newRefCount = subNativeRefCount(stubPointer, MANAGED_REFCNT);
-                                if (newRefCount == 0) {
-                                    LOGGER.finer(() -> PythonUtils.formatJString("No more references for %s (refcount->0): freeing native stub", reference));
-                                    freeNativeStub(reference);
-                                } else {
-                                    LOGGER.finer(() -> PythonUtils.formatJString("Some native references to %s remain (refcount=%d): not freeing native stub yet", reference, newRefCount));
-                                    /*
-                                     * In this case, the object is no longer referenced from managed
-                                     * but still from native code (since the reference count is
-                                     * greater 0). This case is possible if there are reference
-                                     * cycles that include managed objects. We overwrite field
-                                     * 'CFields.GraalPyObject__id' to avoid incorrect reuse of the
-                                     * ID which could resolve to another object.
-                                     */
-                                    CStructAccess.WriteIntNode.writeUncached(stubPointer, CFields.GraalPyObject__handle_table_index, 0);
-                                    // this can only happen if the object is a GC object
-                                    assert reference.gc;
-                                    /*
-                                     * Since the managed object is already dead (only the native
-                                     * object stub is still alive), we need to remove the object
-                                     * from its current GC list. Otherwise, the Python GC would try
-                                     * to traverse the object on the next collection which would
-                                     * lead to a crash.
-                                     */
-                                    GCListRemoveNode.executeUncached(stubPointer);
-                                }
-                            } else {
-                                assert nativeLookupGet(handleContext, reference.pointer) != null : Long.toHexString(reference.pointer);
-                                LOGGER.finer(() -> PythonUtils.formatJString("releasing native stub lookup for managed object with replacement %x => %s", reference.pointer, reference));
-                                nativeLookupRemove(handleContext, reference.pointer);
-                                if (reference.isFreeAtCollection()) {
-                                    LOGGER.finer(() -> PythonUtils.formatJString("freeing managed object %s replacement", reference));
-                                    freeNativeStruct(reference);
-                                }
-                            }
-                        } else if (entry instanceof NativeObjectReference reference) {
-                            LOGGER.finer(() -> PythonUtils.formatJString("releasing native lookup for native object %x => %s", reference.pointer, reference));
-                            nativeLookupRemove(handleContext, reference.pointer);
-                            processNativeObjectReference(reference, referencesToBeFreed);
-                        } else if (entry instanceof NativeStorageReference reference) {
-                            handleContext.nativeStorageReferences.remove(reference);
-                            processNativeStorageReference(reference);
-                        } else if (entry instanceof PyCapsuleReference reference) {
-                            handleContext.pyCapsuleReferences.remove(reference);
-                            processPyCapsuleReference(reference);
-                        }
+                        return manuallyCollected;
                     }
-                } finally {
-                    if (savedException != null) {
-                        threadState.setCurrentException(savedException, savedTraceback);
-                        Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
-                        if (nativeThreadState != null) {
-                            CStructAccess.WritePointerNode.writeUncached(nativeThreadState, CFields.PyThreadState__curexc_type, savedNativeException);
+                    if (count == 0) {
+                        assert !handleContext.referenceQueuePollActive;
+                        handleContext.referenceQueuePollActive = true;
+                        start = System.nanoTime();
+                    } else {
+                        assert handleContext.referenceQueuePollActive;
+                    }
+                    count++;
+                    LOGGER.fine(() -> PythonUtils.formatJString("releasing %s, no remaining managed references", entry));
+                    if (entry instanceof PythonObjectReference reference) {
+                        if (HandlePointerConverter.pointsToPyHandleSpace(reference.pointer)) {
+                            assert nativeStubLookupGet(handleContext, reference.pointer, reference.handleTableIndex) != null : Long.toHexString(reference.pointer);
+                            LOGGER.finer(() -> PythonUtils.formatJString("releasing native stub lookup for managed object %x => %s", reference.pointer, reference));
+                            nativeStubLookupRemove(handleContext, reference);
+                            /*
+                             * We may only free native object stubs if their reference count is
+                             * zero. We cannot free other structs (e.g. PyDateTime_CAPI) because we
+                             * don't know if they are still used from native code. Those must be
+                             * free'd at context finalization.
+                             */
+                            long stubPointer = HandlePointerConverter.pointerToStub(reference.pointer);
+                            long newRefCount = subNativeRefCount(stubPointer, MANAGED_REFCNT);
+                            if (newRefCount == 0) {
+                                LOGGER.finer(() -> PythonUtils.formatJString("No more references for %s (refcount->0): freeing native stub", reference));
+                                freeNativeStub(reference);
+                            } else {
+                                LOGGER.finer(() -> PythonUtils.formatJString("Some native references to %s remain (refcount=%d): not freeing native stub yet", reference, newRefCount));
+                                /*
+                                 * In this case, the object is no longer referenced from managed but
+                                 * still from native code (since the reference count is greater 0).
+                                 * This case is possible if there are reference cycles that include
+                                 * managed objects. We overwrite field 'CFields.GraalPyObject__id'
+                                 * to avoid incorrect reuse of the ID which could resolve to another
+                                 * object.
+                                 */
+                                CStructAccess.WriteIntNode.writeUncached(stubPointer, CFields.GraalPyObject__handle_table_index, 0);
+                                // this can only happen if the object is a GC object
+                                assert reference.gc;
+                                /*
+                                 * Since the managed object is already dead (only the native object
+                                 * stub is still alive), we need to remove the object from its
+                                 * current GC list. Otherwise, the Python GC would try to traverse
+                                 * the object on the next collection which would lead to a crash.
+                                 */
+                                GCListRemoveNode.executeUncached(stubPointer);
+                            }
+                        } else {
+                            assert nativeLookupGet(handleContext, reference.pointer) != null : Long.toHexString(reference.pointer);
+                            LOGGER.finer(() -> PythonUtils.formatJString("releasing native stub lookup for managed object with replacement %x => %s", reference.pointer, reference));
+                            nativeLookupRemove(handleContext, reference.pointer);
+                            if (reference.isFreeAtCollection()) {
+                                LOGGER.finer(() -> PythonUtils.formatJString("freeing managed object %s replacement", reference));
+                                freeNativeStruct(reference);
+                            }
                         }
+                    } else if (entry instanceof NativeObjectReference reference) {
+                        LOGGER.finer(() -> PythonUtils.formatJString("releasing native lookup for native object %x => %s", reference.pointer, reference));
+                        nativeLookupRemove(handleContext, reference.pointer);
+                        processNativeObjectReference(reference, referencesToBeFreed);
+                    } else if (entry instanceof NativeStorageReference reference) {
+                        handleContext.nativeStorageReferences.remove(reference);
+                        processNativeStorageReference(reference);
+                    } else if (entry instanceof PyCapsuleReference reference) {
+                        handleContext.pyCapsuleReferences.remove(reference);
+                        processPyCapsuleReference(reference);
                     }
                 }
             }
@@ -576,19 +545,32 @@ public abstract class CApiTransitions {
      * element. This method may therefore run arbitrary guest code and strictly requires the GIL to
      * be held at the time of invocation.
      */
-    private static void releaseNativeObjects(NativeObjectReferenceArrayWrapper referencesToBeFreed) {
+    private static void releaseNativeObjects(PythonContext context, NativeObjectReferenceArrayWrapper referencesToBeFreed) {
         if (!referencesToBeFreed.isEmpty()) {
             /*
              * This needs the GIL because this will call the native objects' destructors which can
              * be arbitrary guest code.
              */
             assert PythonContext.get(null).ownsGil();
-            LOGGER.fine(() -> PythonUtils.formatJString("releasing %d NativeObjectReference instances", referencesToBeFreed.getArraySize()));
-            Object array = AllocateNode.allocUncached(referencesToBeFreed.getArraySize() * Long.BYTES);
-            CStructAccess.WriteLongNode.getUncached().writeLongArray(array, referencesToBeFreed.getArray(), (int) referencesToBeFreed.getArraySize(), 0, 0);
-            PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_BULK_DEALLOC, array, referencesToBeFreed.getArraySize());
-            FreeNode.executeUncached(array);
-            referencesToBeFreed.reset();
+            PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage());
+            /*
+             * There can be an active exception. Since we might be calling arbitary python, we need
+             * to stash it.
+             */
+            Object savedException = CExtCommonNodes.ReadAndClearNativeException.executeUncached(threadState);
+            try {
+                LOGGER.fine(() -> PythonUtils.formatJString("releasing %d NativeObjectReference instances", referencesToBeFreed.getArraySize()));
+                Object array = AllocateNode.allocUncached(referencesToBeFreed.getArraySize() * Long.BYTES);
+                CStructAccess.WriteLongNode.getUncached().writeLongArray(array, referencesToBeFreed.getArray(), (int) referencesToBeFreed.getArraySize(), 0, 0);
+                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_BULK_DEALLOC, array, referencesToBeFreed.getArraySize());
+                FreeNode.executeUncached(array);
+                referencesToBeFreed.reset();
+            } finally {
+                CExtCommonNodes.ReadAndClearNativeException.executeUncached(threadState);
+                if (savedException != PNone.NO_VALUE) {
+                    CExtCommonNodes.TransformExceptionToNativeNode.executeUncached(savedException);
+                }
+            }
         }
     }
 
@@ -1212,7 +1194,7 @@ public abstract class CApiTransitions {
 
         @Specialization
         static Object doForeign(Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
                         @Cached InlinedExactClassProfile classProfile,
                         @Cached InlinedConditionProfile isNullProfile,
@@ -1273,7 +1255,7 @@ public abstract class CApiTransitions {
 
         @Specialization
         static Object doNative(PythonAbstractNativeObject obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind("needsTransfer()") boolean needsTransfer,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached InlinedBranchProfile inlinedBranchProfile,
@@ -1326,7 +1308,7 @@ public abstract class CApiTransitions {
         @Specialization(guards = "isOther(obj)")
         static Object doOther(Object obj,
                         @Bind("needsTransfer()") boolean needsTransfer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetNativeWrapperNode getWrapper,
                         @Cached GetReplacementNode getReplacementNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
@@ -1448,7 +1430,7 @@ public abstract class CApiTransitions {
 
         @Specialization
         static Object doWrapper(PythonNativeWrapper value,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached InlinedExactClassProfile wrapperProfile,
                         @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             return handleWrapper(inliningTarget, wrapperProfile, updateRefNode, false, value);
@@ -1457,7 +1439,7 @@ public abstract class CApiTransitions {
         @Specialization(guards = "!isNativeWrapper(value)", limit = "3")
         @SuppressWarnings({"truffle-static-method", "truffle-sharing"})
         Object doNonWrapper(Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
                         @Cached CStructAccess.ReadI32Node readI32Node,
                         @Cached InlinedConditionProfile isNullProfile,
@@ -1655,7 +1637,7 @@ public abstract class CApiTransitions {
         @Specialization
         @SuppressWarnings({"truffle-static-method", "truffle-sharing"})
         Object doNonWrapper(long pointer, boolean stealing,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CStructAccess.ReadI32Node readI32Node,
                         @Cached InlinedConditionProfile isZeroProfile,
                         @Cached InlinedConditionProfile createNativeProfile,
@@ -1787,6 +1769,9 @@ public abstract class CApiTransitions {
         if (ignoreIfDead && refCount == 0) {
             return 0;
         }
+        if (refCount == IMMORTAL_REFCNT) {
+            return IMMORTAL_REFCNT;
+        }
         assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
         assert (refCount + refCntDelta) > 0 : String.format("refcnt reached zero during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
 
@@ -1800,6 +1785,9 @@ public abstract class CApiTransitions {
         assert PythonContext.get(null).isNativeAccessAllowed();
         assert PythonContext.get(null).ownsGil();
         long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
+        if (refCount == IMMORTAL_REFCNT) {
+            return IMMORTAL_REFCNT;
+        }
         assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value during managed adjustment for %016x (%d %016x - %d)\n", pointer, refCount, refCount, refCntDelta);
         assert (refCount - refCntDelta) >= 0 : String.format("refcnt below zero during managed adjustment for %016x (%d %016x - %d)\n", pointer, refCount, refCount, refCntDelta);
 
@@ -1927,7 +1915,7 @@ public abstract class CApiTransitions {
 
         @Specialization(guards = "!isNativeWrapper(obj)", limit = "3")
         static PythonNativeWrapper doNonWrapper(Object obj, boolean strict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("obj") InteropLibrary interopLibrary,
                         @Cached NativePtrToPythonWrapperNode nativePtrToPythonWrapperNode,
                         @Cached InlinedConditionProfile isLongProfile) {
@@ -1981,7 +1969,7 @@ public abstract class CApiTransitions {
     public abstract static class WrappedPointerToNativeNode extends CExtToNativeNode {
         @Specialization
         static Object doGeneric(Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile isWrapperProfile,
                         @Cached GetReplacementNode getReplacementNode) {
             if (isWrapperProfile.profile(inliningTarget, object instanceof PythonNativeWrapper)) {

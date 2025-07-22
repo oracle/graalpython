@@ -255,7 +255,7 @@ public class TpSlotSetAttr {
 
         @Specialization
         static void callNative(VirtualFrame frame, TpSlots slots, TpSlotNative slot, Object self, Object name, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached InlinedConditionProfile isSetAttrProfile,
                         @Cached AsCharPointerNode asCharPointerNode,

@@ -1,0 +1,37 @@
+repos:
+- repo: local
+  hooks:
+  - id: checkcopyrights
+    name: Copyright check
+    language: system
+    entry: bash scripts/pre-commit-checkcopyrights.sh
+    types: [text]
+  - id: eclipseformat
+    name: Eclipse formatter
+    language: system
+    entry: bash scripts/pre-commit-eclipseformat.sh
+    types: [text]
+    files: '\.java$'
+  - id: checkstyle
+    name: Checkstyle
+    language: system
+    entry: bash scripts/pre-commit-checkstyle.sh
+    types: [text]
+    files: '\.java$'
+  - id: pylint
+    name: Pylint on mx files
+    language: system
+    pass_filenames: false
+    entry: bash scripts/pre-commit-pylint.sh
+    types: [text]
+    files: '^mx\.graalpython/.*\.py$'
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: trailing-whitespace
+    name: Trim Trailing Whitespace
+    entry: trailing-whitespace-fixer
+    language: python
+    types: [text]
+    files: '\.(java|py|md|c|h|sh)$'
+    exclude: '^graalpython/lib-python/.*'

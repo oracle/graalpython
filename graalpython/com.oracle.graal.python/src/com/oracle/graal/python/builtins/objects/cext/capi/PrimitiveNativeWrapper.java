@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -231,7 +231,7 @@ public final class PrimitiveNativeWrapper extends PythonAbstractObjectNativeWrap
 
         @Specialization(guards = {"obj.isBool()", "!obj.isNative()"})
         static long doBoolNotNative(PrimitiveNativeWrapper obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MaterializeDelegateNode materializeNode) {
             // special case for True and False singletons
             PInt boxed = (PInt) materializeNode.execute(inliningTarget, obj);
@@ -252,7 +252,7 @@ public final class PrimitiveNativeWrapper extends PythonAbstractObjectNativeWrap
 
     @ExportMessage
     void toNative(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CApiTransitions.FirstToNativeNode firstToNativeNode) {
         if (!isNative()) {
             if (isBool()) {

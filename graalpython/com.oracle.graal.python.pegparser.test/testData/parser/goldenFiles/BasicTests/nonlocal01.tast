@@ -23,7 +23,7 @@ Module[1:0-12:7]
         ---- Function body of outer ----
         Assign[2:4-2:15]
             LHS: Name[2:4-2:5] Value: "x" Store
-            RHS: RAW[2:8-2:15] Value: "local"
+            RHS: CODEPOINTS[2:8-2:15] Value: "local"
         FunctionDef[4:4-7:26]
             Name:inner
             ArgumentsTy[1:0-1:0]
@@ -31,11 +31,11 @@ Module[1:0-12:7]
             Nonlocal[5:8-5:18]: x 
             Assign[6:8-6:22]
                 LHS: Name[6:8-6:9] Value: "x" Store
-                RHS: RAW[6:12-6:22] Value: "nonlocal"
+                RHS: CODEPOINTS[6:12-6:22] Value: "nonlocal"
             Call[7:8-7:26]
                 Target: Name[7:8-7:13] Value: "print"
                 Args:
-                    RAW[7:14-7:22] Value: "inner:"
+                    CODEPOINTS[7:14-7:22] Value: "inner:"
                     Name[7:24-7:25] Value: "x"
             ---- End of inner function ----
         Call[9:4-9:11]
@@ -43,7 +43,7 @@ Module[1:0-12:7]
         Call[10:4-10:22]
             Target: Name[10:4-10:9] Value: "print"
             Args:
-                RAW[10:10-10:18] Value: "outer:"
+                CODEPOINTS[10:10-10:18] Value: "outer:"
                 Name[10:20-10:21] Value: "x"
         ---- End of outer function ----
     Call[12:0-12:7]

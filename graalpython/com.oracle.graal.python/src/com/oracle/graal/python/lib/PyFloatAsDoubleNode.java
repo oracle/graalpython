@@ -166,7 +166,7 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
 
         @Specialization
         static double handle(VirtualFrame frame, Object result, Object original,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode resultClassNode,
                         @Cached IsBuiltinClassExactProfile resultProfile,
                         @Cached IsSubtypeNode resultSubtypeNode,

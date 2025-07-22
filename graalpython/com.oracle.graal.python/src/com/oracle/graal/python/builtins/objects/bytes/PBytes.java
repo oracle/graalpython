@@ -101,7 +101,7 @@ public final class PBytes extends PBytesLike {
 
     @ExportMessage
     Object acquire(int flags,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PRaiseNode raiseNode) {
         if ((flags & BufferFlags.PyBUF_WRITABLE) != 0) {
             throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.OBJ_IS_NOT_WRITABLE);

@@ -44,11 +44,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGuards;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.MroShape.MroShapeLookupResult;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -57,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
@@ -78,9 +72,11 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
@@ -111,7 +107,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         @Specialization(replaces = "lookupConstantMRO")
         @InliningCutoff
         protected static Object lookupGeneric(Object klass, TruffleString key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached(value = "createForceType()", uncached = "getUncachedForceType()") ReadAttributeFromObjectNode readAttrNode) {
             return lookup(key, getMroNode.execute(inliningTarget, klass), readAttrNode, false, DynamicObjectLibrary.getUncached());
@@ -226,14 +222,11 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
     // PythonClass specializations:
 
-    static final class AttributeAssumptionPair {
-        public final Assumption assumption;
-        public final Object value;
+    record AttributeAssumptionPair(Assumption assumption, Object value, boolean invalidate) {
+    }
 
-        AttributeAssumptionPair(Assumption assumption, Object value) {
-            this.assumption = assumption;
-            this.value = value;
-        }
+    static final class InvalidateLookupException extends ControlFlowException {
+        private static final InvalidateLookupException INSTANCE = new InvalidateLookupException();
     }
 
     private static boolean skipNonStaticBase(Object clsObj, boolean skipNonStaticBases, DynamicObjectLibrary dylib) {
@@ -243,24 +236,15 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     protected AttributeAssumptionPair findAttrAndAssumptionInMRO(Object klass) {
         CompilerAsserts.neverPartOfCompilation();
         DynamicObjectLibrary dylib = DynamicObjectLibrary.getUncached();
-        // - avoid cases when attributes are stored in a dict containing elements
-        // with a potential MRO sideeffect on access.
-        // Also note that attr should not be read more than once.
-        // - assuming that keys/elements can't be added or replaced in a class dict.
-        // (PythonMangedClass returns MappingProxy, which is read-only). Native classes could
-        // possibly do so, but for now leaving it as it is.
-        PDict dict;
-        if (klass instanceof PythonAbstractNativeObject nativeKlass) {
-            Object nativedict = CStructAccess.ReadObjectNode.getUncached().readFromObj(nativeKlass, CFields.PyTypeObject__tp_dict);
-            dict = nativedict == PNone.NO_VALUE ? null : (PDict) nativedict;
-        } else {
-            dict = GetDictIfExistsNode.getUncached().execute(klass);
-        }
-        if (dict != null && HashingStorageGuards.mayHaveSideEffects(dict)) {
-            return null;
-        }
+        // Regarding potential side effects to MRO caused by __eq__ of the keys in the dicts that we
+        // search through: CPython seems to read the MRO once and then compute the result also
+        // ignoring the side effects. Moreover, CPython has lookup cache, so the side effects
+        // may or may not be visible during subsequent lookups. We want to avoid triggering the side
+        // effects twice, so we succeed this lookup no matter what, however, we will invalidate on
+        // the next lookup if there were some MRO side effects.
         MroSequenceStorage mro = getMro(klass);
         Assumption attrAssumption = mro.createAttributeInMROFinalAssumption(key);
+        Object result = PNone.NO_VALUE;
         for (int i = 0; i < mro.length(); i++) {
             PythonAbstractClass clsObj = mro.getPythonClassItemNormalized(i);
             if (i > 0) {
@@ -272,18 +256,33 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
             }
             Object value = ReadAttributeFromObjectNode.getUncachedForceType().execute(clsObj, key);
             if (value != PNone.NO_VALUE) {
-                return new AttributeAssumptionPair(attrAssumption, value);
+                result = value;
+                break;
             }
         }
-        return new AttributeAssumptionPair(attrAssumption, PNone.NO_VALUE);
+        if (!attrAssumption.isValid()) {
+            return new AttributeAssumptionPair(Assumption.ALWAYS_VALID, result, true);
+        } else {
+            return new AttributeAssumptionPair(attrAssumption, result, false);
+        }
     }
 
     @Specialization(guards = {"isSingleContext()", "isSameType(cachedKlass, klass)", "cachedAttrInMROInfo != null"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()", //
-                    assumptions = "cachedAttrInMROInfo.assumption")
+                    assumptions = "cachedAttrInMROInfo.assumption()", //
+                    rewriteOn = InvalidateLookupException.class)
     protected static Object lookupConstantMROCached(@SuppressWarnings("unused") Object klass,
+                    @Bind Node inliningTarget,
                     @Cached("klass") @SuppressWarnings("unused") Object cachedKlass,
+                    @Cached InlinedBranchProfile shouldInvalidate,
                     @Cached("findAttrAndAssumptionInMRO(cachedKlass)") AttributeAssumptionPair cachedAttrInMROInfo) {
+        if (shouldInvalidate.wasEntered(inliningTarget)) {
+            throw InvalidateLookupException.INSTANCE;
+        } else if (cachedAttrInMROInfo.invalidate) {
+            // next time we will invalidate, but this time we must return the result to avoid
+            // triggering side effects in __eq__ multiple times
+            shouldInvalidate.enter(inliningTarget);
+        }
         return cachedAttrInMROInfo.value;
     }
 

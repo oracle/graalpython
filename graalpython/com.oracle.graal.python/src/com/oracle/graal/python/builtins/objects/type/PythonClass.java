@@ -130,7 +130,7 @@ public final class PythonClass extends PythonManagedClass {
 
     @ExportMessage
     boolean isMetaInstance(Object instance,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached GetClassNode getClassNode,
                     @Cached PForeignToPTypeNode convert,
                     @Cached IsSubtypeNode isSubtype,

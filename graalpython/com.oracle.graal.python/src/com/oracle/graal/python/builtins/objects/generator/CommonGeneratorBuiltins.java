@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.generator;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.GeneratorExit;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopAsyncIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
@@ -54,6 +55,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -337,7 +339,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object send(VirtualFrame frame, PGenerator self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ResumeGeneratorNode resumeGeneratorNode,
                         @Cached PRaiseNode raiseNode) {
             // even though this isn't a builtin for async generators, SendNode is used on async
@@ -361,8 +363,9 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, Object tb,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile hasTbProfile,
+                        @Cached InlinedConditionProfile hasValProfile,
                         @Cached InlinedConditionProfile startedProfile,
                         @Cached InlinedBranchProfile invalidTbProfile,
                         @Cached InlinedBranchProfile runningProfile,
@@ -371,8 +374,13 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                         @Cached ExceptionNodes.SetTracebackNode setTracebackNode,
                         @Cached ExceptionNodes.SetContextNode setContextNode,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached PRaiseNode raiseNode) {
             boolean hasTb = hasTbProfile.profile(inliningTarget, !(tb instanceof PNone));
+            boolean hasVal = hasValProfile.profile(inliningTarget, !(val instanceof PNone));
+            if (hasVal || hasTb) {
+                warnNode.warnEx(frame, DeprecationWarning, ErrorMessages.TYPE_EXC_TB_OF_THROW_IS_DEPRECATED, 1);
+            }
             if (hasTb && !(tb instanceof PTraceback)) {
                 invalidTbProfile.enter(inliningTarget);
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.THROW_THIRD_ARG_MUST_BE_TRACEBACK);
@@ -429,7 +437,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
     public abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object close(VirtualFrame frame, PGenerator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached IsBuiltinObjectProfile isGeneratorExit,
                         @Cached IsBuiltinObjectProfile isStopIteration,
                         @Cached ResumeGeneratorNode resumeGeneratorNode,

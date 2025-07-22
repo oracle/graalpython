@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.contextvars;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -71,17 +72,17 @@ public final class PContextVar extends PythonBuiltinObject {
         return def;
     }
 
-    public Object getValue(PythonContext.PythonThreadState state) {
-        return state.getContextVarsContext().contextVarValues.lookup(this, getHash());
+    public Object getValue(Node node, PythonContext.PythonThreadState state) {
+        return state.getContextVarsContext(node).contextVarValues.lookup(this, getHash());
     }
 
-    public void setValue(PythonContext.PythonThreadState state, Object value) {
-        PContextVarsContext current = state.getContextVarsContext();
+    public void setValue(Node node, PythonContext.PythonThreadState state, Object value) {
+        PContextVarsContext current = state.getContextVarsContext(node);
         current.contextVarValues = current.contextVarValues.withEntry(new Hamt.Entry(this, getHash(), value));
     }
 
-    public Object get(PythonContext.PythonThreadState state, Object defaultValue) {
-        Object result = getValue(state);
+    public Object get(Node node, PythonContext.PythonThreadState state, Object defaultValue) {
+        Object result = getValue(node, state);
         if (result != null) {
             return result;
         }

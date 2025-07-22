@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemWithHashNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetIteratorNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetReverseIteratorNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageIteratorKeyHashNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageIteratorKeyNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageIteratorNextNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageIteratorValueNodeGen;
@@ -62,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage.GetKeywordsStorageItemNode;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
-import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutUnsafeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
@@ -103,28 +103,6 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class HashingStorageNodes {
-
-    public abstract static class HashingStorageGuards {
-        private HashingStorageGuards() {
-        }
-
-        /**
-         * If the storage may contain keys that may have side-effecting {@code __eq__}
-         * implementation.
-         */
-        public static boolean mayHaveSideEffectingEq(PHashingCollection wrapper) {
-            return mayHaveSideEffectingEq(wrapper.getDictStorage());
-        }
-
-        public static boolean mayHaveSideEffectingEq(HashingStorage storage) {
-            return storage instanceof EconomicMapStorage;
-        }
-
-        public static boolean mayHaveSideEffects(PHashingCollection wrapper) {
-            HashingStorage s = wrapper.getDictStorage();
-            return s instanceof EconomicMapStorage && ((EconomicMapStorage) s).map.hasSideEffectingKeys();
-        }
-    }
 
     @GenerateUncached
     @GenerateInline
@@ -253,7 +231,7 @@ public class HashingStorageNodes {
         public abstract void execute(Node inliningTarget, HashingStorage self, TruffleString key, Object value);
     }
 
-    static EconomicMapStorage dynamicObjectStorageToEconomicMap(Node inliningTarget, DynamicObjectStorage s, DynamicObjectLibrary dylib, PyObjectHashNode hashNode, PutUnsafeNode putNode) {
+    static EconomicMapStorage dynamicObjectStorageToEconomicMap(Node inliningTarget, DynamicObjectStorage s, DynamicObjectLibrary dylib, PyObjectHashNode hashNode, ObjectHashMap.PutNode putNode) {
         // TODO: shouldn't we invalidate all MRO assumptions in this case?
         DynamicObject store = s.store;
         EconomicMapStorage result = EconomicMapStorage.create(dylib.getShape(store).getPropertyCount());
@@ -263,7 +241,7 @@ public class HashingStorageNodes {
             if (k instanceof TruffleString) {
                 Object v = dylib.getOrDefault(store, k, PNone.NO_VALUE);
                 if (v != PNone.NO_VALUE) {
-                    putNode.execute(null, inliningTarget, resultMap, k, hashNode.execute(null, inliningTarget, k), v);
+                    putNode.put(null, inliningTarget, resultMap, k, hashNode.execute(null, inliningTarget, k), v);
                 }
             }
         }
@@ -365,7 +343,7 @@ public class HashingStorageNodes {
             static HashingStorage domTransition(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object key, @SuppressWarnings("unused") long keyHash, Object value,
                             @SuppressWarnings("unused") boolean transition, DynamicObjectLibrary dylib,
                             @Cached PyObjectHashNode hashNode,
-                            @Cached PutUnsafeNode putUnsafeNode,
+                            @Cached ObjectHashMap.PutNode putUnsafeNode,
                             @Cached PutNode putNode) {
                 EconomicMapStorage result = dynamicObjectStorageToEconomicMap(inliningTarget, self, dylib, hashNode, putUnsafeNode);
                 putNode.execute(frame, inliningTarget, result.map, key, keyHash, value);
@@ -491,7 +469,7 @@ public class HashingStorageNodes {
             static HashingStorage domTransition(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object key, Object value,
                             @SuppressWarnings("unused") boolean transition, DynamicObjectLibrary dylib,
                             @Cached PyObjectHashNode hashNode,
-                            @Cached PutUnsafeNode putUnsafeNode,
+                            @Cached ObjectHashMap.PutNode putUnsafeNode,
                             @Cached PutNode putNode) {
                 EconomicMapStorage result = dynamicObjectStorageToEconomicMap(inliningTarget, self, dylib, hashNode, putUnsafeNode);
                 putNode.execute(frame, inliningTarget, result.map, key, hashNode.execute(frame, inliningTarget, key), value);
@@ -896,7 +874,7 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorageIterator foreign(@SuppressWarnings("unused") ForeignHashingStorage self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             // InteropLibrary does not provide a reverse HashEntriesIterator
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, FOREIGN_OBJ_ISNT_REVERSE_ITERABLE);
         }
@@ -1027,7 +1005,7 @@ public class HashingStorageNodes {
 
         @Specialization(guards = "it.isReverse")
         static boolean foreignReverse(@SuppressWarnings("unused") ForeignHashingStorage self, HashingStorageIterator it,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             // InteropLibrary does not provide a reverse HashEntriesIterator
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, FOREIGN_OBJ_ISNT_REVERSE_ITERABLE);
         }
@@ -1143,6 +1121,9 @@ public class HashingStorageNodes {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class HashingStorageIteratorKeyHash extends PNodeWithContext {
+        public static long executeUncached(HashingStorage storage, HashingStorageIterator it) {
+            return HashingStorageIteratorKeyHashNodeGen.getUncached().execute(null, null, storage, it);
+        }
 
         public abstract long execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it);
 
@@ -1308,7 +1289,7 @@ public class HashingStorageNodes {
 
         @Specialization
         static Object doIt(Frame frame, Node callbackInliningTarget, HashingStorage storage, HashingStorageForEachCallback<Object> callback, Object accumulatorIn,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageGetIterator getIter,
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached InlinedLoopConditionProfile loopProfile) {

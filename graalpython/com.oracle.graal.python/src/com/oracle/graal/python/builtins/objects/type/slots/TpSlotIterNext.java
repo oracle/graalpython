@@ -54,7 +54,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ClearCurrentExceptionNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.WrapperNodeFactory;
@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -185,14 +186,15 @@ public final class TpSlotIterNext {
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached(inline = false) NativeToPythonTransferNode toPythonNode,
-                        @Cached ClearCurrentExceptionNode clearCurrentExceptionNode) {
+                        @Cached CExtCommonNodes.ReadAndClearNativeException readAndClearNativeException) {
             PythonThreadState state = getThreadStateNode.execute(inliningTarget);
             Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___NEXT__, slot.callable,
                             toNativeNode.execute(self));
             Object pythonResult = toPythonNode.execute(nativeResult);
             if (pythonResult == PNone.NO_VALUE) {
-                if (state.getCurrentException() != null) {
-                    throw clearCurrentExceptionNode.getCurrentExceptionForReraise(inliningTarget, state);
+                Object currentException = readAndClearNativeException.execute(inliningTarget, state);
+                if (currentException != PNone.NO_VALUE) {
+                    throw PException.fromObject(currentException, inliningTarget, false);
                 } else {
                     throw TpIterNextBuiltin.iteratorExhausted();
                 }

@@ -254,7 +254,7 @@ public final class PFunction extends PythonObject {
 
     @ExportMessage
     public SourceSection getSourceLocation(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getCt") @Cached GetCodeCallTargetNode getCt,
                     @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
@@ -289,7 +289,7 @@ public final class PFunction extends PythonObject {
 
     @ExportMessage
     public boolean hasSourceLocation(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("getCt") @Cached GetCodeCallTargetNode getCt,
                     @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();

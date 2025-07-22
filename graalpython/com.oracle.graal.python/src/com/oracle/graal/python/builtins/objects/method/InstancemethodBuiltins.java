@@ -128,7 +128,7 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
         @Specialization(guards = "!checkCallableNode.execute(this, callable)")
         static PNone noCallble(@SuppressWarnings("unused") PDecoratedMethod self, Object callable,
                         @Shared("checkCallable") @SuppressWarnings("unused") @Cached PyCallableCheckNode checkCallableNode,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, callable);
         }
     }
@@ -148,7 +148,7 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
     public abstract static class GetattributeNode extends GetAttrBuiltinNode {
         @Specialization
         protected static Object doIt(VirtualFrame frame, PDecoratedMethod self, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
                         @Cached PyObjectGetAttrO getAttrNode,
                         @Cached IsBuiltinObjectProfile errorProfile) {
@@ -166,7 +166,7 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
     abstract static class DocNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doc(VirtualFrame frame, PDecoratedMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
             return getAttr.execute(frame, inliningTarget, self.getCallable(), T___DOC__);
         }
@@ -190,7 +190,7 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
     public abstract static class GetNode extends DescrGetBuiltinNode {
         @Specialization
         static Object doGeneric(PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object cls,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile objIsNoneProfile) {
             if (objIsNoneProfile.profile(inliningTarget, obj == PNone.NO_VALUE)) {
                 return self.getCallable();
@@ -204,7 +204,7 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString reprBuiltinFunction(VirtualFrame frame, PDecoratedMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getNameNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             return simpleTruffleStringFormatNode.format("<instancemethod %s at 0x%s>", toStr(getNameNode.execute(frame, inliningTarget, self.getCallable(), T___NAME__)),

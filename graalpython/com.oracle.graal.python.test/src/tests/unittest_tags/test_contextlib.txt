@@ -76,6 +76,7 @@ test.test_contextlib.TestRedirectStdout.test_no_redirect_in_init @ darwin-arm64,
 test.test_contextlib.TestRedirectStdout.test_redirect_to_string_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_contextlib.TestSuppress.test_cm_is_reentrant @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_contextlib.TestSuppress.test_exact_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_contextlib.TestSuppress.test_exception_groups @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_contextlib.TestSuppress.test_exception_hierarchy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_contextlib.TestSuppress.test_instance_docs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_contextlib.TestSuppress.test_multiple_exception_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

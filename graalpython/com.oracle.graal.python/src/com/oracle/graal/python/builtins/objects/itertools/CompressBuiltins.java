@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
@@ -94,7 +95,7 @@ public final class CompressBuiltins extends PythonBuiltins {
     public abstract static class CompressNode extends PythonTernaryBuiltinNode {
         @Specialization
         static PCompress construct(VirtualFrame frame, Object cls, Object data, Object selectors,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Bind PythonLanguage language,
@@ -124,7 +125,7 @@ public final class CompressBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PCompress self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectSlotsNode getDataSlots,
                         @Cached GetObjectSlotsNode getSelectorsSlots,
                         @Cached CallSlotTpIterNextNode callIterNextData,
@@ -152,9 +153,10 @@ public final class CompressBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reduce(PCompress self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple = PFactory.createTuple(language, new Object[]{self.getData(), self.getSelectors()});
             return PFactory.createTuple(language, new Object[]{type, tuple});

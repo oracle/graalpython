@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -25,7 +25,9 @@ PyAPI_FUNC(unsigned long) PyThread_start_new_thread(void (*)(void *), void *);
 PyAPI_FUNC(void) _Py_NO_RETURN PyThread_exit_thread(void);
 PyAPI_FUNC(unsigned long) PyThread_get_thread_ident(void);
 
-#if defined(__APPLE__) || defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(_WIN32) || defined(_AIX)
+#if (defined(__APPLE__) || defined(__linux__) || defined(_WIN32) \
+     || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) \
+     || defined(__DragonFly__) || defined(_AIX))
 #define PY_HAVE_THREAD_NATIVE_ID
 PyAPI_FUNC(unsigned long) PyThread_get_thread_native_id(void);
 #endif

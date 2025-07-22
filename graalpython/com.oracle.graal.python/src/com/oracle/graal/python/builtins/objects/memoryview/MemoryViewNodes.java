@@ -268,7 +268,7 @@ public class MemoryViewNodes {
 
         @Specialization(guards = "ptr != null")
         static Object doNative(PMemoryView self, Object ptr, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached UnpackValueNode unpackValueNode) {
             int itemSize = self.getItemSize();
@@ -279,7 +279,7 @@ public class MemoryViewNodes {
 
         @Specialization(guards = "ptr == null")
         static Object doManaged(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached UnpackValueNode unpackValueNode) {
             int itemSize = self.getItemSize();
@@ -299,7 +299,7 @@ public class MemoryViewNodes {
 
         @Specialization(guards = "ptr != null")
         static void doNative(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached PackValueNode packValueNode) {
             int itemSize = self.getItemSize();
@@ -310,7 +310,7 @@ public class MemoryViewNodes {
 
         @Specialization(guards = "ptr == null")
         static void doManaged(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached PackValueNode packValueNode) {
             int itemSize = self.getItemSize();
@@ -364,7 +364,7 @@ public class MemoryViewNodes {
 
         @Specialization
         MemoryPointer resolveInt(PMemoryView self, int index,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile hasOneDimensionProfile,
                         @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -385,7 +385,7 @@ public class MemoryViewNodes {
         @ExplodeLoop
         @SuppressWarnings("truffle-static-method")
         MemoryPointer resolveTupleCached(VirtualFrame frame, PMemoryView self, PTuple indices,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile,
                         @Shared @Cached PyIndexCheckNode indexCheckNode,
                         @Cached("self.getDimensions()") int cachedDimensions,
@@ -405,7 +405,7 @@ public class MemoryViewNodes {
 
         @Specialization(replaces = "resolveTupleCached")
         MemoryPointer resolveTupleGeneric(VirtualFrame frame, PMemoryView self, PTuple indices,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile,
                         @Shared @Cached PyIndexCheckNode indexCheckNode,
                         @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
@@ -425,7 +425,7 @@ public class MemoryViewNodes {
 
         @Specialization(guards = "!isPTuple(indexObj)")
         MemoryPointer resolveIntObj(VirtualFrame frame, PMemoryView self, Object indexObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile hasOneDimensionProfile,
                         @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile,
                         @Shared @Cached PyIndexCheckNode indexCheckNode,
@@ -482,7 +482,7 @@ public class MemoryViewNodes {
         @Specialization(guards = {"self.getDimensions() == cachedDimensions", "cachedDimensions < 8"}, limit = "3")
         @SuppressWarnings("truffle-static-method")
         byte[] tobytesCached(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("self.getDimensions()") int cachedDimensions,
                         @Shared @Cached ReadBytesAtNode readBytesAtNode,
                         @Shared @Cached CExtNodes.PCallCapiFunction callCapiFunction,
@@ -499,7 +499,7 @@ public class MemoryViewNodes {
 
         @Specialization(replaces = "tobytesCached")
         byte[] tobytesGeneric(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached ReadBytesAtNode readBytesAtNode,
                         @Shared @Cached CExtNodes.PCallCapiFunction callCapiFunction,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -596,7 +596,7 @@ public class MemoryViewNodes {
 
         @Specialization(guards = "self.getReference() == null")
         static void releaseSimple(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raise") @Cached PRaiseNode raiseNode) {
             self.checkExports(inliningTarget, raiseNode);
             self.setReleased();
@@ -604,8 +604,8 @@ public class MemoryViewNodes {
 
         @Specialization(guards = {"self.getReference() != null"})
         static void releaseNative(VirtualFrame frame, PMemoryView self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached ReleaseBufferNode releaseNode,
                         @Shared("raise") @Cached PRaiseNode raiseNode) {
             self.checkExports(inliningTarget, raiseNode);
@@ -628,11 +628,11 @@ public class MemoryViewNodes {
         }
 
         public final void execute(VirtualFrame frame, Node inliningTarget, IndirectCallData indirectCallData, BufferLifecycleManager buffer) {
-            Object state = IndirectCallContext.enter(frame, indirectCallData);
+            Object state = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
             try {
                 execute(inliningTarget, buffer);
             } finally {
-                IndirectCallContext.exit(frame, indirectCallData, state);
+                IndirectCallContext.exit(frame, inliningTarget, indirectCallData, state);
             }
         }
 

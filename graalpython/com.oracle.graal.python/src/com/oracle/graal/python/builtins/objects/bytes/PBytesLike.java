@@ -165,7 +165,7 @@ public abstract class PBytesLike extends PSequence {
 
     @ExportMessage
     Object getNativePointer(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PySequenceArrayWrapper.ToNativeStorageNode toNativeStorageNode) {
         NativeSequenceStorage newStorage = toNativeStorageNode.execute(inliningTarget, store, true);
         setSequenceStorage(newStorage);

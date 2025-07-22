@@ -23,7 +23,8 @@ Disassembly of f.<locals>.C:
   2:4   -   2:18        2 STORE_NAME                        1    (__module__)
   2:4   -   2:18        4 LOAD_STRING                       0    ('f.<locals>.C')
   2:4   -   2:18        6 STORE_NAME                        2    (__qualname__)
-  2:17  -   2:18        8 LOAD_CLASSDEREF                   0
-  2:13  -   2:14       10 STORE_NAME                        3    (y)
-  2:13  -   2:18       12 LOAD_NONE
-  2:13  -   2:18       13 RETURN_VALUE
+  2:17  -   2:18        8 LOAD_LOCALS
+  2:17  -   2:18        9 LOAD_FROM_DICT_OR_DEREF           0    (x)
+  2:13  -   2:14       11 STORE_NAME                        3    (y)
+  2:13  -   2:18       13 LOAD_NONE
+  2:13  -   2:18       14 RETURN_VALUE

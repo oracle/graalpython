@@ -110,7 +110,7 @@ public final class BZ2DecompressorBuiltins extends PythonBuiltins {
 
         @Specialization
         static PNone init(BZ2Object.BZ2Decompressor self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction compressInit,
                         @Cached PRaiseNode raiseNode) {
@@ -137,7 +137,7 @@ public final class BZ2DecompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isEOF()"})
         static PBytes doNativeBytes(BZ2Object.BZ2Decompressor self, PBytesLike data, int maxLength,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
                         @Exclusive @Cached Bz2Nodes.Bz2NativeDecompress decompress) {
@@ -150,7 +150,7 @@ public final class BZ2DecompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isEOF()"})
         static PBytes doNativeObject(VirtualFrame frame, BZ2Object.BZ2Decompressor self, Object data, int maxLength,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Exclusive @Cached Bz2Nodes.Bz2NativeDecompress decompress) {
@@ -164,7 +164,7 @@ public final class BZ2DecompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.isEOF()"})
         static Object err(BZ2Object.BZ2Decompressor self, PBytesLike data, int maxLength,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, EOFError, END_OF_STREAM_ALREADY_REACHED);
         }
     }

@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2021, 2024, Oracle and/or its affiliates.
 # Copyright (C) 1996-2021 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -58,6 +58,7 @@ ATEQUAL                 '@='
 RARROW                  '->'
 ELLIPSIS                '...'
 COLONEQUAL              ':='
+EXCLAMATION             '!'
 
 OP
 AWAIT
@@ -65,9 +66,12 @@ ASYNC
 TYPE_IGNORE
 TYPE_COMMENT
 SOFT_KEYWORD
+FSTRING_START
+FSTRING_MIDDLE
+FSTRING_END
+COMMENT
+NL
 ERRORTOKEN
 
 # These aren't used by the C tokenizer but are needed for tokenize.py
-COMMENT
-NL
 ENCODING

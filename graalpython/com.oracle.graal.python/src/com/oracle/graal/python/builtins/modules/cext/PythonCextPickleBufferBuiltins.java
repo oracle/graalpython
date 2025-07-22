@@ -63,7 +63,7 @@ public final class PythonCextPickleBufferBuiltins {
     abstract static class PyTruffle_PickleBuffer_viewobj extends CApiUnaryBuiltinNode {
         @Specialization
         static Object getviewobj(PPickleBuffer object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode) {
             Object owner = null;

@@ -131,7 +131,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     @Specialization(guards = "isSameType(inliningTarget, isSameTypeNode, derived, cls)")
     @SuppressWarnings("unused")
     static boolean isIdentical(Object derived, Object cls,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared @Cached IsSameTypeNode isSameTypeNode) {
         // trivial case: derived == cls
         return true;
@@ -149,7 +149,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     // for assumptions. we also use a larger limit here, because these generate
     // very little code
     static boolean isSubtypeOfCachedMultiContext(Object derived, Object cls,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared @Cached InlinedConditionProfile builtinTypeProfile,
                     @Shared @Cached InlinedConditionProfile builtinClassProfile,
                     @Cached("getType(inliningTarget, derived, builtinTypeProfile, builtinClassProfile)") PythonBuiltinClassType cachedDerived,
@@ -173,7 +173,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }, replaces = "isSubtypeOfCachedMultiContext", limit = "getVariableArgumentInlineCacheLimit()")
     @InliningCutoff
     static boolean isVariableSubtypeOfConstantTypeCachedMultiContext(@SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared @Cached InlinedConditionProfile builtinTypeProfile,
                     @SuppressWarnings("unused") @Shared @Cached InlinedConditionProfile builtinClassProfile,
                     @Shared @Cached IsSameTypeNode isSameTypeNode,
@@ -198,7 +198,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     @InliningCutoff
     @SuppressWarnings("unused")
     static boolean isSubtypeOfCached(Object derived, Object cls,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached("derived") Object cachedDerived,
                     @Cached("cls") Object cachedCls,
                     @Shared @Cached IsSameTypeNode isSameDerivedNode,
@@ -223,7 +223,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     })
     @InliningCutoff
     static boolean isSubtypeOfVariableTypeCached(@SuppressWarnings("unused") Object derived, Object cls,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached("derived") @SuppressWarnings("unused") Object cachedDerived,
                     @SuppressWarnings("unused") @Shared @Cached GetMroStorageNode getMro,
                     @Cached("getMro.execute(inliningTarget, cachedDerived)") MroSequenceStorage mro,
@@ -250,7 +250,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     })
     @InliningCutoff
     static boolean isVariableSubtypeOfConstantTypeCached(@SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached("cls") @SuppressWarnings("unused") Object cachedCls,
                     @SuppressWarnings("unused") @Shared @Cached GetMroStorageNode getMro,
                     @SuppressWarnings("unused") @Cached("getMro.execute(inliningTarget, cachedCls)") MroSequenceStorage baseMro,
@@ -274,7 +274,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     })
     @InliningCutoff
     static boolean isSubtypeGenericCachedLen(@SuppressWarnings("unused") Object derived, Object cls,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared @Cached GetMroStorageNode getMro,
                     @Bind("getMro.execute(inliningTarget, derived)") MroSequenceStorage mro,
                     @Cached("mro.getInternalClassArray().length") int sz,
@@ -293,7 +293,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     @InliningCutoff
     @Megamorphic
     static boolean issubTypeGeneric(Object derived, Object cls,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached InlinedConditionProfile builtinClassIsSubtypeProfile,
                     @Exclusive @Cached IsSameTypeNode isSameTypeNode,
                     @Exclusive @Cached GetMroStorageNode getMro) {

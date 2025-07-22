@@ -106,7 +106,7 @@ public abstract class MappingToKeywordsNode extends PNodeWithContext {
 
         @Specialization
         public CopyKeywordsState add(Frame frame, @SuppressWarnings("unused") Node node, HashingStorage storage, HashingStorageNodes.HashingStorageIterator it, CopyKeywordsState state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached HashingStorageNodes.HashingStorageIteratorKey itKey,

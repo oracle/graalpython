@@ -31,7 +31,10 @@ test.test_urlparse.UrlParseTestCase.test_noslash @ darwin-arm64,darwin-x86_64,li
 test.test_urlparse.UrlParseTestCase.test_parse_fragments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urlparse.UrlParseTestCase.test_parse_qs_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urlparse.UrlParseTestCase.test_parse_qs_separator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urlparse.UrlParseTestCase.test_parse_qsl_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urlparse.UrlParseTestCase.test_parse_qsl_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urlparse.UrlParseTestCase.test_parse_qsl_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urlparse.UrlParseTestCase.test_parse_qsl_false_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urlparse.UrlParseTestCase.test_parse_qsl_max_num_fields @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urlparse.UrlParseTestCase.test_parse_qsl_separator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urlparse.UrlParseTestCase.test_port_casting_failure_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -42,6 +45,7 @@ test.test_urlparse.UrlParseTestCase.test_quote_errors @ darwin-arm64,darwin-x86_
 test.test_urlparse.UrlParseTestCase.test_quote_from_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urlparse.UrlParseTestCase.test_result_pairs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urlparse.UrlParseTestCase.test_roundtrips @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urlparse.UrlParseTestCase.test_roundtrips_normalization @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urlparse.UrlParseTestCase.test_splitting_bracketed_hosts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urlparse.UrlParseTestCase.test_telurl_params @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_urlparse.UrlParseTestCase.test_unparse_parse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

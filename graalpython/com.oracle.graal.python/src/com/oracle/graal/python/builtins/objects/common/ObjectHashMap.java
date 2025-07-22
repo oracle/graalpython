@@ -44,21 +44,18 @@ import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.objects.common.ObjectHashMapFactory.IsSideEffectingKeyNodeGen;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMapFactory.PutNodeGen;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMapFactory.RemoveNodeGen;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.LoopNode;
@@ -66,7 +63,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
-import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Generic dictionary/set backing storage implementation.
@@ -196,14 +192,7 @@ public final class ObjectHashMap {
     // we compacted on deletion.
     int usedIndices;
 
-    /**
-     * If the map contains elements with potential side effects in __eq__, then this map may have to
-     * restart collision resolution on a side effect. This flag is used for this. TODO: the restart
-     * of collision resolution is not implemented yet.
-     */
-    boolean hasSideEffectingKeys;
-
-    public ObjectHashMap(int capacity, boolean hasSideEffects) {
+    public ObjectHashMap(int capacity) {
         int allocateSize;
         if (capacity <= INITIAL_INDICES_SIZE) {
             allocateSize = INITIAL_INDICES_SIZE;
@@ -225,18 +214,12 @@ public final class ObjectHashMap {
             }
         }
         allocateData(allocateSize);
-        hasSideEffectingKeys = hasSideEffects;
     }
 
     public ObjectHashMap() {
         // Note: there is no point in null values/keys, we should use empty storage for such cases,
         // this map will almost certainly have some actual elements
         allocateData(INITIAL_INDICES_SIZE);
-    }
-
-    public ObjectHashMap(boolean hasSideEffects) {
-        allocateData(INITIAL_INDICES_SIZE);
-        this.hasSideEffectingKeys = hasSideEffects;
     }
 
     private void allocateData(int newSize) {
@@ -266,16 +249,11 @@ public final class ObjectHashMap {
         result.hashes = PythonUtils.arrayCopyOf(hashes, hashes.length);
         result.indices = PythonUtils.arrayCopyOf(indices, indices.length);
         result.keysAndValues = PythonUtils.arrayCopyOf(keysAndValues, keysAndValues.length);
-        result.hasSideEffectingKeys = hasSideEffectingKeys;
         return result;
     }
 
     public MapCursor getEntries() {
         return new MapCursor();
-    }
-
-    public boolean hasSideEffectingKeys() {
-        return hasSideEffectingKeys;
     }
 
     @CompilerDirectives.ValueType
@@ -441,6 +419,7 @@ public final class ObjectHashMap {
                                     foundEqKey, collisionFoundNoValue, collisionFoundEqKey, eqNode);
                 } catch (RestartLookupException ignore) {
                     lookupRestart.enter(inliningTarget);
+                    TruffleSafepoint.poll(inliningTarget);
                 }
             }
         }
@@ -508,6 +487,7 @@ public final class ObjectHashMap {
                             return null;
                         }
                     }
+                    TruffleSafepoint.poll(inliningTarget);
                 }
             } finally {
                 LoopNode.reportLoopCount(eqNode, i);
@@ -522,87 +502,11 @@ public final class ObjectHashMap {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    abstract static class UpdateSideEffectingFlag extends Node {
-        public abstract void execute(Node inliningTarget, ObjectHashMap self, Object key);
-
-        @Specialization(guards = "self.hasSideEffectingKeys()")
-        static void flagAlreadySet(@SuppressWarnings("unused") ObjectHashMap self, @SuppressWarnings("unused") Object key) {
-            // nop
-        }
-
-        @Specialization(guards = "!self.hasSideEffectingKeys()")
-        static void flagNotSet(Node inliningTarget, ObjectHashMap self, Object key,
-                        @Cached IsSideEffectingKey isSideEffectingKey) {
-            if (isSideEffectingKey.execute(inliningTarget, key)) {
-                self.hasSideEffectingKeys = true;
-            }
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    @ImportStatic(PGuards.class)
-    abstract static class IsSideEffectingKey extends Node {
-        public abstract boolean execute(Node inliningTarget, Object key);
-
-        @Specialization
-        static boolean doBuiltinString(@SuppressWarnings("unused") int key) {
-            return false;
-        }
-
-        @Specialization
-        static boolean doString(@SuppressWarnings("unused") long key) {
-            return false;
-        }
-
-        @Specialization
-        static boolean doString(@SuppressWarnings("unused") TruffleString object) {
-            return false;
-        }
-
-        @Specialization(guards = "isBuiltinPString(string)")
-        static boolean doBuiltinString(@SuppressWarnings("unused") PString string) {
-            return false;
-        }
-
-        @Fallback
-        static boolean doOthers(@SuppressWarnings("unused") Object key) {
-            return true;
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
     public abstract static class PutNode extends Node {
         public static PutNode getUncached() {
             return PutNodeGen.getUncached();
         }
 
-        public final void put(Frame frame, Node inliningTarget, ObjectHashMap map, DictKey key, Object value) {
-            execute(frame, inliningTarget, map, key.getValue(), key.getPythonHash(), value);
-        }
-
-        public final void put(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash, Object value) {
-            execute(frame, inliningTarget, map, key, keyHash, value);
-        }
-
-        abstract void execute(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash, Object value);
-
-        @Specialization
-        static void doIt(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash, Object value,
-                        @Cached UpdateSideEffectingFlag updateSideEffectingFlag,
-                        @Cached PutUnsafeNode putUnsafeNode) {
-            updateSideEffectingFlag.execute(inliningTarget, map, key);
-            putUnsafeNode.execute(frame, inliningTarget, map, key, keyHash, value);
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class PutUnsafeNode extends Node {
         public final void put(Frame frame, Node inliningTarget, ObjectHashMap map, DictKey key, Object value) {
             execute(frame, inliningTarget, map, key.getValue(), key.getPythonHash(), value);
         }
@@ -628,8 +532,6 @@ public final class ObjectHashMap {
                         @Cached InlinedBranchProfile rehash1Profile,
                         @Cached InlinedBranchProfile rehash2Profile,
                         @Cached PyObjectRichCompareBool eqNode) {
-            // If this assert fires: you're probably using PutUnsafeNode, but should use PutNode
-            assert map.hasSideEffectingKeys || (!IsSideEffectingKeyNodeGen.getUncached().execute(null, key));
             while (true) {
                 try {
                     doPut(frame, map, key, keyHash, value, inliningTarget, foundNullKey, foundEqKey,
@@ -638,6 +540,7 @@ public final class ObjectHashMap {
                     return;
                 } catch (RestartLookupException ignore) {
                     lookupRestart.enter(inliningTarget);
+                    TruffleSafepoint.poll(inliningTarget);
                 }
             }
         }
@@ -700,6 +603,7 @@ public final class ObjectHashMap {
                         return;
                     }
                     markCollision(indices, compactIndex);
+                    TruffleSafepoint.poll(inliningTarget);
                 }
             } finally {
                 LoopNode.reportLoopCount(eqNode, i);
@@ -774,6 +678,10 @@ public final class ObjectHashMap {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class RemoveNode extends Node {
+        public static Object removeUncached(ObjectHashMap map, Object key, long keyHash) {
+            return RemoveNodeGen.getUncached().execute(null, null, map, key, keyHash);
+        }
+
         public abstract Object execute(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash);
 
         // "public" for testing...

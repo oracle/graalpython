@@ -54,12 +54,12 @@ import com.oracle.graal.python.test.integration.PythonTests;
 public class SharedEngineMultithreadingBenchmarkTest extends SharedEngineMultithreadingTestBase {
     @BeforeClass
     public static void setUpClass() {
-        Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("mac"));
+        Assume.assumeFalse(isMacOS() || isAArch64());
     }
 
     @Test
     public void testRichardsInParallelInMultipleContexts() throws Throwable {
-        try (Engine engine = Engine.newBuilder().allowExperimentalOptions(true).option("python.IsolateNativeModules", "true").build()) {
+        try (Engine engine = Engine.newBuilder("python").allowExperimentalOptions(true).option("python.IsolateNativeModules", "true").build()) {
             Source richardsSource = PythonTests.getScriptSource("richards3.py");
             Task[] tasks = new Task[THREADS_COUNT];
             for (int taskIdx = 0; taskIdx < tasks.length; taskIdx++) {

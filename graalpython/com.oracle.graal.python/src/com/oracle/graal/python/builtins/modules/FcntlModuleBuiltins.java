@@ -127,7 +127,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         synchronized PNone flock(VirtualFrame frame, int fd, int operation,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posix,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -149,7 +149,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
     abstract static class LockfNode extends PythonClinicBuiltinNode {
         @Specialization
         PNone lockf(VirtualFrame frame, int fd, int code, Object lenObj, Object startObj, int whence,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posix,
                         @Cached PyLongAsLongNode asLongNode,
@@ -198,12 +198,12 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object ioctl(VirtualFrame frame, int fd, long request, Object arg, boolean mutateArg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached CastToTruffleStringNode castToString,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,

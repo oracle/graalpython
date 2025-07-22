@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2023, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2023 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -42,17 +42,13 @@ static inline char* PyBytes_AS_STRING(PyObject *op)
     // GraalPy change
     return PyBytes_AsString(op);
 }
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyBytes_AS_STRING(op) PyBytes_AS_STRING(_PyObject_CAST(op))
-#endif
+#define PyBytes_AS_STRING(op) PyBytes_AS_STRING(_PyObject_CAST(op))
 
 static inline Py_ssize_t PyBytes_GET_SIZE(PyObject *op) {
     PyBytesObject *self = _PyBytes_CAST(op);
     return Py_SIZE(self);
 }
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyBytes_GET_SIZE(self) PyBytes_GET_SIZE(_PyObject_CAST(self))
-#endif
+#define PyBytes_GET_SIZE(self) PyBytes_GET_SIZE(_PyObject_CAST(self))
 
 /* _PyBytes_Join(sep, x) is like sep.join(x).  sep must be PyBytesObject*,
    x must be an iterable object. */

@@ -1,6 +1,10 @@
 test.test_posix.PosixTester.testNoArgFunctions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_posix.PosixTester.test_access @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posix.PosixTester.test_chdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_chmod_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_chmod_dir_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_chmod_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_chmod_file_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_posix.PosixTester.test_chown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_posix.PosixTester.test_dup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posix.PosixTester.test_dup2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -8,7 +12,7 @@ test.test_posix.PosixTester.test_environ @ darwin-arm64,darwin-x86_64,linux-aarc
 test.test_posix.PosixTester.test_fchown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_posix.PosixTester.test_fs_holes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_posix.PosixTester.test_fstat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_posix.PosixTester.test_fstatvfs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_fstatvfs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posix.PosixTester.test_ftruncate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posix.PosixTester.test_getcwd_long_pathnames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posix.PosixTester.test_getgroups @ linux-aarch64,linux-x86_64
@@ -28,7 +32,7 @@ test.test_posix.PosixTester.test_pipe @ darwin-arm64,darwin-x86_64,linux-aarch64
 test.test_posix.PosixTester.test_putenv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posix.PosixTester.test_rtld_constants @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_posix.PosixTester.test_stat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_posix.PosixTester.test_statvfs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_statvfs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posix.PosixTester.test_strerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posix.PosixTester.test_truncate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_posix.PosixTester.test_umask @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

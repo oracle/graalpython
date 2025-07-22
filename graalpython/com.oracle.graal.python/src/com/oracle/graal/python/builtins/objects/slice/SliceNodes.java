@@ -195,7 +195,7 @@ public abstract class SliceNodes {
 
         @Specialization(guards = "length >= 0")
         PSlice.SliceInfo doSliceObject(VirtualFrame frame, PObjectSlice slice, int length,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SliceExactCastToInt castStartNode,
                         @Cached SliceExactCastToInt castStopNode,
                         @Cached SliceExactCastToInt castStepNode) {
@@ -207,7 +207,7 @@ public abstract class SliceNodes {
 
         @Specialization(guards = "length < 0")
         PSlice.SliceInfo doSliceInt(@SuppressWarnings("unused") PSlice slice, @SuppressWarnings("unused") int length,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
         }
     }
@@ -223,7 +223,7 @@ public abstract class SliceNodes {
 
         @Specialization
         PObjectSlice doSliceInt(PIntSlice slice,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached SliceCastToToBigInt start,
                         @Shared @Cached SliceCastToToBigInt stop,
                         @Shared @Cached SliceCastToToBigInt step,
@@ -242,7 +242,7 @@ public abstract class SliceNodes {
 
         @Specialization
         PObjectSlice doSliceObject(PObjectSlice slice,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached SliceCastToToBigInt start,
                         @Shared @Cached SliceCastToToBigInt stop,
                         @Shared @Cached SliceCastToToBigInt step,

@@ -42,6 +42,9 @@ package com.oracle.graal.python.builtins.modules.hashlib;
 
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_HASHLIB;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_MD5;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA1;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA2;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA3;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_HASHLIB;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
@@ -85,7 +88,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
+import com.oracle.graal.python.builtins.objects.ssl.LazyBouncyCastleProvider;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -139,14 +142,13 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                     "shake_128", "SHAKE128",
                     "shake_256", "SHAKE256");
 
-    public static final String J_CONSTRUCTORS = "_constructors";
     private static final String[] DIGEST_ALIASES = new String[]{
-                    "md5", "_md5",
-                    "sha1", "_sha1",
-                    "sha224", "_sha256",
-                    "sha256", "_sha256",
-                    "sha384", "_sha512",
-                    "sha512", "_sha512",
+                    "md5", J_MD5,
+                    "sha1", J_SHA1,
+                    "sha224", J_SHA2,
+                    "sha256", J_SHA2,
+                    "sha384", J_SHA2,
+                    "sha512", J_SHA2,
                     "sha3_224", J_SHA3,
                     "sha3_256", J_SHA3,
                     "sha3_384", J_SHA3,
@@ -154,34 +156,6 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                     "shake_128", J_SHA3,
                     "shake_256", J_SHA3
     };
-    private static final String[] DIGEST_ALGORITHMS;
-    static {
-        Security.addProvider(CertUtils.BOUNCYCASTLE_PROVIDER);
-        ArrayList<String> digests = new ArrayList<>();
-        for (var provider : Security.getProviders()) {
-            for (var service : provider.getServices()) {
-                if (service.getType().equalsIgnoreCase(MessageDigest.class.getSimpleName())) {
-                    digests.add(service.getAlgorithm());
-                }
-            }
-        }
-        DIGEST_ALGORITHMS = digests.toArray(new String[digests.size()]);
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        EconomicMapStorage algos = EconomicMapStorage.create(DIGEST_ALGORITHMS.length);
-        for (var digest : DIGEST_ALGORITHMS) {
-            algos.putUncached(digest, PNone.NONE);
-        }
-        PythonLanguage language = core.getLanguage();
-        addBuiltinConstant("openssl_md_meth_names", PFactory.createFrozenSet(language, algos));
-
-        EconomicMapStorage storage = EconomicMapStorage.create();
-        addBuiltinConstant(J_CONSTRUCTORS, PFactory.createMappingproxy(language, PFactory.createDict(language, storage)));
-        core.lookupBuiltinModule(T_HASHLIB).setModuleState(storage);
-        super.initialize(core);
-    }
 
     private void addDigestAlias(PythonModule self, PythonModule mod, ReadAttributeFromPythonObjectNode readNode, EconomicMapStorage storage, String digest) {
         TruffleString tsDigest = toTruffleStringUncached(digest);
@@ -195,15 +169,32 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
+        PythonLanguage language = core.getLanguage();
         PythonModule self = core.lookupBuiltinModule(T_HASHLIB);
+        EconomicMapStorage storage = EconomicMapStorage.create();
+        LazyBouncyCastleProvider.initProvider();
+        ArrayList<String> digests = new ArrayList<>();
+        for (var provider : Security.getProviders()) {
+            for (var service : provider.getServices()) {
+                if (service.getType().equalsIgnoreCase(MessageDigest.class.getSimpleName())) {
+                    digests.add(service.getAlgorithm());
+                }
+            }
+        }
+        EconomicMapStorage algos = EconomicMapStorage.create(digests.size());
+        for (var digest : digests) {
+            algos.putUncached(digest, PNone.NONE);
+        }
+        self.setAttribute(tsLiteral("openssl_md_meth_names"), PFactory.createFrozenSet(language, algos));
+        self.setAttribute(tsLiteral("_constructors"), PFactory.createMappingproxy(language, PFactory.createDict(language, storage)));
         ReadAttributeFromPythonObjectNode readNode = ReadAttributeFromPythonObjectNode.getUncached();
-        EconomicMapStorage storage = self.getModuleState(EconomicMapStorage.class);
         PythonModule sha3module = AbstractImportNode.importModule(T_SHA3);
         for (int i = 0; i < DIGEST_ALIASES.length; i += 2) {
             String module = DIGEST_ALIASES[i + 1];
             PythonModule mod = module.equals(J_SHA3) ? sha3module : core.lookupBuiltinModule(toTruffleStringUncached(module));
             addDigestAlias(self, mod, readNode, storage, DIGEST_ALIASES[i]);
         }
+        self.setModuleState(storage);
     }
 
     @Builtin(name = "compare_digest", parameterNames = {"a", "b"})
@@ -211,7 +202,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     abstract static class CompareDigestNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"isString(a)", "isString(b)"})
         static Object cmpStrings(Object a, Object b,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.CopyToByteArrayNode getByteArrayNode,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached CastToTruffleStringNode castA,
@@ -231,8 +222,8 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isString(a) || !isString(b)"})
         static boolean cmpBuffers(VirtualFrame frame, Object a, Object b,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary accessLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -266,7 +257,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     abstract static class HmacDigestNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         static Object hmacDigest(VirtualFrame frame, PythonModule self, Object key, Object msg, Object digest,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HmacNewNode newNode,
                         @Cached DigestObjectBuiltins.DigestNode digestNode,
                         @Cached PRaiseNode raiseNode) {
@@ -287,13 +278,13 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static Object hmacNewError(PythonModule self, Object key, Object msg, PNone digest,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_POS, "hmac_new", "digestmod", 3);
         }
 
         @Specialization(guards = "!isString(digestmod)")
         static Object hmacNewFromFunction(VirtualFrame frame, PythonModule self, Object key, Object msg, Object digestmod,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageNodes.HashingStorageGetItem getItemNode,
                         @Exclusive @Cached CastToTruffleStringNode castStr,
                         @Exclusive @Cached CastToJavaStringNode castJStr,
@@ -314,7 +305,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isString(digestmodObj)")
         static Object hmacNew(@SuppressWarnings("unused") PythonModule self, Object keyObj, Object msgObj, Object digestmodObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached CastToTruffleStringNode castStr,
                         @Exclusive @Cached CastToJavaStringNode castJStr,
                         @Shared("concatStr") @Cached TruffleString.ConcatNode concatStr,
@@ -377,7 +368,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doIt(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType type, String pythonName, String javaName, Object value,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raise) {
@@ -428,7 +419,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object newDigest(VirtualFrame frame, TruffleString name, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CreateDigestNode createNode,
                         @Cached CastToJavaStringNode castStr) {
             String pythonDigestName = getPythonName(castStr.execute(name));
@@ -481,7 +472,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static Object pbkdf2(VirtualFrame frame, TruffleString hashName, Object password, Object salt, long iterations, Object dklenObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @CachedLibrary("password") PythonBufferAccessLibrary passwordLib,
                         @CachedLibrary("salt") PythonBufferAccessLibrary saltLib,

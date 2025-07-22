@@ -112,7 +112,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object mbstreamreaderNew(VirtualFrame frame, Object type, Object err,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual,
@@ -168,7 +168,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
         // _multibytecodec_MultibyteIncrementalDecoder_decode_impl
         @Specialization
         static Object decode(VirtualFrame frame, MultibyteIncrementalDecoderObject self, byte[] input, int end,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MultibyteCodecUtil.DecodeErrorNode decodeErrorNode,
                         @Cached PRaiseNode raiseNode) {
             byte[] data = input;
@@ -249,7 +249,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
         // _multibytecodec_MultibyteIncrementalDecoder_getstate_impl
         @Specialization
         static Object getstate(MultibyteIncrementalDecoderObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached HiddenAttr.WriteNode writeHiddenAttrNode) {
             PBytes buffer = PFactory.createBytes(language, Arrays.copyOf(self.pending, self.pendingsize));
@@ -272,7 +272,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
         // _multibytecodec_MultibyteIncrementalDecoder_setstate_impl
         @Specialization
         static Object setstate(VirtualFrame frame, MultibyteIncrementalDecoderObject self, PTuple state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HiddenAttr.ReadNode readHiddenAttrNode,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,

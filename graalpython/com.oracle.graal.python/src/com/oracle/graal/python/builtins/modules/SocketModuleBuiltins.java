@@ -220,7 +220,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     public abstract static class SetDefaultTimeoutNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object set(VirtualFrame frame, PythonModule module, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SocketNodes.ParseTimeoutNode parseTimeoutNode) {
             long timeout = parseTimeoutNode.execute(frame, inliningTarget, value);
             module.setModuleState(timeout);
@@ -235,7 +235,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         static TruffleString doGeneric(VirtualFrame frame,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -262,7 +262,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLibrary,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createIdnaConverter()") IdnaFromStringOrBytesConverterNode idnaConverter,
                         @Cached SocketNodes.SetIpAddrNode setIpAddrNode,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
@@ -325,7 +325,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createIdnaConverter()") IdnaFromStringOrBytesConverterNode idnaConverter,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached SocketNodes.SetIpAddrNode setIpAddrNode,
@@ -356,7 +356,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
                         @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createIdnaConverter()") IdnaFromStringOrBytesConverterNode idnaConverter,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -404,7 +404,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     public abstract static class GetServByNameNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         static Object getServByName(TruffleString serviceName, Object protocolNameObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile noneProtocol,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
@@ -469,7 +469,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getServByPort(int port, Object protocolNameObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile nonProtocol,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached TruffleString.EqualNode equalNode,
@@ -532,7 +532,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     public abstract static class GetNameInfoNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         static Object getNameInfo(VirtualFrame frame, PTuple sockaddr, int flags,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,
@@ -618,7 +618,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object error(Object sockaddr, Object flags,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.GETNAMEINFO_ARG1_MUST_BE_TUPLE);
         }
 
@@ -637,7 +637,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     public abstract static class GetAddrInfoNode extends PythonClinicBuiltinNode {
         @Specialization
         static Object getAddrInfo(VirtualFrame frame, Object hostObject, Object portObject, int family, int type, int proto, int flags,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") AddrInfoCursorLibrary cursorLib,
@@ -723,7 +723,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         static Object close(VirtualFrame frame, Object fdObj,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GilNode gil,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -752,7 +752,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         static Object close(VirtualFrame frame, Object fdObj,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GilNode gil,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -786,7 +786,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     abstract static class InetAtoNNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
         static PBytes doConvert(TruffleString addr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PRaiseNode raiseNode) {
@@ -812,8 +812,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     abstract static class InetNtoANode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
         static TruffleString doGeneric(VirtualFrame frame, Object addr,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("addr") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
@@ -842,7 +842,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     abstract static class InetPtoNNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         static PBytes doConvert(VirtualFrame frame, int family, TruffleString addr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
@@ -870,8 +870,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     abstract static class InetNtoPNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
         static TruffleString doGeneric(VirtualFrame frame, int family, Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("obj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
@@ -917,7 +917,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     abstract static class NToHSNode extends PythonUnaryBuiltinNode {
         @Specialization
         static int convert(VirtualFrame frame, Object xObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached PRaiseNode raiseNode) {
@@ -942,7 +942,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     abstract static class NToHLNode extends PythonUnaryBuiltinNode {
         @Specialization
         static long convert(VirtualFrame frame, Object xObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached PRaiseNode raiseNode) {
             long x = asLongNode.execute(frame, inliningTarget, xObj);

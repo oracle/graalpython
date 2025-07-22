@@ -17,7 +17,7 @@ Module[1:0-6:15]
             Args:
                 ArgTy[1:15-1:16] f
         ---- Function body of walk_stack ----
-        RAW[2:4-2:23] Value: "Documentation"
+        CODEPOINTS[2:4-2:23] Value: "Documentation"
         If[3:4-4:15]
             Test: 
                 Compare[3:7-3:16]

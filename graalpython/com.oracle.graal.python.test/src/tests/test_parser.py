@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -624,22 +624,22 @@ def test_optimize():
     codestr = '''
 """There is module doc"""
 
-assert "assert in module"
+assert x > 0, "assert in module"
 
 class MyClass():
   """There is class doc"""
-  assert "assert in class"
+  assert x > 0, "assert in class"
   def method1(self):
     """There is method doc"""
-    assert "assert in method"
+    assert x > 0, "assert in method"
 
 def fn():
   """There is function doc"""
-  assert "assert in function"
+  assert x > 0, "assert in function"
 
 def gen():
   """There is generator doc"""
-  assert "assert in generator"""
+  assert x > 0, "assert in generator"""
   yield 10
   yield 20
 '''

@@ -86,7 +86,7 @@ public final class PythonCextCapsuleBuiltins {
     abstract static class PyCapsule_New extends CApiTernaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object pointer, Object namePtr, Object destructor,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyCapsuleNewNode pyCapsuleNewNode) {
             return pyCapsuleNewNode.execute(inliningTarget, pointer, namePtr, destructor);
         }
@@ -118,7 +118,7 @@ public final class PythonCextCapsuleBuiltins {
     abstract static class PyCapsule_IsValid extends CApiBinaryBuiltinNode {
         @Specialization
         static int doCapsule(PyCapsule o, Object namePtr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyCapsuleNameMatchesNode nameMatchesNode) {
             if (o.getPointer() == null) {
                 return 0;
@@ -139,7 +139,7 @@ public final class PythonCextCapsuleBuiltins {
     abstract static class PyCapsule_GetPointer extends CApiBinaryBuiltinNode {
         @Specialization
         static Object doCapsule(Object o, Object name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyCapsuleGetPointerNode pyCapsuleGetPointerNode) {
             return pyCapsuleGetPointerNode.execute(inliningTarget, o, name);
         }
@@ -176,7 +176,7 @@ public final class PythonCextCapsuleBuiltins {
 
         @Specialization
         Object get(PyCapsule o,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (o.getPointer() == null) {
                 throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetName");
@@ -186,7 +186,7 @@ public final class PythonCextCapsuleBuiltins {
 
         @Fallback
         static Object doit(@SuppressWarnings("unused") Object o,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetName");
         }
     }
@@ -195,7 +195,7 @@ public final class PythonCextCapsuleBuiltins {
     abstract static class PyCapsule_GetDestructor extends CApiUnaryBuiltinNode {
         @Specialization
         Object doCapsule(PyCapsule o,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (o.getPointer() == null) {
                 throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetDestructor");
@@ -208,7 +208,7 @@ public final class PythonCextCapsuleBuiltins {
 
         @Fallback
         static Object doError(@SuppressWarnings("unused") Object o,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
         }
     }
@@ -217,7 +217,7 @@ public final class PythonCextCapsuleBuiltins {
     abstract static class PyCapsule_GetContext extends CApiUnaryBuiltinNode {
         @Specialization
         Object doCapsule(PyCapsule o,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (o.getPointer() == null) {
                 throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetContext");
@@ -230,7 +230,7 @@ public final class PythonCextCapsuleBuiltins {
 
         @Fallback
         static Object doError(@SuppressWarnings("unused") Object o,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
         }
     }
@@ -239,7 +239,7 @@ public final class PythonCextCapsuleBuiltins {
     abstract static class PyCapsule_SetPointer extends CApiBinaryBuiltinNode {
         @Specialization
         static int doCapsule(PyCapsule o, Object pointer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "2") InteropLibrary interopLibrary,
                         @Cached PRaiseNode raiseNode) {
             if (interopLibrary.isNull(pointer)) {
@@ -256,7 +256,7 @@ public final class PythonCextCapsuleBuiltins {
 
         @Fallback
         static Object doError(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetPointer");
         }
     }
@@ -265,7 +265,7 @@ public final class PythonCextCapsuleBuiltins {
     abstract static class PyCapsule_SetName extends CApiBinaryBuiltinNode {
         @Specialization
         static int set(PyCapsule o, Object namePtr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached PRaiseNode raiseNode) {
             if (o.getPointer() == null) {
@@ -277,7 +277,7 @@ public final class PythonCextCapsuleBuiltins {
 
         @Fallback
         static Object doError(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetName");
         }
     }
@@ -286,7 +286,7 @@ public final class PythonCextCapsuleBuiltins {
     abstract static class PyCapsule_SetDestructor extends CApiBinaryBuiltinNode {
         @Specialization
         static int doCapsule(PyCapsule o, Object destructor,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached PRaiseNode raiseNode) {
             if (o.getPointer() == null) {
@@ -298,7 +298,7 @@ public final class PythonCextCapsuleBuiltins {
 
         @Fallback
         static Object doError(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetDestructor");
         }
     }
@@ -307,7 +307,7 @@ public final class PythonCextCapsuleBuiltins {
     abstract static class PyCapsule_SetContext extends CApiBinaryBuiltinNode {
         @Specialization
         static int doCapsule(PyCapsule o, Object context,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (o.getPointer() == null) {
                 throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetContext");
@@ -318,7 +318,7 @@ public final class PythonCextCapsuleBuiltins {
 
         @Fallback
         static Object doError(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetContext");
         }
     }
@@ -327,7 +327,7 @@ public final class PythonCextCapsuleBuiltins {
     abstract static class PyCapsule_Import extends CApiBinaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object namePtr, @SuppressWarnings("unused") int noBlock,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CApiTransitions.CharPtrToPythonNode charPtrToPythonNode,
                         @Cached PyCapsuleNameMatchesNode nameMatchesNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,

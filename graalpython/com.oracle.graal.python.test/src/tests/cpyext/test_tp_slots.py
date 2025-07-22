@@ -917,7 +917,7 @@ def test_nb_add_sq_concat_static_managed_heap_inheritance():
     assert SlotsGetter.get_nb_add(ManagedDummy()) == SlotsGetter.get_nb_add(NbAddSqConcatStaticType())
 
 def test_sq_repeat_mul_without_rmul_inheritance():
-    mod = compile_module_from_file("fuzzer_test10")
+    mod = compile_module_from_file("fuzzer_test10", __file__)
     Native0 = mod.create_Native0((object, ))
     class Managed1(Native0):
         def __add__(self): return self

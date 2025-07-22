@@ -34,3 +34,4 @@ test.test_scope.ScopeTests.testUnboundLocal @ darwin-arm64,darwin-x86_64,linux-a
 test.test_scope.ScopeTests.testUnboundLocal_AfterDel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_scope.ScopeTests.testUnboundLocal_AugAssign @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_scope.ScopeTests.testUnoptimizedNamespaces @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.test_multiple_nesting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

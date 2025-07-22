@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,6 @@ import java.util.Arrays;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.runtime.NFIBz2Support;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -106,7 +105,6 @@ public abstract class BZ2Object extends PythonBuiltinObject {
         private int bzsAvailInReal;
 
         private byte[] nextIn;
-        private Object nextInGuest;
         private int nextInIndex;
 
         public BZ2Decompressor(Object cls, Shape instanceShape) {
@@ -119,7 +117,6 @@ public abstract class BZ2Object extends PythonBuiltinObject {
             this.unusedData = PythonUtils.EMPTY_BYTE_ARRAY;
 
             this.nextIn = null;
-            this.nextInGuest = null;
             this.nextInIndex = 0;
         }
 
@@ -190,19 +187,10 @@ public abstract class BZ2Object extends PythonBuiltinObject {
         public void setNextIn(byte[] in) {
             assert in != null;
             this.nextIn = in;
-            this.nextInGuest = null;
         }
 
         public void clearNextIn() {
             this.nextIn = null;
-            this.nextInGuest = null;
-        }
-
-        public Object getNextInGuest(PythonContext context) {
-            if (nextInGuest == null) {
-                this.nextInGuest = context.getEnv().asGuestValue(nextIn);
-            }
-            return nextInGuest;
         }
 
         public int getNextInIndex() {

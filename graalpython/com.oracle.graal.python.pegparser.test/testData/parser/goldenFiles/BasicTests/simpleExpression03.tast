@@ -5,6 +5,6 @@ Input:
 Output:
 -------
 Module[1:0-1:14]
-    RAW[1:0-1:6] Value: "ahoj"
+    CODEPOINTS[1:0-1:6] Value: "ahoj"
     LONG[1:8-1:9] Value: 2
     DOUBLE[1:11-1:14] Value: 1.0

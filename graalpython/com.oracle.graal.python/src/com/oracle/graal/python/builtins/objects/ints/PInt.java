@@ -120,7 +120,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public boolean isNumber(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this") InteropLibrary self) {
         PythonContext context = PythonContext.get(self);
@@ -132,7 +132,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public boolean fitsInByte(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this") InteropLibrary self) {
         if (isNumber(inliningTarget, isBoolean, self)) {
@@ -144,7 +144,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public byte asByte(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this") InteropLibrary self) throws UnsupportedMessageException {
         if (isNumber(inliningTarget, isBoolean, self)) {
@@ -161,7 +161,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     boolean fitsInShort(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this") InteropLibrary self) {
         if (isNumber(inliningTarget, isBoolean, self)) {
@@ -173,7 +173,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage(limit = "1")
     short asShort(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this.intValue()") InteropLibrary interop) throws UnsupportedMessageException {
         if (isNumber(inliningTarget, isBoolean, interop)) {
@@ -190,7 +190,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public boolean fitsInInt(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this") InteropLibrary self) {
         if (isNumber(inliningTarget, isBoolean, self)) {
@@ -202,7 +202,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public int asInt(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this") InteropLibrary self) throws UnsupportedMessageException {
         if (isNumber(inliningTarget, isBoolean, self)) {
@@ -219,7 +219,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public boolean fitsInLong(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this") InteropLibrary self) {
         if (isNumber(inliningTarget, isBoolean, self)) {
@@ -231,7 +231,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public long asLong(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this") InteropLibrary self) throws UnsupportedMessageException {
         if (isNumber(inliningTarget, isBoolean, self)) {
@@ -248,7 +248,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage(limit = "1")
     boolean fitsInFloat(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this.longValue()") InteropLibrary interop) {
         try {
@@ -260,7 +260,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage(limit = "1")
     float asFloat(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
         if (isNumber(inliningTarget, isBoolean, interop)) {
@@ -277,7 +277,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage(limit = "1")
     boolean fitsInDouble(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this.longValue()") InteropLibrary interop) {
         try {
@@ -289,7 +289,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage(limit = "1")
     double asDouble(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
         if (isNumber(inliningTarget, isBoolean, interop)) {

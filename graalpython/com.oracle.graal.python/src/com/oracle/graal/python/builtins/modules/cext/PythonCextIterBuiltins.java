@@ -64,7 +64,7 @@ public final class PythonCextIterBuiltins {
     abstract static class PyIter_Check extends CApiUnaryBuiltinNode {
         @Specialization
         static int check(Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyIterCheckNode check) {
             return check.execute(inliningTarget, obj) ? 1 : 0;
         }

@@ -114,6 +114,7 @@ import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TokenizeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TracemallocModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
@@ -171,9 +172,8 @@ import com.oracle.graal.python.builtins.modules.hashlib.HashObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Md5ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Sha1ModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.hashlib.Sha256ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.hashlib.Sha2ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Sha3ModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.hashlib.Sha512ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.ShakeDigestObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOMixinBuiltins;
@@ -214,6 +214,7 @@ import com.oracle.graal.python.builtins.modules.pickle.UnpicklerMemoProxyBuiltin
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
+import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressorBuiltins;
 import com.oracle.graal.python.builtins.objects.NoneBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -313,6 +314,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.method.AbstractBuiltinMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinClassmethodBuiltins;
@@ -372,6 +374,13 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.GenericBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.ParamSpecArgsBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.ParamSpecBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.ParamSpecKwargsBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.TypeAliasTypeBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.TypeVarBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.TypeVarTupleBuiltins;
 import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -665,6 +674,7 @@ public abstract class Python3Core {
                         new LocaleModuleBuiltins(),
                         new SysModuleBuiltins(),
                         new MemoryViewBuiltins(),
+                        new MemoryViewIteratorBuiltins(),
                         new SuperBuiltins(),
                         PythonImageBuildOptions.WITHOUT_SSL ? null : new SSLModuleBuiltins(),
                         PythonImageBuildOptions.WITHOUT_SSL ? null : new SSLContextBuiltins(),
@@ -680,8 +690,7 @@ public abstract class Python3Core {
                         // hashlib
                         PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Md5ModuleBuiltins(),
                         PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Sha1ModuleBuiltins(),
-                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Sha256ModuleBuiltins(),
-                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Sha512ModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Sha2ModuleBuiltins(),
                         PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Sha3ModuleBuiltins(),
                         PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Blake2ModuleBuiltins(),
                         PythonImageBuildOptions.WITHOUT_DIGEST ? null : new DigestObjectBuiltins(),
@@ -717,6 +726,7 @@ public abstract class Python3Core {
                         PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZLibModuleBuiltins(),
                         PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZlibCompressBuiltins(),
                         PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZlibDecompressBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZlibDecompressorBuiltins(),
 
                         new MMapModuleBuiltins(),
                         new FcntlModuleBuiltins(),
@@ -799,7 +809,17 @@ public abstract class Python3Core {
 
                         // _tokenizer
                         new TokenizeModuleBuiltins(),
-                        new TokenizerIterBuiltins()));
+                        new TokenizerIterBuiltins(),
+
+                        // _typing
+                        new TypingModuleBuiltins(),
+                        new TypeVarBuiltins(),
+                        new TypeVarTupleBuiltins(),
+                        new ParamSpecBuiltins(),
+                        new ParamSpecArgsBuiltins(),
+                        new ParamSpecKwargsBuiltins(),
+                        new TypeAliasTypeBuiltins(),
+                        new GenericBuiltins()));
         if (HAS_PROFILER_TOOL) {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(new ProfilerBuiltins());

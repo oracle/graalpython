@@ -134,7 +134,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends LenBuiltinNode {
         @Specialization
         static int len(PDictView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageLen len) {
             return len.execute(inliningTarget, self.getWrappedStorage());
         }
@@ -145,7 +145,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getKeysViewIter(@SuppressWarnings("unused") PDictKeysView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("len") @Cached HashingStorageLen lenNode,
                         @Shared("getit") @Cached HashingStorageGetIterator getIterator,
                         @Bind PythonLanguage language) {
@@ -155,7 +155,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getItemsViewIter(PDictItemsView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("len") @Cached HashingStorageLen lenNode,
                         @Shared("getit") @Cached HashingStorageGetIterator getIterator,
                         @Bind PythonLanguage language) {
@@ -169,7 +169,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
     public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getReversedKeysViewIter(PDictKeysView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached HashingStorageLen lenNode,
                         @Shared @Cached HashingStorageGetReverseIterator getReverseIterator,
                         @Bind PythonLanguage language) {
@@ -179,7 +179,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getReversedItemsViewIter(PDictItemsView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached HashingStorageLen lenNode,
                         @Shared @Cached HashingStorageGetReverseIterator getReverseIterator,
                         @Bind PythonLanguage language) {
@@ -194,21 +194,21 @@ public final class DictViewBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "len.execute(inliningTarget, self.getWrappedStorage()) == 0", limit = "1")
         static boolean containsEmpty(PDictView self, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageLen len) {
             return false;
         }
 
         @Specialization
         static boolean contains(VirtualFrame frame, PDictKeysView self, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached HashingStorageGetItem getItem) {
             return getItem.hasKey(frame, inliningTarget, self.getWrappedStorage(), key);
         }
 
         @Specialization
         static boolean contains(VirtualFrame frame, PDictItemsView self, PTuple key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached HashingStorageGetItem getItem,
                         @Cached PyObjectRichCompareBool eqNode,
                         @Cached InlinedConditionProfile tupleLenProfile,
@@ -244,14 +244,14 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self == other"})
         static boolean disjointSame(PDictView self, @SuppressWarnings("unused") PDictView other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached @Shared HashingStorageLen len) {
             return len.execute(inliningTarget, self.getWrappedStorage()) == 0;
         }
 
         @Specialization(guards = {"self != other"})
         static boolean disjointNotSame(VirtualFrame frame, PDictView self, PDictView other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached @Shared HashingStorageLen len,
                         @Cached @Shared InlinedConditionProfile sizeProfile,
                         @Cached @Shared PyObjectSizeNode sizeNode,
@@ -261,7 +261,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean disjoint(VirtualFrame frame, PDictView self, PBaseSet other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached @Shared HashingStorageLen len,
                         @Cached @Shared InlinedConditionProfile sizeProfile,
                         @Cached @Shared PyObjectSizeNode sizeNode,
@@ -300,7 +300,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         public boolean doIt(VirtualFrame frame, Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedLoopConditionProfile loopConditionProfile,
                         @Cached PyObjectGetIter getIterNode,
                         @Cached PyIterNextNode nextNode,
@@ -351,7 +351,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isDictViewOrSet(other)")
         static boolean doIt(VirtualFrame frame, PDictView self, Object other, RichCmpOp originalOp,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile isSetProfile,
                         @Cached InlinedConditionProfile lenCheckProfile,
                         @Cached InlinedConditionProfile reverseProfile,
@@ -400,7 +400,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PBaseSet other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("diff") @Cached HashingStorageDiff diffNode,
                         @Bind PythonLanguage language) {
             HashingStorage storage = diffNode.execute(frame, inliningTarget, self.getWrappedStorage(), other.getDictStorage());
@@ -409,7 +409,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PDictKeysView other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("diff") @Cached HashingStorageDiff diffNode,
                         @Bind PythonLanguage language) {
             HashingStorage storage = diffNode.execute(frame, inliningTarget, self.getWrappedStorage(), other.getWrappedStorage());
@@ -418,7 +418,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
                         @Shared("diff") @Cached HashingStorageDiff diffNode,
                         @Bind PythonLanguage language) {
@@ -430,7 +430,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PBaseSet other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
                         @Shared("diff") @Cached HashingStorageDiff diffNode,
                         @Bind PythonLanguage language) {
@@ -441,7 +441,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBaseSet doGeneric(VirtualFrame frame, Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
                         @Shared("diff") @Cached HashingStorageDiff diffNode,
                         @Bind PythonLanguage language) {
@@ -504,7 +504,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBaseSet doGeneric(VirtualFrame frame, Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetStorageForBinopNode getStorage,
                         @Cached HashingStorageIntersect intersectNode,
                         @Bind PythonLanguage language) {
@@ -520,7 +520,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBaseSet doGeneric(VirtualFrame frame, Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetCopiedStorageForBinopNode getStorage,
                         @Cached HashingStorageAddAllToOther addAllToOther,
                         @Bind PythonLanguage language) {
@@ -536,7 +536,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBaseSet doGeneric(VirtualFrame frame, Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetStorageForBinopNode getStorage,
                         @Cached HashingStorageXor xor,
                         @Bind PythonLanguage language) {

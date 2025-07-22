@@ -40,10 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
@@ -69,6 +70,9 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
@@ -93,7 +97,7 @@ public final class PythonCextCEvalBuiltins {
 
         @Specialization
         static Object save(@Cached GilNode gil,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             Object threadState = PThreadState.getOrCreateNativeThreadState(context.getLanguage(inliningTarget), context);
             LOGGER.fine("C extension releases GIL");
@@ -108,7 +112,7 @@ public final class PythonCextCEvalBuiltins {
 
         @Specialization
         static Object restore(@SuppressWarnings("unused") Object ptr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached GilNode gil) {
             /*
@@ -132,11 +136,11 @@ public final class PythonCextCEvalBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyFrameObjectTransfer, args = {}, call = Direct)
+    @CApiBuiltin(ret = PyFrameObjectBorrowed, args = {}, call = Direct)
     abstract static class PyEval_GetFrame extends CApiNullaryBuiltinNode {
         @Specialization
         Object getFrame(
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Cached ReadCallerFrameNode readCallerFrameNode) {
             PFrame.Reference reference = getCurrentFrameRef.execute(null, inliningTarget);
@@ -150,7 +154,8 @@ public final class PythonCextCEvalBuiltins {
         static Object doGeneric(PCode code, Object globals, Object locals,
                         Object argumentArrayPtr, int argumentCount, Object kwsPtr, int kwsCount, Object defaultValueArrayPtr, int defaultValueCount,
                         Object kwdefaultsWrapper, Object closureObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
+                        @Cached PRaiseNode raiseNode,
                         @Cached CStructAccess.ReadObjectNode readNode,
                         @Cached PythonCextBuiltins.CastKwargsNode castKwargsNode,
                         @Cached CastToTruffleStringNode castToStringNode,
@@ -160,6 +165,9 @@ public final class PythonCextCEvalBuiltins {
                         @Cached CreateArgumentsNode createArgumentsNode,
                         @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
             Object[] defaults = readNode.readPyObjectArray(defaultValueArrayPtr, defaultValueCount);
+            if (!PGuards.isPNone(kwdefaultsWrapper) && !PGuards.isDict(kwdefaultsWrapper)) {
+                throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+            }
             PKeyword[] kwdefaults = castKwargsNode.execute(inliningTarget, kwdefaultsWrapper);
             PCell[] closure = null;
             if (closureObj != PNone.NO_VALUE) {
@@ -202,7 +210,7 @@ public final class PythonCextCEvalBuiltins {
     abstract static class PyEval_GetGlobals extends CApiNullaryBuiltinNode {
         @Specialization
         Object get(
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Cached ReadCallerFrameNode readCallerFrameNode) {
             PFrame.Reference frameRef = getCurrentFrameRef.execute(null, inliningTarget);

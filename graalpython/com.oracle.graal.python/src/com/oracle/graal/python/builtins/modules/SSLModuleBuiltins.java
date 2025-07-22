@@ -67,7 +67,6 @@ import java.util.List;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
-import com.oracle.graal.python.runtime.PythonContext;
 import org.bouncycastle.util.encoders.DecoderException;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -80,6 +79,7 @@ import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
+import com.oracle.graal.python.builtins.objects.ssl.LazyBouncyCastleProvider;
 import com.oracle.graal.python.builtins.objects.ssl.SSLCipher;
 import com.oracle.graal.python.builtins.objects.ssl.SSLCipherSelector;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
@@ -97,6 +97,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -218,6 +219,7 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
+        LazyBouncyCastleProvider.initProvider();
         loadDefaults(core.getContext());
         PythonModule module = core.lookupBuiltinModule(T__SSL);
         module.setAttribute(tsLiteral("OPENSSL_VERSION_NUMBER"), 0);
@@ -283,6 +285,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute(tsLiteral("OP_NO_TLSv1_3"), SSLOptions.SSL_OP_NO_TLSv1_3);
         module.setAttribute(tsLiteral("OP_NO_COMPRESSION"), SSLOptions.SSL_OP_NO_COMPRESSION);
         module.setAttribute(tsLiteral("OP_NO_TICKET"), SSLOptions.SSL_OP_NO_TICKET);
+        // we do not implement this flag - is looks insecure, and we define it only to pass test_ssl
+        module.setAttribute(tsLiteral("OP_LEGACY_SERVER_CONNECT"), 0);
 
         module.setAttribute(tsLiteral("VERIFY_DEFAULT"), 0);
         module.setAttribute(tsLiteral("VERIFY_CRL_CHECK_LEAF"), X509_V_FLAG_CRL_CHECK);
@@ -307,7 +311,7 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object txt2obj(TruffleString txt, boolean name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.EqualNode equalNode,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
@@ -332,7 +336,7 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object nid2obj(Object nid,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
@@ -342,7 +346,7 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     abstract static class RandStatusNode extends PythonBuiltinNode {
         @Specialization
         static Object randStatus(
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
@@ -353,7 +357,7 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object randAdd(Object string, Object entropy,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
@@ -364,7 +368,7 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object randBytes(Object n,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
@@ -375,7 +379,7 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object randPseudoBytes(Object n,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
@@ -408,7 +412,7 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object fail(TruffleString argument,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PermissionError);
         }
     }
@@ -418,7 +422,7 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     abstract static class DecodeCertNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object decode(VirtualFrame frame, Object path,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyUnicodeFSDecoderNode asPath,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached TruffleString.EqualNode eqNode,

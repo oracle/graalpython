@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins.AddNoteNode;
 import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -74,6 +76,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -480,6 +483,23 @@ public final class ExceptionNodes {
         @SuppressWarnings("unused")
         static void doInterop(Node inliningTarget, AbstractTruffleException exception, PTuple argsTuple) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class FormatNoteNode extends Node {
+        abstract void executeInternal(VirtualFrame frame, Node inliningTarget, PException exception, TruffleString format, Object[] formatArgs);
+
+        public final void execute(VirtualFrame frame, Node inliningTarget, PException exception, TruffleString format, Object... formatArgs) {
+            executeInternal(frame, inliningTarget, exception, format, formatArgs);
+        }
+
+        @Specialization
+        static void doFormatNote(VirtualFrame frame, PException exception, TruffleString format, Object[] formatArgs,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached AddNoteNode addNoteNode) {
+            addNoteNode.execute(frame, exception, fromJavaStringNode.execute(ErrorMessageFormatter.format(format, formatArgs), TS_ENCODING));
         }
     }
 }

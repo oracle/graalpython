@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2019, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -17,12 +17,12 @@ PyAPI_DATA(PyTypeObject) _PyWeakref_RefType;
 PyAPI_DATA(PyTypeObject) _PyWeakref_ProxyType;
 PyAPI_DATA(PyTypeObject) _PyWeakref_CallableProxyType;
 
-#define PyWeakref_CheckRef(op) PyObject_TypeCheck(op, &_PyWeakref_RefType)
+#define PyWeakref_CheckRef(op) PyObject_TypeCheck((op), &_PyWeakref_RefType)
 #define PyWeakref_CheckRefExact(op) \
-        Py_IS_TYPE(op, &_PyWeakref_RefType)
+        Py_IS_TYPE((op), &_PyWeakref_RefType)
 #define PyWeakref_CheckProxy(op) \
-        (Py_IS_TYPE(op, &_PyWeakref_ProxyType) || \
-         Py_IS_TYPE(op, &_PyWeakref_CallableProxyType))
+        (Py_IS_TYPE((op), &_PyWeakref_ProxyType) \
+         || Py_IS_TYPE((op), &_PyWeakref_CallableProxyType))
 
 #define PyWeakref_Check(op) \
         (PyWeakref_CheckRef(op) || PyWeakref_CheckProxy(op))

@@ -112,22 +112,6 @@ typedef struct {
     int getter_doc;
 } propertyobject;
 
-typedef struct {
-    PyObject_HEAD
-    int32_t handle_table_index;
-} GraalPyObject;
-
-typedef struct {
-    GraalPyObject ob_base;
-    Py_ssize_t ob_size;
-    PyObject **ob_item;
-} GraalPyVarObject;
-
-typedef struct {
-    GraalPyObject ob_base;
-    double ob_fval;
-} GraalPyFloatObject;
-
 /* GraalPy GC support */
 
 typedef struct _cycle_node {
@@ -352,7 +336,7 @@ PY_TRUFFLE_TYPE(Arraytype,                       "array",                      &
 PY_TRUFFLE_TYPE(mmap_object_type,                "mmap.mmap",                  &PyType_Type, 0) \
 PY_TRUFFLE_TYPE(PyArrayIter_Type,                "arrayiterator",              &PyType_Type, sizeof(arrayiterobject)) \
 PY_TRUFFLE_TYPE(PyAsyncGen_Type,                 "async_generator",            &PyType_Type, sizeof(PyAsyncGenObject)) \
-PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyLong_Type,       "int",                        &PyType_Type, offsetof(PyLongObject, ob_digit), sizeof(PyObject *)) \
+PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyLong_Type,       "int",                        &PyType_Type, offsetof(PyLongObject, long_value.ob_digit), sizeof(PyObject *)) \
 PY_TRUFFLE_TYPE(PyBool_Type,                     "bool",                       &PyType_Type, sizeof(struct _longobject)) \
 PY_TRUFFLE_TYPE(PyByteArray_Type,                "bytearray",                  &PyType_Type, sizeof(PyByteArrayObject)) \
 PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyBytes_Type,      "bytes",                      &PyType_Type, PyBytesObject_SIZE, sizeof(char)) \

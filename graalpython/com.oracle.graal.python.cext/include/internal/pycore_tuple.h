@@ -19,7 +19,6 @@ extern "C" {
 /* runtime lifecycle */
 
 extern PyStatus _PyTuple_InitGlobalObjects(PyInterpreterState *);
-extern PyStatus _PyTuple_InitTypes(PyInterpreterState *);
 extern void _PyTuple_Fini(PyInterpreterState *);
 
 
@@ -71,6 +70,13 @@ struct _Py_tuple_state {
 
 extern PyObject *_PyTuple_FromArray(PyObject *const *, Py_ssize_t);
 extern PyObject *_PyTuple_FromArraySteal(PyObject *const *, Py_ssize_t);
+
+
+typedef struct {
+    PyObject_HEAD
+    Py_ssize_t it_index;
+    PyTupleObject *it_seq; /* Set to NULL when iterator is exhausted */
+} _PyTupleIterObject;
 
 #ifdef __cplusplus
 }

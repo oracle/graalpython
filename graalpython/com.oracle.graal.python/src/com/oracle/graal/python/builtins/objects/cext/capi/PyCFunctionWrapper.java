@@ -211,7 +211,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CreateArgumentsNode createArgsNode,
                         @Cached CallDispatchers.CallTargetCachedInvokeNode invokeNode,
@@ -268,7 +268,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallDispatchers.CallTargetCachedInvokeNode invokeNode,
                         @Cached CreateArgumentsNode createArgsNode,
@@ -322,7 +322,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached ExecutePositionalStarargsNode posStarargsNode,
                         @Cached CreateArgumentsNode createArgsNode,
@@ -378,7 +378,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached ExecutePositionalStarargsNode posStarargsNode,
                         @Cached CreateArgumentsNode createArgsNode,

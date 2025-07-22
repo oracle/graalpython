@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -34,7 +34,7 @@ PyAPI_DATA(PyTypeObject) PyBytesIter_Type;
 
 #define PyBytes_Check(op) \
                  PyType_FastSubclass(Py_TYPE(op), Py_TPFLAGS_BYTES_SUBCLASS)
-#define PyBytes_CheckExact(op) Py_IS_TYPE(op, &PyBytes_Type)
+#define PyBytes_CheckExact(op) Py_IS_TYPE((op), &PyBytes_Type)
 
 PyAPI_FUNC(PyObject *) PyBytes_FromStringAndSize(const char *, Py_ssize_t);
 PyAPI_FUNC(PyObject *) PyBytes_FromString(const char *);

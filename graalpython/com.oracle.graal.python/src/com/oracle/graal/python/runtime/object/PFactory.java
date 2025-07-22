@@ -82,7 +82,11 @@ import com.oracle.graal.python.builtins.modules.pickle.PPickler;
 import com.oracle.graal.python.builtins.modules.pickle.PPicklerMemoProxy;
 import com.oracle.graal.python.builtins.modules.pickle.PUnpickler;
 import com.oracle.graal.python.builtins.modules.pickle.PUnpicklerMemoProxy;
+import com.oracle.graal.python.builtins.modules.zlib.JavaCompress;
+import com.oracle.graal.python.builtins.modules.zlib.JavaDecompress;
+import com.oracle.graal.python.builtins.modules.zlib.NativeZlibCompObject;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
+import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressorObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.asyncio.PANextAwaitable;
@@ -151,6 +155,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStructUnpackIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.itertools.PAccumulate;
+import com.oracle.graal.python.builtins.objects.itertools.PBatched;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
 import com.oracle.graal.python.builtins.objects.itertools.PCombinations;
 import com.oracle.graal.python.builtins.objects.itertools.PCombinationsWithReplacement;
@@ -175,6 +180,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewIterator;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
@@ -226,6 +232,12 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
 import com.oracle.graal.python.builtins.objects.types.PGenericAliasIterator;
 import com.oracle.graal.python.builtins.objects.types.PUnionType;
+import com.oracle.graal.python.builtins.objects.typing.PParamSpec;
+import com.oracle.graal.python.builtins.objects.typing.PParamSpecArgs;
+import com.oracle.graal.python.builtins.objects.typing.PParamSpecKwargs;
+import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
+import com.oracle.graal.python.builtins.objects.typing.PTypeVar;
+import com.oracle.graal.python.builtins.objects.typing.PTypeVarTuple;
 import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
@@ -243,6 +255,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -489,6 +502,10 @@ public final class PFactory {
         return trace(language, new PMemoryView(cls, cls.getInstanceShape(language), null, null, buffer, owner, length, readonly, itemsize,
                         BufferFormat.forMemoryView(format, lengthNode, atIndexNode), format, 1, null, 0, new int[]{length / itemsize}, new int[]{itemsize}, null,
                         PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN));
+    }
+
+    public static MemoryViewIterator createMemoryViewIterator(PythonLanguage language, PMemoryView seq, int index, int length, BufferFormat fmt) {
+        return trace(language, new MemoryViewIterator(PythonBuiltinClassType.PMemoryViewIterator, PythonBuiltinClassType.PMemoryViewIterator.getInstanceShape(language), seq, index, length, fmt));
     }
 
     public static PMethod createMethod(PythonLanguage language, Object cls, Shape shape, Object self, Object function) {
@@ -856,6 +873,14 @@ public final class PFactory {
         return trace(language, new PMappingproxy(cls, shape, object));
     }
 
+    public static PReferenceType createReferenceType(PythonLanguage language, Object object) {
+        return createReferenceType(language, PythonBuiltinClassType.PReferenceType, PythonBuiltinClassType.PReferenceType.getInstanceShape(language), object);
+    }
+
+    public static PReferenceType createReferenceType(PythonLanguage language, Object cls, Shape shape, Object object) {
+        return createReferenceType(language, cls, shape, object, null, null);
+    }
+
     public static PReferenceType createReferenceType(PythonLanguage language, Object cls, Shape shape, Object object, Object callback, ReferenceQueue<Object> queue) {
         return trace(language, new PReferenceType(cls, shape, object, callback, queue));
     }
@@ -1189,20 +1214,12 @@ public final class PFactory {
         return trace(language, BZ2Object.createDecompressor(cls, shape));
     }
 
-    public static ZLibCompObject createJavaZLibCompObjectCompress(PythonLanguage language, Object stream, int level, int wbits, int strategy, byte[] zdict) {
-        return createJavaZLibCompObject(language, PythonBuiltinClassType.ZlibCompress, PythonBuiltinClassType.ZlibCompress.getInstanceShape(language), stream, level, wbits, strategy, zdict);
+    public static JavaCompress createJavaZLibCompObjectCompress(PythonLanguage language, int level, int wbits, int strategy, byte[] zdict) {
+        return trace(language, new JavaCompress(PythonBuiltinClassType.ZlibCompress, PythonBuiltinClassType.ZlibCompress.getInstanceShape(language), level, wbits, strategy, zdict));
     }
 
-    public static ZLibCompObject createJavaZLibCompObject(PythonLanguage language, Object cls, Shape shape, Object stream, int level, int wbits, int strategy, byte[] zdict) {
-        return trace(language, ZLibCompObject.createJava(cls, shape, stream, level, wbits, strategy, zdict));
-    }
-
-    public static ZLibCompObject createJavaZLibCompObjectDecompress(PythonLanguage language, Object stream, int wbits, byte[] zdict) {
-        return createJavaZLibCompObject(language, PythonBuiltinClassType.ZlibDecompress, PythonBuiltinClassType.ZlibDecompress.getInstanceShape(language), stream, wbits, zdict);
-    }
-
-    public static ZLibCompObject createJavaZLibCompObject(PythonLanguage language, Object cls, Shape shape, Object stream, int wbits, byte[] zdict) {
-        return trace(language, ZLibCompObject.createJava(cls, shape, stream, wbits, zdict));
+    public static JavaDecompress createJavaZLibCompObjectDecompress(PythonLanguage language, int wbits, byte[] zdict) {
+        return trace(language, new JavaDecompress(PythonBuiltinClassType.ZlibDecompress, PythonBuiltinClassType.ZlibDecompress.getInstanceShape(language), wbits, zdict));
     }
 
     public static ZLibCompObject createNativeZLibCompObjectCompress(PythonLanguage language, Object zst, NFIZlibSupport zlibSupport) {
@@ -1214,7 +1231,15 @@ public final class PFactory {
     }
 
     public static ZLibCompObject createNativeZLibCompObject(PythonLanguage language, Object cls, Shape shape, Object zst, NFIZlibSupport zlibSupport) {
-        return trace(language, ZLibCompObject.createNative(cls, shape, zst, zlibSupport));
+        return trace(language, new NativeZlibCompObject(cls, shape, zst, zlibSupport));
+    }
+
+    public static ZlibDecompressorObject createJavaZlibDecompressorObject(PythonLanguage language, int wbits, byte[] zdict) {
+        return trace(language, ZlibDecompressorObject.createJava(PythonBuiltinClassType.ZlibDecompressor, PythonBuiltinClassType.ZlibDecompressor.getInstanceShape(language), wbits, zdict));
+    }
+
+    public static ZlibDecompressorObject createNativeZlibDecompressorObject(PythonLanguage language, Object zst, NFIZlibSupport zlibSupport) {
+        return trace(language, ZlibDecompressorObject.createNative(PythonBuiltinClassType.ZlibDecompressor, PythonBuiltinClassType.ZlibDecompressor.getInstanceShape(language), zst, zlibSupport));
     }
 
     public static LZMAObject.LZMADecompressor createLZMADecompressor(PythonLanguage language, Object cls, Shape shape, boolean isNative) {
@@ -1350,6 +1375,10 @@ public final class PFactory {
 
     public static PZipLongest createZipLongest(PythonLanguage language, Object cls, Shape shape) {
         return trace(language, new PZipLongest(cls, shape));
+    }
+
+    public static PBatched createBatched(PythonLanguage language, Object cls, Shape shape) {
+        return trace(language, new PBatched(cls, shape));
     }
 
     public static PTextIO createTextIO(PythonLanguage language) {
@@ -1670,12 +1699,59 @@ public final class PFactory {
         return trace(language, new PStructUnpackIterator(PythonBuiltinClassType.PStructUnpackIterator, PythonBuiltinClassType.PStructUnpackIterator.getInstanceShape(language), struct, buffer));
     }
 
-    public static PTokenizerIter createTokenizerIter(PythonLanguage language, String sourceString) {
-        return createTokenizerIter(language, PythonBuiltinClassType.PTokenizerIter, PythonBuiltinClassType.PTokenizerIter.getInstanceShape(language), sourceString);
+    public static PTokenizerIter createTokenizerIter(PythonLanguage language, Object cls, Shape shape, Supplier<int[]> inputSupplier, boolean extraTokens) {
+        return trace(language, new PTokenizerIter(cls, shape, inputSupplier, extraTokens));
     }
 
-    public static PTokenizerIter createTokenizerIter(PythonLanguage language, Object cls, Shape shape, String sourceString) {
-        return trace(language, new PTokenizerIter(cls, shape, sourceString));
+    public static PTypeVar createTypeVar(PythonLanguage language, TruffleString name, Object bound, Object evaluateBound, Object constraints, Object evaluateConstraints,
+                    boolean covariant, boolean contravariant, boolean inferVariance) {
+        return createTypeVar(language, PythonBuiltinClassType.PTypeVar, PythonBuiltinClassType.PTypeVar.getInstanceShape(language), name, bound, evaluateBound, constraints, evaluateConstraints,
+                        covariant, contravariant, inferVariance);
+    }
+
+    public static PTypeVar createTypeVar(PythonLanguage language, Object cls, Shape shape, TruffleString name, Object bound, Object evaluateBound, Object constraints, Object evaluateConstraints,
+                    boolean covariant, boolean contravariant, boolean inferVariance) {
+        return trace(language, new PTypeVar(cls, shape, name, bound, evaluateBound, constraints, evaluateConstraints, covariant, contravariant, inferVariance));
+    }
+
+    public static PTypeVarTuple createTypeVarTuple(PythonLanguage language, TruffleString name) {
+        return createTypeVarTuple(language, PythonBuiltinClassType.PTypeVarTuple, PythonBuiltinClassType.PTypeVarTuple.getInstanceShape(language), name);
+    }
+
+    public static PTypeVarTuple createTypeVarTuple(PythonLanguage language, Object cls, Shape shape, TruffleString name) {
+        return trace(language, new PTypeVarTuple(cls, shape, name));
+    }
+
+    public static PParamSpec createParamSpec(PythonLanguage language, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance) {
+        return createParamSpec(language, PythonBuiltinClassType.PParamSpec, PythonBuiltinClassType.PParamSpec.getInstanceShape(language), name, bound, covariant, contravariant, inferVariance);
+    }
+
+    public static PParamSpec createParamSpec(PythonLanguage language, Object cls, Shape shape, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance) {
+        return trace(language, new PParamSpec(cls, shape, name, bound, covariant, contravariant, inferVariance));
+    }
+
+    public static PParamSpecArgs createParamSpecArgs(PythonLanguage language, Object origin) {
+        return createParamSpecArgs(language, PythonBuiltinClassType.PParamSpecArgs, PythonBuiltinClassType.PParamSpecArgs.getInstanceShape(language), origin);
+    }
+
+    public static PParamSpecArgs createParamSpecArgs(PythonLanguage language, Object cls, Shape shape, Object origin) {
+        return trace(language, new PParamSpecArgs(cls, shape, origin));
+    }
+
+    public static PParamSpecKwargs createParamSpecKwargs(PythonLanguage language, Object origin) {
+        return createParamSpecKwargs(language, PythonBuiltinClassType.PParamSpecKwargs, PythonBuiltinClassType.PParamSpecKwargs.getInstanceShape(language), origin);
+    }
+
+    public static PParamSpecKwargs createParamSpecKwargs(PythonLanguage language, Object cls, Shape shape, Object origin) {
+        return trace(language, new PParamSpecKwargs(cls, shape, origin));
+    }
+
+    public static PTypeAliasType createTypeAliasType(PythonLanguage language, TruffleString name, PTuple typeParams, Object computeValue, Object value, Object module) {
+        return createTypeAliasType(language, PythonBuiltinClassType.PTypeAliasType, PythonBuiltinClassType.PTypeAliasType.getInstanceShape(language), name, typeParams, computeValue, value, module);
+    }
+
+    public static PTypeAliasType createTypeAliasType(PythonLanguage language, Object cls, Shape shape, TruffleString name, PTuple typeParams, Object computeValue, Object value, Object module) {
+        return trace(language, new PTypeAliasType(cls, shape, name, typeParams, computeValue, value, module));
     }
 
     public static Profiler createProfiler(PythonLanguage language, Object cls, Shape shape, CPUSampler sampler) {

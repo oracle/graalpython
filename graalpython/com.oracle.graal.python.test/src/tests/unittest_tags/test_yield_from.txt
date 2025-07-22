@@ -1,3 +1,10 @@
+test.test_yield_from.TestInterestingEdgeCases.test_close_and_throw_raise_base_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_yield_from.TestInterestingEdgeCases.test_close_and_throw_raise_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_yield_from.TestInterestingEdgeCases.test_close_and_throw_raise_generator_exit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_yield_from.TestInterestingEdgeCases.test_close_and_throw_raise_stop_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_yield_from.TestInterestingEdgeCases.test_close_and_throw_return @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_yield_from.TestInterestingEdgeCases.test_close_and_throw_work @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_yield_from.TestInterestingEdgeCases.test_close_and_throw_yield @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_yield_from.TestPEP380Operation.test_attempted_yield_from_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_yield_from.TestPEP380Operation.test_attempting_to_send_to_non_generator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_yield_from.TestPEP380Operation.test_broken_getattr_handling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

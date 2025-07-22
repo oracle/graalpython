@@ -91,21 +91,21 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithContext {
     @Specialization
     @SuppressWarnings("unused")
     static Object doString(VirtualFrame frame, TruffleString object, Object encoding, Object errors,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
     }
 
     @Specialization
     @SuppressWarnings("unused")
     static Object doPString(VirtualFrame frame, PString object, Object encoding, Object errors,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
     }
 
     @Specialization(guards = {"!isPBytes(object)", "!isString(object)"}, limit = "3")
     static Object doBuffer(VirtualFrame frame, Node inliningTarget, Object object, Object encoding, Object errors,
                     @Bind PythonLanguage language,
-                    @Cached("createFor(this)") IndirectCallData indirectCallNode,
+                    @Cached("createFor($node)") IndirectCallData indirectCallNode,
                     @Exclusive @Cached InlinedConditionProfile emptyStringProfile,
                     @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                     @Exclusive @Cached PyUnicodeDecode decode,

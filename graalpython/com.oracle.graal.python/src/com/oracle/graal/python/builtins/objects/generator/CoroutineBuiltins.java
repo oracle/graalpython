@@ -81,7 +81,7 @@ public final class CoroutineBuiltins extends PythonBuiltins {
     public abstract static class GetCode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getCode(PGenerator self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile hasCodeProfile) {
             return self.getOrCreateCode(inliningTarget, hasCodeProfile);
         }

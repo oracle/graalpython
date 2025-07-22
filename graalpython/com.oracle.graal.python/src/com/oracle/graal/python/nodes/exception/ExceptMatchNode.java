@@ -82,7 +82,7 @@ public abstract class ExceptMatchNode extends Node {
 
     @Specialization(guards = "!isPTuple(clause)")
     public static boolean matchPythonSingle(VirtualFrame frame, PException e, Object clause,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared @Cached ValidExceptionNode isValidException,
                     @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtype) {
@@ -92,7 +92,7 @@ public abstract class ExceptMatchNode extends Node {
 
     @Specialization(guards = {"!isPTuple(clause)", "!isPException(e)"}, limit = "1")
     public static boolean matchJava(VirtualFrame frame, AbstractTruffleException e, Object clause,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared @Cached ValidExceptionNode isValidException,
                     @CachedLibrary("clause") InteropLibrary clauseLib) {
         // n.b.: we can only allow Java exceptions in clauses, because we cannot tell for other
@@ -112,7 +112,7 @@ public abstract class ExceptMatchNode extends Node {
 
     @Specialization
     public static boolean matchTuple(VirtualFrame frame, Object e, PTuple clause,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached ExceptMatchNode recursiveNode,
                     @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
         // check for every type in the tuple

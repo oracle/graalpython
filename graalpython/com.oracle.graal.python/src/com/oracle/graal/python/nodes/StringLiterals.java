@@ -70,6 +70,7 @@ public abstract class StringLiterals {
     public static final TruffleString T_COLON = tsLiteral(":");
     public static final TruffleString T_COLON_SPACE = tsLiteral(": ");
     public static final TruffleString T_COMMA_SPACE = tsLiteral(", ");
+    public static final TruffleString T_SINGLE_QUOTE_COMMA_SPACE = tsLiteral("', '");
     public static final TruffleString T_LBRACE = tsLiteral("{");
     public static final TruffleString T_RBRACE = tsLiteral("}");
     public static final TruffleString T_LBRACKET = tsLiteral("[");

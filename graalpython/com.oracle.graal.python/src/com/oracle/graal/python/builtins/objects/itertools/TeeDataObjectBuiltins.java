@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_D_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.TDATAOBJECT_SHOULDNT_HAVE_NEXT;
@@ -106,7 +107,7 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         PTeeDataObject construct(Object cls, Object[] arguments, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached InlinedBranchProfile errorProfile,
                         @Bind PythonLanguage language) {
@@ -154,7 +155,7 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object init(VirtualFrame frame, PTeeDataObject self, Object it, PList values, Object nxt,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalObjectArrayNode,
                         @Cached InlinedBranchProfile numreadLCProfile,
@@ -184,7 +185,7 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isList(values)", "!isNone(values)"})
         static Object init(VirtualFrame frame, PTeeDataObject self, Object it, Object values, Object nxt,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ARG_D_MUST_BE_S_NOT_P, "teedataobject()", 2, "list", values);
         }
     }
@@ -196,9 +197,10 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reduce(PTeeDataObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClass,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             int numread = self.getNumread();
             Object[] values = new Object[numread];
             PythonUtils.arraycopy(self.getValues(), 0, values, 0, numread);

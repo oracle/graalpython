@@ -65,7 +65,7 @@ public abstract class SliceIndexConversionNode extends IntConversionBaseNode {
 
     @Specialization(guards = "!isHandledPNone(value)")
     static int doOthers(VirtualFrame frame, Object value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PyNumberAsSizeNode asSizeNode,
                     @Cached PRaiseNode raiseNode) {

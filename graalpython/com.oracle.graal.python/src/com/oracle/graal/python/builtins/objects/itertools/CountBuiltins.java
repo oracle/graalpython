@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.NUMBER_IS_REQUIRED;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
@@ -112,7 +113,7 @@ public final class CountBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object construct(Object cls, Object start, Object step,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberCheckNode checkNode,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Bind PythonLanguage language,
@@ -160,7 +161,7 @@ public final class CountBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString reprPos(VirtualFrame frame, PCount self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached PyObjectReprAsObjectNode reprNode,
@@ -185,12 +186,13 @@ public final class CountBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reducePos(PCount self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached CastToJavaLongExactNode castLongNode,
                         @Cached PyObjectTypeCheck typeCheckNode,
                         @Cached InlinedConditionProfile hasDefaultStep,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple;
             if (hasDefaultStep.profile(inliningTarget,

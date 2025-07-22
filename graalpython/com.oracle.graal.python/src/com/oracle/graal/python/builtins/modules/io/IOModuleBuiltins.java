@@ -162,7 +162,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PFileIO openCode(VirtualFrame frame, TruffleString path,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached FileIOBuiltins.FileIOInit initFileIO) {
             return createFileIO(frame, inliningTarget, path, IOMode.RB, true, PNone.NONE, initFileIO);
         }
@@ -189,7 +189,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "!isBinary(mode)", "bufferingValue != 0"})
         protected static Object openText(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @Cached TextIOWrapperNodes.TextIOWrapperInitNode initTextIO,
@@ -231,7 +231,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
 
                 /* if not buffering, returns the raw file object */
                 if (buffering == 0) {
-                    invalidunbuf(file, mode, bufferingValue, encoding, errors, newline, closefd, opener, raiseNode);
+                    throw raiseNode.raise(inliningTarget, ValueError, CAN_T_HAVE_UNBUFFERED_TEXT_IO);
                 }
 
                 /* wraps into a buffered file */
@@ -261,7 +261,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") PNone newline,
                         boolean closefd, Object opener,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached FileIOBuiltins.FileIOInit initFileIO) {
             return createFileIO(frame, inliningTarget, file, mode, closefd, opener, initFileIO);
         }
@@ -272,7 +272,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") PNone newline,
                         boolean closefd, Object opener,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Exclusive @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
@@ -289,7 +289,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") PNone newline,
                         boolean closefd, Object opener,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
@@ -339,35 +339,35 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "isUnknown(mode)")
         protected static Object unknownMode(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, UNKNOWN_MODE_S, mode.mode);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isTB(mode)")
         protected static Object invalidTB(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CAN_T_HAVE_TEXT_AND_BINARY_MODE_AT_ONCE);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isValidUniveral(mode)")
         protected static Object invalidUniversal(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, MODE_U_CANNOT_BE_COMBINED_WITH_X_W_A_OR);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isXRWA(mode)")
         protected static Object invalidxrwa(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, MUST_HAVE_EXACTLY_ONE_OF_CREATE_READ_WRITE_APPEND_MODE);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"isBinary(mode)", "isAnyNotNone(encoding, errors, newline)"})
         protected static Object invalidBinary(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             String s;
             if (encoding != PNone.NONE) {
                 s = "encoding";
@@ -382,7 +382,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isBinary(mode)", "bufferingValue == 0"})
         protected static Object invalidunbuf(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CAN_T_HAVE_UNBUFFERED_TEXT_IO);
         }
 

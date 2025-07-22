@@ -44,6 +44,8 @@ import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_ALL;
 import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_MINIMAL;
 import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONE;
 import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONNUMERIC;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NOTNULL;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_STRINGS;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -116,6 +118,8 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("QUOTE_ALL", QUOTE_ALL.ordinal());
         addBuiltinConstant("QUOTE_NONNUMERIC", QUOTE_NONNUMERIC.ordinal());
         addBuiltinConstant("QUOTE_NONE", QUOTE_NONE.ordinal());
+        addBuiltinConstant("QUOTE_STRINGS", QUOTE_STRINGS.ordinal());
+        addBuiltinConstant("QUOTE_NOTNULL", QUOTE_NOTNULL.ordinal());
         addBuiltinConstant(T__DIALECTS, PFactory.createDict(core.getLanguage()));
         super.initialize(core);
     }
@@ -128,7 +132,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PNone register(VirtualFrame frame, PythonModule module, Object nameObj, Object dialectObj, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode nameNode,
                         @Cached ReadAttributeFromObjectNode readNode,
                         @Cached CallNode callNode,
@@ -159,7 +163,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
     public abstract static class CSVUnregisterDialectNode extends PythonBuiltinNode {
         @Specialization
         static PNone unregister(VirtualFrame frame, PythonModule module, Object nameObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode readNode,
                         @Cached PyDictDelItem delItem,
                         @Cached HashingStorageGetItem getItem,
@@ -192,7 +196,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static CSVDialect get(VirtualFrame frame, PythonModule module, Object nameObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyDictGetItem getItemNode,
                         @Cached ReadAttributeFromObjectNode readNode,
                         @Cached PRaiseNode raiseNode) {
@@ -229,7 +233,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
     public abstract static class CSVReaderNode extends PythonBuiltinNode {
         @Specialization
         static Object createReader(VirtualFrame frame, Object csvfile, Object dialectObj, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached CallNode callNode,
                         @Bind PythonLanguage language) {
@@ -244,7 +248,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
     public abstract static class CSVWriterNode extends PythonBuiltinNode {
         @Specialization
         static Object createReader(VirtualFrame frame, Object outputFile, Object dialectObj, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyCallableCheckNode checkCallable,
@@ -268,7 +272,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static long getOrSetFieldSizeLimit(VirtualFrame frame, PythonModule self, Object newLimit,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyLongCheckExactNode checkLongNode,
                         @Cached PyLongAsLongNode castToLong,
                         @Cached PRaiseNode raiseNode) {
@@ -334,6 +338,11 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                     "        csv.QUOTE_NONNUMERIC means that quotes are always placed around\n" +
                     "            fields which do not parse as integers or floating point\n" +
                     "            numbers.\n" +
+                    "        csv.QUOTE_STRINGS means that quotes are always placed around\n" +
+                    "            fields which are strings.  Note that the Python value None\n" +
+                    "            is not a string.\n" +
+                    "        csv.QUOTE_NOTNULL means that quotes are only placed around fields\n" +
+                    "            that are not the Python value None.\n" +
                     "        csv.QUOTE_NONE means that quotes are never placed around fields.\n" +
                     "    * escapechar - specifies a one-character string used to escape\n" +
                     "        the delimiter when quoting is set to QUOTE_NONE.\n" +

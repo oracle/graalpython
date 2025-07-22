@@ -8,6 +8,6 @@ Output:
 Module[1:0-2:6]
     For[1:0-2:6]
         Target: Name[1:4-1:5] Value: "i" Store
-        Iter: RAW[1:9-1:15] Value: "ahoj"
+        Iter: CODEPOINTS[1:9-1:15] Value: "ahoj"
         Body:
             Pass[2:2-2:6]

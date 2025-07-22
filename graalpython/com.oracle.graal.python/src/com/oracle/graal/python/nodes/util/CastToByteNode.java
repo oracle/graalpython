@@ -160,7 +160,7 @@ public abstract class CastToByteNode extends Node {
     @Specialization
     @SuppressWarnings("truffle-static-method")
     protected byte doObject(VirtualFrame frame, Object value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PyNumberIndexNode indexNode,
                     @Cached CastToByteNode recursive) {

@@ -8,8 +8,16 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * `GRAALPY_VERSION_NUM` C macro now inlcudes the release level and serial number at the end to conform to the `hexversion` format. This shouldn't break any existing comparisons.
 * `dir(foreign_object)` now returns both foreign methods and Python methods (it used to return only foreign methods).
 * Support `__name__`, `__doc__`, `__text_signature__` fields on foreign executables to serve as their proper counterparts on the Python side. This is useful to, for example, use Java functional interfaces in lieu of Python functions for things like LangChain's `@tool` annotation that want to inspect the underlying function.
-* Remove support for running C extensions as LLVM bitcode. This also removes the related options `python.UseSystemToolchain` and `python.NativeModules`.
+* Remove support for running C extensions as LLVM bitcode. This also removes the related options `python.UseSystemToolchain` and `python.NativeModules`. Isolation of native code when embedding GraalPy into Java projects is now provided via the GraalVM enterprise edition polyglot isolate feature, which can launch in a separate external sub-process by setting the `--engine.IsolateMode=external` option.
 * Remove built-in HPy module. HPy can now be installed and used from the upstream sources.
+* Update Python standard library and core to 3.12.8.
+* Implement `faulthandler.dump_traceback_later` to better support testing frameworks that implement resilience to crashes.
+* Fix various issues affecting cibuildwheels on Windows, to make it easier for Python projects to provide native extensions for GraalPy on all supported platforms.
+* Add support for sharing Arrow arrays and tables between Java, PyArrow, and Pandas to avoid data copying when embedding those libraries into a Java project.
+* Enable FTS3, FTS4, FTS5, RTREE, and math function features in the bundled sqlite3 library.
+* Add support patches for Torch 2.7.0, PyGObject 3.52.3, xmlschema 4.0.0, lxml < 5.4.0, SciPy 1.15, jq 1.8.0, NumPy < 2.3, ormsgpack < 1.9.1, pandas 2.2.3, PyArrow 19.0, PyMuPDF 1.25.4.
+* The GraalPy Native standalone on Linux now uses the G1 garbage collector which is much faster.
+* Speedup native extensions by using the Panama NFI backend for faster native calls, available on GraalVM 25, JDK 25 and in the GraalPy JVM standalone.
 
 ## Version 24.2.0
 * Updated developer metadata of Maven artifacts.

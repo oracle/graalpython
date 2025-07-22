@@ -21,11 +21,9 @@ from test import support
 from test.support import threading_helper
 from test.support import socket_helper
 from test.support import warnings_helper
+from test.support import asynchat
+from test.support import asyncore
 from test.support.socket_helper import HOST, HOSTv6
-
-
-asynchat = warnings_helper.import_deprecated('asynchat')
-asyncore = warnings_helper.import_deprecated('asyncore')
 
 
 support.requires_working_socket(module=True)
@@ -544,8 +542,8 @@ class TestFTPClass(TestCase):
         self.assertFalse(self.client.passiveserver)
 
     def test_voidcmd(self):
-        self.client.voidcmd('echo 200')
-        self.client.voidcmd('echo 299')
+        self.assertEqual(self.client.voidcmd('echo 200'), '200')
+        self.assertEqual(self.client.voidcmd('echo 299'), '299')
         self.assertRaises(ftplib.error_reply, self.client.voidcmd, 'echo 199')
         self.assertRaises(ftplib.error_reply, self.client.voidcmd, 'echo 300')
 
@@ -982,11 +980,11 @@ class TestTLS_FTPClass(TestCase):
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
-        self.assertRaises(ValueError, ftplib.FTP_TLS, keyfile=CERTFILE,
+        self.assertRaises(TypeError, ftplib.FTP_TLS, keyfile=CERTFILE,
                           context=ctx)
-        self.assertRaises(ValueError, ftplib.FTP_TLS, certfile=CERTFILE,
+        self.assertRaises(TypeError, ftplib.FTP_TLS, certfile=CERTFILE,
                           context=ctx)
-        self.assertRaises(ValueError, ftplib.FTP_TLS, certfile=CERTFILE,
+        self.assertRaises(TypeError, ftplib.FTP_TLS, certfile=CERTFILE,
                           keyfile=CERTFILE, context=ctx)
 
         self.client = ftplib.FTP_TLS(context=ctx, timeout=TIMEOUT)

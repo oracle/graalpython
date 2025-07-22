@@ -153,7 +153,7 @@ public final class DictBuiltins extends PythonBuiltins {
         @Specialization(replaces = "builtinDict")
         @SuppressWarnings("unused")
         static PDict dict(Object cls, Object[] args, PKeyword[] keywordArgs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile orderedProfile,
                         @Cached IsSubtypeNode isSubtypeNode,
@@ -186,7 +186,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == 1"})
         Object doVarargs(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Shared @Cached DictNodes.UpdateDictStorageNode updateDictStorageNode,
                         @Shared @Cached HashingStorageAddAllToOther addAllToOtherNode) {
@@ -199,7 +199,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == 0", "kwargs.length > 0"})
         Object doKeywords(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Shared @Cached DictNodes.UpdateDictStorageNode updateDictStorageNode,
                         @Shared @Cached HashingStorageAddAllToOther addAllToOtherNode) {
@@ -230,7 +230,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doIt(VirtualFrame frame, Object dict, Object key, Object defaultValue,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyDictSetDefault setDefault) {
             return setDefault.execute(frame, inliningTarget, dict, key, defaultValue);
         }
@@ -247,7 +247,7 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class PopNode extends PythonTernaryBuiltinNode {
         @Specialization
         static Object popDefault(VirtualFrame frame, Object dict, Object key, Object defaultValue,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached InlinedConditionProfile hasKeyProfile,
                         @Cached HashingStorageDelItem delItem,
@@ -273,7 +273,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object popItem(Object dict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached HashingStoragePop popNode,
                         @Bind PythonLanguage language,
@@ -329,7 +329,7 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Specialization
         static Object doWithDefault(VirtualFrame frame, Object self, Object key, Object defaultValue,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached HashingStorageGetItem getItem) {
             var storage = getStorageNode.execute(inliningTarget, self);
@@ -345,7 +345,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getItem(VirtualFrame frame, Object self, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached InlinedConditionProfile notFoundProfile,
                         @Cached HashingStorageGetItem getItem,
@@ -379,7 +379,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object missing(VirtualFrame frame, Object self, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("create(T___MISSING__)") LookupAndCallBinaryNode callMissing,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -395,14 +395,14 @@ public final class DictBuiltins extends PythonBuiltins {
     abstract static class SetItemNode extends MpAssSubscriptBuiltinNode {
         @Specialization(guards = "!isNoValue(value)")
         static void run(VirtualFrame frame, Object self, Object key, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode) {
             setItemNode.execute(frame, inliningTarget, self, key, value);
         }
 
         @Specialization(guards = "isNoValue(value)")
         static void run(VirtualFrame frame, Object self, Object key, @SuppressWarnings("unused") Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached HashingStorageDelItem delItem,
                         @Cached PRaiseNode raiseNode) {
@@ -418,7 +418,7 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object run(Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetIterator getIterator,
@@ -433,7 +433,7 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object run(Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetReverseIterator getReverseIterator,
@@ -449,14 +449,14 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "op.isEqOrNe()")
         static Object doDictDict(VirtualFrame frame, PDict self, PDict other, RichCmpOp op,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached HashingStorageEq eqNode) {
             return eqNode.execute(frame, inliningTarget, self.getDictStorage(), other.getDictStorage()) == op.isEq();
         }
 
         @Fallback
         static Object doGeneric(VirtualFrame frame, Object self, Object other, RichCmpOp op,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyDictCheckNode isDictNode,
                         @Exclusive @Cached HashingStorageEq eqNode,
                         @Cached DictNodes.GetDictStorageNode getStorageNode) {
@@ -476,7 +476,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean run(VirtualFrame frame, Object self, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached HashingStorageGetItem getItem) {
             var storage = getStorageNode.execute(inliningTarget, self);
@@ -490,7 +490,7 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends LenBuiltinNode {
         @Specialization
         static int len(Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached HashingStorageLen lenNode) {
             var storage = getStorageNode.execute(inliningTarget, self);
@@ -505,7 +505,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization
         static PDict copy(Object dict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached HashingStorageCopy copyNode,
                         @Bind PythonLanguage language) {
@@ -521,7 +521,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization
         static PNone clear(Object dict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached DictNodes.UpdateDictStorageNode updateStorageNode,
                         @Cached HashingStorageClear clearNode) {
@@ -570,7 +570,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length <= 1", "kwargs.length > 0"})
         static Object update(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached DictNodes.UpdateDictStorageNode updateDictStorageNode,
                         @Shared("updateNode") @Cached DictNodes.UpdateNode updateNode,
@@ -589,7 +589,7 @@ public final class DictBuiltins extends PythonBuiltins {
         @Specialization(guards = "args.length > 1")
         @SuppressWarnings("unused")
         static Object error(Object self, Object[] args, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXPECTED_AT_MOST_D_ARGS_GOT_D, "update", 1, args.length);
         }
 
@@ -602,7 +602,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isBuiltinDict(inliningTarget, cls, isSameTypeNode)", limit = "1")
         static Object doKeys(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object iterable, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsSameTypeNode isSameTypeNode,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
                         @Bind PythonLanguage language) {
@@ -612,7 +612,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached CallNode callCtor,
                         @Cached PyObjectSetItem setItem,
@@ -643,7 +643,7 @@ public final class DictBuiltins extends PythonBuiltins {
     abstract static class OrNode extends BinaryOpBuiltinNode {
         @Specialization(guards = {"isDictNode.execute(inliningTarget, self)", "isDictNode.execute(inliningTarget, other)"}, limit = "1")
         static PDict or(VirtualFrame frame, Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyDictCheckNode isDictNode,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached HashingStorageCopy copyNode,

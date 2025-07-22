@@ -74,7 +74,7 @@ public final class PythonCextByteArrayBuiltins {
 
         @Specialization
         static Object doNative(PythonAbstractNativeObject obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached CStructAccess.GetElementPtrNode getArray,
@@ -87,7 +87,7 @@ public final class PythonCextByteArrayBuiltins {
 
         @Fallback
         static Object doError(Object obj,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytearray", obj);
         }
     }

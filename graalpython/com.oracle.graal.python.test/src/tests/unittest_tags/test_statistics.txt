@@ -83,6 +83,7 @@ test.test_statistics.TestApproxEqualErrors.test_bad_rel @ darwin-arm64,darwin-x8
 test.test_statistics.TestApproxEqualErrors.test_bad_tol @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_statistics.TestBivariateStatistics.test_small_sample_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_statistics.TestBivariateStatistics.test_unequal_size_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_statistics.TestCorrelationAndCovariance.test_correlation_spearman @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_statistics.TestCorrelationAndCovariance.test_different_scales @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_statistics.TestCorrelationAndCovariance.test_results @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_statistics.TestFMean.test_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -120,6 +121,7 @@ test.test_statistics.TestHarmonicMean.test_types_conserved @ darwin-arm64,darwin
 test.test_statistics.TestHarmonicMean.test_with_weights @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_statistics.TestHarmonicMean.test_zero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_statistics.TestLinearRegression.test_constant_input_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_statistics.TestLinearRegression.test_float_output @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_statistics.TestLinearRegression.test_proportional @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_statistics.TestLinearRegression.test_results @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_statistics.TestMean.test_bad_arg_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -39,11 +39,12 @@ get_type_attr_as_size(PyTypeObject *tp, _Py_Identifier *key)
     if (name == NULL) {
         return -1;
     }
-    PyObject *v = PyDict_GetItemWithError(tp->tp_dict, name);
+    PyObject *v = PyDict_GetItemWithError(_PyType_GetDict(tp), name);
     if (v == NULL && !PyErr_Occurred()) {
         PyErr_Format(PyExc_TypeError,
                      "Missed attribute '%U' of type %s",
                      name, tp->tp_name);
+        return -1;
     }
     return PyLong_AsSsize_t(v);
 }
@@ -57,14 +58,27 @@ _Py_IDENTIFIER(n_unnamed_fields);
 #define VISIBLE_SIZE(op) Py_SIZE(op)
 #define VISIBLE_SIZE_TP(tp) \
     get_type_attr_as_size(tp, &PyId_n_sequence_fields)
+// GraalPy change: cannot use CPython's current _Py_ID mechanism
 #define REAL_SIZE_TP(tp) \
     get_type_attr_as_size(tp, &PyId_n_fields)
+#if 0 // GraalPy change: we do not store items within the struct
+#define REAL_SIZE(op) get_real_size((PyObject *)op)
+#else // GraalPy change
 #define REAL_SIZE(op) REAL_SIZE_TP(Py_TYPE(op))
+#endif // GraalPy change
 
 #define UNNAMED_FIELDS_TP(tp) \
     get_type_attr_as_size(tp, &PyId_n_unnamed_fields)
 #define UNNAMED_FIELDS(op) UNNAMED_FIELDS_TP(Py_TYPE(op))
 
+static Py_ssize_t
+get_real_size(PyObject *op)
+{
+    // Compute the real size from the visible size (i.e., Py_SIZE()) and the
+    // number of non-sequence fields accounted for in tp_basicsize.
+    Py_ssize_t hidden = Py_TYPE(op)->tp_basicsize - offsetof(PyStructSequence, ob_item);
+    return Py_SIZE(op) + hidden / sizeof(PyObject *);
+}
 
 #if 0 // GraalPy change
 PyObject *
@@ -128,6 +142,9 @@ structseq_dealloc(PyStructSequence *obj)
     PyObject_GC_UnTrack(obj);
 
     PyTypeObject *tp = Py_TYPE(obj);
+    // gh-122527: We can't use REAL_SIZE_TP() or any macros that access the
+    // type's dictionary here, because the dictionary may have already been
+    // cleared by the garbage collector.
     size = REAL_SIZE(obj);
     for (i = 0; i < size; ++i) {
         // GraalPy change: avoid direct struct access
@@ -224,8 +241,7 @@ structseq_new_impl(PyTypeObject *type, PyObject *arg, PyObject *dict)
     }
     for (i = 0; i < len; ++i) {
         PyObject *v = PySequence_Fast_GET_ITEM(arg, i);
-        Py_INCREF(v);
-        res->ob_item[i] = v;
+        res->ob_item[i] = Py_NewRef(v);
     }
     Py_DECREF(arg);
     for (; i < max_len; ++i) {
@@ -243,8 +259,7 @@ structseq_new_impl(PyTypeObject *type, PyObject *arg, PyObject *dict)
                 ob = Py_None;
             }
         }
-        Py_INCREF(ob);
-        res->ob_item[i] = ob;
+        res->ob_item[i] = Py_NewRef(ob);
     }
 
     _PyObject_GC_TRACK(res);
@@ -459,11 +474,19 @@ error:
 }
 #endif // GraalPy change
 
-static void
-initialize_members(PyStructSequence_Desc *desc, PyMemberDef* members,
-                   Py_ssize_t n_members) {
-    Py_ssize_t i, k;
+static PyMemberDef *
+initialize_members(PyStructSequence_Desc *desc,
+                   Py_ssize_t n_members, Py_ssize_t n_unnamed_members)
+{
+    PyMemberDef *members;
 
+    members = PyMem_NEW(PyMemberDef, n_members - n_unnamed_members + 1);
+    if (members == NULL) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+
+    Py_ssize_t i, k;
     for (i = k = 0; i < n_members; ++i) {
         if (desc->fields[i].name == PyStructSequence_UnnamedField) {
             continue;
@@ -480,12 +503,125 @@ initialize_members(PyStructSequence_Desc *desc, PyMemberDef* members,
         k++;
     }
     members[k].name = NULL;
+
+    return members;
 }
 
 
+static void
+initialize_static_fields(PyTypeObject *type, PyStructSequence_Desc *desc,
+                         PyMemberDef *tp_members, Py_ssize_t n_members,
+                         unsigned long tp_flags)
+{
+    type->tp_name = desc->name;
+    // Account for hidden members in tp_basicsize because they are not
+    // included in the variable size.
+    Py_ssize_t n_hidden = n_members - desc->n_in_sequence;
+    n_hidden = 2; // GraalPy change: we store members and desc within tp_dict
+    type->tp_basicsize = sizeof(PyStructSequence) + (n_hidden - 1) * sizeof(PyObject *);
+    type->tp_itemsize = sizeof(PyObject *);
+    type->tp_dealloc = (destructor)structseq_dealloc;
+    // GraalPy change: set in a later upcall
+    type->tp_repr = NULL;
+    type->tp_doc = desc->doc;
+    type->tp_base = &PyTuple_Type;
+    // GraalPy change: set in a later upcall
+    type->tp_methods = NULL;
+    type->tp_new = NULL;
+    type->tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | tp_flags;
+    type->tp_traverse = (traverseproc) structseq_traverse;
+    type->tp_members = tp_members;
+}
+
+static int
+initialize_static_type(PyTypeObject *type, PyStructSequence_Desc *desc,
+                       Py_ssize_t n_members, Py_ssize_t n_unnamed_members) {
+    /* initialize_static_fields() should have been called already. */
+    if (PyType_Ready(type) < 0) {
+        return -1;
+    }
+    Py_INCREF(type);
+
+#if 0 // GraalPy change: initialize dict in an upcall later
+    if (initialize_structseq_dict(
+            desc, _PyType_GetDict(type), n_members, n_unnamed_members) < 0) {
+        Py_DECREF(type);
+        return -1;
+    }
+#endif // GraalPy change
+
+    // GraalPy change: upcall to set the members and methods
+    return GraalPyTruffleStructSequence_InitType2(type, desc->fields, desc->n_in_sequence);
+}
+
 int
-_PyStructSequence_InitType(PyTypeObject *type, PyStructSequence_Desc *desc,
-                           unsigned long tp_flags)
+_PyStructSequence_InitBuiltinWithFlags(PyInterpreterState *interp,
+                                       PyTypeObject *type,
+                                       PyStructSequence_Desc *desc,
+                                       unsigned long tp_flags)
+{
+    Py_ssize_t n_unnamed_members;
+#if 0 // GraalPy change
+    Py_ssize_t n_members = count_members(desc, &n_unnamed_members);
+#else // GraalPy change
+    Py_ssize_t n_members = 0;
+#endif // GraalPy change
+    PyMemberDef *members = NULL;
+
+    if ((type->tp_flags & Py_TPFLAGS_READY) == 0) {
+        assert(type->tp_name == NULL);
+        assert(type->tp_members == NULL);
+        assert(type->tp_base == NULL);
+
+#if 0 // GraalPy change: initialize members in an upcall later
+        members = initialize_members(desc, n_members, n_unnamed_members);
+        if (members == NULL) {
+            goto error;
+        }
+#endif // GraalPy change
+        initialize_static_fields(type, desc, members, n_members, tp_flags);
+
+        _Py_SetImmortal(type);
+    }
+#ifndef NDEBUG
+    else {
+        // Ensure that the type was initialized.
+        assert(type->tp_name != NULL);
+        assert(type->tp_members != NULL);
+        assert(type->tp_base == &PyTuple_Type);
+        assert((type->tp_flags & _Py_TPFLAGS_STATIC_BUILTIN));
+        assert(_Py_IsImmortal(type));
+    }
+#endif
+
+#if 0 // GraalPy change
+    if (_PyStaticType_InitBuiltin(interp, type) < 0) {
+        PyErr_Format(PyExc_RuntimeError,
+                     "Can't initialize builtin type %s",
+                     desc->name);
+        goto error;
+    }
+
+    if (initialize_structseq_dict(
+            desc, _PyType_GetDict(type), n_members, n_unnamed_members) < 0)
+    {
+        goto error;
+    }
+
+    return 0;
+
+error:
+    if (members != NULL) {
+        PyMem_Free(members);
+    }
+    return -1;
+#endif // GraalPy change
+
+    return 0;
+}
+
+int
+PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc)
 {
     PyMemberDef *members;
     Py_ssize_t n_members, n_unnamed_members;
@@ -506,53 +642,19 @@ _PyStructSequence_InitType(PyTypeObject *type, PyStructSequence_Desc *desc,
     }
 #endif // GraalPy change
 
-    type->tp_name = desc->name;
-    type->tp_basicsize = sizeof(PyStructSequence) - sizeof(PyObject *);
-    type->tp_itemsize = sizeof(PyObject *);
-    type->tp_dealloc = (destructor)structseq_dealloc;
-    // GraalPy change: set in a later upcall
-    type->tp_repr = NULL;
-    type->tp_doc = desc->doc;
-    type->tp_base = &PyTuple_Type;
-    // GraalPy change: set in a later upcall
-    type->tp_methods = NULL;
-    type->tp_new = NULL;
-    type->tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | tp_flags;
-    type->tp_traverse = (traverseproc) structseq_traverse;
-
     n_members = count_members(desc, &n_unnamed_members);
-    members = PyMem_NEW(PyMemberDef, n_members - n_unnamed_members + 1);
+    members = initialize_members(desc, n_members, n_unnamed_members);
     if (members == NULL) {
-        PyErr_NoMemory();
         return -1;
     }
-    initialize_members(desc, members, n_members);
-    type->tp_members = members;
 
-    if (PyType_Ready(type) < 0) {
+    initialize_static_fields(type, desc, members, n_members, 0);
+    if (initialize_static_type(type, desc, n_members, n_unnamed_members) < 0) {
         // GraalPy change: not initialized
         // PyMem_Free(members);
         return -1;
     }
-    Py_INCREF(type);
-
-#if 0 // GraalPy change: initialize dict in an upcall later
-    if (initialize_structseq_dict(
-            desc, type->tp_dict, n_members, n_unnamed_members) < 0) {
-        PyMem_Free(members);
-        Py_DECREF(type);
-        return -1;
-    }
-#endif // GraalPy change
-
-    // GraalPy change: upcall to set the members and methods
-    return GraalPyTruffleStructSequence_InitType2(type, desc->fields, desc->n_in_sequence);
-}
-
-int
-PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc)
-{
-    return _PyStructSequence_InitType(type, desc, 0);
+    return 0;
 }
 
 void
@@ -563,36 +665,87 @@ PyStructSequence_InitType(PyTypeObject *type, PyStructSequence_Desc *desc)
 
 
 #if 0 // GraalPy change
+/* This is exposed in the internal API, not the public API.
+   It is only called on builtin static types, which are all
+   initialized via _PyStructSequence_InitBuiltinWithFlags(). */
+
 void
-_PyStructSequence_FiniType(PyTypeObject *type)
+_PyStructSequence_FiniBuiltin(PyInterpreterState *interp, PyTypeObject *type)
 {
     // Ensure that the type is initialized
     assert(type->tp_name != NULL);
     assert(type->tp_base == &PyTuple_Type);
+    assert((type->tp_flags & _Py_TPFLAGS_STATIC_BUILTIN));
+    assert(_Py_IsImmortal(type));
 
     // Cannot delete a type if it still has subclasses
-    if (type->tp_subclasses != NULL) {
+    if (_PyType_HasSubclasses(type)) {
+        // XXX Shouldn't this be an error?
         return;
     }
 
-    // Undo PyStructSequence_NewType()
-    type->tp_name = NULL;
-    PyMem_Free(type->tp_members);
+    _PyStaticType_Dealloc(interp, type);
 
-    _PyStaticType_Dealloc(type);
-    assert(Py_REFCNT(type) == 1);
-    // Undo Py_INCREF(type) of _PyStructSequence_InitType().
-    // Don't use Py_DECREF(): static type must not be deallocated
-    Py_SET_REFCNT(type, 0);
-#ifdef Py_REF_DEBUG
-    _Py_RefTotal--;
-#endif
-
-    // Make sure that _PyStructSequence_InitType() will initialize
-    // the type again
-    assert(Py_REFCNT(type) == 0);
-    assert(type->tp_name == NULL);
+    if (_Py_IsMainInterpreter(interp)) {
+        // Undo _PyStructSequence_InitBuiltinWithFlags().
+        type->tp_name = NULL;
+        PyMem_Free(type->tp_members);
+        type->tp_members = NULL;
+        type->tp_base = NULL;
+    }
 }
+
+PyTypeObject *
+_PyStructSequence_NewType(PyStructSequence_Desc *desc, unsigned long tp_flags)
+{
+    PyMemberDef *members;
+    PyTypeObject *type;
+    PyType_Slot slots[8];
+    PyType_Spec spec;
+    Py_ssize_t n_members, n_unnamed_members;
+
+    /* Initialize MemberDefs */
+    n_members = count_members(desc, &n_unnamed_members);
+    members = initialize_members(desc, n_members, n_unnamed_members);
+    if (members == NULL) {
+        return NULL;
+    }
+
+    /* Initialize Slots */
+    slots[0] = (PyType_Slot){Py_tp_dealloc, (destructor)structseq_dealloc};
+    slots[1] = (PyType_Slot){Py_tp_repr, (reprfunc)structseq_repr};
+    slots[2] = (PyType_Slot){Py_tp_doc, (void *)desc->doc};
+    slots[3] = (PyType_Slot){Py_tp_methods, structseq_methods};
+    slots[4] = (PyType_Slot){Py_tp_new, structseq_new};
+    slots[5] = (PyType_Slot){Py_tp_members, members};
+    slots[6] = (PyType_Slot){Py_tp_traverse, (traverseproc)structseq_traverse};
+    slots[7] = (PyType_Slot){0, 0};
+
+    /* Initialize Spec */
+    /* The name in this PyType_Spec is statically allocated so it is */
+    /* expected that it'll outlive the PyType_Spec */
+    spec.name = desc->name;
+    Py_ssize_t hidden = n_members - desc->n_in_sequence;
+    spec.basicsize = (int)(sizeof(PyStructSequence) + (hidden - 1) * sizeof(PyObject *));
+    spec.itemsize = sizeof(PyObject *);
+    spec.flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | tp_flags;
+    spec.slots = slots;
+
+    type = (PyTypeObject *)PyType_FromSpecWithBases(&spec, (PyObject *)&PyTuple_Type);
+    PyMem_Free(members);
+    if (type == NULL) {
+        return NULL;
+    }
+
+    if (initialize_structseq_dict(
+            desc, _PyType_GetDict(type), n_members, n_unnamed_members) < 0) {
+        Py_DECREF(type);
+        return NULL;
+    }
+
+    return type;
+}
+
 #endif // GraalPy change
 
 PyTypeObject *

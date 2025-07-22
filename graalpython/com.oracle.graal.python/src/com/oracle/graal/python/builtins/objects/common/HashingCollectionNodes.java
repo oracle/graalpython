@@ -43,15 +43,15 @@ package com.oracle.graal.python.builtins.objects.common;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.GetClonedHashingStorageNodeGen;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
-import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutUnsafeNode;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.GetClonedHashingStorageNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
@@ -123,7 +123,7 @@ public abstract class HashingCollectionNodes {
 
         @Specialization
         static HashingStorage doEconomicStorage(VirtualFrame frame, Node inliningTarget, EconomicMapStorage map, Object value,
-                        @Shared("putNode") @Cached PutUnsafeNode putNode,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("loopProfile") @Cached InlinedLoopConditionProfile loopProfile) {
             // We want to avoid calling __hash__() during map.put
             map.setValueForAllKeys(frame, inliningTarget, value, putNode, loopProfile);
@@ -137,7 +137,7 @@ public abstract class HashingCollectionNodes {
                         @Cached HashingStorageGetIterator getIterator,
                         @Cached HashingStorageIteratorNext itNext,
                         @Cached HashingStorageIteratorKey itKey,
-                        @Shared("putNode") @Cached PutUnsafeNode putNode,
+                        @Shared("putNode") @Cached PutNode putNode,
                         @Shared("loopProfile") @Cached InlinedLoopConditionProfile loopProfile) {
             HashingStorageIterator it = getIterator.execute(inliningTarget, map);
             while (itNext.execute(inliningTarget, map, it)) {
@@ -275,7 +275,7 @@ public abstract class HashingCollectionNodes {
 
             @Specialization
             static HashingStorage doHashingCollection(VirtualFrame frame, HashingStorage other, Object value,
-                            @Bind("this") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @Cached SetValueHashingStorageNode setValue,
                             @Cached HashingStorageCopy copyNode) {
                 assert !PGuards.isNoValue(value);

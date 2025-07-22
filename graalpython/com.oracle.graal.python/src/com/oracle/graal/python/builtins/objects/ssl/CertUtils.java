@@ -66,8 +66,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
+import java.security.Provider;
 import java.security.PublicKey;
-import java.security.Security;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.cert.CRLException;
@@ -89,7 +89,6 @@ import java.util.List;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.cert.X509CRLHolder;
 import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMEncryptedKeyPair;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
@@ -115,7 +114,6 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class CertUtils {
-    public static final BouncyCastleProvider BOUNCYCASTLE_PROVIDER = new BouncyCastleProvider();
     private static final TruffleString T_UNSUPPORTED = tsLiteral("<unsupported>");
     private static final TruffleString T_OTHERNAME = tsLiteral("othername");
     private static final TruffleString T_EMAIL = tsLiteral("email");
@@ -126,10 +124,6 @@ public final class CertUtils {
     private static final TruffleString T_URI = tsLiteral("URI");
     private static final TruffleString T_IP_ADDRESS = tsLiteral("IP Address");
     private static final TruffleString T_REGISTERED_ID = tsLiteral("Registered ID");
-
-    static {
-        Security.addProvider(BOUNCYCASTLE_PROVIDER);
-    }
 
     public static class NoCertificateFoundException extends Exception {
         private static final long serialVersionUID = 5489472143646552420L;
@@ -634,7 +628,8 @@ public final class CertUtils {
                     throws NeedsPasswordException {
         PEMParser pemParser = new PEMParser(reader);
         JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
-        converter.setProvider(BOUNCYCASTLE_PROVIDER);
+        Provider provider = LazyBouncyCastleProvider.initProvider();
+        converter.setProvider(provider);
         PrivateKey privateKey = null;
         try {
             Object object;
@@ -647,7 +642,7 @@ public final class CertUtils {
                         throw new NeedsPasswordException();
                     }
                     JcePEMDecryptorProviderBuilder decryptor = new JcePEMDecryptorProviderBuilder();
-                    decryptor.setProvider(BOUNCYCASTLE_PROVIDER);
+                    decryptor.setProvider(provider);
                     PEMKeyPair keyPair = ((PEMEncryptedKeyPair) object).decryptKeyPair(decryptor.build(password));
                     pkInfo = keyPair.getPrivateKeyInfo();
                 } else if (object instanceof PKCS8EncryptedPrivateKeyInfo) {
@@ -655,7 +650,7 @@ public final class CertUtils {
                         throw new NeedsPasswordException();
                     }
                     JceOpenSSLPKCS8DecryptorProviderBuilder decryptor = new JceOpenSSLPKCS8DecryptorProviderBuilder();
-                    decryptor.setProvider(BOUNCYCASTLE_PROVIDER);
+                    decryptor.setProvider(provider);
                     pkInfo = ((PKCS8EncryptedPrivateKeyInfo) object).decryptPrivateKeyInfo(decryptor.build(password));
                 } else if (object instanceof PrivateKeyInfo) {
                     pkInfo = (PrivateKeyInfo) object;
@@ -708,7 +703,17 @@ public final class CertUtils {
 
     @TruffleBoundary
     static Collection<?> generateCertificates(byte[] bytes) throws CertificateException {
-        return CertificateFactory.getInstance("X.509").generateCertificates(new ByteArrayInputStream(bytes));
+        // test_load_verify_cadata appends an extra byte to a valid certificate and expects
+        // a failure.
+        // For some reason, CertificateFactory#generateCertificates() consumes the whole input
+        // ignoring any extra bytes. Parsing certificate one by one seems to detect them.
+        CertificateFactory factory = CertificateFactory.getInstance("X.509");
+        ArrayList<Object> list = new ArrayList<>();
+        ByteArrayInputStream is = new ByteArrayInputStream(bytes);
+        while (is.available() > 0) {
+            list.add(factory.generateCertificate(is));
+        }
+        return list;
     }
 
     @TruffleBoundary

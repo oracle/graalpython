@@ -55,6 +55,7 @@ import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyListCheckExactNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyTupleCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -187,7 +188,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
         private void appendFloat(PJSONEncoder encoder, TruffleStringBuilderUTF32 builder, double obj) {
             if (!Double.isFinite(obj)) {
                 if (!encoder.allowNan) {
-                    throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.OUT_OF_RANGE_FLOAT_NOT_JSON_COMPLIANT);
+                    throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.OUT_OF_RANGE_FLOAT_NOT_JSON_COMPLIANT, PyObjectReprAsTruffleStringNode.executeUncached(obj));
                 }
                 if (obj > 0) {
                     builder.appendStringUncached(T_POSITIVE_INFINITY);

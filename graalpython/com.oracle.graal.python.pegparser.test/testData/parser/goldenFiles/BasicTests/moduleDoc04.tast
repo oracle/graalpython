@@ -14,10 +14,10 @@ a = "ahoj"
 Output:
 -------
 Module[3:0-6:10]
-    RAW[3:0-3:20] Value: "This is module doc"
+    CODEPOINTS[3:0-3:20] Value: "This is module doc"
     Assign[5:0-5:5]
         LHS: Name[5:0-5:1] Value: "a" Store
         RHS: LONG[5:4-5:5] Value: 1
     Assign[6:0-6:10]
         LHS: Name[6:0-6:1] Value: "a" Store
-        RHS: RAW[6:4-6:10] Value: "ahoj"
+        RHS: CODEPOINTS[6:4-6:10] Value: "ahoj"

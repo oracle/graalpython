@@ -196,7 +196,7 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object name(int cp, Object defaultValue,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached PRaiseNode raiseNode) {
             String result = getUnicodeName(cp);

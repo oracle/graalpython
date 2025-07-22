@@ -59,7 +59,6 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.zlib.ZlibNodes.JavaCompressNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -77,7 +76,6 @@ import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -104,10 +102,10 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBytes compress(VirtualFrame frame, ZLibCompObject self, Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached CompressInnerNode innerNode,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -128,7 +126,7 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
             abstract byte[] execute(Node inliningTarget, Object self, byte[] bytes, int length);
 
             @Specialization
-            static byte[] doNative(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, byte[] bytes, int length,
+            static byte[] doNative(Node inliningTarget, NativeZlibCompObject self, byte[] bytes, int length,
                             @Cached ZlibNodes.ZlibNativeCompressObj compressObj) {
                 synchronized (self) {
                     return compressObj.execute(inliningTarget, self, PythonContext.get(inliningTarget), bytes, length);
@@ -136,10 +134,9 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
             }
 
             @Specialization
-            @TruffleBoundary
-            static byte[] doJava(ZLibCompObject.JavaZlibCompObject self, byte[] bytes, int length) {
+            static byte[] doJava(JavaCompress self, byte[] bytes, int length) {
                 self.setDeflaterInput(bytes, length);
-                return JavaCompressNode.execute(self, Z_NO_FLUSH);
+                return self.compress(Z_NO_FLUSH);
             }
         }
 
@@ -156,7 +153,7 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
         public abstract Object execute(Node inliningTarget, ZLibCompObject self);
 
         @Specialization(guards = "self.isInitialized()")
-        static Object doNative(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self,
+        static Object doNative(Node inliningTarget, NativeZlibCompObject self,
                         @Bind PythonContext context,
                         @Cached(inline = false) NativeLibrary.InvokeNativeFunction createCompObject,
                         @Cached(inline = false) NativeLibrary.InvokeNativeFunction compressObjCopy,
@@ -176,21 +173,21 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.isInitialized()", "self.canCopy()"})
-        static Object doJava(ZLibCompObject.JavaZlibCompObject self) {
-            return self.copyCompressObj();
+        static Object doJava(JavaCompress self) {
+            return self.copy();
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.isInitialized()", "!self.canCopy()"})
-        static PNone error(ZLibCompObject.JavaZlibCompObject self,
-                        @Bind("this") Node inliningTarget) {
+        static PNone error(JavaCompress self,
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, toTruffleStringUncached("JDK based zlib doesn't support copying"));
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isInitialized()")
         static PNone error(ZLibCompObject self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.INCONSISTENT_STREAM_STATE);
         }
     }
@@ -200,7 +197,7 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
     abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doit(ZLibCompObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BaseCopyNode copyNode) {
             return copyNode.execute(inliningTarget, self);
         }
@@ -216,7 +213,7 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
     abstract static class DeepCopyNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doit(ZLibCompObject self, @SuppressWarnings("unused") Object memo,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BaseCopyNode copyNode) {
             return copyNode.execute(inliningTarget, self);
         }
@@ -241,8 +238,8 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"mode != Z_NO_FLUSH", "self.isInitialized()"})
-        static PBytes doit(ZLibCompObject.NativeZlibCompObject self, int mode,
-                        @Bind("this") Node inliningTarget,
+        static PBytes doit(NativeZlibCompObject self, int mode,
+                        @Bind Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction compressObjFlush,
                         @Cached ZlibNodes.GetNativeBufferNode getBuffer,
                         @Cached NativeLibrary.InvokeNativeFunction getIsInitialised,
@@ -252,10 +249,10 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
                 assert self.isInitialized();
                 PythonContext context = PythonContext.get(inliningTarget);
                 NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
-                Object lastInput;
+                byte[] lastInput;
                 if (self.lastInput == null) {
                     // all previous input data has been processed or nothing has been compressed.
-                    lastInput = context.getEnv().asGuestValue(PythonUtils.EMPTY_BYTE_ARRAY);
+                    lastInput = PythonUtils.EMPTY_BYTE_ARRAY;
                 } else {
                     // pass the last data input to continue processing.
                     // all other needed info, e.g. size and offset, about the last data input is
@@ -275,15 +272,15 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"mode != Z_NO_FLUSH", "self.isInitialized()"})
-        static PBytes doit(ZLibCompObject.JavaZlibCompObject self, int mode,
+        static PBytes doit(JavaCompress self, int mode,
                         @Bind PythonLanguage language) {
-            return PFactory.createBytes(language, ZlibNodes.JavaCompressNode.execute(self, mode));
+            return PFactory.createBytes(language, self.compress(mode));
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isInitialized()")
         static PNone error(ZLibCompObject self, int mode,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while compressing data", "inconsistent stream state");
         }
     }

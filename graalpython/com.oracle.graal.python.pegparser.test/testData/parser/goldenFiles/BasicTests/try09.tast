@@ -16,4 +16,4 @@ Module[1:0-4:27]
             Call[4:3-4:27]
                 Target: Name[4:3-4:8] Value: "print"
                 Args:
-                    RAW[4:9-4:26] Value: "Goodbye, world!"
+                    CODEPOINTS[4:9-4:26] Value: "Goodbye, world!"

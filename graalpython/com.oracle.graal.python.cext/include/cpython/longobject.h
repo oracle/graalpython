@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2023, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2023 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -98,3 +98,8 @@ PyAPI_FUNC(PyObject *) _PyLong_GCD(PyObject *, PyObject *);
 
 PyAPI_FUNC(PyObject *) _PyLong_Rshift(PyObject *, size_t);
 PyAPI_FUNC(PyObject *) _PyLong_Lshift(PyObject *, size_t);
+
+
+PyAPI_FUNC(int) PyUnstable_Long_IsCompact(const PyLongObject* op);
+PyAPI_FUNC(Py_ssize_t) PyUnstable_Long_CompactValue(const PyLongObject* op);
+

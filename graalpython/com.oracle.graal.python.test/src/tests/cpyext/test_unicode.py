@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,13 @@ import codecs
 import locale
 import re
 import sys
+import os
 import unittest
 
 from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, GRAALPYTHON, CPyExtFunctionOutVars, \
     is_native_object
 
+from test.support import os_helper
 
 def _reference_fromobject(args):
     if isinstance(args[0], str):
@@ -265,7 +267,6 @@ class TestPyUnicode(CPyExtTestCase):
         lambda: (
             ("hello, world!",),
             ("<%%>",),
-            ("<%6>",),
         ),
         code="""PyObject* wrap_PyUnicode_FromFormat0(char* fmt) {
             return PyUnicode_FromFormat(fmt);
@@ -387,30 +388,6 @@ class TestPyUnicode(CPyExtTestCase):
         argspec='sssiL',
         arguments=["char* fmt", "char* arg0", "char* arg1", "int n", "longlong_t l"],
         callfunction="PyUnicode_FromFormat",
-        cmpfunc=unhandled_error_compare
-    )
-
-    test_PyUnicode_FromUnicode = CPyExtFunction(
-        lambda args: args[0],
-        lambda: (
-            ("hello",),
-            ("hellö",),
-        ),
-        code="""#include <unicodeobject.h>
-
-        PyObject* wrap_PyUnicode_FromUnicode(PyObject* strObj) {
-            Py_UNICODE* wchars;
-            Py_ssize_t n;
-            n = PyUnicode_GetLength(strObj);
-            wchars = malloc(n*sizeof(Py_UNICODE));
-            PyUnicode_AsWideChar(strObj, wchars, n);
-            return PyUnicode_FromUnicode(wchars, n);
-        }
-        """,
-        resultspec="O",
-        argspec='O',
-        arguments=["PyObject* strObj"],
-        callfunction="wrap_PyUnicode_FromUnicode",
         cmpfunc=unhandled_error_compare
     )
 
@@ -699,6 +676,7 @@ class TestPyUnicode(CPyExtTestCase):
             ("%s, %r", ("hello", "world")),
             ("nothing else", tuple()),
             (UnicodeSubclass("%s, %r"), ("hello", "world")),
+            ("%d.%d", (42, 123)),
         ),
         resultspec="O",
         argspec='OO',
@@ -719,81 +697,6 @@ class TestPyUnicode(CPyExtTestCase):
         resultspec="i",
         argspec='O',
         arguments=["PyObject* o"],
-        cmpfunc=unhandled_error_compare
-    )
-
-    test_PyUnicode_GET_SIZE = CPyExtFunction(
-        lambda args: len(args[0]),
-        lambda: (
-            ("hello",),
-        ),
-        resultspec="n",
-        argspec='O',
-        arguments=["PyObject* o"],
-        cmpfunc=unhandled_error_compare
-    )
-
-    test_PyUnicode_AsUnicode = CPyExtFunction(
-        lambda args: True,
-        lambda: (
-            ("hello", b'\x68\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00',
-             b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\x6f\x00\x00\x00"),
-            (UnicodeSubclass("hello"), b'\x68\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00',
-             b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\x6f\x00\x00\x00"),
-        ),
-        code=""" PyObject* wrap_PyUnicode_AsUnicode(PyObject* unicodeObj, PyObject* expected_16, PyObject* expected_32) {
-            Py_ssize_t n = Py_UNICODE_SIZE == 2 ? PyBytes_Size(expected_16) : PyBytes_Size(expected_32);
-            char* actual_bytes = (char*) PyUnicode_AsUnicode(unicodeObj);
-            char* expected_bytes = Py_UNICODE_SIZE == 2 ? PyBytes_AsString(expected_16) : PyBytes_AsString(expected_32);
-            Py_ssize_t i;
-            for (i=0; i < n; i++) {
-                if (actual_bytes[i] != expected_bytes[i]) {
-                    PyErr_Format(PyExc_ValueError, "invalid byte at %d: expected '%c', but was '%c'", i, expected_bytes[i], actual_bytes[i]);
-                    return NULL;
-                }
-            }
-            return Py_True;
-        }
-        """,
-        resultspec="O",
-        argspec='OOO',
-        arguments=["PyObject* unicodeObj", "PyObject* expected_16", "PyObject* expected_32"],
-        callfunction="wrap_PyUnicode_AsUnicode",
-        cmpfunc=unhandled_error_compare
-    )
-
-    test_PyUnicode_AsUnicodeAndSize = CPyExtFunction(
-        lambda args: True,
-        lambda: (
-            ("hello", b'\x68\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00',
-             b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\x6f\x00\x00\x00"),
-            (UnicodeSubclass("hello"), b'\x68\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00',
-             b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\x6f\x00\x00\x00"),
-        ),
-        code=""" PyObject* wrap_PyUnicode_AsUnicodeAndSize(PyObject* unicodeObj, PyObject* expected_16, PyObject* expected_32) {
-            Py_ssize_t n = Py_UNICODE_SIZE == 2 ? PyBytes_Size(expected_16) : PyBytes_Size(expected_32);
-            Py_ssize_t expected_n = n / Py_UNICODE_SIZE;
-            Py_ssize_t actual_n = 0;
-            char* actual_bytes = (char*) PyUnicode_AsUnicodeAndSize(unicodeObj, &actual_n);
-            char* expected_bytes = Py_UNICODE_SIZE == 2 ? PyBytes_AsString(expected_16) : PyBytes_AsString(expected_32);
-            Py_ssize_t i;
-            if (expected_n != actual_n) {
-                PyErr_Format(PyExc_ValueError, "invalid size: expected '%ld', but was '%ld'", expected_n, actual_n);
-                return NULL;
-            }
-            for (i=0; i < n; i++) {
-                if (actual_bytes[i] != expected_bytes[i]) {
-                    PyErr_Format(PyExc_ValueError, "invalid byte at %d: expected '%c', but was '%c'", i, expected_bytes[i], actual_bytes[i]);
-                    return NULL;
-                }
-            }
-            return Py_True;
-        }
-        """,
-        resultspec="O",
-        argspec='OOO',
-        arguments=["PyObject* unicodeObj", "PyObject* expected_16", "PyObject* expected_32"],
-        callfunction="wrap_PyUnicode_AsUnicodeAndSize",
         cmpfunc=unhandled_error_compare
     )
 
@@ -1153,6 +1056,27 @@ class TestPyUnicode(CPyExtTestCase):
         resultspec="O",
         argspec="sy#nns",
         arguments=["const char* encoding", "const char* object", "Py_ssize_t length", "Py_ssize_t start", "Py_ssize_t end", "const char* reason"]
+    )
+
+    test_PyUnicode_FSDecoder = CPyExtFunction(
+        lambda args: str(args[0]),
+        lambda: (
+            (os.path.realpath(os_helper.TESTFN),),
+        ),
+        code='''PyObject* wrap_PyUnicode_FSDecoder(PyObject* path) {
+            PyObject* res;
+            int ret = PyUnicode_FSDecoder(path, &res);
+            if (ret <= 0 && PyErr_Occurred()) {
+               return NULL;
+            }
+            return res;
+        }
+        ''',
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* path"],
+        callfunction="wrap_PyUnicode_FSDecoder",
+        cmpfunc=unhandled_error_compare
     )
 
 

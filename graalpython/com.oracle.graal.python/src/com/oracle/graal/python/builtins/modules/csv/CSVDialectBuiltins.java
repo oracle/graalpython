@@ -140,7 +140,7 @@ public final class CSVDialectBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         static CSVDialect doStringWithoutKeywords(VirtualFrame frame, PythonBuiltinClassType cls, TruffleString dialectName, PNone delimiter, PNone doublequote, PNone escapechar,
                         PNone lineterminator, PNone quotechar, PNone quoting, PNone skipinitialspace, PNone strict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect) {
             PythonModule module = PythonContext.get(inliningTarget).lookupBuiltinModule(T__CSV);
             return getDialect.execute(frame, module, dialectName);
@@ -149,7 +149,7 @@ public final class CSVDialectBuiltins extends PythonBuiltins {
         @Specialization
         static Object doNoDialectObj(VirtualFrame frame, PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone dialectObj, Object delimiterObj, Object doublequoteObj, Object escapecharObj,
                         Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyObjectIsTrueNode isTrueNode,
                         @Exclusive @Cached PyLongCheckExactNode pyLongCheckExactNode,
                         @Exclusive @Cached PyLongAsIntNode pyLongAsIntNode,
@@ -161,7 +161,7 @@ public final class CSVDialectBuiltins extends PythonBuiltins {
         @Specialization
         static Object doStringWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, TruffleString dialectName, Object delimiterObj, Object doublequoteObj, Object escapecharObj,
                         Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
                         @Exclusive @Cached PyObjectIsTrueNode isTrueNode,
                         @Exclusive @Cached PyLongCheckExactNode pyLongCheckExactNode,
@@ -202,7 +202,7 @@ public final class CSVDialectBuiltins extends PythonBuiltins {
         @Specialization
         static Object doDialectClassWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, PythonClass dialectObj, Object delimiterObj, Object doublequoteObj, Object escapecharObj,
                         Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyObjectLookupAttr getFirstAttributesNode,
                         @Exclusive @Cached PyObjectLookupAttr getSecondAttributesNode,
                         @Exclusive @Cached PyObjectLookupAttr getThirdAttributesNode,
@@ -229,7 +229,7 @@ public final class CSVDialectBuiltins extends PythonBuiltins {
         @Specialization
         static Object doPStringWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, PString dialectName, Object delimiterObj, Object doublequoteObj, Object escapecharObj,
                         Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Exclusive @Cached PyObjectIsTrueNode isTrueNode,
@@ -273,7 +273,7 @@ public final class CSVDialectBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isCSVDialect(dialectObj)", "!isPythonClass(dialectObj)", "!isString(dialectObj)", "!isPNone(dialectObj)"})
         static Object doGeneric(VirtualFrame frame, Object cls, Object dialectObj, Object delimiterObj, Object doublequoteObj, Object escapecharObj, Object lineterminatorObj,
                         Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyObjectLookupAttr getFirstAttributesNode,
                         @Exclusive @Cached PyObjectLookupAttr getSecondAttributesNode,
                         @Exclusive @Cached PyObjectLookupAttr getThirdAttributesNode,
@@ -437,8 +437,8 @@ public final class CSVDialectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DelimiterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static TruffleString doIt(CSVDialect self) {
-            return self.delimiter;
+        static Object doIt(CSVDialect self) {
+            return self.delimiterCodePoint == NOT_SET_CODEPOINT ? PNone.NONE : self.delimiter;
         }
     }
 

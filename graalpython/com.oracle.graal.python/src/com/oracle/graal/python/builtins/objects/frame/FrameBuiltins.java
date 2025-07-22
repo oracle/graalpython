@@ -54,7 +54,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -95,7 +94,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization
         TruffleString repr(VirtualFrame frame, PFrame self,
                         @Cached GetCodeNode getCodeNode,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile profile,
                         @Cached MaterializeFrameNode materializeFrameNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
@@ -159,7 +158,7 @@ public final class FrameBuiltins extends PythonBuiltins {
 
         @Specialization
         Object delete(VirtualFrame frame, PFrame self, DescriptorDeleteMarker ignored,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached @Cached.Exclusive PRaiseNode raise) {
             raise.raise(inliningTarget, PythonBuiltinClassType.AttributeError, ErrorMessages.CANNOT_DELETE);
             return PNone.NONE;
@@ -167,7 +166,7 @@ public final class FrameBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(newLineno)")
         int get(VirtualFrame frame, PFrame self, Object newLineno,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached @Cached.Exclusive InlinedConditionProfile profile,
                         @Cached @Cached.Exclusive MaterializeFrameNode frameNode) {
             syncLocationIfNeeded(frame, self, this, inliningTarget, profile, frameNode);
@@ -188,7 +187,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method") // this is used for location here
         @Specialization(guards = {"!isNoValue(newLineno)", "!isDeleteMarker(newLineno)"})
         PNone set(VirtualFrame frame, PFrame self, Object newLineno,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached @Cached.Exclusive InlinedConditionProfile isCurrentFrameProfile,
                         @Cached @Cached.Exclusive MaterializeFrameNode materializeNode,
                         @Cached @Cached.Exclusive PRaiseNode raise,
@@ -259,7 +258,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(v)")
-        static Object doSet(PFrame self, Object v, @Bind("this") Node inliningTarget,
+        static Object doSet(PFrame self, Object v, @Bind Node inliningTarget,
                         @Cached PRaiseNode raise,
                         @Cached CastToJavaBooleanNode cast) {
             try {
@@ -295,7 +294,7 @@ public final class FrameBuiltins extends PythonBuiltins {
     public abstract static class GetLocalsNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getUpdating(VirtualFrame frame, PFrame self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile profile,
                         @Cached MaterializeFrameNode materializeNode,
                         @Cached GetFrameLocalsNode getFrameLocalsNode) {
@@ -304,7 +303,7 @@ public final class FrameBuiltins extends PythonBuiltins {
             // frame. If 'self' represents another frame on the stack, the values are already
             // refreshed.
             if (profile.profile(inliningTarget, frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
-                PFrame pyFrame = materializeNode.execute(false, true, frame);
+                PFrame pyFrame = materializeNode.executeOnStack(false, true, frame);
                 assert pyFrame == self;
             }
             return getFrameLocalsNode.execute(inliningTarget, self);
@@ -318,7 +317,7 @@ public final class FrameBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getBackref(VirtualFrame frame, PFrame self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile noBackref,
                         @Cached InlinedBranchProfile topRef,
                         @Cached InlinedConditionProfile notMaterialized,
@@ -337,7 +336,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                     // a) self is still on the stack and the caller isn't filled in
                     // b) this frame has returned, but not (yet) to a Python caller
                     // c) this frame has no caller (it is/was a top frame)
-                    callerFrame = readCallerFrame.executeWith(cur.getRef(), FrameSelector.ALL_PYTHON_FRAMES, 0);
+                    callerFrame = readCallerFrame.executeWith(cur.getRef(), ReadCallerFrameNode.AllFramesSelector.INSTANCE, 0);
 
                     // We don't need to mark the caller frame as 'escaped' because if 'self' is
                     // escaped, the caller frame will be escaped when leaving the current function.

@@ -173,7 +173,7 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
                     @Cached GetCachedTpSlotsNode getSlotsNode,
                     @Cached CStructAccess.ReadI64Node readTypeObjectFieldNode,
                     @Cached InlinedConditionProfile typeIsNotReadyProfile,
-                    @Cached("createFor(this)") IndirectCallData indirectCallData,
+                    @Cached("createFor($node)") IndirectCallData indirectCallData,
                     @Cached CallSlotHashFunNode callHashFun,
                     @Cached PRaiseNode raiseNode) {
         Object klass = getClassNode.execute(inliningTarget, object);
@@ -199,12 +199,12 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
              */
             long flags = readTypeObjectFieldNode.readFromObj(nativeKlass, CFields.PyTypeObject__tp_flags);
             if (typeIsNotReadyProfile.profile(inliningTarget, (flags & TypeFlags.READY) == 0)) {
-                Object savedState = IndirectCallContext.enter(frame, indirectCallData);
+                Object savedState = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
                 try {
                     slots = callTypeReady(inliningTarget, object, nativeKlass);
                     initialized = true;
                 } finally {
-                    IndirectCallContext.exit(frame, indirectCallData, savedState);
+                    IndirectCallContext.exit(frame, inliningTarget, indirectCallData, savedState);
                 }
             }
         }

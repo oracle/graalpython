@@ -87,14 +87,14 @@ public final class IOBaseDictBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = "isNoValue(none)")
         static Object doit(PythonObject self, @SuppressWarnings("unused") PNone none,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
             return getDict.execute(inliningTarget, self);
         }
 
         @Specialization
         static Object setDict(PythonObject self, @SuppressWarnings("unused") Object d,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.AssertionError, ErrorMessages.ATTR_DICT_IS_NOT_WRITABLE, self);
         }
     }

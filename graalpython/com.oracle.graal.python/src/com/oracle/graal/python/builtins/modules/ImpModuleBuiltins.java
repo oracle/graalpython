@@ -284,9 +284,9 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached ReadAttributeFromPythonObjectNode readNameNode,
                         @Cached ReadAttributeFromPythonObjectNode readOriginNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
@@ -343,8 +343,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class ExecDynamicNode extends PythonBuiltinNode {
         @Specialization
         static int doPythonModule(VirtualFrame frame, PythonModule extensionModule,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached ExecModuleNode execModuleNode,
                         @Cached PRaiseNode raiseNode) {
@@ -404,7 +404,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public int run(PString name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode toString) {
             try {
                 return run(toString.execute(inliningTarget, name));
@@ -427,7 +427,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object run(VirtualFrame frame, PythonObject moduleSpec,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached PyObjectSetAttr setAttributeNode,
                         @Cached PyObjectLookupAttr lookup) {
@@ -535,9 +535,9 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object run(VirtualFrame frame, TruffleString name, Object dataObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached InlinedConditionProfile isCodeObjectProfile,
@@ -601,7 +601,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object run(VirtualFrame frame, TruffleString name, boolean withData,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached MemoryViewNode memoryViewNode,
                         @Cached TruffleString.EqualNode equalNode,
@@ -764,7 +764,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class SourceHashNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         static PBytes run(long magicNumber, Object sourceBuffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached BytesNodes.HashBufferNode hashBufferNode) {
             long sourceHash = hashBufferNode.execute(inliningTarget, sourceBuffer);
@@ -793,7 +793,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public Object run(PCode code, PString path,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode) {
             code.setFilename(castToStringNode.execute(inliningTarget, path));
             return PNone.NONE;
@@ -822,7 +822,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class CreateDynamicNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object run(VirtualFrame frame, PythonObject moduleSpec, Object fileNameIn,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile fileNameIsNoValueProfile,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectStrAsTruffleStringNode asStringNode,

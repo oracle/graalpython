@@ -63,7 +63,7 @@ public class NativeExtTest {
     @Test
     public void testSharingErrorWithCpythonSre() throws InterruptedException {
         // The first context is the one that will use native extensions
-        Engine engine = Engine.newBuilder().build();
+        Engine engine = Engine.create("python");
         Context cextContext = newContext(engine).option("python.IsolateNativeModules", "true").build();
         try {
             cextContext.eval("python", "import _cpython_sre\nassert _cpython_sre.ascii_tolower(88) == 120\n");
@@ -104,6 +104,7 @@ public class NativeExtTest {
 
         } finally {
             cextContext.close(true);
+            engine.close();
         }
     }
 

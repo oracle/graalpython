@@ -108,7 +108,7 @@ public class InstantiableStructSequenceBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTuple withDict(VirtualFrame frame, Object cls, Object sequence, Object dict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached StructSequenceBuiltins.GetSizeNode getSizeNode,
                         @Cached StructSequenceBuiltins.GetFieldNamesNode getFieldNamesNode,

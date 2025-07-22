@@ -248,7 +248,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
     abstract static class IsNanNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean doIt(VirtualFrame frame, Object o,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CmathBooleanUnaryHelperNode helper) {
             return helper.execute(frame, inliningTarget, o, (real, imag) -> Double.isNaN(real) || Double.isNaN(imag));
         }
@@ -259,7 +259,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
     abstract static class IsInfNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean doIt(VirtualFrame frame, Object o,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CmathBooleanUnaryHelperNode helper) {
             return helper.execute(frame, inliningTarget, o, (real, imag) -> Double.isInfinite(real) || Double.isInfinite(imag));
         }
@@ -270,7 +270,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
     abstract static class IsFiniteNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean doIt(VirtualFrame frame, Object o,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CmathBooleanUnaryHelperNode helper) {
             return helper.execute(frame, inliningTarget, o, (real, imag) -> Double.isFinite(real) && Double.isFinite(imag));
         }
@@ -299,7 +299,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static double doGeneral(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CoerceToComplexNode coerceToComplex) {
             return doC(coerceToComplex.execute(frame, inliningTarget, value));
         }
@@ -332,7 +332,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTuple doGeneral(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CoerceToComplexNode coerceToComplex,
                         @Shared @Cached ComplexBuiltins.AbsNode absNode,
                         @Bind PythonLanguage language) {
@@ -386,7 +386,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PComplex doGeneral(VirtualFrame frame, Object r, Object phi,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyFloatAsDoubleNode rAsDoubleNode,
                         @Cached PyFloatAsDoubleNode phiAsDoubleNode) {
             return rect(inliningTarget, rAsDoubleNode.execute(frame, inliningTarget, r), phiAsDoubleNode.execute(frame, inliningTarget, phi));
@@ -460,7 +460,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(yObj)")
         PComplex doGeneral(VirtualFrame frame, Object xObj, @SuppressWarnings("unused") PNone yObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached CoerceToComplexNode coerceXToComplex,
                         // unused node to avoid mixing shared and non-shared inlined nodes
                         @SuppressWarnings("unused") @Shared @Cached CoerceToComplexNode coerceYToComplex,
@@ -470,7 +470,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(yObj)")
         PComplex doGeneral(VirtualFrame frame, Object xObj, Object yObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached CoerceToComplexNode coerceXToComplex,
                         @Shared @Cached CoerceToComplexNode coerceYToComplex,
                         @Shared @Cached ComplexBuiltins.DivNode divNode,
@@ -531,7 +531,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PComplex doGeneral(VirtualFrame frame, Object zObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CoerceToComplexNode coerceXToComplex,
                         @Bind PythonLanguage language) {
             return doComplex(frame, coerceXToComplex.execute(frame, inliningTarget, zObj), language);
@@ -557,7 +557,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PComplex doIt(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CmathComplexUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, SqrtNode::compute);
         }
@@ -611,7 +611,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PComplex doIt(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CmathComplexUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, AcosNode::compute);
         }
@@ -661,7 +661,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PComplex doIt(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CmathComplexUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, AcoshNode::compute);
         }
@@ -692,7 +692,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PComplex doIt(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CmathComplexUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, AsinNode::compute);
         }
@@ -722,7 +722,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PComplex doIt(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CmathComplexUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, AsinhNode::compute);
         }
@@ -758,7 +758,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PComplex doIt(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CmathComplexUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, AtanNode::compute);
         }
@@ -791,7 +791,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PComplex doIt(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CmathComplexUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, AtanhNode::compute);
         }
@@ -848,7 +848,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PComplex doIt(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CmathComplexUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, ExpNode::compute);
         }
@@ -894,7 +894,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PComplex doIt(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CmathComplexUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, CosNode::compute);
         }
@@ -923,7 +923,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PComplex doIt(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CmathComplexUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, CoshNode::compute);
         }
@@ -963,7 +963,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PComplex doIt(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CmathComplexUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, SinNode::compute);
         }
@@ -993,7 +993,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PComplex doIt(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CmathComplexUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, SinhNode::compute);
         }
@@ -1033,7 +1033,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PComplex doIt(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CmathComplexUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, TanNode::compute);
         }
@@ -1063,7 +1063,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PComplex doIt(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CmathComplexUnaryHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, value, TanhNode::compute);
         }
@@ -1103,7 +1103,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doCCDD(PComplex a, PComplex b, double relTolObj, double absTolObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached AbsNode absNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             return isClose(inliningTarget, a, b, relTolObj, absTolObj, absNode, raiseNode);
@@ -1112,7 +1112,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static boolean doCCNN(PComplex a, PComplex b, PNone relTolObj, PNone absTolObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached AbsNode absNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             return isClose(inliningTarget, a, b, DEFAULT_REL_TOL, DEFAULT_ABS_TOL, absNode, raiseNode);
@@ -1120,7 +1120,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doGeneral(VirtualFrame frame, Object aObj, Object bObj, Object relTolObj, Object absTolObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CoerceToComplexNode coerceAToComplex,
                         @Cached CoerceToComplexNode coerceBToComplex,
                         @Cached PyFloatAsDoubleNode relAsDoubleNode,

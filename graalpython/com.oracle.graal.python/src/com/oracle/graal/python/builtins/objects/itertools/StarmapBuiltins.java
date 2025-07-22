@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
@@ -94,7 +95,7 @@ public final class StarmapBuiltins extends PythonBuiltins {
     public abstract static class StarmapNode extends PythonVarargsBuiltinNode {
         @Specialization
         static PStarmap construct(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
@@ -150,9 +151,10 @@ public final class StarmapBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reducePos(PStarmap self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object type = getClassNode.execute(inliningTarget, self);
             // return type(self), (self.fun, self.iterable)
             PTuple tuple = PFactory.createTuple(language, new Object[]{self.getFun(), self.getIterable()});

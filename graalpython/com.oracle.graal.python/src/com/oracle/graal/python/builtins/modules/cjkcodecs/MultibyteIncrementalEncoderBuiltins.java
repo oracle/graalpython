@@ -125,7 +125,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object mbstreamreaderNew(VirtualFrame frame, Object type, Object err,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual,
@@ -173,7 +173,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
         // encoder_encode_stateful
         @Specialization
         static Object ts(VirtualFrame frame, MultibyteStatefulEncoderContext ctx, TruffleString ucvt, int end,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached MultibyteCodecUtil.EncodeNode encodeNode,
                         @Shared @Cached TruffleString.ConcatNode concatNode,
                         @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -214,7 +214,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isTruffleString(unistr)")
         static Object notTS(VirtualFrame frame, MultibyteStatefulEncoderContext ctx, Object unistr, int end,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectStrAsObjectNode strNode,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
@@ -261,7 +261,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
         // _multibytecodec_MultibyteIncrementalEncoder_getstate_impl
         @Specialization
         static Object getstate(MultibyteIncrementalEncoderObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                         @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode asUTF8AndSize,
                         @Cached IntNodes.PyLongFromByteArray fromByteArray,
@@ -304,7 +304,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
         @Specialization
         // _multibytecodec_MultibyteIncrementalEncoder_setstate_impl
         static Object setstate(MultibyteIncrementalEncoderObject self, PInt statelong,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HiddenAttr.ReadNode readHiddenAttrNode,
                         @Cached IntNodes.PyLongAsByteArray asByteArray,
                         @Cached PRaiseNode raiseNode) {

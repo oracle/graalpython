@@ -64,14 +64,14 @@ public abstract class TupleConversionNode extends ArgumentCastNode {
 
     @Specialization
     static Object[] doTuple(PTuple t,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
         return getInternalArrayNode.execute(inliningTarget, t.getSequenceStorage());
     }
 
     @Fallback
     static Object doOthers(Object value,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, S_MUST_BE_S_NOT_P, value, "a tuple", value);
     }
 

@@ -122,7 +122,7 @@ public abstract class PyLongFromUnicodeObject extends Node {
 
         @Specialization
         static Object doGeneric(TruffleString numberTs, int base, byte[] originalBytes, int originalBytesLen,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached InlinedBranchProfile invalidBase,
                         @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,

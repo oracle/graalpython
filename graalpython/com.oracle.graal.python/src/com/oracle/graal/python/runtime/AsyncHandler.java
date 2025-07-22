@@ -55,12 +55,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.graalvm.polyglot.SandboxPolicy;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -139,7 +141,7 @@ public class AsyncHandler {
                     // Avoid pointless stack walks in random places
                     PArguments.setException(args, PException.NO_EXCEPTION);
 
-                    if (debugger == null) {
+                    if (debugger == null && !context.getEnv().getSandboxPolicy().isStricterThan(SandboxPolicy.TRUSTED)) {
                         debugger = Debugger.find(context.getEnv());
                     }
                     if (threadState == null) {
@@ -153,13 +155,17 @@ public class AsyncHandler {
                     if (!alreadyProfiling) {
                         threadState.profilingStart();
                     }
-                    debugger.disableStepping();
+                    if (debugger != null) {
+                        debugger.disableStepping();
+                    }
                     try {
                         CallDispatchers.SimpleIndirectInvokeNode.executeUncached(context.getAsyncHandler().callTarget, args);
                     } catch (PException e) {
                         handleException(e);
                     } finally {
-                        debugger.restoreStepping();
+                        if (debugger != null) {
+                            debugger.restoreStepping();
+                        }
                         if (!alreadyTracing) {
                             threadState.tracingStop();
                         }
@@ -388,7 +394,7 @@ public class AsyncHandler {
                                 }
                             }
                         });
-                    } else if (gilOwner != lastGilOwner) {
+                    } else if (gilOwner != lastGilOwner && gilOwner.isAlive()) {
                         /*
                          * If the gil changed owner since the last time we observed it, clear the
                          * flag to make sure we don't get stuck if the last owner exits before
@@ -396,7 +402,15 @@ public class AsyncHandler {
                          */
                         gilReleaseRequested = false;
                     }
-                    lastGilOwner = gilOwner;
+                    if (gilOwner.isAlive()) {
+                        lastGilOwner = gilOwner;
+                    } else {
+                        /*
+                         * we should only store the thread if the thread is still alive, otherwise,
+                         * we will be referring to an object that should have been collected.
+                         */
+                        lastGilOwner = null;
+                    }
                 }
             }
         }

@@ -26,7 +26,7 @@ file(GLOB_RECURSE PEGEN_FILES
     "${CMAKE_CURRENT_LIST_DIR}/pegen/*.py")
 file(GLOB_RECURSE PEGJAVA_FILES
     LIST_DIRECTORIES FALSE
-    "${CMAKE_CURRENT_LIST_DIR}/pegen/*.py")
+    "${CMAKE_CURRENT_LIST_DIR}/pegjava/*.py")
 file(GLOB_RECURSE ASDL_FILES
     LIST_DIRECTORIES FALSE
     "${CMAKE_CURRENT_LIST_DIR}/asdl/*.py")
@@ -37,10 +37,7 @@ add_custom_target(grammar ALL
     DEPENDS "${PARSER_OUTPUT}")
 add_custom_command(
     OUTPUT "${PARSER_OUTPUT}"
-    COMMAND ${PYTHON_EXE} "${CMAKE_CURRENT_LIST_DIR}/main_parser_gen.py" "${GRAMMAR}" "${TOKENS}" "${PARSER_OUTPUT}"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${PARSER_OUTPUT}
-	    ${PARSER_TARGET}
+    COMMAND ${PYTHON_EXE} "${CMAKE_CURRENT_LIST_DIR}/main_parser_gen.py" "${GRAMMAR}" "${TOKENS}" "${PARSER_TARGET}"
     DEPENDS "${CMAKE_CURRENT_LIST_DIR}/main_parser_gen.py" "${GRAMMAR}" "${TOKENS}" "${PARSER_TARGET}" ${PEGEN_FILES} ${PEGJAVA_FILES})
 
 add_custom_target(asdl ALL 

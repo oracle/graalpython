@@ -10,7 +10,7 @@ suite = {
     "versionConflictResolution": "latest",
 
     "version": "25.0.0",
-    "graalpython:pythonVersion": "3.11.7",
+    "graalpython:pythonVersion": "3.12.8",
     "release": False,
     "groupId": "org.graalvm.python",
     "url": "http://www.graalvm.org/python",
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "64d1fc89abceee55319a919d523830657e7bc280",
+                "version": "9733142a0ecc145aa69c61bc6d81443636a4edd4",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "64d1fc89abceee55319a919d523830657e7bc280",
+                "version": "9733142a0ecc145aa69c61bc6d81443636a4edd4",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -247,6 +247,7 @@ suite = {
             "buildDependencies": [
                 "com.oracle.graal.python.pegparser.generator",
             ],
+            "checkstyle": "com.oracle.graal.python",
         },
 
         "com.oracle.graal.python.pegparser.test": {
@@ -679,6 +680,11 @@ suite = {
                             "bin/modules/_cpython_sre<graalpy_ext>",
                             "bin/modules/_cpython_unicodedata<graalpy_ext>",
                             "bin/modules/_sha3<graalpy_ext>",
+                            "bin/modules/_testcapi<graalpy_ext>",
+                            "bin/modules/_testbuffer<graalpy_ext>",
+                            "bin/modules/_testmultiphase<graalpy_ext>",
+                            "bin/modules/_testsinglephase<graalpy_ext>",
+                            "bin/modules/_ctypes_test<graalpy_ext>",
                             "bin/modules/pyexpat<graalpy_ext>",
                         ],
                     },
@@ -701,6 +707,7 @@ suite = {
                             "bin/modules/_testcapi<graalpy_ext>",
                             "bin/modules/_testbuffer<graalpy_ext>",
                             "bin/modules/_testmultiphase<graalpy_ext>",
+                            "bin/modules/_testsinglephase<graalpy_ext>",
                             "bin/modules/_ctypes_test<graalpy_ext>",
                             "bin/modules/pyexpat<graalpy_ext>",
                             "bin/modules/termios<graalpy_ext>",
@@ -816,6 +823,7 @@ suite = {
             "liblang_relpath": "../lib/<lib:pythonvm>",
             "default_vm_args": [
                 "--vm.Xss16777216", # request 16M of stack
+                '--vm.-enable-native-access=org.graalvm.shadowed.jline',
             ],
         },
 
@@ -837,11 +845,13 @@ suite = {
                 # Configure launcher
                 "-Dorg.graalvm.launcher.class=com.oracle.graal.python.shell.GraalPythonMain",
                 # GraalPy standalone specific flags
-                "-J-Xms14g", # GR-46399: libpythonvm needs more than the default minimum of 8 GB to be built
+                # uncomment to disable JLine FFM provider at native image build time
+                #'-Dorg.graalvm.shadowed.org.jline.terminal.ffm.disable=true',
+                 '--enable-native-access=org.graalvm.shadowed.jline',
                 "-Dpolyglot.python.PosixModuleBackend=native",
                 "-Dpolyglot.python.Sha3ModuleBackend=native",
-                "<bytecode_dsl_build_args>",
             ],
+            "dynamicBuildArgs": "libpythonvm_build_args",
         },
     },
 
@@ -1072,7 +1082,8 @@ suite = {
                 "sdk:NATIVEIMAGE",
                 "sdk:COLLECTIONS",
                 "truffle:TRUFFLE_NFI",
-                "truffle:TRUFFLE_NFI_LIBFFI", # runtime dependency for convenience
+                "truffle:TRUFFLE_NFI_LIBFFI", # runtime dependency
+                "truffle:TRUFFLE_NFI_PANAMA", # runtime dependency
                 "truffle:TRUFFLE_ICU4J",
                 "truffle:TRUFFLE_XZ",
             ],
@@ -1106,7 +1117,7 @@ suite = {
             ],
         },
 
-        "PYTHON_COMMUNITY": {
+        "PYTHON_POM": {
             "type": "pom",
             "runtimeDependencies": [
                 "GRAALPYTHON",
@@ -1116,7 +1127,7 @@ suite = {
             "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This POM dependency includes GraalPy dependencies and Truffle Community Edition.",
             "maven": {
                 "groupId": "org.graalvm.python",
-                "artifactId": "python-community",
+                "artifactId": "python",
                 "tag": ["default", "public"],
             },
             "license": [
@@ -1356,8 +1367,13 @@ suite = {
                                 "dependency:GRAALPYTHON_INCLUDE_RESOURCES/META-INF/resources/include/*",
                             ],
                             "./": [
-                                "dependency:GRAALPYTHON_NI_RESOURCES/META-INF/resources/*",
-                                "dependency:GRAALPYTHON_NATIVE_RESOURCES/META-INF/resources/<os>/<arch>/*",
+                                "dependency:GRAALPYTHON_NI_RESOURCES/META-INF/resources/native-image.properties",
+                                {
+                                    "source_type": "dependency",
+                                    "dependency": "GRAALPYTHON_NATIVE_RESOURCES",
+                                    "path": "META-INF/resources/<os>/<arch>/*",
+                                    "exclude": ["META-INF/resources/<os>/<arch>/native.sha256", "META-INF/resources/<os>/<arch>/native.files"],
+                                },
                             ],
                         },
                     },
@@ -1375,8 +1391,13 @@ suite = {
                                 "dependency:GRAALPYTHON_INCLUDE_RESOURCES/META-INF/resources/include/*",
                             ],
                             "./": [
-                                "dependency:GRAALPYTHON_NI_RESOURCES/META-INF/resources/*",
-                                "dependency:GRAALPYTHON_NATIVE_RESOURCES/META-INF/resources/<os>/<arch>/*",
+                                "dependency:GRAALPYTHON_NI_RESOURCES/META-INF/resources/native-image.properties",
+                                {
+                                    "source_type": "dependency",
+                                    "dependency": "GRAALPYTHON_NATIVE_RESOURCES",
+                                    "path": "META-INF/resources/<os>/<arch>/*",
+                                    "exclude": ["META-INF/resources/<os>/<arch>/native.sha256", "META-INF/resources/<os>/<arch>/native.files"],
+                                },
                             ],
                         },
                     },
@@ -1447,6 +1468,7 @@ suite = {
                 "bin/<exe:graalpy>": "dependency:graalpy_thin_launcher",
                 "bin/<exe:python>": "dependency:graalpy_thin_launcher",
                 "bin/<exe:python3>": "dependency:graalpy_thin_launcher",
+                "bin/<exe:graalpy-config>": "dependency:graalpy_thin_launcher",
                 "libexec/<exe:graalpy-polyglot-get>": "dependency:graalpy_thin_launcher",
                 "release": "dependency:sdk:STANDALONE_JAVA_HOME/release",
             },
@@ -1506,6 +1528,7 @@ suite = {
             "standalone_dist": "GRAALPY_NATIVE_STANDALONE",
             "community_archive_name": "graalpy-community",
             "enterprise_archive_name": "graalpy",
+            "language_id": "python",
         },
 
         "GRAALPY_JVM_STANDALONE_RELEASE_ARCHIVE": {
@@ -1514,6 +1537,7 @@ suite = {
             "standalone_dist": "GRAALPY_JVM_STANDALONE",
             "community_archive_name": "graalpy-community-jvm",
             "enterprise_archive_name": "graalpy-jvm",
+            "language_id": "python",
         },
 
         "graalpy-archetype-polyglot-app": {

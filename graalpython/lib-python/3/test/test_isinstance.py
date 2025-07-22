@@ -8,6 +8,7 @@ import typing
 from test import support
 
 
+
 class TestIsInstanceExceptions(unittest.TestCase):
     # Test to make sure that an AttributeError when accessing the instance's
     # class's bases is masked.  This was actually a bug in Python 2.2 and
@@ -144,6 +145,7 @@ class TestIsSubclassExceptions(unittest.TestCase):
             __bases__ = property(getbases)
 
         self.assertRaises(TypeError, issubclass, B, C())
+
 
 
 # meta classes for creating abstract classes and instances
@@ -352,7 +354,7 @@ def blowstack(fxn, arg, compare_to):
     # argument will raise RecursionError eventually.
     tuple_arg = (compare_to,)
     # TODO: GR-23749 revert back when truffle support is in
-    for cnt in range(10000000 if sys.implementation.name == "graalpy" else sys.getrecursionlimit()+5):
+    for cnt in range(10000000 if sys.implementation.name == "graalpy" else (support.C_RECURSION_LIMIT * 2)):
         tuple_arg = (tuple_arg,)
         fxn(arg, tuple_arg)
 

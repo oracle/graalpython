@@ -113,7 +113,7 @@ public final class ContextBuiltins extends PythonBuiltins {
     public abstract static class GetContextVar extends MpSubscriptBuiltinNode {
         @Specialization
         Object get(PContextVarsContext self, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raise) {
             return getContextVar(inliningTarget, self, key, null, raise);
         }
@@ -164,7 +164,7 @@ public final class ContextBuiltins extends PythonBuiltins {
     public abstract static class Run extends PythonBuiltinNode {
         @Specialization
         static Object get(VirtualFrame frame, PContextVarsContext self, Object fun, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached CallNode call,
                         @Cached PRaiseNode raise) {
@@ -196,7 +196,7 @@ public final class ContextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGetDefault(PContextVarsContext self, Object key, Object def,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile noValueProfile,
                         @Cached PRaiseNode raise) {
             Object defVal = noValueProfile.profile(inliningTarget, isNoValue(def)) ? PNone.NONE : def;
@@ -210,7 +210,7 @@ public final class ContextBuiltins extends PythonBuiltins {
     public abstract static class Contains extends SqContainsBuiltinNode {
         @Specialization
         boolean doIn(PContextVarsContext self, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raise) {
             if (key instanceof PContextVar var) {
                 return self.contextVarValues.lookup(var, var.getHash()) != null;

@@ -19,7 +19,7 @@ ScopeEnvironment
                   fields: [DefLocal, Use, DefFreeClass, Local]
                   len: [Use, GlobalImplicit]
                   n_sequence_fields: [DefLocal, Local]
-                  name: [Use, Free]
+                  name: [Use, DefFreeClass, Free]
         Scope __repr__ Function
                 Flags: [IsNested, HasFreeVars]
                 Varnames: self

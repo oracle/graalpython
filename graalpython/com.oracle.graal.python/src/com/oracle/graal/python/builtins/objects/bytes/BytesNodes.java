@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesWithoutFrameNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -250,8 +251,8 @@ public abstract class BytesNodes {
         @Specialization(limit = "3")
         @SuppressWarnings("truffle-static-method")  // TODO: arg
         byte[] doBuffer(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode) {
@@ -284,6 +285,10 @@ public abstract class BytesNodes {
     public abstract static class ToBytesWithoutFrameNode extends Node {
 
         public abstract byte[] execute(Node inliningTarget, Object object);
+
+        public static byte[] executeUncached(Object object) {
+            return ToBytesWithoutFrameNodeGen.getUncached().execute(null, object);
+        }
 
         @Specialization(limit = "3")
         static byte[] doBuffer(Node inliningTarget, Object object,
@@ -523,14 +528,14 @@ public abstract class BytesNodes {
 
         @Specialization
         static Object str(PString str,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StringNodes.StringMaterializeNode toStr) {
             return toStr.execute(inliningTarget, str);
         }
 
         @Fallback
         Object doOthers(@SuppressWarnings("unused") VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, className, argNum, PythonBuiltinClassType.PString, value);
         }
 
@@ -556,8 +561,8 @@ public abstract class BytesNodes {
 
         @Specialization
         static byte[] doGeneric(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.IterableToByteNode iterableToByteNode,
@@ -775,7 +780,7 @@ public abstract class BytesNodes {
 
         @Specialization
         static byte[] bytearray(VirtualFrame frame, Object iterable,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached IteratorNodes.GetLength lenghtHintNode,
                         @Cached PyIterNextNode nextNode,
                         @Cached CastToByteNode castToByteNode,
@@ -812,8 +817,8 @@ public abstract class BytesNodes {
 
         @Specialization
         static TruffleString doit(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached CastToTruffleStringNode toString,
@@ -883,7 +888,7 @@ public abstract class BytesNodes {
 
         @Specialization(guards = "isAscii(str, getCodeRangeNode)")
         static byte[] ascii(TruffleString str,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
@@ -919,7 +924,7 @@ public abstract class BytesNodes {
 
         @Specialization(guards = "!isAscii(str, getCodeRangeNode)")
         static byte[] nonAscii(TruffleString str,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,

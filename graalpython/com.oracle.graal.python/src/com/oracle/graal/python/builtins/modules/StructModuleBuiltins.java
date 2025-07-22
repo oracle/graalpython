@@ -131,7 +131,7 @@ public class StructModuleBuiltins extends PythonBuiltins {
     abstract static class PackNode extends PythonBuiltinNode {
         @Specialization
         static Object pack(VirtualFrame frame, PythonModule self, Object format, Object[] args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StructBuiltins.ConstructStructNode constructStructNode,
                         @Cached GetStructNode getStructNode,
                         @Cached StructBuiltins.StructPackNode structPackNode) {
@@ -152,7 +152,7 @@ public class StructModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object packInto(VirtualFrame frame, PythonModule self, Object format, Object buffer, int offset, Object[] args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StructBuiltins.ConstructStructNode constructStructNode,
                         @Cached GetStructNode getStructNode,
                         @Cached StructBuiltins.StructPackIntoNode structPackNode) {
@@ -172,7 +172,7 @@ public class StructModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object unpack(VirtualFrame frame, PythonModule self, Object format, Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetStructNode getStructNode,
                         @Cached StructBuiltins.ConstructStructNode constructStructNode,
                         @Cached StructBuiltins.StructUnpackNode structUnpackNode) {
@@ -192,7 +192,7 @@ public class StructModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object iterUnpack(VirtualFrame frame, PythonModule self, Object format, Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StructBuiltins.ConstructStructNode constructStructNode,
                         @Cached GetStructNode getStructNode,
                         @Cached StructBuiltins.StructIterUnpackNode iterUnpackNode) {
@@ -213,7 +213,7 @@ public class StructModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object unpackFrom(VirtualFrame frame, PythonModule self, Object format, Object buffer, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StructBuiltins.ConstructStructNode constructStructNode,
                         @Cached GetStructNode getStructNode,
                         @Cached StructBuiltins.StructUnpackFromNode structUnpackNode) {
@@ -227,7 +227,7 @@ public class StructModuleBuiltins extends PythonBuiltins {
     abstract static class CalcSizeNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object calcSize(PythonModule self, Object format,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StructBuiltins.ConstructStructNode constructStructNode,
                         @Cached GetStructNode getStructNode) {
             PStruct struct = getStructNode.execute(inliningTarget, self, format, constructStructNode);

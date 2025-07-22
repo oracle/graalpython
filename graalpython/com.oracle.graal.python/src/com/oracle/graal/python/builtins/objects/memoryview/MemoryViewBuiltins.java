@@ -45,6 +45,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.systemHashCodeAsHexString;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMORYVIEW;
+import static com.oracle.graal.python.nodes.ErrorMessages.DIM_MEMORY_HAS_NO_LENGTH;
+import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY;
+import static com.oracle.graal.python.nodes.ErrorMessages.MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -183,7 +186,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
     public abstract static class MemoryViewSqItemNode extends SqItemBuiltinNode {
         @Specialization
         static Object doInt(VirtualFrame frame, PMemoryView self, int index,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached MemoryViewNodes.PointerLookupNode pointerFromIndexNode,
                         @Cached MemoryViewNodes.ReadItemAtNode readItemAtNode) {
@@ -199,7 +202,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isPSlice(index)", "!isEllipsis(index)"})
         static Object getitem(VirtualFrame frame, PMemoryView self, Object index,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MemoryViewNodes.PointerLookupNode pointerFromIndexNode,
                         @Cached MemoryViewNodes.ReadItemAtNode readItemAtNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -210,7 +213,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getitemSlice(PMemoryView self, PSlice slice,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached InlinedConditionProfile zeroDimProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
@@ -219,7 +222,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             if (zeroDimProfile.profile(inliningTarget, self.getDimensions() == 0)) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+                throw raiseNode.raise(inliningTarget, TypeError, INVALID_INDEXING_OF_0_DIM_MEMORY);
             }
             int[] shape = self.getBufferShape();
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, shape[0], sliceUnpack.execute(inliningTarget, slice));
@@ -240,7 +243,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getitemEllipsis(PMemoryView self, @SuppressWarnings("unused") PEllipsis ellipsis,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached InlinedConditionProfile zeroDimProfile,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
@@ -256,7 +259,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
     abstract static class SetItemNode extends MpAssSubscriptBuiltinNode {
         @Specialization(guards = {"!isNoValue(object)", "!isPSlice(index)", "!isEllipsis(index)"})
         static void setitem(VirtualFrame frame, PMemoryView self, Object index, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached MemoryViewNodes.PointerLookupNode pointerLookupNode,
                         @Shared @Cached MemoryViewNodes.WriteItemAtNode writeItemAtNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -269,7 +272,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(object)")
         static void setitem(VirtualFrame frame, PMemoryView self, PSlice slice, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetItemNode getItemNode,
                         @Cached PyMemoryViewFromObject createMemoryView,
                         @Cached MemoryViewNodes.ReleaseNode releaseNode,
@@ -307,7 +310,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(object)")
         static void setitem(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") PEllipsis ellipsis, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile zeroDimProfile,
                         @Shared @Cached MemoryViewNodes.WriteItemAtNode writeItemAtNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -317,13 +320,13 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
             if (zeroDimProfile.profile(inliningTarget, self.getDimensions() == 0)) {
                 writeItemAtNode.execute(frame, self, self.getBufferPointer(), 0, object);
             } else {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+                throw raiseNode.raise(inliningTarget, TypeError, INVALID_INDEXING_OF_0_DIM_MEMORY);
             }
         }
 
         @Specialization(guards = "isNoValue(value)")
         static void error(@SuppressWarnings("unused") PMemoryView self, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_DELETE_MEMORY);
         }
 
@@ -340,7 +343,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
     public abstract static class MemoryViewRichCmp extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization(guards = "op.isEqOrNe()")
         static Object doIt(VirtualFrame frame, Object a, Object b, RichCmpOp op,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MemoryViewEqNode eqNode) {
             Object result = eqNode.execute(frame, inliningTarget, a, b);
             if (result == PNotImplemented.NOT_IMPLEMENTED) {
@@ -478,7 +481,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.getDimensions() == cachedDimensions", "cachedDimensions < 8"}, limit = "3")
         Object tolistCached(VirtualFrame frame, PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached("self.getDimensions()") int cachedDimensions,
                         @Shared @Cached MemoryViewNodes.ReadItemAtNode readItemAtNode,
@@ -494,7 +497,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "tolistCached")
         Object tolist(VirtualFrame frame, PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Shared @Cached MemoryViewNodes.ReadItemAtNode readItemAtNode,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -553,7 +556,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         PBytes tobytes(PMemoryView self, TruffleString order,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached PRaiseNode raiseNode) {
@@ -600,7 +603,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString none(PMemoryView self, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") int bytesPerSepGroup,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("p") @Cached InlinedConditionProfile earlyExit,
                         @Shared("b") @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
                         @Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode,
@@ -610,7 +613,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString hex(PMemoryView self, byte sep, int bytesPerSepGroup,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("p") @Cached InlinedConditionProfile earlyExit,
                         @Shared("b") @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
                         @Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode,
@@ -640,7 +643,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
         @Specialization
         static PMemoryView toreadonly(PMemoryView self,
                         @Bind PythonLanguage language,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             return PFactory.createMemoryView(language, PythonContext.get(inliningTarget), self.getLifecycleManager(), self.getBuffer(), self.getOwner(), self.getLength(), true,
@@ -656,7 +659,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static PMemoryView cast(PMemoryView self, TruffleString formatString, @SuppressWarnings("unused") PNone none,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Shared @Cached TruffleString.CodePointAtIndexNode atIndexNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -666,7 +669,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isPTuple(shapeObj) || isList(shapeObj)")
         static PMemoryView cast(VirtualFrame frame, PMemoryView self, TruffleString formatString, Object shapeObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -689,7 +692,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isPTuple(shape)", "!isList(shape)", "!isPNone(shape)"})
         @SuppressWarnings("unused")
         static PMemoryView error(PMemoryView self, TruffleString format, Object shape,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ARG_S_MUST_BE_A_LIST_OR_TUPLE, "shape");
         }
 
@@ -765,11 +768,15 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends LenBuiltinNode {
         @Specialization
         static int len(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile zeroDimProfile,
                         @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
-            return zeroDimProfile.profile(inliningTarget, self.getDimensions() == 0) ? 1 : self.getBufferShape()[0];
+            if (zeroDimProfile.profile(inliningTarget, self.getDimensions() == 0)) {
+                throw raiseNode.raise(inliningTarget, TypeError, DIM_MEMORY_HAS_NO_LENGTH);
+            } else {
+                return self.getBufferShape()[0];
+            }
         }
     }
 
@@ -792,7 +799,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
     public abstract static class HashNode extends HashBuiltinNode {
         @Specialization
         static long hash(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile cachedProfile,
                         @Cached InlinedConditionProfile writableProfile,
                         @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
@@ -817,12 +824,35 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
         }
     }
 
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
+    @GenerateNodeFactory
+    public abstract static class IterNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object iter(PMemoryView self,
+                        @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached InlinedConditionProfile zeroDimProfile,
+                        @Cached PRaiseNode raiseNode) {
+            self.checkReleased(inliningTarget, raiseNode);
+            int ndims = self.getDimensions();
+            if (ndims == 0) {
+                throw raiseNode.raise(inliningTarget, TypeError, INVALID_INDEXING_OF_0_DIM_MEMORY);
+            }
+            if (ndims != 1) {
+                throw raiseNode.raise(inliningTarget, NotImplementedError, MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED);
+            }
+
+            int length = LenNode.len(self, inliningTarget, zeroDimProfile, raiseNode);
+            return PFactory.createMemoryViewIterator(language, self, 0, length, self.getFormat());
+        }
+    }
+
     @Builtin(name = J___ENTER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class EnterNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object enter(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             return self;
@@ -858,7 +888,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static int get(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             return self.getItemSize();
@@ -871,7 +901,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static int get(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             return self.getLength();
@@ -884,7 +914,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object get(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             return self.getOwner() != null ? self.getOwner() : PNone.NONE;
@@ -897,7 +927,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object get(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             return self.getFormatString() != null ? self.getFormatString() : T_UINT_8_TYPE_CODE;
@@ -910,7 +940,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object get(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile nullProfile,
                         @Cached PRaiseNode raiseNode) {
@@ -928,7 +958,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object get(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile nullProfile,
                         @Cached PRaiseNode raiseNode) {
@@ -946,7 +976,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object get(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile nullProfile,
                         @Cached PRaiseNode raiseNode) {
@@ -964,7 +994,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean get(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             return self.isReadOnly();
@@ -977,7 +1007,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static int get(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             return self.getDimensions();
@@ -990,7 +1020,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean get(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             return self.isCContiguous();
@@ -1003,7 +1033,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean get(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             return self.isFortranContiguous();
@@ -1016,7 +1046,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean get(PMemoryView self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             return self.isAnyContiguous();

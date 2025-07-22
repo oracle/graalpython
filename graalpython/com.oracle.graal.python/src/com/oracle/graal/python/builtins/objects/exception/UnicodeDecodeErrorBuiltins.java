@@ -110,7 +110,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object initNoArgs(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached UnicodeErrorBuiltins.GetArgAsBytesNode getArgAsBytesNode,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached CastToJavaIntExactNode toJavaIntExactNode,
@@ -134,7 +134,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
     public abstract static class UnicodeEncodeErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         TruffleString str(VirtualFrame frame, PBaseException self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached SequenceStorageNodes.GetItemNode getitemNode,
                         @Cached PyObjectStrAsTruffleStringNode strNode,

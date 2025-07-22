@@ -102,7 +102,7 @@ public final class PythonCextImportBuiltins {
     abstract static class PyImport_ImportModuleLevelObject extends CApi5BuiltinNode {
         @Specialization
         Object importModuleLevelObject(TruffleString name, Object globals, Object locals, Object fromlist, int level,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode) {
             // Get the __import__ function from the builtins
@@ -122,7 +122,7 @@ public final class PythonCextImportBuiltins {
 
         @Specialization
         Object getModule(Object name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetItem getItem,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectIsTrueNode isTrueNode) {

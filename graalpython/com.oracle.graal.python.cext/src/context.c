@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,8 @@
 
 PyObject marker_struct = {
     _PyObject_EXTRA_INIT
-    1, &PyBaseObject_Type
+    { _Py_IMMORTAL_REFCNT },
+    &PyBaseObject_Type
 };
 
 int PyContextVar_Get(PyObject *var, PyObject *default_value, PyObject **value) {

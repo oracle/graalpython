@@ -7,7 +7,7 @@ test.test_functools.TestCachedProperty.test_object_with_slots @ darwin-arm64,dar
 test.test_functools.TestCachedProperty.test_reuse_different_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestCachedProperty.test_reuse_same_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestCachedProperty.test_set_name_not_called @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_functools.TestCachedProperty.test_threaded @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_functools.TestCachedProperty.test_subclass_with___set__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestCmpToKeyC.test_bad_cmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestCmpToKeyC.test_cmp_to_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestCmpToKeyC.test_cmp_to_key_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -18,10 +18,12 @@ test.test_functools.TestCmpToKeyC.test_sort_int_str @ darwin-arm64,darwin-x86_64
 test.test_functools.TestCmpToKeyPy.test_bad_cmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestCmpToKeyPy.test_cmp_to_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestCmpToKeyPy.test_cmp_to_key_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_functools.TestCmpToKeyPy.test_cmp_to_signature @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestCmpToKeyPy.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestCmpToKeyPy.test_obj_field @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestCmpToKeyPy.test_sort_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestCmpToKeyPy.test_sort_int_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_functools.TestLRUC.test_common_signatures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestLRUC.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestLRUC.test_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestLRUC.test_kwargs_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -48,6 +50,7 @@ test.test_functools.TestLRUC.test_lru_with_maxsize_none @ darwin-arm64,darwin-x8
 test.test_functools.TestLRUC.test_lru_with_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestLRUC.test_need_for_rlock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestLRUC.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_functools.TestLRUPy.test_common_signatures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestLRUPy.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestLRUPy.test_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestLRUPy.test_kwargs_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

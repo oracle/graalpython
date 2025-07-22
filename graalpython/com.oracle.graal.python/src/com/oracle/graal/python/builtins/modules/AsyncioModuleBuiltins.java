@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.modules.AsyncioModuleBuiltins.GetRunningLoop.getCurrentLoop;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__ASYNCIO;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ADD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_DISCARD;
@@ -48,26 +49,38 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.set.SetNodes;
+import com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode;
 import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -89,12 +102,30 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
         return AsyncioModuleBuiltinsFactory.getFactories();
     }
 
+    public static final TruffleString SCHEDULED_TASKS_ATTR = tsLiteral("_scheduled_tasks");
+    public static final TruffleString EAGER_TASKS_ATTR = tsLiteral("_eager_tasks");
+    public static final TruffleString CURRENT_TASKS_ATTR = tsLiteral("_current_tasks");
+
+    private static final TruffleString WEAKREF = tsLiteral("weakref");
+    private static final TruffleString WEAKSET = tsLiteral("WeakSet");
+
+    @Override
+    public void postInitialize(Python3Core core) {
+        PythonModule self = core.lookupBuiltinModule(T__ASYNCIO);
+        Object weakref = AbstractImportNode.importModule(WEAKREF);
+        Object weakSetCls = PyObjectGetAttr.executeUncached(weakref, WEAKSET);
+        Object weakSet = CallNode.executeUncached(weakSetCls);
+        self.setAttribute(CURRENT_TASKS_ATTR, PFactory.createDict(core.getLanguage()));
+        self.setAttribute(SCHEDULED_TASKS_ATTR, weakSet);
+        self.setAttribute(EAGER_TASKS_ATTR, PFactory.createSet(core.getLanguage()));
+    }
+
     @Builtin(name = "get_running_loop")
     @GenerateNodeFactory
     public abstract static class GetRunningLoop extends PythonBuiltinNode {
         @Specialization
         static Object getCurrentLoop(
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached PRaiseNode raise) {
             Object eventLoop = context.getThreadState(context.getLanguage(inliningTarget)).getRunningEventLoop();
@@ -111,7 +142,7 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
     public abstract static class InternalGetRunningLoop extends PythonBuiltinNode {
         @Specialization
         static Object getCurrentLoop(
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             Object eventLoop = context.getThreadState(context.getLanguage(inliningTarget)).getRunningEventLoop();
 
@@ -124,7 +155,7 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
     public abstract static class InternalSetRunningLoop extends PythonUnaryBuiltinNode {
         @Specialization
         static Object setCurrentLoop(Object loop,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             context.getThreadState(context.getLanguage(inliningTarget)).setRunningEventLoop(loop == PNone.NONE ? null : loop);
             return PNone.NONE;
@@ -142,7 +173,7 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getCurrentLoop(VirtualFrame frame, Object ignored,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached CallNode callGetPolicy,
                         @Cached CallNode callGetLoop,
@@ -173,21 +204,20 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    public static final TruffleString CURRENT_TASKS_ATTR = tsLiteral("_current_tasks");
-
     @Builtin(name = "_enter_task", declaresExplicitSelf = true, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class EnterTask extends PythonBuiltinNode {
+    public abstract static class EnterTask extends PythonTernaryBuiltinNode {
         @Specialization
         public Object enterTask(VirtualFrame frame, PythonModule self, Object loop, Object task,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
+                        @Cached ObjectBuiltins.GetAttributeNode getattr,
                         @Cached PyDictSetItem set,
                         @Cached PyDictGetItem get,
                         @Cached PRaiseNode raise) {
-            PDict dict = (PDict) self.getAttribute(CURRENT_TASKS_ATTR);
-            Object item = get.execute(frame, inliningTarget, dict, loop);
+            PDict currentTasks = (PDict) getattr.execute(frame, self, CURRENT_TASKS_ATTR);
+            Object item = get.execute(frame, inliningTarget, currentTasks, loop);
             if (item == null) {
-                set.execute(frame, inliningTarget, dict, loop, task);
+                set.execute(frame, inliningTarget, currentTasks, loop, task);
             } else {
                 throw raise.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.CANT_ENTER_TASK_ALREADY_RUNNING, task, item);
             }
@@ -197,36 +227,37 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_leave_task", declaresExplicitSelf = true, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class LeaveTask extends PythonBuiltinNode {
+    public abstract static class LeaveTask extends PythonTernaryBuiltinNode {
         @Specialization
         public Object leaveTask(VirtualFrame frame, PythonModule self, Object loop, Object task,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
+                        @Cached ObjectBuiltins.GetAttributeNode getattr,
                         @Cached PyDictDelItem del,
                         @Cached PyDictGetItem get,
                         @Cached PRaiseNode raise) {
-            PDict dict = (PDict) self.getAttribute(CURRENT_TASKS_ATTR);
-            Object item = get.execute(frame, inliningTarget, dict, loop);
+            PDict currentTasks = (PDict) getattr.execute(frame, self, CURRENT_TASKS_ATTR);
+            Object item = get.execute(frame, inliningTarget, currentTasks, loop);
             if (item == null) {
                 item = PNone.NONE;
             }
             if (item != task) {
                 throw raise.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.TASK_NOT_ENTERED, task, item);
             }
-            del.execute(frame, inliningTarget, dict, loop);
+            del.execute(frame, inliningTarget, currentTasks, loop);
             return PNone.NONE;
         }
     }
 
     @Builtin(name = "_register_task", declaresExplicitSelf = true, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class RegisterTask extends PythonBuiltinNode {
-        private static final TruffleString ADD = tsLiteral("add");
+    public abstract static class RegisterTask extends PythonBinaryBuiltinNode {
 
         @Specialization
         public Object registerTask(VirtualFrame frame, PythonModule self, Object task,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
+                        @Cached ObjectBuiltins.GetAttributeNode getattr,
                         @Cached PyObjectCallMethodObjArgs callmethod) {
-            Object weakset = self.getAttribute(ALL_TASKS_ATTR);
+            Object weakset = getattr.execute(frame, self, SCHEDULED_TASKS_ATTR);
             callmethod.execute(frame, inliningTarget, weakset, T_ADD, task);
             return PNone.NONE;
         }
@@ -234,30 +265,106 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_unregister_task", declaresExplicitSelf = true, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class UnregisterTask extends PythonBuiltinNode {
+    public abstract static class UnregisterTask extends PythonBinaryBuiltinNode {
 
         @Specialization
         public Object unregisterTask(VirtualFrame frame, PythonModule self, Object task,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
+                        @Cached ObjectBuiltins.GetAttributeNode getattr,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            Object weakset = self.getAttribute(ALL_TASKS_ATTR);
+            Object weakset = getattr.execute(frame, self, SCHEDULED_TASKS_ATTR);
             callMethod.execute(frame, inliningTarget, weakset, T_DISCARD, task);
             return PNone.NONE;
         }
     }
 
-    public static final TruffleString ALL_TASKS_ATTR = tsLiteral("_all_tasks");
+    @Builtin(name = "_register_eager_task", declaresExplicitSelf = true, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class RegisterEagerTask extends PythonBinaryBuiltinNode {
 
-    private static final TruffleString WEAKREF = tsLiteral("weakref");
-    private static final TruffleString WEAKSET = tsLiteral("WeakSet");
-
-    @Override
-    public void postInitialize(Python3Core core) {
-        PythonModule self = core.lookupBuiltinModule(T__ASYNCIO);
-        self.setAttribute(CURRENT_TASKS_ATTR, PFactory.createDict(core.getLanguage()));
-        Object weakref = AbstractImportNode.importModule(WEAKREF);
-        Object weakSetCls = PyObjectGetAttr.executeUncached(weakref, WEAKSET);
-        Object weakSet = CallNode.executeUncached(weakSetCls);
-        self.setAttribute(ALL_TASKS_ATTR, weakSet);
+        @Specialization
+        public Object registerEagerTask(VirtualFrame frame, PythonModule self, Object task,
+                        @Cached ObjectBuiltins.GetAttributeNode getattr,
+                        @Cached SetNodes.AddNode addNode) {
+            PSet set = (PSet) getattr.execute(frame, self, EAGER_TASKS_ATTR);
+            addNode.execute(frame, set, task);
+            return PNone.NONE;
+        }
     }
+
+    @Builtin(name = "_unregister_eager_task", declaresExplicitSelf = true, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class UnregisterEagerTask extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        public Object unregisterEagerTask(VirtualFrame frame, PythonModule self, Object task,
+                        @Cached ObjectBuiltins.GetAttributeNode getattr,
+                        @Cached DiscardNode discardNode) {
+            PSet set = (PSet) getattr.execute(frame, self, EAGER_TASKS_ATTR);
+            discardNode.execute(frame, set, task);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "current_task", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$mod", "loop"})
+    @ArgumentClinic(name = "loop", defaultValue = "PNone.NONE")
+    @GenerateNodeFactory
+    public abstract static class CurrentTaskNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return AsyncioModuleBuiltinsClinicProviders.CurrentTaskNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        public Object currentTask(VirtualFrame frame, PythonModule self, Object argloop,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached ObjectBuiltins.GetAttributeNode getattr,
+                        @Cached PyDictGetItem get,
+                        @Cached PRaiseNode raise) {
+            PDict currentTasks = (PDict) getattr.execute(frame, self, CURRENT_TASKS_ATTR);
+            Object loop = argloop;
+            if (PGuards.isPNone(loop)) {
+                loop = getCurrentLoop(inliningTarget, context, raise);
+            }
+
+            Object ret = get.execute(frame, inliningTarget, currentTasks, loop);
+            if (ret == null) {
+                return PNone.NONE;
+            }
+            return ret;
+        }
+    }
+
+    @Builtin(name = "_swap_current_task", declaresExplicitSelf = true, minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class SwapCurrentTaskNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        public Object enterTask(VirtualFrame frame, PythonModule self, Object loop, Object task,
+                        @Bind Node inliningTarget,
+                        @Cached ObjectBuiltins.GetAttributeNode getattr,
+                        @Cached PyObjectHashNode hashNode,
+                        @Cached HashingStorageNodes.HashingStorageGetItemWithHash getItem,
+                        @Cached HashingStorageNodes.HashingStorageSetItemWithHash setItem,
+                        @Cached PyDictDelItem delItem) {
+            PDict currentTasks = (PDict) getattr.execute(frame, self, CURRENT_TASKS_ATTR);
+            long hash = hashNode.execute(frame, inliningTarget, loop);
+
+            Object prevTask = getItem.execute(frame, inliningTarget, currentTasks.getDictStorage(), loop, hash);
+            if (prevTask == null) {
+                prevTask = PNone.NONE;
+            }
+
+            if (PGuards.isPNone(task)) {
+                // _PyDict_DelItem_KnownHash(currentTasks, loop, hash);
+                delItem.execute(frame, inliningTarget, currentTasks, loop);
+            } else {
+                setItem.execute(frame, inliningTarget, currentTasks.getDictStorage(), loop, hash, task);
+            }
+
+            return prevTask;
+        }
+    }
+
 }

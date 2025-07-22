@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.hashlib;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA1;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -56,7 +58,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@CoreFunctions(defineModule = "_sha1")
+@CoreFunctions(defineModule = J_SHA1)
 public final class Sha1ModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -68,7 +70,7 @@ public final class Sha1ModuleBuiltins extends PythonBuiltins {
     abstract static class Sha1FunctionNode extends PythonBuiltinNode {
         @Specialization
         static Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
             return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.SHA1Type, "sha1", "sha1", buffer);
         }

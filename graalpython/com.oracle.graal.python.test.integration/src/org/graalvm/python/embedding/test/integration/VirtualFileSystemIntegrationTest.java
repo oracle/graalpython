@@ -69,14 +69,17 @@ import java.util.logging.Logger;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
+import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.io.IOAccess;
 import org.graalvm.python.embedding.GraalPyResources;
 import org.graalvm.python.embedding.VirtualFileSystem;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -121,11 +124,23 @@ public class VirtualFileSystemIntegrationTest {
         return VirtualFileSystem.newBuilder().resourceDirectory(resourceDirectory).build();
     }
 
+    private static Engine engine;
+
+    @BeforeClass
+    public static void makeEngine() {
+        engine = Engine.create("python");
+    }
+
+    @AfterClass
+    public static void closeEngine() {
+        engine.close();
+    }
+
     private Context.Builder newContextBuilder() {
         if (useDefaultResourcesDir()) {
-            return GraalPyResources.contextBuilder();
+            return GraalPyResources.contextBuilder().engine(engine);
         }
-        return GraalPyResources.contextBuilder(createVirtualFileSystem());
+        return GraalPyResources.contextBuilder(createVirtualFileSystem()).engine(engine);
     }
 
     private VirtualFileSystem.Builder newVirtualFileSystemBuilder() {
@@ -441,12 +456,11 @@ public class VirtualFileSystemIntegrationTest {
                         assert len(f) == 0, 'expected no files'
 
                         f = listdir('/test_mount_point/')
-                        assert len(f) == 7, 'expected 7 files, got ' + str(len(f))
+                        assert len(f) == 6, 'expected 6 files, got ' + repr(list(f))
 
                         assert 'dir1' in f, 'does not contain "dir1"'
                         assert 'emptydir' in f, 'does not contain "emptydir"'
                         assert 'file1' in f, 'does not contain "file1"'
-                        assert 'fileslist.txt' in f, 'does not contain "fileslist.txt"'
 
                         f = listdir('{pathPrefix}dir1')
                         if len(f) != 2:
@@ -485,7 +499,7 @@ public class VirtualFileSystemIntegrationTest {
                                 dirs.add(r + "/" + dd)
 
                         assert len(roots) == 9, 'expected 10 roots, got ' + str(len(roots))
-                        assert len(files) == 15, 'expected 15 files, got ' + str(len(files))
+                        assert len(files) == 12, 'expected 12 files, got ' + str(len(files))
                         assert len(dirs) == 8, 'expected 8 dirs, got ' + str(len(dirs))
                         """, pathPrefix);
 
@@ -686,13 +700,13 @@ public class VirtualFileSystemIntegrationTest {
                         unixMountPoint(VFS_UNIX_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).build();
         assertEquals(VFS_MOUNT_POINT, vfs.getMountPoint());
-        try (Context ctx = GraalPyResources.contextBuilder(vfs).build()) {
+        try (Context ctx = addTestOptions(GraalPyResources.contextBuilder(vfs)).build()) {
             Value paths = ctx.eval("python", getPathsSource);
             checkPaths(paths.as(List.class), vfs.getMountPoint());
         }
         Path resourcesDir = Files.createTempDirectory("python-resources");
 
-        try (Context ctx = GraalPyResources.contextBuilder(resourcesDir).build()) {
+        try (Context ctx = addTestOptions(GraalPyResources.contextBuilder(resourcesDir)).build()) {
             Value paths = ctx.eval("python", getPathsSource);
             checkPaths(paths.as(List.class), resourcesDir.toString());
         }
@@ -707,14 +721,14 @@ public class VirtualFileSystemIntegrationTest {
     }
 
     private static Builder addTestOptions(Builder builder) {
-        return builder.option("engine.WarnInterpreterOnly", "false");
+        return builder.engine(Engine.newBuilder("python").option("engine.WarnInterpreterOnly", "false").build());
     }
 
     @Test
     public void testAnotherVfs() throws IOException {
         assumeDefaultResourcesDir();
         try (var vfs = VirtualFileSystem.newBuilder().resourceDirectory("GRAALPY-VFS/foo").build()) {
-            try (Context ctx = GraalPyResources.contextBuilder(vfs).build()) {
+            try (Context ctx = addTestOptions(GraalPyResources.contextBuilder(vfs)).build()) {
                 eval(ctx, """
                                 def test(mount_point):
                                     import os

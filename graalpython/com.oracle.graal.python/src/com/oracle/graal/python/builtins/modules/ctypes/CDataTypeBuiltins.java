@@ -153,7 +153,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object CDataType_from_param(VirtualFrame frame, Object type, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached IsInstanceNode isInstanceNode,
@@ -206,7 +206,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object CDataType_from_address(Object type, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @Cached PyCDataAtAddress atAddress) {
             return atAddress.execute(type, pointerFromLongNode.execute(inliningTarget, value));
@@ -226,7 +226,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object CDataType_from_buffer(VirtualFrame frame, Object type, Object obj, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MemoryViewBuiltins.MemoryViewNode memoryViewNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyCDataAtAddress atAddress,
@@ -277,7 +277,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static Object CDataType_from_buffer_copy(Object type, Object buffer, int offset,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PointerNodes.WriteBytesNode writeBytesNode,
                         @Cached AuditNode auditNode,
@@ -325,7 +325,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object CDataType_in_dll(VirtualFrame frame, Object type, Object dll, TruffleString name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached("create(T__HANDLE)") GetAttributeNode getAttributeNode,
                         @Cached PyCDataAtAddress atAddress,
@@ -362,7 +362,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
          */
         @Specialization
         static CDataObject PyCData_AtAddress(Object type, Pointer pointer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CtypesNodes.CreateCDataObjectNode createCDataObjectNode,
@@ -420,7 +420,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static void PyCData_set(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, Pointer ptr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached SetFuncNode setFuncNode,
                         @Cached CallNode callNode,

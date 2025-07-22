@@ -1,0 +1,52 @@
+name: Weekly Downstream Tests
+on:
+  schedule:
+  - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+jobs:
+  downstream-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        name:
+        - pybind11
+        - virtualenv
+        - pyo3
+        os:
+        - id: ubuntu-latest
+          platform: linux
+          arch: amd64
+        - id: macos-latest
+          platform: darwin
+          arch: aarch64
+
+    runs-on: ${{ matrix.os.id }}
+
+    steps:
+    - name: Install CMake (Linux)
+      if: ${{ matrix.os.platform == 'linux' && matrix.name == 'pybind11' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake
+
+    - name: Install CMake (Darwin)
+      if: ${{ matrix.os.platform == 'darwin' && matrix.name == 'pybind11' }}
+      run: brew install cmake
+
+    - name: Install Rust toolchain
+      if: ${{ matrix.name == 'pyo3' }}
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Checkout main repository
+      uses: actions/checkout@v4
+
+    - name: Get GraalPy EA build
+      run: |
+        tarball="$(curl -sfL https://raw.githubusercontent.com/graalvm/graal-languages-ea-builds/refs/heads/main/graalpy/versions/latest-native-${{ matrix.os.platform }}-${{ matrix.os.arch}}.url)"
+        curl -sfL "$tarball" | tar xz
+
+    - name: Run downstream tests for ${{ matrix.name }}
+      run: python mx.graalpython/downstream_tests.py graalpy-*/bin/python ${{ matrix.name }}

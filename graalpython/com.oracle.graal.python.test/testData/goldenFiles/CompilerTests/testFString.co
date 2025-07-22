@@ -3,15 +3,15 @@ Disassembly of <module>:
   1:0   -   1:30        2 LOAD_METHOD                       0    (join)
   1:2   -   1:8         4 LOAD_STRING                       1    ('before')
   1:9   -   1:10        6 LOAD_NAME                         1    (a)
-  1:9   -   1:10        8 FORMAT_VALUE                      0    (NONE)
+  1:8   -   1:11        8 FORMAT_VALUE                      0    (NONE)
   1:11  -   1:17       10 LOAD_STRING                       2    ('middle')
   1:18  -   1:19       12 LOAD_NAME                         2    (b)
-  1:22  -   1:23       14 LOAD_STRING                       0    ('')
-  1:22  -   1:23       16 LOAD_METHOD                       0    (join)
+  1:21  -   1:23       14 LOAD_STRING                       0    ('')
+  1:21  -   1:23       16 LOAD_METHOD                       0    (join)
   1:22  -   1:23       18 LOAD_STRING                       3    ('5')
-  1:22  -   1:23       20 COLLECTION_FROM_STACK             1    (list)
-  1:22  -   1:23       22 CALL_METHOD                       1
-  1:18  -   1:25       24 FORMAT_VALUE                      6    (REPR + SPEC)
+  1:21  -   1:23       20 COLLECTION_FROM_STACK             1    (list)
+  1:21  -   1:23       22 CALL_METHOD                       1
+  1:17  -   1:24       24 FORMAT_VALUE                      6    (REPR + SPEC)
   1:24  -   1:29       26 LOAD_STRING                       4    ('after')
   1:0   -   1:30       28 COLLECTION_FROM_STACK             5    (list)
   1:0   -   1:30       30 CALL_METHOD                       1

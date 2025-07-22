@@ -199,7 +199,7 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString doGeneric(VirtualFrame frame, Object category, Object posixLocaleID,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached FromJavaStringNode resultAsTruffleStringNode,

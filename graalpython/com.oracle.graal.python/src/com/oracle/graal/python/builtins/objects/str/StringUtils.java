@@ -320,12 +320,12 @@ public final class StringUtils {
             }
             TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
             int c = nextNode.execute(it);
-            if (c != '_' && !hasProperty(c, UProperty.XID_START)) {
+            if (c != '_' && !isIdentifierStart(c)) {
                 return false;
             }
             while (it.hasNext()) {
                 c = nextNode.execute(it);
-                if (!hasProperty(c, UProperty.XID_CONTINUE)) {
+                if (!isIdentifierPart(c)) {
                     return false;
                 }
             }
@@ -333,8 +333,23 @@ public final class StringUtils {
         }
 
         @TruffleBoundary
-        static boolean hasProperty(int codePoint, int property) {
-            return UCharacter.hasBinaryProperty(codePoint, property);
+        static boolean isIdentifierStart(int codePoint) {
+            if (ImageInfo.inImageBuildtimeCode()) {
+                // Avoid initializing ICU4J at image build time
+                return Character.isUnicodeIdentifierStart(codePoint);
+            } else {
+                return UCharacter.hasBinaryProperty(codePoint, UProperty.XID_START);
+            }
+        }
+
+        @TruffleBoundary
+        static boolean isIdentifierPart(int codePoint) {
+            if (ImageInfo.inImageBuildtimeCode()) {
+                // Avoid initializing ICU4J at image build time
+                return Character.isUnicodeIdentifierPart(codePoint);
+            } else {
+                return UCharacter.hasBinaryProperty(codePoint, UProperty.XID_CONTINUE);
+            }
         }
     }
 

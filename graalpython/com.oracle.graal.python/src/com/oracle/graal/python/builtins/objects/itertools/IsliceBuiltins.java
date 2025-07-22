@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.itertools;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.ISLICE_WRONG_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.STEP_FOR_ISLICE_MUST_BE;
@@ -113,7 +114,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
     public abstract static class IsliceNode extends PythonVarargsBuiltinNode {
         @Specialization
         static Object constructOne(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyNumberAsSizeNode asIntNode,
@@ -232,7 +233,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNone(self.getIterable())")
         static Object next(VirtualFrame frame, PIslice self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectSlotsNode getSlots,
                         @Cached CallSlotTpIterNextNode callIterNext,
                         @Cached InlinedLoopConditionProfile loopProfile,
@@ -271,10 +272,11 @@ public final class IsliceBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "isNone(self.getIterable())")
         static Object reduceNoIterable(VirtualFrame frame, PIslice self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             // return type(self), (iter([]), 0), 0
             Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple = PFactory.createTuple(language, new Object[]{getIter.execute(frame, inliningTarget, PFactory.createList(language)), 0});
@@ -283,7 +285,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNone(self.getIterable())")
         static Object reduce(PIslice self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Bind PythonLanguage language) {
             Object type = getClassNode.execute(inliningTarget, self);
@@ -298,9 +300,10 @@ public final class IsliceBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object setState(PIslice self, Object state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToJavaIntLossyNode castInt,
                         @Cached PRaiseNode raiseNode) {
+            warnPickleDeprecated();
             try {
                 self.setCnt(castInt.execute(inliningTarget, state));
             } catch (CannotCastException e) {

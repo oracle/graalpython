@@ -67,21 +67,20 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.EnsureExecutableNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIndexNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ReadUnicodeArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
@@ -93,8 +92,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -126,8 +123,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -145,11 +140,11 @@ import com.oracle.truffle.nfi.api.SignatureLibrary;
 public abstract class CExtCommonNodes {
     @TruffleBoundary
     public static void fatalError(Node location, PythonContext context, TruffleString prefix, TruffleString msg, int status) {
-        fatalError(location, context, prefix != null ? prefix.toJavaStringUncached() : null, msg.toJavaStringUncached(), status);
+        fatalErrorString(location, context, prefix != null ? prefix.toJavaStringUncached() : null, msg.toJavaStringUncached(), status);
     }
 
     @TruffleBoundary
-    public static void fatalError(Node location, PythonContext context, String prefix, String msg, int status) {
+    public static void fatalErrorString(Node location, PythonContext context, String prefix, String msg, int status) {
         PrintWriter stderr = new PrintWriter(context.getStandardErr());
         stderr.print("Fatal Python error: ");
         if (prefix != null) {
@@ -199,7 +194,7 @@ public abstract class CExtCommonNodes {
 
         @Specialization
         static byte[] doGeneric(Charset charset, Object unicodeObject, TruffleString errors,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached PRaiseNode raiseNode) {
@@ -435,7 +430,7 @@ public abstract class CExtCommonNodes {
 
         @Specialization(guards = "!isNativeWrapper(value)")
         static double runGeneric(Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode) {
             // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it
             // is a float object, use the value and do *NOT* call '__float__'.
@@ -473,60 +468,69 @@ public abstract class CExtCommonNodes {
     @GenerateUncached
     public abstract static class TransformExceptionToNativeNode extends Node {
 
-        public abstract void execute(Frame frame, Node inliningTarget, PException e, LazyTraceback tb);
+        public abstract void execute(Node inliningTarget, Object pythonException);
 
         public final void execute(Node inliningTarget, PException e) {
-            execute(null, inliningTarget, e, null);
-        }
-
-        public final void execute(Frame frame, Node inliningTarget, PException e) {
-            execute(frame, inliningTarget, e, null);
-        }
-
-        public final void execute(Node inliningTarget, PException e, LazyTraceback tb) {
-            execute(null, inliningTarget, e, tb);
+            execute(inliningTarget, e.getEscapedException());
         }
 
         public final void executeCached(PException e) {
-            execute(null, this, e, null);
+            execute(this, e.getEscapedException());
+        }
+
+        public static void executeUncached(Object pythonException) {
+            CExtCommonNodesFactory.TransformExceptionToNativeNodeGen.getUncached().execute(null, pythonException);
+        }
+
+        public static void executeUncached(PException e) {
+            CExtCommonNodesFactory.TransformExceptionToNativeNodeGen.getUncached().execute(null, e.getEscapedException());
         }
 
         @Specialization
-        static void setCurrentException(Frame frame, Node inliningTarget, PException e, LazyTraceback tb,
-                        @Cached GetCurrentFrameRef getCurrentFrameRef,
+        static void setCurrentException(Node inliningTarget, Object pythonException,
                         @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached(inline = false) PythonToNativeNode pythonToNativeNode,
+                        @Cached CExtNodes.XDecRefPointerNode decRefPointerNode,
+                        @Cached(inline = false) PythonToNativeNewRefNode pythonToNativeNode,
+                        @Cached(inline = false) CStructAccess.ReadPointerNode readPointerNode,
                         @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode) {
             /*
-             * Run the ToNative conversion early so that nothing interrups the code between setting
-             * the managed and native states
+             * Run the ToNative conversion early so that the reference poll won't interrupt between
+             * the read and write.
              */
-            Object exceptionType = getClassNode.execute(inliningTarget, e.getUnreifiedException());
-            Object exceptionTypeNative = pythonToNativeNode.execute(exceptionType);
-            // TODO connect f_back
-            getCurrentFrameRef.execute(frame, inliningTarget).markAsEscaped();
-            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
-            if (tb != null) {
-                threadState.setCurrentException(e, tb);
-            } else {
-                threadState.setCurrentException(e);
-            }
-            /*
-             * Mirror the global exception state to native for faster access. For now, we only write
-             * 'PyThreadState.curexc_type' (which is the only one required for 'PyErr_Occurred').
-             * Since that won't escape the exception object to the program, we can use
-             * 'getUnreifiedException'. As soon as we provide the exception object and the traceback
-             * as well, we need to use 'getEscapedException'.
-             */
+            Object currentException = pythonToNativeNode.execute(pythonException);
+            Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(getThreadStateNode.execute(inliningTarget));
+            Object oldException = readPointerNode.read(nativeThreadState, CFields.PyThreadState__current_exception);
+            writePointerNode.write(nativeThreadState, CFields.PyThreadState__current_exception, currentException);
+            decRefPointerNode.execute(inliningTarget, oldException);
+        }
+    }
+
+    /**
+     * Equivalent of native {@code _PyErr_GetRaisedException}. Returns {@link PNone#NO_VALUE} if
+     * there is no exception.
+     */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class ReadAndClearNativeException extends Node {
+        public abstract Object execute(Node inliningTarget, PythonThreadState threadState);
+
+        public static Object executeUncached(PythonThreadState threadState) {
+            return CExtCommonNodesFactory.ReadAndClearNativeExceptionNodeGen.getUncached().execute(null, threadState);
+        }
+
+        @Specialization
+        static Object getException(PythonThreadState threadState,
+                        @Cached(inline = false) CStructAccess.ReadPointerNode readPointerNode,
+                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
+                        @Cached CApiTransitions.NativeToPythonTransferNode nativeToPythonNode) {
             Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
             if (nativeThreadState != null) {
-                /*
-                 * Write a borrowed ref to the native mirror because we need to keep that in sync
-                 * anyway.
-                 */
-                writePointerNode.write(nativeThreadState, CFields.PyThreadState__curexc_type, exceptionTypeNative);
+                Object exception = nativeToPythonNode.execute(readPointerNode.read(nativeThreadState, CFields.PyThreadState__current_exception));
+                writePointerNode.write(nativeThreadState, CFields.PyThreadState__current_exception, 0L);
+                return exception;
             }
+            return PNone.NO_VALUE;
         }
     }
 
@@ -572,33 +576,29 @@ public abstract class CExtCommonNodes {
                         TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage,
                         @Cached InlinedConditionProfile errOccurredProfile,
                         @Cached InlinedConditionProfile indicatesErrorProfile,
-                        @Cached ClearCurrentExceptionNode clearCurrentExceptionNode) {
-            AbstractTruffleException currentException = threadState.getCurrentException();
-            boolean errOccurred = errOccurredProfile.profile(inliningTarget, currentException != null);
+                        @Cached ReadAndClearNativeException readAndClearNativeException) {
+            Object currentException = readAndClearNativeException.execute(inliningTarget, threadState);
+            boolean errOccurred = errOccurredProfile.profile(inliningTarget, currentException != PNone.NO_VALUE);
             boolean indicatesErrorProfiled = indicatesErrorProfile.profile(inliningTarget, indicatesError);
             if (indicatesErrorProfiled || errOccurred) {
-                checkFunctionResultSlowpath(inliningTarget, threadState, name, indicatesErrorProfiled, strict,
-                                nullButNoErrorMessage, resultWithErrorMessage, errOccurred, currentException, clearCurrentExceptionNode);
+                checkFunctionResultSlowpath(inliningTarget, name, indicatesErrorProfiled, strict,
+                                nullButNoErrorMessage, resultWithErrorMessage, errOccurred, currentException);
             }
-            assert threadState.getCurrentException() == null;
         }
 
         @InliningCutoff
-        private static void checkFunctionResultSlowpath(Node inliningTarget, PythonThreadState threadState, TruffleString name, boolean indicatesError, boolean strict,
-                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage, boolean errOccurred, AbstractTruffleException currentException,
-                        ClearCurrentExceptionNode clearCurrentExceptionNode) {
+        private static void checkFunctionResultSlowpath(Node inliningTarget, TruffleString name, boolean indicatesError, boolean strict,
+                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage, boolean errOccurred, Object currentException) {
             if (indicatesError) {
                 if (errOccurred) {
-                    assert currentException != null;
-                    throw clearCurrentExceptionNode.getCurrentExceptionForReraise(inliningTarget, threadState);
+                    assert currentException != PNone.NO_VALUE;
+                    throw PException.fromObject(currentException, inliningTarget, false);
                 } else if (strict) {
-                    assert currentException == null;
+                    assert currentException == PNone.NO_VALUE;
                     throw raiseNullButNoError(inliningTarget, name, nullButNoErrorMessage);
                 }
             } else if (errOccurred) {
                 assert currentException != null;
-                // consume exception
-                clearCurrentExceptionNode.execute(inliningTarget, threadState);
                 throw raiseResultWithError(inliningTarget, name, currentException, resultWithErrorMessage);
             }
         }
@@ -609,10 +609,10 @@ public abstract class CExtCommonNodes {
         }
 
         @TruffleBoundary
-        private static PException raiseResultWithError(Node node, TruffleString name, AbstractTruffleException currentException, TruffleString resultWithErrorMessage) {
+        private static PException raiseResultWithError(Node node, TruffleString name, Object currentException, TruffleString resultWithErrorMessage) {
             PythonLanguage language = PythonLanguage.get(null);
             PBaseException sysExc = PFactory.createBaseException(language, SystemError, resultWithErrorMessage, new Object[]{name});
-            sysExc.setCause(GetEscapedExceptionNode.executeUncached(currentException));
+            sysExc.setCause(currentException);
             throw PRaiseNode.raiseExceptionObject(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(language));
         }
     }
@@ -697,7 +697,7 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"targetTypeSize == 4", "signed == 0"}, replaces = "doIntToUInt32Pos")
         @SuppressWarnings("unused")
         static int doIntToUInt32(int value, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
             if (exact && value < 0) {
                 throw raiseNegativeValue(inliningTarget, raiseNativeNode);
@@ -720,7 +720,7 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doIntToUInt64Pos")
         @SuppressWarnings("unused")
         static long doIntToUInt64(int value, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
             if (exact && value < 0) {
                 throw raiseNegativeValue(inliningTarget, raiseNativeNode);
@@ -743,7 +743,7 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doLongToUInt64Pos")
         @SuppressWarnings("unused")
         static long doLongToUInt64(long value, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
             if (exact && value < 0) {
                 throw raiseNegativeValue(inliningTarget, raiseNativeNode);
@@ -754,7 +754,7 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"exact", "targetTypeSize == 4", "signed != 0"})
         @SuppressWarnings("unused")
         static int doLongToInt32Exact(long obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return PInt.intValueExact(obj);
@@ -766,7 +766,7 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"exact", "targetTypeSize == 4", "signed == 0", "obj >= 0"})
         @SuppressWarnings("unused")
         static int doLongToUInt32PosExact(long obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             if (Integer.toUnsignedLong((int) obj) == obj) {
                 return (int) obj;
@@ -778,7 +778,7 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"exact", "targetTypeSize == 4", "signed == 0"}, replaces = "doLongToUInt32PosExact")
         @SuppressWarnings("unused")
         static int doLongToUInt32Exact(long obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             if (obj < 0) {
                 throw raiseNegativeValue(inliningTarget, raiseNode);
@@ -802,7 +802,7 @@ public abstract class CExtCommonNodes {
         @SuppressWarnings("unused")
         @TruffleBoundary
         static int doPIntTo32Bit(PInt obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 if (signed != 0) {
@@ -823,7 +823,7 @@ public abstract class CExtCommonNodes {
         @SuppressWarnings("unused")
         @TruffleBoundary
         static long doPIntTo64Bit(PInt obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 if (signed != 0) {
@@ -860,7 +860,7 @@ public abstract class CExtCommonNodes {
                                         "doVoidPtrToI64", //
                                         "doPIntTo32Bit", "doPIntTo64Bit", "doPIntToInt32Lossy", "doPIntToInt64Lossy"})
         static Object doGeneric(Object obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             Object result = indexNode.execute(null, inliningTarget, obj);
@@ -882,7 +882,7 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
         @SuppressWarnings("unused")
         static int doUnsupportedTargetSize(Object obj, int signed, int targetTypeSize, boolean exact,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
         }
 
@@ -1151,7 +1151,7 @@ public abstract class CExtCommonNodes {
 
         @Specialization
         static byte doGeneric(Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
                         @Cached PRaiseNode raiseNode) {
             byte[] encoded = encodeNativeStringNode.execute(StandardCharsets.UTF_8, value, T_STRICT);
@@ -1195,7 +1195,7 @@ public abstract class CExtCommonNodes {
 
         @Specialization
         static int doIt(Object self, Object indexObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile indexLt0Branch,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached CallSlotLenNode callLenNode,
@@ -1253,30 +1253,6 @@ public abstract class CExtCommonNodes {
 
         static boolean isNativePointer(Object pointerObject) {
             return pointerObject instanceof NativePointer;
-        }
-    }
-
-    @GenerateInline
-    @GenerateCached(false)
-    @GenerateUncached
-    public abstract static class ClearCurrentExceptionNode extends Node {
-
-        public abstract void execute(Node inliningTarget, PythonThreadState threadState);
-
-        public final AbstractTruffleException getCurrentExceptionForReraise(Node inliningTarget, PythonThreadState threadState) {
-            AbstractTruffleException exceptionForReraise = threadState.getCurrentExceptionForReraise();
-            execute(inliningTarget, threadState);
-            return exceptionForReraise;
-        }
-
-        @Specialization
-        static void doGeneric(PythonThreadState threadState,
-                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode) {
-            threadState.clearCurrentException();
-            Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
-            if (nativeThreadState != null) {
-                writePointerNode.write(nativeThreadState, CFields.PyThreadState__curexc_type, 0L);
-            }
         }
     }
 

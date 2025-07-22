@@ -108,7 +108,7 @@ public final class AbstractBuiltinMethodBuiltins extends PythonBuiltins {
     public abstract static class MethodQualName extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString getQualName(VirtualFrame frame, PMethod method,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached("create(T___NAME__)") GetAttributeNode getNameAttrNode,
                         @Shared @Cached("create(T___QUALNAME__)") GetAttributeNode getQualNameAttrNode,
                         @Shared @Cached TypeNodes.IsTypeNode isTypeNode,
@@ -123,7 +123,7 @@ public final class AbstractBuiltinMethodBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString getQualName(VirtualFrame frame, PBuiltinMethod method,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached("create(T___NAME__)") GetAttributeNode getNameAttrNode,
                         @Shared @Cached("create(T___QUALNAME__)") GetAttributeNode getQualNameAttrNode,
                         @Shared @Cached TypeNodes.IsTypeNode isTypeNode,

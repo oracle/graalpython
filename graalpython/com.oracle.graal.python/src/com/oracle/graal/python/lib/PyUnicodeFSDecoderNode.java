@@ -81,7 +81,7 @@ public abstract class PyUnicodeFSDecoderNode extends PNodeWithContext {
 
     @Specialization
     static TruffleString doPString(PString object,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CastToTruffleStringNode cast,
                     @Shared("byteIndexOfCP") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode) {
         return checkString(inliningTarget, cast.execute(inliningTarget, object), byteIndexOfCodePointNode);
@@ -100,7 +100,7 @@ public abstract class PyUnicodeFSDecoderNode extends PNodeWithContext {
 
     @Fallback
     static TruffleString doPathLike(VirtualFrame frame, Object object,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PyOSFSPathNode fspathNode,
                     @Cached PyUnicodeFSDecoderNode recursive) {
         Object path = fspathNode.execute(frame, inliningTarget, object);

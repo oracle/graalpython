@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -288,7 +288,7 @@ public abstract class FunctionNodes {
 
         @Specialization
         static RootCallTarget doFunction(PFunction function,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getCode") @Cached GetFunctionCodeNode getFunctionCodeNode,
                         @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {
             return getCt.execute(inliningTarget, getFunctionCodeNode.execute(inliningTarget, function));
@@ -301,7 +301,7 @@ public abstract class FunctionNodes {
 
         @Specialization(guards = "isPFunction(function)")
         static RootCallTarget doMethod(@SuppressWarnings("unused") PMethod method,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind("method.getFunction()") Object function,
                         @Shared("getCode") @Cached GetFunctionCodeNode getFunctionCodeNode,
                         @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {

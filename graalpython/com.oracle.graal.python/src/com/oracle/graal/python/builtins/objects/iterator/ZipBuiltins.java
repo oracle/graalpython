@@ -96,7 +96,7 @@ public final class ZipBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoneOrEmptyPKeyword(kw)")
         static PZip zip(VirtualFrame frame, Object cls, Object[] args, @SuppressWarnings("unused") Object kw,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached.Exclusive @Cached PyObjectGetIter getIter,
                         @Cached.Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             return zip(frame, inliningTarget, cls, args, false, getIter, getInstanceShape);
@@ -104,7 +104,7 @@ public final class ZipBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "kw.length == 1")
         static PZip zip(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kw,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached.Exclusive @Cached PyObjectGetIter getIter,
                         @Cached PyObjectIsTrueNode isTrueNode,
@@ -119,7 +119,7 @@ public final class ZipBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "kw.length != 1")
         static Object zip(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object[] args, PKeyword[] kw,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_TAKES_AT_MOST_ONE_KEYWORD_ARGUMENT_D_GIVEN, T_ZIP, kw.length);
         }
 
@@ -164,7 +164,7 @@ public final class ZipBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isEmpty(self.getIterators())", "self.isStrict()"})
         static Object doNext(VirtualFrame frame, PZip self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PyIterNextNode nextNode,
                         @Cached PRaiseNode raiseNode) {
@@ -209,7 +209,7 @@ public final class ZipBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reduce(PZip self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile strictProfile,
                         @Cached GetClassNode getClass,
                         @Bind PythonLanguage language) {

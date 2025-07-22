@@ -179,14 +179,6 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    private static Object as(Python3Core core, int[] a) {
-        return core.getContext().getEnv().asGuestValue(a);
-    }
-
-    private static Object as(Python3Core core, long[] a) {
-        return core.getContext().getEnv().asGuestValue(a);
-    }
-
     @Override
     public void postInitialize(Python3Core c) {
         super.postInitialize(c);
@@ -199,9 +191,9 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
         long[] preset = new long[2];
         if (lzmaSupport.isAvailable()) {
             try {
-                lzmaSupport.getMacros(as(c, formats),
-                                as(c, checks), as(c, FILTERS),
-                                as(c, mfs), as(c, modes), as(c, preset));
+                lzmaSupport.getMacros(formats,
+                                checks, FILTERS,
+                                mfs, modes, preset);
                 FORMAT_AUTO = formats[FORMAT_AUTO_INDEX];
                 FORMAT_XZ = formats[FORMAT_XZ_INDEX];
                 FORMAT_ALONE = formats[FORMAT_ALONE_INDEX];
@@ -262,7 +254,7 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doInt(VirtualFrame frame, Object checkID,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached LZMANodes.IsCheckSupported isCheckSupported) {
             return isCheckSupported.execute(inliningTarget, asSizeNode.executeExact(frame, inliningTarget, checkID, ValueError));
@@ -287,7 +279,7 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PDict encode(VirtualFrame frame, Object id, Object encodedProps,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached CastToJavaLongLossyNode toLong,
                         @Cached BytesNodes.ToBytesNode toBytes,

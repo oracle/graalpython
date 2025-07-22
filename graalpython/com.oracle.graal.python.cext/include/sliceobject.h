@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -39,7 +39,7 @@ PyAPI_FUNC(PyObject*) PySlice_Step(PySliceObject *slice);
 PyAPI_DATA(PyTypeObject) PySlice_Type;
 PyAPI_DATA(PyTypeObject) PyEllipsis_Type;
 
-#define PySlice_Check(op) Py_IS_TYPE(op, &PySlice_Type)
+#define PySlice_Check(op) Py_IS_TYPE((op), &PySlice_Type)
 
 PyAPI_FUNC(PyObject *) PySlice_New(PyObject* start, PyObject* stop,
                                   PyObject* step);

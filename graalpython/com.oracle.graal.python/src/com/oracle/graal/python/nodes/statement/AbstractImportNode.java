@@ -82,6 +82,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -103,6 +104,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
     /**
      * Equivalent of {@code PyImport_Import} and {@code PyImport_ImportModule}.
      */
+    @TruffleBoundary
     public static PythonModule importModule(TruffleString name) {
         /*
          * TODO we should rather use {@link com.oracle.graal.python.lib.PyImportImport}, but it
@@ -165,7 +167,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
         @Specialization
         static Object importName(VirtualFrame frame, PythonContext context, PythonModule builtins, TruffleString name, Object globals, TruffleString[] fromList, int level,
                         @Cached ReadAttributeFromPythonObjectNode readAttrNode,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile importFuncProfile,
                         @Cached PConstructAndRaiseNode.Lazy raiseNode,
                         @Cached CallNode importCallNode,
@@ -216,7 +218,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
         public static Object levelZeroNoFromlist(VirtualFrame frame, PythonContext context, TruffleString name, @SuppressWarnings("unused") Object globals,
                         @SuppressWarnings("unused") TruffleString[] fromList,
                         @SuppressWarnings("unused") int level,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached PyDictGetItem getModuleNode,
                         @Exclusive @Cached EnsureInitializedNode ensureInitialized,
@@ -251,7 +253,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
 
         @Specialization(guards = "level >= 0", replaces = "levelZeroNoFromlist")
         static Object genericImport(VirtualFrame frame, PythonContext context, TruffleString name, Object globals, TruffleString[] fromList, int level,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ResolveName resolveName,
                         @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached PyDictGetItem getModuleNode,
@@ -372,7 +374,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
 
         @Specialization
         static boolean isInitializing(VirtualFrame frame, Object mod,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile hasSpec,
                         @Cached PyObjectLookupAttr getSpecNode,
                         @Cached PyObjectLookupAttr getInitNode,
@@ -411,7 +413,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
 
         @Specialization
         static void ensureInitialized(VirtualFrame frame, PythonContext context, Object mod, TruffleString name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyModuleIsInitializing isInitializing,
                         @Cached PyObjectCallMethodObjArgs callLockUnlock) {
             if (isInitializing.execute(frame, mod)) {
@@ -448,7 +450,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
 
         @Specialization
         TruffleString resolveName(VirtualFrame frame, TruffleString name, Object globals, int level,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetDictFromGlobalsNode getDictNode,
                         @Cached PyDictGetItem getPackageOrNameNode,
                         @Cached PyDictGetItem getSpecNode,
@@ -591,7 +593,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                         // @Cached ReadAttributeFromDynamicObjectNode readMetaPath,
                         // @Cached ReadAttributeFromDynamicObjectNode readPathHooks,
                         // @Cached AuditNode audit,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callFindAndLoad) {
             // TODO: (tfel) audit and import timing
             // PythonModule sys = context.getSysModule();

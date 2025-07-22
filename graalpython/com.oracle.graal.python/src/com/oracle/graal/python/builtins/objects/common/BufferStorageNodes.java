@@ -138,6 +138,12 @@ public abstract class BufferStorageNodes {
             }
         }
 
+        @Specialization(guards = "format == HALF_FLOAT")
+        static double unpackFloat16(@SuppressWarnings("unused") BufferFormat format, Object buffer, int offset,
+                        @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+            return bufferLib.readFloat16(buffer, offset);
+        }
+
         @Specialization(guards = "format == FLOAT")
         static double unpackFloat(@SuppressWarnings("unused") BufferFormat format, Object buffer, int offset,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
@@ -284,6 +290,14 @@ public abstract class BufferStorageNodes {
                         @Cached CastToJavaUnsignedLongNode castToUnsignedLong) {
             long value = castToUnsignedLong.execute(inliningTarget, indexNode.execute(frame, inliningTarget, object));
             bufferLib.writeLong(buffer, offset, value);
+        }
+
+        @Specialization(guards = "format == HALF_FLOAT")
+        static void packFloat16(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") BufferFormat format, Object object, Object buffer, int offset,
+                        @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
+            float value = (float) asDoubleNode.execute(frame, inliningTarget, object);
+            bufferLib.writeFloat16(buffer, offset, value);
         }
 
         @Specialization(guards = "format == FLOAT")

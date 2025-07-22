@@ -126,7 +126,7 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNativeObject(object)")
         static PReferenceType refType(Object cls, Object object, @SuppressWarnings("unused") PNone none,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached.Exclusive @Cached GetClassNode getClassNode,
                         @Cached HiddenAttr.ReadNode readWeaklistNode,
                         @Cached HiddenAttr.WriteNode writeWeakListNode,
@@ -160,7 +160,7 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNativeObject(object)", "!isPNone(callback)"})
         static PReferenceType refTypeWithCallback(Object cls, Object object, Object callback,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached.Exclusive @Cached HiddenAttr.ReadNode readQueueNode,
                         @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
@@ -170,7 +170,7 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("truffle-static-method")
         PReferenceType refType(Object cls, PythonAbstractNativeObject pythonObject, Object callback,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached.Exclusive @Cached GetClassNode getClassNode,
                         @Cached BuiltinClassProfiles.IsBuiltinClassExactProfile profile,
                         @Cached TypeNodes.GetMroNode getMroNode,
@@ -211,13 +211,13 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
                 CApiTransitions.addNativeWeakRef(getContext(), pythonObject);
                 return PFactory.createReferenceType(language, cls, getInstanceShape.execute(cls), pythonObject, actualCallback, getWeakReferenceQueue(inliningTarget, readQueueNode));
             } else {
-                return refType(cls, pythonObject, actualCallback, raiseNode);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, pythonObject);
             }
         }
 
         @Fallback
         static PReferenceType refType(@SuppressWarnings("unused") Object cls, Object object, @SuppressWarnings("unused") Object callback,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, object);
         }
 
@@ -290,7 +290,7 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getHash() == HASH_UNSET")
         static long computeHash(VirtualFrame frame, PReferenceType self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile referentProfile,
                         @Cached PyObjectHashNode hashNode,
                         @Cached PRaiseNode raiseNode) {
@@ -306,7 +306,7 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
 
         @Fallback
         static long hashWrong(@SuppressWarnings("unused") Object self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, "__hash__", "weakref", self);
         }
     }
@@ -323,7 +323,7 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getObject() != null")
         static TruffleString repr(VirtualFrame frame, PReferenceType self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached GetClassNode getClassNode,
                         @Cached TypeNodes.GetNameNode getNameNode,
@@ -352,7 +352,7 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
     public abstract static class RefTypeEqNode extends RichCmpBuiltinNode {
         @Specialization(guards = {"self.getObject() != null", "other.getObject() != null", "op.isEqOrNe()"})
         static Object withObjs(VirtualFrame frame, PReferenceType self, PReferenceType other, RichCmpOp op,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectRichCompare richCompareNode) {
             return richCompareNode.execute(frame, inliningTarget, self.getObject(), other.getObject(), op);
         }

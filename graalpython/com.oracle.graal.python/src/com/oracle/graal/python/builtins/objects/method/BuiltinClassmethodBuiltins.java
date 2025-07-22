@@ -93,7 +93,7 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
     abstract static class NameNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object name(VirtualFrame frame, PDecoratedMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
             return getAttr.execute(frame, inliningTarget, self.getCallable(), T___NAME__);
         }
@@ -104,7 +104,7 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
     abstract static class QualnameNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object qualname(VirtualFrame frame, PDecoratedMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
             return getAttr.execute(frame, inliningTarget, self.getCallable(), T___QUALNAME__);
         }
@@ -115,7 +115,7 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
     abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object objclass(VirtualFrame frame, PDecoratedMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
             return getAttr.execute(frame, inliningTarget, self.getCallable(), T___OBJCLASS__);
         }
@@ -126,7 +126,7 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
     abstract static class DocNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doc(VirtualFrame frame, PDecoratedMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
             return getAttr.execute(frame, inliningTarget, self.getCallable(), T___DOC__);
         }
@@ -137,7 +137,7 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
     abstract static class TextSignatureNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object textSignature(VirtualFrame frame, PDecoratedMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
             return getAttr.execute(frame, inliningTarget, self.getCallable(), T___TEXT_SIGNATURE__);
         }
@@ -148,7 +148,7 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString repr(VirtualFrame frame, PDecoratedMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectStrAsTruffleStringNode asTruffleStringNode,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached PyObjectLookupAttr lookupName,

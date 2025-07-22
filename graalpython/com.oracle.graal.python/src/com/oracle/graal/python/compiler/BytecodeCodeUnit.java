@@ -207,6 +207,9 @@ public final class BytecodeCodeUnit extends CodeUnit {
                         line[5] = line[5] = codeUnit.qualname.toJavaStringUncached();
                         break;
                     }
+                    case MAKE_TYPE_PARAM:
+                        line[4] = String.format("% 2d", oparg);
+                        break;
                     case LOAD_INT:
                     case LOAD_LONG:
                         line[5] = Objects.toString(primitiveConstants[oparg]);
@@ -227,6 +230,7 @@ public final class BytecodeCodeUnit extends CodeUnit {
                     case LOAD_DEREF:
                     case STORE_DEREF:
                     case DELETE_DEREF:
+                    case LOAD_FROM_DICT_OR_DEREF:
                         if (oparg >= cellvars.length) {
                             line[5] = freevars[oparg - cellvars.length].toJavaStringUncached();
                         } else {
@@ -250,6 +254,7 @@ public final class BytecodeCodeUnit extends CodeUnit {
                     case LOAD_ATTR:
                     case STORE_ATTR:
                     case DELETE_ATTR:
+                    case LOAD_FROM_DICT_OR_GLOBALS:
                         line[5] = names[oparg].toJavaStringUncached();
                         break;
                     case FORMAT_VALUE: {

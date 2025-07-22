@@ -306,7 +306,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTuple gmtime(VirtualFrame frame, Object seconds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ToLongTime toLongTime,
                         @Bind PythonLanguage language) {
             return PFactory.createStructSeq(language, STRUCT_TIME_DESC, getTimeStruct(GMT, toLongTime.execute(frame, inliningTarget, seconds)));
@@ -341,7 +341,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTuple localtime(VirtualFrame frame, PythonModule module, Object seconds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ToLongTime toLongTime,
                         @Bind PythonLanguage language) {
             ModuleState moduleState = module.getModuleState(ModuleState.class);
@@ -507,7 +507,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!isPositive(seconds)")
         static Object err(PythonModule self, long seconds,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
         }
 
@@ -531,13 +531,13 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!isPositive(seconds)")
         static Object err(PythonModule self, double seconds,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
         }
 
         @Specialization(guards = "!isInteger(secondsObj)")
         static Object sleepObj(VirtualFrame frame, PythonModule self, Object secondsObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached SleepNode recursive) {
             return recursive.execute(frame, self, asDoubleNode.execute(frame, inliningTarget, secondsObj));
@@ -925,7 +925,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString formatTime(PythonModule module, TruffleString format, @SuppressWarnings("unused") PNone time,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("byteIndexOfCp") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
                         @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
@@ -939,7 +939,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString formatTime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, TruffleString format, PTuple time,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("byteIndexOfCp") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
@@ -956,7 +956,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static TruffleString formatTime(PythonModule module, TruffleString format, Object time,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.TUPLE_OR_STRUCT_TIME_ARG_REQUIRED);
         }
     }
@@ -973,7 +973,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         @ExplodeLoop
         static double mktime(VirtualFrame frame, PythonModule module, PTuple tuple,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached GetObjectArrayNode getObjectArrayNode,
                         @Cached PRaiseNode raiseNode) {
@@ -1003,7 +1003,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public static TruffleString localtime(VirtualFrame frame, PythonModule module, Object seconds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ToLongTime toLongTime,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             ModuleState moduleState = module.getModuleState(ModuleState.class);
@@ -1038,7 +1038,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString localtime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, PTuple time,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
@@ -1049,7 +1049,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object localtime(Object module, Object time,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TUPLE_OR_STRUCT_TIME_ARG_REQUIRED);
         }
 
@@ -1095,7 +1095,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getClockInfo(TruffleString name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached WriteAttributeToPythonObjectNode writeAttrNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Bind PythonLanguage language,
@@ -1145,7 +1145,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object strptime(VirtualFrame frame, TruffleString dataString, TruffleString format,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyImportImport importNode,
                         @Cached PyObjectCallMethodObjArgs callNode) {
             final Object module = importNode.execute(frame, inliningTarget, T_MOD_STRPTIME);

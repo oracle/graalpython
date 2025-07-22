@@ -100,7 +100,7 @@ public final class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization
         static void doInit(VirtualFrame frame, @SuppressWarnings("unused") Node ignored, PBuffered self, Object raw, int bufferSize,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CheckBoolMethodHelperNode checkWritableNode,
                         @Cached BufferedInitNode bufferedInitNode,
                         @Cached GetPythonObjectClassNode getSelfClass,
@@ -135,7 +135,7 @@ public final class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization
         static Object doIt(VirtualFrame frame, PBuffered self, Object raw, Object bufferSize,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InitBufferSizeNode initBufferSizeNode,
                         @Cached BufferedWriterInit init) {
             int size = initBufferSizeNode.execute(frame, inliningTarget, bufferSize);

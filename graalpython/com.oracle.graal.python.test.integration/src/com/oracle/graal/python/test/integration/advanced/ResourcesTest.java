@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.io.IOAccess;
 import org.junit.Before;
 import org.junit.Test;
@@ -72,7 +73,8 @@ public class ResourcesTest {
 
     @Test
     public void testResourcesAlwaysAllowReading() {
-        try (Context context = Context.newBuilder("python").allowIO(IOAccess.NONE).option("python.PythonHome", "/path/that/does/not/exist").build()) {
+        try (Engine engine = Engine.create("python");
+                        Context context = Context.newBuilder("python").engine(engine).allowIO(IOAccess.NONE).option("python.PythonHome", "/path/that/does/not/exist").build()) {
             String foundHome = context.eval("python", "import email; email.__spec__.origin").asString();
             assertTrue(foundHome, foundHome.contains("python" + File.separator + "python-home"));
         }

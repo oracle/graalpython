@@ -7,6 +7,7 @@ test.test_memoryio.CBytesIOTest.test_bytes_array @ darwin-arm64,darwin-x86_64,li
 test.test_memoryio.CBytesIOTest.test_detach @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_memoryio.CBytesIOTest.test_flags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_memoryio.CBytesIOTest.test_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_memoryio.CBytesIOTest.test_getbuffer_gc_collect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_memoryio.CBytesIOTest.test_getstate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_memoryio.CBytesIOTest.test_getvalue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_memoryio.CBytesIOTest.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -88,6 +89,7 @@ test.test_memoryio.PyBytesIOTest.test_bytes_array @ darwin-arm64,darwin-x86_64,l
 test.test_memoryio.PyBytesIOTest.test_detach @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_memoryio.PyBytesIOTest.test_flags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_memoryio.PyBytesIOTest.test_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_memoryio.PyBytesIOTest.test_getbuffer_gc_collect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_memoryio.PyBytesIOTest.test_getvalue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_memoryio.PyBytesIOTest.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_memoryio.PyBytesIOTest.test_instance_dict_leak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

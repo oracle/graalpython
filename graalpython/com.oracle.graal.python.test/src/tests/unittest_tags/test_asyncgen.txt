@@ -45,5 +45,6 @@ test.test_asyncgen.AsyncGenTest.test_async_gen_exception_07 @ darwin-arm64,darwi
 test.test_asyncgen.AsyncGenTest.test_async_gen_exception_08 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_asyncgen.AsyncGenTest.test_async_gen_exception_09 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_asyncgen.AsyncGenTest.test_async_gen_exception_11 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_asyncgen.AsyncGenTest.test_async_gen_exception_12 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_asyncgen.AsyncGenTest.test_async_gen_iteration_01 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_asyncgen.AsyncGenTest.test_async_gen_iteration_02 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

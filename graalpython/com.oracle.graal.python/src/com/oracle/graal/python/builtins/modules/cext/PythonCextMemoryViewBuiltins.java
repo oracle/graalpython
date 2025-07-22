@@ -77,7 +77,7 @@ public final class PythonCextMemoryViewBuiltins {
     abstract static class PyMemoryView_GetContiguous extends CApiTernaryBuiltinNode {
         @Specialization()
         static Object get(Object obj, int buffertype, byte orderByte,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyMemoryViewFromObject memoryViewFromObject,
                         @Cached ReleaseNode releaseNode,
                         @Cached ToBytesNode toBytesNode,

@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -11,16 +11,20 @@
 
 #include "capi.h" // GraalPy change
 #include "Python.h"
-#if 0 // GraalPy change
 #include "pycore_dtoa.h"          // _Py_dg_dtoa()
 #include "pycore_floatobject.h"   // _PyFloat_FormatAdvancedWriter()
+#if 0 // GraalPy change
 #include "pycore_initconfig.h"    // _PyStatus_OK()
+#endif // GraalPy change
 #include "pycore_interp.h"        // _PyInterpreterState.float_state
+#if 0 // GraalPy change
 #include "pycore_long.h"          // _PyLong_GetOne()
 #include "pycore_object.h"        // _PyObject_Init()
 #include "pycore_pymath.h"        // _PY_SHORT_FLOAT_REPR
+#endif // GraalPy change
 #include "pycore_pystate.h"       // _PyInterpreterState_GET()
-#include "pycore_structseq.h"     // _PyStructSequence_FiniType()
+#if 0 // GraalPy change
+#include "pycore_structseq.h"     // _PyStructSequence_FiniBuiltin()
 #endif // GraalPy change
 
 #include <ctype.h>
@@ -111,10 +115,18 @@ PyFloat_GetInfo(void)
         return NULL;
     }
 
-#define SetIntFlag(flag) \
-    PyStructSequence_SET_ITEM(floatinfo, pos++, PyLong_FromLong(flag))
-#define SetDblFlag(flag) \
-    PyStructSequence_SET_ITEM(floatinfo, pos++, PyFloat_FromDouble(flag))
+#define SetFlag(CALL) \
+    do {                                                    \
+        PyObject *flag = (CALL);                            \
+        if (flag == NULL) {                                 \
+            Py_CLEAR(floatinfo);                            \
+            return NULL;                                    \
+        }                                                   \
+        PyStructSequence_SET_ITEM(floatinfo, pos++, flag);  \
+    } while (0)
+
+#define SetIntFlag(FLAG) SetFlag(PyLong_FromLong((FLAG)))
+#define SetDblFlag(FLAG) SetFlag(PyFloat_FromDouble((FLAG)))
 
     SetDblFlag(DBL_MAX);
     SetIntFlag(DBL_MAX_EXP);
@@ -129,11 +141,8 @@ PyFloat_GetInfo(void)
     SetIntFlag(FLT_ROUNDS);
 #undef SetIntFlag
 #undef SetDblFlag
+#undef SetFlag
 
-    if (PyErr_Occurred()) {
-        Py_CLEAR(floatinfo);
-        return NULL;
-    }
     return floatinfo;
 }
 
@@ -299,20 +308,6 @@ float_dealloc(PyObject *op)
 double
 PyFloat_AsDouble(PyObject *op)
 {
-    // GraalPy change: read from native object stub or upcall for managed
-    if (points_to_py_handle_space(op)) {
-        if (PyFloat_Check(op)) {
-            double val = ((GraalPyFloatObject*) pointer_to_stub(op))->ob_fval;
-#ifndef NDEBUG
-            if (PyTruffle_Debug_CAPI() && GraalPyTruffleFloat_AsDouble(op) != val) {
-                Py_FatalError("ob_size of native stub and managed object differ");
-            }
-#endif
-            return val;
-        }
-        return GraalPyTruffleFloat_AsDouble(op);
-    }
-
     PyNumberMethods *nb;
     PyObject *res;
     double val;
@@ -323,8 +318,12 @@ PyFloat_AsDouble(PyObject *op)
     }
 
     if (PyFloat_Check(op)) {
-        // GraalPy change: avoid macro recursion
-        return ((PyFloatObject*) op)->ob_fval;
+        return PyFloat_AS_DOUBLE(op);
+    }
+
+    // GraalPy change: upcall for managed
+    if (points_to_py_handle_space(op)) {
+        return GraalPyTruffleFloat_AsDouble(op);
     }
 
     nb = Py_TYPE(op)->tp_as_number;
@@ -365,8 +364,7 @@ PyFloat_AsDouble(PyObject *op)
         }
     }
 
-    // GraalPy change: avoid macro recursion
-    val = PyFloat_AsDouble(res);
+    val = PyFloat_AS_DOUBLE(res);
     Py_DECREF(res);
     return val;
 }
@@ -399,8 +397,7 @@ convert_to_double(PyObject **v, double *dbl)
         }
     }
     else {
-        Py_INCREF(Py_NotImplemented);
-        *v = Py_NotImplemented;
+        *v = Py_NewRef(Py_NotImplemented);
         return -1;
     }
     return 0;
@@ -560,20 +557,17 @@ float_richcompare(PyObject *v, PyObject *w, int op)
                 temp = _PyLong_Lshift(ww, 1);
                 if (temp == NULL)
                     goto Error;
-                Py_DECREF(ww);
-                ww = temp;
+                Py_SETREF(ww, temp);
 
                 temp = _PyLong_Lshift(vv, 1);
                 if (temp == NULL)
                     goto Error;
-                Py_DECREF(vv);
-                vv = temp;
+                Py_SETREF(vv, temp);
 
                 temp = PyNumber_Or(vv, _PyLong_GetOne());
                 if (temp == NULL)
                     goto Error;
-                Py_DECREF(vv);
-                vv = temp;
+                Py_SETREF(vv, temp);
             }
 
             r = PyObject_RichCompareBool(vv, ww, op);
@@ -932,8 +926,7 @@ float_is_integer_impl(PyObject *self)
                              PyExc_ValueError);
         return NULL;
     }
-    Py_INCREF(o);
-    return o;
+    return Py_NewRef(o);
 }
 
 /*[clinic input]
@@ -1152,11 +1145,12 @@ float___round___impl(PyObject *self, PyObject *o_ndigits)
 static PyObject *
 float_float(PyObject *v)
 {
-    if (PyFloat_CheckExact(v))
-        Py_INCREF(v);
-    else
-        v = PyFloat_FromDouble(((PyFloatObject *)v)->ob_fval);
-    return v;
+    if (PyFloat_CheckExact(v)) {
+        return Py_NewRef(v);
+    }
+    else {
+        return PyFloat_FromDouble(((PyFloatObject *)v)->ob_fval);
+    }
 }
 
 /*[clinic input]
@@ -1578,12 +1572,10 @@ float_fromhex(PyTypeObject *type, PyObject *string)
 /*[clinic input]
 float.as_integer_ratio
 
-Return integer ratio.
+Return a pair of integers, whose ratio is exactly equal to the original float.
 
-Return a pair of integers, whose ratio is exactly equal to the original float
-and with a positive denominator.
-
-Raise OverflowError on infinities and a ValueError on NaNs.
+The ratio is in lowest terms and has a positive denominator.  Raise
+OverflowError on infinities and a ValueError on NaNs.
 
 >>> (10.0).as_integer_ratio()
 (10, 1)
@@ -1595,7 +1587,7 @@ Raise OverflowError on infinities and a ValueError on NaNs.
 
 static PyObject *
 float_as_integer_ratio_impl(PyObject *self)
-/*[clinic end generated code: output=65f25f0d8d30a712 input=e21d08b4630c2e44]*/
+/*[clinic end generated code: output=65f25f0d8d30a712 input=d5ba7765655d75bd]*/
 {
     double self_double;
     double float_part;
@@ -1673,12 +1665,12 @@ float.__new__ as float_new
     x: object(c_default="NULL") = 0
     /
 
-Convert a string or number to a floating point number, if possible.
+Convert a string or number to a floating-point number, if possible.
 [clinic start generated code]*/
 
 static PyObject *
 float_new_impl(PyTypeObject *type, PyObject *x)
-/*[clinic end generated code: output=ccf1e8dc460ba6ba input=f43661b7de03e9d8]*/
+/*[clinic end generated code: output=ccf1e8dc460ba6ba input=55909f888aa0c8a6]*/
 {
     if (type != &PyFloat_Type) {
         if (x == NULL) {
@@ -1753,12 +1745,14 @@ float___getnewargs___impl(PyObject *self)
 #endif // GraalPy change
 
 /* this is for the benefit of the pack/unpack routines below */
+typedef enum _py_float_format_type float_format_type;
+#define unknown_format _py_float_format_unknown
+#define ieee_big_endian_format _py_float_format_ieee_big_endian
+#define ieee_little_endian_format _py_float_format_ieee_little_endian
 
-typedef enum {
-    unknown_format, ieee_big_endian_format, ieee_little_endian_format
-} float_format_type;
+#define float_format (_PyRuntime.float_state.float_format)
+#define double_format (_PyRuntime.float_state.double_format)
 
-static float_format_type double_format, float_format;
 
 #if 0 // GraalPy change
 /*[clinic input]
@@ -1774,13 +1768,13 @@ You probably don't want to use this function.
 It exists mainly to be used in Python's test suite.
 
 This function returns whichever of 'unknown', 'IEEE, big-endian' or 'IEEE,
-little-endian' best describes the format of floating point numbers used by the
+little-endian' best describes the format of floating-point numbers used by the
 C type named by typestr.
 [clinic start generated code]*/
 
 static PyObject *
 float___getformat___impl(PyTypeObject *type, const char *typestr)
-/*[clinic end generated code: output=2bfb987228cc9628 input=d5a52600f835ad67]*/
+/*[clinic end generated code: output=2bfb987228cc9628 input=90d5e246409a246e]*/
 {
     float_format_type r;
 
@@ -1961,19 +1955,13 @@ PyTypeObject PyFloat_Type = {
 };
 #endif // GraalPy change
 
-void
-_PyFloat_InitState(PyInterpreterState *interp)
+static void
+_init_global_state(void)
 {
-#if 0 // GraalPy change
-    if (!_Py_IsMainInterpreter(interp)) {
-        return;
-    }
-#endif // GraalPy change
-
     float_format_type detected_double_format, detected_float_format;
 
     /* We attempt to determine if this machine is using IEEE
-       floating point formats by peering at the bits of some
+       floating-point formats by peering at the bits of some
        carefully chosen values.  If it looks like we are on an
        IEEE platform, the float packing/unpacking routines can
        just copy bits, if not they resort to arithmetic & shifts
@@ -2019,23 +2007,24 @@ _PyFloat_InitState(PyInterpreterState *interp)
     float_format = detected_float_format;
 }
 
+void
+_PyFloat_InitState(PyInterpreterState *interp)
+{
+    if (!_Py_IsMainInterpreter(interp)) {
+        return;
+    }
+    _init_global_state();
+}
+
 #if 0 // GraalPy change
 PyStatus
 _PyFloat_InitTypes(PyInterpreterState *interp)
 {
-    if (!_Py_IsMainInterpreter(interp)) {
-        return _PyStatus_OK();
-    }
-
-    if (PyType_Ready(&PyFloat_Type) < 0) {
-        return _PyStatus_ERR("Can't initialize float type");
-    }
-
     /* Init float info */
-    if (FloatInfoType.tp_name == NULL) {
-        if (PyStructSequence_InitType2(&FloatInfoType, &floatinfo_desc) < 0) {
-            return _PyStatus_ERR("can't init float info type");
-        }
+    if (_PyStructSequence_InitBuiltin(interp, &FloatInfoType,
+                                      &floatinfo_desc) < 0)
+    {
+        return _PyStatus_ERR("can't init float info type");
     }
 
     return _PyStatus_OK();
@@ -2070,9 +2059,7 @@ _PyFloat_Fini(PyInterpreterState *interp)
 void
 _PyFloat_FiniType(PyInterpreterState *interp)
 {
-    if (_Py_IsMainInterpreter(interp)) {
-        _PyStructSequence_FiniType(&FloatInfoType);
-    }
+    _PyStructSequence_FiniBuiltin(interp, &FloatInfoType);
 }
 
 /* Print summary info about the state of the optimized allocator */
@@ -2468,25 +2455,14 @@ PyFloat_Unpack2(const char *data, int le)
     f |= *p;
 
     if (e == 0x1f) {
-#if _PY_SHORT_FLOAT_REPR == 0
         if (f == 0) {
             /* Infinity */
             return sign ? -Py_HUGE_VAL : Py_HUGE_VAL;
         }
         else {
             /* NaN */
-            return sign ? -Py_NAN : Py_NAN;
+            return sign ? -fabs(Py_NAN) : fabs(Py_NAN);
         }
-#else  // _PY_SHORT_FLOAT_REPR == 1
-        if (f == 0) {
-            /* Infinity */
-            return _Py_dg_infinity(sign);
-        }
-        else {
-            /* NaN */
-            return _Py_dg_stdnan(sign);
-        }
-#endif  // _PY_SHORT_FLOAT_REPR == 1
     }
 
     x = (double)f / 1024.0;

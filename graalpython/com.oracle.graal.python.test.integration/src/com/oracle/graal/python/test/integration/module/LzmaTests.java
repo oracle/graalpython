@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Value;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameter;
@@ -60,7 +61,7 @@ public class LzmaTests {
 
     @Test
     public void testLzmaBasics() {
-        try (Context context = Context.newBuilder("python").allowNativeAccess(useNative).build()) {
+        try (Engine engine = Engine.create("python"); Context context = Context.newBuilder("python").engine(engine).allowNativeAccess(useNative).build()) {
             Value isSupported = context.eval("python", "import lzma; lzma.is_check_supported(lzma.CHECK_CRC32)");
             assertTrue(isSupported.isBoolean());
             assertTrue(isSupported.asBoolean());

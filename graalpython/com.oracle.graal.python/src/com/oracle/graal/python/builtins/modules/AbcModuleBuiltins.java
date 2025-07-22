@@ -93,7 +93,7 @@ public final class AbcModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         static Object init(Object object,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             if (TypeNodes.IsTypeNode.executeUncached(object)) {
                 Object flags = PyObjectLookupAttr.executeUncached(object, ABC_TPFLAGS);
                 long val;

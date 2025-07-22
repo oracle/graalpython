@@ -83,6 +83,7 @@ import static com.oracle.graal.python.nodes.HiddenAttr.DICTOFFSET;
 import static com.oracle.graal.python.nodes.HiddenAttr.ITEMSIZE;
 import static com.oracle.graal.python.nodes.HiddenAttr.WEAKLISTOFFSET;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSCELL__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSDICTCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
@@ -132,14 +133,13 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKeyHash;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItemWithHash;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -153,6 +153,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.IsIdentifierNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
@@ -167,8 +168,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetIndexed
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSolidBaseNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesAsArrayNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTpNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.InstancesOfTypeHaveDictNodeGen;
@@ -269,7 +268,7 @@ public abstract class TypeNodes {
 
         @Specialization
         static long doBuiltinClassType(PythonBuiltinClassType clazz,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("read") @Cached HiddenAttr.ReadNode readHiddenFlagsNode,
                         @Shared("write") @Cached HiddenAttr.WriteNode writeHiddenFlagsNode,
                         @Shared("profile") @Cached InlinedCountingConditionProfile profile) {
@@ -278,7 +277,7 @@ public abstract class TypeNodes {
 
         @Specialization
         static long doManaged(PythonManagedClass clazz,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("read") @Cached HiddenAttr.ReadNode readHiddenFlagsNode,
                         @Shared("write") @Cached HiddenAttr.WriteNode writeHiddenFlagsNode,
                         @Shared("profile") @Cached InlinedCountingConditionProfile profile) {
@@ -459,6 +458,9 @@ public abstract class TypeNodes {
                 case PString:
                 case PBytes:
                     result = DEFAULT | BASETYPE | MATCH_SELF;
+                    break;
+                case PIOBase:
+                    result = DEFAULT | BASETYPE | HEAPTYPE;
                     break;
                 default:
                     // default case; this includes: PythonObject, PCode, PInstancemethod, PNone,
@@ -800,125 +802,134 @@ public abstract class TypeNodes {
         }
     }
 
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class GetSubclassesNode extends PNodeWithContext {
-
-        public abstract PDict execute(Node inliningTarget, Object clazz);
-
-        public static PDict executeUncached(Object clazz) {
-            return GetSubclassesNodeGen.getUncached().execute(null, clazz);
+    public static final class GetSubclassesNode {
+        static record KeyAndHash(Object key, long hash) {
         }
 
-        protected static void unsafeAddSubclass(Object base, Object subclass) {
-            long hash = ObjectBuiltins.HashNode.hash(subclass);
+        static final class CollectEmptyKeys extends HashingStorageForEachCallback<List<KeyAndHash>> {
+            @Override
+            public final List<KeyAndHash> execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, List<KeyAndHash> acc) {
+                Object value = HashingStorageIteratorValue.executeUncached(storage, it);
+                if (value instanceof PReferenceType pref) {
+                    Object subclassValue = pref.getObject();
+                    if (subclassValue == null) {
+                        Object key = HashingStorageIteratorKey.executeUncached(storage, it);
+                        // CPython uses the object pointer as the key, but we cannot so we do not
+                        // really know how the hash is arrived at and need to make sure to remove
+                        // the same hash that was stored.
+                        long hash = HashingStorageIteratorKeyHash.executeUncached(storage, it);
+                        acc.add(new KeyAndHash(key, hash));
+                    }
+                }
+                return acc;
+            }
+        }
+
+        static void clearEmptyReferences(EconomicMapStorage storage) {
+            List<KeyAndHash> acc = new ArrayList<>();
+            HashingStorageForEach.executeUncached(storage, new CollectEmptyKeys(), acc);
+            for (KeyAndHash k : acc) {
+                storage.removeUncached(k.key(), k.hash());
+            }
+        }
+
+        protected static void addSubclass(PythonAbstractClass base, PythonManagedClass subclass) {
+            CompilerAsserts.neverPartOfCompilation();
             PDict dict = executeUncached(base);
+            // CPython uses the object pointer as the key, but we cannot since identity hashes are
+            // not unique. So we need to use the actual weakref as the key here, but not all
+            // classes are hashable. So we use the identity hash code for the map storage hash.
+            long hash = System.identityHashCode(subclass);
             HashingStorage storage = dict.getDictStorage();
-            HashingStorageSetItemWithHash setItem = HashingStorageSetItemWithHashNodeGen.getUncached();
-            storage = setItem.execute(null, null, storage, subclass, hash, subclass);
-            dict.setDictStorage(storage);
+            Object weakref = PFactory.createReferenceType(PythonLanguage.get(null), subclass);
+            if (!(storage instanceof EconomicMapStorage)) {
+                assert storage == EmptyStorage.INSTANCE : "Unexpected storage type!";
+                storage = EconomicMapStorage.create();
+                dict.setDictStorage(storage);
+            } else {
+                clearEmptyReferences((EconomicMapStorage) storage);
+            }
+            ((EconomicMapStorage) storage).putUncached(weakref, hash, weakref);
         }
 
-        protected static void unsafeRemoveSubclass(Object base, Object subclass) {
-            long hash = ObjectBuiltins.HashNode.hash(subclass);
+        static final class RemoveSubclassValue extends HashingStorageForEachCallback<PythonManagedClass> {
+            @Override
+            public final PythonManagedClass execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, PythonManagedClass toRemove) {
+                if (toRemove == null) {
+                    return null;
+                }
+                Object value = HashingStorageIteratorValue.executeUncached(storage, it);
+                if (value instanceof PReferenceType pref) {
+                    Object subclassValue = pref.getObject();
+                    if (subclassValue == toRemove) {
+                        pref.clearRef();
+                        return null;
+                    }
+                }
+                return toRemove;
+            }
+        }
+
+        protected static void removeSubclass(PythonAbstractClass base, PythonManagedClass subclass) {
+            CompilerAsserts.neverPartOfCompilation();
             PDict dict = executeUncached(base);
             HashingStorage storage = dict.getDictStorage();
             if (storage instanceof EconomicMapStorage ems) {
-                HashingStorageDelItem.executeUncachedWithHash(ems, subclass, hash);
+                HashingStorageForEach.executeUncached(ems, new RemoveSubclassValue(), subclass);
+                clearEmptyReferences(ems);
             } else {
                 assert storage == EmptyStorage.INSTANCE : "Unexpected storage type!";
             }
         }
 
-        @Specialization
-        static PDict doPythonClass(PythonManagedClass obj) {
-            return obj.getSubClasses();
-        }
-
-        @Specialization
-        static PDict doPythonClass(Node inliningTarget, PythonBuiltinClassType obj) {
-            return PythonContext.get(inliningTarget).lookupType(obj).getSubClasses();
-        }
-
-        @Specialization
-        static PDict doNativeClass(Node inliningTarget, PythonAbstractNativeObject obj,
-                        @Cached(inline = false) CStructAccess.ReadObjectNode getTpSubclassesNode,
-                        @Cached InlinedExactClassProfile profile) {
-            Object tpSubclasses = getTpSubclassesNode.readFromObj(obj, PyTypeObject__tp_subclasses);
-
-            Object profiled = profile.profile(inliningTarget, tpSubclasses);
-            if (profiled instanceof PDict dict) {
-                return dict;
+        public static PDict executeUncached(PythonAbstractClass clazz) {
+            if (clazz instanceof PythonManagedClass mc) {
+                return mc.getSubClasses();
+            } else if (PythonNativeClass.isInstance(clazz)) {
+                Object tpSubclasses = CStructAccess.ReadObjectNode.getUncached().readFromObj(PythonNativeClass.cast(clazz), PyTypeObject__tp_subclasses);
+                if (tpSubclasses instanceof PDict dict) {
+                    return dict;
+                }
+                throw CompilerDirectives.shouldNotReachHere("invalid subclasses dict " + tpSubclasses.getClass().getName());
+            } else {
+                throw CompilerDirectives.shouldNotReachHere("unexpected value for GetSubclassesNode: " + clazz.getClass().getName());
             }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("invalid subclasses dict " + profiled.getClass().getName());
         }
     }
 
-    @GenerateUncached
-    @GenerateInline(true)
-    @GenerateCached(true)
-    public abstract static class GetSubclassesAsArrayNode extends Node {
-
+    public static final class GetSubclassesAsArrayNode {
         private static final PythonAbstractClass[] EMPTY = new PythonAbstractClass[0];
 
-        abstract PythonAbstractClass[] execute(Node inliningTarget, Object clazz);
-
-        public static PythonAbstractClass[] executeUncached(Object clazz) {
-            return GetSubclassesAsArrayNodeGen.getUncached().execute(null, clazz);
-        }
-
-        static final class PythonAbstractClassList {
-            final PythonAbstractClass[] subclasses;
-            int i;
-
-            PythonAbstractClassList(PythonAbstractClass[] subclasses) {
-                this.subclasses = subclasses;
-                this.i = 0;
-            }
-
-            void add(PythonAbstractClass clazz) {
-                subclasses[i++] = clazz;
-            }
-        }
-
-        @GenerateUncached
-        @GenerateInline(true)
-        abstract static class EachSubclassAdd extends HashingStorageForEachCallback<PythonAbstractClassList> {
-
+        static final class EachSubclassAdd extends HashingStorageForEachCallback<ArrayList<PythonAbstractClass>> {
             @Override
-            public abstract PythonAbstractClassList execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, PythonAbstractClassList subclasses);
-
-            @Specialization
-            static PythonAbstractClassList doIt(Node inliningTarget, HashingStorage storage, HashingStorageIterator it, PythonAbstractClassList subclasses,
-                            @Cached HashingStorageIteratorValue itValue) {
-                Object value = itValue.execute(inliningTarget, storage, it);
-                subclasses.add(PythonAbstractClass.cast(value));
+            public final ArrayList<PythonAbstractClass> execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ArrayList<PythonAbstractClass> subclasses) {
+                Object value = HashingStorageIteratorValue.executeUncached(storage, it);
+                PythonAbstractClass clazz = PythonAbstractClass.cast(((PReferenceType) value).getObject());
+                if (clazz != null) {
+                    subclasses.add(clazz);
+                }
                 return subclasses;
             }
         }
 
-        @Specialization
-        static PythonAbstractClass[] doTpSubclasses(Node inliningTarget, Object object,
-                        @Cached GetSubclassesNode getSubclassesNode,
-                        @Cached EachSubclassAdd eachNode,
-                        @Cached HashingStorageLen dictLen,
-                        @Cached HashingStorageForEach forEachNode) {
-            PDict subclasses = getSubclassesNode.execute(inliningTarget, object);
+        public static PythonAbstractClass[] executeUncached(Object object) {
+            PythonAbstractClass clazz;
+            if (object instanceof PythonBuiltinClassType bt) {
+                clazz = PythonContext.get(null).lookupType(bt);
+            } else {
+                clazz = PythonAbstractClass.cast(object);
+            }
+            PDict subclasses = GetSubclassesNode.executeUncached(clazz);
             if (subclasses == null) {
                 return EMPTY;
             }
-
             HashingStorage storage = subclasses.getDictStorage();
             if (storage == EmptyStorage.INSTANCE) {
                 return EMPTY;
             }
-
-            int size = dictLen.execute(inliningTarget, storage);
-            PythonAbstractClassList list = new PythonAbstractClassList(new PythonAbstractClass[size]);
-            forEachNode.execute(null, inliningTarget, storage, eachNode, list);
-            return list.subclasses;
+            ArrayList<PythonAbstractClass> list = new ArrayList<>();
+            HashingStorageForEach.executeUncached(storage, new EachSubclassAdd(), list);
+            return list.toArray(EMPTY);
         }
     }
 
@@ -1113,7 +1124,7 @@ public abstract class TypeNodes {
 
         @Specialization
         boolean isCompatible(VirtualFrame frame, Object oldBase, Object newBase,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile errorSlotsBranch,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached GetBaseClassNode getBaseClassNode) {
@@ -1403,8 +1414,7 @@ public abstract class TypeNodes {
             }
             typeIsNotBase.enter(inliningTarget);
 
-            Object typeSlots = getSlotsFromType(type, readAttr);
-            if (extraivars(type, base, typeSlots)) {
+            if (shapeDiffers(type, base, readAttr)) {
                 return type;
             } else {
                 return base;
@@ -1412,37 +1422,19 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private static boolean extraivars(Object type, Object base, Object typeSlots) {
+        static boolean shapeDiffers(Object type, Object base, ReadAttributeFromObjectNode readAttr) {
             if (NeedsNativeAllocationNode.executeUncached(type) || NeedsNativeAllocationNode.executeUncached(base)) {
-                // https://github.com/python/cpython/blob/v3.10.8/Objects/typeobject.c#L2218
                 long tSize = GetBasicSizeNode.executeUncached(type);
                 long bSize = GetBasicSizeNode.executeUncached(base);
+                if (tSize != bSize) {
+                    return true;
+                }
                 long tItemSize = GetItemSizeNode.executeUncached(type);
                 long bItemSize = GetItemSizeNode.executeUncached(base);
-
-                if (tItemSize != 0 || bItemSize != 0) {
-                    return tSize != bSize || tItemSize != bItemSize;
-                }
-
-                long flags = GetTypeFlagsNode.executeUncached(type);
-                long tDictOffset = GetDictOffsetNode.executeUncached(type);
-                long bDictOffset = GetDictOffsetNode.executeUncached(base);
-                long tWeakListOffset = GetWeakListOffsetNode.executeUncached(type);
-                long bWeakListOffset = GetWeakListOffsetNode.executeUncached(base);
-                if (tWeakListOffset != 0 && bWeakListOffset == 0 && tWeakListOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
-                    tSize -= SIZEOF_PY_OBJECT_PTR;
-                }
-                if ((flags & MANAGED_DICT) == 0 && tDictOffset != 0 && bDictOffset == 0 && tDictOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
-                    tSize -= SIZEOF_PY_OBJECT_PTR;
-                }
-                // Check weaklist again in case it precedes dict
-                if (tWeakListOffset != 0 && bWeakListOffset == 0 && tWeakListOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
-                    tSize -= SIZEOF_PY_OBJECT_PTR;
-                }
-
-                return tSize != bSize;
+                return tItemSize != bItemSize;
             }
 
+            Object typeSlots = getSlotsFromType(type, readAttr);
             if (typeSlots != null && length(typeSlots) != 0) {
                 return true;
             }
@@ -1812,7 +1804,7 @@ public abstract class TypeNodes {
 
         @Specialization
         static boolean doNativeClass(PythonAbstractNativeObject obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached IsTypeNode isType,
                         @Cached GetTypeFlagsNode getFlags) {
             if (isType.execute(inliningTarget, obj)) {
@@ -1877,7 +1869,7 @@ public abstract class TypeNodes {
         @Specialization
         @InliningCutoff
         protected static Shape doNativeClass(PythonAbstractNativeObject clazz,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode getTpDictNode,
                         @Cached HiddenAttr.ReadNode readAttrNode) {
             Object tpDictObj = getTpDictNode.readFromObj(clazz, CFields.PyTypeObject__tp_dict);
@@ -1898,7 +1890,7 @@ public abstract class TypeNodes {
         @Specialization(guards = {"!isManagedClass(clazz)", "!isPythonBuiltinClassType(clazz)"})
         @InliningCutoff
         protected static Shape doError(@SuppressWarnings("unused") Object clazz,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_GET_SHAPE_OF_NATIVE_CLS);
         }
 
@@ -1941,7 +1933,7 @@ public abstract class TypeNodes {
 
         @Specialization
         protected PythonClass makeType(VirtualFrame frame, PDict namespaceOrig, TruffleString name, PTuple bases, Object metaclass, PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorage.InitNode initNode,
                         @Cached HashingStorageGetItem getItemGlobals,
                         @Cached HashingStorageGetItem getItemNamespace,
@@ -1958,7 +1950,9 @@ public abstract class TypeNodes {
                         @Cached GetMroStorageNode getMroStorageNode,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raise,
-                        @Cached AllocateTypeWithMetaclassNode typeMetaclass) {
+                        @Cached ExceptionNodes.FormatNoteNode formatNoteNode,
+                        @Cached AllocateTypeWithMetaclassNode typeMetaclass,
+                        @Cached GetOrCreateDictNode getOrCreateDictNode) {
             PDict namespace = PFactory.createDict(language);
             namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
             PythonClass newType = typeMetaclass.execute(frame, name, bases, namespace, metaclass);
@@ -1998,6 +1992,17 @@ public abstract class TypeNodes {
                     throw raise.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_A_CELL, "__classcell__");
                 }
                 delItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__, namespace);
+            }
+
+            // set __classdict__ cell contents
+            Object classdictcell = getItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSDICTCELL__);
+            if (classdictcell != null) {
+                if (classdictcell instanceof PCell cell) {
+                    cell.setRef(getOrCreateDictNode.execute(inliningTarget, newType));
+                } else {
+                    throw raise.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_A_CELL, "__classdictcell__");
+                }
+                delItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSDICTCELL__, namespace);
             }
 
             // Initialization of the type slots:
@@ -2048,7 +2053,8 @@ public abstract class TypeNodes {
                     try {
                         callSetNameNode.execute(frame, setName, value, newType, key);
                     } catch (PException e) {
-                        throw raise.raiseWithCause(inliningTarget, PythonBuiltinClassType.RuntimeError, e, ErrorMessages.ERROR_CALLING_SET_NAME, value, key, newType);
+                        formatNoteNode.execute(frame, inliningTarget, e, ErrorMessages.ERROR_CALLING_SET_NAME, value, key, newType);
+                        throw e;
                     }
                 }
             }
@@ -2104,9 +2110,8 @@ public abstract class TypeNodes {
 
         @Specialization
         static PythonClass typeMetaclass(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespace, Object metaclass,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @Cached HashingStorageGetItem getHashingStorageItem,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached HashingStorageSetItemWithHash setHashingStorageItem,
                         @Cached GetOrCreateDictNode getOrCreateDictNode,
                         @Cached HashingStorageGetIterator getHashingStorageIterator,
@@ -2115,7 +2120,7 @@ public abstract class TypeNodes {
                         @Cached HashingStorageIteratorKeyHash hashingStorageItKeyHash,
                         @Cached HashingStorageIteratorValue hashingStorageItValue,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Cached InstancesOfTypeHaveDictNode hasDictNode,
+                        @Cached GetDictOffsetNode dictOffsetNode,
                         @Cached InstancesOfTypeHaveWeakrefsNode hasWeakrefsNode,
                         @Cached GetBestBaseClassNode getBestBaseNode,
                         @Cached GetIndexedSlotsCountNode getIndexedSlotsCountNode,
@@ -2182,8 +2187,9 @@ public abstract class TypeNodes {
             // 3.) invoke metaclass mro() method
             pythonClass.invokeMro(inliningTarget);
 
+            // see cpython://Objects/typeobject.c#type_new_slots
             // may_add_dict = base->tp_dictoffset == 0
-            ctx.mayAddDict = !hasDictNode.execute(base);
+            ctx.mayAddDict = dictOffsetNode.execute(inliningTarget, base) == 0;
             // may_add_weak = base->tp_weaklistoffset == 0 && base->tp_itemsize == 0
             boolean hasItemSize = getItemSize.execute(inliningTarget, base) != 0;
             ctx.mayAddWeak = !hasWeakrefsNode.execute(inliningTarget, base) && !hasItemSize;
@@ -2196,6 +2202,7 @@ public abstract class TypeNodes {
                     ctx.addWeak = true;
                 }
             } else {
+                // see cpython://Objects/typeobject.c#type_new_slots_impl
                 // have slots
                 // Make it into a list
                 SequenceStorage slotsStorage;
@@ -2383,24 +2390,15 @@ public abstract class TypeNodes {
             long dictOffset = GetDictOffsetNode.executeUncached(base);
             long weakListOffset = GetWeakListOffsetNode.executeUncached(base);
             long itemSize = GetItemSizeNode.executeUncached(base);
-            if (ctx.addDict && itemSize != 0) {
-                dictOffset = -SIZEOF_PY_OBJECT_PTR;
-                slotOffset += SIZEOF_PY_OBJECT_PTR;
+            if (ctx.addDict) {
+                long flags = GetTypeFlagsNode.executeUncached(pythonClass);
+                SetTypeFlagsNode.executeUncached(pythonClass, flags | MANAGED_DICT);
+                dictOffset = -1;
             }
             if (ctx.addWeak) {
                 weakListOffset = slotOffset;
-                slotOffset += SIZEOF_PY_OBJECT_PTR;
             }
-            if (ctx.addDict && itemSize == 0) {
-                long flags = GetTypeFlagsNode.executeUncached(pythonClass) | MANAGED_DICT;
-                SetTypeFlagsNode.executeUncached(pythonClass, flags);
-                /*
-                 * Negative offsets are computed from the end of the structure. Our managed dict is
-                 * right before the start of the object. CPython has 3 fields there, so our formula
-                 * differs.
-                 */
-                dictOffset = -slotOffset - SIZEOF_PY_OBJECT_PTR;
-            }
+
             SetDictOffsetNode.executeUncached(pythonClass, dictOffset);
             SetBasicSizeNode.executeUncached(pythonClass, slotOffset);
             SetItemSizeNode.executeUncached(pythonClass, itemSize);
@@ -2527,9 +2525,9 @@ public abstract class TypeNodes {
                 newSlots[j] = slotName;
                 // Passing 'null' frame is fine because the caller already transfers the exception
                 // state to the context.
-                if (!T___CLASSCELL__.equalsUncached(slotName, TS_ENCODING) && !T___QUALNAME__.equalsUncached(slotName, TS_ENCODING) &&
+                if (!T___CLASSCELL__.equalsUncached(slotName, TS_ENCODING) && !T___CLASSDICTCELL__.equalsUncached(slotName, TS_ENCODING) && !T___QUALNAME__.equalsUncached(slotName, TS_ENCODING) &&
                                 HashingStorageGetItem.hasKeyUncached(namespace.getDictStorage(), slotName)) {
-                    // __qualname__ and __classcell__ will be deleted later
+                    // __qualname__, __classcell__ and __classdictcell__ will be deleted later
                     throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.S_S_CONFLICTS_WITH_CLASS_VARIABLE, slotName, "__slots__");
                 }
                 j++;
@@ -2599,13 +2597,11 @@ public abstract class TypeNodes {
             // @formatter:off
             return switch (cls) {
                 case PBytes -> 1;
-                case PInt -> 4;
-                case PFrame, PMemoryView, PTuple, PStatResult, PTerminalSize, PUnameResult, PStructTime, PProfilerEntry,
-                        PProfilerSubentry, PStructPasswd, PStructRusage, PVersionInfo, PFlags, PFloatInfo,
-                        PIntInfo, PHashInfo, PThreadInfo, PUnraisableHookArgs, PIOBase, PFileIO, PBufferedIOBase,
-                        PBufferedReader, PBufferedWriter, PBufferedRWPair, PBufferedRandom, PIncrementalNewlineDecoder,
-                        PTextIOWrapper, CArgObject, CThunkObject, StgDict, Structure, Union, PyCPointer, PyCArray,
-                        PWindowsVersion, PyCData, SimpleCData, PyCFuncPtr, CField, DictRemover, StructParam -> 8;
+                case PCode -> 2;
+                case PInt, Boolean -> 4;
+                case PAsyncGenerator, PFlags, PHashInfo, PTuple, PCoroutine, PGenerator, PThreadInfo, PMemoryView,
+                     PStatResult, PUnameResult, PStructTime, PFloatInfo, PStatvfsResult, PIntInfo, PFrame,
+                     PTerminalSize, PUnraisableHookArgs -> 8;
                 case PythonClass -> 40;
                 default -> 0;
             };
@@ -2646,23 +2642,11 @@ public abstract class TypeNodes {
         static long lookup(Object cls,
                         @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
                         @Cached(inline = false) CExtNodes.LookupNativeI64MemberFromBaseNode lookup) {
-            long result = lookup.execute(cls, PyTypeObject__tp_dictoffset, DICTOFFSET, GetDictOffsetNode::getBuiltinDictoffset);
+            long result = lookup.execute(cls, PyTypeObject__tp_dictoffset, DICTOFFSET, PythonBuiltinClassType::getDictoffset);
             if (result == 0 && (getTypeFlagsNode.execute(cls) & TypeFlags.MANAGED_DICT) != 0) {
                 return MANAGED_DICT_OFFSET;
             }
             return result;
-        }
-
-        private static int getBuiltinDictoffset(PythonBuiltinClassType cls) {
-            if (!cls.isBuiltinWithDict()) {
-                return 0;
-            }
-            // TODO there are more builtins with dict
-            return switch (cls) {
-                case PBaseException, PythonModule -> 16;
-                case PythonClass -> 264;
-                default -> cls.getBase() != null ? getBuiltinDictoffset(cls.getBase()) : 0;
-            };
         }
     }
 

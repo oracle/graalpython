@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Double;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT_LIST;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_C_FUNCTION;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
@@ -67,7 +68,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINTPTR_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_INT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.WCHAR_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.allocfunc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.binaryfunc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.descrgetfunc;
@@ -299,6 +299,10 @@ public enum CFields {
     PyListObject__ob_item(PyObjectPtr),
     PyListObject__allocated(Py_ssize_t),
 
+    _PyLongValue__lv_tag(UINTPTR_T),
+    _PyLongValue__ob_digit(INT_LIST),
+    PyLongObject__long_value__lv_tag(UINTPTR_T),
+
     PyTupleObject__ob_item(PyObjectPtr),
 
     PyFloatObject__ob_fval(Double),
@@ -314,11 +318,9 @@ public enum CFields {
     PyASCIIObject__length(Py_ssize_t),
     PyASCIIObject__hash(Py_hash_t),
     PyASCIIObject__state(Int),
-    PyASCIIObject__wstr(WCHAR_T_PTR),
 
     PyCompactUnicodeObject__utf8_length(Py_ssize_t),
     PyCompactUnicodeObject__utf8(CharPtrAsTruffleString),
-    PyCompactUnicodeObject__wstr_length(Py_ssize_t),
 
     PyUnicodeObject__data(Pointer),
 
@@ -334,12 +336,13 @@ public enum CFields {
     PyMemberDef__flags(Int),
     PyMemberDef__doc(ConstCharPtr),
 
-    PyThreadState__curexc_type(PyObject),
-    PyThreadState__curexc_value(PyObject),
-    PyThreadState__curexc_traceback(PyObject),
+    PyThreadState__current_exception(PyObject),
     PyThreadState__dict(PyObject),
     PyThreadState__small_ints(PyObjectPtr),
     PyThreadState__gc(Pointer),
+    PyThreadState__py_recursion_limit(Int),
+    PyThreadState__py_recursion_remaining(Int),
+    PyThreadState__c_recursion_remaining(Int),
 
     GCState__enabled(Int),
     GCState__debug(Int),
@@ -366,7 +369,6 @@ public enum CFields {
     public static final int PyASCIIObject__state_kind_shift = 2;
     public static final int PyASCIIObject__state_compact_shift = 5;
     public static final int PyASCIIObject__state_ascii_shift = 6;
-    public static final int PyASCIIObject__state_ready_shift = 7;
 
     @CompilationFinal(dimensions = 1) public static final CFields[] VALUES = values();
 

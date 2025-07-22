@@ -190,7 +190,7 @@ def build_wheels(pip):
 
 
 def repair_wheels():
-    whls = glob("*graalpy*.whl")
+    whls = glob("*.whl")
     env = os.environ.copy()
     env["PYTHONUTF8"] = "1"
     env["PATH"] = abspath(dirname(sys.executable)) + os.pathsep + env["PATH"]

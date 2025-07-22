@@ -40,38 +40,63 @@
  */
 package com.oracle.graal.python.builtins.objects.tokenize;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NONBYTES;
+import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NON_STRING;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_ENCODING;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltinsClinicProviders.TokenizerIterNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.pegparser.tokenizer.CodePoints;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Token.Kind;
+import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
+import com.oracle.graal.python.pegparser.tokenizer.Tokenizer.StatusCode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTokenizerIter)
 public final class TokenizerIterBuiltins extends PythonBuiltins {
@@ -84,10 +109,12 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_new, isComplex = true)
-    @SlotSignature(name = "TokenizerIter", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "source"})
-    @ArgumentClinic(name = "source", conversion = ArgumentClinic.ClinicConversion.TString)
+    @SlotSignature(name = "TokenizerIter", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$cls", "readline"}, keywordOnlyNames = {"extra_tokens",
+                    "encoding"})
+    @ArgumentClinic(name = "extra_tokens", conversion = ClinicConversion.Boolean, defaultValue = "true")
+    @ArgumentClinic(name = "encoding", conversion = ClinicConversion.TString, useDefaultForNone = true, defaultValue = "PNone.NONE")
     @GenerateNodeFactory
-    public abstract static class TokenizerIterNode extends PythonBinaryClinicBuiltinNode {
+    abstract static class TokenizerIterNode extends PythonQuaternaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -95,10 +122,91 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static PTokenizerIter tokenizerIter(@SuppressWarnings("unused") Object cls, TruffleString source,
+        static PTokenizerIter tokenizerIterStr(Object cls, Object readline, boolean extraTokens, @SuppressWarnings("unused") PNone encoding,
                         @Bind PythonLanguage language,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-            return PFactory.createTokenizerIter(language, toJavaStringNode.execute(source));
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            Supplier<int[]> inputSupplier = () -> {
+                Object o;
+                try {
+                    o = CallNode.executeUncached(readline);
+                } catch (PException e) {
+                    e.expectUncached(PythonBuiltinClassType.StopIteration);
+                    return null;
+                }
+                TruffleString line;
+                try {
+                    line = CastToTruffleStringNode.executeUncached(o);
+                } catch (CannotCastException e) {
+                    throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.TypeError, RETURNED_NON_STRING, "readline()", o);
+                }
+                return getCodePoints(line);
+            };
+            return PFactory.createTokenizerIter(language, cls, getInstanceShape.execute(cls), inputSupplier, extraTokens);
+        }
+
+        @Specialization
+        static PTokenizerIter tokenizerIterBytes(Object cls, Object readline, boolean extraTokens, TruffleString encoding,
+                        @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached PRaiseNode raiseNode) {
+            Charset charset;
+            try {
+                charset = getCharset(Tokenizer.getNormalName(encoding.toJavaStringUncached()));
+            } catch (Exception e) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.LookupError, UNKNOWN_ENCODING, encoding);
+            }
+
+            Supplier<int[]> inputSupplier = () -> {
+                Object o;
+                try {
+                    o = CallNode.executeUncached(readline);
+                } catch (PException e) {
+                    e.expectUncached(PythonBuiltinClassType.StopIteration);
+                    return null;
+                }
+                if (!PyBytesCheckNode.executeUncached(o)) {
+                    throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.TypeError, RETURNED_NONBYTES, "readline()", o);
+                }
+
+                Object buffer;
+                try {
+                    buffer = PythonBufferAcquireLibrary.getUncached().acquireReadonly(o);
+                } catch (PException e) {
+                    throw PRaiseNode.raiseStatic(null, TypeError, EXPECTED_BYTESLIKE_GOT_P, o);
+                }
+                PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getUncached();
+                byte[] bytes;
+                int len;
+                try {
+                    bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                    len = bufferLib.getBufferLength(buffer);
+                } finally {
+                    bufferLib.release(buffer);
+                }
+                String line = charset.decode(ByteBuffer.wrap(bytes, 0, len)).toString();
+                return getCodePoints(TruffleString.fromJavaStringUncached(line, TS_ENCODING));
+            };
+            return PFactory.createTokenizerIter(language, cls, getInstanceShape.execute(cls), inputSupplier, extraTokens);
+        }
+
+        @TruffleBoundary
+        private static Charset getCharset(String s) {
+            return Charset.forName(s);
+        }
+
+        private static int[] getCodePoints(TruffleString ts) {
+            int len = ts.codePointLengthUncached(TS_ENCODING);
+            if (len == 0) {
+                return null;
+            }
+            int[] res = new int[len];
+            int i = 0;
+            TruffleStringIterator it = ts.createCodePointIteratorUncached(TS_ENCODING);
+            while (it.hasNext()) {
+                res[i++] = it.nextUncached();
+            }
+            return res;
         }
     }
 
@@ -115,37 +223,83 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NextNode extends TpIterNextBuiltin {
         private static final TruffleString T_EOF = tsLiteral("EOF");
+        private static final CodePoints CP_LF = CodePoints.fromBuffer(new int[]{'\n'}, 0, 1);
+        private static final CodePoints CP_CRLF = CodePoints.fromBuffer(new int[]{'\r', '\n'}, 0, 2);
 
         @Specialization
         static PTuple next(PTokenizerIter self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Bind Node inliningTarget,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayUTF32Node,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
-            Token token = self.getNextToken();
-            if (token.type == Kind.ERRORTOKEN || token.type == Kind.ENDMARKER) {
+            if (self.isDone()) {
                 throw raiseNode.raiseStopIteration(inliningTarget, T_EOF);
             }
-            int startColumn;
-            int endColumn;
-            if (token.type == Kind.INDENT || token.type == Kind.DEDENT) {
-                startColumn = -1;
-                endColumn = -1;
-            } else {
-                startColumn = token.sourceRange.startColumn;
-                endColumn = token.sourceRange.endColumn;
+            EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
+            Node encapsulatingNode = encapsulating.set(inliningTarget);
+            Token token;
+            try {
+                token = self.getNextToken();
+            } finally {
+                encapsulating.set(encapsulatingNode);
             }
+            CodePoints tokenCp = self.getTokenCodePoints(token);
+            int type = token.type;
+            boolean isTrailingToken = false;
+            if (type == Kind.ENDMARKER || (type == Kind.DEDENT && self.tokenizer.getDone() == StatusCode.EOF)) {
+                isTrailingToken = true;
+            }
+            TruffleString line = self.tokenizer.isExtraTokens() && isTrailingToken ? TS_ENCODING.getEmpty() : self.getLine(token, fromIntArrayUTF32Node, switchEncodingNode);
+
+            int startLine = token.sourceRange.startLine;
+            int endLine = token.sourceRange.endLine;
+            int startColumn = token.sourceRange.startColumn;
+            int endColumn = token.sourceRange.endColumn;
             if (token.type == Kind.NEWLINE) {
                 endColumn--;
             }
+            if (self.tokenizer.isExtraTokens()) {
+                if (isTrailingToken) {
+                    startLine += 1;
+                    endLine += 1;
+                    startColumn = 0;
+                    endColumn = 0;
+                }
+
+                if (type > Kind.DEDENT && type < Kind.OP) {
+                    type = Kind.OP;
+                } else if (type == Kind.ASYNC || type == Kind.AWAIT) {
+                    type = Kind.NAME;
+                } else if (type == Kind.NEWLINE) {
+                    if (!self.tokenizer.isImplicitNewline()) {
+                        if (!tokenCp.isEmpty() && tokenCp.get(0) == '\r') {
+                            tokenCp = CP_CRLF;
+                        } else {
+                            tokenCp = CP_LF;
+                        }
+                    } else {
+                        tokenCp = CodePoints.EMPTY;
+                    }
+                    endColumn++;
+                } else if (type == Kind.NL) {
+                    if (self.tokenizer.isImplicitNewline()) {
+                        tokenCp = CodePoints.EMPTY;
+                    }
+                }
+            } else if (type == Kind.INDENT || type == Kind.DEDENT) {
+                startColumn = -1;
+                endColumn = -1;
+            } else if (type == Kind.NEWLINE) {
+                tokenCp = CodePoints.EMPTY;
+            }
+
             return PFactory.createTuple(language, new Object[]{
-                            fromJavaStringNode.execute(self.getTokenString(token), TS_ENCODING),
-                            token.type,
-                            token.sourceRange.startLine,
-                            token.sourceRange.endLine,
-                            startColumn,
-                            endColumn,
-                            fromJavaStringNode.execute(self.getLine(token), TS_ENCODING)
+                            type,
+                            switchEncodingNode.execute(fromIntArrayUTF32Node.execute(tokenCp.getBuffer(), tokenCp.getOffset(), tokenCp.getLength()), TS_ENCODING),
+                            PFactory.createTuple(language, new Object[]{startLine, startColumn}),
+                            PFactory.createTuple(language, new Object[]{endLine, endColumn}),
+                            line
             });
         }
     }

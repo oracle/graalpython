@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ITER;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
@@ -97,7 +98,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
     public abstract static class GrouperNode extends PythonTernaryBuiltinNode {
         @Specialization
         static PGrouper construct(Object cls, Object parent, Object tgtKey,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile wrongTypeProfile,
                         @Cached InlinedConditionProfile isPGroupByProfile,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
@@ -127,7 +128,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PGrouper self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyIterNextNode nextNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectRichCompareBool eqNode,
@@ -159,9 +160,10 @@ public final class GrouperBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "currValueIsSelf(self)")
         static Object reduce(PGrouper self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple = PFactory.createTuple(language, new Object[]{self.getParent(), self.getTgtKey()});
             return PFactory.createTuple(language, new Object[]{type, tuple});
@@ -169,7 +171,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!currValueIsSelf(self)")
         Object reduceCurrNotSelf(VirtualFrame frame, @SuppressWarnings("unused") PGrouper self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Bind PythonLanguage language) {
             PythonModule builtins = getContext().getCore().lookupBuiltinModule(BuiltinNames.T_BUILTINS);

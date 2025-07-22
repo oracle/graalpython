@@ -105,7 +105,7 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
     abstract static class GetSetReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         TruffleString repr(GetSetDescriptor descr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("gerName") @Cached GetNameNode getName,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             return simpleTruffleStringFormatNode.format("<attribute '%s' of '%s' objects>", descr.getName(), getName.execute(inliningTarget, descr.getType()));
@@ -113,7 +113,7 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString repr(IndexedSlotDescriptor descr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("gerName") @Cached GetNameNode getName,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             return simpleTruffleStringFormatNode.format("<attribute '%s' of '%s' objects>", descr.getName(), getName.execute(inliningTarget, descr.getType()));
@@ -131,7 +131,7 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(obj)")
         static Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached DescriptorCheckNode descriptorCheckNode,
                         @Shared @Cached DescrGetNode getNode) {
             descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getName(), obj);
@@ -140,7 +140,7 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(obj)")
         static Object doIndexedSlotDescriptor(VirtualFrame frame, IndexedSlotDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached DescriptorCheckNode descriptorCheckNode,
                         @Shared @Cached DescrGetNode getNode) {
             descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getName(), obj);
@@ -153,7 +153,7 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
     abstract static class DescrSet extends DescrSetBuiltinNode {
         @Specialization(guards = "!isNoValue(value)")
         static void doDescriptorSet(VirtualFrame frame, Object descr, Object obj, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile isGetSetDescrProfile,
                         @Shared @Cached DescriptorCheckNode descriptorCheckNode,
                         @Cached DescrSetNode setNode) {
@@ -175,7 +175,7 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static void doDescriptorDel(VirtualFrame frame, Object descr, Object obj, @SuppressWarnings("unused") Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile isGetSetDescrProfile,
                         @Shared @Cached DescriptorCheckNode descriptorCheckNode,
                         @Cached DescrDeleteNode deleteNode) {

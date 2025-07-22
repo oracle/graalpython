@@ -63,6 +63,7 @@ final class AstState {
     static final TruffleString T_F_ATTR = tsLiteral("attr");
     static final TruffleString T_F_BASES = tsLiteral("bases");
     static final TruffleString T_F_BODY = tsLiteral("body");
+    static final TruffleString T_F_BOUND = tsLiteral("bound");
     static final TruffleString T_F_CASES = tsLiteral("cases");
     static final TruffleString T_F_CAUSE = tsLiteral("cause");
     static final TruffleString T_F_CLS = tsLiteral("cls");
@@ -128,6 +129,7 @@ final class AstState {
     static final TruffleString T_F_TYPE = tsLiteral("type");
     static final TruffleString T_F_TYPE_COMMENT = tsLiteral("type_comment");
     static final TruffleString T_F_TYPE_IGNORES = tsLiteral("type_ignores");
+    static final TruffleString T_F_TYPE_PARAMS = tsLiteral("type_params");
     static final TruffleString T_F_UPPER = tsLiteral("upper");
     static final TruffleString T_F_VALUE = tsLiteral("value");
     static final TruffleString T_F_VALUES = tsLiteral("values");
@@ -209,6 +211,7 @@ final class AstState {
     static final TruffleString T_C_NOTEQ = tsLiteral("NotEq");
     static final TruffleString T_C_NOTIN = tsLiteral("NotIn");
     static final TruffleString T_C_OR = tsLiteral("Or");
+    static final TruffleString T_C_PARAMSPEC = tsLiteral("ParamSpec");
     static final TruffleString T_C_PASS = tsLiteral("Pass");
     static final TruffleString T_C_POW = tsLiteral("Pow");
     static final TruffleString T_C_RSHIFT = tsLiteral("RShift");
@@ -224,7 +227,10 @@ final class AstState {
     static final TruffleString T_C_TRY = tsLiteral("Try");
     static final TruffleString T_C_TRYSTAR = tsLiteral("TryStar");
     static final TruffleString T_C_TUPLE = tsLiteral("Tuple");
+    static final TruffleString T_C_TYPEALIAS = tsLiteral("TypeAlias");
     static final TruffleString T_C_TYPEIGNORE = tsLiteral("TypeIgnore");
+    static final TruffleString T_C_TYPEVAR = tsLiteral("TypeVar");
+    static final TruffleString T_C_TYPEVARTUPLE = tsLiteral("TypeVarTuple");
     static final TruffleString T_C_UADD = tsLiteral("UAdd");
     static final TruffleString T_C_USUB = tsLiteral("USub");
     static final TruffleString T_C_UNARYOP = tsLiteral("UnaryOp");
@@ -248,6 +254,7 @@ final class AstState {
     static final TruffleString T_T_PATTERN = tsLiteral("pattern");
     static final TruffleString T_T_STMT = tsLiteral("stmt");
     static final TruffleString T_T_TYPE_IGNORE = tsLiteral("type_ignore");
+    static final TruffleString T_T_TYPE_PARAM = tsLiteral("type_param");
     static final TruffleString T_T_UNARYOP = tsLiteral("unaryop");
     static final TruffleString T_T_WITHITEM = tsLiteral("withitem");
 
@@ -264,6 +271,7 @@ final class AstState {
     final PythonClass clsReturn;
     final PythonClass clsDelete;
     final PythonClass clsAssign;
+    final PythonClass clsTypeAlias;
     final PythonClass clsAugAssign;
     final PythonClass clsAnnAssign;
     final PythonClass clsFor;
@@ -338,6 +346,10 @@ final class AstState {
     final PythonClass clsMatchOr;
     final PythonClass clsTypeIgnoreTy;
     final PythonClass clsTypeIgnore;
+    final PythonClass clsTypeParamTy;
+    final PythonClass clsTypeVar;
+    final PythonClass clsParamSpec;
+    final PythonClass clsTypeVarTuple;
 
     final PythonClass clsLoad;
     final PythonObject singletonLoad;
@@ -455,12 +467,13 @@ final class AstState {
                         tsa(),
                         tsa(T_F_LINENO, T_F_COL_OFFSET, T_F_END_LINENO, T_F_END_COL_OFFSET),
                         tsa(T_F_END_LINENO, T_F_END_COL_OFFSET),
-                        ts("stmt = FunctionDef(identifier name, arguments args, stmt* body, expr* decorator_list, expr? returns, string? type_comment)\n" +
-                        "     | AsyncFunctionDef(identifier name, arguments args, stmt* body, expr* decorator_list, expr? returns, string? type_comment)\n" +
-                        "     | ClassDef(identifier name, expr* bases, keyword* keywords, stmt* body, expr* decorator_list)\n" +
+                        ts("stmt = FunctionDef(identifier name, arguments args, stmt* body, expr* decorator_list, expr? returns, string? type_comment, type_param* type_params)\n" +
+                        "     | AsyncFunctionDef(identifier name, arguments args, stmt* body, expr* decorator_list, expr? returns, string? type_comment, type_param* type_params)\n" +
+                        "     | ClassDef(identifier name, expr* bases, keyword* keywords, stmt* body, expr* decorator_list, type_param* type_params)\n" +
                         "     | Return(expr? value)\n" +
                         "     | Delete(expr* targets)\n" +
                         "     | Assign(expr* targets, expr value, string? type_comment)\n" +
+                        "     | TypeAlias(expr name, type_param* type_params, expr value)\n" +
                         "     | AugAssign(expr target, operator op, expr value)\n" +
                         "     | AnnAssign(expr target, expr annotation, expr? value, int simple)\n" +
                         "     | For(expr target, expr iter, stmt* body, stmt* orelse, string? type_comment)\n" +
@@ -486,26 +499,26 @@ final class AstState {
 
         // StmtTy.FunctionDef
         clsFunctionDef = factory.makeType(T_C_FUNCTIONDEF, clsStmtTy,
-                        tsa(T_F_NAME, T_F_ARGS, T_F_BODY, T_F_DECORATOR_LIST, T_F_RETURNS, T_F_TYPE_COMMENT),
+                        tsa(T_F_NAME, T_F_ARGS, T_F_BODY, T_F_DECORATOR_LIST, T_F_RETURNS, T_F_TYPE_COMMENT, T_F_TYPE_PARAMS),
                         null,
                         tsa(T_F_RETURNS, T_F_TYPE_COMMENT),
-                        ts("FunctionDef(identifier name, arguments args, stmt* body, expr* decorator_list, expr? returns, string? type_comment)")
+                        ts("FunctionDef(identifier name, arguments args, stmt* body, expr* decorator_list, expr? returns, string? type_comment, type_param* type_params)")
         );
 
         // StmtTy.AsyncFunctionDef
         clsAsyncFunctionDef = factory.makeType(T_C_ASYNCFUNCTIONDEF, clsStmtTy,
-                        tsa(T_F_NAME, T_F_ARGS, T_F_BODY, T_F_DECORATOR_LIST, T_F_RETURNS, T_F_TYPE_COMMENT),
+                        tsa(T_F_NAME, T_F_ARGS, T_F_BODY, T_F_DECORATOR_LIST, T_F_RETURNS, T_F_TYPE_COMMENT, T_F_TYPE_PARAMS),
                         null,
                         tsa(T_F_RETURNS, T_F_TYPE_COMMENT),
-                        ts("AsyncFunctionDef(identifier name, arguments args, stmt* body, expr* decorator_list, expr? returns, string? type_comment)")
+                        ts("AsyncFunctionDef(identifier name, arguments args, stmt* body, expr* decorator_list, expr? returns, string? type_comment, type_param* type_params)")
         );
 
         // StmtTy.ClassDef
         clsClassDef = factory.makeType(T_C_CLASSDEF, clsStmtTy,
-                        tsa(T_F_NAME, T_F_BASES, T_F_KEYWORDS, T_F_BODY, T_F_DECORATOR_LIST),
+                        tsa(T_F_NAME, T_F_BASES, T_F_KEYWORDS, T_F_BODY, T_F_DECORATOR_LIST, T_F_TYPE_PARAMS),
                         null,
                         tsa(),
-                        ts("ClassDef(identifier name, expr* bases, keyword* keywords, stmt* body, expr* decorator_list)")
+                        ts("ClassDef(identifier name, expr* bases, keyword* keywords, stmt* body, expr* decorator_list, type_param* type_params)")
         );
 
         // StmtTy.Return
@@ -530,6 +543,14 @@ final class AstState {
                         null,
                         tsa(T_F_TYPE_COMMENT),
                         ts("Assign(expr* targets, expr value, string? type_comment)")
+        );
+
+        // StmtTy.TypeAlias
+        clsTypeAlias = factory.makeType(T_C_TYPEALIAS, clsStmtTy,
+                        tsa(T_F_NAME, T_F_TYPE_PARAMS, T_F_VALUE),
+                        null,
+                        tsa(),
+                        ts("TypeAlias(expr name, type_param* type_params, expr value)")
         );
 
         // StmtTy.AugAssign
@@ -1443,6 +1464,40 @@ final class AstState {
                         null,
                         tsa(),
                         ts("TypeIgnore(int lineno, string tag)")
+        );
+
+        // TypeParamTy
+        clsTypeParamTy = factory.makeType(T_T_TYPE_PARAM, clsAst,
+                        tsa(),
+                        tsa(T_F_LINENO, T_F_COL_OFFSET, T_F_END_LINENO, T_F_END_COL_OFFSET),
+                        tsa(),
+                        ts("type_param = TypeVar(identifier name, expr? bound)\n" +
+                        "           | ParamSpec(identifier name)\n" +
+                        "           | TypeVarTuple(identifier name)")
+        );
+
+        // TypeParamTy.TypeVar
+        clsTypeVar = factory.makeType(T_C_TYPEVAR, clsTypeParamTy,
+                        tsa(T_F_NAME, T_F_BOUND),
+                        null,
+                        tsa(T_F_BOUND),
+                        ts("TypeVar(identifier name, expr? bound)")
+        );
+
+        // TypeParamTy.ParamSpec
+        clsParamSpec = factory.makeType(T_C_PARAMSPEC, clsTypeParamTy,
+                        tsa(T_F_NAME),
+                        null,
+                        tsa(),
+                        ts("ParamSpec(identifier name)")
+        );
+
+        // TypeParamTy.TypeVarTuple
+        clsTypeVarTuple = factory.makeType(T_C_TYPEVARTUPLE, clsTypeParamTy,
+                        tsa(T_F_NAME),
+                        null,
+                        tsa(),
+                        ts("TypeVarTuple(identifier name)")
         );
     }
 

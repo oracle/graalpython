@@ -94,7 +94,7 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
     abstract static class KeyWrapperRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
         boolean doCompare(VirtualFrame frame, PKeyWrapper self, PKeyWrapper other, RichCmpOp op,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached PyObjectRichCompare richCompareNode,
                         @Cached PyObjectIsTrueNode isTrueNode) {
@@ -105,7 +105,7 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static boolean fallback(Object self, Object other, RichCmpOp op,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, OTHER_ARG_MUST_BE_KEY);
         }
     }

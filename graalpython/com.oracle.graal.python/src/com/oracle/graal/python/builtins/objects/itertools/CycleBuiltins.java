@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
 import static com.oracle.graal.python.nodes.ErrorMessages.STATE_ARGUMENT_D_MUST_BE_A_S;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
@@ -113,7 +114,7 @@ public final class CycleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PCycle construct(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
@@ -153,7 +154,7 @@ public final class CycleBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PCycle self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyIterNextNode nextNode,
                         @Cached InlinedBranchProfile iterableProfile,
                         @Cached InlinedBranchProfile firstPassProfile) {
@@ -207,9 +208,10 @@ public final class CycleBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "hasIterable(self)")
         static Object reduce(PCycle self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached GetClassNode getClass,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object type = getClass.execute(inliningTarget, self);
             PTuple iterableTuple = PFactory.createTuple(language, new Object[]{self.getIterable()});
             PTuple tuple = PFactory.createTuple(language, new Object[]{getSavedList(self, language), self.isFirstpass()});
@@ -218,7 +220,7 @@ public final class CycleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!hasIterable(self)")
         static Object reduceNoIterable(VirtualFrame frame, PCycle self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached GetClassNode getClass,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached CallUnaryMethodNode callNode,
@@ -257,13 +259,14 @@ public final class CycleBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object setState(VirtualFrame frame, PCycle self, Object state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached GetItemNode getItemNode,
                         @Cached IsBuiltinObjectProfile isTypeErrorProfile,
                         @Cached ToArrayNode toArrayNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PRaiseNode raiseNode) {
+            warnPickleDeprecated();
             if (!((state instanceof PTuple) && ((int) lenNode.execute(frame, state) == 2))) {
                 throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "2-tuple");
             }

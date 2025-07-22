@@ -71,7 +71,7 @@ public final class ContextvarsModuleBuiltins extends PythonBuiltins {
     public abstract static class GetDefaultEncodingNode extends PythonBuiltinNode {
         @Specialization
         protected static PContextVarsContext copyCtx(
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyContextCopyCurrent copyCurrent) {
             return copyCurrent.execute(inliningTarget);
         }

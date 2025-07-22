@@ -63,7 +63,7 @@ public abstract class GetAExitCoroNode extends PNodeWithContext {
 
     @Specialization
     int exit(VirtualFrame virtualFrame, int stackTopIn,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CallQuaternaryMethodNode callExit,
                     @Cached GetClassNode getClassNode,
                     @Cached ExceptionNodes.GetTracebackNode getTracebackNode) {

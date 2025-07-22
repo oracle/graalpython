@@ -219,7 +219,8 @@ class PosixTests(unittest.TestCase):
             def __fspath__(self):
                 return bytearray(b'.')
 
-        os.close(os.open(bytearray(b'.'), 0))
+        with self.assertRaisesRegex(TypeError, r"path should be string, bytes or os.PathLike, not bytearray"):
+            os.open(bytearray(b'.'), 0)
         with self.assertRaisesRegex(TypeError, r"expected C.__fspath__\(\) to return str or bytes, not bytearray"):
             os.open(C(), 0)
 
@@ -379,7 +380,6 @@ class WithTempFilesTests(unittest.TestCase):
         with open(TEST_FULL_PATH2, 0) as fd:           # follows symlink
             self.assertEqual(inode, os.fstat(fd).st_ino)
 
-    @unittest.skipIf(__graalpython__.posix_module_backend() == 'java', 'statvfs emulation is not supported')
     def test_statvfs(self):
         res = os.statvfs(TEST_FULL_PATH1)
         with open(TEST_FULL_PATH1, 0) as fd:
@@ -601,13 +601,9 @@ class ScandirTests(unittest.TestCase):
         with os.scandir(os.fsencode(TEST_FULL_PATH1 + '/')) as dir:
             self.assertEqual(os.fsencode(self.abc_path), next(dir).path)
 
-    def test_scandir_entry_path_bufferlike(self):
-        with os.scandir(array.array('B', os.fsencode(TEST_FULL_PATH1))) as dir:
-            entry = next(dir)
-        self.assertEqual("<DirEntry b'.abc'>", repr(entry))
-        self.assertEqual(b'.abc', entry.name)
-        self.assertEqual(os.fsencode(self.abc_path), entry.path)
-        self.assertEqual(os.fsencode(self.abc_path), os.fspath(entry))
+    def test_scandir_invalid_type(self):
+        with self.assertRaisesRegex(TypeError, r"path should be string, bytes, os.PathLike, integer or None, not array"):
+            os.scandir(array.array('B', os.fsencode(TEST_FULL_PATH1)))
 
     def test_scandir_entry_path_fd(self):
         with open(TEST_FULL_PATH1, 0) as fd:

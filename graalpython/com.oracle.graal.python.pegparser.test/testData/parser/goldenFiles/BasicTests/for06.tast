@@ -45,7 +45,7 @@ Module[1:0-11:4]
                         Call[6:6-6:20]
                             Target: Name[6:6-6:11] Value: "print"
                             Args:
-                                RAW[6:12-6:19] Value: "jedna"
+                                CODEPOINTS[6:12-6:19] Value: "jedna"
                         Break[7:6-7:11]
                     Else:
                         Call[9:6-9:14]

@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToBy
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -78,8 +77,8 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     private final byte[] formatBytes;
     private final int bytesLength;
 
-    public BytesFormatProcessor(Python3Core core, TupleBuiltins.GetItemNode getTupleItemNode, byte[] formatBytes, int bytesLength, Node raisingNode) {
-        super(core, getTupleItemNode, new BytesFormattingBuffer(), raisingNode);
+    public BytesFormatProcessor(Python3Core core, byte[] formatBytes, int bytesLength, Node raisingNode) {
+        super(core, new BytesFormattingBuffer(), raisingNode);
         this.formatBytes = formatBytes;
         this.bytesLength = bytesLength;
     }

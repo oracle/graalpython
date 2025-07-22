@@ -102,7 +102,7 @@ public final class NtModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object getfullpathname(Object path,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyOSFSPathNode fsPathNode,
                         @Cached CastToJavaStringNode castStr) {
             // TODO should call win api

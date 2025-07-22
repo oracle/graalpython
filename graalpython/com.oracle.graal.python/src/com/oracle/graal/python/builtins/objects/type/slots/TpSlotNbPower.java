@@ -211,7 +211,7 @@ public final class TpSlotNbPower {
         @SuppressWarnings("unused")
         static Object callPythonAsTernary(VirtualFrame frame, TpSlotReversiblePython slot,
                         Object v, Object vType, Object w, TpSlot wSlot, Object wType, Object z, boolean sameTypes,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetCachedTpSlotsNode getSelfSlotsNode,
                         @Cached TernaryPythonSlotDispatcherNode dispatcherNode,
                         @Cached InlinedBranchProfile notImplementedProfile) {

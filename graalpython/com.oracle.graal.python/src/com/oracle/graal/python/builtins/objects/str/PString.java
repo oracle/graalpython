@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -157,7 +157,7 @@ public final class PString extends PSequence {
 
     @ExportMessage
     String asString(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("materialize") @Cached StringMaterializeNode stringMaterializeNode,
                     @Shared("gil") @Cached GilNode gil,
                     @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
@@ -166,7 +166,7 @@ public final class PString extends PSequence {
 
     @ExportMessage
     TruffleString asTruffleString(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("materialize") @Cached StringMaterializeNode stringMaterializeNode,
                     @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -179,7 +179,7 @@ public final class PString extends PSequence {
 
     @ExportMessage
     Object readArrayElement(long index,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CastToTruffleStringNode cast,
                     @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                     @Shared("gil") @Cached GilNode gil) {

@@ -310,7 +310,7 @@ public class PBaseException extends PythonObject {
 
     @ExportMessage
     ExceptionType getExceptionType(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached GetClassNode getClassNode,
                     @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -358,7 +358,7 @@ public class PBaseException extends PythonObject {
     @ExportMessage
     int getExceptionExitStatus(
                     @Cached CastToJavaIntExactNode castToInt,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached GetClassNode getClassNode,
                     @Cached ReadAttributeFromPythonObjectNode readNode,
                     @Exclusive @Cached InlinedBranchProfile unsupportedProfile,
@@ -396,7 +396,7 @@ public class PBaseException extends PythonObject {
 
     @ExportMessage
     Object getExceptionCause(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached InlinedBranchProfile unsupportedProfile) throws UnsupportedMessageException {
         if (cause != null) {
             return cause;

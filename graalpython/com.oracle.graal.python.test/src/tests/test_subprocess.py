@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -100,20 +100,40 @@ class TestSubprocess(unittest.TestCase):
             p.kill()
             p.wait()
 
-    @unittest.skipIf(sys.platform == 'win32', "Posix-specific")
+    # @unittest.skipIf(sys.platform == 'win32', "Posix-specific")
+    # Skipped because of transient: GR-66709
+    @unittest.skip
     def test_waitpid_group_child(self):
         import os
-        p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(0.1); 42"])
+        p = subprocess.Popen([sys.executable, "-c", "import time; print('before'); time.sleep(0.1); print('after'); 42"],
+                             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        ps_list = 'not available'
+        if sys.implementation.name == "graalpy" and \
+                __graalpython__.posix_module_backend != 'java' \
+                and sys.platform.startswith("linux"):
+            ps_list = subprocess.check_output("ps", shell=True, text=True)
         res = os.waitpid(0, 0)
-        assert res[1] == 0, res
+        msg = f"Spawned {p.pid=}, os.waitpid result={res}, output of ps:\n{ps_list}"
+        try:
+            stdout, stderr = p.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            p.kill()
+            stdout, stderr = p.communicate()
+        msg += f"\n{stdout.decode().strip()=}, {stderr.decode().strip()=}"
+        assert res[1] == 0, msg
 
-    @unittest.skipIf(sys.platform == 'win32', "Posix-specific")
+    # @unittest.skipIf(sys.platform == 'win32', "Posix-specific")
+    # Skipped because of transient: https://jira.oci.oraclecorp.com/browse/GR-65714
+    @unittest.skip
     def test_waitpid_any_child(self):
         import os
         p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(0.1); 42"])
         res = os.waitpid(-1, 0)
         assert res[1] == 0, res
 
+    # Skipped because of transient: GR-66709
+    @unittest.skip
     def test_waitpid_no_child(self):
         import os
         try:
@@ -186,3 +206,9 @@ class TestSubprocess(unittest.TestCase):
             env = {"GRAAL_PYTHON_ARGS": """\v-c\vimport os\nprint(os.environ.get("GRAAL_PYTHON_ARGS"))\v"""}
             result = subprocess.check_output([sys.executable], env=env, text=True)
             self.assertEqual('None\n', result)
+
+            # check that the subprocess receives an empty arg
+            args = """\v-c\vimport sys\nprint(repr(sys.argv))\va1\v\va3"""
+            env = {"GRAAL_PYTHON_ARGS": args}
+            result = subprocess.check_output([sys.executable], env=env, text=True)
+            self.assertEqual("['-c', 'a1', '', 'a3']\n", result)

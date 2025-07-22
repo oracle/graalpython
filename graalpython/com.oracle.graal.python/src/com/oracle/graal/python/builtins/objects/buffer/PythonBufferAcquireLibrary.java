@@ -115,11 +115,11 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * node which is an ancestor of the library.
      */
     public final Object acquireReadonly(Object receiver, VirtualFrame frame, IndirectCallData indirectCallData) {
-        Object savedState = IndirectCallContext.enter(frame, indirectCallData);
+        Object savedState = IndirectCallContext.enter(frame, this, indirectCallData);
         try {
             return acquire(receiver, BufferFlags.PyBUF_SIMPLE);
         } finally {
-            IndirectCallContext.exit(frame, indirectCallData, savedState);
+            IndirectCallContext.exit(frame, this, indirectCallData, savedState);
         }
     }
 
@@ -165,11 +165,11 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * node which is an ancestor of the library.
      */
     public final Object acquireWritable(Object receiver, VirtualFrame frame, IndirectCallData indirectCallData) {
-        Object savedState = IndirectCallContext.enter(frame, indirectCallData);
+        Object savedState = IndirectCallContext.enter(frame, this, indirectCallData);
         try {
             return acquire(receiver, BufferFlags.PyBUF_WRITABLE);
         } finally {
-            IndirectCallContext.exit(frame, indirectCallData, savedState);
+            IndirectCallContext.exit(frame, this, indirectCallData, savedState);
         }
     }
 
@@ -198,13 +198,13 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * acquisition produced.
      */
     public final Object acquireWritableWithTypeError(Object receiver, String callerName, VirtualFrame frame, IndirectCallData indirectCallData) {
-        Object savedState = IndirectCallContext.enter(frame, indirectCallData);
+        Object savedState = IndirectCallContext.enter(frame, this, indirectCallData);
         try {
             return acquireWritable(receiver);
         } catch (PException e) {
             throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P, callerName, receiver);
         } finally {
-            IndirectCallContext.exit(frame, indirectCallData, savedState);
+            IndirectCallContext.exit(frame, this, indirectCallData, savedState);
         }
     }
 
@@ -234,11 +234,11 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * library.
      */
     public final Object acquire(Object receiver, int flags, VirtualFrame frame, IndirectCallData indirectCallData) {
-        Object savedState = IndirectCallContext.enter(frame, indirectCallData);
+        Object savedState = IndirectCallContext.enter(frame, this, indirectCallData);
         try {
             return acquire(receiver, flags);
         } finally {
-            IndirectCallContext.exit(frame, indirectCallData, savedState);
+            IndirectCallContext.exit(frame, this, indirectCallData, savedState);
         }
     }
 

@@ -191,7 +191,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     abstract static class ParametersNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object parameters(PGenericAlias self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile createProfile) {
             if (self.getParameters() == null) {
                 createProfile.enter(inliningTarget);
@@ -239,7 +239,12 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
                 if (i > 0) {
                     sb.appendStringUncached(SEPARATOR);
                 }
-                reprItem(sb, SequenceStorageNodes.GetItemScalarNode.executeUncached(argsStorage, i));
+                Object p = SequenceStorageNodes.GetItemScalarNode.executeUncached(argsStorage, i);
+                if (p instanceof PList list) {
+                    reprItemsList(sb, list);
+                } else {
+                    reprItem(sb, p);
+                }
             }
             if (argsStorage.length() == 0) {
                 // for something like tuple[()] we should print a "()"
@@ -258,6 +263,19 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
             }
             GenericTypeNodes.reprItem(sb, obj);
         }
+
+        private static void reprItemsList(TruffleStringBuilder sb, PList list) {
+            sb.appendCodePointUncached('[');
+            SequenceStorage storage = list.getSequenceStorage();
+            for (int i = 0; i < storage.length(); i++) {
+                if (i > 0) {
+                    sb.appendStringUncached(SEPARATOR);
+                }
+                Object p = SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i);
+                reprItem(sb, p);
+            }
+            sb.appendCodePointUncached(']');
+        }
     }
 
     @Slot(value = SlotKind.tp_hash, isComplex = true)
@@ -265,7 +283,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     abstract static class HashNode extends HashBuiltinNode {
         @Specialization
         static long hash(VirtualFrame frame, PGenericAlias self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectHashNode hashOrigin,
                         @Cached PyObjectHashNode hashArgs) {
             long h0 = hashOrigin.execute(frame, inliningTarget, self.getOrigin());
@@ -280,7 +298,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     abstract static class CallMethodNode extends PythonVarargsBuiltinNode {
         @Specialization
         static Object call(VirtualFrame frame, PGenericAlias self, Object[] args, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached PyObjectSetAttr setAttr,
                         @Cached IsBuiltinObjectProfile typeErrorProfile,
@@ -304,7 +322,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
         @Specialization
         @ExplodeLoop
         static Object getattribute(VirtualFrame frame, PGenericAlias self, Object nameObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached PyObjectGetAttr getAttr,
@@ -329,7 +347,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     abstract static class EqNode extends RichCmpBuiltinNode {
         @Specialization(guards = "op.isEqOrNe()")
         static boolean eq(VirtualFrame frame, PGenericAlias self, PGenericAlias other, RichCmpOp op,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectRichCompareBool eqOrigin,
                         @Cached PyObjectRichCompareBool eqArgs) {
             if (self.isStarred() != other.isStarred()) {
@@ -364,7 +382,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object check(PGenericAlias self, Object other,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ISINSTANCE_ARG_2_CANNOT_BE_A_PARAMETERIZED_GENERIC);
         }
     }
@@ -375,7 +393,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object check(PGenericAlias self, Object other,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ISSUBCLASS_ARG_2_CANNOT_BE_A_PARAMETERIZED_GENERIC);
         }
     }
@@ -385,7 +403,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reduce(VirtualFrame frame, PGenericAlias self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyObjectGetAttr getAttr,
@@ -408,7 +426,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static Object dir(PGenericAlias self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectDir dir,
                         @Cached PySequenceContainsNode containsNode,
                         @Cached ListNodes.AppendNode appendNode) {
@@ -427,7 +445,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     abstract static class GetItemNode extends MpSubscriptBuiltinNode {
         @Specialization
         static Object getitem(PGenericAlias self, Object item,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language) {
             if (self.getParameters() == null) {
                 self.setParameters(PFactory.createTuple(language, GenericTypeNodes.makeParameters(self.getArgs())));
@@ -443,7 +461,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     abstract static class TypingUnpackedTupleArgsNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PGenericAlias self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TypeNodes.IsSameTypeNode isSameTypeNode) {
             if (self.isStarred() && isSameTypeNode.execute(inliningTarget, self.getOrigin(), PythonBuiltinClassType.PTuple)) {
                 return self.getArgs();

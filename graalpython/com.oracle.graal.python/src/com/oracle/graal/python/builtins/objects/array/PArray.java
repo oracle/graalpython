@@ -346,7 +346,7 @@ public final class PArray extends PythonBuiltinObject {
 
     @ExportMessage
     public Object readArrayElement(long index,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItem,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
@@ -364,7 +364,7 @@ public final class PArray extends PythonBuiltinObject {
 
     @ExportMessage
     public void writeArrayElement(long index, Object value,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
                     @Exclusive @Cached PForeignToPTypeNode convert,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
@@ -383,7 +383,7 @@ public final class PArray extends PythonBuiltinObject {
 
     @ExportMessage
     public void removeArrayElement(long index,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
@@ -430,7 +430,7 @@ public final class PArray extends PythonBuiltinObject {
 
     @ExportMessage
     Object getNativePointer(
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PySequenceArrayWrapper.ToNativeStorageNode toNativeStorageNode) {
         NativeSequenceStorage newStorage = toNativeStorageNode.execute(inliningTarget, storage, true);
         setSequenceStorage(newStorage);

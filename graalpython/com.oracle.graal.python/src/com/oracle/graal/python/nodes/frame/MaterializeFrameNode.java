@@ -85,23 +85,17 @@ public abstract class MaterializeFrameNode extends Node {
         return MaterializeFrameNodeGen.getUncached();
     }
 
-    public final PFrame execute(boolean markAsEscaped, Frame frameToMaterialize) {
-        return execute(markAsEscaped, false, frameToMaterialize);
-    }
-
-    public final PFrame execute(boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
-        PFrame.Reference info = PArguments.getCurrentFrameInfo(frameToMaterialize);
-        assert info != null && info.getCallNode() != null : "cannot materialize a frame without location information";
-        Node callNode = info.getCallNode();
-        return execute(callNode, markAsEscaped, forceSync, frameToMaterialize);
-    }
-
-    public final PFrame execute(Frame frame, boolean markAsEscaped) {
-        return execute(markAsEscaped, frame);
-    }
-
     public final PFrame execute(Frame frame, Node location, boolean markAsEscaped, boolean forceSync) {
         return execute(location, markAsEscaped, forceSync, frame);
+    }
+
+    public final PFrame executeOnStack(boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
+        PFrame.Reference info = PArguments.getCurrentFrameInfo(frameToMaterialize);
+        Node location = info.getRootNode();
+        if (location instanceof PBytecodeDSLRootNode rootNode) {
+            location = rootNode.getBytecodeNode();
+        }
+        return execute(location, markAsEscaped, forceSync, frameToMaterialize);
     }
 
     public abstract PFrame execute(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize);
@@ -149,7 +143,7 @@ public abstract class MaterializeFrameNode extends Node {
 
     @Specialization(guards = "getPFrame(frameToMaterialize) != null")
     static PFrame alreadyEscapedFrame(@SuppressWarnings("unused") Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode,
                     @Cached InlinedConditionProfile syncProfile) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
@@ -181,10 +175,9 @@ public abstract class MaterializeFrameNode extends Node {
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
             BytecodeNode bytecodeNode = BytecodeNode.get(location);
             if (bytecodeNode == null) {
-                /**
-                 * Sometimes we don't have a precise location (see
-                 * {@link ReadCallerFrameNode#getFrame}). Set bci to -1 to mark the location as
-                 * unknown.
+                /*
+                 * Sometimes we don't have a precise location (see {@link
+                 * ReadCallerFrameNode#getFrame}). Set bci to -1 to mark the location as unknown.
                  */
                 pyFrame.setBci(-1);
                 pyFrame.setLocation(location);

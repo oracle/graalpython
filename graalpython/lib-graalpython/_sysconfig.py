@@ -86,6 +86,8 @@ def _get_posix_vars():
     g['CFLAGS_DEFAULT'] = ' '.join(cflags_default)
     g['CFLAGS'] = ' '.join(cflags_default + [gnu_source])
     g['LDFLAGS'] = ""
+    g['LIBS'] = ""
+    g['SYSLIBS'] = ""
     g['CCSHARED'] = fpic
     if darwin_native:
         # MACOSX_DEPLOYMENT_TARGET is taken from the minimum version we build
@@ -125,6 +127,7 @@ def _get_posix_vars():
     g['LIBDIR'] = __graalpython__.capi_home
     g['LIBDEST'] = __graalpython__.capi_home
     g['LDLIBRARY'] = 'libpython.' + so_abi + so_ext
+    g['LIBPL'] = __graalpython__.capi_home.replace(os.path.sep, '/')
     return g
 
 

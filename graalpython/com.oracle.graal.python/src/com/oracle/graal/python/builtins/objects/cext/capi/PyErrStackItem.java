@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -94,7 +94,7 @@ public final class PyErrStackItem extends PythonStructNativeWrapper {
 
     @ExportMessage
     Object readMember(String key,
-                    @Bind("$node") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached GetClassNode getClassNode,
                     @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                     @Cached PythonToNativeNode toSulongNode) {
@@ -132,7 +132,7 @@ public final class PyErrStackItem extends PythonStructNativeWrapper {
     }
 
     @ExportMessage
-    void toNative(@Bind("$node") Node inliningTarget,
+    void toNative(@Bind Node inliningTarget,
                     @Cached InlinedConditionProfile isNativeProfile) {
         if (!isNative(inliningTarget, isNativeProfile)) {
             // TODO(fa): not yet implemented

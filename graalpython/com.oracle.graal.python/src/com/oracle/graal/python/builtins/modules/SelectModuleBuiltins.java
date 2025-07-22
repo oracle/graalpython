@@ -122,7 +122,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
     abstract static class SelectNode extends PythonBuiltinNode {
         @Specialization
         static PTuple doGeneric(VirtualFrame frame, Object rlist, Object wlist, Object xlist, Object timeout,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile isNotNoneTimeout,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached PyObjectSizeNode sizeNode,

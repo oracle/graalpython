@@ -100,7 +100,7 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
          */
         @Specialization
         static Object detach(@SuppressWarnings("unused") Object self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, T_DETACH);
         }
     }
@@ -115,7 +115,7 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static Object read(Object self, Object args,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, T_READ);
         }
     }
@@ -130,7 +130,7 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static Object read1(Object self, Object args,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, T_READ1);
         }
     }
@@ -147,8 +147,8 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
          */
         @Specialization
         Object readinto(VirtualFrame frame, Object self, Object buffer,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached InlinedConditionProfile isBytes,
@@ -219,7 +219,7 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static Object write(Object self, Object args,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, T_WRITE);
         }
     }

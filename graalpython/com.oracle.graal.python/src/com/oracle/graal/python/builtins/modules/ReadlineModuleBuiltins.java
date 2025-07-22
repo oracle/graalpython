@@ -138,7 +138,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class ReadInitNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PNone setCompleter(@SuppressWarnings("unused") PythonModule self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.OSError, ErrorMessages.NOT_IMPLEMENTED);
         }
     }
@@ -174,7 +174,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class ReplaceItemNode extends PythonTernaryBuiltinNode {
         @Specialization
         TruffleString setCompleter(PythonModule self, int index, PString string,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode) {
             return setCompleter(self, index, castToStringNode.execute(inliningTarget, string));
         }
@@ -211,7 +211,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class AddHistoryNode extends PythonBinaryBuiltinNode {
         @Specialization
         static PNone addHistory(PythonModule self, PString item,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode) {
             return addHistory(self, castToStringNode.execute(inliningTarget, item));
         }
@@ -230,7 +230,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class ReadHistoryFileNode extends PythonBinaryBuiltinNode {
         @Specialization
         PNone setCompleter(PythonModule self, PString path,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode) {
             return setCompleter(self, castToStringNode.execute(inliningTarget, path));
         }
@@ -259,7 +259,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class WriteHistoryFileNode extends PythonBinaryBuiltinNode {
         @Specialization
         PNone setCompleter(PythonModule self, PString path,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode) {
             return setCompleter(self, castToStringNode.execute(inliningTarget, path));
         }

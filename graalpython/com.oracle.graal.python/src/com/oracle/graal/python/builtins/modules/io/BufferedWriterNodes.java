@@ -94,7 +94,7 @@ public class BufferedWriterNodes {
          */
         @Specialization
         static int bufferedWriterWrite(VirtualFrame frame, @SuppressWarnings("unused") Node ignored, PBuffered self, Object buffer,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached AbstractBufferedIOBuiltins.LazyRaiseBlockingIOError raiseBlockingIOError,
                         @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
@@ -257,7 +257,7 @@ public class BufferedWriterNodes {
          */
         @Specialization
         protected static void bufferedwriterFlushUnlocked(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached AbstractBufferedIOBuiltins.LazyRaiseBlockingIOError raiseBlockingIOError,
                         @Cached RawWriteNode rawWriteNode,
                         @Cached BufferedIONodes.RawSeekNode rawSeekNode) {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -208,6 +208,5 @@ TESTNAME(PyObject *error(const char*))
         Py_DECREF(Py_None);
     }
 
-    Py_INCREF(Py_None);
-    return Py_None;
+    return Py_NewRef(Py_None);
 }

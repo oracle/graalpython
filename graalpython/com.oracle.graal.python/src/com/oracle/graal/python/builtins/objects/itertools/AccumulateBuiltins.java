@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
@@ -97,7 +98,7 @@ public final class AccumulateBuiltins extends PythonBuiltins {
 
         @Specialization
         protected static PAccumulate construct(VirtualFrame frame, Object cls, Object iterable, Object func, Object initial,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PyObjectGetIter getIter) {
@@ -124,7 +125,7 @@ public final class AccumulateBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PAccumulate self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectSlotsNode getSlots,
                         @Cached CallSlotTpIterNextNode callIterNext,
                         @Cached PyNumberAddNode addNode,
@@ -160,7 +161,7 @@ public final class AccumulateBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object reduceNoFunc(VirtualFrame frame, PAccumulate self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached InlinedBranchProfile hasInitialProfile,
                         @Cached InlinedBranchProfile totalNoneProfile,
@@ -168,6 +169,7 @@ public final class AccumulateBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile elseProfile,
                         @Cached PyObjectGetIter getIter,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object func = self.getFunc();
             if (func == null) {
                 func = PNone.NONE;
@@ -219,6 +221,7 @@ public final class AccumulateBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object setState(PAccumulate self, Object state) {
+            warnPickleDeprecated();
             self.setTotal(state);
             return PNone.NONE;
         }

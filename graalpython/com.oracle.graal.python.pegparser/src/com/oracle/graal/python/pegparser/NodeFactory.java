@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,15 +60,20 @@ import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.ExprTy.FormattedValue;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.OperatorTy;
 import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
-import com.oracle.graal.python.pegparser.sst.StringLiteralUtils;
+import com.oracle.graal.python.pegparser.sst.StmtTy.TypeAlias;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy.TypeIgnore;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.ParamSpec;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVar;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVarTuple;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
@@ -162,12 +167,20 @@ public class NodeFactory {
         }
     }
 
-    public ExprTy createConstant(ConstantValue value, SourceRange sourceRange) {
+    public ExprTy createJoinedStr(ExprTy[] values, SourceRange sourceRange) {
+        return new ExprTy.JoinedStr(values, sourceRange);
+    }
+
+    public ExprTy.Constant createConstant(ConstantValue value, SourceRange sourceRange) {
         return new ExprTy.Constant(value, null, sourceRange);
     }
 
-    public ExprTy createString(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ErrorCallback errorCb, PythonStringFactory<?> stringFactory, int featureVersion) {
-        return StringLiteralUtils.createStringLiteral(values, sourceRanges, exprParser, errorCb, stringFactory, featureVersion);
+    public ExprTy.Constant createConstant(ConstantValue value, Object kind, SourceRange sourceRange) {
+        return new ExprTy.Constant(value, kind, sourceRange);
+    }
+
+    public ExprTy.FormattedValue createFormattedValue(ExprTy value, int conversion, ExprTy formatSpec, SourceRange sourceRange) {
+        return new FormattedValue(value, conversion, formatSpec, sourceRange);
     }
 
     public ExprTy createUnaryOp(UnaryOpTy op, ExprTy value, SourceRange sourceRange) {
@@ -321,21 +334,21 @@ public class NodeFactory {
         return new ExprTy.GeneratorExp(name, generators, sourceRange);
     }
 
-    public StmtTy createFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy returns, String typeComment, SourceRange sourceRange) {
-        return new StmtTy.FunctionDef(name, args, body, null, returns, typeComment, sourceRange);
+    public StmtTy createFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy returns, String typeComment, TypeParamTy[] typeParams, SourceRange sourceRange) {
+        return new StmtTy.FunctionDef(name, args, body, null, returns, typeComment, typeParams, sourceRange);
     }
 
     public StmtTy createFunctionDefWithDecorators(StmtTy funcDef, ExprTy[] decorators) {
         if (funcDef instanceof StmtTy.AsyncFunctionDef) {
             StmtTy.AsyncFunctionDef f = (StmtTy.AsyncFunctionDef) funcDef;
-            return new StmtTy.AsyncFunctionDef(f.name, f.args, f.body, decorators, f.returns, f.typeComment, f.getSourceRange());
+            return new StmtTy.AsyncFunctionDef(f.name, f.args, f.body, decorators, f.returns, f.typeComment, f.typeParams, f.getSourceRange());
         }
         StmtTy.FunctionDef f = (StmtTy.FunctionDef) funcDef;
-        return new StmtTy.FunctionDef(f.name, f.args, f.body, decorators, f.returns, f.typeComment, f.getSourceRange());
+        return new StmtTy.FunctionDef(f.name, f.args, f.body, decorators, f.returns, f.typeComment, f.typeParams, f.getSourceRange());
     }
 
-    public StmtTy createAsyncFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy returns, String typeComment, SourceRange sourceRange) {
-        return new StmtTy.AsyncFunctionDef(name, args, body, null, returns, typeComment, sourceRange);
+    public StmtTy createAsyncFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy returns, String typeComment, TypeParamTy[] typeParams, SourceRange sourceRange) {
+        return new StmtTy.AsyncFunctionDef(name, args, body, null, returns, typeComment, typeParams, sourceRange);
     }
 
     public StmtTy createWhile(ExprTy condition, StmtTy[] block, StmtTy[] elseBlock, SourceRange sourceRange) {
@@ -370,16 +383,16 @@ public class NodeFactory {
         return new ExprTy.Lambda(args, body, sourceRange);
     }
 
-    public StmtTy createClassDef(ExprTy name, ExprTy call, StmtTy[] body, SourceRange sourceRange) {
+    public StmtTy createClassDef(ExprTy name, ExprTy call, StmtTy[] body, TypeParamTy[] typeParams, SourceRange sourceRange) {
         return new StmtTy.ClassDef(((ExprTy.Name) name).id,
                         call == null ? EMPTY_EXPR_ARRAY : ((ExprTy.Call) call).args,
                         call == null ? AbstractParser.EMPTY_KEYWORD_ARRAY : ((ExprTy.Call) call).keywords,
-                        body, null, sourceRange);
+                        body, null, typeParams, sourceRange);
     }
 
     public StmtTy createClassDef(StmtTy proto, ExprTy[] decorators, @SuppressWarnings("unused") SourceRange sourceRange) {
         StmtTy.ClassDef classdef = (StmtTy.ClassDef) proto;
-        return new StmtTy.ClassDef(classdef.name, classdef.bases, classdef.keywords, classdef.body, decorators, classdef.getSourceRange());
+        return new StmtTy.ClassDef(classdef.name, classdef.bases, classdef.keywords, classdef.body, decorators, classdef.typeParams, classdef.getSourceRange());
     }
 
     public StmtTy createNonLocal(String[] names, SourceRange sourceRange) {
@@ -492,5 +505,21 @@ public class NodeFactory {
 
     public PatternTy createMatchOr(PatternTy[] patterns, SourceRange sourceRange) {
         return new PatternTy.MatchOr(patterns, sourceRange);
+    }
+
+    public TypeAlias createTypeAlias(ExprTy name, TypeParamTy[] typeParams, ExprTy value, SourceRange sourceRange) {
+        return new TypeAlias(name, typeParams, value, sourceRange);
+    }
+
+    public TypeVar createTypeVar(String name, ExprTy bound, SourceRange sourceRange) {
+        return new TypeVar(name, bound, sourceRange);
+    }
+
+    public TypeVarTuple createTypeVarTuple(String name, SourceRange sourceRange) {
+        return new TypeVarTuple(name, sourceRange);
+    }
+
+    public ParamSpec createParamSpec(String name, SourceRange sourceRange) {
+        return new ParamSpec(name, sourceRange);
     }
 }

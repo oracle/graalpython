@@ -84,7 +84,7 @@ public abstract class PrepareExceptionNode extends Node {
 
     @Specialization(guards = "check.execute(inliningTarget, exc)")
     static Object doException(PythonAbstractNativeObject exc, @SuppressWarnings("unused") PNone value,
-                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check) {
         return exc;
     }
@@ -92,13 +92,13 @@ public abstract class PrepareExceptionNode extends Node {
     @Specialization(guards = {"check.execute(inliningTarget, exc)", "!isPNone(value)"})
     static Object doException(@SuppressWarnings("unused") PBaseException exc, @SuppressWarnings("unused") Object value,
                     @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
     }
 
     @Specialization(guards = {"isTypeNode.execute(inliningTarget, type)", "!isPNone(value)", "!isPTuple(value)"}, limit = "1")
     static Object doExceptionOrCreate(VirtualFrame frame, Object type, Object value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
                     @Exclusive @Cached PyExceptionInstanceCheckNode check,
                     @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
@@ -121,7 +121,7 @@ public abstract class PrepareExceptionNode extends Node {
 
     @Specialization(guards = "isTypeNode.execute(this, type)", limit = "1")
     static Object doCreate(VirtualFrame frame, Object type, @SuppressWarnings("unused") PNone value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
                     @Exclusive @Cached PyExceptionInstanceCheckNode check,
                     @Shared @Cached IsSubtypeNode isSubtypeNode,
@@ -138,7 +138,7 @@ public abstract class PrepareExceptionNode extends Node {
 
     @Specialization(guards = "isTypeNode.execute(inliningTarget, type)", limit = "1")
     static Object doCreateTuple(VirtualFrame frame, Object type, PTuple value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
                     @Exclusive @Cached PyExceptionInstanceCheckNode check,
                     @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
@@ -157,7 +157,7 @@ public abstract class PrepareExceptionNode extends Node {
 
     @Specialization(guards = "fallbackGuard(type, inliningTarget, isTypeNode)", limit = "1")
     static Object doError(Object type, @SuppressWarnings("unused") Object value,
-                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode) {
         throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX, type);
     }

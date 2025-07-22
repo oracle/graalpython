@@ -100,7 +100,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
     abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doObject(VirtualFrame frame, Object value, Object index,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetItem getItem) {
             return getItem.execute(frame, inliningTarget, value, index);
         }
@@ -111,7 +111,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
     abstract static class ConcatNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doObject(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PySequenceConcatNode concatNode) {
             return concatNode.execute(frame, inliningTarget, left, right);
         }
@@ -122,7 +122,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
     abstract static class IConcatNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doObject(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PySequenceInPlaceConcatNode concatNode) {
             return concatNode.execute(frame, inliningTarget, left, right);
         }
@@ -145,8 +145,8 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean compare(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached CastToJavaStringNode cast,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
@@ -159,7 +159,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
                 if (!bufferAcquireLib.hasBuffer(left) || !bufferAcquireLib.hasBuffer(right)) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, left, right);
                 }
-                Object savedState = IndirectCallContext.enter(frame, indirectCallData);
+                Object savedState = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
                 Object leftBuffer = bufferAcquireLib.acquireReadonly(left);
                 try {
                     Object rightBuffer = bufferAcquireLib.acquireReadonly(right);
@@ -170,7 +170,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
                     }
                 } finally {
                     bufferLib.release(leftBuffer);
-                    IndirectCallContext.exit(frame, indirectCallData, savedState);
+                    IndirectCallContext.exit(frame, inliningTarget, indirectCallData, savedState);
                 }
             }
         }
@@ -210,7 +210,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object asIndex(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberIndexNode index) {
             return index.execute(frame, inliningTarget, value);
         }

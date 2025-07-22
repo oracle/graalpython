@@ -91,8 +91,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PyErrFetchNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PyErrOccurredNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolvePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.UnicodeFromFormatNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
@@ -113,7 +111,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeW
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ClearCurrentExceptionNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
@@ -126,8 +123,6 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
-import com.oracle.graal.python.builtins.objects.exception.GetUnreifiedExceptionNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -138,7 +133,6 @@ import com.oracle.graal.python.builtins.objects.module.ModuleGetNameNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -201,7 +195,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
@@ -253,7 +246,7 @@ public abstract class CExtNodes {
 
         @Specialization
         Object callNativeConstructor(Object object, Object arg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PythonToNativeNode toSulongNode,
                         @Cached NativeToPythonTransferNode toJavaNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
@@ -344,7 +337,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static Double doDouble(PythonAbstractNativeObject object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetPythonObjectClassNode getClass,
                         @Cached IsSubtypeNode isSubtype,
                         @Cached CStructAccess.ReadDoubleNode read) {
@@ -480,7 +473,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object doPString(PString str, boolean allocatePyMem,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Shared @Cached TruffleString.CopyToByteArrayNode toBytes,
                         @Shared @Cached TruffleString.SwitchEncodingNode switchEncoding,
@@ -507,7 +500,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object doBytes(PBytes bytes, boolean allocatePyMem,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached SequenceStorageNodes.ToByteArrayNode toBytesNode,
                         @Shared @Cached CStructAccess.AllocateNode alloc,
                         @Shared @Cached CStructAccess.WriteByteNode write) {
@@ -516,7 +509,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object doBytes(PByteArray bytes, boolean allocatePyMem,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached SequenceStorageNodes.ToByteArrayNode toBytesNode,
                         @Shared @Cached CStructAccess.AllocateNode alloc,
                         @Shared @Cached CStructAccess.WriteByteNode write) {
@@ -846,7 +839,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object doWithoutContext(NativeCAPISymbol symbol, Object[] args,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
             try {
@@ -999,7 +992,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static long doSingleContext(Object cls, CFields nativeMember, HiddenAttr managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached HiddenAttr.ReadNode readAttrNode,
                         @Cached CStructAccess.ReadI64Node getTypeMemberNode,
@@ -1035,68 +1028,6 @@ public abstract class CExtNodes {
         }
     }
 
-    @GenerateInline
-    @GenerateCached(false)
-    @GenerateUncached
-    public abstract static class PyErrOccurredNode extends Node {
-
-        public static Object executeUncached(PythonThreadState threadState) {
-            return PyErrOccurredNodeGen.getUncached().execute(null, threadState);
-        }
-
-        public abstract Object execute(Node inliningTarget, PythonThreadState threadState);
-
-        @Specialization
-        static Object doGeneric(Node inliningTarget, PythonThreadState threadState,
-                        @Cached GetClassNode getClassNode,
-                        @Cached GetUnreifiedExceptionNode getUnreifiedExceptionNode) {
-            AbstractTruffleException currentException = threadState.getCurrentException();
-            if (currentException != null) {
-                // getClassNode acts as a branch profile
-                return getClassNode.execute(inliningTarget, getUnreifiedExceptionNode.execute(inliningTarget, currentException));
-            }
-            return null;
-        }
-    }
-
-    public record ExceptionState(Object type, Object value, Object traceback) {
-    }
-
-    @GenerateInline
-    @GenerateCached(false)
-    @GenerateUncached
-    public abstract static class PyErrFetchNode extends Node {
-
-        public static ExceptionState executeUncached(PythonThreadState threadState) {
-            return PyErrFetchNodeGen.getUncached().execute(null, threadState);
-        }
-
-        public abstract ExceptionState execute(Node inliningTarget, PythonThreadState threadState);
-
-        @Specialization
-        static ExceptionState doGeneric(Node inliningTarget, PythonThreadState threadState,
-                        @Cached GetClassNode getClassNode,
-                        @Cached MaterializeLazyTracebackNode materializeTraceback,
-                        @Cached GetEscapedExceptionNode getEscapedExceptionNode,
-                        @Cached ClearCurrentExceptionNode clearCurrentExceptionNode) {
-            AbstractTruffleException currentException = threadState.getCurrentException();
-            if (currentException == null) {
-                /*
-                 * This should be caught in native by checking 'PyErr_Occurred' and avoiding the
-                 * upcall. But let's be defensive and treat that case on a slow path.
-                 */
-                return null;
-            }
-            Object exception = getEscapedExceptionNode.execute(inliningTarget, currentException);
-            Object traceback = null;
-            if (threadState.getCurrentTraceback() != null) {
-                traceback = materializeTraceback.execute(inliningTarget, threadState.getCurrentTraceback());
-            }
-            clearCurrentExceptionNode.execute(inliningTarget, threadState);
-            return new ExceptionState(getClassNode.execute(inliningTarget, exception), exception, traceback);
-        }
-    }
-
     @GenerateUncached
     @GenerateCached
     @GenerateInline(false)
@@ -1121,29 +1052,29 @@ public abstract class CExtNodes {
         public abstract int executeInt(Frame frame, int errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments);
 
         @Specialization
-        static int doInt(Frame frame, int errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments,
-                        @Bind("this") Node inliningTarget,
+        static int doInt(int errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            raiseNative(frame, inliningTarget, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
+            raiseNative(inliningTarget, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
             return errorValue;
         }
 
         @Specialization
-        static Object doObject(Frame frame, Object errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments,
-                        @Bind("this") Node inliningTarget,
+        static Object doObject(Object errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments,
+                        @Bind Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            raiseNative(frame, inliningTarget, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
+            raiseNative(inliningTarget, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
             return errorValue;
         }
 
-        private static void raiseNative(Frame frame, Node inliningTarget, PythonBuiltinClassType errType, TruffleString format, Object[] arguments, PRaiseNode raiseNode,
+        private static void raiseNative(Node inliningTarget, PythonBuiltinClassType errType, TruffleString format, Object[] arguments, PRaiseNode raiseNode,
                         TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 throw raiseNode.raise(inliningTarget, errType, format, arguments);
             } catch (PException p) {
-                transformExceptionToNativeNode.execute(frame, inliningTarget, p);
+                transformExceptionToNativeNode.execute(inliningTarget, p);
             }
         }
 
@@ -1334,19 +1265,37 @@ public abstract class CExtNodes {
     }
 
     /**
-     * Depending on the object's type, the size may need to be computed in very different ways. E.g.
-     * any PyVarObject usually returns the number of contained elements.
+     * Calculate the lv_tag of PyLongObject.
      */
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
-    public abstract static class ObSizeNode extends PNodeWithContext {
+    public abstract static class LvTagNode extends PNodeWithContext {
+
+        private static final int SIGN_ZERO = 1;
+        private static final int SIGN_NEGATIVE = 2;
+        private static final int NON_SIZE_BITS = 3;
 
         public abstract long execute(Node inliningTarget, Object object);
 
+        public long getDigitCount(Node inliningTarget, Object object) {
+            return execute(inliningTarget, object) >> NON_SIZE_BITS;
+        }
+
+        static long toLvTag(long x, boolean isNegative) {
+            int sign = 0;
+            if (x == 0) {
+                return SIGN_ZERO;
+            }
+            if (isNegative) {
+                sign = SIGN_NEGATIVE;
+            }
+            return x << NON_SIZE_BITS | sign;
+        }
+
         @Specialization
         static long doBoolean(boolean object) {
-            return object ? 1 : 0;
+            return toLvTag(object ? 1 : 0, false);
         }
 
         @Specialization
@@ -1357,21 +1306,33 @@ public abstract class CExtNodes {
         @Specialization
         static long doLong(long object) {
             long t = PInt.abs(object);
-            int sign = object < 0 ? -1 : 1;
+            boolean sign = object < 0;
             int size = 0;
             while (t != 0) {
                 ++size;
                 t >>>= PYLONG_BITS_IN_DIGIT.intValue();
             }
-            return size * sign;
+            return toLvTag(size, sign);
         }
 
         @Specialization
         static long doPInt(PInt object) {
             int bw = PYLONG_BITS_IN_DIGIT.intValue();
             int len = (PInt.bitLength(object.abs()) + bw - 1) / bw;
-            return object.isNegative() ? -len : len;
+            return toLvTag(len, object.isNegative());
         }
+    }
+
+    /**
+     * Depending on the object's type, the size may need to be computed in very different ways. E.g.
+     * any PyVarObject usually returns the number of contained elements.
+     */
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class ObSizeNode extends PNodeWithContext {
+
+        public abstract long execute(Node inliningTarget, Object object);
 
         @Specialization
         static long doPythonNativeVoidPtr(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
@@ -1671,6 +1632,7 @@ public abstract class CExtNodes {
         // according to definitions in 'moduleobject.h'
         static final int SLOT_PY_MOD_CREATE = 1;
         static final int SLOT_PY_MOD_EXEC = 2;
+        static final int SLOT_PY_MOD_MULTIPLE_INTERPRETERS = 3;
 
     }
 
@@ -1705,7 +1667,7 @@ public abstract class CExtNodes {
         @Specialization
         @TruffleBoundary
         static Object doGeneric(CApiContext capiContext, ModuleSpec moduleSpec, Object moduleDefWrapper, Object library,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached CStructAccess.ReadPointerNode readPointer,
                         @Cached CStructAccess.ReadI64Node readI64,
@@ -1762,6 +1724,10 @@ public abstract class CExtNodes {
                             break;
                         case SLOT_PY_MOD_EXEC:
                             hasExecutionSlots = true;
+                            break;
+                        case SLOT_PY_MOD_MULTIPLE_INTERPRETERS:
+                            // ignored
+                            // (mq) TODO: handle multiple interpreter cases
                             break;
                         default:
                             throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.MODULE_USES_UNKNOW_SLOT_ID, mName, slotId);
@@ -1847,7 +1813,7 @@ public abstract class CExtNodes {
         @Specialization
         @TruffleBoundary
         static int doGeneric(CApiContext capiContext, PythonModule module, Object moduleDef,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ModuleGetNameNode getNameNode,
                         @Cached CStructAccess.ReadI64Node readI64,
                         @Cached CStructAccess.AllocateNode alloc,
@@ -1910,6 +1876,10 @@ public abstract class CExtNodes {
                             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
                             transformExceptionFromNativeNode.execute(inliningTarget, threadState, mName, iResult != 0, true, ErrorMessages.EXECUTION_FAILED_WITHOUT_EXCEPTION,
                                             ErrorMessages.EXECUTION_RAISED_EXCEPTION);
+                            break;
+                        case SLOT_PY_MOD_MULTIPLE_INTERPRETERS:
+                            // ignored
+                            // (mq) TODO: handle multiple interpreter cases
                             break;
                         default:
                             throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.MODULE_INITIALIZED_WITH_UNKNOWN_SLOT, mName, slotId);

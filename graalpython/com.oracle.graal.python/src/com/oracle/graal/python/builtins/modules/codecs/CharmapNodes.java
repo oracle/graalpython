@@ -196,7 +196,7 @@ public final class CharmapNodes {
 
         @Specialization
         static byte[] doLatin1(TruffleString src, TruffleString errors, PNone mapping,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             // TODO latin1
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, toTruffleStringUncached("latin1"));
         }
@@ -363,9 +363,9 @@ public final class CharmapNodes {
 
         @Specialization(limit = "3")
         static TruffleString decodeLatin1(VirtualFrame frame, Object data, @SuppressWarnings("unused") TruffleString errors, @SuppressWarnings("unused") PNone mapping,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Shared @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
@@ -384,8 +384,8 @@ public final class CharmapNodes {
 
         @Specialization(limit = "3", guards = "isBuiltinString.execute(inliningTarget, mappingObj)")
         static TruffleString decodeStringMapping(VirtualFrame frame, Object data, TruffleString errors, Object mappingObj,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib,
                         @SuppressWarnings("unused") @Cached @Exclusive PyUnicodeCheckExactNode isBuiltinString,
@@ -443,8 +443,8 @@ public final class CharmapNodes {
 
         @Specialization(limit = "3", guards = {"!isBuiltinString.execute(inliningTarget, mappingObj)", "!isPNone(mappingObj)"})
         static TruffleString decodeGenericMapping(VirtualFrame frame, Object data, TruffleString errors, Object mappingObj,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib,
                         @SuppressWarnings("unused") @Cached @Exclusive PyUnicodeCheckExactNode isBuiltinString,

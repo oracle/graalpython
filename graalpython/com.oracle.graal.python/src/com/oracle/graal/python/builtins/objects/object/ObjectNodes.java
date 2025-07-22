@@ -254,7 +254,7 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(PBytes self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
                         @Shared @Cached IsAnyBuiltinObjectProfile isBuiltin,
                         @Shared @Cached PyObjectSizeNode sizeNode) {
@@ -266,7 +266,7 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(PFrozenSet self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
                         @Shared @Cached IsAnyBuiltinObjectProfile isBuiltin,
                         @Shared @Cached PyObjectSizeNode sizeNode) {
@@ -278,7 +278,7 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(PTuple self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
                         @Shared @Cached IsAnyBuiltinObjectProfile isBuiltin,
                         @Shared @Cached PyObjectSizeNode sizeNode) {
@@ -315,14 +315,14 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(PythonAbstractNativeObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
             return getObjectIdNode.execute(inliningTarget, self);
         }
 
         @Specialization
         static Object id(boolean self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
             PythonContext context = PythonContext.get(getObjectIdNode);
             Object bool = self ? context.getTrue() : context.getFalse();
@@ -337,7 +337,7 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(PFloat self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
             return getObjectIdNode.execute(inliningTarget, self);
         }
@@ -350,7 +350,7 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(PInt self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
             return getObjectIdNode.execute(inliningTarget, self);
         }
@@ -362,7 +362,7 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(TruffleString self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             if (self.isEmpty()) {
                 return ID_EMPTY_UNICODE;
             }
@@ -371,7 +371,7 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(PString self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
                         @Cached StringNodes.IsInternedStringNode isInternedStringNode,
                         @Cached StringNodes.StringMaterializeNode materializeNode) {
@@ -403,14 +403,14 @@ public abstract class ObjectNodes {
 
         @Specialization(guards = "isDefaultCase(self)")
         static Object id(PythonObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
             return getObjectIdNode.execute(inliningTarget, self);
         }
 
         @Specialization(guards = "isForeignObjectNode.execute(inliningTarget, self)", limit = "1")
         static Object idForeign(Object self,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
             return PythonContext.get(isForeignObjectNode).getNextObjectId(self);
         }
@@ -442,7 +442,7 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Pair<Object, Object> dispatch(VirtualFrame frame, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetNewArgsInternalNode getNewArgsInternalNode,
                         @Cached PyObjectLookupAttr lookupAttr) {
             Object getNewArgsExAttr = lookupAttr.execute(frame, inliningTarget, obj, T___GETNEWARGS_EX__);
@@ -456,7 +456,7 @@ public abstract class ObjectNodes {
 
             @Specialization(guards = "!isNoValue(getNewArgsExAttr)")
             static Pair<Object, Object> doNewArgsEx(VirtualFrame frame, Object getNewArgsExAttr, @SuppressWarnings("unused") Object getNewArgsAttr,
-                            @Bind("this") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @Exclusive @Cached CallNode callNode,
                             @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                             @Cached PyDictCheckNode isDictSubClassNode,
@@ -489,7 +489,7 @@ public abstract class ObjectNodes {
 
             @Specialization(guards = "!isNoValue(getNewArgsAttr)")
             static Pair<Object, Object> doNewArgs(VirtualFrame frame, @SuppressWarnings("unused") PNone getNewArgsExAttr, Object getNewArgsAttr,
-                            @Bind("this") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @Exclusive @Cached CallNode callNode,
                             @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                             @Exclusive @Cached PRaiseNode raiseNode) {
@@ -748,7 +748,7 @@ public abstract class ObjectNodes {
 
         @Specialization
         static TruffleString get(VirtualFrame frame, Object cls,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached CastToTruffleStringNode cast,
                         @Cached TruffleString.EqualNode equalNode,
@@ -988,7 +988,7 @@ public abstract class ObjectNodes {
 
             @Specialization
             static void doIt(Object object, Object key, Object type,
-                            @Bind("this") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @Cached PRaiseNode raiseNode,
                             @Cached IsSubtypeNode isSubtypeNode) {
                 TruffleString message;

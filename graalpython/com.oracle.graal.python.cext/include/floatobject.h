@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -7,7 +7,7 @@
 /* Float object interface */
 
 /*
-PyFloatObject represents a (double precision) floating point number.
+PyFloatObject represents a (double precision) floating-point number.
 */
 
 #ifndef Py_FLOATOBJECT_H
@@ -19,7 +19,7 @@ extern "C" {
 PyAPI_DATA(PyTypeObject) PyFloat_Type;
 
 #define PyFloat_Check(op) PyObject_TypeCheck(op, &PyFloat_Type)
-#define PyFloat_CheckExact(op) Py_IS_TYPE(op, &PyFloat_Type)
+#define PyFloat_CheckExact(op) Py_IS_TYPE((op), &PyFloat_Type)
 
 #define Py_RETURN_NAN return PyFloat_FromDouble(Py_NAN)
 

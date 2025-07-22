@@ -85,7 +85,7 @@ public class Sha3Builtins extends PythonBuiltins {
     abstract static class ShaNode extends PythonBuiltinNode {
         @Specialization
         static Object newDigest(VirtualFrame frame, Object type, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode,
                         @Cached PRaiseNode raiseNode) {
             PythonBuiltinClassType resultType;

@@ -122,7 +122,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object PyCFuncPtrType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TypeNode typeNew,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CastToJavaIntExactNode asNumber,

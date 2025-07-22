@@ -110,13 +110,12 @@ public class Bz2Nodes {
 
         @Specialization
         static byte[] nativeCompress(BZ2Object.BZ2Compressor self, PythonContext context, byte[] bytes, int len, int action,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction compress,
                         @Cached GetOutputNativeBufferNode getBuffer,
                         @Cached PRaiseNode raiseNode) {
             NFIBz2Support bz2Support = context.getNFIBz2Support();
-            Object inGuest = context.getEnv().asGuestValue(bytes);
-            int err = bz2Support.compress(self.getBzs(), inGuest, len, action, INITIAL_BUFFER_SIZE, compress);
+            int err = bz2Support.compress(self.getBzs(), bytes, len, action, INITIAL_BUFFER_SIZE, compress);
             if (err != BZ_OK) {
                 errorHandling(inliningTarget, err, raiseNode);
             }
@@ -230,7 +229,7 @@ public class Bz2Nodes {
 
         @Specialization
         static byte[] nativeInternalDecompress(BZ2Object.BZ2Decompressor self, int maxLength,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction decompress,
                         @Cached NativeLibrary.InvokeNativeFunction getBzsAvailInReal,
                         @Cached NativeLibrary.InvokeNativeFunction getNextInIndex,
@@ -240,9 +239,9 @@ public class Bz2Nodes {
                         @Cached PRaiseNode raiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
             NFIBz2Support bz2Support = context.getNFIBz2Support();
-            Object inGuest = self.getNextInGuest(context);
+            byte[] in = self.getNextIn();
             int offset = self.getNextInIndex();
-            int err = bz2Support.decompress(self.getBzs(), inGuest, offset, maxLength, INITIAL_BUFFER_SIZE, self.getBzsAvailInReal(), decompress);
+            int err = bz2Support.decompress(self.getBzs(), in, offset, maxLength, INITIAL_BUFFER_SIZE, self.getBzsAvailInReal(), decompress);
             long nextInIdx = bz2Support.getNextInIndex(self.getBzs(), getNextInIndex);
             long bzsAvailInReal = bz2Support.getBzsAvailInReal(self.getBzs(), getBzsAvailInReal);
             try {
@@ -285,9 +284,8 @@ public class Bz2Nodes {
                 return PythonUtils.EMPTY_BYTE_ARRAY;
             }
             byte[] resultArray = new byte[size];
-            Object out = context.getEnv().asGuestValue(resultArray);
             /* this will clear the native output once retrieved */
-            bz2Support.getOutputBuffer(bzst, out, getBuffer);
+            bz2Support.getOutputBuffer(bzst, resultArray, getBuffer);
             return resultArray;
         }
     }

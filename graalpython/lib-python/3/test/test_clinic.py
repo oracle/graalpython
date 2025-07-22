@@ -2,9 +2,9 @@
 # Copyright 2012-2013 by Larry Hastings.
 # Licensed to the PSF under a contributor agreement.
 
+from functools import partial
 from test import support, test_tools
 from test.support import os_helper
-from test.support import SHORT_TIMEOUT, requires_subprocess
 from test.support.os_helper import TESTFN, unlink
 from textwrap import dedent
 from unittest import TestCase
@@ -19,6 +19,20 @@ test_tools.skip_if_missing('clinic')
 with test_tools.imports_under_tool('clinic'):
     import clinic
     from clinic import DSLParser
+
+
+def restore_dict(converters, old_converters):
+    converters.clear()
+    converters.update(old_converters)
+
+
+def save_restore_converters(testcase):
+    testcase.addCleanup(restore_dict, clinic.converters,
+                        clinic.converters.copy())
+    testcase.addCleanup(restore_dict, clinic.legacy_converters,
+                        clinic.legacy_converters.copy())
+    testcase.addCleanup(restore_dict, clinic.return_converters,
+                        clinic.return_converters.copy())
 
 
 class _ParserBase(TestCase):
@@ -107,6 +121,7 @@ class FakeClinic:
 
 class ClinicWholeFileTest(_ParserBase):
     def setUp(self):
+        save_restore_converters(self)
         self.clinic = clinic.Clinic(clinic.CLanguage(None), filename="test.c")
 
     def expect_failure(self, raw):
@@ -380,7 +395,7 @@ class ClinicGroupPermuterTest(TestCase):
     def test_have_left_options_but_required_is_empty(self):
         def fn():
             clinic.permute_optional_groups(['a'], [], [])
-        self.assertRaises(AssertionError, fn)
+        self.assertRaises(ValueError, fn)
 
 
 class ClinicLinearFormatTest(TestCase):
@@ -600,7 +615,6 @@ class ClinicParserTest(_ParserBase):
                 follow_symlinks: bool = True
                 something_else: str = ''
         """)
-        p = function.parameters['follow_symlinks']
         self.assertEqual(3, len(function.parameters))
         conv = function.parameters['something_else'].converter
         self.assertIsInstance(conv, clinic.str_converter)
@@ -1185,6 +1199,22 @@ class ClinicParserTest(_ParserBase):
                 out = self.parse_function_should_fail(block)
                 self.assertEqual(out, expected_failure_message)
 
+    def test_kwarg_splats_disallowed_in_function_call_annotations(self):
+        expected_error_msg = (
+            "Error on line 0:\n"
+            "Cannot use a kwarg splat in a function-call annotation\n"
+        )
+        dataset = (
+            'module fo\nfo.barbaz\n   o: bool(**{None: "bang!"})',
+            'module fo\nfo.barbaz -> bool(**{None: "bang!"})',
+            'module fo\nfo.barbaz -> bool(**{"bang": 42})',
+            'module fo\nfo.barbaz\n   o: bool(**{"bang": None})',
+        )
+        for fn in dataset:
+            with self.subTest(fn=fn):
+                out = self.parse_function_should_fail(fn)
+                self.assertEqual(out, expected_error_msg)
+
     def test_self_param_placement(self):
         expected_error_msg = (
             "Error on line 0:\n"
@@ -1279,6 +1309,66 @@ class ClinicParserTest(_ParserBase):
         """)
         self.assertEqual(out, expected_error_msg)
 
+    def test_unused_param(self):
+        block = self.parse("""
+            module foo
+            foo.func
+                fn: object
+                k: float
+                i: float(unused=True)
+                /
+                *
+                flag: bool(unused=True) = False
+        """)
+        sig = block.signatures[1]  # Function index == 1
+        params = sig.parameters
+        conv = lambda fn: params[fn].converter
+        dataset = (
+            {"name": "fn", "unused": False},
+            {"name": "k", "unused": False},
+            {"name": "i", "unused": True},
+            {"name": "flag", "unused": True},
+        )
+        for param in dataset:
+            name, unused = param.values()
+            with self.subTest(name=name, unused=unused):
+                p = conv(name)
+                # Verify that the unused flag is parsed correctly.
+                self.assertEqual(unused, p.unused)
+
+                # Now, check that we'll produce correct code.
+                decl = p.simple_declaration(in_parser=False)
+                if unused:
+                    self.assertIn("Py_UNUSED", decl)
+                else:
+                    self.assertNotIn("Py_UNUSED", decl)
+
+                # Make sure the Py_UNUSED macro is not used in the parser body.
+                parser_decl = p.simple_declaration(in_parser=True)
+                self.assertNotIn("Py_UNUSED", parser_decl)
+
+    def test_kind_defining_class(self):
+        function = self.parse_function("""
+            module m
+            class m.C "PyObject *" ""
+            m.C.meth
+                cls: defining_class
+        """, signatures_in_block=3, function_index=2)
+        p = function.parameters['cls']
+        self.assertEqual(p.kind, inspect.Parameter.POSITIONAL_ONLY)
+
+    def test_disallow_defining_class_at_module_level(self):
+        expected_error_msg = (
+            "Error on line 0:\n"
+            "A 'defining_class' parameter cannot be defined at module level.\n"
+        )
+        out = self.parse_function_should_fail("""
+            module m
+            m.func
+                cls: defining_class
+        """)
+        self.assertEqual(out, expected_error_msg)
+
     def parse(self, text):
         c = FakeClinic()
         parser = DSLParser(c)
@@ -1316,6 +1406,9 @@ class ClinicExternalTest(TestCase):
     maxDiff = None
     clinic_py = os.path.join(test_tools.toolsdir, "clinic", "clinic.py")
 
+    def setUp(self):
+        save_restore_converters(self)
+
     def _do_test(self, *args, expect_success=True):
         with subprocess.Popen(
             [sys.executable, "-Xutf8", self.clinic_py, *args],
@@ -1342,7 +1435,7 @@ class ClinicExternalTest(TestCase):
     def test_external(self):
         CLINIC_TEST = 'clinic.test.c'
         source = support.findfile(CLINIC_TEST)
-        with open(source, 'r', encoding='utf-8') as f:
+        with open(source, encoding='utf-8') as f:
             orig_contents = f.read()
 
         # Run clinic CLI and verify that it does not complain.
@@ -1350,7 +1443,7 @@ class ClinicExternalTest(TestCase):
         out = self.expect_success("-f", "-o", TESTFN, source)
         self.assertEqual(out, "")
 
-        with open(TESTFN, 'r', encoding='utf-8') as f:
+        with open(TESTFN, encoding='utf-8') as f:
             new_contents = f.read()
 
         self.assertEqual(new_contents, orig_contents)
@@ -1409,9 +1502,9 @@ class ClinicExternalTest(TestCase):
             # Verify by checking the checksum.
             checksum = (
                 "/*[clinic end generated code: "
-                "output=6c2289b73f32bc19 input=9543a8d2da235301]*/\n"
+                "output=99dd9b13ffdc660d input=9543a8d2da235301]*/\n"
             )
-            with open(fn, 'r', encoding='utf-8') as f:
+            with open(fn, encoding='utf-8') as f:
                 generated = f.read()
             self.assertTrue(generated.endswith(checksum))
 
@@ -1516,7 +1609,6 @@ class ClinicExternalTest(TestCase):
                 init()
                 int()
                 long()
-                NoneType()
                 Py_ssize_t()
                 size_t()
                 unsigned_int()
@@ -2001,11 +2093,27 @@ class ClinicFunctionalTest(unittest.TestCase):
         self.assertEqual(ac_tester.vararg(1, 2, 3, 4), (1, (2, 3, 4)))
 
     def test_vararg_with_default(self):
-        with self.assertRaises(TypeError):
-            ac_tester.vararg_with_default()
-        self.assertEqual(ac_tester.vararg_with_default(1, b=False), (1, (), False))
-        self.assertEqual(ac_tester.vararg_with_default(1, 2, 3, 4), (1, (2, 3, 4), False))
-        self.assertEqual(ac_tester.vararg_with_default(1, 2, 3, 4, b=True), (1, (2, 3, 4), True))
+        fn = ac_tester.vararg_with_default
+        self.assertRaises(TypeError, fn)
+        self.assertRaises(TypeError, fn, 1, a=2)
+        self.assertEqual(fn(1, b=2), (1, (), True))
+        self.assertEqual(fn(1, 2, 3, 4), (1, (2, 3, 4), False))
+        self.assertEqual(fn(1, 2, 3, 4, b=5), (1, (2, 3, 4), True))
+        self.assertEqual(fn(a=1), (1, (), False))
+        self.assertEqual(fn(a=1, b=2), (1, (), True))
+
+    def test_vararg_with_default2(self):
+        fn = ac_tester.vararg_with_default2
+        self.assertRaises(TypeError, fn)
+        self.assertRaises(TypeError, fn, 1, a=2)
+        self.assertEqual(fn(1, b=2), (1, (), 2, None))
+        self.assertEqual(fn(1, b=2, c=3), (1, (), 2, 3))
+        self.assertEqual(fn(1, 2, 3), (1, (2, 3), None, None))
+        self.assertEqual(fn(1, 2, 3, b=4), (1, (2, 3), 4, None))
+        self.assertEqual(fn(1, 2, 3, b=4, c=5), (1, (2, 3), 4, 5))
+        self.assertEqual(fn(a=1), (1, (), None, None))
+        self.assertEqual(fn(a=1, b=2), (1, (), 2, None))
+        self.assertEqual(fn(a=1, b=2, c=3), (1, (), 2, 3))
 
     def test_vararg_with_only_defaults(self):
         self.assertEqual(ac_tester.vararg_with_only_defaults(), ((), None))
@@ -2031,6 +2139,39 @@ class ClinicFunctionalTest(unittest.TestCase):
         expected_error = r'gh_99240_double_free\(\) argument 2 must be encoded string without null bytes, not str'
         with self.assertRaisesRegex(TypeError, expected_error):
             ac_tester.gh_99240_double_free('a', '\0b')
+
+    def test_cloned_func_exception_message(self):
+        incorrect_arg = -1  # f1() and f2() accept a single str
+        with self.assertRaisesRegex(TypeError, "clone_f1"):
+            ac_tester.clone_f1(incorrect_arg)
+        with self.assertRaisesRegex(TypeError, "clone_f2"):
+            ac_tester.clone_f2(incorrect_arg)
+
+    def test_cloned_func_with_converter_exception_message(self):
+        for name in "clone_with_conv_f1", "clone_with_conv_f2":
+            with self.subTest(name=name):
+                func = getattr(ac_tester, name)
+                self.assertEqual(func(), name)
+
+    def test_meth_method_no_params(self):
+        obj = ac_tester.TestClass()
+        meth = obj.meth_method_no_params
+        check = partial(self.assertRaisesRegex, TypeError, "no arguments")
+        check(meth, 1)
+        check(meth, a=1)
+
+    def test_meth_method_no_params_capi(self):
+        from _testcapi import pyobject_vectorcall
+        obj = ac_tester.TestClass()
+        meth = obj.meth_method_no_params
+        pyobject_vectorcall(meth, None, None)
+        pyobject_vectorcall(meth, (), None)
+        pyobject_vectorcall(meth, (), ())
+        pyobject_vectorcall(meth, None, ())
+
+        check = partial(self.assertRaisesRegex, TypeError, "no arguments")
+        check(pyobject_vectorcall, meth, (1,), None)
+        check(pyobject_vectorcall, meth, (1,), ("a",))
 
 
 class PermutationTests(unittest.TestCase):
@@ -2139,412 +2280,168 @@ class PermutationTests(unittest.TestCase):
                 self.assertEqual(actual, expected)
 
 
-ac_tester = import_helper.import_module('_testclinic')
+class FormatHelperTests(unittest.TestCase):
 
+    def test_strip_leading_and_trailing_blank_lines(self):
+        dataset = (
+            # Input lines, expected output.
+            ("a\nb",            "a\nb"),
+            ("a\nb\n",          "a\nb"),
+            ("a\nb ",           "a\nb"),
+            ("\na\nb\n\n",      "a\nb"),
+            ("\n\na\nb\n\n",    "a\nb"),
+            ("\n\na\n\nb\n\n",  "a\n\nb"),
+            # Note, leading whitespace is preserved:
+            (" a\nb",               " a\nb"),
+            (" a\nb ",              " a\nb"),
+            (" \n \n a\nb \n \n ",  " a\nb"),
+        )
+        for lines, expected in dataset:
+            with self.subTest(lines=lines, expected=expected):
+                out = clinic.strip_leading_and_trailing_blank_lines(lines)
+                self.assertEqual(out, expected)
 
-class ClinicFunctionalTest(unittest.TestCase):
-    locals().update((name, getattr(ac_tester, name))
-                    for name in dir(ac_tester) if name.startswith('test_'))
+    def test_normalize_snippet(self):
+        snippet = """
+            one
+            two
+            three
+        """
 
-    def test_objects_converter(self):
-        with self.assertRaises(TypeError):
-            ac_tester.objects_converter()
-        self.assertEqual(ac_tester.objects_converter(1, 2), (1, 2))
-        self.assertEqual(ac_tester.objects_converter([], 'whatever class'), ([], 'whatever class'))
-        self.assertEqual(ac_tester.objects_converter(1), (1, None))
+        # Expected outputs:
+        zero_indent = (
+            "one\n"
+            "two\n"
+            "three"
+        )
+        four_indent = (
+            "    one\n"
+            "    two\n"
+            "    three"
+        )
+        eight_indent = (
+            "        one\n"
+            "        two\n"
+            "        three"
+        )
+        expected_outputs = {0: zero_indent, 4: four_indent, 8: eight_indent}
+        for indent, expected in expected_outputs.items():
+            with self.subTest(indent=indent):
+                actual = clinic.normalize_snippet(snippet, indent=indent)
+                self.assertEqual(actual, expected)
 
-    def test_bytes_object_converter(self):
-        with self.assertRaises(TypeError):
-            ac_tester.bytes_object_converter(1)
-        self.assertEqual(ac_tester.bytes_object_converter(b'BytesObject'), (b'BytesObject',))
+    def test_accumulator(self):
+        acc = clinic.text_accumulator()
+        self.assertEqual(acc.output(), "")
+        acc.append("a")
+        self.assertEqual(acc.output(), "a")
+        self.assertEqual(acc.output(), "")
+        acc.append("b")
+        self.assertEqual(acc.output(), "b")
+        self.assertEqual(acc.output(), "")
+        acc.append("c")
+        acc.append("d")
+        self.assertEqual(acc.output(), "cd")
+        self.assertEqual(acc.output(), "")
 
-    def test_byte_array_object_converter(self):
-        with self.assertRaises(TypeError):
-            ac_tester.byte_array_object_converter(1)
-        byte_arr = bytearray(b'ByteArrayObject')
-        self.assertEqual(ac_tester.byte_array_object_converter(byte_arr), (byte_arr,))
+    def test_quoted_for_c_string(self):
+        dataset = (
+            # input,    expected
+            (r"abc",    r"abc"),
+            (r"\abc",   r"\\abc"),
+            (r"\a\bc",  r"\\a\\bc"),
+            (r"\a\\bc", r"\\a\\\\bc"),
+            (r'"abc"',  r'\"abc\"'),
+            (r"'a'",    r"\'a\'"),
+        )
+        for line, expected in dataset:
+            with self.subTest(line=line, expected=expected):
+                out = clinic.quoted_for_c_string(line)
+                self.assertEqual(out, expected)
 
-    def test_unicode_converter(self):
-        with self.assertRaises(TypeError):
-            ac_tester.unicode_converter(1)
-        self.assertEqual(ac_tester.unicode_converter('unicode'), ('unicode',))
+    def test_rstrip_lines(self):
+        lines = (
+            "a \n"
+            "b\n"
+            " c\n"
+            " d \n"
+        )
+        expected = (
+            "a\n"
+            "b\n"
+            " c\n"
+            " d\n"
+        )
+        out = clinic.rstrip_lines(lines)
+        self.assertEqual(out, expected)
 
-    def test_bool_converter(self):
-        with self.assertRaises(TypeError):
-            ac_tester.bool_converter(False, False, 'not a int')
-        self.assertEqual(ac_tester.bool_converter(), (True, True, True))
-        self.assertEqual(ac_tester.bool_converter('', [], 5), (False, False, True))
-        self.assertEqual(ac_tester.bool_converter(('not empty',), {1: 2}, 0), (True, True, False))
+    def test_format_escape(self):
+        line = "{}, {a}"
+        expected = "{{}}, {{a}}"
+        out = clinic.format_escape(line)
+        self.assertEqual(out, expected)
 
-    def test_char_converter(self):
-        with self.assertRaises(TypeError):
-            ac_tester.char_converter(1)
-        with self.assertRaises(TypeError):
-            ac_tester.char_converter(b'ab')
-        chars = [b'A', b'\a', b'\b', b'\t', b'\n', b'\v', b'\f', b'\r', b'"', b"'", b'?', b'\\', b'\000', b'\377']
-        expected = tuple(ord(c) for c in chars)
-        self.assertEqual(ac_tester.char_converter(), expected)
-        chars = [b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'0', b'a', b'b', b'c', b'd']
-        expected = tuple(ord(c) for c in chars)
-        self.assertEqual(ac_tester.char_converter(*chars), expected)
+    def test_indent_all_lines(self):
+        # Blank lines are expected to be unchanged.
+        self.assertEqual(clinic.indent_all_lines("", prefix="bar"), "")
 
-    def test_unsigned_char_converter(self):
-        from _testcapi import UCHAR_MAX
-        with self.assertRaises(OverflowError):
-            ac_tester.unsigned_char_converter(-1)
-        with self.assertRaises(OverflowError):
-            ac_tester.unsigned_char_converter(UCHAR_MAX + 1)
-        with self.assertRaises(OverflowError):
-            ac_tester.unsigned_char_converter(0, UCHAR_MAX + 1)
-        with self.assertRaises(TypeError):
-            ac_tester.unsigned_char_converter([])
-        self.assertEqual(ac_tester.unsigned_char_converter(), (12, 34, 56))
-        self.assertEqual(ac_tester.unsigned_char_converter(0, 0, UCHAR_MAX + 1), (0, 0, 0))
-        self.assertEqual(ac_tester.unsigned_char_converter(0, 0, (UCHAR_MAX + 1) * 3 + 123), (0, 0, 123))
+        lines = (
+            "one\n"
+            "two"  # The missing newline is deliberate.
+        )
+        expected = (
+            "barone\n"
+            "bartwo"
+        )
+        out = clinic.indent_all_lines(lines, prefix="bar")
+        self.assertEqual(out, expected)
 
-    def test_short_converter(self):
-        from _testcapi import SHRT_MIN, SHRT_MAX
-        with self.assertRaises(OverflowError):
-            ac_tester.short_converter(SHRT_MIN - 1)
-        with self.assertRaises(OverflowError):
-            ac_tester.short_converter(SHRT_MAX + 1)
-        with self.assertRaises(TypeError):
-            ac_tester.short_converter([])
-        self.assertEqual(ac_tester.short_converter(-1234), (-1234,))
-        self.assertEqual(ac_tester.short_converter(4321), (4321,))
+        # If last line is empty, expect it to be unchanged.
+        lines = (
+            "\n"
+            "one\n"
+            "two\n"
+            ""
+        )
+        expected = (
+            "bar\n"
+            "barone\n"
+            "bartwo\n"
+            ""
+        )
+        out = clinic.indent_all_lines(lines, prefix="bar")
+        self.assertEqual(out, expected)
 
-    def test_unsigned_short_converter(self):
-        from _testcapi import USHRT_MAX
-        with self.assertRaises(ValueError):
-            ac_tester.unsigned_short_converter(-1)
-        with self.assertRaises(OverflowError):
-            ac_tester.unsigned_short_converter(USHRT_MAX + 1)
-        with self.assertRaises(OverflowError):
-            ac_tester.unsigned_short_converter(0, USHRT_MAX + 1)
-        with self.assertRaises(TypeError):
-            ac_tester.unsigned_short_converter([])
-        self.assertEqual(ac_tester.unsigned_short_converter(), (12, 34, 56))
-        self.assertEqual(ac_tester.unsigned_short_converter(0, 0, USHRT_MAX + 1), (0, 0, 0))
-        self.assertEqual(ac_tester.unsigned_short_converter(0, 0, (USHRT_MAX + 1) * 3 + 123), (0, 0, 123))
+    def test_suffix_all_lines(self):
+        # Blank lines are expected to be unchanged.
+        self.assertEqual(clinic.suffix_all_lines("", suffix="foo"), "")
 
-    def test_int_converter(self):
-        from _testcapi import INT_MIN, INT_MAX
-        with self.assertRaises(OverflowError):
-            ac_tester.int_converter(INT_MIN - 1)
-        with self.assertRaises(OverflowError):
-            ac_tester.int_converter(INT_MAX + 1)
-        with self.assertRaises(TypeError):
-            ac_tester.int_converter(1, 2, 3)
-        with self.assertRaises(TypeError):
-            ac_tester.int_converter([])
-        self.assertEqual(ac_tester.int_converter(), (12, 34, 45))
-        self.assertEqual(ac_tester.int_converter(1, 2, '3'), (1, 2, ord('3')))
+        lines = (
+            "one\n"
+            "two"  # The missing newline is deliberate.
+        )
+        expected = (
+            "onefoo\n"
+            "twofoo"
+        )
+        out = clinic.suffix_all_lines(lines, suffix="foo")
+        self.assertEqual(out, expected)
 
-    def test_unsigned_int_converter(self):
-        from _testcapi import UINT_MAX
-        with self.assertRaises(ValueError):
-            ac_tester.unsigned_int_converter(-1)
-        with self.assertRaises(OverflowError):
-            ac_tester.unsigned_int_converter(UINT_MAX + 1)
-        with self.assertRaises(OverflowError):
-            ac_tester.unsigned_int_converter(0, UINT_MAX + 1)
-        with self.assertRaises(TypeError):
-            ac_tester.unsigned_int_converter([])
-        self.assertEqual(ac_tester.unsigned_int_converter(), (12, 34, 56))
-        self.assertEqual(ac_tester.unsigned_int_converter(0, 0, UINT_MAX + 1), (0, 0, 0))
-        self.assertEqual(ac_tester.unsigned_int_converter(0, 0, (UINT_MAX + 1) * 3 + 123), (0, 0, 123))
-
-    def test_long_converter(self):
-        from _testcapi import LONG_MIN, LONG_MAX
-        with self.assertRaises(OverflowError):
-            ac_tester.long_converter(LONG_MIN - 1)
-        with self.assertRaises(OverflowError):
-            ac_tester.long_converter(LONG_MAX + 1)
-        with self.assertRaises(TypeError):
-            ac_tester.long_converter([])
-        self.assertEqual(ac_tester.long_converter(), (12,))
-        self.assertEqual(ac_tester.long_converter(-1234), (-1234,))
-
-    def test_unsigned_long_converter(self):
-        from _testcapi import ULONG_MAX
-        with self.assertRaises(ValueError):
-            ac_tester.unsigned_long_converter(-1)
-        with self.assertRaises(OverflowError):
-            ac_tester.unsigned_long_converter(ULONG_MAX + 1)
-        with self.assertRaises(OverflowError):
-            ac_tester.unsigned_long_converter(0, ULONG_MAX + 1)
-        with self.assertRaises(TypeError):
-            ac_tester.unsigned_long_converter([])
-        self.assertEqual(ac_tester.unsigned_long_converter(), (12, 34, 56))
-        self.assertEqual(ac_tester.unsigned_long_converter(0, 0, ULONG_MAX + 1), (0, 0, 0))
-        self.assertEqual(ac_tester.unsigned_long_converter(0, 0, (ULONG_MAX + 1) * 3 + 123), (0, 0, 123))
-
-    def test_long_long_converter(self):
-        from _testcapi import LLONG_MIN, LLONG_MAX
-        with self.assertRaises(OverflowError):
-            ac_tester.long_long_converter(LLONG_MIN - 1)
-        with self.assertRaises(OverflowError):
-            ac_tester.long_long_converter(LLONG_MAX + 1)
-        with self.assertRaises(TypeError):
-            ac_tester.long_long_converter([])
-        self.assertEqual(ac_tester.long_long_converter(), (12,))
-        self.assertEqual(ac_tester.long_long_converter(-1234), (-1234,))
-
-    def test_unsigned_long_long_converter(self):
-        from _testcapi import ULLONG_MAX
-        with self.assertRaises(ValueError):
-            ac_tester.unsigned_long_long_converter(-1)
-        with self.assertRaises(OverflowError):
-            ac_tester.unsigned_long_long_converter(ULLONG_MAX + 1)
-        with self.assertRaises(OverflowError):
-            ac_tester.unsigned_long_long_converter(0, ULLONG_MAX + 1)
-        with self.assertRaises(TypeError):
-            ac_tester.unsigned_long_long_converter([])
-        self.assertEqual(ac_tester.unsigned_long_long_converter(), (12, 34, 56))
-        self.assertEqual(ac_tester.unsigned_long_long_converter(0, 0, ULLONG_MAX + 1), (0, 0, 0))
-        self.assertEqual(ac_tester.unsigned_long_long_converter(0, 0, (ULLONG_MAX + 1) * 3 + 123), (0, 0, 123))
-
-    def test_py_ssize_t_converter(self):
-        from _testcapi import PY_SSIZE_T_MIN, PY_SSIZE_T_MAX
-        with self.assertRaises(OverflowError):
-            ac_tester.py_ssize_t_converter(PY_SSIZE_T_MIN - 1)
-        with self.assertRaises(OverflowError):
-            ac_tester.py_ssize_t_converter(PY_SSIZE_T_MAX + 1)
-        with self.assertRaises(TypeError):
-            ac_tester.py_ssize_t_converter([])
-        self.assertEqual(ac_tester.py_ssize_t_converter(), (12, 34, 56))
-        self.assertEqual(ac_tester.py_ssize_t_converter(1, 2, None), (1, 2, 56))
-
-    def test_slice_index_converter(self):
-        from _testcapi import PY_SSIZE_T_MIN, PY_SSIZE_T_MAX
-        with self.assertRaises(TypeError):
-            ac_tester.slice_index_converter([])
-        self.assertEqual(ac_tester.slice_index_converter(), (12, 34, 56))
-        self.assertEqual(ac_tester.slice_index_converter(1, 2, None), (1, 2, 56))
-        self.assertEqual(ac_tester.slice_index_converter(PY_SSIZE_T_MAX, PY_SSIZE_T_MAX + 1, PY_SSIZE_T_MAX + 1234),
-                         (PY_SSIZE_T_MAX, PY_SSIZE_T_MAX, PY_SSIZE_T_MAX))
-        self.assertEqual(ac_tester.slice_index_converter(PY_SSIZE_T_MIN, PY_SSIZE_T_MIN - 1, PY_SSIZE_T_MIN - 1234),
-                         (PY_SSIZE_T_MIN, PY_SSIZE_T_MIN, PY_SSIZE_T_MIN))
-
-    def test_size_t_converter(self):
-        with self.assertRaises(ValueError):
-            ac_tester.size_t_converter(-1)
-        with self.assertRaises(TypeError):
-            ac_tester.size_t_converter([])
-        self.assertEqual(ac_tester.size_t_converter(), (12,))
-
-    def test_float_converter(self):
-        with self.assertRaises(TypeError):
-            ac_tester.float_converter([])
-        self.assertEqual(ac_tester.float_converter(), (12.5,))
-        self.assertEqual(ac_tester.float_converter(-0.5), (-0.5,))
-
-    def test_double_converter(self):
-        with self.assertRaises(TypeError):
-            ac_tester.double_converter([])
-        self.assertEqual(ac_tester.double_converter(), (12.5,))
-        self.assertEqual(ac_tester.double_converter(-0.5), (-0.5,))
-
-    def test_py_complex_converter(self):
-        with self.assertRaises(TypeError):
-            ac_tester.py_complex_converter([])
-        self.assertEqual(ac_tester.py_complex_converter(complex(1, 2)), (complex(1, 2),))
-        self.assertEqual(ac_tester.py_complex_converter(complex('-1-2j')), (complex('-1-2j'),))
-        self.assertEqual(ac_tester.py_complex_converter(-0.5), (-0.5,))
-        self.assertEqual(ac_tester.py_complex_converter(10), (10,))
-
-    def test_str_converter(self):
-        with self.assertRaises(TypeError):
-            ac_tester.str_converter(1)
-        with self.assertRaises(TypeError):
-            ac_tester.str_converter('a', 'b', 'c')
-        with self.assertRaises(ValueError):
-            ac_tester.str_converter('a', b'b\0b', 'c')
-        self.assertEqual(ac_tester.str_converter('a', b'b', 'c'), ('a', 'b', 'c'))
-        self.assertEqual(ac_tester.str_converter('a', b'b', b'c'), ('a', 'b', 'c'))
-        self.assertEqual(ac_tester.str_converter('a', b'b', 'c\0c'), ('a', 'b', 'c\0c'))
-
-    def test_str_converter_encoding(self):
-        with self.assertRaises(TypeError):
-            ac_tester.str_converter_encoding(1)
-        self.assertEqual(ac_tester.str_converter_encoding('a', 'b', 'c'), ('a', 'b', 'c'))
-        with self.assertRaises(TypeError):
-            ac_tester.str_converter_encoding('a', b'b\0b', 'c')
-        self.assertEqual(ac_tester.str_converter_encoding('a', b'b', bytearray([ord('c')])), ('a', 'b', 'c'))
-        self.assertEqual(ac_tester.str_converter_encoding('a', b'b', bytearray([ord('c'), 0, ord('c')])),
-                         ('a', 'b', 'c\x00c'))
-        self.assertEqual(ac_tester.str_converter_encoding('a', b'b', b'c\x00c'), ('a', 'b', 'c\x00c'))
-
-    def test_py_buffer_converter(self):
-        with self.assertRaises(TypeError):
-            ac_tester.py_buffer_converter('a', 'b')
-        self.assertEqual(ac_tester.py_buffer_converter('abc', bytearray([1, 2, 3])), (b'abc', b'\x01\x02\x03'))
-
-    def test_keywords(self):
-        self.assertEqual(ac_tester.keywords(1, 2), (1, 2))
-        self.assertEqual(ac_tester.keywords(1, b=2), (1, 2))
-        self.assertEqual(ac_tester.keywords(a=1, b=2), (1, 2))
-
-    def test_keywords_kwonly(self):
-        with self.assertRaises(TypeError):
-            ac_tester.keywords_kwonly(1, 2)
-        self.assertEqual(ac_tester.keywords_kwonly(1, b=2), (1, 2))
-        self.assertEqual(ac_tester.keywords_kwonly(a=1, b=2), (1, 2))
-
-    def test_keywords_opt(self):
-        self.assertEqual(ac_tester.keywords_opt(1), (1, None, None))
-        self.assertEqual(ac_tester.keywords_opt(1, 2), (1, 2, None))
-        self.assertEqual(ac_tester.keywords_opt(1, 2, 3), (1, 2, 3))
-        self.assertEqual(ac_tester.keywords_opt(1, b=2), (1, 2, None))
-        self.assertEqual(ac_tester.keywords_opt(1, 2, c=3), (1, 2, 3))
-        self.assertEqual(ac_tester.keywords_opt(a=1, c=3), (1, None, 3))
-        self.assertEqual(ac_tester.keywords_opt(a=1, b=2, c=3), (1, 2, 3))
-
-    def test_keywords_opt_kwonly(self):
-        self.assertEqual(ac_tester.keywords_opt_kwonly(1), (1, None, None, None))
-        self.assertEqual(ac_tester.keywords_opt_kwonly(1, 2), (1, 2, None, None))
-        with self.assertRaises(TypeError):
-            ac_tester.keywords_opt_kwonly(1, 2, 3)
-        self.assertEqual(ac_tester.keywords_opt_kwonly(1, b=2), (1, 2, None, None))
-        self.assertEqual(ac_tester.keywords_opt_kwonly(1, 2, c=3), (1, 2, 3, None))
-        self.assertEqual(ac_tester.keywords_opt_kwonly(a=1, c=3), (1, None, 3, None))
-        self.assertEqual(ac_tester.keywords_opt_kwonly(a=1, b=2, c=3, d=4), (1, 2, 3, 4))
-
-    def test_keywords_kwonly_opt(self):
-        self.assertEqual(ac_tester.keywords_kwonly_opt(1), (1, None, None))
-        with self.assertRaises(TypeError):
-            ac_tester.keywords_kwonly_opt(1, 2)
-        self.assertEqual(ac_tester.keywords_kwonly_opt(1, b=2), (1, 2, None))
-        self.assertEqual(ac_tester.keywords_kwonly_opt(a=1, c=3), (1, None, 3))
-        self.assertEqual(ac_tester.keywords_kwonly_opt(a=1, b=2, c=3), (1, 2, 3))
-
-    def test_posonly_keywords(self):
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_keywords(1)
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_keywords(a=1, b=2)
-        self.assertEqual(ac_tester.posonly_keywords(1, 2), (1, 2))
-        self.assertEqual(ac_tester.posonly_keywords(1, b=2), (1, 2))
-
-    def test_posonly_kwonly(self):
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_kwonly(1)
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_kwonly(1, 2)
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_kwonly(a=1, b=2)
-        self.assertEqual(ac_tester.posonly_kwonly(1, b=2), (1, 2))
-
-    def test_posonly_keywords_kwonly(self):
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_keywords_kwonly(1)
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_keywords_kwonly(1, 2, 3)
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_keywords_kwonly(a=1, b=2, c=3)
-        self.assertEqual(ac_tester.posonly_keywords_kwonly(1, 2, c=3), (1, 2, 3))
-        self.assertEqual(ac_tester.posonly_keywords_kwonly(1, b=2, c=3), (1, 2, 3))
-
-    def test_posonly_keywords_opt(self):
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_keywords_opt(1)
-        self.assertEqual(ac_tester.posonly_keywords_opt(1, 2), (1, 2, None, None))
-        self.assertEqual(ac_tester.posonly_keywords_opt(1, 2, 3), (1, 2, 3, None))
-        self.assertEqual(ac_tester.posonly_keywords_opt(1, 2, 3, 4), (1, 2, 3, 4))
-        self.assertEqual(ac_tester.posonly_keywords_opt(1, b=2), (1, 2, None, None))
-        self.assertEqual(ac_tester.posonly_keywords_opt(1, 2, c=3), (1, 2, 3, None))
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_keywords_opt(a=1, b=2, c=3, d=4)
-        self.assertEqual(ac_tester.posonly_keywords_opt(1, b=2, c=3, d=4), (1, 2, 3, 4))
-
-    def test_posonly_opt_keywords_opt(self):
-        self.assertEqual(ac_tester.posonly_opt_keywords_opt(1), (1, None, None, None))
-        self.assertEqual(ac_tester.posonly_opt_keywords_opt(1, 2), (1, 2, None, None))
-        self.assertEqual(ac_tester.posonly_opt_keywords_opt(1, 2, 3), (1, 2, 3, None))
-        self.assertEqual(ac_tester.posonly_opt_keywords_opt(1, 2, 3, 4), (1, 2, 3, 4))
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_opt_keywords_opt(1, b=2)
-        self.assertEqual(ac_tester.posonly_opt_keywords_opt(1, 2, c=3), (1, 2, 3, None))
-        self.assertEqual(ac_tester.posonly_opt_keywords_opt(1, 2, c=3, d=4), (1, 2, 3, 4))
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_opt_keywords_opt(a=1, b=2, c=3, d=4)
-
-    def test_posonly_kwonly_opt(self):
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_kwonly_opt(1)
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_kwonly_opt(1, 2)
-        self.assertEqual(ac_tester.posonly_kwonly_opt(1, b=2), (1, 2, None, None))
-        self.assertEqual(ac_tester.posonly_kwonly_opt(1, b=2, c=3), (1, 2, 3, None))
-        self.assertEqual(ac_tester.posonly_kwonly_opt(1, b=2, c=3, d=4), (1, 2, 3, 4))
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_kwonly_opt(a=1, b=2, c=3, d=4)
-
-    def test_posonly_opt_kwonly_opt(self):
-        self.assertEqual(ac_tester.posonly_opt_kwonly_opt(1), (1, None, None, None))
-        self.assertEqual(ac_tester.posonly_opt_kwonly_opt(1, 2), (1, 2, None, None))
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_opt_kwonly_opt(1, 2, 3)
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_opt_kwonly_opt(1, b=2)
-        self.assertEqual(ac_tester.posonly_opt_kwonly_opt(1, 2, c=3), (1, 2, 3, None))
-        self.assertEqual(ac_tester.posonly_opt_kwonly_opt(1, 2, c=3, d=4), (1, 2, 3, 4))
-
-    def test_posonly_keywords_kwonly_opt(self):
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_keywords_kwonly_opt(1)
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_keywords_kwonly_opt(1, 2)
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_keywords_kwonly_opt(1, b=2)
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_keywords_kwonly_opt(1, 2, 3)
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_keywords_kwonly_opt(a=1, b=2, c=3)
-        self.assertEqual(ac_tester.posonly_keywords_kwonly_opt(1, 2, c=3), (1, 2, 3, None, None))
-        self.assertEqual(ac_tester.posonly_keywords_kwonly_opt(1, b=2, c=3), (1, 2, 3, None, None))
-        self.assertEqual(ac_tester.posonly_keywords_kwonly_opt(1, 2, c=3, d=4), (1, 2, 3, 4, None))
-        self.assertEqual(ac_tester.posonly_keywords_kwonly_opt(1, 2, c=3, d=4, e=5), (1, 2, 3, 4, 5))
-
-    def test_posonly_keywords_opt_kwonly_opt(self):
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_keywords_opt_kwonly_opt(1)
-        self.assertEqual(ac_tester.posonly_keywords_opt_kwonly_opt(1, 2), (1, 2, None, None, None))
-        self.assertEqual(ac_tester.posonly_keywords_opt_kwonly_opt(1, b=2), (1, 2, None, None, None))
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_keywords_opt_kwonly_opt(1, 2, 3, 4)
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_keywords_opt_kwonly_opt(a=1, b=2)
-        self.assertEqual(ac_tester.posonly_keywords_opt_kwonly_opt(1, 2, c=3), (1, 2, 3, None, None))
-        self.assertEqual(ac_tester.posonly_keywords_opt_kwonly_opt(1, b=2, c=3), (1, 2, 3, None, None))
-        self.assertEqual(ac_tester.posonly_keywords_opt_kwonly_opt(1, 2, 3, d=4), (1, 2, 3, 4, None))
-        self.assertEqual(ac_tester.posonly_keywords_opt_kwonly_opt(1, 2, c=3, d=4), (1, 2, 3, 4, None))
-        self.assertEqual(ac_tester.posonly_keywords_opt_kwonly_opt(1, 2, 3, d=4, e=5), (1, 2, 3, 4, 5))
-        self.assertEqual(ac_tester.posonly_keywords_opt_kwonly_opt(1, 2, c=3, d=4, e=5), (1, 2, 3, 4, 5))
-
-    def test_posonly_opt_keywords_opt_kwonly_opt(self):
-        self.assertEqual(ac_tester.posonly_opt_keywords_opt_kwonly_opt(1), (1, None, None, None))
-        self.assertEqual(ac_tester.posonly_opt_keywords_opt_kwonly_opt(1, 2), (1, 2, None, None))
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_opt_keywords_opt_kwonly_opt(1, b=2)
-        self.assertEqual(ac_tester.posonly_opt_keywords_opt_kwonly_opt(1, 2, 3), (1, 2, 3, None))
-        self.assertEqual(ac_tester.posonly_opt_keywords_opt_kwonly_opt(1, 2, c=3), (1, 2, 3, None))
-        self.assertEqual(ac_tester.posonly_opt_keywords_opt_kwonly_opt(1, 2, 3, d=4), (1, 2, 3, 4))
-        self.assertEqual(ac_tester.posonly_opt_keywords_opt_kwonly_opt(1, 2, c=3, d=4), (1, 2, 3, 4))
-        with self.assertRaises(TypeError):
-            ac_tester.posonly_opt_keywords_opt_kwonly_opt(1, 2, 3, 4)
-
-    def test_keyword_only_parameter(self):
-        with self.assertRaises(TypeError):
-            ac_tester.keyword_only_parameter()
-        with self.assertRaises(TypeError):
-            ac_tester.keyword_only_parameter(1)
-        self.assertEqual(ac_tester.keyword_only_parameter(a=1), (1,))
-
-    def test_gh_99240_double_free(self):
-        expected_error = r'gh_99240_double_free\(\) argument 2 must be encoded string without null bytes, not str'
-        with self.assertRaisesRegex(TypeError, expected_error):
-            ac_tester.gh_99240_double_free('a', '\0b')
+        # If last line is empty, expect it to be unchanged.
+        lines = (
+            "\n"
+            "one\n"
+            "two\n"
+            ""
+        )
+        expected = (
+            "foo\n"
+            "onefoo\n"
+            "twofoo\n"
+            ""
+        )
+        out = clinic.suffix_all_lines(lines, suffix="foo")
+        self.assertEqual(out, expected)
 
 
 if __name__ == "__main__":

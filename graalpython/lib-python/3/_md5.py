@@ -56,7 +56,7 @@ Dinu C. Gherman
 
 
 __date__    = '2004-11-17'
-__version__ = 0.91 # Modernised by J. Hallén and L. Creighton for Pypy
+__version__ = 0.91 # Modernised by J. Hallï¿½n and L. Creighton for Pypy
 
 __metaclass__ = type # or genrpy won't work
 

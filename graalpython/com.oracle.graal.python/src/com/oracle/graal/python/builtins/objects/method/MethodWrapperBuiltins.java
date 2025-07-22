@@ -94,7 +94,7 @@ public final class MethodWrapperBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString reprBuiltinMethod(VirtualFrame frame, PBuiltinMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
                         @Shared @Cached GetNameNode getTypeNameNode,
@@ -106,7 +106,7 @@ public final class MethodWrapperBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString reprBuiltinMethod(VirtualFrame frame, PMethod self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
                         @Shared @Cached GetNameNode getTypeNameNode,

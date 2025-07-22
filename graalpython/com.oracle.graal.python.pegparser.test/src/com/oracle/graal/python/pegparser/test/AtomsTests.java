@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -102,7 +102,24 @@ public class AtomsTests extends ParserTestBase {
     @Test
     public void atomFString() throws Exception {
         checkTreeResult("f'a{b!r}'");
-        checkError("f'a{b!g}'", "Generic[1:2-1:9]:f-string: invalid conversion character: expected 's', 'r', or 'a'");
+        checkError("f'a{b!g}'", "Syntax[1:6-1:7]:f-string: invalid conversion character 'g': expected 's', 'r', or 'a'");
+    }
+
+    @Test
+    public void atomFStringFormatSpec() throws Exception {
+        checkTreeResult("f'a{b!r:05}'");
+    }
+
+    @Test
+    public void atomFStringDebug() throws Exception {
+        checkTreeResult("f'a{b=}'");
+    }
+
+    @Test
+    public void atomFStringDebugMultiline() throws Exception {
+        checkTreeResult("f\"\"\"a{b\n" +
+                        "+ # comment\n" +
+                        "c=}\"\"\"");
     }
 
     @Test
@@ -115,13 +132,18 @@ public class AtomsTests extends ParserTestBase {
     }
 
     @Test
+    public void atomFStringGreedy() throws Exception {
+        checkTreeResult("f\"{1:>3{5}}}}\"");
+    }
+
+    @Test
     public void atomByte() throws Exception {
         checkTreeResult("b\"a\"");
     }
 
     @Test
     public void atomMixedBytesString() throws Exception {
-        checkError("b\"a\" f'aa'", "Generic[1:0-1:10]:cannot mix bytes and nonbytes literals");
+        checkError("b\"a\" f'aa'", "Syntax[1:10-1:11]:cannot mix bytes and nonbytes literals");
     }
 
     @Test
@@ -182,5 +204,20 @@ public class AtomsTests extends ParserTestBase {
     @Test
     public void atomUnicodeStringPrefix() throws Exception {
         checkTreeResult("(u'abc', u'abc' 'def', 'abc' u'def', f'{u\"abc\"}' 'def')");
+    }
+
+    @Test
+    public void atomMultilineString() throws Exception {
+        checkTreeResult("'''abc\ndef'''");
+    }
+
+    @Test
+    public void atomMultilineStringCrLf() throws Exception {
+        checkTreeResult("'''abc\r\ndef'''");
+    }
+
+    @Test
+    public void atomMultilineStringCr() throws Exception {
+        checkTreeResult("'''abc\rdef'''");
     }
 }

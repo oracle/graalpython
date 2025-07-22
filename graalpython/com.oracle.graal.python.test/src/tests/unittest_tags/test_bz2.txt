@@ -26,6 +26,10 @@ test.test_bz2.BZ2FileTest.testIteratorMultiStream @ darwin-arm64,darwin-x86_64,l
 test.test_bz2.BZ2FileTest.testMixedIterationAndReads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_bz2.BZ2FileTest.testMultiStreamOrdering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_bz2.BZ2FileTest.testOpenBytesFilename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_bz2.BZ2FileTest.testOpenFileWithIntName @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_bz2.BZ2FileTest.testOpenFileWithName @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_bz2.BZ2FileTest.testOpenFileWithoutName @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_bz2.BZ2FileTest.testOpenFilename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_bz2.BZ2FileTest.testOpenNonexistent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_bz2.BZ2FileTest.testOpenPathLikeFilename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_bz2.BZ2FileTest.testPeek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

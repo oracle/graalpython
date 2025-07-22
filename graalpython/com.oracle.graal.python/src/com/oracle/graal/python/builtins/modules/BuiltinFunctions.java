@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SyntaxError;
@@ -33,7 +32,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.builtins.objects.PNone.NONE;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
-import static com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback.raiseSyntaxError;
+import static com.oracle.graal.python.compiler.ParserCallbacksImpl.raiseSyntaxError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ABS;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ALL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ANY;
@@ -119,7 +118,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IONodes;
@@ -167,7 +165,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
 import com.oracle.graal.python.compiler.Compiler;
-import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
+import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyEvalGetGlobals;
@@ -244,10 +242,10 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.pegparser.AbstractParser;
-import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
+import com.oracle.graal.python.pegparser.ParserCallbacks;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -293,6 +291,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.LoopNode;
@@ -305,7 +304,6 @@ import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(defineModule = J_BUILTINS, isEager = true)
@@ -432,7 +430,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         protected boolean doHashStorage(VirtualFrame frame, HashingStorage hashingStorage, AnyOrAllNodeType nodeType,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached InlinedLoopConditionProfile loopConditionProfile,
                         @Cached HashingStorageGetIterator getIter,
@@ -459,14 +457,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "isBuiltinList(object)")
         static boolean doList(VirtualFrame frame, PList object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ALL);
         }
 
         @Specialization(guards = "isBuiltinTuple(object)")
         static boolean doTuple(VirtualFrame frame, PTuple object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ALL);
         }
@@ -479,7 +477,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         static boolean doObject(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode nextNode,
                         @Cached PyObjectIsTrueNode isTrueNode) {
@@ -510,14 +508,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "isBuiltinList(object)")
         static boolean doList(VirtualFrame frame, PList object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ANY);
         }
 
         @Specialization(guards = "isBuiltinTuple(object)")
         static boolean doTuple(VirtualFrame frame, PTuple object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ANY);
         }
@@ -530,7 +528,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         static boolean doObject(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode nextNode,
                         @Cached PyObjectIsTrueNode isTrueNode) {
@@ -639,7 +637,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         static TruffleString doIt(VirtualFrame frame, Object x,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BinOctHexHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, x, T_BIN_PREFIX, 2, BinNode::longToString);
         }
@@ -658,7 +656,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         static TruffleString doIt(VirtualFrame frame, Object x,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BinOctHexHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, x, T_OCT_PREFIX, 8, OctNode::longToString);
         }
@@ -677,7 +675,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         static TruffleString doIt(VirtualFrame frame, Object x,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BinOctHexHelperNode helperNode) {
             return helperNode.execute(frame, inliningTarget, x, T_HEX_PREFIX, 16, HexNode::longToString);
         }
@@ -700,7 +698,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         static boolean doGeneric(Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyCallableCheckNode callableCheck) {
             return callableCheck.execute(inliningTarget, object);
         }
@@ -713,7 +711,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class ChrNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
         static TruffleString charFromInt(int arg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.FromCodePointNode fromCodePointNode,
                         @Cached PRaiseNode raiseNode) {
             if (arg >= 0 && arg <= Character.MAX_CODE_POINT) {
@@ -735,7 +733,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
         long hash(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectHashNode hashNode) {
             return hashNode.execute(frame, inliningTarget, object);
         }
@@ -749,7 +747,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         // logic like in 'Objects/object.c: _dir_locals'
         @Specialization(guards = "isNoValue(object)")
         Object locals(VirtualFrame frame, @SuppressWarnings("unused") Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyEvalGetLocals getLocals,
                         @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached ListBuiltins.ListSortNode sortNode,
@@ -763,7 +761,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(object)")
         static Object dir(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectDir dir) {
             return dir.execute(frame, inliningTarget, object);
         }
@@ -776,7 +774,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         static Object doObject(VirtualFrame frame, Object a, Object b,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberDivmodNode divmodNode) {
             return divmodNode.execute(frame, inliningTarget, a, b);
         }
@@ -790,16 +788,27 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         static Object[] inheritGlobals(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PNone globals, Object locals, TruffleString mode,
                         @Exclusive @Cached ReadCallerFrameNode readCallerFrameNode,
+                        @Exclusive @Cached GetOrCreateDictNode getOrCreateDictNode,
+                        @Exclusive @Cached InlinedConditionProfile haveCallerFrameProfile,
                         @Exclusive @Cached InlinedConditionProfile haveLocals,
                         @Exclusive @Cached PyMappingCheckNode mappingCheckNode,
                         @Exclusive @Cached GetFrameLocalsNode getFrameLocalsNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             Object[] args = PArguments.create();
-            PArguments.setGlobals(args, callerFrame.getGlobals());
+            boolean haveCallerFrame = haveCallerFrameProfile.profile(inliningTarget, callerFrame != null);
+            if (haveCallerFrame) {
+                PArguments.setGlobals(args, callerFrame.getGlobals());
+            } else {
+                PArguments.setGlobals(args, getOrCreateDictNode.execute(inliningTarget, PythonContext.get(inliningTarget).getMainModule()));
+            }
             if (haveLocals.profile(inliningTarget, locals instanceof PNone)) {
-                Object callerLocals = getFrameLocalsNode.execute(inliningTarget, callerFrame);
-                setCustomLocals(args, callerLocals);
+                if (haveCallerFrame) {
+                    Object callerLocals = getFrameLocalsNode.execute(inliningTarget, callerFrame);
+                    setCustomLocals(args, callerLocals);
+                } else {
+                    setCustomLocals(args, PArguments.getGlobals(args));
+                }
             } else {
                 if (!mappingCheckNode.execute(inliningTarget, locals)) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.LOCALS_MUST_BE_MAPPING, mode, locals);
@@ -953,17 +962,29 @@ public final class BuiltinFunctions extends PythonBuiltins {
         protected abstract Object executeInternal(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, int flags, boolean dontInherit, int optimize,
                         int featureVersion);
 
+        private int inheritFlags(VirtualFrame frame, int flags, ReadCallerFrameNode readCallerFrame) {
+            PFrame fr = readCallerFrame.executeWith(frame, 0);
+            if (fr != null) {
+                PCode code = PFactory.createCode(PythonLanguage.get(this), fr.getTarget());
+                flags |= code.getFlags() & PyCF_MASK;
+            }
+            return flags;
+        }
+
         @Specialization
         Object doCompile(VirtualFrame frame, TruffleString expression, TruffleString filename, TruffleString mode, int flags, boolean dontInherit, int optimize,
                         int featureVersion,
-                        @Shared @Cached ReadCallerFrameNode readCallerFrame,
-                        @Bind PythonLanguage language) {
+                        @Shared @Cached ReadCallerFrameNode readCallerFrame) {
             if (!dontInherit) {
-                PFrame fr = readCallerFrame.executeWith(frame, 0);
-                PCode code = PFactory.createCode(language, fr.getTarget());
-                flags |= code.getFlags() & PyCF_MASK;
+                flags = inheritFlags(frame, flags, readCallerFrame);
             }
-            return compile(expression, filename, mode, flags, dontInherit, optimize, featureVersion);
+            EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
+            Node encapsulatingNode = encapsulating.set(this);
+            try {
+                return compile(expression, filename, mode, flags, dontInherit, optimize, featureVersion);
+            } finally {
+                encapsulating.set(encapsulatingNode);
+            }
         }
 
         @TruffleBoundary
@@ -988,7 +1009,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             if ((flags & PyCF_ONLY_AST) != 0) {
                 Source source = PythonLanguage.newSource(context, code, filename, mayBeFromFile, PythonLanguage.MIME_TYPE);
-                RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(context.getLanguage()));
+                ParserCallbacksImpl parserCb = new ParserCallbacksImpl(source, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
 
                 EnumSet<AbstractParser.Flags> compilerFlags = EnumSet.noneOf(AbstractParser.Flags.class);
                 if ((flags & PyCF_TYPE_COMMENTS) != 0) {
@@ -1003,9 +1024,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 if (context.getEnv().getOptions().get(PythonOptions.ParserLogFiles)) {
                     PythonLanguage.LOGGER.log(Level.FINE, () -> "parse '" + source.getName() + "'");
                 }
-                Parser parser = Compiler.createParser(code.toJavaStringUncached(), errorCb, type, compilerFlags, featureVersion);
+                Parser parser = Compiler.createParser(code.toJavaStringUncached(), parserCb, type, compilerFlags, featureVersion);
                 ModTy mod = (ModTy) parser.parse();
-                errorCb.triggerDeprecationWarnings();
+                parserCb.triggerDeprecationWarnings();
                 return AstModuleBuiltins.sst2Obj(getContext(), mod);
             }
             CallTarget ct;
@@ -1019,7 +1040,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     return context.getEnv().parsePublic(source);
                 } else {
                     Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.MIME_TYPE);
-                    return context.getLanguage().parse(context, source, InputType.SINGLE, false, optimize, false, null, FutureFeature.fromFlags(flags));
+                    boolean allowIncomplete = (flags & PyCF_ALLOW_INCOMPLETE_INPUT) != 0;
+                    return context.getLanguage().parse(context, source, InputType.SINGLE, false, optimize, false, allowIncomplete, null, FutureFeature.fromFlags(flags));
                 }
             };
             if (getContext().isCoreInitialized()) {
@@ -1032,57 +1054,44 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(limit = "3")
         @SuppressWarnings("truffle-static-method")
-        Object generic(VirtualFrame frame, Object wSource, Object wFilename, TruffleString mode, int flags, @SuppressWarnings("unused") boolean dontInherit, int optimize, int featureVersion,
+        Object generic(VirtualFrame frame, Object wSource, Object wFilename, TruffleString mode, int flags, boolean dontInherit, int optimize, int featureVersion,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode,
                         @Cached PyObjectStrAsTruffleStringNode asStrNode,
                         @CachedLibrary("wSource") InteropLibrary interopLib,
                         @Cached PyUnicodeFSDecoderNode asPath,
-                        @Cached WarnNode warnNode,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Shared @Cached ReadCallerFrameNode readCallerFrame,
                         @Cached PRaiseNode raiseNode) {
             if (wSource instanceof PCode) {
                 return wSource;
             }
-            TruffleString filename;
-            // TODO use PyUnicode_FSDecode
-            if (acquireLib.hasBuffer(wFilename)) {
-                Object filenameBuffer = acquireLib.acquireReadonly(wFilename, frame, indirectCallData);
-                try {
-                    TruffleString utf8 = fromByteArrayNode.execute(bufferLib.getCopiedByteArray(filenameBuffer), Encoding.UTF_8, false);
-                    filename = switchEncodingNode.execute(utf8, TS_ENCODING);
-                    if (!(wFilename instanceof PBytes)) {
-                        warnNode.warnFormat(frame, null, DeprecationWarning, 1, ErrorMessages.PATH_SHOULD_BE_STR_BYTES_PATHLIKE_NOT_P, wFilename);
-                    }
-                } finally {
-                    bufferLib.release(filenameBuffer, frame, indirectCallData);
-                }
-            } else {
-                filename = asPath.execute(frame, wFilename);
-            }
+            TruffleString filename = asPath.execute(frame, wFilename);
 
             if (!dontInherit) {
-                PFrame fr = readCallerFrame.executeWith(frame, 0);
-                PCode code = PFactory.createCode(PythonLanguage.get(inliningTarget), fr.getTarget());
-                flags |= code.getFlags() & PyCF_MASK;
+                flags = inheritFlags(frame, flags, readCallerFrame);
             }
 
-            if (AstModuleBuiltins.isAst(context, wSource)) {
-                ModTy mod = AstModuleBuiltins.obj2sst(inliningTarget, context, wSource, getParserInputType(mode, flags));
-                Source source = PythonUtils.createFakeSource(filename);
-                RootCallTarget rootCallTarget = context.getLanguage(inliningTarget).compileModule(context, mod, source, false, optimize, null, null, flags);
-                return wrapRootCallTarget(rootCallTarget);
+            EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
+            Node encapsulatingNode = encapsulating.set(this);
+            try {
+                if (AstModuleBuiltins.isAst(context, wSource)) {
+                    ModTy mod = AstModuleBuiltins.obj2sst(inliningTarget, context, wSource, getParserInputType(mode, flags));
+                    Source source = PythonUtils.createFakeSource(filename);
+                    RootCallTarget rootCallTarget = context.getLanguage(inliningTarget).compileModule(context, mod, source, false, optimize, null, null, flags);
+                    return wrapRootCallTarget(rootCallTarget);
+                }
+                TruffleString source = sourceAsString(frame, inliningTarget, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode,
+                                raiseNode, indirectCallData);
+                checkSource(source);
+                return compile(source, filename, mode, flags, dontInherit, optimize, featureVersion);
+            } finally {
+                encapsulating.set(encapsulatingNode);
             }
-            TruffleString source = sourceAsString(frame, inliningTarget, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode,
-                            raiseNode, indirectCallData);
-            checkSource(source);
-            return compile(source, filename, mode, flags, dontInherit, optimize, featureVersion);
         }
 
         private static PCode wrapRootCallTarget(RootCallTarget rootCallTarget) {
@@ -1186,13 +1195,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Source source = PythonLanguage.newSource(context, T_SPACE, filename, mayBeFromFile, null);
             SourceRange sourceRange = new SourceRange(1, 0, 1, 0);
             TruffleString message = toTruffleStringUncached(String.format(format, args));
-            throw raiseSyntaxError(ErrorCallback.ErrorType.Syntax, sourceRange, message, source, PythonOptions.isPExceptionWithJavaStacktrace(context.getLanguage()));
+            throw raiseSyntaxError(ParserCallbacks.ErrorType.Syntax, sourceRange, message, source, PythonOptions.isPExceptionWithJavaStacktrace(context.getLanguage()));
         }
 
+        @NeverDefault
         public static CompileNode create(boolean mapFilenameToUri) {
             return BuiltinFunctionsFactory.CompileNodeFactory.create(mapFilenameToUri, false, new ReadArgumentNode[]{});
         }
 
+        @NeverDefault
         public static CompileNode create(boolean mapFilenameToUri, boolean lstrip) {
             return BuiltinFunctionsFactory.CompileNodeFactory.create(mapFilenameToUri, lstrip, new ReadArgumentNode[]{});
         }
@@ -1209,7 +1220,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     abstract static class DelAttrNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object delattr(VirtualFrame frame, Object object, Object name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectSetAttrO setAttr) {
             setAttr.execute(frame, inliningTarget, object, name, NO_VALUE);
             return PNone.NONE;
@@ -1223,14 +1234,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(defaultValue)")
         static Object getAttrNoDefault(VirtualFrame frame, Object primary, Object name, @SuppressWarnings("unused") Object defaultValue,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttrO getAttr) {
             return getAttr.execute(frame, inliningTarget, primary, name);
         }
 
         @Specialization(guards = "!isNoValue(defaultValue)")
         static Object getAttrWithDefault(VirtualFrame frame, Object primary, Object name, Object defaultValue,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile noValueProfile,
                         @Cached PyObjectLookupAttrO lookupAttr) {
             Object result = lookupAttr.execute(frame, inliningTarget, primary, name);
@@ -1293,7 +1304,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         limit = "getVariableArgumentInlineCacheLimit()")
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
         static boolean doTupleConstantLen(VirtualFrame frame, Object instance, PTuple clsTuple,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("getLength(clsTuple)") int cachedLen,
                         @Shared @Cached GetObjectArrayNode getObjectArrayNode,
                         @Shared @Cached("createRecursive()") RecursiveBinaryCheckBaseNode recursiveNode) {
@@ -1309,7 +1320,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "depth < getNodeRecursionLimit()", replaces = "doTupleConstantLen")
         static boolean doRecursiveWithNode(VirtualFrame frame, Object instance, PTuple clsTuple,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetObjectArrayNode getObjectArrayNode,
                         @Shared @Cached("createRecursive()") RecursiveBinaryCheckBaseNode recursiveNode) {
             for (Object cls : getObjectArrayNode.execute(inliningTarget, clsTuple)) {
@@ -1322,8 +1333,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = {"depth != NON_RECURSIVE", "depth >= getNodeRecursionLimit()"})
         static boolean doRecursiveWithLoop(VirtualFrame frame, Object instance, PTuple clsTuple,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Shared @Cached GetObjectArrayNode getObjectArrayNode,
                         @Cached("createNonRecursive()") RecursiveBinaryCheckBaseNode node) {
             PythonContext context = PythonContext.get(inliningTarget);
@@ -1342,7 +1353,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "depth == NON_RECURSIVE")
         boolean doRecursiveWithLoopReuseThis(VirtualFrame frame, Object instance, PTuple clsTuple,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetObjectArrayNode getObjectArrayNode) {
             // This should be only called by doRecursiveWithLoop, now we have to reuse this to stop
             // recursive node creation. It is OK, because now all specializations should always get
@@ -1464,14 +1475,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class IterNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(sentinel)")
         static Object iter(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone sentinel,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter) {
             return getIter.execute(frame, inliningTarget, object);
         }
 
         @Specialization(guards = {"callableCheck.execute(this, callable)", "!isNoValue(sentinel)"}, limit = "1")
         static Object iter(Object callable, Object sentinel,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyCallableCheckNode callableCheck,
                         @Bind PythonLanguage language) {
             return PFactory.createSentinelIterator(language, callable, sentinel);
@@ -1480,7 +1491,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object iterNotCallable(Object callable, Object sentinel,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ITER_V_MUST_BE_CALLABLE);
         }
     }
@@ -1491,7 +1502,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         public int len(VirtualFrame frame, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode) {
             return sizeNode.execute(frame, inliningTarget, obj);
         }
@@ -1522,7 +1533,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 currentValue = nextNode.execute(frame, inliningTarget, iterator);
             } catch (IteratorExhausted e) {
                 if (hasDefaultProfile.profile(inliningTarget, isNoValue(defaultVal))) {
-                    throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.ARG_IS_EMPTY_SEQ, name);
+                    throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.ITERABLE_ARG_IS_EMPTY, name);
                 } else {
                     return defaultVal;
                 }
@@ -1606,7 +1617,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         static Object max(VirtualFrame frame, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MinMaxNode minMaxNode) {
             return minMaxNode.execute(frame, inliningTarget, arg1, args, keywordArgIn, defaultVal, "max", RichCmpOp.Py_GT);
         }
@@ -1619,7 +1630,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class MinNode extends PythonBuiltinNode {
         @Specialization
         static Object min(VirtualFrame frame, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached MinMaxNode minMaxNode) {
             return minMaxNode.execute(frame, inliningTarget, arg1, args, keywordArgIn, defaultVal, "min", RichCmpOp.Py_LT);
         }
@@ -1631,7 +1642,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     abstract static class NextNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object next(VirtualFrame frame, Object iterator, Object defaultObject,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile defaultIsNoValue,
                         @Cached GetObjectSlotsNode getSlots,
                         @Cached CallSlotTpIterNextNode callIterNext,
@@ -1669,7 +1680,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "isString(chrObj)")
         static int ord(Object chrObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
@@ -1689,7 +1700,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         static long ord(PBytesLike chr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToJavaLongExactNode castNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -1702,7 +1713,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = {"!isString(obj)", "!isBytes(obj)"})
         static Object ord(@SuppressWarnings("unused") Object obj,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_EXPECTED_STRING_OF_LEN_BUT_P, "ord()", "1", "obj");
         }
     }
@@ -1725,7 +1736,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         PNone printNoKeywords(VirtualFrame frame, Object[] values, PNone sep, PNone end, PNone file, PNone flush,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getWriteMethod") @Cached PyObjectGetAttr getWriteMethod,
                         @Shared("callWrite") @Cached CallNode callWrite,
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
@@ -1740,7 +1751,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = {"!isNone(file)", "!isNoValue(file)"})
         static PNone printAllGiven(VirtualFrame frame, Object[] values, TruffleString sep, TruffleString end, Object file, boolean flush,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getWriteMethod") @Cached PyObjectGetAttr getWriteMethod,
                         @Shared("callWrite") @Cached CallNode callWrite,
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
@@ -1766,7 +1777,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(replaces = {"printAllGiven", "printNoKeywords"})
         @SuppressWarnings("truffle-static-method")
         PNone printGeneric(VirtualFrame frame, Object[] values, Object sepIn, Object endIn, Object fileIn, Object flushIn,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castSep,
                         @Cached CastToTruffleStringNode castEnd,
                         @Cached PyObjectIsTrueNode castFlush,
@@ -1843,7 +1854,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         static Object repr(VirtualFrame frame, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectReprAsObjectNode reprNode) {
             return reprNode.execute(frame, inliningTarget, obj);
         }
@@ -1858,7 +1869,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public static Object format(VirtualFrame frame, Object obj, Object formatSpec,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("create(T___FORMAT__)") LookupAndCallBinaryNode callFormat,
                         @Cached InlinedConditionProfile formatIsNoValueProfile,
                         @Cached PRaiseNode raiseNode) {
@@ -1887,7 +1898,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public static TruffleString ascii(VirtualFrame frame, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectAsciiNode asciiNode) {
             return asciiNode.execute(frame, inliningTarget, obj);
         }
@@ -1899,7 +1910,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class RoundNode extends PythonBuiltinNode {
         @Specialization
         static Object round(VirtualFrame frame, Object x, @SuppressWarnings("unused") PNone n,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("create(T___ROUND__)") LookupAndCallUnaryNode callRound,
                         @Shared @Cached PRaiseNode raiseNode) {
             Object result = callRound.executeObject(frame, x);
@@ -1911,7 +1922,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "!isPNone(n)")
         static Object round(VirtualFrame frame, Object x, Object n,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("create(T___ROUND__)") LookupAndCallBinaryNode callRound,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
@@ -1928,7 +1939,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class SetAttrNode extends PythonTernaryBuiltinNode {
         @Specialization
         static Object setAttr(VirtualFrame frame, Object object, Object key, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectSetAttrO setAttrNode) {
             setAttrNode.execute(frame, inliningTarget, object, key, value);
             return PNone.NONE;
@@ -1941,7 +1952,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class HasAttrNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean hasAttr(VirtualFrame frame, Object object, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttrO pyObjectLookupAttr) {
             return pyObjectLookupAttr.execute(frame, inliningTarget, object, key) != PNone.NO_VALUE;
         }
@@ -1978,7 +1989,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         Object doIt(VirtualFrame frame, Object[] args, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageGetItem getItem,
                         @Cached PRaiseNode raiseNode) {
             if (getDebuggerSessionCount() > 0) {
@@ -2225,7 +2236,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public Object globals(VirtualFrame frame,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyEvalGetGlobals getGlobals,
                         @Cached GetOrCreateDictNode getDict) {
             Object globals = getGlobals.execute(frame, inliningTarget);
@@ -2243,7 +2254,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         Object locals(VirtualFrame frame,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyEvalGetLocals getLocals) {
             return getLocals.execute(frame, inliningTarget);
         }
@@ -2255,14 +2266,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(none)")
         static Object vars(VirtualFrame frame, @SuppressWarnings("unused") PNone none,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyEvalGetLocals getLocals) {
             return getLocals.execute(frame, inliningTarget);
         }
 
         @Specialization(guards = "!isNoValue(obj)")
         static Object vars(VirtualFrame frame, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PRaiseNode raiseNode) {
             Object dict = lookupAttr.execute(frame, inliningTarget, obj, T___DICT__);
@@ -2304,7 +2315,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         static PTuple update(PTuple bases, Object[] arguments, int nargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PyObjectLookupAttr getMroEntries,
                         @Cached CallUnaryMethodNode callMroEntries,
@@ -2362,7 +2373,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         /* Determine the most derived metatype. */
         @Specialization
         static Object calculate(Object metatype, PTuple bases,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClass,
                         @Cached IsSubtypeNode isSubType,
                         @Cached IsSubtypeNode isSubTypeReverse,
@@ -2419,9 +2430,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         protected Object doItNonFunction(VirtualFrame frame, Object function, Object[] arguments, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached CalculateMetaclassNode calculateMetaClass,
                         @Cached("create(T___PREPARE__)") GetAttributeNode getPrepare,
                         @Cached PyMappingCheckNode pyMappingCheckNode,
@@ -2505,12 +2516,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     // will use the explicitly given object as it is
                 }
             }
-            Object savedState = IndirectCallContext.enter(frame, indirectCallData);
+            Object savedState = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
             InitializeBuildClass init;
             try {
                 init = new InitializeBuildClass(ctx);
             } finally {
-                IndirectCallContext.exit(frame, indirectCallData, savedState);
+                IndirectCallContext.exit(frame, inliningTarget, indirectCallData, savedState);
             }
 
             Object ns;
@@ -2554,7 +2565,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class ANext extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object asyncIter, Object defaultValue,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectSlotsNode getSlots,
                         @Cached CallSlotUnaryNode callSlot,
                         @Cached InlinedConditionProfile hasDefault,

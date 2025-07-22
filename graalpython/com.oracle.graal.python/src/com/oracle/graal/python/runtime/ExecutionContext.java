@@ -50,9 +50,8 @@ import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.StackWalkResult;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
-import com.oracle.graal.python.runtime.ExecutionContextFactory.CallContextNodeGen;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -60,8 +59,8 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -72,7 +71,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -88,10 +86,6 @@ import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 public abstract class ExecutionContext {
     @GenerateUncached
     public abstract static class CallContext extends Node {
-        public static CallContext create() {
-            return CallContextNodeGen.create();
-        }
-
         /**
          * Prepare an indirect call from a Python frame to a Python function.
          */
@@ -153,11 +147,11 @@ public abstract class ExecutionContext {
             protected abstract void execute(VirtualFrame frame, Node inliningTarget, Object[] callArguments, Node callNode, boolean needsCallerFrame);
 
             @Specialization(guards = "!needsCallerFrame")
-            protected static void dontPassCallerFrame(VirtualFrame frame, Node inliningTarget, Object[] callArguments, Node callNode, boolean needsCallerFrame) {
+            protected static void dontPassCallerFrame(Object[] callArguments, Node callNode, boolean needsCallerFrame) {
             }
 
             @Specialization(guards = {"needsCallerFrame", "isPythonFrame(frame)"})
-            protected static void passCallerFrame(VirtualFrame frame, Node inliningTarget, Object[] callArguments, Node callNode, boolean needsCallerFrame,
+            protected static void passCallerFrame(VirtualFrame frame, Object[] callArguments, Node callNode, boolean needsCallerFrame,
                             @Cached(inline = false) MaterializeFrameNode materialize) {
                 PFrame.Reference thisInfo = PArguments.getCurrentFrameInfo(frame);
                 // We are handing the PFrame of the current frame to the caller, i.e., it does
@@ -166,12 +160,11 @@ public abstract class ExecutionContext {
                 PFrame pyFrame = materialize.execute(frame, callNode, false, true);
                 assert thisInfo.getPyFrame() == pyFrame;
                 assert pyFrame.getRef() == thisInfo;
-                thisInfo.setCallNode(callNode);
                 PArguments.setCallerFrameInfo(callArguments, thisInfo);
             }
 
             @Specialization(guards = {"needsCallerFrame", "!isPythonFrame(frame)"})
-            protected static void passEmptyCallerFrame(VirtualFrame frame, Node inliningTarget, Object[] callArguments, Node callNode, boolean needsCallerFrame) {
+            protected static void passEmptyCallerFrame(VirtualFrame frame, Object[] callArguments, Node callNode, boolean needsCallerFrame) {
                 PArguments.setCallerFrameInfo(callArguments, PFrame.Reference.EMPTY);
             }
         }
@@ -292,7 +285,7 @@ public abstract class ExecutionContext {
             // PythonContext.dumpStackOnAssertionHelper("callee w/o GIL");
             // tfel: Create our frame reference here and store it so that
             // there's no reference to it from the caller side.
-            PFrame.Reference thisFrameRef = new PFrame.Reference(PArguments.getCallerFrameInfo(frame));
+            PFrame.Reference thisFrameRef = new PFrame.Reference(getRootNode(), PArguments.getCallerFrameInfo(frame));
             PArguments.setCurrentFrameInfo(frame, thisFrameRef);
         }
 
@@ -329,12 +322,10 @@ public abstract class ExecutionContext {
                 // n.b. We need to use 'ReadCallerFrameNode.getCallerFrame' instead of
                 // 'Truffle.getRuntime().getCallerFrame()' because we still need to skip
                 // non-Python frames, even if we do not skip frames of builtin functions.
-                Frame callerFrame = ReadCallerFrameNode.getCallerFrame(info, FrameInstance.FrameAccess.READ_ONLY, FrameSelector.ALL_PYTHON_FRAMES, 0);
-                if (PArguments.isPythonFrame(callerFrame)) {
-                    callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
+                StackWalkResult callerFrameResult = ReadCallerFrameNode.getCallerFrame(info, FrameInstance.FrameAccess.READ_ONLY, ReadCallerFrameNode.AllFramesSelector.INSTANCE, 0);
+                if (callerFrameResult != null) {
+                    callerInfo = PArguments.getCurrentFrameInfo(callerFrameResult.frame());
                 } else {
-                    // TODO: frames: an assertion should be that this is one of our
-                    // entry point call nodes
                     callerInfo = Reference.EMPTY;
                 }
                 // ReadCallerFrameNode.getCallerFrame must have the assumption invalidated
@@ -422,10 +413,10 @@ public abstract class ExecutionContext {
             }
 
             PythonThreadState pythonThreadState = context.getThreadState(language);
-            return enter(frame, pythonThreadState, needsCallerFrame, needsExceptionState, indirectCallData.getNode());
+            return enter(frame, pythonThreadState, needsCallerFrame, needsExceptionState);
         }
 
-        public static Object enter(VirtualFrame frame, IndirectCallData indirectCallData) {
+        public static Object enter(VirtualFrame frame, Node node, IndirectCallData indirectCallData) {
             if (frame == null || indirectCallData.isUncached()) {
                 return null;
             }
@@ -435,10 +426,9 @@ public abstract class ExecutionContext {
                 return null;
             }
 
-            Node indirectCallNode = indirectCallData.getNode();
-            PythonContext context = PythonContext.get(indirectCallNode);
-            PythonThreadState pythonThreadState = context.getThreadState(context.getLanguage(indirectCallNode));
-            return enter(frame, pythonThreadState, needsCallerFrame, needsExceptionState, indirectCallNode);
+            PythonContext context = PythonContext.get(node);
+            PythonThreadState pythonThreadState = context.getThreadState(context.getLanguage(node));
+            return enter(frame, pythonThreadState, needsCallerFrame, needsExceptionState);
         }
 
         /**
@@ -448,17 +438,16 @@ public abstract class ExecutionContext {
             if (frame == null || indirectCallData.isUncached()) {
                 return null;
             }
-            return enter(frame, pythonThreadState, indirectCallData.calleeNeedsCallerFrame(), indirectCallData.calleeNeedsExceptionState(), indirectCallData.getNode());
+            return enter(frame, pythonThreadState, indirectCallData.calleeNeedsCallerFrame(), indirectCallData.calleeNeedsExceptionState());
         }
 
-        private static IndirectCallState enter(VirtualFrame frame, PythonThreadState pythonThreadState, boolean needsCallerFrame, boolean needsExceptionState, Node callNode) {
+        private static IndirectCallState enter(VirtualFrame frame, PythonThreadState pythonThreadState, boolean needsCallerFrame, boolean needsExceptionState) {
             PFrame.Reference info = null;
             if (needsCallerFrame) {
                 PFrame.Reference prev = pythonThreadState.popTopFrameInfo();
                 assert prev == null : "trying to call from Python to a foreign function, but we didn't clear the topframeref. " +
                                 "This indicates that a call into Python code happened without a proper enter through ForeignToPythonCallContext";
                 info = PArguments.getCurrentFrameInfo(frame);
-                info.setCallNode(callNode);
                 pythonThreadState.setTopFrameInfo(info);
             }
             AbstractTruffleException curExc = pythonThreadState.getCaughtException();
@@ -489,12 +478,11 @@ public abstract class ExecutionContext {
             assert savedState == null : "tried to exit an indirect call with state, but without frame/context";
         }
 
-        public static void exit(VirtualFrame frame, IndirectCallData indirectCallData, Object savedState) {
+        public static void exit(VirtualFrame frame, Node node, IndirectCallData indirectCallData, Object savedState) {
             if (savedState != null && frame != null && !indirectCallData.isUncached()) {
-                Node indirectCallNode = indirectCallData.getNode();
-                PythonContext context = PythonContext.get(indirectCallNode);
+                PythonContext context = PythonContext.get(node);
                 if (context != null) {
-                    PythonLanguage language = context.getLanguage(indirectCallNode);
+                    PythonLanguage language = context.getLanguage(node);
                     exit(frame, context.getThreadState(language), savedState);
                     return;
                 }

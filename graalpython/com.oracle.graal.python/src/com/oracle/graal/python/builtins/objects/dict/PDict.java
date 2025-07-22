@@ -192,7 +192,7 @@ public class PDict extends PHashingCollection {
 
     @ExportMessage
     static void writeHashEntry(PDict self, Object key, Object value,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached GilNode gil,
                     @Cached IsBuiltinObjectProfile errorProfile,
                     @Cached HashingStorageSetItem setItem,

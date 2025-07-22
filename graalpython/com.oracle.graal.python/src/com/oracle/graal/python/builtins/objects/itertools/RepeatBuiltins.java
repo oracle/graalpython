@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.LEN_OF_UNSIZED_OBJECT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
@@ -100,7 +101,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object construct(VirtualFrame frame, Object cls, Object object, Object timesObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
@@ -156,7 +157,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.getCnt() < 0")
         static Object hintNeg(PRepeat self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, LEN_OF_UNSIZED_OBJECT);
         }
     }
@@ -166,10 +167,11 @@ public final class RepeatBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reduce(PRepeat self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile negativeCountProfile,
                         @Cached GetClassNode getClass,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object type = getClass.execute(inliningTarget, self);
             Object[] tupleElements;
             if (negativeCountProfile.profile(inliningTarget, self.getCnt() < 0)) {
@@ -187,7 +189,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getCnt() >= 0")
         static TruffleString reprPos(VirtualFrame frame, PRepeat self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getClass") @Cached GetClassNode getClass,
                         @Shared("getAttr") @Cached PyObjectGetAttr getAttrNode,
                         @Shared("repr") @Cached PyObjectReprAsObjectNode reprNode,
@@ -201,7 +203,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getCnt() < 0")
         static TruffleString reprNeg(VirtualFrame frame, PRepeat self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getClass") @Cached GetClassNode getClass,
                         @Shared("getAttr") @Cached PyObjectGetAttr getAttrNode,
                         @Shared("repr") @Cached PyObjectReprAsObjectNode reprNode,

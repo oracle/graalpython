@@ -30,8 +30,10 @@ test.test_unicode.UnicodeTest.test_expandtabs @ darwin-arm64,darwin-x86_64,linux
 test.test_unicode.UnicodeTest.test_extended_getslice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_unicode.UnicodeTest.test_find @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_unicode.UnicodeTest.test_find_etc_raise_correct_error_messages @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_unicode.UnicodeTest.test_find_many_lengths @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_unicode.UnicodeTest.test_find_periodic_pattern @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_unicode.UnicodeTest.test_find_shift_table_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_unicode.UnicodeTest.test_find_with_memory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_unicode.UnicodeTest.test_fixtype @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_unicode.UnicodeTest.test_floatformatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_unicode.UnicodeTest.test_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -85,6 +87,7 @@ test.test_unicode.UnicodeTest.test_removeprefix @ darwin-arm64,darwin-x86_64,lin
 test.test_unicode.UnicodeTest.test_removesuffix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_unicode.UnicodeTest.test_repeat_id_preserving @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_unicode.UnicodeTest.test_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_unicode.UnicodeTest.test_replace_uses_two_way_maxcount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_unicode.UnicodeTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_unicode.UnicodeTest.test_rfind @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_unicode.UnicodeTest.test_rindex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

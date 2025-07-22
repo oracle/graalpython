@@ -91,7 +91,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
     abstract static class ArrayReconstructorNode extends PythonClinicBuiltinNode {
         @Specialization(guards = "mformatCode == cachedCode", limit = "3")
         static Object reconstructCached(VirtualFrame frame, Object arrayType, TruffleString typeCode, @SuppressWarnings("unused") int mformatCode, PBytes bytes,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("mformatCode") int cachedCode,
                         // Truffle lacks generic inline value profile, but it still warns that this
                         // can be inlined:
@@ -117,7 +117,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "reconstructCached")
         static Object reconstruct(VirtualFrame frame, Object arrayType, TruffleString typeCode, int mformatCode, PBytes bytes,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callDecode,
                         @Exclusive @Cached ArrayBuiltins.FromBytesNode fromBytesNode,
                         @Exclusive @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
@@ -175,7 +175,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPBytes(value)")
         @SuppressWarnings("unused")
         static Object error(Object arrayType, TruffleString typeCode, int mformatCode, Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.FOURTH_ARG_SHOULD_BE_BYTES, value);
         }
 

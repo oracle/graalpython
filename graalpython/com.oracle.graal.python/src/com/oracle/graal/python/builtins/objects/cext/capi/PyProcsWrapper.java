@@ -177,7 +177,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallManagedSlotGetAttrNode callGetAttr,
                         @Cached NativeToPythonNode toJavaNode,
@@ -224,7 +224,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallBinaryMethodNode executeNode,
                         @Cached NativeToPythonNode toJavaNode,
@@ -266,7 +266,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallSlotBinaryFuncNode callSlotNode,
                         @Cached NativeToPythonNode selfToJavaNode,
@@ -368,7 +368,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallSlotBinaryOpNode callSlotNode,
                         @Cached NativeToPythonNode selfToJavaNode,
@@ -426,7 +426,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallUnaryMethodNode executeNode,
                         @Cached NativeToPythonNode toJavaNode,
@@ -477,7 +477,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallSlotUnaryNode callNode,
                         @Cached NativeToPythonNode toJavaNode,
@@ -521,7 +521,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallSlotTpIterNextNode callNextNode,
                         @Cached NativeToPythonNode toJavaNode,
@@ -564,7 +564,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallSlotNbBoolNode callSlotNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -609,7 +609,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallSlotSqContainsNode callSlotNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -656,7 +656,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         int execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallSlotMpAssSubscriptNode callNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached InlinedConditionProfile arityProfile,
@@ -698,7 +698,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         int execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallManagedSlotSetAttrNode callSlotNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached InlinedConditionProfile arityProfile,
@@ -745,7 +745,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         int execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallSlotDescrSet callSetNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -764,7 +764,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     throw checkThrowableBeforeNative(t, "SetAttrWrapper", getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return -1;
             } finally {
                 CApiTiming.exit(timing);
@@ -797,7 +797,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         int execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExecutePositionalStarargsNode posStarargsNode,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode,
                         @Cached CallSlotTpInitNode callSlot,
@@ -959,7 +959,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         static Object execute(NbPowerWrapper self, Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -1015,7 +1015,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         static Object execute(NbInPlacePowerWrapper self, Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -1063,7 +1063,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached CallSlotRichCmpNode callNode,
                         @Cached PythonToNativeNewRefNode toNativeNode,
@@ -1111,7 +1111,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallBinaryMethodNode executeNode,
                         @Cached NativeToPythonNode toJavaNode,
@@ -1160,7 +1160,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallSlotSizeArgFun callSlotNode,
                         @Cached SsizeAsIntNode asIntNode,
@@ -1243,7 +1243,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         int execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallSlotSqAssItemNode executeNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached SsizeAsIntNode asIntNode,
@@ -1289,7 +1289,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @ExportMessage
         long execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallSlotLenNode callSlotNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -1387,7 +1387,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
             @Specialization(guards = "arguments.length == 3")
             static Object call(DescrGetFunctionWrapper self, Object[] arguments,
-                            @Bind("this") Node inliningTarget,
+                            @Bind Node inliningTarget,
                             @Cached CallSlotDescrGet callGetNode,
                             @Cached NativeToPythonNode toJavaNode,
                             @Cached PythonToNativeNewRefNode toNativeNode,

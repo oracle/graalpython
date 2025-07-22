@@ -67,6 +67,10 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateInline
 @GenerateCached(false)
 public abstract class PyTupleSizeNode extends PNodeWithContext {
+    public static int executeUncached(Object tuple) {
+        return PyTupleSizeNodeGen.getUncached().execute(null, tuple);
+    }
+
     public abstract int execute(Node inliningTarget, Object tuple);
 
     @Specialization
@@ -87,7 +91,7 @@ public abstract class PyTupleSizeNode extends PNodeWithContext {
     @Fallback
     @InliningCutoff
     static int size(Object obj,
-                    @Bind("this") Node inliningTarget) {
+                    @Bind Node inliningTarget) {
         throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, "PyTuple_Size");
     }
 

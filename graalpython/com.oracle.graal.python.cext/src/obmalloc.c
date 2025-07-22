@@ -73,10 +73,12 @@ typedef struct {
 
 static GraalPyMem_t _GraalPyMem_State = { 0, 0, 0 };
 
+#if 0 // GraalPy change
 /* bpo-35053: Declare tracemalloc configuration here rather than
    Modules/_tracemalloc.c because _tracemalloc can be compiled as dynamic
    library, whereas _Py_NewReference() requires it. */
 struct _PyTraceMalloc_Config _Py_tracemalloc_config = _PyTraceMalloc_Config_INIT;
+#endif // GraalPy change
 
 
 static void *

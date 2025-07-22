@@ -124,7 +124,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object PyCPointerType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageGetItem getItem,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached GetDictIfExistsNode getDict,
@@ -215,7 +215,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPNone(value)")
         static Object PyCPointerType_from_param(VirtualFrame frame, Object type, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached CastToJavaBooleanNode toJavaBooleanNode,
                         @Cached IsInstanceNode isInstanceNode,
@@ -253,7 +253,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object PyCPointerType_set_type(Object self, TruffleString type,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageSetItem setItem,
                         @Cached IsTypeNode isTypeNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
@@ -267,7 +267,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!isString(type)")
         static Object error(Object self, Object type,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, TYPE_MUST_BE_A_TYPE);
         }
     }

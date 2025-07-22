@@ -43,6 +43,7 @@ package org.graalvm.python.embedding;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 import org.graalvm.polyglot.io.FileSystem;
 
@@ -92,10 +93,8 @@ public final class VirtualFileSystem implements AutoCloseable {
      * @since 24.2.0
      */
     public static final class Builder {
-        private static final Predicate<Path> DEFAULT_EXTRACT_FILTER = (p) -> {
-            var s = p.toString();
-            return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd") || s.endsWith(".dll") || s.endsWith(".ttf");
-        };
+        private static final Pattern DEFAULT_EXTRACT_REGEX = Pattern.compile(".*(\\.(so|dylib|pyd|dll|ttf)$|\\.so\\..*)");
+        private static final Predicate<Path> DEFAULT_EXTRACT_FILTER = (p) -> DEFAULT_EXTRACT_REGEX.matcher(p.toString()).matches();
 
         private static final String DEFAULT_WINDOWS_MOUNT_POINT = "X:\\graalpy_vfs";
         private static final String DEFAULT_UNIX_MOUNT_POINT = "/graalpy_vfs";
@@ -229,8 +228,9 @@ public final class VirtualFileSystem implements AutoCloseable {
         /**
          * This filter applied to files in the virtual filesystem treats them as symlinks to real
          * files in the host filesystem. This is useful, for example, if files in the virtual
-         * filesystem need to be accessed outside the Truffle sandbox. They will be extracted to the
-         * Java temporary directory on demand. The default filter matches any DLLs, dynamic
+         * filesystem need to be accessed outside the Truffle IO virtualization. They will be
+         * extracted to the Java temporary directory when first accessed. Matching files belonging
+         * to the same wheel are extracted together. The default filter matches any DLLs, dynamic
          * libraries, shared objects, and Python C extension files, because these need to be
          * accessed by the operating system loader. Setting this filter to <code>null</code> denies
          * any extraction. Any other filter is combined with the default filter.

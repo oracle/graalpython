@@ -182,7 +182,7 @@ public final class RandomBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!canBeInteger(inputSeed)", "!isPNone(inputSeed)"})
         static PNone seedGeneric(VirtualFrame frame, PRandom random, Object inputSeed,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectHashNode hash) {
             return seedLong(random, hash.execute(frame, inliningTarget, inputSeed));
         }
@@ -194,7 +194,7 @@ public final class RandomBuiltins extends PythonBuiltins {
 
         @Specialization
         static PNone setstate(PRandom random, PTuple tuple,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectArrayNode getObjectArrayNode,
                         @Cached CastToJavaUnsignedLongNode castNode,
                         @Cached PRaiseNode raiseNode) {
@@ -218,7 +218,7 @@ public final class RandomBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object setstate(Object random, Object state,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.STATE_VECTOR_MUST_BE_A_TUPLE);
         }
     }
@@ -273,7 +273,7 @@ public final class RandomBuiltins extends PythonBuiltins {
         @Specialization(guards = "k < 0")
         @SuppressWarnings("unused")
         static int negative(PRandom random, int k,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.NUMBER_OF_BITS_MUST_BE_NON_NEGATIVE);
         }
 

@@ -115,7 +115,7 @@ public final class StructureBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object GenericPyCDataNew(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
                         @Cached PRaiseNode raiseNode) {
@@ -132,7 +132,7 @@ public final class StructureBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object Struct_init(VirtualFrame frame, CDataObject self, Object[] args, PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor(this)") com.oracle.graal.python.runtime.IndirectCallData indirectCallData,
                         @Cached PyObjectSetAttr setAttr,
                         @Cached GetClassNode getClassNode,
@@ -191,11 +191,11 @@ public final class StructureBuiltins extends PythonBuiltins {
                                     indirectCallData, setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode,
                                     raiseNode, recursionLimit - 1);
                 } else {
-                    Object savedState = IndirectCallContext.enter(frame, indirectCallData);
+                    Object savedState = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
                     try {
                         index = _init_pos_args_boundary(self, base, args, kwds, index, indirectCallData, setAttr, getItemNode);
                     } finally {
-                        IndirectCallContext.exit(frame, indirectCallData, savedState);
+                        IndirectCallContext.exit(frame, inliningTarget, indirectCallData, savedState);
                     }
                 }
             }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -20,9 +20,9 @@ PyAPI_DATA(PyTypeObject) PyContextToken_Type;
 typedef struct _pycontexttokenobject PyContextToken;
 
 
-#define PyContext_CheckExact(o) Py_IS_TYPE(o, &PyContext_Type)
-#define PyContextVar_CheckExact(o) Py_IS_TYPE(o, &PyContextVar_Type)
-#define PyContextToken_CheckExact(o) Py_IS_TYPE(o, &PyContextToken_Type)
+#define PyContext_CheckExact(o) Py_IS_TYPE((o), &PyContext_Type)
+#define PyContextVar_CheckExact(o) Py_IS_TYPE((o), &PyContextVar_Type)
+#define PyContextToken_CheckExact(o) Py_IS_TYPE((o), &PyContextToken_Type)
 
 
 PyAPI_FUNC(PyObject *) PyContext_New(void);

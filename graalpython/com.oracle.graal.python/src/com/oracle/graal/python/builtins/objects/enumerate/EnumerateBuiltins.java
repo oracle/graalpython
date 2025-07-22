@@ -85,7 +85,7 @@ public final class EnumerateBuiltins extends PythonBuiltins {
 
         @Specialization
         static PEnumerate doNone(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone keywordArg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
@@ -94,7 +94,7 @@ public final class EnumerateBuiltins extends PythonBuiltins {
 
         @Specialization
         static PEnumerate doInt(VirtualFrame frame, Object cls, Object iterable, int start,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
@@ -103,7 +103,7 @@ public final class EnumerateBuiltins extends PythonBuiltins {
 
         @Specialization
         static PEnumerate doLong(VirtualFrame frame, Object cls, Object iterable, long start,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
@@ -112,7 +112,7 @@ public final class EnumerateBuiltins extends PythonBuiltins {
 
         @Specialization
         static PEnumerate doPInt(VirtualFrame frame, Object cls, Object iterable, PInt start,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
@@ -125,7 +125,7 @@ public final class EnumerateBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isIntegerIndex(start)")
         static void enumerate(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object iterable, Object start,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, start);
         }
     }
@@ -136,7 +136,7 @@ public final class EnumerateBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doNext(VirtualFrame frame, PEnumerate self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile bigIntIndexProfile,
                         @Cached GetObjectSlotsNode getSlots,
@@ -163,7 +163,7 @@ public final class EnumerateBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reduce(PEnumerate self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile bigIntIndexProfile,
                         @Cached GetClassNode getClassNode) {

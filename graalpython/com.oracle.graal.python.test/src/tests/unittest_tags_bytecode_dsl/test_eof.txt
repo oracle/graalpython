@@ -2,5 +2,3 @@ test.test_eof.EOFTestCase.test_EOFS @ linux-x86_64
 test.test_eof.EOFTestCase.test_EOFS_with_file @ linux-x86_64
 test.test_eof.EOFTestCase.test_EOF_single_quote @ linux-x86_64
 test.test_eof.EOFTestCase.test_eof_with_line_continuation @ linux-x86_64
-test.test_eof.EOFTestCase.test_line_continuation_EOF @ linux-x86_64
-test.test_eof.EOFTestCase.test_line_continuation_EOF_from_file_bpo2180 @ linux-x86_64

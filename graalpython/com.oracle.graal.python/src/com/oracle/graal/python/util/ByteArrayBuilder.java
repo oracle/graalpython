@@ -109,8 +109,8 @@ public final class ByteArrayBuilder {
                 if (newSize < sizeTimes2) {
                     newSize = sizeTimes2;
                 }
+                data = arrayCopyOf(data, newSize);
             }
-            data = arrayCopyOf(data, newSize);
         } catch (OverflowException e) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new OutOfMemoryError();
@@ -125,7 +125,7 @@ public final class ByteArrayBuilder {
         @Specialization(limit = "3")
         static void appendBytes(VirtualFrame frame, Node inliningTarget, ByteArrayBuilder builder, Object data,
                         @Bind PythonContext context,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib) {
             Object dataBuffer = bufferAcquireLib.acquireReadonly(data, frame, context, context.getLanguage(inliningTarget), indirectCallData);

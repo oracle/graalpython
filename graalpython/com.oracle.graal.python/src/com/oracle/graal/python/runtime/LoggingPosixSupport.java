@@ -263,6 +263,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    public boolean poll(int fd, boolean forWriting, Timeval timeout,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("poll", "%s %s %s", fd, forWriting, timeout);
+        try {
+            return logExit("poll", "%s", lib.poll(delegate, fd, forWriting, timeout));
+        } catch (PosixException e) {
+            throw logException("poll", e);
+        }
+    }
+
+    @ExportMessage
     final long lseek(int fd, long offset, int how,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("lseek", "%d, %d, %d", fd, offset, how);

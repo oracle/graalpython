@@ -86,7 +86,7 @@ public abstract class WriteUnraisableNode extends Node {
 
     @Specialization
     static void writeUnraisable(VirtualFrame frame, Object exception, TruffleString message, Object object,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PyObjectLookupAttr lookup,
                     @Cached CallNode callNode,
                     @Cached GetClassNode getClassNode,

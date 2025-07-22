@@ -10,5 +10,5 @@ Module[1:0-1:33]
             Call[1:6-1:24]
                 Target: Name[1:6-1:15] Value: "NameError"
                 Args:
-                    RAW[1:16-1:23] Value: "Pavel"
+                    CODEPOINTS[1:16-1:23] Value: "Pavel"
         Cause: Name[1:30-1:33] Value: "exc"

@@ -107,7 +107,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object mbstreamreaderNew(VirtualFrame frame, Object type, Object stream, Object err,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual,
@@ -154,7 +154,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
         // mbstreamreader_iread
         @Specialization
         static TruffleString iread(VirtualFrame frame, MultibyteStreamReaderObject self, TruffleString method, long sizehint,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyBytesCheckNode bytesCheckNode,
                         @Cached BytesNodes.ToBytesNode toBytesNode,

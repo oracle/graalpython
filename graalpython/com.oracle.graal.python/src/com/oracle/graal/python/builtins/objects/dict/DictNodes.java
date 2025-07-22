@@ -49,9 +49,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.ForeignHashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.ObjectToArrayPairNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGuards;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
@@ -72,7 +70,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -139,7 +136,7 @@ public abstract class DictNodes {
 
         @Specialization
         static void updateDictGeneric(VirtualFrame frame, Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached BuiltinClassProfiles.IsBuiltinObjectProfile isDictNode,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached UpdateInnerNode updateInnerNode) {
@@ -157,25 +154,12 @@ public abstract class DictNodes {
         }
     }
 
-    @ImportStatic(HashingStorageGuards.class)
     @GenerateInline
     @GenerateCached(false)
     public abstract static class UpdateInnerNode extends PNodeWithContext {
         public abstract void execute(Frame frame, Node inliningTarget, Object self, HashingStorage selfStorage, Object other, Object otherStorage);
 
-        @Specialization(guards = "!mayHaveSideEffectingEq(selfStorage)")
-        public static void updateDictNoSideEffects(Node inliningTarget, Object self, HashingStorage selfStorage, Object other, HashingStorage otherStorage,
-                        @Exclusive @Cached HashingStorageAddAllToOther addAllToOther,
-                        @Exclusive @Cached DictNodes.UpdateDictStorageNode updateStorageNode) {
-            // The contract is such that we iterate over 'other' and add its elements to 'self'. If
-            // 'other' gets mutated during the iteration, we should raise. This can happen via a
-            // side effect of '__eq__' of some key in self, we should not run any other arbitrary
-            // code here (hashes are reused from the 'other' storage).
-            var newStorage = addAllToOther.execute(null, inliningTarget, otherStorage, selfStorage);
-            updateStorageNode.execute(inliningTarget, self, selfStorage, newStorage);
-        }
-
-        @Specialization(guards = "mayHaveSideEffectingEq(selfStorage)")
+        @Specialization
         public static void updateDictGeneric(VirtualFrame frame, Node inliningTarget, Object self, HashingStorage selfStorage, Object other, HashingStorage otherStorage,
                         @Exclusive @Cached DictNodes.UpdateDictStorageNode updateStorageNode,
                         @Cached HashingStorageTransferItem transferItem,

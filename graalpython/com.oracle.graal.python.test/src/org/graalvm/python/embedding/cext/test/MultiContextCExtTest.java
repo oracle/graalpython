@@ -230,17 +230,17 @@ public class MultiContextCExtTest {
             var code = Source.create("python", "import _sha3; _sha3.implementation");
             // First one works
             var r1 = c1.eval(code);
-            assertEquals("tiny_sha3", r1.asString());
+            assertEquals("HACL", r1.asString());
             assertFalse("created no more copies of the capi", Files.list(venvDir).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
             // Second one works because of isolation
             var r2 = c2.eval(code);
-            assertEquals("tiny_sha3", r2.asString());
+            assertEquals("HACL", r2.asString());
             c2.eval("python", "import _sha3; _sha3.implementation = '12'");
             r2 = c2.eval(code);
             assertEquals("12", r2.asString());
             // first context is unaffected
             r1 = c1.eval(code);
-            assertEquals("tiny_sha3", r1.asString());
+            assertEquals("HACL", r1.asString());
             assertFalse("created no more copies of the capi", Files.list(venvDir).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
             // Third one works and triggers a dynamic relocation
             c3.eval(code);

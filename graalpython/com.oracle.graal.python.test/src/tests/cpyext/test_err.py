@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -186,12 +186,12 @@ class Dummy:
     pass
 
 
-def raise_erorr():
+def raise_error():
     raise NameError
 
 
 try:
-    raise_erorr()
+    raise_error()
 except NameError as e:
     example_traceback = e.__traceback__
 else:
@@ -652,6 +652,78 @@ class TestPyErr(CPyExtTestCase):
     #     callfunction="wrap_PyErr_Fetch_tb_f_back",
     #     cmpfunc=compare_frame_f_back_chain,
     # )
+
+
+class TestCaughtException(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.tester = CPyExtType(
+            "CaughtExceptionTester",
+            """
+            PyObject* TestPyErr_GetHandledException(PyObject* self) {
+                PyObject* result = PyErr_GetHandledException();
+                if (result == NULL)
+                    Py_RETURN_NONE;
+                return result;
+            }
+            PyObject* TestPyErr_GetExcInfo(PyObject* self) {
+                PyObject* typ;
+                PyObject* val;
+                PyObject* tb;
+                PyErr_GetExcInfo(&typ, &val, &tb);
+                return Py_BuildValue("OOO", typ, val, tb);
+            }
+            PyObject* TestPyErr_SetHandledException(PyObject* self, PyObject* arg) {
+                PyErr_SetHandledException(arg != Py_None? arg : NULL);
+                return TestPyErr_GetHandledException(NULL);
+            }
+            PyObject* TestPyErr_SetExcInfo(PyObject* self, PyObject* arg) {
+                PyErr_SetExcInfo(Py_NewRef(Py_None), Py_NewRef(arg), Py_NewRef(Py_None));
+                return TestPyErr_GetHandledException(NULL);
+            }
+            """,
+            tp_methods='''
+            {"PyErr_GetHandledException", (PyCFunction)TestPyErr_GetHandledException, METH_NOARGS | METH_STATIC, ""},
+            {"PyErr_GetExcInfo", (PyCFunction)TestPyErr_GetExcInfo, METH_NOARGS | METH_STATIC, ""},
+            {"PyErr_SetHandledException", (PyCFunction)TestPyErr_SetHandledException, METH_O | METH_STATIC, ""},
+            {"PyErr_SetExcInfo", (PyCFunction)TestPyErr_SetExcInfo, METH_O | METH_STATIC, ""}
+            '''
+        )
+
+    def test_PyErr_GetHandledException(self):
+        try:
+            raise IndexError
+        except IndexError as e:
+            self.assertIs(self.tester.PyErr_GetHandledException(), e)
+            # do a second time because this time we won't do a stack walk
+            self.assertIs(self.tester.PyErr_GetHandledException(), e)
+
+    def test_PyErr_GetHandledException_no_exception(self):
+        self.assertIsNone(self.tester.PyErr_GetHandledException())
+        self.assertIsNone(self.tester.PyErr_GetHandledException())
+
+    def test_PyErr_GetExcInfo(self):
+        try:
+            raise IndexError
+        except IndexError as e:
+            self.assertEqual(self.tester.PyErr_GetExcInfo(), (type(e), e, e.__traceback__))
+            # do a second time because this time we won't do a stack walk
+            self.assertEqual(self.tester.PyErr_GetExcInfo(), (type(e), e, e.__traceback__))
+
+    def test_PyErr_GetExcInfo_no_exception(self):
+        self.assertEqual(self.tester.PyErr_GetExcInfo(), (None, None, None))
+        self.assertEqual(self.tester.PyErr_GetExcInfo(), (None, None, None))
+
+    def test_TestPyErr_SetHandledException(self):
+        e = IndexError()
+        # TODO on GraalPy the exception doesn't propagate to the function frame, so we can't use sys.exc_info() here
+        self.assertIs(self.tester.PyErr_SetHandledException(e), e)
+        self.assertIsNone(self.tester.PyErr_SetHandledException(None))
+
+    def test_TestPyErr_SetExcInfo(self):
+        e = IndexError()
+        self.assertIs(self.tester.PyErr_SetExcInfo(e), e)
+        self.assertIsNone(self.tester.PyErr_SetExcInfo(None))
 
 
 def raise_native_exception():

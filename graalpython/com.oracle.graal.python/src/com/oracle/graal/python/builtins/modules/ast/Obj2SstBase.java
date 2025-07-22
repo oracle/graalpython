@@ -92,6 +92,7 @@ import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.strings.TruffleString;
 
 abstract class Obj2SstBase {
@@ -131,12 +132,9 @@ abstract class Obj2SstBase {
         return conversion.convert(tmp);
     }
 
-    int lookupAndConvertInt(Object obj, TruffleString attrName, TruffleString nodeName, boolean required) {
+    int lookupAndConvertInt(Object obj, TruffleString attrName, TruffleString nodeName) {
         Object tmp = lookupAttr(obj, attrName);
         if (tmp instanceof PNone) {
-            if (!required) {
-                return 0;
-            }
             if (tmp == PNone.NO_VALUE) {
                 throw raiseTypeError(REQUIRED_FIELD_S_MISSING_FROM_S, attrName, nodeName);
             }
@@ -146,12 +144,17 @@ abstract class Obj2SstBase {
         return obj2int(tmp);
     }
 
-    boolean lookupAndConvertBoolean(Object obj, TruffleString attrName, TruffleString nodeName, boolean required) {
+    int lookupAndConvertIntOpt(Object obj, TruffleString attrName, @SuppressWarnings("unused") TruffleString nodeName, int defaultValue) {
         Object tmp = lookupAttr(obj, attrName);
         if (tmp instanceof PNone) {
-            if (!required) {
-                return false;
-            }
+            return defaultValue;
+        }
+        return obj2int(tmp);
+    }
+
+    boolean lookupAndConvertBoolean(Object obj, TruffleString attrName, TruffleString nodeName) {
+        Object tmp = lookupAttr(obj, attrName);
+        if (tmp instanceof PNone) {
             if (tmp == PNone.NO_VALUE) {
                 throw raiseTypeError(REQUIRED_FIELD_S_MISSING_FROM_S, attrName, nodeName);
             }
@@ -164,7 +167,7 @@ abstract class Obj2SstBase {
     <T> T[] lookupAndConvertSequence(Object obj, TruffleString attrName, TruffleString nodeName, Conversion<T> conversion, IntFunction<T[]> arrayFactory) {
         Object tmp = lookupAttr(obj, attrName);
         if (tmp instanceof PNone) {
-            throw raiseTypeError(REQUIRED_FIELD_S_MISSING_FROM_S, attrName, nodeName);
+            return arrayFactory.apply(0);
         }
         if (!(tmp instanceof PList)) {
             throw raiseTypeError(S_FIELD_S_MUST_BE_A_LIST_NOT_P, nodeName, attrName, tmp);
@@ -272,11 +275,11 @@ abstract class Obj2SstBase {
             PComplex c = (PComplex) obj;
             return ConstantValue.ofComplex(c.getReal(), c.getImag());
         }
-        if (obj instanceof TruffleString) {
-            return ConstantValue.ofRaw(obj);
+        if (obj instanceof TruffleString ts) {
+            return ConstantValue.ofCodePoints(PythonUtils.truffleStringToCodePoints(ts));
         }
-        if (obj instanceof PString && PyUnicodeCheckExactNode.executeUncached(obj)) {
-            return ConstantValue.ofRaw(((PString) obj).getValueUncached());
+        if (obj instanceof PString ps && PyUnicodeCheckExactNode.executeUncached(obj)) {
+            return ConstantValue.ofCodePoints(PythonUtils.truffleStringToCodePoints(ps.getValueUncached()));
         }
         if (obj instanceof PBytes && PyBytesCheckExactNode.executeUncached(obj)) {
             Object buf = PythonBufferAcquireLibrary.getUncached().acquireReadonly(obj);

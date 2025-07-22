@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENTS_MUST_BE_ITERATORS;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
@@ -106,7 +107,7 @@ public final class ChainBuiltins extends PythonBuiltins {
 
         @Specialization
         static PChain construct(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
@@ -140,7 +141,7 @@ public final class ChainBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PChain self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode nextNode,
                         @Cached InlinedBranchProfile nextExceptionProfile,
@@ -182,7 +183,7 @@ public final class ChainBuiltins extends PythonBuiltins {
     public abstract static class FromIterNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object fromIter(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object arg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Bind PythonLanguage language) {
             PChain instance = PFactory.createChain(language);
@@ -197,11 +198,12 @@ public final class ChainBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reducePos(PChain self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClass,
                         @Cached InlinedConditionProfile hasSourceProfile,
                         @Cached InlinedConditionProfile hasActiveProfile,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object type = getClass.execute(inliningTarget, self);
             PTuple empty = PFactory.createEmptyTuple(language);
             if (hasSourceProfile.profile(inliningTarget, self.getSource() != PNone.NONE)) {
@@ -223,12 +225,13 @@ public final class ChainBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object setState(VirtualFrame frame, PChain self, Object state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached GetItemNode getItemNode,
                         @Cached InlinedBranchProfile len2Profile,
                         @Cached PyIterCheckNode iterCheckNode,
                         @Cached PRaiseNode raiseNode) {
+            warnPickleDeprecated();
             if (!(state instanceof PTuple)) {
                 throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }

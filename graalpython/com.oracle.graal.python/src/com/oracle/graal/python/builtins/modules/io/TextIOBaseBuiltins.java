@@ -83,7 +83,7 @@ public final class TextIOBaseBuiltins extends PythonBuiltins {
     abstract static class DetachNode extends PythonBuiltinNode {
         @Specialization
         static Object detach(@SuppressWarnings("unused") Object self,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, T_DETACH);
         }
     }
@@ -93,7 +93,7 @@ public final class TextIOBaseBuiltins extends PythonBuiltins {
     abstract static class ReadNode extends PythonBuiltinNode {
         @Specialization
         static Object read(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, T_READ);
         }
     }
@@ -103,7 +103,7 @@ public final class TextIOBaseBuiltins extends PythonBuiltins {
     abstract static class ReadlineNode extends PythonBuiltinNode {
         @Specialization
         static Object read(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, T_READLINE);
         }
     }
@@ -113,7 +113,7 @@ public final class TextIOBaseBuiltins extends PythonBuiltins {
     abstract static class WriteNode extends PythonBuiltinNode {
         @Specialization
         static Object write(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, T_WRITE);
         }
     }

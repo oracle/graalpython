@@ -16,4 +16,5 @@ test.test_cmd_line_script.CmdLineTest.test_package_error @ darwin-arm64,darwin-x
 test.test_cmd_line_script.CmdLineTest.test_package_recursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_cmd_line_script.CmdLineTest.test_pep_409_verbiage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_cmd_line_script.CmdLineTest.test_script_as_dev_fd @ linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_syntaxerror_multi_line_fstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_cmd_line_script.CmdLineTest.test_zipfile_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

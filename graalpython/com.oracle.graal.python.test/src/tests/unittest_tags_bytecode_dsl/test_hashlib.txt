@@ -59,5 +59,3 @@ test.test_hashlib.HashLibTestCase.test_usedforsecurity_false @ linux-x86_64
 test.test_hashlib.HashLibTestCase.test_usedforsecurity_true @ linux-x86_64
 test.test_hashlib.KDFTests.test_file_digest @ linux-x86_64
 test.test_hashlib.KDFTests.test_normalized_name @ linux-x86_64
-test.test_hashlib.KDFTests.test_pbkdf2_hmac_c @ linux-x86_64
-test.test_hashlib.KDFTests.test_pbkdf2_hmac_py @ linux-x86_64

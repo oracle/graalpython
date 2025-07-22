@@ -11,6 +11,7 @@ test.test_configparser.ConfigParserTestCase.test_case_sensitivity_mapping_access
 test.test_configparser.ConfigParserTestCase.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCase.test_default_case_sensitivity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCase.test_defaults_keyword @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_configparser.ConfigParserTestCase.test_get_after_duplicate_option_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCase.test_interpolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCase.test_interpolation_missing_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCase.test_invalid_multiline_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -38,6 +39,7 @@ test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_clear @ da
 test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_default_case_sensitivity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_endless_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_extended_interpolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_get_after_duplicate_option_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_invalid_multiline_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_other_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_parse_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -60,6 +62,7 @@ test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_case_sensiti
 test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_default_case_sensitivity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_defaults_keyword @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_get_after_duplicate_option_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_interpolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_interpolation_missing_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_invalid_multiline_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -83,6 +86,7 @@ test.test_configparser.ConfigParserTestCaseNoInterpolation.test_case_sensitivity
 test.test_configparser.ConfigParserTestCaseNoInterpolation.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNoInterpolation.test_default_case_sensitivity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNoInterpolation.test_empty_case @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_configparser.ConfigParserTestCaseNoInterpolation.test_get_after_duplicate_option_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNoInterpolation.test_invalid_multiline_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNoInterpolation.test_no_interpolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNoInterpolation.test_none_as_default_interpolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -104,6 +108,7 @@ test.test_configparser.ConfigParserTestCaseNoValue.test_case_sensitivity_mapping
 test.test_configparser.ConfigParserTestCaseNoValue.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNoValue.test_default_case_sensitivity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNoValue.test_defaults_keyword @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_configparser.ConfigParserTestCaseNoValue.test_get_after_duplicate_option_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNoValue.test_interpolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNoValue.test_interpolation_missing_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNoValue.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -128,6 +133,7 @@ test.test_configparser.ConfigParserTestCaseNonStandardDefaultSection.test_case_s
 test.test_configparser.ConfigParserTestCaseNonStandardDefaultSection.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNonStandardDefaultSection.test_default_case_sensitivity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNonStandardDefaultSection.test_defaults_keyword @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_configparser.ConfigParserTestCaseNonStandardDefaultSection.test_get_after_duplicate_option_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNonStandardDefaultSection.test_interpolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNonStandardDefaultSection.test_interpolation_missing_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNonStandardDefaultSection.test_invalid_multiline_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -153,6 +159,7 @@ test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_case_sensi
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_default_case_sensitivity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_defaults_keyword @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_get_after_duplicate_option_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_interpolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_interpolation_missing_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_invalid_multiline_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -177,6 +184,7 @@ test.test_configparser.ConvertersTestCase.test_case_sensitivity_mapping_access @
 test.test_configparser.ConvertersTestCase.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConvertersTestCase.test_converters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConvertersTestCase.test_default_case_sensitivity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_configparser.ConvertersTestCase.test_get_after_duplicate_option_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConvertersTestCase.test_invalid_multiline_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConvertersTestCase.test_parse_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ConvertersTestCase.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -194,6 +202,7 @@ test.test_configparser.CopyTestCase.test_case_sensitivity @ darwin-arm64,darwin-
 test.test_configparser.CopyTestCase.test_case_sensitivity_mapping_access @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.CopyTestCase.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.CopyTestCase.test_default_case_sensitivity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_configparser.CopyTestCase.test_get_after_duplicate_option_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.CopyTestCase.test_invalid_multiline_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.CopyTestCase.test_parse_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.CopyTestCase.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -210,8 +219,6 @@ test.test_configparser.CoverageOneHundredTestCase.test_interpolation_depth_error
 test.test_configparser.CoverageOneHundredTestCase.test_interpolation_validation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.CoverageOneHundredTestCase.test_legacyinterpolation_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.CoverageOneHundredTestCase.test_parsing_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_configparser.CoverageOneHundredTestCase.test_readfp_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_configparser.CoverageOneHundredTestCase.test_safeconfigparser_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.CoverageOneHundredTestCase.test_sectionproxy_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ExceptionContextTestCase.test_get_basic_interpolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.ExceptionContextTestCase.test_get_extended_interpolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -241,6 +248,7 @@ test.test_configparser.MultilineValuesTestCase.test_case_sensitivity_mapping_acc
 test.test_configparser.MultilineValuesTestCase.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.MultilineValuesTestCase.test_default_case_sensitivity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.MultilineValuesTestCase.test_dominating_multiline_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_configparser.MultilineValuesTestCase.test_get_after_duplicate_option_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.MultilineValuesTestCase.test_invalid_multiline_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.MultilineValuesTestCase.test_parse_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.MultilineValuesTestCase.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -259,6 +267,7 @@ test.test_configparser.RawConfigParserTestCase.test_case_sensitivity_mapping_acc
 test.test_configparser.RawConfigParserTestCase.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.RawConfigParserTestCase.test_default_case_sensitivity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.RawConfigParserTestCase.test_defaults_keyword @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_configparser.RawConfigParserTestCase.test_get_after_duplicate_option_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.RawConfigParserTestCase.test_interpolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.RawConfigParserTestCase.test_invalid_multiline_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.RawConfigParserTestCase.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -280,6 +289,7 @@ test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_case_se
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_default_case_sensitivity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_defaults_keyword @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_get_after_duplicate_option_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_interpolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_invalid_multiline_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -304,6 +314,7 @@ test.test_configparser.SortedTestCase.test_case_sensitivity_mapping_access @ dar
 test.test_configparser.SortedTestCase.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.SortedTestCase.test_default_case_sensitivity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.SortedTestCase.test_defaults_keyword @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_configparser.SortedTestCase.test_get_after_duplicate_option_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.SortedTestCase.test_interpolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.SortedTestCase.test_invalid_multiline_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.SortedTestCase.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -325,6 +336,7 @@ test.test_configparser.StrictTestCase.test_case_sensitivity @ darwin-arm64,darwi
 test.test_configparser.StrictTestCase.test_case_sensitivity_mapping_access @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.StrictTestCase.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.StrictTestCase.test_default_case_sensitivity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_configparser.StrictTestCase.test_get_after_duplicate_option_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.StrictTestCase.test_invalid_multiline_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.StrictTestCase.test_parse_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_configparser.StrictTestCase.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

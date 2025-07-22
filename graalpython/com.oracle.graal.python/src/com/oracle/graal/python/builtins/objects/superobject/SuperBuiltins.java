@@ -93,7 +93,6 @@ import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -253,7 +252,7 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(cls)")
         PNone init(VirtualFrame frame, SuperObject self, Object cls, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (!(obj instanceof PNone)) {
                 Object type = supercheck(frame, inliningTarget, cls, obj, raiseNode);
@@ -274,7 +273,7 @@ public final class SuperBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = {"!isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
         PNone initInPlace(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode,
                         @Shared @Cached CellBuiltins.GetRefNode getRefNode) {
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
@@ -295,11 +294,11 @@ public final class SuperBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = {"isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
         PNone init(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode,
                         @Cached ReadCallerFrameNode readCaller,
                         @Shared @Cached CellBuiltins.GetRefNode getRefNode) {
-            PFrame target = readCaller.executeWith(frame, FrameSelector.SKIP_PYTHON_BUILTIN, 0);
+            PFrame target = readCaller.executeWith(frame, ReadCallerFrameNode.SkipPythonBuiltinFramesSelector.INSTANCE, 0);
             if (target == null) {
                 throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.NO_CURRENT_FRAME, "super()");
             }
@@ -318,7 +317,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         private PNone initFromLocalFrame(VirtualFrame frame, Node inliningTarget, SuperObject self, PBytecodeRootNode rootNode, Frame localFrame, CellBuiltins.GetRefNode getRefNode,
                         PRaiseNode raiseNode) {
             PCell classCell = rootNode.readClassCell(localFrame);
-            if (classCell == null) {
+            if (!rootNode.hasSelf() || classCell == null) {
                 throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_NO_CLASS);
             }
             Object cls = getRefNode.execute(inliningTarget, classCell);
@@ -328,7 +327,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             }
             Object obj = rootNode.readSelf(localFrame);
             if (obj == null) {
-                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.NO_ARGS, "super()");
+                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_ARG0_DELETED);
             }
             return init(frame, self, cls, obj, inliningTarget, raiseNode);
         }
@@ -336,7 +335,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         private PNone initFromLocalFrame(VirtualFrame frame, Node inliningTarget, SuperObject self, PBytecodeDSLRootNode rootNode, Frame localFrame, CellBuiltins.GetRefNode getRefNode,
                         PRaiseNode raiseNode) {
             PCell classCell = rootNode.readClassCell(localFrame);
-            if (classCell == null) {
+            if (!rootNode.hasSelf() || classCell == null) {
                 throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_NO_CLASS);
             }
             Object cls = getRefNode.execute(inliningTarget, classCell);
@@ -346,7 +345,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             }
             Object obj = rootNode.readSelf(localFrame);
             if (obj == null) {
-                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.NO_ARGS, "super()");
+                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_ARG0_DELETED);
             }
             return init(frame, self, cls, obj, inliningTarget, raiseNode);
         }
@@ -436,7 +435,7 @@ public final class SuperBuiltins extends PythonBuiltins {
     public abstract static class GetNode extends DescrGetBuiltinNode {
         @Specialization
         static Object doNoneOrBound(SuperObject self, Object obj, @SuppressWarnings("unused") Object type,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile objIsNoneProfile,
                         @Cached InlinedConditionProfile selfObjIsNullProfile,
                         @Cached GetObjectNode getObject,
@@ -490,7 +489,7 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         @Specialization
         Object get(VirtualFrame frame, SuperObject self, Object attr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectSlotsNode getSlotsNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached GetObjectTypeNode getObjectType,
@@ -596,7 +595,7 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getClass(SuperObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetTypeNode getType) {
             Object type = getType.execute(inliningTarget, self);
             if (type == null) {
@@ -612,7 +611,7 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getClass(SuperObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectNode getObject) {
             Object object = getObject.execute(inliningTarget, self);
             if (object == null) {
@@ -627,7 +626,7 @@ public final class SuperBuiltins extends PythonBuiltins {
     public abstract static class SelfClassNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getClass(SuperObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetObjectTypeNode getObjectType) {
             Object objectType = getObjectType.execute(inliningTarget, self);
             if (objectType == null) {
@@ -642,7 +641,7 @@ public final class SuperBuiltins extends PythonBuiltins {
     public abstract static class SuperReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         TruffleString repr(SuperObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetTypeNode getType,
                         @Cached GetObjectTypeNode getObjectType,

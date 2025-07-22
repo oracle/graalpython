@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
@@ -95,7 +96,7 @@ public final class TakewhileBuiltins extends PythonBuiltins {
     public abstract static class TakewhileNode extends PythonVarargsBuiltinNode {
         @Specialization
         static PTakewhile construct(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
@@ -155,9 +156,10 @@ public final class TakewhileBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reduce(PTakewhile self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple = PFactory.createTuple(language, new Object[]{self.getPredicate(), self.getIterable()});
             return PFactory.createTuple(language, new Object[]{type, tuple});

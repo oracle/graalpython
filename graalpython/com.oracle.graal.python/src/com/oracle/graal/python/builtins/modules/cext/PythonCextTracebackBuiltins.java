@@ -52,16 +52,16 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCodeBuiltins.PyCode_NewEmpty;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
-import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -84,20 +84,19 @@ public final class PythonCextTracebackBuiltins {
     abstract static class PyTraceBack_Here extends CApiUnaryBuiltinNode {
         @Specialization
         static int tbHere(PFrame frame,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode) {
-            PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
-            AbstractTruffleException currentException = threadState.getCurrentException();
-            if (currentException != null) {
-                PTraceback currentTraceback = null;
-                if (threadState.getCurrentTraceback() != null) {
-                    currentTraceback = materializeLazyTracebackNode.execute(inliningTarget, threadState.getCurrentTraceback());
-                }
-                PTraceback newTraceback = PFactory.createTraceback(PythonLanguage.get(inliningTarget), frame, frame.getLine(), currentTraceback);
-                threadState.setCurrentTraceback(new LazyTraceback(newTraceback));
+                        @Cached CExtCommonNodes.ReadAndClearNativeException readAndClearNativeException,
+                        @Cached CExtCommonNodes.TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            PythonLanguage language = context.getLanguage(inliningTarget);
+            PythonContext.PythonThreadState threadState = context.getThreadState(language);
+            Object currentException = readAndClearNativeException.execute(inliningTarget, threadState);
+            if (currentException instanceof PBaseException) {
+                Object traceback = ExceptionNodes.GetTracebackNode.executeUncached(currentException);
+                PTraceback newTraceback = PFactory.createTraceback(language, frame, frame.getLine(), traceback instanceof PTraceback ptb ? ptb : null);
+                ExceptionNodes.SetTracebackNode.executeUncached(currentException, newTraceback);
             }
-
+            transformExceptionToNativeNode.execute(inliningTarget, currentException);
             return 0;
         }
     }

@@ -150,7 +150,7 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object error(int length, String typeCode,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.INVALID_TYPE_CODE, typeCode);
         }
 
@@ -167,7 +167,7 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isString(typeCodeObj)")
         static Object fromTypeCode(int length, Object typeCodeObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToJavaStringNode cast,
                         @Cached ArrayFromTypeCode fromTypeCodeNode) {
             String typeCode = cast.execute(typeCodeObj);
@@ -177,7 +177,7 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isString(classObj)")
         static Object fromClass(int length, Object classObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             TruffleLanguage.Env env = PythonContext.get(inliningTarget).getEnv();
             if (env.isHostObject(classObj)) {
@@ -201,7 +201,7 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
     abstract static class ArrayNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object fromSequence(PSequence sequence, Object type,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "5") InteropLibrary lib,
                         @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
@@ -225,7 +225,7 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPSequence(sequence)")
         static Object fromIterable(VirtualFrame frame, Object sequence, Object type,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Shared @CachedLibrary(limit = "5") InteropLibrary lib,
                         @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,

@@ -8,17 +8,16 @@ patch = 'autopep8.patch'
 license = 'MIT'
 
 [[bcrypt.rules]]
-# With pyo3 changes upstreamed, this patch is not needed in recent versions
-# This old version is still used in ray's tests
+note = "With pyo3 changes upstreamed, this patch is not needed in recent versions. This old version is still used in ray's tests."
 install-priority = 0
 version = '== 4.0.1'
 patch = 'bcrypt-4.0.1.patch'
 license = 'Apache-2.0'
 
 [[blosc2.rules]]
+note = "This patch is not needed in newer versions."
 version = '< 3'
 patch = 'blosc2.patch'
-# Not needed in newer versions
 install-priority = 0
 license = 'BSD-3-Clause'
 
@@ -54,7 +53,7 @@ license = 'BSD-3-Clause'
 [[cramjam.rules]]
 version = '== 2.7.0'
 patch = 'cramjam-2.7.0.patch'
-# Versions since 2.10 don't need a patch
+note = "Versions since 2.10 don't need a patch."
 install-priority = 0
 license = 'MIT'
 
@@ -105,6 +104,10 @@ install-priority = 0
 version = '== 42.0.5'
 patch = 'cryptography-42.0.5.patch'
 license = 'Apache-2.0 OR BSD-3-Clause'
+
+[[cryptography.rules]]
+version = '>= 43.0.0'
+note = "Versions newer than 43 do not need a patch."
 
 [[Cython.rules]]
 version = '>= 3.0.10, <= 3.0.12'
@@ -175,14 +178,44 @@ patch = 'hmmlearn.patch'
 license = 'BSD-3-Clause'
 
 [[hypothesis.rules]]
-install-priority = 1
-version = '>= 6.69.0'
+# can be removed once [GR-65570] is done
+patch = 'hypothesis-6.135.0.patch'
+version = '>= 6.120.0'
+license = 'MPL-2.0'
+
+[[hypothesis.rules]]
+# can be removed once [GR-65570] is done
+patch = 'hypothesis-6.118.5.patch'
+version = '>= 6.118.5, < 6.120.0'
+license = 'MPL-2.0'
+
+[[hypothesis.rules]]
+# can be removed once [GR-65570] is done
+patch = 'hypothesis-6.105.2.patch'
+version = '>= 6.105.2, < 6.118.5'
+license = 'MPL-2.0'
+
+[[hypothesis.rules]]
+# can be removed once [GR-65570] is done
+patch = 'hypothesis-6.104.1.patch'
+version = '>= 6.99.0, < 6.105.2'
+license = 'MPL-2.0'
 
 [[hypothesis.rules]]
 install-priority = 0
 version = '< 6.69.0'
 patch = 'hypothesis-6.patch'
 license = 'MPL-2.0'
+
+[[itk.rules]]
+note = """\
+ITK cannot be directly installed with pip. It can be built manually from upstream source tarball with cmake. \
+GraalPy includes a patch `itk-5.4.3.patch` that can be manually applied to fix library loading issues.\
+"""
+# Note: there is no source, the patch isn't complete enough to build a wheel
+version = '== 5.4.3'
+patch = 'itk-5.4.3.patch'
+license = 'Apache-2.0'
 
 [[jaxlib.rules]]
 version = '== 0.4.13'
@@ -194,7 +227,7 @@ version = '0.4.13'
 url = 'https://github.com/google/jax/archive/refs/tags/jaxlib-v0.4.13.tar.gz'
 
 [[jiter.rules]]
-# Upstreamed, should not be needed in the next release
+note = "GraalPy patch was accepted upstream and should not be needed in the next release."
 version = '<= 0.5.0'
 install-priority = 0
 patch = 'jiter.patch'
@@ -282,8 +315,8 @@ version = '>= 4.9, < 5'
 patch = 'lxml-4.9.patch'
 license = 'BSD-3-Clause'
 
-# Patch already upstreamed, keeping it around for older versions
 [[MarkupSafe.rules]]
+note = "GraalPy patch is upstreamed."
 version = "< 2.1.0"
 patch = "MarkupSafe.patch"
 license = "BSD-3-Clause"
@@ -291,7 +324,7 @@ install-priority = 0  # Don't make pip install prefer this version
 dist-type = "sdist"
 
 [[meson-python.rules]]
-# Upstreamed
+note = "GraalPy patch is upstreamed."
 version = '<= 0.16.0'
 install-priority = 0
 patch = 'meson-python.patch'
@@ -319,6 +352,7 @@ license = 'BSD-3-Clause'
 
 [[numba.rules]]
 # Not upstreamable, we disable the JIT
+note = "Numba JIT relies on bytecode parsing and is disabled on GraalPy."
 version = '== 0.59.1'
 patch = 'numba-0.59.1.patch'
 license = 'BSD-2-Clause'
@@ -336,21 +370,9 @@ license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
 [[numpy.rules]]
-version = '== 1.24.3'
-patch = 'numpy-1.24.3.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-
-[[numpy.rules]]
-version = '== 1.23.5'
-patch = 'numpy-1.23.5.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-
-[[numpy.rules]]
-# 1.23.2 is currently used by oldest-supported-numpy
-version = '>= 1.23.2, < 1.23.5'
-patch = 'numpy-1.23.2.patch'
+# 1.26.2 is currently used by oldest-supported-numpy
+version = '== 1.26.2'
+patch = 'numpy-1.26.2.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
@@ -384,11 +406,12 @@ version = '== 7.4.0'
 # Important: This patch esentially breaks the package, it's not upstreamable. The package relies on bytecode parsing
 # to do some otherwise impossible syntax shortcuts. Since it's esentially a type-checker, we just disable the overrides
 # checking altogether
+note = "This package relies on bytecode parsing and cannot work on GraalPy without significant changes. When installed on GraalPy, it is essentially disabled"
 patch = 'overrides-7.4.0.patch'
 license = 'Apache-2.0'
 
 [[packaging.rules]]
-# Merged upstream
+note = "Upstream packaging now supports GraalPy."
 version = '< 23.2'
 install-priority = 0
 patch = 'packaging.patch'
@@ -421,13 +444,19 @@ dist-type = 'sdist'
 [[pendulum.rules]]
 version = '== 3.0.0'
 patch = 'pendulum-3.0.0.patch'
-# Not needed since 3.1
+note = "Not needed since 3.1."
 install-priority = 0
 license = 'MIT'
 
 [[pip.rules]]
 version = '== 23.2.1'
 patch = 'pip-23.2.1.patch'
+license = 'MIT'
+subdir = 'src'
+
+[[pip.rules]]
+version = '== 24.3.1'
+patch = 'pip-24.3.1.patch'
 license = 'MIT'
 subdir = 'src'
 
@@ -496,8 +525,13 @@ version = '== 19.0.1'
 patch = 'pyarrow-19.0.1.patch'
 license = 'Apache-2.0'
 
+[[pyarrow.rules]]
+version = '== 20.0.0'
+patch = 'pyarrow-20.0.0.patch'
+license = 'Apache-2.0'
+
 [[pybind11.rules]]
-# Upstreamed
+note = "This patch was accepted upstream."
 install-priority = 0
 # Note: This patch is also inlined in torch
 version = '>= 2.11.0, <= 2.13.6'
@@ -546,7 +580,7 @@ license = 'MIT'
 [[PyDriller.rules]]
 version = '< 2.4'
 patch = 'PyDriller.patch'
-# Upstreamed
+note = "GraalPy patch was accepted upstream."
 install-priority = 0
 license = 'Apache-2.0'
 
@@ -569,13 +603,14 @@ license = 'Apache-2.0'
 [[pymongo.rules]]
 version = ">= 4.8.0, <= 4.13.0"
 patch = 'pymongo-4.8.0.patch'
-# Upstreamed
+note = "GraalPy patch was accepted upstream."
 install-priority = 0
 license = 'Apache-2.0'
 
 [[PyMuPDF.rules]]
 version = "== 1.25.4"
 patch = "pymupdf.patch"
+note = "Building PyMuPDF needs a CPython installation besides GraalPy on the PATH."
 # That project is AGPL, so do not actually include *any* code of pymupdf in the patch, not even an
 # empty line, in the diff context. The code we write in the patch is UPL - that is compatible with
 # AGPL in the sense that if someone were to apply it and distribute *that*, our patch is now part
@@ -669,15 +704,21 @@ license = 'Apache-2.0'
 version = '2.9.1'
 url = 'https://github.com/ray-project/ray/archive/refs/tags/ray-2.9.1.tar.gz'
 
+[[rasterio.rules]]
+install-priority = 0
+version = '<= 1.4.3'
+patch = 'rasterio-1.4.3.patch'
+license = 'BSD-3-Clause'
+
 [[rpds_py.rules]]
-# Patch not needed anymore in recent version since pyo3 changes have been upstreamed
+note = "GraalPy patch is not needed anymore in recent version since PyO3 now supports GraalPy."
 install-priority = 0
 version = '== 0.10.3'
 patch = 'rpds_py-0.10.3.patch'
 license = 'MIT'
 
 [[safetensors.rules]]
-# Recent versions should use pyo3 with upstream support for graalpy
+note = "GraalPy patch is not needed anymore in recent version since PyO3 now supports GraalPy."
 install-priority = 0
 version = '== 0.3.3'
 patch = 'safetensors-0.3.3.patch'
@@ -687,6 +728,17 @@ license = 'Apache-2.0'
 version = '~= 0.11.0'
 patch = 'scikit-build-core.patch'
 license = 'Apache-2.0'
+
+[[scikit-learn.rules]]
+version = '> 1.7.0'
+# 1.7.0 patch got upstreamed
+install-priority = 2
+
+[[scikit-learn.rules]]
+version = '== 1.7.0'
+patch = 'scikit-learn-1.7.0.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
 
 [[scikit-learn.rules]]
 version = '== 1.5.2'
@@ -850,11 +902,10 @@ license = 'PSF-2.0'
 subdir = 'src'
 
 [[urllib3.rules]]
-# urllib3 has a check that requires that the ssl implementation's name starts with "OpenSSL", we need to patch it out
+note = "urllib3 in this version range has a check that requires that the ssl implementation's name starts with 'OpenSSL', we need to patch it out. Older versions worked fine before the check was added. Newer versions turned it into a warning."
 patch = 'urllib3-2.patch'
 license = 'MIT'
 subdir = 'src'
-# Older versions worked fine before the check was added. Newer versions turned it into a warning
 version = '>= 2, < 2.0.3'
 install-priority = 0
 
@@ -866,7 +917,7 @@ license = 'MIT'
 [[watchfiles.rules]]
 version = '== 0.21.0'
 patch = 'watchfiles-0.21.0.patch'
-# Not needed in newer versions
+note = "Patch is not needed anymore in newer versions."
 install-priority = 0
 license = 'MIT'
 

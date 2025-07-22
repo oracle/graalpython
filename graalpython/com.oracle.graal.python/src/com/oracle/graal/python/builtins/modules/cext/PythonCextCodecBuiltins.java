@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,7 +60,7 @@ public final class PythonCextCodecBuiltins {
     abstract static class PyCodec_Encoder extends CApiUnaryBuiltinNode {
         @Specialization
         Object get(TruffleString encoding,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CodecsModuleBuiltins.PyCodecLookupNode lookupNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode) {
             PTuple codecInfo = lookupNode.execute(null, inliningTarget, encoding);
@@ -72,7 +72,7 @@ public final class PythonCextCodecBuiltins {
     abstract static class PyCodec_Decoder extends CApiUnaryBuiltinNode {
         @Specialization
         Object get(TruffleString encoding,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CodecsModuleBuiltins.PyCodecLookupNode lookupNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode) {
             PTuple codecInfo = lookupNode.execute(null, inliningTarget, encoding);

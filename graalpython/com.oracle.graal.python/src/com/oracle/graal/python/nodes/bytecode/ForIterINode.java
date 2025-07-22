@@ -64,7 +64,7 @@ public abstract class ForIterINode extends PNodeWithContext {
 
     @Specialization
     boolean doIntRange(VirtualFrame frame, PIntRangeIterator iterator, int stackTop,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     /*
                      * Not using LoopConditionProfile because when OSR-compiled, we might never
                      * register the condition being false

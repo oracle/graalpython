@@ -138,7 +138,7 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
     public abstract static class GetpwuidNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doGetpwuid(VirtualFrame frame, Object uidObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached UidConversionNode uidConversionNode,
                         @Cached IsBuiltinObjectProfile classProfile,
@@ -191,7 +191,7 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doGetpwname(VirtualFrame frame, TruffleString name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached GilNode gil,
                         @Cached StringOrBytesToOpaquePathNode encodeFSDefault,
@@ -226,7 +226,7 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
     public abstract static class GetpwallNode extends PythonBuiltinNode {
         @Specialization
         static Object doGetpall(VirtualFrame frame,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile unsignedConversionProfile,

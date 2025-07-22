@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
@@ -100,7 +101,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
     public abstract static class ZipLongestNode extends PythonBuiltinNode {
         @Specialization
         static Object construct(VirtualFrame frame, Object cls, Object[] args, Object fillValueIn,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIterNode,
                         @Cached InlinedConditionProfile fillIsNone,
                         @Cached InlinedLoopConditionProfile loopProfile,
@@ -154,7 +155,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!zeroSize(self)")
         static Object next(VirtualFrame frame, PZipLongest self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyIterNextNode nextNode,
                         @Cached InlinedConditionProfile noItProfile,
                         @Cached InlinedConditionProfile noActiveProfile,
@@ -203,12 +204,13 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reduce(PZipLongest self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClass,
                         @Cached InlinedConditionProfile noFillValueProfile,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached InlinedConditionProfile noItProfile,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object fillValue = self.getFillValue();
             if (noFillValueProfile.profile(inliningTarget, fillValue == null)) {
                 fillValue = PNone.NONE;
@@ -234,6 +236,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object setState(PZipLongest self, Object state) {
+            warnPickleDeprecated();
             self.setFillValue(state);
             return PNone.NONE;
         }

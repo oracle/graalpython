@@ -90,7 +90,7 @@ public abstract class TupleNodes {
 
         @Specialization(guards = "isBuiltinList(iterable)")
         static PTuple list(PList iterable,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached SequenceStorageNodes.CopyNode copyNode) {
             return PFactory.createTuple(language, copyNode.execute(inliningTarget, iterable.getSequenceStorage()));
@@ -99,7 +99,7 @@ public abstract class TupleNodes {
         @Fallback
         @InliningCutoff
         static PTuple generic(VirtualFrame frame, Object iterable,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached CreateStorageFromIteratorNode storageNode,
                         @Cached PyObjectGetIter getIter) {

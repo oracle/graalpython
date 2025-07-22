@@ -73,6 +73,10 @@ public abstract class BuiltinNames {
     public static final String J___NOTES__ = "__notes__";
     public static final TruffleString T___NOTES__ = tsLiteral(J___NOTES__);
 
+    // os
+    public static final TruffleString T_OS = tsLiteral("os");
+    public static final TruffleString T_ENVIRON = tsLiteral("environ");
+
     // sys
     public static final TruffleString T_TRACEBACKLIMIT = tsLiteral("tracebacklimit");
 
@@ -259,6 +263,8 @@ public abstract class BuiltinNames {
 
     public static final String J_TYPES = "types";
 
+    public static final String J__TYPING = "_typing";
+
     public static final String J_TYPING = "typing";
     public static final TruffleString T_TYPING = tsLiteral(J_TYPING);
 
@@ -425,6 +431,24 @@ public abstract class BuiltinNames {
     public static final String J_TYPE_VAR = "TypeVar";
     public static final TruffleString T_TYPE_VAR = tsLiteral(J_TYPE_VAR);
 
+    public static final String J_TYPE_VAR_TUPLE = "TypeVarTuple";
+    public static final TruffleString T_TYPE_VAR_TUPLE = tsLiteral(J_TYPE_VAR_TUPLE);
+
+    public static final String J_PARAM_SPEC = "ParamSpec";
+    public static final TruffleString T_PARAM_SPEC = tsLiteral(J_PARAM_SPEC);
+
+    public static final String J_PARAM_SPEC_ARGS = "ParamSpecArgs";
+    public static final TruffleString T_PARAM_SPEC_ARGS = tsLiteral(J_PARAM_SPEC_ARGS);
+
+    public static final String J_PARAM_SPEC_KWARGS = "ParamSpecKwargs";
+    public static final TruffleString T_PARAM_SPEC_KWARGS = tsLiteral(J_PARAM_SPEC_KWARGS);
+
+    public static final String J_TYPE_ALIAS_TYPE = "TypeAliasType";
+    public static final TruffleString T_TYPE_ALIAS_TYPE = tsLiteral(J_TYPE_ALIAS_TYPE);
+
+    public static final String J_GENERIC = "Generic";
+    public static final TruffleString T_GENERIC = tsLiteral(J_GENERIC);
+
     public static final String J__SRE = "_sre";
     public static final TruffleString T__SRE = tsLiteral(J__SRE);
 
@@ -446,6 +470,12 @@ public abstract class BuiltinNames {
 
     public static final String J_HASHLIB = "_hashlib";
     public static final TruffleString T_HASHLIB = tsLiteral(J_HASHLIB);
+
+    public static final String J_MD5 = "_md5";
+
+    public static final String J_SHA1 = "_sha1";
+
+    public static final String J_SHA2 = "_sha2";
 
     public static final String J_SHA3 = "_sha3";
     public static final TruffleString T_SHA3 = tsLiteral(J_SHA3);

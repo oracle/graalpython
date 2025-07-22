@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,9 +42,10 @@ package com.oracle.graal.python.pegparser.test;
 
 import java.util.EnumSet;
 
+import org.junit.Test;
+
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
-import org.junit.Test;
 
 /**
  * Testing invalid rules. If the test method has the same names, but different number, then it tests
@@ -331,10 +332,10 @@ public class ErrorTests extends ParserTestBase {
         parse("i: (yield from f) = 3\n", "<module>", InputType.FILE);
         parse("i: (x:=42) = 3\n", "<module>", InputType.FILE);
         // with __future__ annotations, they are rejected by symtable/ScopeEnvironment
-        checkSyntaxErrorMessage("i: (await f()) = 3\n", "'await expression' can not be used within an annotation", EnumSet.of(FutureFeature.ANNOTATIONS));
-        checkSyntaxErrorMessage("i: (yield) = 3\n", "'yield expression' can not be used within an annotation", EnumSet.of(FutureFeature.ANNOTATIONS));
-        checkSyntaxErrorMessage("i: (yield from f) = 3\n", "'yield expression' can not be used within an annotation", EnumSet.of(FutureFeature.ANNOTATIONS));
-        checkSyntaxErrorMessage("i: (x:=42) = 3\n", "'named expression' can not be used within an annotation", EnumSet.of(FutureFeature.ANNOTATIONS));
+        checkSyntaxErrorMessage("i: (await f()) = 3\n", "await expression can not be used within an annotation", EnumSet.of(FutureFeature.ANNOTATIONS));
+        checkSyntaxErrorMessage("i: (yield) = 3\n", "yield expression can not be used within an annotation", EnumSet.of(FutureFeature.ANNOTATIONS));
+        checkSyntaxErrorMessage("i: (yield from f) = 3\n", "yield expression can not be used within an annotation", EnumSet.of(FutureFeature.ANNOTATIONS));
+        checkSyntaxErrorMessage("i: (x:=42) = 3\n", "named expression can not be used within an annotation", EnumSet.of(FutureFeature.ANNOTATIONS));
     }
 
     @Test

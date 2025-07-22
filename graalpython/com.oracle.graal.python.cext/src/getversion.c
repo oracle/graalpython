@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -10,12 +10,23 @@
 
 #include "patchlevel.h"
 
+static int initialized = 0;
+static char version[250];
+
+void _Py_InitVersion(void)
+{
+    if (initialized) {
+        return;
+    }
+    initialized = 1;
+    PyOS_snprintf(version, sizeof(version), "%.80s (%.80s) %.80s",
+                  PY_VERSION, Py_GetBuildInfo(), Py_GetCompiler());
+}
+
 const char *
 Py_GetVersion(void)
 {
-    static char version[250];
-    PyOS_snprintf(version, sizeof(version), "%.80s (%.80s) %.80s",
-                  PY_VERSION, Py_GetBuildInfo(), Py_GetCompiler());
+    _Py_InitVersion();
     return version;
 }
 

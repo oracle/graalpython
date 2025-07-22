@@ -111,7 +111,7 @@ public class PData {
 
         @Specialization
         static Object pop(PData self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (self.size <= self.fence) {
                 throw raiseUnderflow(self, inliningTarget, raiseNode);
@@ -131,7 +131,7 @@ public class PData {
 
         @Specialization
         static void push(PData self, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (self.size == self.data.length) {
                 try {
@@ -155,7 +155,7 @@ public class PData {
 
         @Specialization
         static PTuple popTuple(PData self, int start,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
             int len, i, j;

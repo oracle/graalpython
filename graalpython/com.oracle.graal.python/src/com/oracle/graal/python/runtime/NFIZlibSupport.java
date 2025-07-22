@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -244,7 +245,9 @@ public class NFIZlibSupport {
           nfi_function: name('decompressObjCopy') map('zlib_stream*', 'POINTER')
           int zlib_Decompress_copy(zlib_stream *zst, zlib_stream *new_copy)
         */
-        zlib_Decompress_copy("(POINTER, POINTER): SINT32");
+        zlib_Decompress_copy("(POINTER, POINTER): SINT32"),
+
+        zlib_decompress("(POINTER, [UINT8], SINT64, SINT64): SINT32");
 
         private final String signature;
 
@@ -332,8 +335,10 @@ public class NFIZlibSupport {
         }
     }
 
+    @TruffleBoundary
     public void notAvailable() {
         if (available) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             CompilerAsserts.neverPartOfCompilation("Checking NFIZlibSupport availability should only be done during initialization.");
             available = false;
         }
@@ -341,6 +346,15 @@ public class NFIZlibSupport {
 
     public boolean isAvailable() {
         return available;
+    }
+
+    @TruffleBoundary
+    public void setAvailable() {
+        if (!available && typedNativeLib != null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            CompilerAsserts.neverPartOfCompilation("Checking NFIZlibSupport availability should only be done during initialization.");
+            available = true;
+        }
     }
 
     /**
@@ -386,7 +400,7 @@ public class NFIZlibSupport {
      * @param len uInt len
      * @return uLong
      */
-    public long crc32(long crc, Object buf, int len,
+    public long crc32(long crc, byte[] buf, int len,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callLong(typedNativeLib, ZlibNativeFunctions.zlib_crc32, crc, buf, len);
     }
@@ -398,7 +412,7 @@ public class NFIZlibSupport {
      * @param len uInt len
      * @return uLong
      */
-    public long adler32(long crc, Object buf, int len,
+    public long adler32(long crc, byte[] buf, int len,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callLong(typedNativeLib, ZlibNativeFunctions.zlib_adler32, crc, buf, len);
     }
@@ -491,7 +505,7 @@ public class NFIZlibSupport {
      * @param dest Byte *dest
      *
      */
-    public void getBuffer(Object zst, int option, Object dest,
+    public void getBuffer(Object zst, int option, byte[] dest,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         invokeNode.call(typedNativeLib, ZlibNativeFunctions.zlib_get_off_heap_buffer, zst, option, dest);
     }
@@ -516,7 +530,7 @@ public class NFIZlibSupport {
      * @param wbits int window bits
      * @return int
      */
-    public int deflateOffHeap(Object zst, Object in, long in_len, long buf_size, int level, int wbits,
+    public int deflateOffHeap(Object zst, byte[] in, long in_len, long buf_size, int level, int wbits,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_deflate_off_heap, zst, in, in_len, buf_size, level, wbits);
     }
@@ -530,7 +544,7 @@ public class NFIZlibSupport {
      * @param wbits int wbits
      * @return int
      */
-    public int inflateOffHeap(Object zst, Object in, long in_len, long buf_size, int wbits,
+    public int inflateOffHeap(Object zst, byte[] in, long in_len, long buf_size, int wbits,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_inflate_off_heap, zst, in, in_len, buf_size, wbits);
     }
@@ -547,7 +561,7 @@ public class NFIZlibSupport {
      * @param dict_len size_t dict_len
      * @return int
      */
-    public int compressObjInitWithDict(Object zst, int level, int method, int wbits, int memLevel, int strategy, Object dict, long dict_len,
+    public int compressObjInitWithDict(Object zst, int level, int method, int wbits, int memLevel, int strategy, byte[] dict, long dict_len,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_Compress_init, zst, level, method, wbits, memLevel, strategy, dict, dict_len);
     }
@@ -588,7 +602,7 @@ public class NFIZlibSupport {
      * @param mode int mode
      * @return int
      */
-    public int compressObjFlush(Object zst, Object in, long buf_size, int mode,
+    public int compressObjFlush(Object zst, byte[] in, long buf_size, int mode,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_Compress_flush, zst, in, buf_size, mode);
     }
@@ -612,7 +626,7 @@ public class NFIZlibSupport {
      * @param dict_len size_t dict_len
      * @return int
      */
-    public int decompressObjInitWithDict(Object zst, int wbits, Object dict, long dict_len,
+    public int decompressObjInitWithDict(Object zst, int wbits, byte[] dict, long dict_len,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_Decompress_init, zst, wbits, dict, dict_len);
     }
@@ -637,7 +651,7 @@ public class NFIZlibSupport {
      * @param max_length ssize_t max_length
      * @return int
      */
-    public int decompressObj(Object zst, Object in, long in_len, long buf_size, long max_length,
+    public int decompressObj(Object zst, byte[] in, long in_len, long buf_size, long max_length,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_Decompress_obj, zst, in, in_len, buf_size, max_length);
     }
@@ -664,4 +678,18 @@ public class NFIZlibSupport {
         return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_Decompress_copy, zst, new_copy);
     }
 
+    /**
+     * returns needs_input flag if the value isn't less than 0, otherwise it returns the zlib error
+     * code.
+     *
+     * @param zst zlib_stream *zst
+     * @param data Byte *data
+     * @param len size_t len
+     * @param max_length ssize_t max_length
+     * @return int
+     */
+    public int decompressor(Object zst, byte[] data, long len, long max_length,
+                    NativeLibrary.InvokeNativeFunction invokeNode) {
+        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_decompress, zst, data, len, max_length);
+    }
 }

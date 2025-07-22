@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -28,7 +28,7 @@ PyAPI_DATA(PyTypeObject) PyListRevIter_Type;
 
 #define PyList_Check(op) \
     PyType_FastSubclass(Py_TYPE(op), Py_TPFLAGS_LIST_SUBCLASS)
-#define PyList_CheckExact(op) Py_IS_TYPE(op, &PyList_Type)
+#define PyList_CheckExact(op) Py_IS_TYPE((op), &PyList_Type)
 
 PyAPI_FUNC(PyObject *) PyList_New(Py_ssize_t size);
 PyAPI_FUNC(Py_ssize_t) PyList_Size(PyObject *);

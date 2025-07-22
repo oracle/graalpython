@@ -137,7 +137,7 @@ public final class TupleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)", replaces = "doBuiltin")
         static PTuple constructTuple(VirtualFrame frame, Object cls, Object iterable,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Shared @Cached TupleNodes.ConstructTupleNode constructTupleNode,
                         @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
@@ -155,7 +155,7 @@ public final class TupleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"needsNativeAllocationNode.execute(inliningTarget, cls)", "isSubtypeOfTuple( isSubtype, cls)"}, limit = "1")
         @InliningCutoff
         static Object doNative(@SuppressWarnings("unused") VirtualFrame frame, Object cls, Object iterable,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Cached CExtNodes.TupleSubtypeNew subtypeNew) {
@@ -172,7 +172,7 @@ public final class TupleBuiltins extends PythonBuiltins {
 
         @Fallback
         static PTuple tupleObject(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
     }
@@ -191,7 +191,7 @@ public final class TupleBuiltins extends PythonBuiltins {
 
         @Specialization
         int index(VirtualFrame frame, Object self, Object value, int startIn, int endIn,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached InlinedBranchProfile startLe0Profile,
                         @Cached InlinedBranchProfile endLe0Profile,
@@ -228,7 +228,7 @@ public final class TupleBuiltins extends PythonBuiltins {
 
         @Specialization
         static long count(VirtualFrame frame, Object self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached PyObjectRichCompareBool eqNode) {
@@ -251,7 +251,7 @@ public final class TupleBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends LenBuiltinNode {
         @Specialization
         public int len(Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTupleSizeNode pyTupleSizeNode) {
             return pyTupleSizeNode.execute(inliningTarget, self);
         }
@@ -274,7 +274,7 @@ public final class TupleBuiltins extends PythonBuiltins {
 
         @Specialization
         public static TruffleString repr(VirtualFrame frame, Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
@@ -317,7 +317,7 @@ public final class TupleBuiltins extends PythonBuiltins {
     public abstract static class TupleSqItem extends SqItemBuiltinNode {
         @Specialization
         static Object doIt(Object self, int index,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTupleGetItem getItem) {
             return getItem.execute(inliningTarget, self, index);
         }
@@ -329,7 +329,7 @@ public final class TupleBuiltins extends PythonBuiltins {
     public abstract static class GetItemNode extends MpSubscriptBuiltinNode {
         @Specialization
         static Object doIt(VirtualFrame frame, Object self, Object idx,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile validProfile,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PRaiseNode raiseNode,
@@ -353,7 +353,7 @@ public final class TupleBuiltins extends PythonBuiltins {
     abstract static class TupleRichCmpNode extends TpSlotRichCompare.RichCmpBuiltinNode {
         @Specialization
         static Object doTuple(VirtualFrame frame, Object left, Object right, RichCmpOp op,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTupleCheckNode checkLeft,
                         @Cached PyTupleCheckNode checkRight,
                         @Cached InlinedConditionProfile tupleCheckProfile,
@@ -373,7 +373,7 @@ public final class TupleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"checkRight.execute(inliningTarget, right)"}, limit = "1")
         static PTuple doTuple(Object left, Object right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyTupleCheckNode checkRight,
                         @Cached GetTupleStorage getLeft,
                         @Cached GetTupleStorage getRight,
@@ -387,7 +387,7 @@ public final class TupleBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object doGeneric(@SuppressWarnings("unused") Object left, Object right,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "tuple", right, "tuple");
         }
     }
@@ -398,7 +398,7 @@ public final class TupleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doTuple(VirtualFrame frame, Object left, int repeats,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyTupleCheckExactNode checkTuple,
                         @Cached GetTupleStorage getLeft,
                         @Cached InlinedConditionProfile isSingleRepeat,
@@ -416,7 +416,7 @@ public final class TupleBuiltins extends PythonBuiltins {
     abstract static class ContainsNode extends SqContainsBuiltinNode {
         @Specialization
         boolean contains(VirtualFrame frame, Object self, Object other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.ContainsNode containsNode) {
             return containsNode.execute(frame, inliningTarget, getTupleStorage.execute(inliningTarget, self), other);
@@ -475,7 +475,7 @@ public final class TupleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.getHash() == HASH_UNSET"})
         long computeHash(VirtualFrame frame, PTuple self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getItem") @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Shared("hash") @Cached PyObjectHashNode hashNode) {
             // XXX CPython claims that caching the hash is not worth the space overhead:
@@ -487,7 +487,7 @@ public final class TupleBuiltins extends PythonBuiltins {
 
         @Specialization
         long computeHash(VirtualFrame frame, PythonAbstractNativeObject self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared("getItem") @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Shared("hash") @Cached PyObjectHashNode hashNode,
                         @Cached GetNativeTupleStorage getStorage) {
@@ -508,7 +508,7 @@ public final class TupleBuiltins extends PythonBuiltins {
 
             hash += 97531;
 
-            if (hash == Long.MAX_VALUE) {
+            if (hash == -1) {
                 hash = -2;
             }
             return hash;
@@ -520,7 +520,7 @@ public final class TupleBuiltins extends PythonBuiltins {
     public abstract static class GetNewargsNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PTuple doIt(Object self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetTupleStorage getTupleStorage,
                         @Bind PythonLanguage language) {
             return PFactory.createTuple(language, new Object[]{PFactory.createTuple(language, getTupleStorage.execute(inliningTarget, self))});

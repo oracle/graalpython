@@ -103,7 +103,7 @@ public abstract class HashingStorage {
 
         @Specialization(guards = {"isEmpty(kwargs)", "hasBuiltinDictIter(inliningTarget, dict, getClassNode, getSlots)"})
         static HashingStorage doPDict(PDict dict, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode.GetPythonObjectClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached GetCachedTpSlotsNode getSlots,
                         @Shared @Cached HashingStorageCopy copyNode) {
@@ -112,7 +112,7 @@ public abstract class HashingStorage {
 
         @Specialization(guards = {"!isEmpty(kwargs)", "hasBuiltinDictIter(inliningTarget, dict, getClassNode, getSlots)"})
         static HashingStorage doPDictKwargs(VirtualFrame frame, PDict dict, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode.GetPythonObjectClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached GetCachedTpSlotsNode getSlots,
                         @Shared @Cached HashingStorageCopy copyNode,
@@ -124,7 +124,7 @@ public abstract class HashingStorage {
 
         @Fallback
         static HashingStorage updateArg(VirtualFrame frame, Object arg, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Exclusive @Cached PyObjectLookupAttr lookupKeysAttributeNode,
                         @Exclusive @Cached ObjectToArrayPairNode toArrayPair,
                         @Exclusive @Cached HashingStorageSetItem setItem,
@@ -205,7 +205,7 @@ public abstract class HashingStorage {
         // partial impl PyDict_Merge
         @Specialization(guards = "!isNoValue(keyAttr)")
         static ArrayBuilder<KeyValue> partialMerge(VirtualFrame frame, Object mapping, Object keyAttr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyObjectGetIter getIter,
                         @Shared @Cached PyIterNextNode nextNode,
                         @Shared @Cached PyObjectGetItem getItemNode,
@@ -230,7 +230,7 @@ public abstract class HashingStorage {
         // partial impl PyDict_MergeFromSeq2
         @Specialization
         static ArrayBuilder<KeyValue> partialMergeFromSeq2(VirtualFrame frame, Object iterable, @SuppressWarnings("unused") PNone keyAttr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyObjectGetIter getIter,
                         @Shared @Cached PyIterNextNode nextNode,
                         @Shared @Cached PyObjectGetItem getItemNode,

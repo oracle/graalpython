@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -69,9 +69,36 @@ def main():
     with open(args.tokens_file, "r") as tok_file:
         all_tokens, exact_tokens, non_exact_tokens = generate_token_definitions(tok_file)
 
-    with open(args.output_file, "w") as file:
+    # Determine which line separator to use
+    if os.path.exists(args.output_file):
+        stat_result = os.stat(args.output_file)
+        atime, mtime = stat_result.st_atime, stat_result.st_mtime
+        with open(args.output_file, "r", encoding="utf-8", newline=os.linesep) as f:
+            content = f.read()
+        if os.linesep != "\n":
+            unix_content = content.replace(os.linesep, "\n")
+            if unix_content == content:
+                # Windows file has Unix line endings
+                linesep = "\n"
+                content = unix_content
+            else:
+                linesep = os.linesep
+        else:
+            linesep = "\n"
+    else:
+        content = None
+        linesep = os.linesep
+
+    with open(args.output_file, "w", encoding="utf-8", newline=linesep) as file:
         gen = JavaParserGenerator(grammar, all_tokens, exact_tokens, non_exact_tokens, file, debug=args.debug)
         gen.generate(os.path.basename(args.grammar_file))
+
+    with open(args.output_file, "r", encoding="utf-8", newline=linesep) as file:
+        new_content = file.read()
+
+    if content == new_content:
+        print(f"{args.output_file} not modified")
+        os.utime(args.output_file, (atime, mtime))
 
 
 if __name__ == '__main__':

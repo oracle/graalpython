@@ -41,11 +41,11 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.LOGGER;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
+import static com.oracle.graal.python.nodes.ErrorMessages.S;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -87,26 +87,23 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils.NeedsPasswordException;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils.NoCertificateFoundException;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.OsEnvironGetNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -117,7 +114,6 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -143,7 +139,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -153,8 +148,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public final class SSLContextBuiltins extends PythonBuiltins {
-
-    private static final TruffleString T_ENVIRON = tsLiteral("environ");
 
     public static final TpSlots SLOTS = SSLContextBuiltinsSlotsGen.SLOTS;
 
@@ -171,7 +164,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization
         static PSSLContext createContext(VirtualFrame frame, Object type, int protocol,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
@@ -292,7 +285,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class WrapSocketNode extends PythonClinicBuiltinNode {
         @Specialization
         static Object wrap(PSSLContext context, PSocket sock, boolean serverSide, Object serverHostnameObj, Object owner, @SuppressWarnings("unused") PNone session,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached StringNodes.CastToTruffleStringCheckedNode cast,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
@@ -312,7 +305,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object wrap(Object context, Object sock, Object serverSide, Object serverHostname, Object owner, Object session,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INVALID_WRAP_SOCKET_CALL);
         }
 
@@ -329,7 +322,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @Specialization
         static Object wrap(PSSLContext context, PMemoryBIO incoming, PMemoryBIO outgoing, boolean serverSide, Object serverHostnameObj, Object owner,
                         @SuppressWarnings("unused") PNone session,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached StringNodes.CastToTruffleStringCheckedNode cast,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
@@ -349,7 +342,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object wrap(Object context, Object incoming, Object outgoing, Object serverSide, Object serverHostname, Object owner, Object session,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INVALID_WRAP_BIO_CALL);
         }
 
@@ -389,7 +382,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(flags)")
         static Object setVerifyFlags(VirtualFrame frame, PSSLContext self, Object flags,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             self.setVerifyFlags(asSizeNode.executeLossy(frame, inliningTarget, flags));
             return PNone.NONE;
@@ -415,10 +408,14 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(valueObj)")
         static Object setOption(VirtualFrame frame, PSSLContext self, Object valueObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
-                        @Cached CastToJavaLongExactNode cast) {
+                        @Cached CastToJavaLongExactNode cast,
+                        @Cached PRaiseNode raiseNode) {
             long value = cast.execute(inliningTarget, indexNode.execute(frame, inliningTarget, valueObj));
+            if (value < 0) {
+                throw raiseNode.raise(inliningTarget, OverflowError);
+            }
             // TODO validate the options
             // TODO use the options
             self.setOptions(value);
@@ -436,7 +433,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object set(VirtualFrame frame, PSSLContext self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PRaiseNode raiseNode) {
             int mode = asSizeNode.executeLossy(frame, inliningTarget, value);
@@ -495,7 +492,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(obj)")
         static Object set(VirtualFrame frame, PSSLContext self, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PRaiseNode raiseNode) {
             setMinMaxVersion(inliningTarget, raiseNode, self, false, asSizeNode.executeExact(frame, inliningTarget, obj));
@@ -513,7 +510,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(obj)")
         static Object set(VirtualFrame frame, PSSLContext self, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PRaiseNode raiseNode) {
             setMinMaxVersion(inliningTarget, raiseNode, self, true, asSizeNode.executeExact(frame, inliningTarget, obj));
@@ -560,7 +557,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "isNoValue(value)")
         static int get(PSSLContext self, PNone value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             // not used yet so rather raise error
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
@@ -568,7 +565,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!isNoValue(value)")
         static Object set(VirtualFrame frame, PSSLContext self, Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             // not used yet so rather raise error
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
             // int num;
@@ -593,7 +590,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class SNICallbackNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object notImplemented(@SuppressWarnings("unused") PSSLContext self, @SuppressWarnings("unused") Object value,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
@@ -612,27 +609,15 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     @Builtin(name = "set_default_verify_paths", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SetDefaultVerifyPathsNode extends PythonUnaryBuiltinNode {
+        static final TruffleString T_SSL_CERT_FILE = tsLiteral("SSL_CERT_FILE");
+        static final TruffleString T_SSL_CERT_DIR = tsLiteral("SSL_CERT_DIR");
+
         @Specialization
         Object set(VirtualFrame frame, PSSLContext self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyUnicodeFSDecoderNode asPath,
-                        @Cached("createEnvironLookup()") GetAttributeNode getAttribute,
-                        @Cached HashingStorageGetItem getItem,
-                        @Cached("createCertFileKey()") PBytes certFileKey,
-                        @Cached("createCertDirKey()") PBytes certDirKey,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-
-            PythonModule posix;
-            if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-                posix = getContext().lookupBuiltinModule(T_NT);
-            } else {
-                posix = getContext().lookupBuiltinModule(T_POSIX);
-            }
-            PDict environ = (PDict) getAttribute.executeObject(frame, posix);
-            HashingStorage storage = environ.getDictStorage();
-
-            TruffleFile file = toTruffleFile(frame, asPath, getItem.execute(frame, inliningTarget, storage, certFileKey), toJavaStringNode);
-            TruffleFile path = toTruffleFile(frame, asPath, getItem.execute(frame, inliningTarget, storage, certDirKey), toJavaStringNode);
+                        @Bind Node inliningTarget,
+                        @Cached PyUnicodeFSDecoderNode asPath) {
+            TruffleFile file = toTruffleFile(frame, asPath, OsEnvironGetNode.executeUncached(T_SSL_CERT_FILE));
+            TruffleFile path = toTruffleFile(frame, asPath, OsEnvironGetNode.executeUncached(T_SSL_CERT_DIR));
             if (file != null || path != null) {
                 LOGGER.fine(() -> String.format("set_default_verify_paths file: %s. path: %s", file != null ? file.getPath() : "None", path != null ? path.getPath() : "None"));
                 try {
@@ -647,30 +632,13 @@ public final class SSLContextBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @NeverDefault
-        @TruffleBoundary
-        protected PBytes createCertFileKey() {
-            return PFactory.createBytes(PythonLanguage.get(null), "SSL_CERT_FILE".getBytes());
-        }
-
-        @NeverDefault
-        @TruffleBoundary
-        protected PBytes createCertDirKey() {
-            return PFactory.createBytes(PythonLanguage.get(null), "SSL_CERT_DIR".getBytes());
-        }
-
-        @NeverDefault
-        protected static GetAttributeNode createEnvironLookup() {
-            return GetAttributeNode.create(T_ENVIRON);
-        }
-
-        private TruffleFile toTruffleFile(VirtualFrame frame, PyUnicodeFSDecoderNode asPath, Object path, TruffleString.ToJavaStringNode toJavaStringNode) throws PException {
+        private TruffleFile toTruffleFile(VirtualFrame frame, PyUnicodeFSDecoderNode asPath, TruffleString path) throws PException {
             if (path == null) {
                 return null;
             }
             TruffleFile file;
             try {
-                file = getContext().getEnv().getPublicTruffleFile(toJavaStringNode.execute(asPath.execute(frame, path)));
+                file = getContext().getEnv().getPublicTruffleFile(asPath.execute(frame, path).toJavaStringUncached());
                 if (!file.exists()) {
                     return null;
                 }
@@ -691,7 +659,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object storeStats(VirtualFrame frame, PSSLContext self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
@@ -719,7 +687,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class LoadVerifyLocationsNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         Object load(VirtualFrame frame, PSSLContext self, Object cafile, Object capath, Object cadata,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyUnicodeFSDecoderNode asPath,
                         @Cached CastToJavaStringNode castToString,
                         @Cached ToByteArrayNode toBytes,
@@ -825,13 +793,13 @@ public final class SSLContextBuiltins extends PythonBuiltins {
             } catch (CertificateException ex) {
                 String msg = ex.getMessage();
                 if (msg != null) {
-                    if (msg.contains("No certificate data found")) {
+                    if (msg.contains("Empty input")) {
                         throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_NOT_ENOUGH_DATA, ErrorMessages.NOT_ENOUGH_DATA);
                     }
                 } else {
                     msg = "error while reading cadata";
                 }
-                throw PConstructAndRaiseNode.raiseUncachedSSLError(null, SSLErrorCode.ERROR_SSL, toTruffleStringUncached(msg));
+                throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, S, toTruffleStringUncached(msg));
             }
         }
     }
@@ -841,7 +809,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class LoadCertChainNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         Object load(VirtualFrame frame, PSSLContext self, Object certfile, Object keyfile, Object passwordObj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyUnicodeFSDecoderNode asPath,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached GetPasswordNode getPasswordNode,
@@ -939,7 +907,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isString(password)")
         static char[] doString(Object password,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CastToJavaStringNode cast,
                         @Shared @Cached PRaiseNode raiseNode) {
             String str = cast.execute(password);
@@ -949,7 +917,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         static char[] doBytes(PBytesLike bytes,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("bytes") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached PRaiseNode raiseNode) {
             byte[] data = bufferLib.getInternalOrCopiedByteArray(bytes);
@@ -964,7 +932,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Fallback
         static char[] doCallable(VirtualFrame frame, Object callable,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyCallableCheckNode callableCheckNode,
                         @Cached CallNode callNode,
                         @Cached GetPasswordNode recursive,
@@ -997,7 +965,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static PNone load(VirtualFrame frame, PSSLContext self, Object pathObject,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyUnicodeFSDecoderNode asPath) {
             TruffleString path = asPath.execute(frame, pathObject);
             // not used yet so rather raise error
@@ -1025,7 +993,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class SetAlpnProtocols extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
         static Object setFromBuffer(VirtualFrame frame, PSSLContext self, Object buffer,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
@@ -1064,7 +1032,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class GetCACerts extends PythonBinaryClinicBuiltinNode {
         @Specialization(guards = "!binary_form")
         Object getCerts(VirtualFrame frame, PSSLContext self, @SuppressWarnings("unused") boolean binary_form,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {

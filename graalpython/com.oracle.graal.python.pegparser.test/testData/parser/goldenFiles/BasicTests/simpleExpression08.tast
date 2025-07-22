@@ -5,4 +5,4 @@ Input:
 Output:
 -------
 Expression[1:0-1:8]
-    RAW[1:0-1:8] Value: "\ud800"
+    CODEPOINTS[1:0-1:8] Value: "\ud800"

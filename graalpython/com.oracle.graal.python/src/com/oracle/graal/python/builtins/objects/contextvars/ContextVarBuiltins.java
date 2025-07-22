@@ -101,7 +101,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
 
         @Specialization
         protected static Object constructDef(@SuppressWarnings("unused") Object cls, TruffleString name, Object def,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile noValueProfile,
                         @Bind PythonLanguage language) {
             if (noValueProfile.profile(inliningTarget, isNoValue(def))) {
@@ -116,13 +116,13 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     public abstract static class GetNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object get(PContextVar self, Object def,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile defIsNoValueProfile,
                         @Cached PRaiseNode raiseNode) {
             Object defValue = defIsNoValueProfile.profile(inliningTarget, isNoValue(def)) ? PContextVar.NO_DEFAULT : def;
             PythonContext context = PythonContext.get(inliningTarget);
             PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
-            Object value = self.get(threadState, defValue);
+            Object value = self.get(inliningTarget, threadState, defValue);
             if (value != null) {
                 return value;
             }
@@ -135,12 +135,12 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     public abstract static class SetNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object set(PContextVar self, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonContext.PythonThreadState threadState = context.getThreadState(language);
-            Object oldValue = self.getValue(threadState);
-            self.setValue(threadState, value);
+            Object oldValue = self.getValue(inliningTarget, threadState);
+            self.setValue(inliningTarget, threadState, value);
             return PFactory.createContextVarsToken(language, self, oldValue);
         }
     }
@@ -150,17 +150,17 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     public abstract static class ResetNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object reset(PContextVar self, PContextVarsToken token,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Bind PythonContext pythonContext,
                         @Shared @Cached PRaiseNode raise) {
             if (self == token.getVar()) {
                 token.use(inliningTarget, raise);
                 PythonContext.PythonThreadState threadState = pythonContext.getThreadState(pythonContext.getLanguage(inliningTarget));
                 if (token.getOldValue() == null) {
-                    PContextVarsContext context = threadState.getContextVarsContext();
+                    PContextVarsContext context = threadState.getContextVarsContext(inliningTarget);
                     context.contextVarValues = context.contextVarValues.without(self, self.getHash());
                 } else {
-                    self.setValue(threadState, token.getOldValue());
+                    self.setValue(inliningTarget, threadState, token.getOldValue());
                 }
             } else {
                 throw raise.raise(inliningTarget, ValueError, ErrorMessages.TOKEN_FOR_DIFFERENT_CONTEXTVAR, token);
@@ -170,7 +170,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isToken(token)")
         Object doError(@SuppressWarnings("unused") PContextVar self, Object token,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raise) {
             throw raise.raise(inliningTarget, TypeError, ErrorMessages.INSTANCE_OF_TOKEN_EXPECTED, token);
         }

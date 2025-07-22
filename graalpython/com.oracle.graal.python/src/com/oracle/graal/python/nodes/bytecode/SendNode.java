@@ -74,7 +74,7 @@ public abstract class SendNode extends PNodeWithContext {
 
     @Specialization
     static boolean doGenerator(VirtualFrame virtualFrame, int stackTop, PGenerator generator, Object arg,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached CommonGeneratorBuiltins.SendNode sendNode,
                     @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
                     @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
@@ -90,7 +90,7 @@ public abstract class SendNode extends PNodeWithContext {
 
     @Specialization(guards = "hasIterSlot(slots)", limit = "1")
     static boolean doIterator(VirtualFrame virtualFrame, int stackTop, Object iter, @SuppressWarnings("unused") PNone arg,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Cached GetObjectSlotsNode getSlots,
                     @Bind("getSlots.execute(inliningTarget, iter)") TpSlots slots,
                     @Cached CallSlotTpIterNextNode callIterNext,
@@ -118,7 +118,7 @@ public abstract class SendNode extends PNodeWithContext {
 
     @Fallback
     static boolean doOther(VirtualFrame virtualFrame, int stackTop, Object obj, Object arg,
-                    @Bind("this") Node inliningTarget,
+                    @Bind Node inliningTarget,
                     @Cached PyObjectCallMethodObjArgs callMethodNode,
                     @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
                     @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {

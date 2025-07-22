@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_INT_AS_R;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
@@ -118,7 +119,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object construct(VirtualFrame frame, Object cls, Object iterable, Object rArg,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile rIsNoneProfile,
                         @Cached IteratorNodes.ToArrayNode toArrayNode,
                         @Cached CastToJavaIntExactNode castToInt,
@@ -205,7 +206,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isStopped()")
         static Object next(PPermutations self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile isStartedProfile,
                         @Cached InlinedBranchProfile jProfile,
                         @Cached InlinedLoopConditionProfile resultLoopProfile,
@@ -261,9 +262,10 @@ public final class PermutationsBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "!self.isRaisedStopIteration()")
         static Object reduce(PPermutations self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
                         @Bind PythonLanguage language) {
+            warnPickleDeprecated();
             Object type = getClassNode.execute(inliningTarget, self);
             PList poolList = PFactory.createList(language, self.getPool());
             PTuple tuple = PFactory.createTuple(language, new Object[]{poolList, self.getR()});
@@ -279,7 +281,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isRaisedStopIteration()")
         static Object reduceStopped(PPermutations self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
                         @Bind PythonLanguage language) {
             Object type = getClassNode.execute(inliningTarget, self);
@@ -295,7 +297,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object setState(VirtualFrame frame, PPermutations self, Object state,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached GetItemNode getItemNode,
                         @Cached InlinedLoopConditionProfile indicesProfile,
@@ -303,6 +305,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                         @Cached CastToJavaBooleanNode castBoolean,
                         @Cached CastToJavaIntExactNode castInt,
                         @Cached PRaiseNode raiseNode) {
+            warnPickleDeprecated();
             try {
                 if (sizeNode.execute(frame, inliningTarget, state) != 3) {
                     throw raiseNode.raise(inliningTarget, ValueError, INVALID_ARGS, T___SETSTATE__);

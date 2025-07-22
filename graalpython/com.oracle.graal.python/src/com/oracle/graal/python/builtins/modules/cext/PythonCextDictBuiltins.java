@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -93,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItemWithHash;
+import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ClearNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.PopNode;
@@ -105,6 +107,7 @@ import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -127,6 +130,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 public final class PythonCextDictBuiltins {
@@ -146,7 +150,7 @@ public final class PythonCextDictBuiltins {
 
         @Specialization
         static int next(PDict dict, Object posPtr, Object keyPtr, Object valuePtr, Object hashPtr,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached CStructAccess.ReadI64Node readI64Node,
                         @Cached CStructAccess.WriteLongNode writeLongNode,
@@ -272,7 +276,7 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_Size extends CApiUnaryBuiltinNode {
         @Specialization
         static int size(PDict dict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageLen lenNode) {
             return lenNode.execute(inliningTarget, dict.getDictStorage());
         }
@@ -287,7 +291,7 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_Copy extends CApiUnaryBuiltinNode {
         @Specialization
         static Object copy(PDict dict,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageCopy copyNode,
                         @Bind PythonLanguage language) {
             return PFactory.createDict(language, copyNode.execute(inliningTarget, dict.getDictStorage()));
@@ -304,7 +308,7 @@ public final class PythonCextDictBuiltins {
 
         @Specialization
         static Object getItem(PDict dict, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageGetItem getItem,
                         @Cached PromoteBorrowedValue promoteNode,
                         @Cached SetItemNode setItemNode,
@@ -329,7 +333,7 @@ public final class PythonCextDictBuiltins {
 
         @Specialization(guards = "!isDict(obj)")
         static Object getItem(Object obj, @SuppressWarnings("unused") Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached StringBuiltins.StrNewNode strNode) {
             return PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(null, obj), obj);
         }
@@ -343,7 +347,7 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_GetItemWithError extends CApiBinaryBuiltinNode {
         @Specialization
         static Object getItem(PDict dict, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageGetItem getItem,
                         @Cached PromoteBorrowedValue promoteNode,
                         @Cached SetItemNode setItemNode,
@@ -371,7 +375,7 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_SetItem extends CApiTernaryBuiltinNode {
         @Specialization
         static int setItem(PDict dict, Object key, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SetItemNode setItemNode) {
             setItemNode.execute(null, inliningTarget, dict, key, value);
             return 0;
@@ -388,7 +392,7 @@ public final class PythonCextDictBuiltins {
     abstract static class _PyDict_SetItem_KnownHash extends CApiQuaternaryBuiltinNode {
         @Specialization
         static int setItem(PDict dict, Object key, Object value, Object givenHash,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectHashNode hashNode,
                         @Cached CastToJavaLongExactNode castToLong,
                         @Cached SetItemNode setItemNode,
@@ -413,7 +417,7 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_SetDefault extends CApiTernaryBuiltinNode {
         @Specialization
         static Object setItem(PDict dict, Object key, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyDictSetDefault setDefault) {
             return setDefault.execute(null, inliningTarget, dict, key, value);
         }
@@ -428,7 +432,7 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_DelItem extends CApiBinaryBuiltinNode {
         @Specialization
         static int delItem(PDict dict, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyDictDelItem delItemNode) {
             delItemNode.execute(null, inliningTarget, dict, key);
             return 0;
@@ -459,7 +463,7 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_Contains extends CApiBinaryBuiltinNode {
         @Specialization
         static int contains(PDict dict, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageGetItem getItem) {
             return PInt.intValue(getItem.hasKey(null, inliningTarget, dict.getDictStorage(), key));
         }
@@ -519,7 +523,7 @@ public final class PythonCextDictBuiltins {
 
         @Specialization(guards = {"override != 0"})
         static int merge(PDict a, Object b, @SuppressWarnings("unused") int override,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyObjectGetAttr getKeys,
                         @Cached PyObjectGetAttr getUpdate,
                         @Shared @Cached CallNode callNode,
@@ -535,7 +539,7 @@ public final class PythonCextDictBuiltins {
 
         @Specialization(guards = "override == 0")
         static int merge(PDict a, PDict b, @SuppressWarnings("unused") int override,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageGetIterator getBIter,
                         @Cached HashingStorageIteratorNext itBNext,
                         @Cached HashingStorageIteratorKey itBKey,
@@ -559,7 +563,7 @@ public final class PythonCextDictBuiltins {
 
         @Specialization(guards = {"override == 0", "!isDict(b)"})
         static int merge(PDict a, Object b, @SuppressWarnings("unused") int override,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyObjectGetAttr getKeys,
                         @Shared @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
@@ -599,7 +603,7 @@ public final class PythonCextDictBuiltins {
 
         @Specialization
         static int doPDict(@SuppressWarnings("unused") PDict self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageNodes.HashingStorageForEach forEachNode,
                         @Cached DictTraverseCallback traverseCallback) {
             HashingStorage dictStorage = self.getDictStorage();
@@ -652,6 +656,34 @@ public final class PythonCextDictBuiltins {
             // return true;
             // }
             // return false;
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
+    abstract static class _PyDict_HasOnlyStringKeys extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static int check(PDict dict,
+                        @Bind Node inliningTarget,
+                        @Cached InlinedConditionProfile storageProfile,
+                        @Cached InlinedLoopConditionProfile loopConditionProfile,
+                        @Cached HashingStorageGetIterator getIter,
+                        @Cached HashingStorageIteratorNext getIterNext,
+                        @Cached HashingStorageIteratorKey getIterKey,
+                        @Cached PyUnicodeCheckNode check) {
+            HashingStorage storage = dict.getDictStorage();
+            // Keywords and dynamic object storages only allow strings
+            if (storageProfile.profile(inliningTarget, storage instanceof KeywordsStorage || storage instanceof DynamicObjectStorage)) {
+                return 1;
+            }
+            HashingStorageIterator it = getIter.execute(inliningTarget, storage);
+            while (loopConditionProfile.profile(inliningTarget, getIterNext.execute(inliningTarget, storage, it))) {
+                Object key = getIterKey.execute(inliningTarget, storage, it);
+                if (!check.execute(inliningTarget, key)) {
+                    return 0;
+                }
+            }
+            return 1;
         }
     }
 }

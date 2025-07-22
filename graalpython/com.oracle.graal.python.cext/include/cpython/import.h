@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -15,8 +15,8 @@ PyAPI_FUNC(PyObject *) _PyImport_GetModuleId(_Py_Identifier *name);
 PyAPI_FUNC(int) _PyImport_SetModule(PyObject *name, PyObject *module);
 PyAPI_FUNC(int) _PyImport_SetModuleString(const char *name, PyObject* module);
 
-PyAPI_FUNC(void) _PyImport_AcquireLock(void);
-PyAPI_FUNC(int) _PyImport_ReleaseLock(void);
+PyAPI_FUNC(void) _PyImport_AcquireLock(PyInterpreterState *interp);
+PyAPI_FUNC(int) _PyImport_ReleaseLock(PyInterpreterState *interp);
 
 PyAPI_FUNC(int) _PyImport_FixupBuiltin(
     PyObject *mod,
@@ -30,6 +30,7 @@ struct _inittab {
     const char *name;           /* ASCII encoded string */
     PyObject* (*initfunc)(void);
 };
+// This is not used after Py_Initialize() is called.
 PyAPI_DATA(struct _inittab *) PyImport_Inittab;
 PyAPI_FUNC(int) PyImport_ExtendInittab(struct _inittab *newtab);
 

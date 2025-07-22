@@ -447,7 +447,7 @@ class PyPerformanceSuite(PySuite):
                 join(vm_venv, "bin", "pyperformance"),
                 "run",
                 "--inherit-environ",
-                "PIP_INDEX_URL,PIP_EXTRA_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX,JAVA_OPTS,GRAAL_PYTHON_ARGS",
+                "PIP_INDEX_URL,PIP_EXTRA_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX,JAVA_OPTS,GRAAL_PYTHON_ARGS,GRAAL_PYTHON_VM_ARGS",
                 "-o",
                 json_file,
                 *bms,
@@ -465,7 +465,7 @@ class PyPerformanceSuite(PySuite):
                 "--debug-single-value",
                 "--track-memory",
                 "--inherit-environ",
-                "PIP_INDEX_URL,PIP_EXTRA_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX,JAVA_OPTS,GRAAL_PYTHON_ARGS",
+                "PIP_INDEX_URL,PIP_EXTRA_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX,JAVA_OPTS,GRAAL_PYTHON_ARGS,GRAAL_PYTHON_VM_ARGS",
                 "-o",
                 json_file_memory,
                 *bms,
@@ -566,6 +566,7 @@ class NumPySuite(PySuite):
 
     BENCHMARK_REQ = [
         "asv==0.5.1",
+        "setuptools==70.3.0",
         "distlib==0.3.6",
         "filelock==3.8.0",
         "platformdirs==2.5.2",
@@ -672,6 +673,7 @@ class PandasSuite(PySuite):
 
     BENCHMARK_REQ = [
         "asv==0.5.1",
+        "setuptools==70.3.0",
         "distlib==0.3.6",
         "filelock==3.8.0",
         "platformdirs==2.5.2",

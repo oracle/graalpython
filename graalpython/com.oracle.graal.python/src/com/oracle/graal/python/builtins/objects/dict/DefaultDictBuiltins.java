@@ -116,7 +116,7 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reprFunction(VirtualFrame frame, PDefaultDict self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
@@ -135,7 +135,7 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reduce(VirtualFrame frame, PDefaultDict self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter,
                         @Bind PythonLanguage language) {
@@ -152,7 +152,7 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PDefaultDict copy(@SuppressWarnings("unused") VirtualFrame frame, PDefaultDict self,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageCopy copyNode,
                         @Bind PythonLanguage language) {
             return PFactory.createDefaultDict(language, self.getDefaultFactory(), copyNode.execute(inliningTarget, self.getDictStorage()));
@@ -164,13 +164,13 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     public abstract static class MissingNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNone(self.getDefaultFactory())")
         static Object doNoFactory(@SuppressWarnings("unused") PDefaultDict self, Object key,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.KeyError, new Object[]{key});
         }
 
         @Specialization(guards = "!isNone(self.getDefaultFactory())")
         static Object doMissing(VirtualFrame frame, PDefaultDict self, Object key,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached PyDictSetItem setItem) {
             final Object value = callNode.execute(frame, self.getDefaultFactory());
@@ -185,7 +185,7 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     public abstract static class InitNode extends PythonVarargsBuiltinNode {
         @Specialization
         static Object doInit(VirtualFrame frame, PDefaultDict self, Object[] args, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached DictBuiltins.InitNode dictInitNode,
                         @Cached PyCallableCheckNode callableCheckNode,
                         @Cached PRaiseNode raiseNode) {
@@ -225,7 +225,7 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     abstract static class OrNode extends BinaryOpBuiltinNode {
         @Specialization
         static Object or(VirtualFrame frame, PDict self, PDict other,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached CallNode callNode,
                         @Cached DictNodes.UpdateNode updateNode,
