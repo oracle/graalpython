@@ -53,7 +53,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.bytecode.ContinuationRootNode;
-import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
@@ -63,7 +62,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@GenerateInline(false) // to avoid truffle inline suggestion warnings
 public final class ReadCallerFrameNode extends Node {
     public interface FrameSelector {
         boolean skip(RootNode rootNode);
