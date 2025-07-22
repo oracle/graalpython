@@ -147,6 +147,7 @@ public enum RichCmpOp {
             case Py_NE -> result != 0;
             case Py_GT -> result > 0;
             case Py_GE -> result >= 0;
+            default -> throw CompilerDirectives.shouldNotReachHere();
         };
     }
 
@@ -158,6 +159,7 @@ public enum RichCmpOp {
             case Py_NE -> a != b;
             case Py_GT -> a > b;
             case Py_GE -> a >= b;
+            default -> throw CompilerDirectives.shouldNotReachHere();
         };
     }
 
@@ -169,6 +171,7 @@ public enum RichCmpOp {
             case Py_NE -> a != b;
             case Py_GT -> a > b;
             case Py_GE -> a >= b;
+            default -> throw CompilerDirectives.shouldNotReachHere();
         };
     }
 
@@ -180,6 +183,7 @@ public enum RichCmpOp {
             case Py_NE -> a != b;
             case Py_GT -> a > b;
             case Py_GE -> a >= b;
+            default -> throw CompilerDirectives.shouldNotReachHere();
         };
     }
 
@@ -191,6 +195,7 @@ public enum RichCmpOp {
             case Py_NE -> a != b;
             case Py_GT -> a > b;
             case Py_GE -> a >= b;
+            default -> throw CompilerDirectives.shouldNotReachHere();
         };
     }
 
@@ -209,6 +214,7 @@ public enum RichCmpOp {
             case Py_NE -> Py_NE;
             case Py_GT -> Py_LT;
             case Py_GE -> Py_LE;
+            default -> throw CompilerDirectives.shouldNotReachHere();
         };
     }
 }

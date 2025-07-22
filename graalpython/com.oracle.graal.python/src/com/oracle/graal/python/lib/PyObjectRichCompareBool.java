@@ -46,6 +46,7 @@ import com.oracle.graal.python.lib.PyObjectRichCompareBoolNodeGen.CachedPyObject
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -107,6 +108,7 @@ public abstract class PyObjectRichCompareBool extends Node {
             case Py_EQ, Py_NE -> PFloat.areIdentical(a, b) == op.isEq();
             case Py_GT -> a > b;
             case Py_GE -> a >= b;
+            default -> throw CompilerDirectives.shouldNotReachHere();
         };
     }
 
