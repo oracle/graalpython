@@ -165,13 +165,10 @@ PyAPI_FUNC(Py_ssize_t) PyObject_LengthHint(PyObject *o, Py_ssize_t);
 
 /* === Sequence protocol ================================================ */
 
-// GraalPy-specific
-PyAPI_FUNC(PyObject*) GraalPyPrivate_Sequence_ITEM(PyObject* obj, Py_ssize_t index);
-
 /* Assume tp_as_sequence and sq_item exist and that 'i' does not
    need to be corrected for a negative index. */
-// GraalPy change
-#define PySequence_ITEM(o, i) GraalPyPrivate_Sequence_ITEM((o), (i))
+#define PySequence_ITEM(o, i)\
+    ( Py_TYPE(o)->tp_as_sequence->sq_item((o), (i)) )
 
 #define PY_ITERSEARCH_COUNT    1
 #define PY_ITERSEARCH_INDEX    2

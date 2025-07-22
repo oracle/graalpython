@@ -3042,12 +3042,3 @@ _Py_FreeCharPArray(char *const array[])
     PyMem_Free((void*)array);
 }
 #endif // GraalPy change
-
-// GraalPy additions
-
-PyObject*
-GraalPyPrivate_Sequence_ITEM(PyObject* obj, Py_ssize_t index)
-{
-        PySequenceMethods* methods = Py_TYPE(obj)->tp_as_sequence;
-        return methods->sq_item(obj, index);
-}
