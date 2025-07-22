@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -109,6 +109,7 @@ _PyLong_FromDigits(int negative, Py_ssize_t digit_count, digit *digits);
 #define _PyLong_SIGN_MASK 3
 #define _PyLong_NON_SIZE_BITS 3
 
+#if 0 // GraalPy change
 
 static inline int
 _PyLong_IsCompact(const PyLongObject* op) {
@@ -117,6 +118,12 @@ _PyLong_IsCompact(const PyLongObject* op) {
 }
 
 #define PyUnstable_Long_IsCompact _PyLong_IsCompact
+
+#endif // GraalPy change
+
+#define _PyLong_IsCompact PyUnstable_Long_IsCompact
+
+#if 0 // GraalPy change
 
 static inline Py_ssize_t
 _PyLong_CompactValue(const PyLongObject *op)
@@ -130,6 +137,9 @@ _PyLong_CompactValue(const PyLongObject *op)
 
 #define PyUnstable_Long_CompactValue _PyLong_CompactValue
 
+#endif // GraalPy change
+
+#define _PyLong_CompactValue PyUnstable_Long_CompactValue
 
 #ifdef __cplusplus
 }

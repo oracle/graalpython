@@ -681,7 +681,7 @@ public final class PInt extends PythonBuiltinObject {
         return value.compareTo(left) >= 0 && value.compareTo(right) <= 0;
     }
 
-    private boolean fitsIn(BigInteger left, BigInteger right) {
+    public boolean fitsIn(BigInteger left, BigInteger right) {
         return fitsIn(value, left, right);
     }
 
