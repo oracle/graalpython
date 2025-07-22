@@ -2659,6 +2659,14 @@ PyFloat_Unpack8(const char *data, int le)
 
 // GraalPy additions
 
+double GraalPyFloat_AS_DOUBLE(PyObject *op) {
+    if (points_to_py_handle_space(op)) {
+        return ((GraalPyFloatObject*) pointer_to_stub(op))->ob_fval;
+    } else {
+        return _PyFloat_CAST(op)->ob_fval;
+    }
+}
+
 // not quite as in CPython, this assumes that x is already a double. The rest of
 // the implementation is in the Float constructor in Java
 PyAPI_FUNC(PyObject*)

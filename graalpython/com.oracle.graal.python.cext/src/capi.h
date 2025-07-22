@@ -83,6 +83,8 @@
 #include "pycore_global_objects.h" // _PY_NSMALLPOSINTS
 #include "pycore_gc.h" // PyGC_Head
 
+#include "graalpy/handles.h"
+
 #define SRC_CS "utf-8"
 
 /* Flags definitions representing global (debug) options. */
@@ -124,6 +126,24 @@ typedef struct {
     int32_t n;
     PyGC_Head *reachable;
 } GraalPyGC_Cycle;
+
+PyAPI_FUNC(void) GraalPyPrivate_DebugTrace(void);
+
+typedef struct {
+    PyObject_HEAD
+    int32_t handle_table_index;
+} GraalPyObject;
+
+typedef struct {
+    GraalPyObject ob_base;
+    Py_ssize_t ob_size;
+    PyObject **ob_item;
+} GraalPyVarObject;
+
+typedef struct {
+    GraalPyObject ob_base;
+    double ob_fval;
+} GraalPyFloatObject;
 
 typedef struct gc_generation GCGeneration;
 

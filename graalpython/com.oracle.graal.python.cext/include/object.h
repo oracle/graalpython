@@ -58,8 +58,6 @@ whose size is determined when the object is allocated.
 
 #include "pystats.h"
 
-#include "graalpy/handles.h"
-
 /* Py_DEBUG implies Py_REF_DEBUG. */
 #if defined(Py_DEBUG) && !defined(Py_REF_DEBUG)
 #  define Py_REF_DEBUG
@@ -1028,20 +1026,6 @@ static inline int PyType_CheckExact(PyObject *op) {
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define PyType_CheckExact(op) PyType_CheckExact(_PyObject_CAST(op))
 #endif
-
-// GraalPy additions
-PyAPI_FUNC(void) GraalPyPrivate_DebugTrace(void);
-
-typedef struct {
-    PyObject_HEAD
-    int32_t handle_table_index;
-} GraalPyObject;
-
-typedef struct {
-    GraalPyObject ob_base;
-    Py_ssize_t ob_size;
-    PyObject **ob_item;
-} GraalPyVarObject;
 
 #ifdef __cplusplus
 }
