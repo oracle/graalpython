@@ -2842,7 +2842,8 @@ int Py_IsFalse(PyObject *x)
 }
 
 // GraalPy additions
-Py_ssize_t GraalPyPrivate_REFCNT(PyObject *obj) {
+#undef Py_REFCNT
+Py_ssize_t Py_REFCNT(PyObject *obj) {
     Py_ssize_t res;
     if (points_to_py_handle_space(obj))
     {
@@ -2861,12 +2862,19 @@ Py_ssize_t GraalPyPrivate_REFCNT(PyObject *obj) {
     return res;
 }
 
-// alias, currently used in PyO3
+// alias, currently used in PyO3, remove after updating to 3.14
 PyAPI_FUNC(Py_ssize_t) _Py_REFCNT(PyObject *obj) {
-    return GraalPyPrivate_REFCNT(obj);
+    return Py_REFCNT(obj);
 }
 
-void GraalPyPrivate_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
+void _Py_SetRefcnt(PyObject* obj, Py_ssize_t cnt) {
+    // This immortal check is for code that is unaware of immortal objects.
+    // The runtime tracks these objects and we should avoid as much
+    // as possible having extensions inadvertently change the refcnt
+    // of an immortalized object.
+    if (_Py_IsImmortal(obj)) {
+        return;
+    }
     PyObject *dest;
     if (points_to_py_handle_space(obj))
     {
@@ -2885,7 +2893,7 @@ void GraalPyPrivate_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
     dest->ob_refcnt = cnt;
 }
 
-PyTypeObject* GraalPyPrivate_TYPE(PyObject *a) {
+PyTypeObject* GraalPy_TYPE(PyObject *a) {
     PyTypeObject *res;
     if (points_to_py_handle_space(a))
     {
@@ -2906,10 +2914,10 @@ PyTypeObject* GraalPyPrivate_TYPE(PyObject *a) {
 
 // alias, currently used in PyO3
 PyAPI_FUNC(PyTypeObject*) _Py_TYPE(PyObject *obj) {
-    return GraalPyPrivate_TYPE(obj);
+    return GraalPy_TYPE(obj);
 }
 
-Py_ssize_t GraalPyPrivate_SIZE(PyObject *ob) {
+Py_ssize_t GraalPy_SIZE(PyObject *ob) {
     PyVarObject* a = (PyVarObject*)ob;
     Py_ssize_t res;
     if (points_to_py_handle_space(a))
@@ -2942,7 +2950,7 @@ Py_ssize_t GraalPyPrivate_SIZE(PyObject *ob) {
 
 // alias, currently used in PyO3
 PyAPI_FUNC(Py_ssize_t) _Py_SIZE(PyObject *obj) {
-    return GraalPyPrivate_SIZE(obj);
+    return GraalPy_SIZE(obj);
 }
 
 void

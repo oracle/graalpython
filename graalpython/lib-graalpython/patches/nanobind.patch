@@ -907,7 +907,7 @@ index 0000000..b61486b
 +-U __Py_VaBuildValue_SizeT
 +-U GraalPyList_ITEMS
 +-U GraalPyTuple_ITEMS
-+-U GraalPyPrivate_SIZE
++-U GraalPy_SIZE
 +-U GraalPyTuple_GET_ITEM
 +-U __Py_EllipsisObjectReference
 +-U __Py_FalseStructReference

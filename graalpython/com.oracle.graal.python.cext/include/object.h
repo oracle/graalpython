@@ -172,6 +172,7 @@ check by comparing the reference count field to the immortality reference count.
  */
 struct _object {
     _PyObject_HEAD_EXTRA
+
 #if (defined(__GNUC__) || defined(__clang__)) \
         && !(defined __STDC_VERSION__ && __STDC_VERSION__ >= 201112L)
     // On C99 and older, anonymous union is a GCC and clang extension
@@ -210,28 +211,22 @@ typedef struct {
 
 // Test if the 'x' object is the 'y' object, the same as "x is y" in Python.
 PyAPI_FUNC(int) Py_Is(PyObject *x, PyObject *y);
-#if 0 // GraalPy change
-#define Py_Is(x, y) ((x) == (y))
-#endif // GraalPy change
+// GraalPy change: call function
+#define Py_Is(x, y) (Py_Is(x, y))
 
-
-PyAPI_FUNC(Py_ssize_t) GraalPyPrivate_REFCNT(PyObject *ob);
-static inline Py_ssize_t Py_REFCNT(PyObject *ob) {
-    return GraalPyPrivate_REFCNT(ob);
-}
+// GraalPy change: backported declaration from CPython 3.14
+// Py_REFCNT() implementation for the stable ABI
+PyAPI_FUNC(Py_ssize_t) Py_REFCNT(PyObject *ob);
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_REFCNT(ob) Py_REFCNT(_PyObject_CAST(ob))
 #endif
 
 
+// GraalPy public API, mainly for non-C languages that can't use macros
+PyAPI_FUNC(PyTypeObject*) GraalPy_TYPE(PyObject *ob);
 // bpo-39573: The Py_SET_TYPE() function must be used to set an object type.
-PyAPI_FUNC(PyTypeObject*) GraalPyPrivate_TYPE(PyObject *ob);
 static inline PyTypeObject* Py_TYPE(PyObject *ob) {
-#if defined(GRAALVM_PYTHON) && defined(NDEBUG)
-    return (pointer_to_stub(ob)->ob_type);
-#else
-    return GraalPyPrivate_TYPE(ob);
-#endif
+    return GraalPy_TYPE(ob);
 }
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_TYPE(ob) Py_TYPE(_PyObject_CAST(ob))
@@ -240,12 +235,13 @@ static inline PyTypeObject* Py_TYPE(PyObject *ob) {
 PyAPI_DATA(PyTypeObject) PyLong_Type;
 PyAPI_DATA(PyTypeObject) PyBool_Type;
 
+// GraalPy public API, mainly for non-C languages that can't use macros
+PyAPI_FUNC(Py_ssize_t) GraalPy_SIZE(PyObject *ob);
 // bpo-39573: The Py_SET_SIZE() function must be used to set an object size.
-PyAPI_FUNC(Py_ssize_t) GraalPyPrivate_SIZE(PyObject *ob);
 static inline Py_ssize_t Py_SIZE(PyObject *ob) {
     assert(Py_TYPE(ob) != &PyLong_Type);
     assert(Py_TYPE(ob) != &PyBool_Type);
-    return GraalPyPrivate_SIZE(ob);
+    return GraalPy_SIZE(ob);
 }
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_SIZE(ob) Py_SIZE(_PyObject_CAST(ob))
@@ -273,22 +269,19 @@ static inline int Py_IS_TYPE(PyObject *ob, PyTypeObject *type) {
 #endif
 
 
-PyAPI_FUNC(void) GraalPyPrivate_SET_REFCNT(PyObject *ob, Py_ssize_t refcnt);
+// GraalPy change: backported declaration from 3.14
+// Py_SET_REFCNT() implementation for stable ABI
+PyAPI_FUNC(void) _Py_SetRefcnt(PyObject *ob, Py_ssize_t refcnt);
+
 static inline void Py_SET_REFCNT(PyObject *ob, Py_ssize_t refcnt) {
-    // This immortal check is for code that is unaware of immortal objects.
-    // The runtime tracks these objects and we should avoid as much
-    // as possible having extensions inadvertently change the refcnt
-    // of an immortalized object.
-    if (_Py_IsImmortal(ob)) {
-        return;
-    }
-    GraalPyPrivate_SET_REFCNT(ob, refcnt);
+    _Py_SetRefcnt(ob, refcnt);
 }
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_SET_REFCNT(ob, refcnt) Py_SET_REFCNT(_PyObject_CAST(ob), (refcnt))
 #endif
 
 
+// GraalPy public API, mainly for non-C languages that can't use macros
 PyAPI_FUNC(void) GraalPy_SET_TYPE(PyObject *ob, PyTypeObject *type);
 static inline void Py_SET_TYPE(PyObject *ob, PyTypeObject *type) {
     GraalPy_SET_TYPE(ob, type);
@@ -297,7 +290,7 @@ static inline void Py_SET_TYPE(PyObject *ob, PyTypeObject *type) {
 #  define Py_SET_TYPE(ob, type) Py_SET_TYPE(_PyObject_CAST(ob), type)
 #endif
 
-
+// GraalPy public API, mainly for non-C languages that can't use macros
 PyAPI_FUNC(void) GraalPy_SET_SIZE(PyVarObject *ob, Py_ssize_t size);
 static inline void Py_SET_SIZE(PyVarObject *ob, Py_ssize_t size) {
     GraalPy_SET_SIZE(ob, size);
