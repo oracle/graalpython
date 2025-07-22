@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByte
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.EnsureExecutableNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIndexNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ReadUnicodeArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.TransformPExceptionToNativeCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -464,27 +465,15 @@ public abstract class CExtCommonNodes {
      * upcall and before returning to native code. This node will reify the exception appropriately
      * and register the exception as the current exception.
      */
-    @GenerateInline(inlineByDefault = true)
-    @GenerateCached
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     public abstract static class TransformExceptionToNativeNode extends Node {
 
         public abstract void execute(Node inliningTarget, Object pythonException);
 
-        public final void execute(Node inliningTarget, PException e) {
-            execute(inliningTarget, e.getEscapedException());
-        }
-
-        public final void executeCached(PException e) {
-            execute(this, e.getEscapedException());
-        }
-
         public static void executeUncached(Object pythonException) {
             CExtCommonNodesFactory.TransformExceptionToNativeNodeGen.getUncached().execute(null, pythonException);
-        }
-
-        public static void executeUncached(PException e) {
-            CExtCommonNodesFactory.TransformExceptionToNativeNodeGen.getUncached().execute(null, e.getEscapedException());
         }
 
         @Specialization
@@ -503,6 +492,42 @@ public abstract class CExtCommonNodes {
             Object oldException = readPointerNode.read(nativeThreadState, CFields.PyThreadState__current_exception);
             writePointerNode.write(nativeThreadState, CFields.PyThreadState__current_exception, currentException);
             decRefPointerNode.execute(inliningTarget, oldException);
+        }
+    }
+
+    /**
+     * This node acts as a branch profile.
+     */
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class TransformPExceptionToNativeNode extends Node {
+        public abstract void execute(Node inliningTarget, PException e);
+
+        @Specialization
+        static void setCurrentException(Node inliningTarget, PException ex,
+                        @Cached TransformExceptionToNativeNode transformNode) {
+            transformNode.execute(inliningTarget, ex.getEscapedException());
+        }
+    }
+
+    /**
+     * This node acts as a branch profile.
+     */
+    @GenerateInline(false)
+    @GenerateCached
+    public abstract static class TransformPExceptionToNativeCachedNode extends Node {
+        public static TransformPExceptionToNativeCachedNode create() {
+            return TransformPExceptionToNativeCachedNodeGen.create();
+        }
+
+        public abstract void execute(PException e);
+
+        @Specialization
+        static void setCurrentException(PException ex,
+                        @Bind Node inliningTarget,
+                        @Cached TransformExceptionToNativeNode transformNode) {
+            transformNode.execute(inliningTarget, ex.getEscapedException());
         }
     }
 
