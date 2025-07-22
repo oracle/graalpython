@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,7 +49,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -69,12 +68,10 @@ public final class CPyObjectArrayWrapper extends PythonStructNativeWrapper {
 
     private static final Unsafe UNSAFE = PythonUtils.initUnsafe();
 
-    @TruffleBoundary
     private static long allocateBoundary(long size) {
         return UNSAFE.allocateMemory(size);
     }
 
-    @TruffleBoundary
     private static void freeBoundary(long ptr) {
         UNSAFE.freeMemory(ptr);
     }
