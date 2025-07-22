@@ -131,9 +131,13 @@ PyTypeObject PyList_Type = {
     .tp_vectorcall = 0, // GraalPy change: nulled
 };
 
-// alias for internal function, currently used in PyO3
+void GraalPyList_SET_ITEM(PyObject* op, Py_ssize_t index, PyObject* value) {
+    GraalPyList_ITEMS(op)[index] = value;
+}
+
+// deprecated alias for internal function, currently used in PyO3
 PyAPI_FUNC(void) _PyList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
-    PyList_SET_ITEM(a, b, c);
+    GraalPyList_SET_ITEM(a, b, c);
 }
 
 static inline int
@@ -166,14 +170,14 @@ PyList_SetItem(PyObject *op, Py_ssize_t i,
         return -1;
     }
     // GraalPy change: avoid direct struct access
-    p = GraalPyPrivate_List_GetItems(op) + i;
+    p = GraalPyList_ITEMS(op) + i;
     Py_XSETREF(*p, newitem);
     return 0;
 }
 
 // GraalPy-additions
 PyObject **
-GraalPyPrivate_List_GetItems(PyObject *op)
+GraalPyList_ITEMS(PyObject *op)
 {
     return GraalPyPrivate_GET_PyListObject_ob_item(op);
 }

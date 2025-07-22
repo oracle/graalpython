@@ -152,7 +152,7 @@ PyTuple_SetItem(PyObject *op, Py_ssize_t i, PyObject *newitem)
         return -1;
     }
     // GraalPy change: avoid direct struct access
-    p = GraalPyPrivate_Tuple_GetItems(op) + i;
+    p = GraalPyTuple_ITEMS(op) + i;
     Py_XSETREF(*p, newitem);
     return 0;
 }
@@ -1367,7 +1367,7 @@ void GraalPyPrivate_Tuple_Dealloc(PyTupleObject* self) {
 }
 
 PyObject **
-GraalPyPrivate_Tuple_GetItems(PyObject *op)
+GraalPyTuple_ITEMS(PyObject *op)
 {
     PyObject **ob_item;
     if (points_to_py_handle_space(op)) {
@@ -1391,16 +1391,14 @@ GraalPyPrivate_Tuple_GetItems(PyObject *op)
  * PyTuple_GET_ITEM.
  */
 PyObject*
-_PyTuple_GET_ITEM(PyObject* a, Py_ssize_t b) {
-    PyObject **ob_item = GraalPyPrivate_Tuple_GetItems(a);
+GraalPyTuple_GET_ITEM(PyObject* a, Py_ssize_t b) {
+    PyObject **ob_item = GraalPyTuple_ITEMS(a);
     if (ob_item) {
         return ob_item[b];
     }
     return NULL; // an exception has happend during transtion
 }
 
-#undef PyTuple_SET_ITEM
-// Export PyTuple_SET_ITEM as regular API function to use in PyO3 and others
-void PyTuple_SET_ITEM(PyObject* op, Py_ssize_t index, PyObject* value) {
-    graalpy_tuple_set_item(op, index, value);
+void GraalPyTuple_SET_ITEM(PyObject* op, Py_ssize_t index, PyObject* value) {
+    GraalPyTuple_ITEMS(op)[index] = value;
 }

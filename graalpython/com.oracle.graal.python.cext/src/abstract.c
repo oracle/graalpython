@@ -3044,15 +3044,6 @@ _Py_FreeCharPArray(char *const array[])
 #endif // GraalPy change
 
 // GraalPy additions
-PyObject **
-GraalPyPrivate_Sequence_Fast_ITEMS(PyObject *o)
-{
-    if (PyTuple_Check(o)) {
-        return GraalPyPrivate_Tuple_GetItems(o);
-    } else {
-        return GraalPyPrivate_List_GetItems(o);
-    }
-}
 
 PyObject*
 GraalPyPrivate_Sequence_ITEM(PyObject* obj, Py_ssize_t index)

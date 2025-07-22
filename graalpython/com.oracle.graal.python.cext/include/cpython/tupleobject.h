@@ -31,20 +31,19 @@ static inline Py_ssize_t PyTuple_GET_SIZE(PyObject *op) {
 }
 #define PyTuple_GET_SIZE(op) PyTuple_GET_SIZE(_PyObject_CAST(op))
 
-PyAPI_FUNC(PyObject *) _PyTuple_GET_ITEM(PyObject *, Py_ssize_t);
-#define PyTuple_GET_ITEM(op, index) _PyTuple_GET_ITEM(_PyObject_CAST(op), (index))
+#define PyTuple_GET_ITEM(op, index) GraalPyTuple_GET_ITEM(_PyObject_CAST(op), (index))
 
-// GraalPy-specific
-PyAPI_FUNC(PyObject **) GraalPyPrivate_Tuple_GetItems(PyObject *op);
+// GraalPy public API to avoid direct access to ob_item
+PyAPI_FUNC(PyObject **) GraalPyTuple_ITEMS(PyObject *op);
+PyAPI_FUNC(PyObject *) GraalPyTuple_GET_ITEM(PyObject *, Py_ssize_t);
+PyAPI_FUNC(void) GraalPyTuple_SET_ITEM(PyObject*, Py_ssize_t, PyObject*);
 
-// GraalPy change: Export PyTuple_SET_ITEM as regular API function to use in PyO3 and others
-PyAPI_FUNC(void) PyTuple_SET_ITEM(PyObject*, Py_ssize_t, PyObject*);
-
-/* Inline function to be used in the PyTuple_SET_ITEM macro. */
-static inline void graalpy_tuple_set_item(PyObject *op, Py_ssize_t index, PyObject *value) {
-    GraalPyPrivate_Tuple_GetItems(op)[index] = value;
+/* Function *only* to be used to fill in brand new tuples */
+static inline void
+PyTuple_SET_ITEM(PyObject *op, Py_ssize_t index, PyObject *value) {
+    GraalPyTuple_SET_ITEM(op, index, value);
 }
 #define PyTuple_SET_ITEM(op, index, value) \
-    graalpy_tuple_set_item(_PyObject_CAST(op), (index), _PyObject_CAST(value))
+    PyTuple_SET_ITEM(_PyObject_CAST(op), (index), _PyObject_CAST(value))
 
 PyAPI_FUNC(void) _PyTuple_DebugMallocStats(FILE *out);
