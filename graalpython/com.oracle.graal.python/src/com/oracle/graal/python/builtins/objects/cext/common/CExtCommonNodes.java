@@ -1352,7 +1352,7 @@ public abstract class CExtCommonNodes {
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @Cached UnwrapForeignPointerNode unwrapForeignPointerNode,
                         @Shared @CachedLibrary(limit = "1") SignatureLibrary signatureLib,
-                        @Cached(inline = false) IndirectCallNode nfiSignatureFactory) {
+                        @Cached IndirectCallNode nfiSignatureFactory) {
             PythonContext pythonContext = PythonContext.get(inliningTarget);
             if (!lib.isExecutable(callable)) {
                 if (!pythonContext.isNativeAccessAllowed()) {

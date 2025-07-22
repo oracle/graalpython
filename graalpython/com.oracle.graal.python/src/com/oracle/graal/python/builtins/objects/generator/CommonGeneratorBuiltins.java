@@ -162,7 +162,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isBytecodeDSLInterpreter()", "sameCallTarget(self.getCurrentCallTarget(), callNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
         static Object cached(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
-                        @Cached(parameters = "self.getCurrentCallTarget()", inline = false) DirectCallNode callNode,
+                        @Cached(parameters = "self.getCurrentCallTarget()") DirectCallNode callNode,
                         @Exclusive @Cached CallDispatchers.SimpleDirectInvokeNode invoke,
                         @Exclusive @Cached InlinedBranchProfile returnProfile,
                         @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
@@ -188,7 +188,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isBytecodeDSLInterpreter()", "sameCallTarget(self.getCurrentCallTarget(), callNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
         static Object cachedBytecodeDSL(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
-                        @Cached(parameters = "self.getCurrentCallTarget()", inline = false) DirectCallNode callNode,
+                        @Cached(parameters = "self.getCurrentCallTarget()") DirectCallNode callNode,
                         @Exclusive @Cached CallDispatchers.SimpleDirectInvokeNode invoke,
                         @Cached("self.getContinuation() == null") boolean firstCall,
                         @Exclusive @Cached InlinedBranchProfile returnProfile,
