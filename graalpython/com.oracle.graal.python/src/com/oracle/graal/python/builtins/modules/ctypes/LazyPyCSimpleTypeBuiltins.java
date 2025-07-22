@@ -132,7 +132,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
         PBuiltinFunction function = PFactory.createBuiltinFunction(language, name, type, 1, flags, callTarget);
         PDecoratedMethod classMethod = PFactory.createClassmethodFromCallableObj(language, function);
         function.setAttribute(T___DOC__, builtinDoc);
-        WriteAttributeToObjectNode.getUncached(true).execute(type, name, classMethod);
+        WriteAttributeToObjectNode.getUncached().execute(type, name, classMethod);
     }
 
     @ImportStatic(CDataTypeBuiltins.class)

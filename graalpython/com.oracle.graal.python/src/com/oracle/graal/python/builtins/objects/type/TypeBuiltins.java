@@ -622,7 +622,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringChecked0Node castKeyNode,
                         @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
-                        @Cached("createForceType()") WriteAttributeToObjectNode write) {
+                        @Cached WriteAttributeToObjectNode write) {
             TruffleString key = castKeyNode.cast(inliningTarget, keyObject, ATTR_NAME_MUST_BE_STRING);
             genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
         }
@@ -633,7 +633,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             if (PythonContext.get(this).isInitialized()) {
                 throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.executeUncached(key), object);
             } else {
-                set(null, object, key, value, null, CastToTruffleStringChecked0Node.getUncached(), ObjectNodes.GenericSetAttrNode.getUncached(), WriteAttributeToObjectNode.getUncached(true));
+                set(null, object, key, value, null, CastToTruffleStringChecked0Node.getUncached(), ObjectNodes.GenericSetAttrNode.getUncached(), WriteAttributeToObjectNode.getUncached());
             }
         }
 
@@ -953,7 +953,7 @@ public final class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object setModule(PythonClass cls, Object value,
-                        @Cached WriteAttributeToObjectNode writeAttrNode) {
+                        @Shared @Cached WriteAttributeToObjectNode writeAttrNode) {
             writeAttrNode.execute(cls, T___MODULE__, value);
             return PNone.NONE;
         }
@@ -991,13 +991,13 @@ public final class TypeBuiltins extends PythonBuiltins {
         static Object setNative(PythonAbstractNativeObject cls, Object value,
                         @Bind Node inliningTarget,
                         @Shared @Cached GetTypeFlagsNode getFlags,
-                        @Cached("createForceType()") WriteAttributeToObjectNode writeAttr,
+                        @Shared @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             long flags = getFlags.execute(cls);
             if ((flags & TypeFlags.HEAPTYPE) == 0) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_SET_N_S, cls, T___MODULE__);
             }
-            writeAttr.execute(cls, T___MODULE__, value);
+            writeAttrNode.execute(cls, T___MODULE__, value);
             return PNone.NONE;
         }
 
