@@ -248,7 +248,7 @@
             "windows:amd64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST),
         }),
         "python-junit-bytecode-dsl": gpgate + platform_spec(no_jobs) + bytecode_dsl_gate("python-junit") + platform_spec({
-            "linux:amd64:jdk21"          : tier3                      + require(GRAAL_JDK_LATEST),
+            "linux:amd64:jdk21"          : daily                      + require(GRAAL_JDK_LATEST),
         }),
         "python-junit-maven": gpgate_maven + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk21"          : daily     + t("00:30:00"),
