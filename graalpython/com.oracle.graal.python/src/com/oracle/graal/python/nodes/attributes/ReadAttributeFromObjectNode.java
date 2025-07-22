@@ -65,6 +65,7 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -97,10 +98,8 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
 
     public abstract Object execute(PythonModule object, TruffleString key);
 
-    /**
-     * @param module Non-cached parameter to help the DSL produce a guard, not an assertion
-     */
-    protected static HashingStorage getStorage(Object module, PHashingCollection cachedGlobals) {
+    @NonIdempotent
+    protected static HashingStorage getStorage(PHashingCollection cachedGlobals) {
         return cachedGlobals.getDictStorage();
     }
 
@@ -111,15 +110,16 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     // special case for the very common module read
     @Specialization(guards = {"isSingleContext()",
                     "cachedObject == object",
-                    // no need to check the cachedDict for equality, module.__dict__ is read-only
-                    "getStorage(object, cachedDict) == cachedStorage"
+                    // no need to check "getDict(object) == cachedDict", module.__dict__ is
+                    // read-only
+                    "getStorage(cachedDict) == cachedStorage"
     }, limit = "1")
     @SuppressWarnings("unused")
     protected static Object readFromBuiltinModuleDict(PythonModule object, TruffleString key,
                     @Bind Node inliningTarget,
                     @Cached(value = "object", weak = true) PythonModule cachedObject,
                     @Cached(value = "getDict(object)", weak = true) PHashingCollection cachedDict,
-                    @Cached(value = "getStorage(object, getDict(object))", weak = true) HashingStorage cachedStorage,
+                    @Cached(value = "getStorage(getDict(object))", weak = true) HashingStorage cachedStorage,
                     @Exclusive @Cached HashingStorageGetItem getItem) {
         // note that we don't need to pass the state here - string keys are hashable by definition
         Object value = getItem.execute(inliningTarget, cachedStorage, key);
