@@ -126,6 +126,7 @@ import com.oracle.graal.python.nodes.argument.keywords.MappingToKeywordsNode;
 import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -1165,7 +1166,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         @Specialization
         static boolean access(Object object, TruffleString attrKeyName, int type,
                         @Bind Node inliningTarget,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readTypeAttrNode,
+                        @Cached ReadAttributeFromObjectNode readTypeAttrNode,
                         @Cached ReadAttributeFromObjectNode readObjectAttrNode,
                         @Cached PyCallableCheckNode callableCheck,
                         @Cached LookupInheritedAttributeNode.Dynamic getGetNode,
@@ -1477,7 +1478,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         public static TruffleString doDefault(Node inliningTarget, PythonAbstractObject receiver,
-                        @Cached(inline = false) ReadAttributeFromObjectNode readStr,
+                        @Cached ReadAttributeFromModuleNode readStr,
                         @Cached(inline = false) CallNode callNode,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached InlinedConditionProfile toStringUsed) {

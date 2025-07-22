@@ -259,7 +259,7 @@ public final class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getDoc(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone value) {
-            return ReadAttributeFromObjectNode.getUncachedForceType().execute(self, T___DOC__);
+            return ReadAttributeFromObjectNode.getUncached().execute(self, T___DOC__);
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)", "!isPythonBuiltinClass(self)"})
@@ -942,7 +942,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(value)")
         static Object getModule(PythonClass cls, @SuppressWarnings("unused") PNone value,
                         @Bind Node inliningTarget,
-                        @Cached ReadAttributeFromObjectNode readAttrNode,
+                        @Shared @Cached ReadAttributeFromObjectNode readAttrNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             Object module = readAttrNode.execute(cls, T___MODULE__);
             if (module == NO_VALUE) {
@@ -961,7 +961,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(value)")
         static Object getModule(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
                         @Bind Node inliningTarget,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttr,
+                        @Shared @Cached ReadAttributeFromObjectNode readAttrNode,
                         @Shared @Cached GetTypeFlagsNode getFlags,
                         @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -970,7 +970,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Shared @Cached PRaiseNode raiseNode) {
             // see function 'typeobject.c: type_module'
             if ((getFlags.execute(cls) & TypeFlags.HEAPTYPE) != 0) {
-                Object module = readAttr.execute(cls, T___MODULE__);
+                Object module = readAttrNode.execute(cls, T___MODULE__);
                 if (module == NO_VALUE) {
                     throw raiseNode.raise(inliningTarget, AttributeError);
                 }

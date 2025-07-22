@@ -1239,7 +1239,7 @@ public abstract class TypeNodes {
         private ReadAttributeFromObjectNode getReadAttr() {
             if (readAttr == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readAttr = insert(ReadAttributeFromObjectNode.createForceType());
+                readAttr = insert(ReadAttributeFromObjectNode.create());
             }
             return readAttr;
         }
@@ -1321,7 +1321,7 @@ public abstract class TypeNodes {
         @Specialization
         static boolean check(Node inliningTarget, Object type,
                         @Cached NeedsNativeAllocationNode needsNativeAllocationNode,
-                        @Cached(inline = false) ReadAttributeFromObjectNode read,
+                        @Cached ReadAttributeFromObjectNode read,
                         @Cached GetWeakListOffsetNode getWeakListOffsetNode) {
             if (needsNativeAllocationNode.execute(inliningTarget, type)) {
                 return getWeakListOffsetNode.execute(inliningTarget, type) != 0;
@@ -1376,7 +1376,7 @@ public abstract class TypeNodes {
         @Specialization
         protected static Object getSolid(Node inliningTarget, Object type,
                         @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached(value = "createForceType()", inline = false) ReadAttributeFromObjectNode readAttr,
+                        @Cached ReadAttributeFromObjectNode readAttr,
                         @Cached InlinedBranchProfile typeIsNotBase,
                         @Cached InlinedBranchProfile hasBase,
                         @Cached InlinedBranchProfile hasNoBase) {
@@ -1386,7 +1386,7 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         protected static Object solidBaseTB(Object type, Node inliningTarget, GetBaseClassNode getBaseClassNode, PythonContext context, int depth) {
-            return solidBase(type, inliningTarget, getBaseClassNode, context, ReadAttributeFromObjectNode.getUncachedForceType(), InlinedBranchProfile.getUncached(),
+            return solidBase(type, inliningTarget, getBaseClassNode, context, ReadAttributeFromObjectNode.getUncached(), InlinedBranchProfile.getUncached(),
                             InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached(), depth);
         }
 

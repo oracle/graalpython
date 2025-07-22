@@ -49,6 +49,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -80,7 +81,6 @@ import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonSenaryBuiltinNode;
@@ -622,7 +622,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             @Specialization(replaces = "doSingleContext")
             static Object doRead(
                             @Bind PythonContext context,
-                            @Cached ReadAttributeFromObjectNode read) {
+                            @Cached ReadAttributeFromModuleNode read) {
                 PythonModule module = context.lookupBuiltinModule(BuiltinNames.T__SRE);
                 return read.execute(module, T_MATCH_CONSTRUCTOR);
             }

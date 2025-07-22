@@ -472,7 +472,7 @@ public final class SuperBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_getattro, isComplex = true)
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends GetAttrBuiltinNode {
-        @Child private ReadAttributeFromObjectNode readFromDict = ReadAttributeFromObjectNode.createForceType();
+        @Child private ReadAttributeFromObjectNode readFromDict = ReadAttributeFromObjectNode.create();
         @Child private CallSlotDescrGet callGetSlotNode;
         @Child private GetTypeNode getType;
         @Child private GetObjectNode getObject = GetObjectNodeGen.create();

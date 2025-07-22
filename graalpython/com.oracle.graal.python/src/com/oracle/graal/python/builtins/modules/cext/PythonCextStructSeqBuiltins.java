@@ -74,6 +74,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -137,7 +138,7 @@ public final class PythonCextStructSeqBuiltins {
         @TruffleBoundary
         Object doGeneric(TruffleString typeName, TruffleString typeDoc, Object fields, int nInSequence,
                         @Cached GraalPyPrivate_StructSequence_InitType2 initNode,
-                        @Cached ReadAttributeFromObjectNode readTypeBuiltinNode,
+                        @Cached ReadAttributeFromModuleNode readTypeBuiltinNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Cached CallNode callTypeNewNode,
                         @Bind PythonLanguage language) {
@@ -159,7 +160,7 @@ public final class PythonCextStructSeqBuiltins {
         @Specialization
         static Object doGeneric(Object cls,
                         @Bind Node inliningTarget,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readRealSizeNode,
+                        @Cached ReadAttributeFromObjectNode readRealSizeNode,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,

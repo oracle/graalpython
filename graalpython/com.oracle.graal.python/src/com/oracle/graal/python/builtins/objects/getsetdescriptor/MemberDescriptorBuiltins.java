@@ -63,7 +63,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.DescrSetBuiltinNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -107,7 +107,7 @@ public final class MemberDescriptorBuiltins extends PythonBuiltins {
     abstract static class MemberDescriptorReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doGeneric(GetSetDescriptor descr,
-                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
+                        @Cached ReadAttributeFromModuleNode readAttributeFromObjectNode,
                         @Cached GetIdNode getIdNode,
                         @Bind PythonLanguage language) {
             Object getattr = readAttributeFromObjectNode.execute(getContext().getBuiltins(), BuiltinNames.T_GETATTR);

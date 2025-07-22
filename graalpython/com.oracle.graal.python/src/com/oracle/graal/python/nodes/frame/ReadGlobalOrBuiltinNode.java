@@ -38,7 +38,7 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -88,7 +88,7 @@ public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @Shared("readFromBuiltinsNode") @Cached ReadBuiltinNode readFromBuiltinsNode,
                     @Exclusive @Cached InlinedBranchProfile wasReadFromModule,
-                    @Shared("readFromModule") @Cached ReadAttributeFromObjectNode readFromModuleNode,
+                    @Shared("readFromModule") @Cached ReadAttributeFromModuleNode readFromModuleNode,
                     @Cached(value = "globals", weak = true) PythonModule cachedGlobals) {
         Object result = readFromModuleNode.execute(cachedGlobals, attributeId);
         return returnGlobalOrBuiltin(result, attributeId, readFromBuiltinsNode, inliningTarget, wasReadFromModule);
@@ -100,7 +100,7 @@ public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @Shared("readFromBuiltinsNode") @Cached ReadBuiltinNode readFromBuiltinsNode,
                     @Exclusive @Cached InlinedBranchProfile wasReadFromModule,
-                    @Shared("readFromModule") @Cached ReadAttributeFromObjectNode readFromModuleNode) {
+                    @Shared("readFromModule") @Cached ReadAttributeFromModuleNode readFromModuleNode) {
         Object result = readFromModuleNode.execute(globals, attributeId);
         return returnGlobalOrBuiltin(result, attributeId, readFromBuiltinsNode, inliningTarget, wasReadFromModule);
     }

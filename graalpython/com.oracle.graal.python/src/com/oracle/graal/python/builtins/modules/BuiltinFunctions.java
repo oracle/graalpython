@@ -209,6 +209,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
@@ -1730,7 +1731,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     "flush: whether to forcibly flush the stream.")
     @GenerateNodeFactory
     public abstract static class PrintNode extends PythonBuiltinNode {
-        @Child private ReadAttributeFromObjectNode readStdout;
+        @Child private ReadAttributeFromModuleNode readStdout;
         @CompilationFinal private PythonModule cachedSys;
 
         @Specialization
@@ -1836,7 +1837,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             if (readStdout == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readStdout = insert(ReadAttributeFromObjectNode.create());
+                readStdout = insert(ReadAttributeFromModuleNode.create());
             }
             Object stdout = readStdout.execute(sys, T_STDOUT);
             if (stdout == NO_VALUE) {

@@ -516,7 +516,7 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object[] getstate(VirtualFrame frame, Node inliningTarget, Object type,
-                        @Cached(value = "createForceType()", inline = false) ReadAttributeFromObjectNode read,
+                        @Cached ReadAttributeFromObjectNode read,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
                         @Cached PyImportImport importNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
