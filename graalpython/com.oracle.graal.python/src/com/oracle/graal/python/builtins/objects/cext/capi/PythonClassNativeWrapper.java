@@ -191,35 +191,38 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
         return PythonUtils.formatJString("PythonClassNativeWrapper(%s, isNative=%s)", getDelegate(), isNative());
     }
 
-    @Override
-    @TruffleBoundary
     public Object getReplacement(InteropLibrary lib) {
-        if (replacement == null) {
-            /*
-             * Note: it's important that we first allocate the empty 'PyTypeStruct' and register it
-             * to the wrapper before we do the type's initialization. Otherwise, we will run into an
-             * infinite recursion because, e.g., some type uses 'None', so the 'NoneType' will be
-             * transformed to native but 'NoneType' may have some field that is initialized with
-             * 'None' and so on.
-             *
-             * If we first set the empty struct and initialize it afterward, everything is fine.
-             */
-            PythonManagedClass clazz = (PythonManagedClass) getDelegate();
-            boolean heaptype = (GetTypeFlagsNode.executeUncached(clazz) & TypeFlags.HEAPTYPE) != 0;
-            long size = CStructs.PyTypeObject.size();
-            if (heaptype) {
-                size = CStructs.PyHeapTypeObject.size();
-                if (GetClassNode.executeUncached(clazz) instanceof PythonAbstractNativeObject nativeMetatype) {
-                    // TODO should call the metatype's tp_alloc
-                    size = TypeNodes.GetBasicSizeNode.executeUncached(nativeMetatype);
-                }
-            }
-            Object pointerObject = AllocateNode.allocUncached(size);
-            replacement = registerReplacement(pointerObject, true, lib);
-
-            ToNativeTypeNode.initializeType(this, pointerObject, heaptype);
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, replacement == null)) {
+            initializeReplacement(lib);
         }
         return replacement;
+    }
+
+    @TruffleBoundary
+    private void initializeReplacement(InteropLibrary lib) {
+        /*
+         * Note: it's important that we first allocate the empty 'PyTypeStruct' and register it to
+         * the wrapper before we do the type's initialization. Otherwise, we will run into an
+         * infinite recursion because, e.g., some type uses 'None', so the 'NoneType' will be
+         * transformed to native but 'NoneType' may have some field that is initialized with 'None'
+         * and so on.
+         *
+         * If we first set the empty struct and initialize it afterward, everything is fine.
+         */
+        PythonManagedClass clazz = (PythonManagedClass) getDelegate();
+        boolean heaptype = (GetTypeFlagsNode.executeUncached(clazz) & TypeFlags.HEAPTYPE) != 0;
+        long size = CStructs.PyTypeObject.size();
+        if (heaptype) {
+            size = CStructs.PyHeapTypeObject.size();
+            if (GetClassNode.executeUncached(clazz) instanceof PythonAbstractNativeObject nativeMetatype) {
+                // TODO should call the metatype's tp_alloc
+                size = TypeNodes.GetBasicSizeNode.executeUncached(nativeMetatype);
+            }
+        }
+        Object pointerObject = AllocateNode.allocUncached(size);
+        replacement = registerReplacement(pointerObject, true, lib);
+
+        ToNativeTypeNode.initializeType(this, pointerObject, heaptype);
     }
 
     /**

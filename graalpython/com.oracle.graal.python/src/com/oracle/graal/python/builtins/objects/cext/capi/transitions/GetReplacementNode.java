@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
+import com.oracle.graal.python.builtins.objects.cext.capi.PyMemoryViewWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -60,27 +63,24 @@ public abstract class GetReplacementNode extends Node {
     public abstract Object execute(Node inliningTarget, PythonNativeWrapper wrapper);
 
     @Specialization(guards = "isReplacingWrapper(wrapper)")
-    static Object doReplacingWrapper(PythonNativeWrapper wrapper,
+    static Object doReplacingWrapper(PyMemoryViewWrapper wrapper,
                     @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
         return wrapper.getReplacement(lib);
     }
 
-    @Specialization(guards = "!isReplacingWrapper(wrapper)")
-    static Object doWrapper(Node inliningTarget, PythonNativeWrapper wrapper) {
-        if (wrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper && !PythonContext.get(inliningTarget).isNativeAccessAllowed()) {
-            // LLVM managed code path
-            return objectNativeWrapper;
-        }
-        return null;
+    @Specialization(guards = "isReplacingWrapper(wrapper)")
+    static Object doReplacingWrapper(PythonClassNativeWrapper wrapper,
+                    @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
+        return wrapper.getReplacement(lib);
     }
 
-    @Specialization(replaces = {"doReplacingWrapper", "doWrapper"})
-    static Object doGeneric(Node inliningTarget, PythonNativeWrapper wrapper,
-                    @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
+    @Specialization(guards = "isReplacingWrapper(wrapper)")
+    static Object doReplacingWrapper(PythonNativeWrapper wrapper) {
+        throw CompilerDirectives.shouldNotReachHere("Unexpected replacing wrapper");
+    }
 
-        if (wrapper.isReplacingWrapper()) {
-            return wrapper.getReplacement(lib);
-        }
+    @Specialization(guards = "!isReplacingWrapper(wrapper)")
+    static Object doWrapper(Node inliningTarget, PythonNativeWrapper wrapper) {
         if (wrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper && !PythonContext.get(inliningTarget).isNativeAccessAllowed()) {
             // LLVM managed code path
             return objectNativeWrapper;
