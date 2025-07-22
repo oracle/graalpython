@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.object;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_CHECK_BASICSIZE_FOR_GETSTATE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_COPYREG;
-import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_PICKLE_OBJECT_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_TYPE_A_NOT_TYPE_B;
 import static com.oracle.graal.python.nodes.ErrorMessages.SHOULD_RETURN_A_NOT_B;
@@ -137,7 +136,6 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -839,56 +837,16 @@ public abstract class ObjectNodes {
          */
         public abstract void execute(Node inliningTarget, VirtualFrame frame, Object object, TruffleString key, Object value, WriteAttributeToObjectNode writeNode);
 
-        public abstract void execute(Node inliningTarget, VirtualFrame frame, Object object, Object key, Object value, WriteAttributeToObjectNode writeNode);
-
         @Specialization
-        static void doStringKey(Node inliningTarget, VirtualFrame frame, Object object, TruffleString key, Object value, WriteAttributeToObjectNode writeNode,
-                        @SuppressWarnings("unused") @Shared @Cached CastToTruffleStringNode castKeyToStringNode,
-                        @Shared @Cached GetClassNode getClassNode,
-                        @Shared @Cached InlinedConditionProfile hasDescriptor,
-                        @Shared @Cached GetObjectSlotsNode getDescrSlotsNode,
-                        @Shared @Cached CallSlotDescrSet callSetNode,
-                        @Shared @Cached(inline = false) LookupAttributeInMRONode.Dynamic getExisting,
-                        @Shared @Cached(inline = false) ReadAttributeFromObjectNode attrRead,
-                        @Shared @Cached InlinedBranchProfile deleteNonExistingBranchProfile,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            setAttr(inliningTarget, frame, object, key, value, writeNode, getClassNode, hasDescriptor,
-                            getDescrSlotsNode, callSetNode, getExisting, attrRead, deleteNonExistingBranchProfile,
-                            raiseNode);
-        }
-
-        @Specialization
-        @InliningCutoff
-        static void doGeneric(Node inliningTarget, VirtualFrame frame, Object object, Object keyObject, Object value, WriteAttributeToObjectNode writeNode,
-                        @Shared @Cached CastToTruffleStringNode castKeyToStringNode,
-                        @Shared @Cached GetClassNode getClassNode,
-                        @Shared @Cached InlinedConditionProfile hasDescriptor,
-                        @Shared @Cached GetObjectSlotsNode getDescrSlotsNode,
-                        @Shared @Cached CallSlotDescrSet callSetNode,
-                        @Shared @Cached(inline = false) LookupAttributeInMRONode.Dynamic getExisting,
-                        @Shared @Cached(inline = false) ReadAttributeFromObjectNode attrRead,
-                        @Shared @Cached InlinedBranchProfile deleteNonExistingBranchProfile,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            TruffleString key = castAttributeKey(inliningTarget, keyObject, castKeyToStringNode, raiseNode);
-            setAttr(inliningTarget, frame, object, key, value, writeNode, getClassNode, hasDescriptor,
-                            getDescrSlotsNode, callSetNode, getExisting, attrRead, deleteNonExistingBranchProfile,
-                            raiseNode);
-        }
-
-        public static TruffleString castAttributeKey(Node inliningTarget, Object keyObject, CastToTruffleStringNode castKeyToStringNode, PRaiseNode raiseNode) {
-            try {
-                return castKeyToStringNode.execute(inliningTarget, keyObject);
-            } catch (CannotCastException e) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ATTR_NAME_MUST_BE_STRING, keyObject);
-            }
-        }
-
-        private static void setAttr(Node inliningTarget, VirtualFrame frame, Object object, TruffleString key,
-                        Object value, WriteAttributeToObjectNode writeNode, GetClassNode getClassNode,
-                        InlinedConditionProfile hasDescriptor, GetObjectSlotsNode getDescrSlotsNode,
-                        CallSlotDescrSet callSetNode, LookupAttributeInMRONode.Dynamic getExisting,
-                        ReadAttributeFromObjectNode attrRead, InlinedBranchProfile deleteNonExistingBranchProfile,
-                        PRaiseNode raiseNode) {
+        static void doGeneric(Node inliningTarget, VirtualFrame frame, Object object, TruffleString key, Object value, WriteAttributeToObjectNode writeNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached InlinedConditionProfile hasDescriptor,
+                        @Cached GetObjectSlotsNode getDescrSlotsNode,
+                        @Cached CallSlotDescrSet callSetNode,
+                        @Cached(inline = false) LookupAttributeInMRONode.Dynamic getExisting,
+                        @Cached ReadAttributeFromObjectNode attrRead,
+                        @Cached InlinedBranchProfile deleteNonExistingBranchProfile,
+                        @Cached PRaiseNode raiseNode) {
             Object type = getClassNode.execute(inliningTarget, object);
             Object descr = getExisting.execute(type, key);
             if (hasDescriptor.profile(inliningTarget, !PGuards.isNoValue(descr))) {

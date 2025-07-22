@@ -31,6 +31,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHe
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_qualname;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
+import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASES__;
@@ -103,6 +104,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins.UpdateSingleNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
@@ -163,7 +165,6 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -617,29 +618,22 @@ public final class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetattrNode extends SetAttrBuiltinNode {
         @Specialization(guards = "!isImmutable(object)")
-        void setString(VirtualFrame frame, Object object, TruffleString key, Object value,
+        static void set(VirtualFrame frame, Object object, Object keyObject, Object value,
                         @Bind Node inliningTarget,
-                        @Shared @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
-                        @Shared @Cached("createForceType()") WriteAttributeToObjectNode write) {
+                        @Cached CastToTruffleStringChecked0Node castKeyNode,
+                        @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
+                        @Cached("createForceType()") WriteAttributeToObjectNode write) {
+            TruffleString key = castKeyNode.cast(inliningTarget, keyObject, ATTR_NAME_MUST_BE_STRING);
             genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
         }
 
-        @Specialization(guards = "!isImmutable(object)")
-        @InliningCutoff
-        static void set(VirtualFrame frame, Object object, Object key, Object value,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
-                        @Shared @Cached("createForceType()") WriteAttributeToObjectNode write) {
-            genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
-        }
-
-        @Specialization(guards = "isImmutable(object)")
         @TruffleBoundary
+        @Specialization(guards = "isImmutable(object)")
         void setBuiltin(Object object, Object key, Object value) {
             if (PythonContext.get(this).isInitialized()) {
                 throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.executeUncached(key), object);
             } else {
-                set(null, object, key, value, null, ObjectNodes.GenericSetAttrNode.getUncached(), WriteAttributeToObjectNode.getUncached(true));
+                set(null, object, key, value, null, CastToTruffleStringChecked0Node.getUncached(), ObjectNodes.GenericSetAttrNode.getUncached(), WriteAttributeToObjectNode.getUncached(true));
             }
         }
 
