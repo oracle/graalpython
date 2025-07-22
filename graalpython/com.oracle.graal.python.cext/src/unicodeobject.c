@@ -15234,27 +15234,27 @@ PyInit__string(void)
 #endif // GraalPy change
 
 // GraalPy additions
-unsigned int GraalPyPrivate_Unicode_CHECK_INTERNED(PyObject *op) {
+unsigned int GraalPyUnicode_CHECK_INTERNED(PyObject *op) {
     return GET_SLOT_SPECIAL(op, PyASCIIObject, state_interned, state.interned);
 }
 
-Py_ssize_t GraalPyPrivate_Unicode_GET_LENGTH(PyObject* op) {
+Py_ssize_t GraalPyUnicode_GET_LENGTH(PyObject* op) {
 	return GraalPyPrivate_GET_PyASCIIObject_length(op);
 }
 
-unsigned int GraalPyPrivate_Unicode_IS_ASCII(PyObject* op) {
+unsigned int GraalPyUnicode_IS_ASCII(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_ascii, state.ascii);
 }
 
-unsigned int GraalPyPrivate_Unicode_IS_COMPACT(PyObject* op) {
+unsigned int GraalPyUnicode_IS_COMPACT(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_compact, state.compact);
 }
 
-int GraalPyPrivate_Unicode_KIND(PyObject* op) {
+int GraalPyUnicode_KIND(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_kind, state.kind);
 }
 
-void* GraalPyPrivate_Unicode_NONCOMPACT_DATA(PyObject* op) {
+void* GraalPyUnicode_NONCOMPACT_DATA(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyUnicodeObject, data, data.any);
 }
 
