@@ -1014,19 +1014,19 @@ public final class PythonCextBuiltins {
 
         @Specialization
         static void doBuiltinClass(PythonBuiltinClass object, TruffleString key, Object value,
-                        @Exclusive @Cached(value = "createForceType()", inline = false) WriteAttributeToObjectNode writeAttrNode) {
+                        @Exclusive @Cached WriteAttributeToObjectNode writeAttrNode) {
             writeAttrNode.execute(object, key, value);
         }
 
         @Specialization
         static void doNativeClass(PythonNativeClass object, TruffleString key, Object value,
-                        @Exclusive @Cached(value = "createForceType()", inline = false) WriteAttributeToObjectNode writeAttrNode) {
+                        @Exclusive @Cached WriteAttributeToObjectNode writeAttrNode) {
             writeAttrNode.execute(object, key, value);
         }
 
         @Specialization(guards = {"!isPythonBuiltinClass(object)"})
         static void doObject(PythonObject object, TruffleString key, Object value,
-                        @Exclusive @Cached(inline = false) WriteAttributeToPythonObjectNode writeAttrToPythonObjectNode) {
+                        @Exclusive @Cached WriteAttributeToPythonObjectNode writeAttrToPythonObjectNode) {
             writeAttrToPythonObjectNode.execute(object, key, value);
         }
     }
