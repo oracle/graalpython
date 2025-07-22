@@ -100,6 +100,16 @@ public abstract class PyDateTimeCAPIWrapper {
 
     private static final TruffleString T_TIMEDELTA = tsLiteral("timedelta");
     public static final TruffleString T_TZINFO = tsLiteral("tzinfo");
+    public static final TruffleString T_DAY = tsLiteral("day");
+    public static final TruffleString T_MONTH = tsLiteral("month");
+    public static final TruffleString T_YEAR = tsLiteral("year");
+    public static final TruffleString T_HOUR = tsLiteral("hour");
+    public static final TruffleString T_MINUTE = tsLiteral("minute");
+    public static final TruffleString T_SECOND = tsLiteral("second");
+    public static final TruffleString T_MICROSECOND = tsLiteral("microsecond");
+    public static final TruffleString T_DAYS = tsLiteral("days");
+    public static final TruffleString T_SECONDS = tsLiteral("seconds");
+    public static final TruffleString T_MICROSECONDS = tsLiteral("microseconds");
     private static final TruffleString T_TIMEZONE = tsLiteral("timezone");
     private static final TruffleString T_UTC = tsLiteral("utc");
     public static final TruffleString T_FROMTIMESTAMP = tsLiteral("fromtimestamp");
