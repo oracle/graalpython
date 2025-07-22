@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
@@ -53,25 +54,19 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.PyCStructUnionTypeUpdateStgDict;
 import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.StructUnionTypeNewNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
-import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GenericSetAttrNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.EqualNode;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.UnionType)
 public final class UnionTypeBuiltins extends PythonBuiltins {
@@ -96,38 +91,20 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class SetattrNode extends SetAttrBuiltinNode {
         @Specialization
-        static void doStringKey(VirtualFrame frame, Object object, TruffleString key, Object value,
-                        @Bind Node inliningTarget,
-                        @Exclusive @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
-                        @Shared @Cached WriteAttributeToObjectNode write,
-                        @Shared @Cached TruffleString.EqualNode equalNode,
-                        @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict) {
-            genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
-            updateStgDictIfNecessary(frame, object, key, value, equalNode, updateStgDict);
-        }
-
-        // @Exclusive to address warning
-        @Specialization
-        @InliningCutoff
         static void doGenericKey(VirtualFrame frame, Object object, Object keyObject, Object value,
                         @Bind Node inliningTarget,
-                        @Cached CastToTruffleStringNode castKeyNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Exclusive @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
-                        @Shared @Cached WriteAttributeToObjectNode write,
-                        @Shared @Cached TruffleString.EqualNode equalNode,
-                        @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict) {
-            TruffleString key = GenericSetAttrNode.castAttributeKey(inliningTarget, keyObject, castKeyNode, raiseNode);
+                        @Cached CastToTruffleStringChecked0Node castKeyNode,
+                        @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
+                        @Cached WriteAttributeToObjectNode write,
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached PyCStructUnionTypeUpdateStgDict updateStgDict) {
+            TruffleString key = castKeyNode.cast(inliningTarget, keyObject, ATTR_NAME_MUST_BE_STRING);
             genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
-            updateStgDictIfNecessary(frame, object, key, value, equalNode, updateStgDict);
-        }
-
-        private static void updateStgDictIfNecessary(VirtualFrame frame, Object object, TruffleString key, Object value,
-                        EqualNode equalNode, PyCStructUnionTypeUpdateStgDict updateStgDict) {
             if (equalNode.execute(key, StructUnionTypeBuiltins.T__FIELDS_, TS_ENCODING)) {
                 updateStgDict.execute(frame, object, value, false);
             }
         }
+
     }
 
 }

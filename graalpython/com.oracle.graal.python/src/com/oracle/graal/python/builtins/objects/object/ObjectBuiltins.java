@@ -29,6 +29,7 @@ package com.oracle.graal.python.builtins.objects.object;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_NEW;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_OBJECT;
+import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 import static com.oracle.graal.python.nodes.PGuards.isDeleteMarker;
 import static com.oracle.graal.python.nodes.PGuards.isDict;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
@@ -87,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.Dic
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -589,19 +591,12 @@ public final class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetattrNode extends SetAttrBuiltinNode {
         @Specialization
-        void setString(VirtualFrame frame, Object object, TruffleString key, Object value,
+        void set(VirtualFrame frame, Object object, Object keyObject, Object value,
                         @Bind Node inliningTarget,
-                        @Shared @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
-                        @Shared @Cached WriteAttributeToObjectNode write) {
-            genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
-        }
-
-        @Specialization
-        @InliningCutoff
-        void setGeneric(VirtualFrame frame, Object object, Object key, Object value,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
-                        @Shared @Cached WriteAttributeToObjectNode write) {
+                        @Cached CastToTruffleStringChecked0Node castKeyNode,
+                        @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
+                        @Cached WriteAttributeToObjectNode write) {
+            TruffleString key = castKeyNode.cast(inliningTarget, keyObject, ATTR_NAME_MUST_BE_STRING);
             genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
         }
 

@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.thread;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 
 import java.util.List;
@@ -57,8 +58,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GenericSetAttrWithDictNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
@@ -78,7 +79,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -211,26 +211,15 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetattrNode extends SetAttrBuiltinNode {
         @Specialization
-        static void doStringKey(VirtualFrame frame, PThreadLocal object, TruffleString key, Object value,
-                        @Bind Node inliningTarget,
-                        @Exclusive @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
-                        @Exclusive @Cached GenericSetAttrWithDictNode setAttrWithDictNode) {
-            // Note: getting thread local dict has potential side-effects, don't move
-            PDict localDict = getThreadLocalDict.execute(frame, object);
-            setAttrWithDictNode.execute(inliningTarget, frame, object, key, value, localDict);
-        }
-
-        @Specialization
         @InliningCutoff
         static void doGeneric(VirtualFrame frame, PThreadLocal object, Object keyObject, Object value,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
-                        @Cached CastToTruffleStringNode castKeyToStringNode,
-                        @Exclusive @Cached PRaiseNode raiseNode,
+                        @Cached CastToTruffleStringChecked0Node castKeyNode,
                         @Exclusive @Cached GenericSetAttrWithDictNode setAttrWithDictNode) {
             // Note: getting thread local dict has potential side-effects, don't move
             PDict localDict = getThreadLocalDict.execute(frame, object);
-            TruffleString key = ObjectNodes.GenericSetAttrNode.castAttributeKey(inliningTarget, keyObject, castKeyToStringNode, raiseNode);
+            TruffleString key = castKeyNode.cast(inliningTarget, keyObject, ATTR_NAME_MUST_BE_STRING);
             setAttrWithDictNode.execute(inliningTarget, frame, object, key, value, localDict);
         }
     }

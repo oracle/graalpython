@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Read
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.CastToTruffleStringChecked0NodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.IsInternedStringNodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.StringMaterializeNodeGen;
 import com.oracle.graal.python.lib.IteratorExhausted;
@@ -247,6 +248,10 @@ public abstract class StringNodes {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class CastToTruffleStringChecked0Node extends PNodeWithContext {
+        public static CastToTruffleStringChecked0Node getUncached() {
+            return CastToTruffleStringChecked0NodeGen.getUncached();
+        }
+
         public final TruffleString cast(Node inliningTarget, Object object, TruffleString errMsg) {
             return execute(inliningTarget, object, errMsg);
         }
