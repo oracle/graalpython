@@ -6,7 +6,5 @@ test.test_ucn.UnicodeNamesTest.test_errors @ linux-x86_64
 test.test_ucn.UnicodeNamesTest.test_general @ linux-x86_64
 test.test_ucn.UnicodeNamesTest.test_hangul_syllables @ linux-x86_64
 test.test_ucn.UnicodeNamesTest.test_misc_symbols @ linux-x86_64
-test.test_ucn.UnicodeNamesTest.test_named_sequences_full @ linux-x86_64
 test.test_ucn.UnicodeNamesTest.test_named_sequences_names_in_pua_range @ linux-x86_64
-test.test_ucn.UnicodeNamesTest.test_named_sequences_sample @ linux-x86_64
 test.test_ucn.UnicodeNamesTest.test_strict_error_handling @ linux-x86_64

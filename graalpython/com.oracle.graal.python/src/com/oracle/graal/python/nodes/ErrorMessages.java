@@ -530,6 +530,7 @@ public abstract class ErrorMessages {
     public static final TruffleString NAME_MUST_BE_A_STRING = tsLiteral("__name__ must be a string");
     public static final TruffleString NAME_NOT_DEFINED = tsLiteral("name '%s' is not defined");
     public static final TruffleString NAME_NOT_IN_GLOBALS = tsLiteral("'__name__' not in globals");
+    public static final TruffleString NAME_TOO_LONG = tsLiteral("name too long");
     public static final TruffleString NAMEDEXPR_TARGET_MUST_BE_A_NAME = tsLiteral("NamedExpr target must be a Name");
     public static final TruffleString NAMELESS_MODULE = tsLiteral("nameless module");
     public static final TruffleString NATIVE_S_SUBTYPES_NOT_IMPLEMENTED = tsLiteral("native %s subtypes not implemented");
@@ -745,6 +746,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNEXPECTED_CONSTANT_INSIDE_OF_A_LITERAL_PATTERN = tsLiteral("unexpected constant inside of a literal pattern");
     public static final TruffleString UNEXPECTED_KEYWORD_ARGS = tsLiteral("%s: unexpected keyword arguments");
     public static final TruffleString UNEXPECTED_S_IN_FIELD_NAME = tsLiteral("unexpected %s in field name");
+    public static final TruffleString UNDEFINED_CHARACTER_NAME = tsLiteral("undefined character name '%s'");
     public static final TruffleString UNHASHABLE_TYPE_P = tsLiteral("unhashable type: '%p'");
     public static final TruffleString UNHASHABLE_TYPE = tsLiteral("unhashable type");
     public static final TruffleString UNINITIALIZED_S_OBJECT = tsLiteral("uninitialized classmethod object");

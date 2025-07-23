@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,34 +37,41 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import unicodedata
+import unittest
 
-def assert_raises(err, fn, *args, **kwargs):
-    raised = False
-    try:
-        fn(*args, **kwargs)
-    except err:
-        raised = True
-    assert raised
+class TestUnicodedata(unittest.TestCase):
 
-
-def test_args_validation():
-    import unicodedata
-    assert_raises(TypeError, unicodedata.category, None)
-    assert_raises(TypeError, unicodedata.bidirectional, None)
-    assert_raises(TypeError, unicodedata.name, None)
+    def test_args_validation(self):
+        self.assertRaises(TypeError, unicodedata.category, None)
+        self.assertRaises(TypeError, unicodedata.bidirectional, None)
+        self.assertRaises(TypeError, unicodedata.name, None)
 
 
-def test_normalize():
-    import unicodedata
-    assert_raises(TypeError, unicodedata.normalize)
-    assert_raises(ValueError, unicodedata.normalize, 'unknown', 'xx')
-    assert unicodedata.normalize('NFKC', '') == ''
+    def test_normalize(self):
+        self.assertRaises(TypeError, unicodedata.normalize)
+        self.assertRaises(ValueError, unicodedata.normalize, 'unknown', 'xx')
+        assert unicodedata.normalize('NFKC', '') == ''
 
 
-def test_category():
-    import unicodedata
-    assert unicodedata.category('\uFFFE') == 'Cn'
-    assert unicodedata.category('a') == 'Ll'
-    assert unicodedata.category('A') == 'Lu'
-    assert_raises(TypeError, unicodedata.category)
-    assert_raises(TypeError, unicodedata.category, 'xx')
+    def test_category(self):
+        assert unicodedata.category('\uFFFE') == 'Cn'
+        assert unicodedata.category('a') == 'Ll'
+        assert unicodedata.category('A') == 'Lu'
+        self.assertRaises(TypeError, unicodedata.category)
+        self.assertRaises(TypeError, unicodedata.category, 'xx')
+
+
+    def test_lookup(self):
+        unicode_name = "ARABIC SMALL HIGH LIGATURE ALEF WITH LAM WITH YEH"
+        self.assertEqual(unicodedata.lookup(unicode_name), "\u0616")
+
+        unicode_name_alias = "ARABIC SMALL HIGH LIGATURE ALEF WITH YEH BARREE"
+        self.assertEqual(unicodedata.lookup(unicode_name_alias), "\u0616")
+
+        with self.assertRaisesRegex(KeyError, "undefined character name 'wrong-name'"):
+            unicodedata.lookup("wrong-name")
+
+        with self.assertRaisesRegex(KeyError, "name too long"):
+            unicodedata.lookup("a" * 257)
+

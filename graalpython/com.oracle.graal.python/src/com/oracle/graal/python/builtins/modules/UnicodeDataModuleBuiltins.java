@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_UNICODEDATA;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_UNICODEDATA;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -49,6 +50,8 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.truffle.api.strings.TruffleString.FromJavaStringNode;
+import com.oracle.truffle.api.strings.TruffleString.ToJavaStringNode;
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
 import org.graalvm.shadowed.com.ibm.icu.text.Normalizer2;
@@ -140,8 +143,8 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached("form") TruffleString cachedForm,
                         @Cached("getNormalizer(cachedForm)") Normalizer2 cachedNormalizer,
                         @SuppressWarnings("unused") @Cached TruffleString.EqualNode equalNode,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Cached ToJavaStringNode toJavaStringNode,
+                        @Exclusive @Cached FromJavaStringNode fromJavaStringNode) {
             return fromJavaStringNode.execute(normalize(toJavaStringNode.execute(unistr), cachedNormalizer), TS_ENCODING);
         }
 
@@ -188,6 +191,72 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    // unicodedata.lookup(name)
+    @Builtin(name = "lookup", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"name"})
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
+    @GenerateNodeFactory
+    public abstract static class LookupNode extends PythonUnaryClinicBuiltinNode {
+
+        private static final int NAME_MAX_LENGTH = 256;
+
+        @Specialization
+        @TruffleBoundary
+        static Object lookup(TruffleString name,
+                        @Bind Node inliningTarget) {
+            String nameString = ToJavaStringNode.getUncached().execute(name);
+            if (nameString.length() > NAME_MAX_LENGTH) {
+                throw PRaiseNode.raiseStatic(inliningTarget, KeyError, ErrorMessages.NAME_TOO_LONG);
+            }
+
+            // TODO: support Unicode character named sequences (GR-68227)
+            // see test/test_ucn.py.UnicodeFunctionsTest.test_named_sequences_full
+            String character = getCharacterByUnicodeName(nameString);
+            if (character == null) {
+                character = getCharacterByUnicodeNameAlias(nameString);
+            }
+            if (character == null) {
+                throw PRaiseNode.raiseStatic(inliningTarget, KeyError, ErrorMessages.UNDEFINED_CHARACTER_NAME, name);
+            }
+
+            return FromJavaStringNode.getUncached().execute(character, TS_ENCODING);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return UnicodeDataModuleBuiltinsClinicProviders.LookupNodeClinicProviderGen.INSTANCE;
+        }
+
+        /**
+         * Finds a Unicode code point by its Unicode name and returns it as a single character
+         * String. Returns null if name is not found.
+         */
+        @TruffleBoundary
+        private static String getCharacterByUnicodeName(String unicodeName) {
+            int codepoint = UCharacter.getCharFromName(unicodeName);
+
+            if (codepoint < 0) {
+                return null;
+            }
+
+            return UCharacter.toString(codepoint);
+        }
+
+        /**
+         * Finds a Unicode code point by its Unicode name alias and returns it as a single character
+         * String. Returns null if name alias is not found.
+         */
+        @TruffleBoundary
+        private static String getCharacterByUnicodeNameAlias(String unicodeName) {
+            int codepoint = UCharacter.getCharFromNameAlias(unicodeName);
+
+            if (codepoint < 0) {
+                return null;
+            }
+
+            return UCharacter.toString(codepoint);
+        }
+    }
+
     // unicodedata.name(chr, default)
     @Builtin(name = "name", minNumOfPositionalArgs = 1, parameterNames = {"chr", "default"})
     @ArgumentClinic(name = "chr", conversion = ArgumentClinic.ClinicConversion.CodePoint)
@@ -197,7 +266,7 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object name(int cp, Object defaultValue,
                         @Bind Node inliningTarget,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached FromJavaStringNode fromJavaStringNode,
                         @Cached PRaiseNode raiseNode) {
             String result = getUnicodeName(cp);
             if (result == null) {
@@ -222,7 +291,7 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
     public abstract static class BidirectionalNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
         static TruffleString bidirectional(int chr,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Cached FromJavaStringNode fromJavaStringNode) {
             return fromJavaStringNode.execute(getBidiClassName(chr), TS_ENCODING);
         }
 
@@ -244,7 +313,7 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
     public abstract static class CategoryNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
         static TruffleString category(int chr,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Cached FromJavaStringNode fromJavaStringNode) {
             return fromJavaStringNode.execute(getCategoryName(chr), TS_ENCODING);
         }
 
