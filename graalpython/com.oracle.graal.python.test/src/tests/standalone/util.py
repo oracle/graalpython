@@ -42,22 +42,9 @@ import shutil
 import subprocess
 import sys
 import unittest
-import urllib.parse
 import tempfile
 from abc import ABC, abstractmethod
 from typing import Optional
-
-MAVEN_VERSION = "3.9.8"
-GLOBAL_MVN_CMD = [shutil.which('mvn'), "--batch-mode"]
-
-GRADLE_VERSION = "8.9"
-
-DEFAULT_VFS_PREFIX = "org.graalvm.python.vfs"
-
-is_maven_plugin_test_enabled = 'ENABLE_MAVEN_PLUGIN_UNITTESTS' in os.environ and os.environ['ENABLE_MAVEN_PLUGIN_UNITTESTS'] == "true"
-is_maven_plugin_long_running_test_enabled = 'ENABLE_MAVEN_PLUGIN_LONG_RUNNING_UNITTESTS' in os.environ and os.environ['ENABLE_MAVEN_PLUGIN_LONG_RUNNING_UNITTESTS'] == "true"
-is_gradle_plugin_test_enabled = 'ENABLE_GRADLE_PLUGIN_UNITTESTS' in os.environ and os.environ['ENABLE_GRADLE_PLUGIN_UNITTESTS'] == "true"
-is_gradle_plugin_long_running_test_enabled = 'ENABLE_GRADLE_PLUGIN_LONG_RUNNING_UNITTESTS' in os.environ and os.environ['ENABLE_GRADLE_PLUGIN_LONG_RUNNING_UNITTESTS'] == "true"
 
 class TemporaryTestDirectory():
     def __init__(self):
@@ -110,88 +97,12 @@ class StdOutLogger(LoggerBase):
         print(msg)
         self.delegate.log(msg, newline=newline)
 
-
-class BuildToolTestBase(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        if (not is_maven_plugin_test_enabled and not is_gradle_plugin_test_enabled
-            and not is_maven_plugin_long_running_test_enabled and not is_gradle_plugin_long_running_test_enabled):
-            return
-
-        cls.env = os.environ.copy()
-        cls.env["PYLAUNCHER_DEBUG"] = "1"
-
-        cls.archetypeGroupId = "org.graalvm.python"
-        cls.archetypeArtifactId = "graalpy-archetype-polyglot-app"
-        cls.pluginArtifactId = "graalpy-maven-plugin"
-        cls.graalvmVersion = get_graalvm_version()
-
-        for custom_repo in os.environ.get("MAVEN_REPO_OVERRIDE", "").split(","):
-            url = urllib.parse.urlparse(custom_repo)
-            if url.scheme == "file":
-                jar = os.path.join(
-                    urllib.parse.unquote(url.path),
-                    cls.archetypeGroupId.replace(".", os.path.sep),
-                    cls.archetypeArtifactId,
-                    cls.graalvmVersion,
-                    f"{cls.archetypeArtifactId}-{cls.graalvmVersion}.jar",
-                )
-                pom = os.path.join(
-                    urllib.parse.unquote(url.path),
-                    cls.archetypeGroupId.replace(".", os.path.sep),
-                    cls.archetypeArtifactId,
-                    cls.graalvmVersion,
-                    f"{cls.archetypeArtifactId}-{cls.graalvmVersion}.pom",
-                )
-                cmd = GLOBAL_MVN_CMD + [
-                    "install:install-file",
-                    f"-Dfile={jar}",
-                    f"-DgroupId={cls.archetypeGroupId}",
-                    f"-DartifactId={cls.archetypeArtifactId}",
-                    f"-Dversion={cls.graalvmVersion}",
-                    "-Dpackaging=jar",
-                    f"-DpomFile={pom}",
-                    "-DcreateChecksum=true",
-                ]
-                out, return_code = run_cmd(cmd, cls.env)
-                assert return_code == 0, out
-
-                jar = os.path.join(
-                    urllib.parse.unquote(url.path),
-                    cls.archetypeGroupId.replace(".", os.path.sep),
-                    cls.pluginArtifactId,
-                    cls.graalvmVersion,
-                    f"{cls.pluginArtifactId}-{cls.graalvmVersion}.jar",
-                )
-
-                pom = os.path.join(
-                    urllib.parse.unquote(url.path),
-                    cls.archetypeGroupId.replace(".", os.path.sep),
-                    cls.pluginArtifactId,
-                    cls.graalvmVersion,
-                    f"{cls.pluginArtifactId}-{cls.graalvmVersion}.pom",
-                )
-
-                cmd = GLOBAL_MVN_CMD + [
-                    "install:install-file",
-                    f"-Dfile={jar}",
-                    f"-DgroupId={cls.archetypeGroupId}",
-                    f"-DartifactId={cls.pluginArtifactId}",
-                    f"-Dversion={cls.graalvmVersion}",
-                    "-Dpackaging=jar",
-                    f"-DpomFile={pom}",
-                    "-DcreateChecksum=true",
-                ]
-                out, return_code = run_cmd(cmd, cls.env)
-                assert return_code == 0, out
-                break
-
 def run_cmd(cmd, env, cwd=None, print_out=False, logger:LoggerBase=NullLogger()):
     if print_out:
         logger = StdOutLogger(logger)
     out = []
     out.append(f"Executing:\n    {cmd=}\n")
-    
+
     logger.log(f"Executing command: {' '.join(cmd)}")
     process = subprocess.Popen(cmd, env=env, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, text=True, errors='backslashreplace')
     for line in iter(process.stdout.readline, ""):
@@ -218,24 +129,6 @@ def print_output(out, err_msg=None):
     print("\n========== end of output ==========")
     if err_msg:
         print("", err_msg, "", sep="\n")
-
-def get_mvn_wrapper(project_dir, env):
-    cmd = "mvnw" if 'win32' != sys.platform else "mvnw.cmd"
-    mvn_cmd = [os.path.join(project_dir, cmd),  "--batch-mode"]
-    cmd = mvn_cmd + ["--version"]
-    out, return_code = run_cmd(cmd, env, cwd=project_dir)
-    check_ouput(MAVEN_VERSION, out)
-    return mvn_cmd
-
-def get_gradle_wrapper(project_dir, env, verbose=True):
-    gradle_cmd = [os.path.abspath(os.path.join(project_dir, "gradlew" if 'win32' != sys.platform else "gradlew.bat"))]
-    cmd = gradle_cmd + ["--version"]
-    out, return_code = run_cmd(cmd, env, cwd=project_dir)
-    check_ouput(GRADLE_VERSION, out)
-    if verbose:
-        return gradle_cmd + ["-i"]
-    else:
-        return gradle_cmd
 
 def get_gp():
     if "PYTHON_STANDALONE_HOME" not in os.environ:
@@ -276,78 +169,3 @@ def get_executable(file):
     if os.path.isfile(exe):
         return exe
     return None
-
-def patch_pom_repositories(pom):
-    if custom_repos := os.environ.get("MAVEN_REPO_OVERRIDE"):
-        repos = []
-        pluginRepos = []
-        for idx, custom_repo in enumerate(custom_repos.split(",")):
-            repos.append(f"""
-                    <repository>
-                        <id>myrepo{idx}</id>
-                        <url>{custom_repo}</url>
-                        <releases>
-                            <enabled>true</enabled>
-                            <updatePolicy>never</updatePolicy>
-                        </releases>
-                        <snapshots>
-                            <enabled>true</enabled>
-                            <updatePolicy>never</updatePolicy>
-                        </snapshots>
-                    </repository>
-                """)
-            pluginRepos.append(f"""
-                    <pluginRepository>
-                        <id>myrepo{idx}</id>
-                        <url>{custom_repo}</url>
-                        <releases>
-                            <enabled>true</enabled>
-                        </releases>
-                        <snapshots>
-                            <enabled>true</enabled>
-                        </snapshots>
-                    </pluginRepository>
-                """)
-
-        with open(pom, "r") as f:
-            contents = f.read()
-        with open(pom, "w") as f:
-            f.write(contents.replace("</project>", """
-                <repositories>
-                """ + '\n'.join(repos) + """
-                </repositories>
-                <pluginRepositories>
-                """ + '\n'.join(pluginRepos) + """
-                </pluginRepositories>
-                </project>
-                """))
-
-def replace_in_file(file, str, replace_str):
-    with open(file, "r") as f:
-        contents = f.read()
-    assert str in contents, f"cannot find '{str}' in file '{file}' with contents:\n {contents}\n------"
-    with open(file, "w") as f:
-        f.write(contents.replace(str, replace_str))
-
-
-def replace_main_body(filename, new_main_body):
-    with open(filename, "r") as f:
-        lines = f.readlines()
-    with open(filename, "w") as f:
-        for l in lines:
-            f.write(l)
-            if 'public static void main(String[] args) {' in l:
-                break
-        f.write(new_main_body)
-        f.write('    }\n')
-        f.write('}\n')
-
-
-def override_gradle_properties_file(gradle_project_root):
-    if override_file:=os.environ.get('GRADLE_PROPERTIES_OVERRIDE'):
-        shutil.copy(override_file, os.path.join(gradle_project_root, "gradle", "wrapper", "gradle-wrapper.properties"))
-
-
-def override_maven_properties_file(maven_project_root):
-    if override_file:=os.environ.get('MAVEN_PROPERTIES_OVERRIDE'):
-        shutil.copy(override_file, os.path.join(maven_project_root, ".mvn", "wrapper", "maven-wrapper.properties"))
