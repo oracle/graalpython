@@ -333,7 +333,6 @@ suite = {
                 "com.oracle.graal.python",
                 "GRAALPYTHON-LAUNCHER",
                 "regex:TREGEX",
-                "truffle:TRUFFLE_NFI_LIBFFI",
             ],
         },
 

@@ -2322,8 +2322,10 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
             args.insert(0, "-q")
 
         args[:0] = [
-            f"--python.PyCachePrefix={pycache_dir}",
-            "--python.DisableFrozenModules",
+            "--PosixModuleBackend=java",
+            "--CompressionModulesBackend=java",
+            f"--PyCachePrefix={pycache_dir}",
+            "--DisableFrozenModules",
             "-B",
             "-S"
         ]
@@ -2331,7 +2333,6 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
 
         env = env.copy() if env else os.environ.copy()
         env.update(cast(GraalpythonProject, self.subject).getBuildEnv())
-        args.insert(0, '--PosixModuleBackend=java')
         jdk = mx.get_jdk()  # Don't get JVMCI, it might not have finished building by this point
         rc = do_run_python(args, jdk=jdk, env=env, cwd=cwd, minimal=True, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error), **kwargs)
 
