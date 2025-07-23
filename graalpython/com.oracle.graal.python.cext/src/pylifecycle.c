@@ -74,9 +74,16 @@ _Py_IsFinalizing(void)
 }
 
 void _Py_NO_RETURN  _Py_FatalErrorFunc(const char *func, const char *msg) {
-	GraalPyPrivate_FatalErrorFunc(func, msg, -1);
-	/* If the above upcall returns, then we just fall through to the 'abort' call. */
-	abort();
+    const char *prefix1 = "", *prefix2 = "";
+    if (func) {
+        prefix1 = func;
+        prefix2 = ": ";
+    }
+    if (!msg) {
+        msg = "<message not set>";
+    }
+    fprintf(stderr, "Fatal Python error: %s%s%s\n", prefix1, prefix2, msg);
+    abort();
 }
 
 _PyRuntimeState _PyRuntime

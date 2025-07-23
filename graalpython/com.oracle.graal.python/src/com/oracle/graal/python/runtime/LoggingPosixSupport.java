@@ -808,12 +808,6 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final void abort(@CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        logEnter("abort", "");
-        lib.abort(this.delegate);
-    }
-
-    @ExportMessage
     final boolean wcoredump(int status,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter("wcoredump", "%d", status);

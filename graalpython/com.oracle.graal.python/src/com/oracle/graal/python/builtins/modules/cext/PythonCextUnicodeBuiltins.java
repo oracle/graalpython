@@ -116,7 +116,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
@@ -158,11 +157,11 @@ import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -388,7 +387,6 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization(guards = "!isOF(prec)")
         static Object formatLong(Object val, int alt, int prec, int type,
                         @Bind Node inliningTarget,
-                        @Bind PythonContext context,
                         @Cached OctNode toOctBase,
                         @Cached HexNode toHexBase,
                         @Cached PyNumberIndexNode indexNode,
@@ -396,7 +394,7 @@ public final class PythonCextUnicodeBuiltins {
                         @Cached CastToJavaStringNode cast,
                         @Cached TruffleString.FromCharArrayUTF16Node fromCharArrayNode) {
             int numnondigits = 0;
-            TruffleString result = null;
+            TruffleString result;
             switch (type) {
                 case 'd', 'i', 'u' ->
                     /* int and int subclasses should print numerically when a numeric */
@@ -410,7 +408,10 @@ public final class PythonCextUnicodeBuiltins {
                     numnondigits = 2;
                     result = (TruffleString) PyNumber_ToBase.toBase16(val, 16, inliningTarget, indexNode, toHexBase);
                 }
-                default -> CExtCommonNodes.fatalErrorString(inliningTarget, context, null, null, -1);
+                default -> {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+                }
             }
 
             char[] buf = getCharArray(cast.execute(result));
