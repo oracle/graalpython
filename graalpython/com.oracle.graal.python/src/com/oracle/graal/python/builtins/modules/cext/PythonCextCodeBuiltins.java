@@ -122,7 +122,7 @@ public final class PythonCextCodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyCodeObject}, call = Direct)
-    abstract static class PyCode_GetName extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyCode_GetName extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PCode code) {
             return code.getName();
@@ -130,7 +130,7 @@ public final class PythonCextCodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyCodeObject}, call = Direct)
-    abstract static class PyCode_GetFileName extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyCode_GetFileName extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PCode code) {
             return code.getFilename();

@@ -83,6 +83,8 @@
 #include "pycore_global_objects.h" // _PY_NSMALLPOSINTS
 #include "pycore_gc.h" // PyGC_Head
 
+#include "graalpy/handles.h"
+
 #define SRC_CS "utf-8"
 
 /* Flags definitions representing global (debug) options. */
@@ -125,17 +127,37 @@ typedef struct {
     PyGC_Head *reachable;
 } GraalPyGC_Cycle;
 
+PyAPI_FUNC(void) GraalPyPrivate_DebugTrace(void);
+
+typedef struct {
+    PyObject_HEAD
+    int32_t handle_table_index;
+} GraalPyObject;
+
+typedef struct {
+    GraalPyObject ob_base;
+    Py_ssize_t ob_size;
+    PyObject **ob_item;
+} GraalPyVarObject;
+
+typedef struct {
+    GraalPyObject ob_base;
+    double ob_fval;
+} GraalPyFloatObject;
+
 typedef struct gc_generation GCGeneration;
 
 // {{start CAPI_BUILTINS}}
 #include "capi.gen.h"
 
 
-#define BUILTIN(NAME, RET, ...) extern PyAPI_FUNC(RET) (*Graal##NAME)(__VA_ARGS__);
+#define PUBLIC_BUILTIN(NAME, RET, ...) extern PyAPI_FUNC(RET) (*GraalPyPrivate_Upcall_##NAME)(__VA_ARGS__);
+#define PRIVATE_BUILTIN(NAME, RET, ...) extern PyAPI_FUNC(RET) (*NAME)(__VA_ARGS__);
 CAPI_BUILTINS
-#undef BUILTIN
+#undef PUBLIC_BUILTIN
+#undef PRIVATE_BUILTIN
 
-#define GET_SLOT_SPECIAL(OBJ, RECEIVER, NAME, SPECIAL) ( points_to_py_handle_space(OBJ) ? GraalPy_get_##RECEIVER##_##NAME((RECEIVER*) (OBJ)) : ((RECEIVER*) (OBJ))->SPECIAL )
+#define GET_SLOT_SPECIAL(OBJ, RECEIVER, NAME, SPECIAL) ( points_to_py_handle_space(OBJ) ? GraalPyPrivate_Get_##RECEIVER##_##NAME((RECEIVER*) (OBJ)) : ((RECEIVER*) (OBJ))->SPECIAL )
 
 PyAPI_DATA(uint32_t) Py_Truffle_Options;
 
@@ -159,7 +181,7 @@ static void print_c_stacktrace() {
 
 static void attach_gdb() {
     pid_t my_pid = getpid();
-    char pathname = "/bin/sh";
+    char* pathname = "/bin/sh";
     char gdbcmd[28] = {'\0'};
     snprintf(gdbcmd, sizeof(gdbcmd) - 1, "gdb -p %u", my_pid);
     char *argv[4];
@@ -185,41 +207,41 @@ static void attach_gdb() {
 #endif
 
 /* Flags definitions representing global (debug) options. */
-static MUST_INLINE int PyTruffle_Trace_Memory() {
+static MUST_INLINE int GraalPyPrivate_Trace_Memory() {
     return Py_Truffle_Options & PY_TRUFFLE_TRACE_MEM;
 }
-static MUST_INLINE int PyTruffle_Log_Info() {
+static MUST_INLINE int GraalPyPrivate_Log_Info() {
     return Py_Truffle_Options & PY_TRUFFLE_LOG_INFO;
 }
-static MUST_INLINE int PyTruffle_Log_Config() {
+static MUST_INLINE int GraalPyPrivate_Log_Config() {
     return Py_Truffle_Options & PY_TRUFFLE_LOG_CONFIG;
 }
-static MUST_INLINE int PyTruffle_Log_Fine() {
+static MUST_INLINE int GraalPyPrivate_Log_Fine() {
     return Py_Truffle_Options & PY_TRUFFLE_LOG_FINE;
 }
-static MUST_INLINE int PyTruffle_Log_Finer() {
+static MUST_INLINE int GraalPyPrivate_Log_Finer() {
     return Py_Truffle_Options & PY_TRUFFLE_LOG_FINER;
 }
-static MUST_INLINE int PyTruffle_Log_Finest() {
+static MUST_INLINE int GraalPyPrivate_Log_Finest() {
     return Py_Truffle_Options & PY_TRUFFLE_LOG_FINEST;
 }
-static MUST_INLINE int PyTruffle_Debug_CAPI() {
+static MUST_INLINE int GraalPyPrivate_Debug_CAPI() {
     return Py_Truffle_Options & PY_TRUFFLE_DEBUG_CAPI;
 }
 
-static MUST_INLINE int PyTruffle_PythonGC() {
+static MUST_INLINE int GraalPyPrivate_PythonGC() {
     return Py_Truffle_Options & PY_TRUFFLE_PYTHON_GC;
 }
 
 static void
-PyTruffle_Log(int level, const char *format, ...)
+GraalPyPrivate_Log(int level, const char *format, ...)
 {
     if (Py_Truffle_Options & level) {
         char buffer[1024];
         va_list args;
         va_start(args, format);
         vsprintf(buffer, format, args);
-        GraalPyTruffle_LogString(level, buffer);
+        GraalPyPrivate_LogString(level, buffer);
         va_end(args);
     }
 }
@@ -299,10 +321,7 @@ static inline int get_method_flags_wrapper(int flags) {
     return JWRAPPER_UNSUPPORTED;
 }
 
-// looked up by NFI, so exported
-PyAPI_FUNC(void) register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members);
-
-PyAPI_FUNC(void) GraalPyObject_GC_Del(void *op);
+PyAPI_FUNC(void) GraalPyPrivate_Object_GC_Del(void *op);
 
 // export the SizeT arg parse functions, because we use them in contrast to cpython on windows for core modules that we link dynamically
 PyAPI_FUNC(int) _PyArg_Parse_SizeT(PyObject *, const char *, ...);

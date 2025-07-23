@@ -50,6 +50,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -59,6 +60,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
 @GenerateCached
+@GenerateInline(false) // 52 -> 36
 public abstract class ReadFromDictOrGlobalsNode extends PNodeWithContext {
 
     public abstract int execute(VirtualFrame frame, int initialStackTop, Object globals, TruffleString name);

@@ -69,6 +69,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -83,7 +84,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
 @OperationProxy.Proxyable
-@SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 26
+@GenerateInline(false)       // footprint reduction 44 -> 26
 public abstract class IsNode extends Node implements BinaryOp {
 
     protected abstract boolean executeInternal(Object left, Object right);

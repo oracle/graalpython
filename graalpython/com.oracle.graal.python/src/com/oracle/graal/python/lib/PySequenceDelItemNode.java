@@ -75,7 +75,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class PySequenceDelItemNode extends Node {
     public abstract void execute(Frame frame, Node inliningTarget, Object container, int index);
 
-    @Specialization(guards = "isBuiltinList(object)")
+    @Specialization(guards = "isBuiltinList(object)", excludeForUncached = true)
     static void doList(VirtualFrame frame, PList object, int key,
                     @Cached(inline = false) ListBuiltins.SetItemNode setItemNode) {
         setItemNode.executeIntKey(frame, object, key, PNone.NO_VALUE);

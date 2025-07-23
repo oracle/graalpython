@@ -50,6 +50,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -78,6 +79,7 @@ public abstract class InvokeArrowReleaseCallbackNode extends PNodeWithContext {
         }
     }
 
+    @NeverDefault
     static Object createReleaseCallbackSignature(PythonContext context) {
         return ArrowUtil.createNfiSignature("(UINT64):VOID", context);
     }

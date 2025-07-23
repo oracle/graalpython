@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "9733142a0ecc145aa69c61bc6d81443636a4edd4",
+                "version": "f8196f0bf0b98e14d1abeea2a806aff4a507d99f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "9733142a0ecc145aa69c61bc6d81443636a4edd4",
+                "version": "f8196f0bf0b98e14d1abeea2a806aff4a507d99f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -153,12 +153,6 @@ suite = {
               "artifactId": "org-netbeans-lib-profiler",
               "version": "RELEASE120-1",
             },
-        },
-        "JBANG" : {
-            "urls" : [
-                "https://github.com/jbangdev/jbang/releases/download/v0.114.0/jbang-0.114.0.zip"
-            ],
-            "digest": "sha256:660c7eb2eda888897f20aa5c5927ccfed924f3b86d5f2a2477a7b0235cdc94bb"
         },
     },
 
@@ -285,38 +279,6 @@ suite = {
             "requires": [
                 "java.management",
                 "java.xml",
-            ],
-            "jacoco": "include",
-            "javaCompliance": "17+",
-            "checkstyle": "com.oracle.graal.python",
-        },
-
-        "org.graalvm.python.embedding": {
-            "subDir": "graalpython",
-            "sourceDirs": ["src"],
-            "dependencies": [
-                "sdk:POLYGLOT",
-            ],
-            "requires": [
-                "java.logging",
-            ],
-            "jacoco": "include",
-            "javaCompliance": "17+",
-            "checkstyle": "com.oracle.graal.python",
-        },
-        "org.graalvm.python.embedding.tools": {
-            "subDir": "graalpython",
-            "sourceDirs": ["src"],
-            "jacoco": "include",
-            "javaCompliance": "17+",
-            "checkstyle": "com.oracle.graal.python",
-        },
-
-        "org.graalvm.python.jbang": {
-            "subDir": "graalpython",
-            "sourceDirs": ["src"],
-            "dependencies": [
-                "org.graalvm.python.embedding.tools"
             ],
             "jacoco": "include",
             "javaCompliance": "17+",
@@ -458,7 +420,6 @@ suite = {
                 "truffle:TRUFFLE_TCK",
                 "mx:JUNIT",
                 "NETBEANS-LIB-PROFILER",
-                "GRAALPYTHON_EMBEDDING_TOOLS",
             ],
             "requires": [
                 "java.management",
@@ -487,7 +448,6 @@ suite = {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "dependencies": [
-                "GRAALPYTHON_EMBEDDING",
                 "mx:JUNIT",
                 "sdk:GRAAL_SDK",
             ],
@@ -888,78 +848,6 @@ suite = {
             },
         },
 
-        "GRAALPYTHON_EMBEDDING" : {
-            "moduleInfo": {
-                "name": "org.graalvm.python.embedding",
-                "exports": [
-                    "org.graalvm.python.embedding",
-                ]
-            },
-            "useModulePath": True,
-            "dependencies": [
-                "org.graalvm.python.embedding"
-            ],
-            "distDependencies": [
-                "sdk:POLYGLOT",
-            ],
-            "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This artifact provides convenience APIs to embed GraalPy into Java applications. Use this dependency if you install additional Python packages with the Maven or Gradle plugins for GraalPy.",
-            "maven": {
-                "groupId": "org.graalvm.python",
-                "artifactId": "python-embedding",
-                "tag": ["default", "public"],
-            },
-
-        },
-        "GRAALPYTHON_EMBEDDING_TOOLS" : {
-            "moduleInfo": {
-                "name": "org.graalvm.python.embedding.tools",
-                "exports": [
-                    "org.graalvm.python.embedding.tools.vfs",
-                    "org.graalvm.python.embedding.tools.exec",
-                ]
-            },
-            "useModulePath": True,
-            "dependencies": [
-                "org.graalvm.python.embedding.tools",
-            ],
-            "distDependencies": [
-                "sdk:POLYGLOT",
-            ],
-            "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This artifact contains utilities for tools that want to integrate GraalPy packages into the build process of Java applications.",
-            "maven": {
-                "groupId": "org.graalvm.python",
-                "artifactId": "python-embedding-tools",
-                "tag": ["default", "public"],
-            },
-
-        },
-
-        "GRAALPYTHON_JBANG": {
-            "moduleInfo": {
-                "name": "org.graalvm.python.jbang",
-                "exports": [
-                    "org.graalvm.python.jbang",
-                ]
-            },
-            "useModulePath": True,
-            "dependencies": [
-                "org.graalvm.python.jbang",
-            ],
-            "distDependencies": [
-                "GRAALPYTHON",
-                "GRAALPYTHON_RESOURCES",
-                "GRAALPYTHON-LAUNCHER",
-                "GRAALPYTHON_EMBEDDING",
-                "GRAALPYTHON_EMBEDDING_TOOLS",
-            ],
-            "description": "GraalPy JBang Integration",
-            "maven": {
-                "groupId": "org.graalvm.python",
-                "artifactId": "jbang",
-                "tag": ["default", "public"],
-            },
-        },
-
         "GRAALPYTHON-LAUNCHER": {
             "moduleInfo": {
                 "name": "org.graalvm.py.launcher",
@@ -1156,7 +1044,6 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON",
                 "GRAALPYTHON-LAUNCHER",
-                "GRAALPYTHON_EMBEDDING_TOOLS", # See MultiContextCExtTest
                 "truffle:TRUFFLE_TCK",
                 "GRAALPYTHON_INTEGRATION_UNIT_TESTS",
             ],
@@ -1174,7 +1061,6 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON",
                 "GRAALPYTHON_RESOURCES",
-                "GRAALPYTHON_EMBEDDING",
                 "sdk:GRAAL_SDK",
             ],
             "testDistribution": True,
@@ -1538,48 +1424,6 @@ suite = {
             "community_archive_name": "graalpy-community-jvm",
             "enterprise_archive_name": "graalpy-jvm",
             "language_id": "python",
-        },
-
-        "graalpy-archetype-polyglot-app": {
-            "class": "MavenProject",
-            "subDir": "graalpython",
-            "noMavenJavadoc": True,
-            "maven": {
-                "tag": ["default", "public"],
-            },
-        },
-
-        "graalpy-maven-plugin": {
-            "class": "MavenProject",
-            "subDir": "graalpython",
-            "noMavenJavadoc": True,
-            "dependencies": [
-                "GRAALPYTHON-LAUNCHER",
-                "GRAALPYTHON_EMBEDDING_TOOLS",
-            ],
-            "maven": {
-                "tag": ["default", "public"],
-            },
-        },
-        "org.graalvm.python.gradle.plugin": {
-            "class": "GradlePluginProject",
-            "subDir": "graalpython",
-            "javaCompliance": "17+",
-            "checkstyle": "com.oracle.graal.python",
-            "noMavenJavadoc": True,
-            "gradleProjectName": "graalpy-gradle-plugin",
-            "gradlePluginId": "org.graalvm.python",
-            "gradlePluginImplementation": "org.graalvm.python.GraalPyGradlePlugin",
-            "description": "Gradle plugin for GraalPy, a high-performance embeddable Python 3 runtime for Java. The plugin provides support for installing and managing Python packages.",
-            "dependencies": [
-                "GRAALPYTHON-LAUNCHER",
-                "GRAALPYTHON_EMBEDDING_TOOLS",
-            ],
-            "maven": {
-                "tag": ["default", "public"],
-                "groupId": "org.graalvm.python",
-                "artifactId": "org.graalvm.python.gradle.plugin",
-            },
         },
     },
 }

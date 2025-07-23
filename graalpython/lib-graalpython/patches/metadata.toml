@@ -257,8 +257,10 @@ patch = 'jupyter_server.patch'
 license = 'BSD-3-Clause'
 
 [[lazy-object-proxy.rules]]
-# Disable optional C ext. Upstreamable
+# Disable optional C ext. Upstreamed
+version = '<= 1.11.0'
 patch = 'lazy-object-proxy.patch'
+install-priority = 0
 license = 'BSD-2-Clause'
 dist-type = 'sdist'
 

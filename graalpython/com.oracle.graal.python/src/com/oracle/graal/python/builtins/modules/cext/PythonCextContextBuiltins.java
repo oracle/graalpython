@@ -77,7 +77,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonCextContextBuiltins {
 
     @CApiBuiltin(ret = VoidNoReturn, args = {}, call = Ignored)
-    abstract static class PyTrufflePrintStacktrace extends CApiNullaryBuiltinNode {
+    abstract static class GraalPyPrivate_PrintStacktrace extends CApiNullaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
@@ -103,7 +103,7 @@ public final class PythonCextContextBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Pointer}, call = Ignored)
-    abstract static class PyTruffleContextVar_Get extends CApiTernaryBuiltinNode {
+    abstract static class GraalPyPrivate_ContextVar_Get extends CApiTernaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object var, Object def, Object marker,
                         @Bind Node inliningTarget,

@@ -834,7 +834,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 if (!PyExceptionInstanceCheckNode.executeUncached(message)) {
                     throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.SystemError, ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION, PyObjectReprAsTruffleStringNode.executeUncached(message));
                 } else {
-                    throw PRaiseNode.raiseExceptionObject(this, message);
+                    throw PRaiseNode.raiseExceptionObjectStatic(this, message);
                 }
             }
 

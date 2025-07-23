@@ -62,6 +62,7 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -104,7 +105,7 @@ public abstract class SetupAnnotationsNode extends PNodeWithContext {
         static void doModule(Node inliningTarget, PythonModule locals,
                         @Cached(inline = false) ReadAttributeFromObjectNode read,
                         @Cached(inline = false) WriteAttributeToObjectNode write,
-                        @Cached InlinedBranchProfile create) {
+                        @Cached @Exclusive InlinedBranchProfile create) {
             Object annotations = read.execute(locals, T___ANNOTATIONS__);
             if (annotations == PNone.NO_VALUE) {
                 create.enter(inliningTarget);
@@ -116,7 +117,7 @@ public abstract class SetupAnnotationsNode extends PNodeWithContext {
         static void doBuiltinDict(VirtualFrame frame, Node inliningTarget, PDict locals,
                         @Cached PyDictGetItem getItem,
                         @Cached PyDictSetItem setItem,
-                        @Cached InlinedBranchProfile create) {
+                        @Cached @Exclusive InlinedBranchProfile create) {
             Object annotations = getItem.execute(frame, inliningTarget, locals, T___ANNOTATIONS__);
             if (annotations == null) {
                 create.enter(inliningTarget);

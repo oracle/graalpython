@@ -77,7 +77,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
 @ImportStatic(PGuards.class)
-@SuppressWarnings("truffle-inlining")       // footprint reduction 28 -> 9
+@GenerateInline(false)       // footprint reduction 28 -> 9
 public abstract class PConstructAndRaiseNode extends Node {
     public final PException executeWithArgsOnly(Frame frame, PythonBuiltinClassType type, Object[] arguments) {
         return execute(frame, type, null, null, null, arguments, PKeyword.EMPTY_KEYWORDS);
@@ -108,7 +108,7 @@ public abstract class PConstructAndRaiseNode extends Node {
             error.setContext(cause);
             error.setCause(cause);
         }
-        return PRaiseNode.raiseExceptionObject(this, error);
+        return PRaiseNode.raiseExceptionObjectStatic(this, error);
     }
 
     @Specialization(guards = {"format == null", "formatArgs == null"})

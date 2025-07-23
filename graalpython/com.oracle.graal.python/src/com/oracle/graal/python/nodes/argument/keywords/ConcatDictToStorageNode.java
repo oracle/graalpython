@@ -64,7 +64,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -79,11 +78,12 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class ConcatDictToStorageNode extends PNodeWithContext {
     public abstract HashingStorage execute(VirtualFrame frame, HashingStorage dest, Object other) throws SameDictKeyException, NonMappingException;
 
+    // @Exclusive for truffle-interpreted-performance
     @Specialization(guards = "hasBuiltinDictIter(inliningTarget, other, getClassNode, getSlots)", limit = "1")
     static HashingStorage doBuiltinDictEmptyDest(@SuppressWarnings("unused") EmptyStorage dest, PDict other,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
-                    @SuppressWarnings("unused") @Shared @Cached GetCachedTpSlotsNode getSlots,
+                    @SuppressWarnings("unused") @Exclusive @Cached GetCachedTpSlotsNode getSlots,
                     @Cached HashingStorageNodes.HashingStorageCopy copyNode) {
         return copyNode.execute(inliningTarget, other.getDictStorage());
     }
@@ -92,7 +92,7 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
     static HashingStorage doBuiltinDict(VirtualFrame frame, HashingStorage dest, PDict other,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
-                    @SuppressWarnings("unused") @Shared @Cached GetCachedTpSlotsNode getSlots,
+                    @SuppressWarnings("unused") @Exclusive @Cached GetCachedTpSlotsNode getSlots,
                     @Exclusive @Cached HashingStorageNodes.HashingStorageGetItem resultGetItem,
                     @Exclusive @Cached HashingStorageNodes.HashingStorageSetItem resultSetItem,
                     @Cached HashingStorageNodes.HashingStorageGetIterator getIterator,
@@ -127,7 +127,7 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
     static HashingStorage doMapping(VirtualFrame frame, HashingStorage dest, Object other,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
-                    @SuppressWarnings("unused") @Shared @Cached GetCachedTpSlotsNode getSlots,
+                    @SuppressWarnings("unused") @Exclusive @Cached GetCachedTpSlotsNode getSlots,
                     @Exclusive @Cached InlinedBranchProfile sameKeyProfile,
                     @Exclusive @Cached StringNodes.CastToTruffleStringCheckedNode castToStringNode,
                     @Cached PyObjectCallMethodObjArgs callKeys,

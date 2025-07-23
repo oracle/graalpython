@@ -116,7 +116,7 @@ public abstract class GetFrameLocalsNode extends Node {
     }
 
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 104 -> 86
+    @GenerateInline(false)       // footprint reduction 104 -> 86
     abstract static class CopyLocalsToDict extends Node {
         abstract void execute(MaterializedFrame locals, PDict dict);
 

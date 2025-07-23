@@ -88,7 +88,7 @@ public abstract class PyFloatFromString extends PNodeWithContext {
 
     @Specialization
     static double doGeneric(VirtualFrame frame, Node inliningTarget, Object object,
-                    @Cached(value = "createFor(this)") IndirectCallData indirectCallData,
+                    @Cached(value = "createFor($node)") IndirectCallData indirectCallData,
                     @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                     @CachedLibrary(limit = "3") PythonBufferAccessLibrary accessLib,
                     @Cached(inline = false) CastToJavaStringNode cast,

@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -56,12 +54,9 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "mmap")
 public final class MMapModuleBuiltins extends PythonBuiltins {
-
-    public static final TruffleString T_INIT_BUFFERPROTOCOL = tsLiteral("mmap_init_bufferprotocol");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

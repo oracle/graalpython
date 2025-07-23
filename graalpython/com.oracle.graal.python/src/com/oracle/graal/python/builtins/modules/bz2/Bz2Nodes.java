@@ -95,7 +95,7 @@ public class Bz2Nodes {
 
     protected static final int INITIAL_BUFFER_SIZE = 8192;
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 21
+    @GenerateInline(false)       // footprint reduction 40 -> 21
     public abstract static class Bz2NativeCompress extends Node {
 
         public abstract byte[] execute(BZ2Object.BZ2Compressor self, PythonContext context, byte[] bytes, int len, int action);
@@ -222,7 +222,7 @@ public class Bz2Nodes {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 21
+    @GenerateInline(false)       // footprint reduction 40 -> 21
     public abstract static class Bz2NativeInternalDecompress extends Node {
 
         public abstract byte[] execute(BZ2Object.BZ2Decompressor self, int maxLength);

@@ -81,7 +81,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
     @Specialization
     static PList doObject(VirtualFrame frame, Object value,
-                    @Cached(inline = false) CastToListNode castToListNode) {
+                    @Cached CastToListNode castToListNode) {
         return castToListNode.execute(frame, value);
     }
 

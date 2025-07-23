@@ -148,7 +148,7 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
                     replaces = {"doList", "doTuple", "doDict", "doSet"})
     @InliningCutoff
     public static boolean doOthers(VirtualFrame frame, Object object,
-                    @Cached(inline = false) PyObjectIsTrueNodeGeneric internalNode) {
+                    @Cached PyObjectIsTrueNodeGeneric internalNode) {
         // Cached PyObjectItTrue nodes used in PBytecodeRootNode are significant contributors to
         // footprint, so we use indirection to save all the fields for the nodes used in the generic
         // variant + this is one polymorphic dispatch to the execute method. Inside the cached

@@ -59,6 +59,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -69,7 +70,7 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class SetNodes {
 
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 116 -> 98
+    @GenerateInline(false)       // footprint reduction 116 -> 98
     public abstract static class ConstructSetNode extends PNodeWithContext {
         public abstract PSet execute(Frame frame, Object value);
 
@@ -117,7 +118,7 @@ public abstract class SetNodes {
 
     @GenerateUncached
     @OperationProxy.Proxyable
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 92 -> 73
+    @GenerateInline(false)       // footprint reduction 92 -> 73
     public abstract static class AddNode extends PNodeWithContext {
         public abstract void execute(Frame frame, PSet self, Object o);
 

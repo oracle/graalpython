@@ -774,7 +774,7 @@ public abstract class BytesNodes {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 72 -> 54
+    @GenerateInline(false)       // footprint reduction 72 -> 54
     public abstract static class IterableToByteNode extends Node {
         public abstract byte[] execute(VirtualFrame frame, Object iterable);
 
@@ -882,7 +882,7 @@ public abstract class BytesNodes {
     }
 
     @ImportStatic(PGuards.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 25
+    @GenerateInline(false)       // footprint reduction 44 -> 25
     public abstract static class HexStringToBytesNode extends Node {
         public abstract byte[] execute(TruffleString str);
 
@@ -932,7 +932,7 @@ public abstract class BytesNodes {
             TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
             int i = 0;
             while (it.hasNext()) {
-                if (nextNode.execute(it) > 127) {
+                if (nextNode.execute(it, TS_ENCODING) > 127) {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
                 }
                 ++i;

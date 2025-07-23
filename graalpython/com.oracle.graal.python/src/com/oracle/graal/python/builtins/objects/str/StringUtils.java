@@ -319,12 +319,12 @@ public final class StringUtils {
                 return false;
             }
             TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
-            int c = nextNode.execute(it);
+            int c = nextNode.execute(it, TS_ENCODING);
             if (c != '_' && !isIdentifierStart(c)) {
                 return false;
             }
             while (it.hasNext()) {
-                c = nextNode.execute(it);
+                c = nextNode.execute(it, TS_ENCODING);
                 if (!isIdentifierPart(c)) {
                     return false;
                 }
@@ -429,7 +429,7 @@ public final class StringUtils {
      * </ul>
      */
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 56 -> 37
+    @GenerateInline(false)       // footprint reduction 56 -> 37
     public abstract static class SimpleTruffleStringFormatNode extends Node {
 
         public final TruffleString format(TruffleString format, Object... args) {

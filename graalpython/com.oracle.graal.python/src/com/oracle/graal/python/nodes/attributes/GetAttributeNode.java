@@ -142,7 +142,7 @@ public final class GetAttributeNode extends PNodeWithContext {
 
         @Specialization(replaces = {"doBuiltinObject", "doBuiltinType", "doBuiltinModule"})
         final Object doGeneric(VirtualFrame frame, Object object, TpSlots slots,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached CallSlotGetAttrNode callGetAttrNode,
                         @Cached AttributeErrorBuiltins.SetAttributeErrorContext setContext) {
             try {

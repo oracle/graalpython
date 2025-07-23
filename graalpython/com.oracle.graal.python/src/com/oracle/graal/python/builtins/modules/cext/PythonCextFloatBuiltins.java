@@ -79,7 +79,7 @@ public final class PythonCextFloatBuiltins {
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Ignored)
-    abstract static class PyTruffleFloat_AsDouble extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Float_AsDouble extends CApiUnaryBuiltinNode {
 
         @Specialization
         static double doLongNativeWrapper(long object) {

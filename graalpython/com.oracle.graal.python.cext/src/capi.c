@@ -115,10 +115,6 @@ static void capsule_dealloc(PyObject *o) {
 // taken from CPython "Objects/bytesobject.c"
 #define PyBytesObject_SIZE (offsetof(PyBytesObject, ob_sval) + 1)
 
-/* prototype */
-PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems);
-void PyTruffle_Tuple_Dealloc(PyTupleObject* tuple);
-
 PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 PyAPI_DATA(PyTypeObject) _PyExc_StopIteration;
 PyAPI_DATA(PyTypeObject) mmap_object_type;
@@ -200,15 +196,19 @@ PY_TYPE_OBJECTS
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
 
 
-#define BUILTIN(NAME, RET, ...) RET (*Graal##NAME)(__VA_ARGS__);
+#define PUBLIC_BUILTIN(NAME, RET, ...) RET (*GraalPyPrivate_Upcall_##NAME)(__VA_ARGS__);
+#define PRIVATE_BUILTIN(NAME, RET, ...) RET (*NAME)(__VA_ARGS__);
 CAPI_BUILTINS
-#undef BUILTIN
+#undef PUBLIC_BUILTIN
+#undef PRIVATE_BUILTIN
 
 static inline void initialize_builtins(void *builtin_closures[]) {
     int id = 0;
-#define BUILTIN(NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) builtin_closures[id++];
+#define PUBLIC_BUILTIN(NAME, RET, ...) GraalPyPrivate_Upcall_##NAME = (RET(*)(__VA_ARGS__)) builtin_closures[id++];
+#define PRIVATE_BUILTIN(NAME, RET, ...) NAME = (RET(*)(__VA_ARGS__)) builtin_closures[id++];
 CAPI_BUILTINS
-#undef BUILTIN
+#undef PUBLIC_BUILTIN
+#undef PRIVATE_BUILTIN
 }
 
 uint32_t Py_Truffle_Options;
@@ -216,7 +216,7 @@ uint32_t Py_Truffle_Options;
 #undef bool
 static void initialize_builtin_types_and_structs() {
 	clock_t t = clock();
-    PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtin_types_and_structs...");
+    GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtin_types_and_structs...");
 	static int64_t builtin_types[] = {
 #define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) &GLOBAL_NAME, __TYPE_NAME__,
 #define PY_TRUFFLE_TYPE_EXTERN(GLOBAL_NAME, __TYPE_NAME__) &GLOBAL_NAME, __TYPE_NAME__,
@@ -228,49 +228,49 @@ static void initialize_builtin_types_and_structs() {
         NULL, NULL
 	};
 
-	GraalPyTruffle_InitBuiltinTypesAndStructs(builtin_types);
+	GraalPyPrivate_InitBuiltinTypesAndStructs(builtin_types);
 
 	// fix up for circular dependency:
 	PyType_Type.tp_base = &PyBaseObject_Type;
 
-	PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtin_types_and_structs: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+	GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtin_types_and_structs: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
  }
 
 int mmap_getbuffer(PyObject *self, Py_buffer *view, int flags) {
 	// TODO(fa) readonly flag
-    char* data = GraalPyTruffle_GetMMapData(self);
+    char* data = GraalPyPrivate_GetMMapData(self);
     if (!data) {
         return -1;
     }
     return PyBuffer_FillInfo(view, (PyObject*)self, data, PyObject_Size((PyObject *)self), 0, flags);
 }
 
-PyAPI_FUNC(void) mmap_init_bufferprotocol(PyObject* mmap_type) {
-	PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "mmap_init_bufferprotocol");
+PyAPI_FUNC(void) GraalPyPrivate_MMap_InitBufferProtocol(PyObject* mmap_type) {
+	GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINE, "GraalPyPrivate_MMap_InitBufferProtocol");
 	assert(PyType_Check(mmap_type));
 
 	static PyBufferProcs mmap_as_buffer = {
 	    (getbufferproc)mmap_getbuffer,
 	    (releasebufferproc)NULL,
 	};
-	GraalPy_set_PyTypeObject_tp_as_buffer((PyTypeObject *) mmap_type, &mmap_as_buffer);
+	GraalPyPrivate_Type_SetBufferProcs((PyTypeObject *) mmap_type, &mmap_as_buffer);
 	((PyTypeObject*) mmap_type)->tp_as_buffer = &mmap_as_buffer;
 }
 
 static int cdata_getbuffer(PyObject* type, Py_buffer* view, int flags) {
-    return GraalPyTruffleCData_NewGetBuffer(type, view, flags);
+    return GraalPyPrivate_CData_NewGetBuffer(type, view, flags);
 }
 
 static void cdata_releasebuffer(PyObject* obj, Py_buffer* view) {
-    GraalPyTruffleCData_ReleaseBuffer(obj, view);
+    GraalPyPrivate_CData_ReleaseBuffer(obj, view);
 }
 
-PyAPI_FUNC(void) PyTruffleCData_InitBufferProtocol(PyObject* type) {
+PyAPI_FUNC(void) GraalPyPrivate_CData_InitBufferProtocol(PyObject* type) {
     static PyBufferProcs cdata_as_buffer = {
         cdata_getbuffer,
         cdata_releasebuffer,
     };
-    GraalPy_set_PyTypeObject_tp_as_buffer(((PyTypeObject*) type), &cdata_as_buffer);
+    GraalPyPrivate_Type_SetBufferProcs(((PyTypeObject*) type), &cdata_as_buffer);
     ((PyTypeObject*) type)->tp_as_buffer = &cdata_as_buffer;
 }
 
@@ -291,12 +291,12 @@ THREAD_LOCAL PyThreadState *tstate_current = NULL;
 
 static void initialize_globals() {
     // store the thread state into a thread local variable
-    tstate_current = GraalPyTruffleThreadState_Get(&tstate_current);
-    _Py_NoneStructReference = GraalPyTruffle_None();
-    _Py_NotImplementedStructReference = GraalPyTruffle_NotImplemented();
-    _Py_EllipsisObjectReference = GraalPyTruffle_Ellipsis();
-    _Py_TrueStructReference = (struct _longobject*)GraalPyTruffle_True();
-    _Py_FalseStructReference = (struct _longobject*)GraalPyTruffle_False();
+    tstate_current = GraalPyPrivate_ThreadState_Get(&tstate_current);
+    _Py_NoneStructReference = GraalPyPrivate_None();
+    _Py_NotImplementedStructReference = GraalPyPrivate_NotImplemented();
+    _Py_EllipsisObjectReference = GraalPyPrivate_Ellipsis();
+    _Py_TrueStructReference = (struct _longobject*)GraalPyPrivate_True();
+    _Py_FalseStructReference = (struct _longobject*)GraalPyPrivate_False();
 }
 
 /* internal functions to avoid unnecessary managed <-> native conversions */
@@ -314,7 +314,7 @@ void memory_releasebuf(PyMemoryViewObject *self, Py_buffer *view);
 static int
 picklebuf_getbuf(PyPickleBufferObject *self, Py_buffer *view, int flags)
 {
-    PyObject *self_view_obj = GraalPyTruffle_PickleBuffer_viewobj((PyObject*) self);
+    PyObject *self_view_obj = GraalPyPrivate_PickleBuffer_viewobj((PyObject*) self);
     return PyObject_GetBuffer(self_view_obj, view, flags);
 }
 
@@ -326,33 +326,33 @@ static void initialize_bufferprocs() {
         (releasebufferproc)NULL,                     /* bf_releasebuffer */
     };
     PyBytes_Type.tp_as_buffer = &bytes_as_buffer;
-    GraalPy_set_PyTypeObject_tp_as_buffer(&PyBytes_Type, &bytes_as_buffer);
+    GraalPyPrivate_Type_SetBufferProcs(&PyBytes_Type, &bytes_as_buffer);
 
     static PyBufferProcs bytearray_as_buffer = {
         (getbufferproc)bytearray_getbuffer,          /* bf_getbuffer */
         (releasebufferproc)bytearray_releasebuffer,  /* bf_releasebuffer */
     };
     PyByteArray_Type.tp_as_buffer = &bytearray_as_buffer;
-    GraalPy_set_PyTypeObject_tp_as_buffer(&PyByteArray_Type, &bytearray_as_buffer);
+    GraalPyPrivate_Type_SetBufferProcs(&PyByteArray_Type, &bytearray_as_buffer);
 
     static PyBufferProcs memory_as_buffer = {
         (getbufferproc)memory_getbuf,         /* bf_getbuffer */
         (releasebufferproc)memory_releasebuf, /* bf_releasebuffer */
     };
     PyMemoryView_Type.tp_as_buffer = &memory_as_buffer;
-    GraalPy_set_PyTypeObject_tp_as_buffer(&PyMemoryView_Type, &memory_as_buffer);
+    GraalPyPrivate_Type_SetBufferProcs(&PyMemoryView_Type, &memory_as_buffer);
 
     static PyBufferProcs array_as_buffer;
-    array_as_buffer.bf_getbuffer = GraalPyTruffle_Array_getbuffer,
-    array_as_buffer.bf_releasebuffer = GraalPyTruffle_Array_releasebuffer,
+    array_as_buffer.bf_getbuffer = GraalPyPrivate_Array_getbuffer,
+    array_as_buffer.bf_releasebuffer = GraalPyPrivate_Array_releasebuffer,
     Arraytype.tp_as_buffer = &array_as_buffer;
-    GraalPy_set_PyTypeObject_tp_as_buffer(&Arraytype, &array_as_buffer);
+    GraalPyPrivate_Type_SetBufferProcs(&Arraytype, &array_as_buffer);
 
     static PyBufferProcs picklebuf_as_buffer;
     picklebuf_as_buffer.bf_getbuffer = (getbufferproc)picklebuf_getbuf,
     picklebuf_as_buffer.bf_releasebuffer = empty_releasebuf,
     PyPickleBuffer_Type.tp_as_buffer = &picklebuf_as_buffer;
-    GraalPy_set_PyTypeObject_tp_as_buffer(&PyPickleBuffer_Type, &picklebuf_as_buffer);
+    GraalPyPrivate_Type_SetBufferProcs(&PyPickleBuffer_Type, &picklebuf_as_buffer);
 
 }
 
@@ -361,7 +361,7 @@ static int dummy_traverse(PyObject *self, visitproc f, void *i) {return 0;}
 
 static void initialize_gc_types_related_slots() {
     _PyExc_Exception.tp_traverse = &dummy_traverse;
-    _PyWeakref_RefType.tp_free = &GraalPyObject_GC_Del;
+    _PyWeakref_RefType.tp_free = &GraalPyPrivate_Object_GC_Del;
 }
 
 int is_builtin_type(PyTypeObject *tp) {
@@ -374,31 +374,19 @@ int is_builtin_type(PyTypeObject *tp) {
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
 }
 
-// not quite as in CPython, this assumes that x is already a double. The rest of
-// the implementation is in the Float constructor in Java
-PyAPI_FUNC(PyObject*) float_subtype_new(PyTypeObject *type, double x) {
-    PyObject* newobj = type->tp_alloc(type, 0);
-    if (newobj == NULL) {
-        Py_DECREF(newobj);
-        return NULL;
-    }
-    ((PyFloatObject *)newobj)->ob_fval = x;
-    return newobj;
-}
-
 /** to be used from Java code only; calls INCREF */
-PyAPI_FUNC(void) PyTruffle_INCREF(PyObject* obj) {
+PyAPI_FUNC(void) GraalPyPrivate_INCREF(PyObject* obj) {
     Py_INCREF(obj);
 }
 
 /** to be used from Java code only; calls DECREF */
-PyAPI_FUNC(void) PyTruffle_DECREF(PyObject* obj) {
+PyAPI_FUNC(void) GraalPyPrivate_DECREF(PyObject* obj) {
     Py_DECREF(obj);
 }
 
 /** to be used from Java code only; calls '_Py_Dealloc' */
 PyAPI_FUNC(Py_ssize_t)
-PyTruffle_SUBREF(intptr_t ptr, Py_ssize_t value)
+GraalPyPrivate_SUBREF(intptr_t ptr, Py_ssize_t value)
 {
     PyObject *obj = (PyObject*)ptr; // avoid type attachment at the interop boundary
 #ifndef NDEBUG
@@ -420,7 +408,7 @@ PyTruffle_SUBREF(intptr_t ptr, Py_ssize_t value)
 
     Py_ssize_t new_value = ((obj->ob_refcnt) -= value);
     if (new_value == 0) {
-        PyTruffle_Log(PY_TRUFFLE_LOG_FINER, "%s: _Py_Dealloc(0x%zx)",
+        GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINER, "%s: _Py_Dealloc(0x%zx)",
                 __func__, obj);
         _Py_Dealloc(obj);
     }
@@ -434,11 +422,11 @@ PyTruffle_SUBREF(intptr_t ptr, Py_ssize_t value)
 
 /** to be used from Java code only; calls '_Py_Dealloc' */
 PyAPI_FUNC(Py_ssize_t)
-PyTruffle_bulk_DEALLOC(intptr_t ptrArray[], int64_t len)
+GraalPyPrivate_BulkDealloc(intptr_t ptrArray[], int64_t len)
 {
     for (int i = 0; i < len; i++) {
         PyObject *obj = (PyObject*)ptrArray[i];
-        PyTruffle_Log(PY_TRUFFLE_LOG_FINER, "%s: _Py_Dealloc(0x%zx)",
+        GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINER, "%s: _Py_Dealloc(0x%zx)",
                 __func__, obj);
         _Py_Dealloc(obj);
     }
@@ -447,7 +435,7 @@ PyTruffle_bulk_DEALLOC(intptr_t ptrArray[], int64_t len)
 
 /** to be used from Java code only and only at exit; calls _Py_Dealloc */
 PyAPI_FUNC(Py_ssize_t)
-PyTruffle_shutdown_bulk_DEALLOC(intptr_t ptrArray[], int64_t len)
+GraalPyPrivate_BulkDeallocOnShutdown(intptr_t ptrArray[], int64_t len)
 {
     /* some objects depends on others which might get deallocated in the
        process of an earlier deallocation of the other object. To avoid double
@@ -462,7 +450,7 @@ PyTruffle_shutdown_bulk_DEALLOC(intptr_t ptrArray[], int64_t len)
             /* we don't need to care about objects with default deallocation
                process */
             obj->ob_refcnt = 0;
-            PyTruffle_Log(PY_TRUFFLE_LOG_FINER, "%s: _Py_Dealloc(0x%zx)",
+            GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINER, "%s: _Py_Dealloc(0x%zx)",
                     __func__, obj);
             _Py_Dealloc(obj);
         }
@@ -470,23 +458,14 @@ PyTruffle_shutdown_bulk_DEALLOC(intptr_t ptrArray[], int64_t len)
     return 0;
 }
 
-/** free's a native pointer or releases a Sulong handle; DO NOT CALL WITH MANAGED POINTERS ! */
-PyAPI_FUNC(void) PyTruffle_Free(intptr_t val) {
-    PyMem_RawFree((void*) val);
-}
-
 /* To be used from Java code only.
  * This function is used if a native class inherits from a managed class but uses the 'object.__new__'.
  * This function roughly corresponds to CPython's 'object_new'. */
-PyAPI_FUNC(PyObject*) PyTruffle_Object_New(PyTypeObject* cls) {
+PyAPI_FUNC(PyObject*) GraalPyPrivate_ObjectNew(PyTypeObject* cls) {
     return cls->tp_alloc(cls, 0);
 }
 
-PyAPI_FUNC(void*) PyTruffle_Add_Offset(void* value, long offset) {
-	return ((char*) value) + offset;
-}
-
-PyAPI_FUNC(void) PyTruffle_ObjectArrayRelease(PyObject** array, int32_t size) {
+PyAPI_FUNC(void) GraalPyPrivate_ObjectArrayRelease(PyObject** array, int32_t size) {
     for (int i = 0; i < size; i++) {
         /* This needs to use 'Py_XDECREF' because we use this function to
            deallocate storages of tuples, lists, ..., where this is done in the
@@ -504,7 +483,7 @@ PyAPI_FUNC(void) PyTruffle_ObjectArrayRelease(PyObject** array, int32_t size) {
 #include "psapi.h"
 #endif
 
-PyAPI_FUNC(size_t) PyTruffle_GetCurrentRSS() {
+PyAPI_FUNC(size_t) GraalPyPrivate_GetCurrentRSS() {
     size_t rss = 0;
 #if defined(__APPLE__) && defined(__MACH__)
     // MacOS
@@ -537,135 +516,62 @@ PyAPI_FUNC(size_t) PyTruffle_GetCurrentRSS() {
 
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + offset))[0]
 
-PyAPI_FUNC(int) ReadShortMember(void* object, Py_ssize_t offset) {
+PyAPI_FUNC(int) GraalPyPrivate_ReadShortMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, short);
 }
 
-PyAPI_FUNC(int) ReadIntMember(void* object, Py_ssize_t offset) {
+PyAPI_FUNC(int) GraalPyPrivate_ReadIntMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, int);
 }
 
-PyAPI_FUNC(long) ReadLongMember(void* object, Py_ssize_t offset) {
+PyAPI_FUNC(long) GraalPyPrivate_ReadLongMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, long);
 }
 
-PyAPI_FUNC(double) ReadFloatMember(void* object, Py_ssize_t offset) {
+PyAPI_FUNC(double) GraalPyPrivate_ReadFloatMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, float);
 }
 
-PyAPI_FUNC(double) ReadDoubleMember(void* object, Py_ssize_t offset) {
+PyAPI_FUNC(double) GraalPyPrivate_ReadDoubleMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, double);
 }
 
-PyAPI_FUNC(void*) ReadStringMember(void* object, Py_ssize_t offset) {
-    char *ptr = ReadMember(object, offset, char*);
-    if (ptr != NULL) {
-    	return ReadMember(object, offset, char*);
-    }
-    return NULL;
-}
-
-PyAPI_FUNC(void*) ReadStringInPlaceMember(void* object, Py_ssize_t offset) {
-    char *addr = (char*) (((char*)object) + offset);
-    return addr;
-}
-
-PyAPI_FUNC(void*) ReadPointerMember(void* object, Py_ssize_t offset) {
+PyAPI_FUNC(void*) GraalPyPrivate_ReadPointerMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, void*);
 }
 
-PyAPI_FUNC(PyObject*) ReadObjectMember(void* object, Py_ssize_t offset) {
-    PyObject* member = ReadMember(object, offset, PyObject*);
-    if (member == NULL) {
-        member = Py_None;
-    }
-    Py_INCREF(member);
-    return member;
-}
-
-PyAPI_FUNC(int) ReadCharMember(void* object, Py_ssize_t offset) {
+PyAPI_FUNC(int) GraalPyPrivate_ReadCharMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, char);
 }
 
-PyAPI_FUNC(int) ReadUByteMember(void* object, Py_ssize_t offset) {
-    return ReadMember(object, offset, unsigned char);
-}
-
-PyAPI_FUNC(int) ReadUShortMember(void* object, Py_ssize_t offset) {
-    return ReadMember(object, offset, unsigned short);
-}
-
-PyAPI_FUNC(long) ReadUIntMember(void* object, Py_ssize_t offset) {
-    return ReadMember(object, offset, unsigned int);
-}
-
-PyAPI_FUNC(unsigned long) ReadULongMember(void* object, Py_ssize_t offset) {
-    return ReadMember(object, offset, unsigned long);
-}
-
-PyAPI_FUNC(PyObject*) ReadObjectExMember(void* object, Py_ssize_t offset) {
-    PyObject* member = ReadMember(object, offset, PyObject*);
-    if (member == NULL) {
-        return NULL;
-    } else {
-        Py_INCREF(member);
-        return member;
-    }
-}
-
-PyAPI_FUNC(long long) ReadLongLongMember(void* object, Py_ssize_t offset) {
-    return ReadMember(object, offset, long long);
-}
-
-PyAPI_FUNC(unsigned long long) ReadULongLongMember(void* object, Py_ssize_t offset) {
-    return ReadMember(object, offset, unsigned long long);
-}
-
-PyAPI_FUNC(Py_ssize_t) ReadPySSizeT(void* object, Py_ssize_t offset) {
-    return ReadMember(object, offset, Py_ssize_t);
-}
-
-
 #define WriteMember(object, offset, value, T) *(T*)(((char*)object) + offset) = (T)(value)
 
-PyAPI_FUNC(int) WriteShortMember(void* object, Py_ssize_t offset, short value) {
+PyAPI_FUNC(int) GraalPyPrivate_WriteShortMember(void* object, Py_ssize_t offset, short value) {
     WriteMember(object, offset, value, short);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteIntMember(void* object, Py_ssize_t offset, int value) {
+PyAPI_FUNC(int) GraalPyPrivate_WriteIntMember(void* object, Py_ssize_t offset, int value) {
     WriteMember(object, offset, value, int);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteLongMember(void* object, Py_ssize_t offset, long value) {
+PyAPI_FUNC(int) GraalPyPrivate_WriteLongMember(void* object, Py_ssize_t offset, long value) {
     WriteMember(object, offset, value, long);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteFloatMember(void* object, Py_ssize_t offset, double value) {
+PyAPI_FUNC(int) GraalPyPrivate_WriteFloatMember(void* object, Py_ssize_t offset, double value) {
     WriteMember(object, offset, value, float);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteDoubleMember(void* object, Py_ssize_t offset, double value) {
+PyAPI_FUNC(int) GraalPyPrivate_WriteDoubleMember(void* object, Py_ssize_t offset, double value) {
     WriteMember(object, offset, value, double);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteStringMember(void* object, Py_ssize_t offset, char* value) {
-    WriteMember(object, offset, value, char*);
-    return 0;
-}
-
-PyAPI_FUNC(int) WriteStringInPlaceMember(void* object, Py_ssize_t offset, char* value) {
-    char *addr = (char*) (((char*) object) + offset);
-    size_t n = strlen(value);
-    memcpy(addr, value, n);
-    return 0;
-}
-
-PyAPI_FUNC(int) WriteObjectMember(void* object, Py_ssize_t offset, PyObject* value) {
+PyAPI_FUNC(int) GraalPyPrivate_WriteObjectMember(void* object, Py_ssize_t offset, PyObject* value) {
     /* We first need to decref the old value. */
     PyObject *oldv = ReadMember(object, offset, PyObject*);
     Py_XINCREF(value);
@@ -674,71 +580,20 @@ PyAPI_FUNC(int) WriteObjectMember(void* object, Py_ssize_t offset, PyObject* val
     return 0;
 }
 
-PyAPI_FUNC(int) WritePointerMember(void* object, Py_ssize_t offset, void* value) {
+PyAPI_FUNC(int) GraalPyPrivate_WritePointerMember(void* object, Py_ssize_t offset, void* value) {
     WriteMember(object, offset, value, void*);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteCharMember(void* object, Py_ssize_t offset, char value) {
+PyAPI_FUNC(int) GraalPyPrivate_WriteCharMember(void* object, Py_ssize_t offset, char value) {
     WriteMember(object, offset, value, char);
-    return 0;
-}
-
-PyAPI_FUNC(int) WriteByteMember(void* object, Py_ssize_t offset, char value) {
-    WriteMember(object, offset, value, char);
-    return 0;
-}
-
-PyAPI_FUNC(int) WriteUByteMember(void* object, Py_ssize_t offset, unsigned char value) {
-    WriteMember(object, offset, value, uint8_t);
-    return 0;
-}
-
-PyAPI_FUNC(int) WriteUShortMember(void* object, Py_ssize_t offset, unsigned short value) {
-    WriteMember(object, offset, value, unsigned short);
-    return 0;
-}
-
-PyAPI_FUNC(int) WriteUIntMember(void* object, Py_ssize_t offset, unsigned int value) {
-    WriteMember(object, offset, value, unsigned int);
-    return 0;
-}
-
-PyAPI_FUNC(int) WriteULongMember(void* object, Py_ssize_t offset, unsigned long value) {
-    WriteMember(object, offset, value, unsigned long);
-    return 0;
-}
-
-PyAPI_FUNC(int) WriteObjectExMember(void* object, Py_ssize_t offset, PyObject* value) {
-    PyObject *oldv = ReadMember(object, offset, PyObject*);
-    if (value == NULL && oldv == NULL) {
-        return 1;
-    }
-    Py_XINCREF(value);
-    WriteMember(object, offset, value, PyObject*);
-    Py_XDECREF(oldv);
-    return 0;
-}
-
-PyAPI_FUNC(int) WriteLongLongMember(void* object, Py_ssize_t offset, long long value) {
-    WriteMember(object, offset, value, long long);
-    return 0;
-}
-
-PyAPI_FUNC(int) WriteULongLongMember(void* object, Py_ssize_t offset, unsigned long long value) {
-    WriteMember(object, offset, value, unsigned long long);
-    return 0;
-}
-
-PyAPI_FUNC(int) WritePySSizeT(void* object, Py_ssize_t offset, Py_ssize_t value) {
-    WriteMember(object, offset, value, Py_ssize_t);
     return 0;
 }
 
 #undef ReadMember
 #undef WriteMember
 
-PyAPI_FUNC(int) truffle_ptr_compare(void* x, void* y, int op) {
+PyAPI_FUNC(int) GraalPyPrivate_PointerCompare(void* x, void* y, int op) {
     switch (op) {
     case Py_LT:
         return x < y;
@@ -757,44 +612,16 @@ PyAPI_FUNC(int) truffle_ptr_compare(void* x, void* y, int op) {
     }
 }
 
-PyAPI_FUNC(void*) truffle_ptr_convert(size_t value) {
-	return (void*) value;
-}
-
-PyAPI_FUNC(void*) truffle_ptr_add(void* x, Py_ssize_t y) {
+PyAPI_FUNC(void*) GraalPyPrivate_PointerAddOffset(void* x, Py_ssize_t y) {
     return (char *)x + y;
 }
 
-PyAPI_FUNC(void) truffle_memcpy_bytes(void *dest, size_t dest_offset, void *src, size_t src_offset, size_t len) {
-    memcpy((char *)dest + dest_offset, (char *)src + src_offset, len);
-}
-
-PyAPI_FUNC(void*) truffle_calloc(size_t count, size_t elsize) {
-	return calloc(count, elsize);
-}
-
-// avoid problems with calling "void" intrinsics via interop
-PyAPI_FUNC(int) truffle_free(void* ptr) {
-	free(ptr);
-	return 1;
-}
-
-PyAPI_FUNC(void) register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members) {
-    if (getsets || members) {
-        GraalPyTruffle_Set_Native_Slots(managed_class, getsets, members);
-    }
-}
-
-PyAPI_FUNC(PyObject*) truffle_create_datetime_capsule(void *object) {
-    return PyCapsule_New(object, "datetime.datetime_CAPI", NULL);
-}
-
-PyAPI_FUNC(int) truffle_subclass_check(PyObject* type) {
+PyAPI_FUNC(int) GraalPyPrivate_SubclassCheck(PyObject* type) {
     return PyType_FastSubclass(Py_TYPE(type), Py_TPFLAGS_TYPE_SUBCLASS);
 }
 
 // Implements the basesisze check in typeobject.c:_PyObject_GetState
-PyAPI_FUNC(int) tuffle_check_basesize_for_getstate(PyTypeObject* type, int slot_num) {
+PyAPI_FUNC(int) GraalPyPrivate_CheckBasicsizeForGetstate(PyTypeObject* type, int slot_num) {
     Py_ssize_t basicsize = PyBaseObject_Type.tp_basicsize;
     if (type->tp_dictoffset)
         basicsize += sizeof(PyObject *);
@@ -805,29 +632,25 @@ PyAPI_FUNC(int) tuffle_check_basesize_for_getstate(PyTypeObject* type, int slot_
     return type->tp_basicsize > basicsize;
 }
 
-PyAPI_FUNC(void) truffle_check_type_ready(PyTypeObject* type) {
+PyAPI_FUNC(void) GraalPyPrivate_CheckTypeReady(PyTypeObject* type) {
     if (!(type->tp_flags & Py_TPFLAGS_READY)) {
         PyType_Ready(type);
     }
 }
 
-PyAPI_FUNC(int) truffle_BASETYPE_check(PyObject* type) {
-    return PyType_HasFeature(Py_TYPE(type), Py_TPFLAGS_BASETYPE);
-}
-
-PyAPI_FUNC(void*) truffle_va_arg_pointer(va_list* va) {
+PyAPI_FUNC(void*) GraalPyPrivate_VaArgPointer(va_list* va) {
 	return va_arg(*va, void*);
 }
 
-PyAPI_FUNC(void*) truffle_convert_pointer(Py_ssize_t value) {
+PyAPI_FUNC(void*) GraalPyPrivate_ConvertPointer(Py_ssize_t value) {
 	return (void*) value;
 }
 
-PyAPI_FUNC(int) truffle_no_op_clear(PyObject* o) {
+PyAPI_FUNC(int) GraalPyPrivate_NoOpClear(PyObject* o) {
     return 0;
 }
 
-PyAPI_FUNC(int) truffle_no_op_traverse(PyObject *self, visitproc visit, void *arg) {
+PyAPI_FUNC(int) GraalPyPrivate_NoOpTraverse(PyObject *self, visitproc visit, void *arg) {
     return 0;
 }
 
@@ -902,8 +725,8 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures,
      * context exits and its table is the "latest", we delay freeing it.
      */
     initialize_builtins(builtin_closures);
-    PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtins: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
-    Py_Truffle_Options = GraalPyTruffle_Native_Options();
+    GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtins: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+    Py_Truffle_Options = GraalPyPrivate_Native_Options();
 
     initialize_builtin_types_and_structs();
     // initialize global variables like '_Py_NoneStruct', etc.
@@ -915,16 +738,16 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures,
     _PyFloat_InitState(NULL);
 
     // TODO: initialize during cext initialization doesn't work at the moment
-    Py_FileSystemDefaultEncoding = "utf-8"; // strdup(PyUnicode_AsUTF8(GraalPyTruffle_FileSystemDefaultEncoding()));
+    Py_FileSystemDefaultEncoding = "utf-8"; // strdup(PyUnicode_AsUTF8(GraalPyPrivate_FileSystemDefaultEncoding()));
 
-    PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_graal_capi: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+    GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINE, "initialize_graal_capi: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
 }
 
 /*
  * This function is called from Java during C API initialization to get the
  * pointer `_graalpy_finalizing`.
  */
-PyAPI_FUNC(int8_t *) GraalPy_get_finalize_capi_pointer() {
+PyAPI_FUNC(int8_t *) GraalPyPrivate_GetFinalizeCApiPointer() {
     assert(!_graalpy_finalizing);
     // We actually leak this memory on purpose. On the Java side, this is
     // written to in a VM shutdown hook. Once such a hook is registered it
@@ -939,7 +762,7 @@ static void unimplemented(const char* name) {
     print_c_stacktrace();
 }
 
-#define FUNC_NOT_IMPLEMENTED unimplemented(__func__); GraalPyTrufflePrintStacktrace(); exit(-1);
+#define FUNC_NOT_IMPLEMENTED unimplemented(__func__); GraalPyPrivate_PrintStacktrace(); exit(-1);
 
 // {{start CAPI_BUILTINS}}
 #include "capi.gen.c.h"

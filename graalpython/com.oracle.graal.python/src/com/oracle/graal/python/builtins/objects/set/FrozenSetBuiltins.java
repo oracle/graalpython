@@ -93,7 +93,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(arg)")
         static PFrozenSet frozensetEmpty(Object cls, @SuppressWarnings("unused") PNone arg,
                         @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                        @Cached @Shared TypeNodes.GetInstanceShape getInstanceShape) {
             return PFactory.createFrozenSet(language, cls, getInstanceShape.execute(cls), EmptyStorage.INSTANCE);
         }
 
@@ -109,7 +109,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Shared("isBuiltinProfile") @SuppressWarnings("unused") @Cached BuiltinClassProfiles.IsAnyBuiltinClassProfile isBuiltinClass,
                         @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                        @Cached @Shared TypeNodes.GetInstanceShape getInstanceShape) {
             return PFactory.createFrozenSet(language, cls, getInstanceShape.execute(cls), arg.getDictStorage());
         }
 
@@ -118,7 +118,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
                         @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                        @Cached @Shared TypeNodes.GetInstanceShape getInstanceShape) {
             HashingStorage storage = getHashingStorageNode.getForSets(frame, inliningTarget, iterable);
             return PFactory.createFrozenSet(language, cls, getInstanceShape.execute(cls), storage);
         }

@@ -440,7 +440,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         static Object doIt(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
-                        @Cached(inline = false) PyNumberAddNode opNode) {
+                        @Cached PyNumberAddNode opNode) {
             return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
         }
     }
@@ -452,7 +452,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         static Object doIt(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
-                        @Cached(inline = false) PyNumberSubtractNode opNode) {
+                        @Cached PyNumberSubtractNode opNode) {
             return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
         }
     }
@@ -464,7 +464,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         static Object doIt(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
-                        @Cached(inline = false) PyNumberMultiplyNode opNode) {
+                        @Cached PyNumberMultiplyNode opNode) {
             return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
         }
     }
@@ -476,7 +476,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         static Object doIt(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
-                        @Cached(inline = false) PyNumberRemainderNode opNode) {
+                        @Cached PyNumberRemainderNode opNode) {
             return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
         }
     }
@@ -488,7 +488,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         static Object doIt(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
-                        @Cached(inline = false) PyNumberLshiftNode opNode) {
+                        @Cached PyNumberLshiftNode opNode) {
             return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
         }
     }
@@ -500,7 +500,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         static Object doIt(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
-                        @Cached(inline = false) PyNumberRshiftNode opNode) {
+                        @Cached PyNumberRshiftNode opNode) {
             return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
         }
     }
@@ -512,7 +512,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         static Object doIt(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
-                        @Cached(inline = false) PyNumberAndNode opNode) {
+                        @Cached PyNumberAndNode opNode) {
             return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
         }
     }
@@ -524,7 +524,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         static Object doIt(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
-                        @Cached(inline = false) PyNumberXorNode opNode) {
+                        @Cached PyNumberXorNode opNode) {
             return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
         }
     }
@@ -536,7 +536,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         static Object doIt(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
-                        @Cached(inline = false) PyNumberOrNode opNode) {
+                        @Cached PyNumberOrNode opNode) {
             return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
         }
     }
@@ -548,7 +548,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         static Object doIt(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
-                        @Cached(inline = false) PyNumberFloorDivideNode opNode) {
+                        @Cached PyNumberFloorDivideNode opNode) {
             return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
         }
     }
@@ -560,7 +560,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         static Object doIt(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
-                        @Cached(inline = false) PyNumberTrueDivideNode opNode) {
+                        @Cached PyNumberTrueDivideNode opNode) {
             return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
         }
     }
@@ -572,7 +572,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         static Object doIt(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
-                        @Cached(inline = false) PyNumberDivmodNode opNode) {
+                        @Cached PyNumberDivmodNode opNode) {
             return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
         }
     }

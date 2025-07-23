@@ -129,7 +129,7 @@ public abstract class NotNode extends UnaryOpNode {
                     replaces = {"doList", "doTuple", "doDict", "doSet"})
     @InliningCutoff
     public static boolean doOthers(VirtualFrame frame, Object object,
-                    @Cached(inline = false) PyObjectIsTrueNodeGeneric internalNode) {
+                    @Cached PyObjectIsTrueNodeGeneric internalNode) {
         return !internalNode.execute(frame, object);
     }
 

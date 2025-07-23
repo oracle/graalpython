@@ -157,7 +157,7 @@ public abstract class TextIOWrapperNodes {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 28 -> 9
+    @GenerateInline(false)       // footprint reduction 28 -> 9
     abstract static class CheckClosedNode extends Node {
 
         public abstract void execute(VirtualFrame frame, PTextIO self);
@@ -356,7 +356,7 @@ public abstract class TextIOWrapperNodes {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 64 -> 45
+    @GenerateInline(false)       // footprint reduction 64 -> 45
     protected abstract static class ReadlineNode extends Node {
 
         public abstract TruffleString execute(VirtualFrame frame, PTextIO self, int limit);
@@ -606,7 +606,7 @@ public abstract class TextIOWrapperNodes {
     /*
      * cpython/Modules/_io/textio.c:_textiowrapper_decode
      */
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 80 -> 62
+    @GenerateInline(false)       // footprint reduction 80 -> 62
     protected abstract static class DecodeNode extends Node {
         public abstract TruffleString execute(VirtualFrame frame, Object decoder, Object bytes, boolean eof);
 

@@ -97,7 +97,7 @@ public abstract class PyNumberAddNode extends PyNumberAddFastPathsBase {
 
     @Specialization
     public static TruffleString doIt(TruffleString left, TruffleString right,
-                    @Cached(inline = false) TruffleString.ConcatNode concatNode) {
+                    @Cached TruffleString.ConcatNode concatNode) {
         return concatNode.execute(left, right, TS_ENCODING, false);
     }
 

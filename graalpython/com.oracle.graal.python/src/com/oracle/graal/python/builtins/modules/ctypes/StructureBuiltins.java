@@ -133,7 +133,7 @@ public final class StructureBuiltins extends PythonBuiltins {
         @Specialization
         static Object Struct_init(VirtualFrame frame, CDataObject self, Object[] args, PKeyword[] kwds,
                         @Bind Node inliningTarget,
-                        @Cached("createFor(this)") com.oracle.graal.python.runtime.IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") com.oracle.graal.python.runtime.IndirectCallData indirectCallData,
                         @Cached PyObjectSetAttr setAttr,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetItem getItemNode,

@@ -109,7 +109,7 @@ public final class PythonCextTupleBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, Py_ssize_t}, call = Ignored)
-    public abstract static class PyTruffleTuple_GetItem extends CApiBinaryBuiltinNode {
+    public abstract static class GraalPyPrivate_Tuple_GetItem extends CApiBinaryBuiltinNode {
 
         public abstract Object execute(PTuple tuple, long key);
 
@@ -212,7 +212,7 @@ public final class PythonCextTupleBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectPtr, args = {PyObject, Py_ssize_t, PyObjectPtr}, call = Ignored)
-    abstract static class PyTruffleTuple_Resize extends CApiTernaryBuiltinNode {
+    abstract static class GraalPyPrivate_Tuple_Resize extends CApiTernaryBuiltinNode {
         @Specialization
         public static Object size(PTuple tuple, long size, Object obItemsPtr,
                         @Bind Node inliningTarget,

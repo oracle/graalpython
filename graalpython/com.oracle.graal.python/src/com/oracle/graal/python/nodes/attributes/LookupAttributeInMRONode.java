@@ -225,6 +225,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     record AttributeAssumptionPair(Assumption assumption, Object value, boolean invalidate) {
     }
 
+    @SuppressWarnings("serial")
     static final class InvalidateLookupException extends ControlFlowException {
         private static final InvalidateLookupException INSTANCE = new InvalidateLookupException();
     }

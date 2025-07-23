@@ -224,7 +224,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
 
             Thread thread = threadBuilder.build();
             startThread(thread);
-            return thread.getId();
+            return PThread.getThreadId(thread);
         }
 
         @TruffleBoundary

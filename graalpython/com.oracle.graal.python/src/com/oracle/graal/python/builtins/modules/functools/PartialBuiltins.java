@@ -179,7 +179,7 @@ public final class PartialBuiltins extends PythonBuiltins {
                         @Exclusive @Cached InlinedConditionProfile hasKeywordsProfile,
                         @Exclusive @SuppressWarnings("unused") @Cached HashingStorageLen lenNode,
                         @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             assert args[0] instanceof PPartial;
             final PPartial function = (PPartial) args[0];
             Object[] funcArgs = getNewPartialArgs(function, args, inliningTarget, hasArgsProfile, 1);

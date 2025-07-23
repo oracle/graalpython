@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SET_PY_DATETIME_TYPES;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_INIT_NATIVE_DATETIME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATETIME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;
@@ -100,6 +100,16 @@ public abstract class PyDateTimeCAPIWrapper {
 
     private static final TruffleString T_TIMEDELTA = tsLiteral("timedelta");
     public static final TruffleString T_TZINFO = tsLiteral("tzinfo");
+    public static final TruffleString T_DAY = tsLiteral("day");
+    public static final TruffleString T_MONTH = tsLiteral("month");
+    public static final TruffleString T_YEAR = tsLiteral("year");
+    public static final TruffleString T_HOUR = tsLiteral("hour");
+    public static final TruffleString T_MINUTE = tsLiteral("minute");
+    public static final TruffleString T_SECOND = tsLiteral("second");
+    public static final TruffleString T_MICROSECOND = tsLiteral("microsecond");
+    public static final TruffleString T_DAYS = tsLiteral("days");
+    public static final TruffleString T_SECONDS = tsLiteral("seconds");
+    public static final TruffleString T_MICROSECONDS = tsLiteral("microseconds");
     private static final TruffleString T_TIMEZONE = tsLiteral("timezone");
     private static final TruffleString T_UTC = tsLiteral("utc");
     public static final TruffleString T_FROMTIMESTAMP = tsLiteral("fromtimestamp");
@@ -112,7 +122,7 @@ public abstract class PyDateTimeCAPIWrapper {
         CompilerAsserts.neverPartOfCompilation();
 
         PCallCapiFunction callCapiFunction = PCallCapiFunction.getUncached();
-        callCapiFunction.call(FUN_SET_PY_DATETIME_TYPES);
+        callCapiFunction.call(FUN_INIT_NATIVE_DATETIME);
 
         Object datetimeModule = AbstractImportNode.importModule(T_DATETIME);
         capiContext.timezoneType = PyObjectGetAttr.executeUncached(datetimeModule, T_TIMEZONE);
@@ -169,15 +179,15 @@ public abstract class PyDateTimeCAPIWrapper {
         writePointerNode.write(mem, CFields.PyDateTime_CAPI__DeltaType, deltaType);
         writePointerNode.write(mem, CFields.PyDateTime_CAPI__TZInfoType, tzInfoType);
         writePointerNode.write(mem, CFields.PyDateTime_CAPI__TimeZone_UTC, timezoneUTC);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Date_FromDate, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Date_FromDate);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromDateAndTime, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_DateTime_FromDateAndTime);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Time_FromTime, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Time_FromTime);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Delta_FromDelta, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Delta_FromDelta);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__TimeZone_FromTimeZone, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_TimeZone_FromTimeZone);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromTimestamp, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_DateTime_FromTimestamp);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Date_FromTimestamp, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Date_FromTimestamp);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromDateAndTimeAndFold, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_DateTime_FromDateAndTimeAndFold);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Time_FromTimeAndFold, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Time_FromTimeAndFold);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Date_FromDate, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Date_FromDate);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromDateAndTime, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_DateTime_FromDateAndTime);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Time_FromTime, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Time_FromTime);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Delta_FromDelta, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Delta_FromDelta);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__TimeZone_FromTimeZone, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_TimeZone_FromTimeZone);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromTimestamp, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_DateTime_FromTimestamp);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Date_FromTimestamp, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Date_FromTimestamp);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromDateAndTimeAndFold, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_DateTime_FromDateAndTimeAndFold);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Time_FromTimeAndFold, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Time_FromTimeAndFold);
 
         return mem;
     }

@@ -56,6 +56,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -71,7 +72,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
  */
 @GenerateUncached
 @ImportStatic({PythonOptions.class, PGuards.class})
-@SuppressWarnings("truffle-inlining")       // footprint reduction 84 -> 67
+@GenerateInline(false)       // footprint reduction 84 -> 67
 public abstract class IsSubtypeNode extends PNodeWithContext {
     protected abstract boolean executeInternal(Object derived, Object cls);
 
@@ -289,7 +290,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     "isSubtypeOfCached",
                     "isSubtypeOfVariableTypeCached",
                     "isSubtypeGenericCachedLen"
-    }, limit = "1")
+    })
     @InliningCutoff
     @Megamorphic
     static boolean issubTypeGeneric(Object derived, Object cls,

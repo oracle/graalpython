@@ -110,6 +110,7 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -208,7 +209,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(StructUnionTypeBuiltins.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 292 -> 275
+    @GenerateInline(false)       // footprint reduction 292 -> 275
     protected abstract static class PyCStructUnionTypeUpdateStgDict extends Node {
         abstract void execute(VirtualFrame frame, Object type, Object fields, boolean isStruct);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -92,7 +92,7 @@ public abstract class PyObjectAsciiNode extends PNodeWithContext {
         TruffleStringIterator it = createCodePointIteratorNode.execute(repr, TS_ENCODING);
         int j = 0;
         while (it.hasNext()) {
-            int ch = nextNode.execute(it);
+            int ch = nextNode.execute(it, TS_ENCODING);
             j = unicodeNonAsciiEscape(ch, j, bytes);
         }
         return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, j, Encoding.US_ASCII, true), TS_ENCODING);

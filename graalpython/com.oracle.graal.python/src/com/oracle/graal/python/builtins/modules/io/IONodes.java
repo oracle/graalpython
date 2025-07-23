@@ -252,7 +252,7 @@ public class IONodes {
             int flags = 0;
             TruffleStringIterator it = createCodePointIteratorNode.execute(mode, TS_ENCODING);
             while (it.hasNext()) {
-                int c = nextNode.execute(it);
+                int c = nextNode.execute(it, TS_ENCODING);
                 int current;
                 switch (c) {
                     case 'x':

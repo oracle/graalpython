@@ -117,7 +117,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyDict_WatchCallback;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectBorrowed;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFunctionObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFunction_WatchCallback;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyGetSetDef;
@@ -234,7 +233,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyCFunction_GetSelf", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyCFunction_New", ret = PyObject, args = {PyMethodDef, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyCFunction_NewEx", ret = PyObject, args = {PyMethodDef, PyObject, PyObject}, call = CImpl)
-    @CApiBuiltin(name = "PyCMethod_GetClass", ret = PyTypeObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyCMethod_New", ret = PyObject, args = {PyMethodDef, PyObject, PyObject, PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyUnstable_Code_New", ret = PyCodeObject, args = {Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int,
                     PyObject, PyObject}, call = CImpl)
@@ -244,8 +242,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyComplex_ImagAsDouble", ret = ArgDescriptor.Double, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyComplex_RealAsDouble", ret = ArgDescriptor.Double, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyContextVar_Get", ret = Int, args = {PyObject, PyObject, PyObjectPtr}, call = CImpl)
-    @CApiBuiltin(name = "PyDescrObject_GetName", ret = PyObject, args = {PyObject}, call = CImpl)
-    @CApiBuiltin(name = "PyDescrObject_GetType", ret = PyTypeObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyDescr_IsData", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyDescr_NewClassMethod", ret = PyObject, args = {PyTypeObject, PyMethodDef}, call = CImpl)
     @CApiBuiltin(name = "PyDescr_NewGetSet", ret = PyObject, args = {PyTypeObject, PyGetSetDef}, call = CImpl)
@@ -321,7 +317,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyInstanceMethod_Function", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyInterpreterState_GetDict", ret = PyObject, args = {PyInterpreterState}, call = CImpl)
     @CApiBuiltin(name = "PyInterpreterState_GetID", ret = INT64_T, args = {PyInterpreterState}, call = CImpl)
-    @CApiBuiltin(name = "PyInterpreterState_GetIDFromThreadState", ret = INT64_T, args = {PyThreadState}, call = CImpl)
     @CApiBuiltin(name = "PyInterpreterState_Main", ret = PyInterpreterState, args = {}, call = CImpl)
     @CApiBuiltin(name = "PyIter_Send", ret = PySendResult, args = {PyObject, PyObject, PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "PyList_SetItem", ret = Int, args = {PyObject, Py_ssize_t, PyObjectTransfer}, call = CImpl)
@@ -358,7 +353,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyMem_Realloc", ret = Pointer, args = {Pointer, SIZE_T}, call = CImpl)
     @CApiBuiltin(name = "PyMemoryView_FromBuffer", ret = PyObject, args = {CONST_PY_BUFFER_PTR}, call = CImpl)
     @CApiBuiltin(name = "PyMemoryView_FromMemory", ret = PyObject, args = {CHAR_PTR, Py_ssize_t, Int}, call = CImpl)
-    @CApiBuiltin(name = "PyMethodDescrObject_GetMethod", ret = PyMethodDef, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyMethod_Function", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyMethod_Self", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyModuleDef_Init", ret = PyObject, args = {PYMODULEDEF_PTR}, call = CImpl)
@@ -470,9 +464,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PySequence_Size", ret = Py_ssize_t, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PySequence_Repeat", ret = PyObject, args = {PyObject, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PySlice_AdjustIndices", ret = Py_ssize_t, args = {Py_ssize_t, PY_SSIZE_T_PTR, PY_SSIZE_T_PTR, Py_ssize_t}, call = CImpl)
-    @CApiBuiltin(name = "PySlice_Start", ret = PyObject, args = {PySliceObject}, call = CImpl)
-    @CApiBuiltin(name = "PySlice_Step", ret = PyObject, args = {PySliceObject}, call = CImpl)
-    @CApiBuiltin(name = "PySlice_Stop", ret = PyObject, args = {PySliceObject}, call = CImpl)
     @CApiBuiltin(name = "PySlice_Unpack", ret = Int, args = {PyObject, PY_SSIZE_T_PTR, PY_SSIZE_T_PTR, PY_SSIZE_T_PTR}, call = CImpl)
     @CApiBuiltin(name = "PyState_AddModule", ret = Int, args = {PyObject, PYMODULEDEF_PTR}, call = CImpl)
     @CApiBuiltin(name = "PyState_FindModule", ret = PyObjectBorrowed, args = {PYMODULEDEF_PTR}, call = CImpl)
@@ -594,10 +585,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyBytesWriter_Resize", ret = Pointer, args = {_PYBYTESWRITER_PTR, Pointer, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "_PyBytesWriter_WriteBytes", ret = Pointer, args = {_PYBYTESWRITER_PTR, Pointer, CONST_VOID_PTR, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "_PyBytes_Resize", ret = Int, args = {PyObjectPtr, Py_ssize_t}, call = CImpl)
-    @CApiBuiltin(name = "_PyCFunction_GetMethodDef", ret = PyMethodDef, args = {PyObject}, call = CImpl)
-    @CApiBuiltin(name = "_PyCFunction_GetModule", ret = PyObject, args = {PyObject}, call = CImpl)
-    @CApiBuiltin(name = "_PyCFunction_SetMethodDef", ret = Void, args = {PyObject, PyMethodDef}, call = CImpl)
-    @CApiBuiltin(name = "_PyCFunction_SetModule", ret = Void, args = {PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_ContainsId", ret = Int, args = {PyObject, _PY_IDENTIFIER_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_GetItemIdWithError", ret = PyObject, args = {PyObject, _PY_IDENTIFIER_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_GetItemStringWithError", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString}, call = CImpl)
@@ -611,7 +598,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyErr_FormatFromCause", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "_PyErr_GetExcInfo", ret = Void, args = {PyThreadState, PyObjectPtr, PyObjectPtr, PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "_PyEval_SliceIndex", ret = Int, args = {PyObject, PY_SSIZE_T_PTR}, call = CImpl)
-    @CApiBuiltin(name = "_PyFrame_SetLineNumber", ret = Void, args = {PyFrameObject, Int}, call = CImpl)
     @CApiBuiltin(name = "_PyGen_FetchStopIterationValue", ret = Int, args = {PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "_PyGen_Finalize", ret = Void, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyGen_SetStopIterationValue", ret = Int, args = {PyObject}, call = CImpl)
@@ -933,8 +919,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyThread_set_stacksize", ret = Int, args = {SIZE_T}, call = NotImplemented)
     @CApiBuiltin(name = "PyThread_start_new_thread", ret = UNSIGNED_LONG, args = {func_voidvoidptr, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "PyTraceBack_Print", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyTruffleFrame_New", ret = PyFrameObjectTransfer, args = {PyThreadState, PyCodeObject, PyObject, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyTruffle_SeqIter_New", ret = PyObjectTransfer, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyType_ClearCache", ret = UNSIGNED_INT, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyType_SUPPORTS_WEAKREFS", ret = Int, args = {PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyUnicodeDecodeError_GetEncoding", ret = PyObject, args = {PyObject}, call = NotImplemented)

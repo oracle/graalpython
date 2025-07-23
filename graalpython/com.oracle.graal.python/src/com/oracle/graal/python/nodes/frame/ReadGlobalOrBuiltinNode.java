@@ -60,7 +60,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
-@SuppressWarnings("truffle-inlining")       // footprint reduction 48 -> 30
+@GenerateInline(false)       // footprint reduction 48 -> 30
 public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
     public final Object execute(VirtualFrame frame, TruffleString name) {
         CompilerAsserts.partialEvaluationConstant(name);

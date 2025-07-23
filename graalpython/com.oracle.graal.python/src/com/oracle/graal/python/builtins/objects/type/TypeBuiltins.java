@@ -341,7 +341,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached GetCachedTpSlotsNode getSlots,
                         @Cached CallSlotTpNewNode callNew,
-                        @Cached IsTypeNode isTypeNode,
+                        @Cached @Exclusive IsTypeNode isTypeNode,
                         @Cached PyObjectLookupAttr lookupMroEntriesNode,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached TypeNodes.CreateTypeNode createType,
