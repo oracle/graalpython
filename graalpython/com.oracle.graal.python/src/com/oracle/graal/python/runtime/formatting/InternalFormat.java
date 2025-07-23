@@ -16,11 +16,12 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.Locale;
-import java.util.Locale.Category;
 
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.locale.PythonLocale;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -212,7 +213,7 @@ public class InternalFormat {
         }
 
         protected static DecimalFormat getCurrentDecimalFormat() {
-            Locale currLocale = Locale.getDefault(Category.FORMAT);
+            Locale currLocale = PythonContext.get(null).getCurrentLocale().category(PythonLocale.LC_NUMERIC);
             NumberFormat numberFormat = NumberFormat.getInstance(currLocale);
             return numberFormat instanceof DecimalFormat ? (DecimalFormat) numberFormat : null;
         }
