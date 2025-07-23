@@ -624,7 +624,8 @@ public final class PythonContext extends Python3Core {
         public void setNativeThreadLocalVarPointer(Object ptr) {
             // either unset or same
             assert nativeThreadLocalVarPointer == null || nativeThreadLocalVarPointer == ptr ||
-                            InteropLibrary.getUncached().isIdentical(nativeThreadLocalVarPointer, ptr, InteropLibrary.getUncached());
+                            InteropLibrary.getUncached().isIdentical(nativeThreadLocalVarPointer, ptr, InteropLibrary.getUncached()) : //
+                            String.format("ptr = %s; nativeThreadLocalVarPointer = %s", ptr, nativeThreadLocalVarPointer);
             this.nativeThreadLocalVarPointer = ptr;
         }
     }
