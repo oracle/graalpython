@@ -293,7 +293,7 @@ public class NFILZMASupport {
     @CompilerDirectives.CompilationFinal private boolean available;
 
     private NFILZMASupport(PythonContext context, NativeLibrary.NFIBackend backend, String noNativeAccessHelp) {
-        if (context.isNativeAccessAllowed()) {
+        if (context.useNativeCompressionModules()) {
             this.pythonContext = context;
             this.typedNativeLib = NativeLibrary.create(PythonContext.getSupportLibName(SUPPORTING_NATIVE_LIB_NAME), LZMANativeFunctions.values(),
                             backend, noNativeAccessHelp, true);
