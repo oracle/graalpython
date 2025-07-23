@@ -132,7 +132,7 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class PyTruffleErr_SetTraceback extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Err_SetTraceback extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object set(Object exception, PTraceback tb) {
@@ -192,8 +192,8 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct)
-    abstract static class _PyTruffleErr_CreateAndSetException extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class GraalPyPrivate_Err_CreateAndSetException extends CApiBinaryBuiltinNode {
         @Specialization(guards = "!isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")
         static Object create(Object type, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Shared @Cached IsTypeNode isTypeNode,
@@ -209,7 +209,7 @@ public final class PythonCextErrBuiltins {
                         @SuppressWarnings("unused") @Shared @Cached IsSubClassNode isSubClassNode,
                         @Cached PrepareExceptionNode prepareExceptionNode) {
             Object exception = prepareExceptionNode.execute(null, type, value);
-            throw PRaiseNode.raiseExceptionObject(inliningTarget, exception);
+            throw PRaiseNode.raiseExceptionObjectStatic(inliningTarget, exception);
         }
 
         protected static boolean isExceptionClass(Node inliningTarget, Object obj, IsTypeNode isTypeNode, IsSubClassNode isSubClassNode) {
@@ -284,7 +284,7 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    abstract static class PyTruffleErr_GetExcInfo extends CApiNullaryBuiltinNode {
+    abstract static class GraalPyPrivate_Err_GetExcInfo extends CApiNullaryBuiltinNode {
         @Specialization
         Object info(
                         @Bind Node inliningTarget,
@@ -311,7 +311,7 @@ public final class PythonCextErrBuiltins {
 
         @Specialization
         static Object get(@SuppressWarnings("unused") Object threadState,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @Cached GetEscapedExceptionNode getEscapedExceptionNode) {
             AbstractTruffleException caughtException = getCaughtExceptionNode.executeFromNative();

@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -39,8 +39,10 @@ PyAPI_FUNC(PyObject *) PyInterpreterState_GetDict(PyInterpreterState *);
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03070000
 /* New in 3.7 */
 PyAPI_FUNC(int64_t) PyInterpreterState_GetID(PyInterpreterState *);
-// GraalPy-specific
-PyAPI_FUNC(int64_t) PyInterpreterState_GetIDFromThreadState(PyThreadState *);
+// GraalPy public API
+PyAPI_FUNC(int64_t) GraalPyInterpreterState_GetIDFromThreadState(PyThreadState *);
+// Deprecated alias used by current Cython, remove in 27.0
+#define PyInterpreterState_GetIDFromThreadState GraalPyInterpreterState_GetIDFromThreadState
 #endif
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03030000
 

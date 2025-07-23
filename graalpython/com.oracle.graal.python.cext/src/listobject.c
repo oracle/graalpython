@@ -48,7 +48,7 @@ _list_clear(PyListObject *a)
 
     /* Because XDECREF can recursively invoke operations on
        this list, we make it empty first. */
-    i = GraalPyTruffleList_TryGetItems((PyObject *)a, &item);
+    i = GraalPyPrivate_List_TryGetItems((PyObject *)a, &item);
     if (i > 0) {
         assert(item != NULL);
         while (--i >= 0) {
@@ -75,7 +75,7 @@ list_traverse(PyListObject *o, visitproc visit, void *arg)
      * explanation, see 'dictobject.c: dict_traverse'.
      */
     if (points_to_py_handle_space(o)) {
-        size = GraalPyTruffleList_TryGetItems((PyObject *)o, &ob_item);
+        size = GraalPyPrivate_List_TryGetItems((PyObject *)o, &ob_item);
     } else {
         size = Py_SIZE(o);
         ob_item = o->ob_item;
@@ -127,13 +127,17 @@ PyTypeObject PyList_Type = {
     0,                                          /* tp_init */ // GraalPy change: nulled
     PyType_GenericAlloc,                        /* tp_alloc */
     PyType_GenericNew,                          /* tp_new */
-    GraalPyObject_GC_Del,                       /* tp_free */ // GraalPy change: different function
+    GraalPyPrivate_Object_GC_Del,              /* tp_free */ // GraalPy change: different function
     .tp_vectorcall = 0, // GraalPy change: nulled
 };
 
-// alias for internal function, currently used in PyO3
+void GraalPyList_SET_ITEM(PyObject* op, Py_ssize_t index, PyObject* value) {
+    GraalPyList_ITEMS(op)[index] = value;
+}
+
+// deprecated alias for internal function, currently used in PyO3
 PyAPI_FUNC(void) _PyList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
-    PyList_SET_ITEM(a, b, c);
+    GraalPyList_SET_ITEM(a, b, c);
 }
 
 static inline int
@@ -166,14 +170,14 @@ PyList_SetItem(PyObject *op, Py_ssize_t i,
         return -1;
     }
     // GraalPy change: avoid direct struct access
-    p = PyTruffleList_GetItems(op) + i;
+    p = GraalPyList_ITEMS(op) + i;
     Py_XSETREF(*p, newitem);
     return 0;
 }
 
 // GraalPy-additions
 PyObject **
-PyTruffleList_GetItems(PyObject *op)
+GraalPyList_ITEMS(PyObject *op)
 {
-    return PyListObject_ob_item(op);
+    return GraalPyPrivate_GET_PyListObject_ob_item(op);
 }

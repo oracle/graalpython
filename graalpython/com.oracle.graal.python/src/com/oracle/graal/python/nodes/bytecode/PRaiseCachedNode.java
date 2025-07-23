@@ -43,12 +43,14 @@ package com.oracle.graal.python.nodes.bytecode;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
+@GenerateInline(false) // 16 -> 0
 @GenerateUncached
 abstract class PRaiseCachedNode extends Node {
     public final PException raise(PythonBuiltinClassType type, TruffleString format, Object... formatArgs) {

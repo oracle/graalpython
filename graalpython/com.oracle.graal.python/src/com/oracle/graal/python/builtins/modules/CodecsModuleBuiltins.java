@@ -250,7 +250,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                 int end = start + encoder.getErrorLength();
                 Object exception = lazyCallNode.executeWithoutFrame(UnicodeEncodeError, encoder.getEncodingName(), inputObject, start, end, encoder.getErrorReason());
                 if (exception instanceof PBaseException) {
-                    throw raiseNode.raiseExceptionObject(inliningTarget, (PBaseException) exception);
+                    throw raiseNode.raiseExceptionObject(inliningTarget, exception);
                 } else {
                     // Shouldn't happen unless the user manually replaces the method, which is
                     // really

@@ -357,7 +357,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile reverseProfile,
                         @Cached HashingStorageLen selfLenNode,
                         @Cached HashingStorageLen otherLenNode,
-                        @Cached(inline = false) ContainedInNode allContained) {
+                        @Cached ContainedInNode allContained) {
             // Note: more compact (to help hosted inlining) implementation, but should be in the end
             // the same as CPython dictview_richcompare
             RichCmpOp op = originalOp != RichCmpOp.Py_NE ? originalOp : RichCmpOp.Py_EQ;

@@ -1143,7 +1143,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = LocalAccessor.class)
     public static final class MatchKeys {
         @Specialization
-        public static boolean perform(VirtualFrame frame, LocalAccessor values, Object map, Object[] keys, @Bind BytecodeNode bytecodeNode, @Cached MatchKeysNode node) {
+        public static boolean perform(VirtualFrame frame, LocalAccessor values, Object map, Object[] keys,
+                        @Bind BytecodeNode bytecodeNode,
+                        @Cached MatchKeysNode node) {
             values.setObject(bytecodeNode, frame, node.execute(frame, map, keys));
             return node.execute(frame, map, keys) != PNone.NONE;
         }
@@ -1788,7 +1790,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind BytecodeNode bytecode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, sequence);
             int len = storage.length();
             int count = results.getLength();
@@ -1820,7 +1822,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile notIterableProfile,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             int count = results.getLength();
             CompilerAsserts.partialEvaluationConstant(count);
 
@@ -2590,7 +2592,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile notIterableProfile,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
 
             Object iterator;
             try {
@@ -3382,7 +3384,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Bind BytecodeNode bytecodeNode,
                         @Bind Node inliningTarget,
-                        @Cached InlinedBranchProfile localUnboundProfile) {
+                        @Shared @Cached InlinedBranchProfile localUnboundProfile) {
             if (accessor.isCleared(bytecodeNode, frame)) {
                 localUnboundProfile.enter(inliningTarget);
                 throw raiseUnbound(rootNode, inliningTarget, index);

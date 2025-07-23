@@ -84,6 +84,7 @@ import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
  * depending on whether the other side is also a Python frame.
  */
 public abstract class ExecutionContext {
+    @GenerateInline(false) // 28 -> 10
     @GenerateUncached
     public abstract static class CallContext extends Node {
         /**

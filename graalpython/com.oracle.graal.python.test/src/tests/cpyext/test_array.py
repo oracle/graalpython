@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -62,41 +62,41 @@ TEST_ARRAY = array('i', [1, 2, 3])
 class TestPyArray(CPyExtTestCase):
 
     if sys.implementation.name == 'graalpy':
-        test__PyArray_Resize = CPyExtFunction(
+        test_GraalPyArray_Resize = CPyExtFunction(
             reference_array_resize,
             lambda: (
                 (array('i', [1, 2, 3]), 1),
                 (array('i'), 3),
             ),
             code="""
-                PyObject* wrap__PyArray_Resize(PyObject* array, Py_ssize_t new_size) {
-                    if (_PyArray_Resize(array, new_size) < 0)
+                PyObject* wrap_GraalPyArray_Resize(PyObject* array, Py_ssize_t new_size) {
+                    if (GraalPyArray_Resize(array, new_size) < 0)
                         return NULL;
                     Py_INCREF(array);
                     return array;
                 }
             """,
-            callfunction="wrap__PyArray_Resize",
+            callfunction="wrap_GraalPyArray_Resize",
             resultspec="O",
             argspec='On',
             arguments=["PyObject* array", "Py_ssize_t new_size"],
             cmpfunc=unhandled_error_compare,
         )
 
-        test__PyArray_Data = CPyExtFunction(
+        test_GraalPyArray_Data = CPyExtFunction(
             lambda args: bytes(args[0]),
             lambda: (
                 (TEST_ARRAY, len(TEST_ARRAY) * TEST_ARRAY.itemsize),
             ),
             code="""
-            PyObject* wrap__PyArray_Data(PyObject* array, Py_ssize_t size) {
-                char* data = _PyArray_Data(array);
+            PyObject* wrap_GraalPyArray_Data(PyObject* array, Py_ssize_t size) {
+                char* data = GraalPyArray_Data(array);
                 if (data == NULL)
                     return NULL;
                 return PyBytes_FromStringAndSize(data, size);
             }
             """,
-            callfunction="wrap__PyArray_Data",
+            callfunction="wrap_GraalPyArray_Data",
             resultspec="O",
             argspec='On',
             arguments=["PyObject* array", "Py_ssize_t size"],

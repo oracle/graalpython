@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,7 @@
 
 
 int _PySet_NextEntry(PyObject *set, Py_ssize_t *pos, PyObject **key, Py_hash_t *hash) {
-    PyObject *tresult = Graal_PyTruffleSet_NextEntry(set, *pos);
+    PyObject *tresult = GraalPyPrivate_Set_NextEntry(set, *pos);
     if (tresult == NULL) {
         *key = NULL;
         *hash = 0;

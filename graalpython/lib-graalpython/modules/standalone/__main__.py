@@ -86,6 +86,7 @@ GRAALVM_URL_BASE = "https://download.oracle.com/graalvm/"
 
 MVN_REPOSITORY = os.getenv("MVN_REPOSITORY")
 MVN_GRAALPY_VERSION = os.getenv("MVN_GRAALPY_VERSION") if os.getenv("MVN_GRAALPY_VERSION") else __graalpython__.get_graalvm_version()
+LEGACY_EMBEDDING_VERSION = '24.2.2'
 
 CMD_NATIVE_EXECUTABLE = "native"
 CMD_JAVA_PYTHON_APP = "polyglot_app"
@@ -139,8 +140,7 @@ def create_polyglot_app(parsed_args):
         exit(1)
 
 
-def get_download_dir(parsed_args):
-    subdir = "downloaded_standalone_resources"
+def get_download_dir(parsed_args, subdir = "downloaded_standalone_resources"):
     mp = os.path.join(__graalpython__.home, subdir)
     try:
         if not os.path.exists(mp):
@@ -159,25 +159,28 @@ def get_download_dir(parsed_args):
 
 
 def create_native_exec(parsed_args):
-    artifacts = ["org.graalvm.python.python-embedding"]
-
     target_dir = tempfile.mkdtemp()
     try:
         ni, jc = get_tools(target_dir, parsed_args)
         if parsed_args.ce:
-            artifacts.append("org.graalvm.polyglot.python-community")
+            artifact = "org.graalvm.polyglot.python-community"
         else:
-            artifacts.append("org.graalvm.polyglot.python")
+            artifact = "org.graalvm.polyglot.python"
 
         modules_path = get_download_dir(parsed_args)
-        for artifact in artifacts:
-            download_maven_artifact(modules_path, artifact, parsed_args)
+        legacy_embedding_path = None
+        if not download_maven_artifact(modules_path, "org.graalvm.python.python-embedding", parsed_args, version=MVN_GRAALPY_VERSION, fail_if_not_found=False):
+            legacy_embedding_dir = get_download_dir(parsed_args, subdir='downloaded_standalone_resources_legacy')
+            download_maven_artifact(legacy_embedding_dir, "org.graalvm.python.python-embedding", parsed_args, version=LEGACY_EMBEDDING_VERSION)
+            legacy_embedding_path = os.path.join(legacy_embedding_dir, f"org.graalvm.python-python-embedding-{LEGACY_EMBEDDING_VERSION}.jar")
+
+        download_maven_artifact(modules_path, artifact, parsed_args, version=MVN_GRAALPY_VERSION)
 
         launcher_file = os.path.join(target_dir, NATIVE_EXEC_LAUNCHER_FILE)
         create_target_directory(target_dir, launcher_file, parsed_args)
 
         index_vfs(target_dir)
-        build_binary(target_dir, ni, jc, modules_path, launcher_file, parsed_args)
+        build_binary(target_dir, ni, jc, modules_path, legacy_embedding_path, launcher_file, parsed_args)
     finally:
         if not parsed_args.keep_temp:
             shutil.rmtree(target_dir)
@@ -368,7 +371,7 @@ def get_tools(target_dir, parsed_args):
     return ni, jc
 
 
-def download_maven_artifact(modules_path, artifact, parsed_args):
+def download_maven_artifact(modules_path, artifact, parsed_args, version=MVN_GRAALPY_VERSION, fail_if_not_found=True):
     mvnd = get_executable(os.path.join(__graalpython__.home, "libexec", "graalpy-polyglot-get"))
     cmd = [mvnd]
 
@@ -376,8 +379,9 @@ def download_maven_artifact(modules_path, artifact, parsed_args):
         cmd += ["-r", MVN_REPOSITORY]
     cmd += ["-a", artifact.rsplit(".", 1)[1]]
     cmd += ["-g", artifact.rsplit(".", 1)[0]]
-    cmd += ["-v", MVN_GRAALPY_VERSION]
+    cmd += ["-v", version]
     cmd += ["-o", modules_path]
+
     if parsed_args.verbose:
         print(f"downloading graalpython maven artifacts: {' '.join(cmd)}")
 
@@ -387,19 +391,28 @@ def download_maven_artifact(modules_path, artifact, parsed_args):
         p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     if p.returncode != 0:
-        if not parsed_args.verbose:
+        if fail_if_not_found and not parsed_args.verbose:
             print(p.stdout.decode())
             print(p.stderr.decode())
-        exit(1)
+        if fail_if_not_found:
+            exit(1)
+        return False
+    return True
 
 
-def build_binary(target_dir, ni, jc, modules_path, launcher_file, parsed_args):
+def build_binary(target_dir, ni, jc, modules_path, legacy_embedding_path, launcher_file, parsed_args):
     cwd = os.getcwd()
     output = os.path.abspath(parsed_args.output)
     os.chdir(target_dir)
 
     try:
-        cmd = [jc, "-cp", f"{modules_path}/*", launcher_file]
+        legacy_embedding_cp = ''
+        legacy_embedding_modules = []
+        if legacy_embedding_path:
+            legacy_embedding_cp = f"{os.pathsep}{legacy_embedding_path}"
+            legacy_embedding_modules = [legacy_embedding_path]
+
+        cmd = [jc, "-cp", f"{modules_path}/*{legacy_embedding_cp}", launcher_file]
         if parsed_args.verbose:
             print(f"Compiling code for Python standalone entry point: {' '.join(cmd)}")
         p = subprocess.run(cmd, cwd=target_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -408,7 +421,7 @@ def build_binary(target_dir, ni, jc, modules_path, launcher_file, parsed_args):
             print(p.stderr.decode())
             exit(1)
 
-        ni_modules = os.pathsep.join([os.path.join(modules_path, f) for f in os.listdir(modules_path) if f.endswith(".jar")] + [target_dir])
+        ni_modules = os.pathsep.join([os.path.join(modules_path, f) for f in os.listdir(modules_path) if f.endswith(".jar")] + legacy_embedding_modules + [target_dir])
         cmd = [ni, "-cp", ni_modules] + parsed_args.ni_args[:]
 
         if parsed_args.Os:

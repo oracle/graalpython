@@ -63,6 +63,7 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -73,7 +74,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
-@SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
+@GenerateInline(false)       // footprint reduction 36 -> 17
 public abstract class GetDictIfExistsNode extends PNodeWithContext {
     public abstract PDict execute(Object object);
 
@@ -122,7 +123,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
 
     @Specialization
     @InliningCutoff
-    PDict doNativeObject(PythonAbstractNativeObject object,
+    static PDict doNativeObject(PythonAbstractNativeObject object,
                     @Bind Node inliningTarget,
                     @CachedLibrary(limit = "1") InteropLibrary lib,
                     @Cached PythonToNativeNode toNative,
@@ -144,7 +145,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
                 return dict;
             } else {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, dictObject);
+                throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, dictObject);
             }
         }
     }

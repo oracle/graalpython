@@ -734,16 +734,17 @@ public final class ArrayBuiltins extends PythonBuiltins {
         static void setitem(VirtualFrame frame, PArray self, int index, Object value,
                         @Bind Node inliningTarget,
                         @Cached ArrayNodes.PutValueNode putValueNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             checkBounds(inliningTarget, raiseNode, ErrorMessages.ARRAY_ASSIGN_OUT_OF_BOUNDS, index, self.getLength());
             putValueNode.execute(frame, inliningTarget, self, index, value);
         }
 
+        // @Exclusive for truffle-interpreted-performance
         @Specialization(guards = "isNoValue(value)")
         static void delitem(PArray self, int index, @SuppressWarnings("unused") Object value,
                         @Bind Node inliningTarget,
                         @Cached DeleteArraySliceNode deleteSliceNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             checkBounds(inliningTarget, raiseNode, ErrorMessages.ARRAY_ASSIGN_OUT_OF_BOUNDS, index, self.getLength());
             self.checkCanResize(inliningTarget, raiseNode);
             deleteSliceNode.execute(inliningTarget, self, index, 1);
@@ -754,10 +755,11 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetSubscriptNode extends MpAssSubscriptBuiltinNode {
 
+        // @Exclusive for truffle-interpreted-performance
         @Specialization(guards = {"!isPSlice(idx)", "!isNoValue(value)"})
         static void setitem(VirtualFrame frame, PArray self, Object idx, Object value,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PyNumberIndexNode indexNode,
+                        @Exclusive @Cached PyNumberIndexNode indexNode,
                         @Shared @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
                         @Cached ArrayNodes.PutValueNode putValueNode) {
             int index = normalizeIndexNode.execute(indexNode.execute(frame, inliningTarget, idx), self.getLength());
@@ -767,15 +769,16 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isPSlice(idx)", "isNoValue(value)"})
         static void delitem(VirtualFrame frame, PArray self, Object idx, @SuppressWarnings("unused") Object value,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PyNumberIndexNode indexNode,
+                        @Exclusive @Cached PyNumberIndexNode indexNode,
                         @Shared @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
-                        @Shared @Cached DeleteArraySliceNode deleteSliceNode,
+                        @Exclusive @Cached DeleteArraySliceNode deleteSliceNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             self.checkCanResize(inliningTarget, raiseNode);
             int index = normalizeIndexNode.execute(indexNode.execute(frame, inliningTarget, idx), self.getLength());
             deleteSliceNode.execute(inliningTarget, self, index, 1);
         }
 
+        // @Exclusive for truffle-interpreted-performance
         @Specialization
         static void setitem(PArray self, PSlice slice, Object other,
                         @Bind Node inliningTarget,
@@ -794,10 +797,10 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached InlinedByteValueProfile itemShiftProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices,
-                        @Shared @Cached DeleteArraySliceNode deleteSliceNode,
+                        @Exclusive @Cached DeleteArraySliceNode deleteSliceNode,
                         @Cached ArrayNodes.ShiftNode shiftNode,
                         @Cached ArrayNodes.SetLengthNode setLengthNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             int length = self.getLength();
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, length, sliceUnpack.execute(inliningTarget, slice));
             int start = sliceInfo.start;
@@ -1339,7 +1342,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
                 int codePointIndex = 0;
                 while (it.hasNext()) {
-                    TruffleString value = fromCodePointNode.execute(nextNode.execute(it), TS_ENCODING, true);
+                    TruffleString value = fromCodePointNode.execute(nextNode.execute(it, TS_ENCODING), TS_ENCODING, true);
                     putValueNode.execute(frame, inliningTarget, self, self.getLength() + codePointIndex++, value);
                 }
                 setLengthNode.execute(inliningTarget, self, newLength);

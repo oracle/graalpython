@@ -168,7 +168,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                 self.lineNum++;
                 TruffleStringIterator tsi = createCodePointIteratorNode.execute(line, TS_ENCODING);
                 while (tsi.hasNext()) {
-                    final int codepoint = stringNextNode.execute(tsi);
+                    final int codepoint = stringNextNode.execute(tsi, TS_ENCODING);
                     parseProcessCodePoint(inliningTarget, self, fields, codepoint, appendCodePointNode, toStringNode, pyNumberFloatNode, appendNode, raiseNode);
                 }
                 parseProcessCodePoint(inliningTarget, self, fields, EOL, appendCodePointNode, toStringNode, pyNumberFloatNode, appendNode, raiseNode);

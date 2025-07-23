@@ -112,6 +112,7 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -159,10 +160,11 @@ public class OrderedDictBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.mp_ass_subscript, isComplex = true)
     @GenerateNodeFactory
     abstract static class SetItemNode extends MpAssSubscriptBuiltinNode {
+        // @Exclusive for truffle-interpreted-performance
         @Specialization(guards = "!isNoValue(value)")
         static void setitem(VirtualFrame frame, POrderedDict self, Object key, Object value,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PyObjectHashNode hashNode,
+                        @Exclusive @Cached PyObjectHashNode hashNode,
                         @Cached HashingStorageNodes.HashingStorageSetItemWithHash setItemWithHash,
                         @Cached InlinedBranchProfile storageUpdated,
                         @Cached ObjectHashMap.GetNode getNode,
@@ -183,7 +185,7 @@ public class OrderedDictBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(value)")
         static void delitem(VirtualFrame frame, POrderedDict self, Object key, @SuppressWarnings("unused") Object value,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PyObjectHashNode hashNode,
+                        @Exclusive @Cached PyObjectHashNode hashNode,
                         @Cached HashingStorageNodes.HashingStorageDelItem delItem,
                         @Cached ObjectHashMap.RemoveNode removeNode,
                         @Cached PRaiseNode raiseNode) {

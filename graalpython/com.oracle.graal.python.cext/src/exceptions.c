@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,13 +47,13 @@ PY_EXCEPTIONS
 #undef EXCEPTION
 
 void initialize_exceptions() {
-#define EXCEPTION(NAME) PyExc_##NAME = (PyObject*) GraalPyTruffle_Type(#NAME);
+#define EXCEPTION(NAME) PyExc_##NAME = (PyObject*) GraalPyPrivate_Type(#NAME);
 	PY_EXCEPTIONS
 #undef EXCEPTION
 }
 
 PyAPI_FUNC(PyObject *)
-exception_subtype_new(PyTypeObject *type, PyObject *args) {
+GraalPyPrivate_Exception_SubtypeNew(PyTypeObject *type, PyObject *args) {
     PyBaseExceptionObject *self;
 
     self = (PyBaseExceptionObject *)type->tp_alloc(type, 0);

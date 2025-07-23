@@ -144,10 +144,22 @@ index 9cfd4d7..4231d18 100644
          let obj = Box::new(Fragment {
              ob_refcnt: 1,
 diff --git a/src/lib.rs b/src/lib.rs
-index 0ae348e..13508ea 100644
+index 0ae348e..b712f4e 100644
 --- a/src/lib.rs
 +++ b/src/lib.rs
-@@ -230,11 +230,20 @@ fn raise_loads_exception(err: deserialize::DeserializeError) -> *mut PyObject {
+@@ -181,8 +181,9 @@ pub unsafe extern "C" fn PyInit_orjson() -> *mut PyModuleDef {
+         },
+         #[cfg(Py_3_12)]
+         PyModuleDef_Slot {
+-            slot: Py_mod_multiple_interpreters,
+-            value: Py_MOD_MULTIPLE_INTERPRETERS_NOT_SUPPORTED,
++            // Following symbols are not exported by the PyO3 version we use
++            slot: 3 /*Py_mod_multiple_interpreters*/,
++            value: null_mut() /*Py_MOD_MULTIPLE_INTERPRETERS_NOT_SUPPORTED*/,
+         },
+         #[cfg(Py_3_13)]
+         PyModuleDef_Slot {
+@@ -230,11 +231,20 @@ fn raise_loads_exception(err: deserialize::DeserializeError) -> *mut PyObject {
              PyUnicode_FromStringAndSize(msg.as_ptr() as *const c_char, msg.len() as isize);
          let args = PyTuple_New(3);
          let pos = PyLong_FromLongLong(pos);
@@ -172,7 +184,7 @@ index 0ae348e..13508ea 100644
          Py_DECREF(args);
      };
      null_mut()
-@@ -248,7 +257,7 @@ fn raise_dumps_exception_fixed(msg: &str) -> *mut PyObject {
+@@ -248,7 +258,7 @@ fn raise_dumps_exception_fixed(msg: &str) -> *mut PyObject {
          let err_msg =
              PyUnicode_FromStringAndSize(msg.as_ptr() as *const c_char, msg.len() as isize);
          PyErr_SetObject(typeref::JsonEncodeError, err_msg);
@@ -181,7 +193,7 @@ index 0ae348e..13508ea 100644
          Py_DECREF(err_msg);
      };
      null_mut()
-@@ -265,7 +274,7 @@ fn raise_dumps_exception_dynamic(err: &str) -> *mut PyObject {
+@@ -265,7 +275,7 @@ fn raise_dumps_exception_dynamic(err: &str) -> *mut PyObject {
          let err_msg =
              PyUnicode_FromStringAndSize(err.as_ptr() as *const c_char, err.len() as isize);
          PyErr_SetObject(typeref::JsonEncodeError, err_msg);
@@ -190,7 +202,7 @@ index 0ae348e..13508ea 100644
          Py_DECREF(err_msg);
  
          if !cause_exc.is_null() {
-@@ -291,7 +300,7 @@ fn raise_dumps_exception_dynamic(err: &str) -> *mut PyObject {
+@@ -291,7 +301,7 @@ fn raise_dumps_exception_dynamic(err: &str) -> *mut PyObject {
          let err_msg =
              PyUnicode_FromStringAndSize(err.as_ptr() as *const c_char, err.len() as isize);
          PyErr_SetObject(typeref::JsonEncodeError, err_msg);
@@ -199,7 +211,7 @@ index 0ae348e..13508ea 100644
          Py_DECREF(err_msg);
          let mut tp: *mut PyObject = null_mut();
          let mut val: *mut PyObject = null_mut();
-@@ -345,7 +354,10 @@ pub unsafe extern "C" fn dumps(
+@@ -345,7 +355,10 @@ pub unsafe extern "C" fn dumps(
      }
      if unlikely!(!kwnames.is_null()) {
          for i in 0..=Py_SIZE(kwnames).saturating_sub(1) {
@@ -210,7 +222,7 @@ index 0ae348e..13508ea 100644
              if arg == typeref::DEFAULT {
                  if unlikely!(num_args & 2 == 2) {
                      return raise_dumps_exception_fixed(
-@@ -369,7 +381,7 @@ pub unsafe extern "C" fn dumps(
+@@ -369,7 +382,7 @@ pub unsafe extern "C" fn dumps(
      let mut optsbits: i32 = 0;
      if unlikely!(optsptr.is_some()) {
          let opts = optsptr.unwrap();

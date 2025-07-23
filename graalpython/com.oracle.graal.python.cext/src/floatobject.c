@@ -323,7 +323,7 @@ PyFloat_AsDouble(PyObject *op)
 
     // GraalPy change: upcall for managed
     if (points_to_py_handle_space(op)) {
-        return GraalPyTruffleFloat_AsDouble(op);
+        return GraalPyPrivate_Float_AsDouble(op);
     }
 
     nb = Py_TYPE(op)->tp_as_number;
@@ -2655,4 +2655,28 @@ PyFloat_Unpack8(const char *data, int le)
 
         return x;
     }
+}
+
+// GraalPy additions
+
+double GraalPyFloat_AS_DOUBLE(PyObject *op) {
+    if (points_to_py_handle_space(op)) {
+        return ((GraalPyFloatObject*) pointer_to_stub(op))->ob_fval;
+    } else {
+        return _PyFloat_CAST(op)->ob_fval;
+    }
+}
+
+// not quite as in CPython, this assumes that x is already a double. The rest of
+// the implementation is in the Float constructor in Java
+PyAPI_FUNC(PyObject*)
+GraalPyPrivate_Float_SubtypeNew(PyTypeObject *type, double x)
+{
+    PyObject* newobj = type->tp_alloc(type, 0);
+    if (newobj == NULL) {
+        Py_DECREF(newobj);
+        return NULL;
+    }
+    ((PyFloatObject *)newobj)->ob_fval = x;
+    return newobj;
 }

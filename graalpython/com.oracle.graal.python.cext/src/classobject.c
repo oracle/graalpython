@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,7 @@
 
 PyObject* PyMethod_Function(PyObject* obj) {
     if (PyMethod_Check(obj)) {
-        return PyMethodObject_im_func(obj);
+        return GraalPyPrivate_GET_PyMethodObject_im_func(obj);
     } else {
         PyErr_BadInternalCall();
         return NULL;
@@ -52,7 +52,7 @@ PyObject* PyMethod_Function(PyObject* obj) {
 
 PyObject* PyMethod_Self(PyObject* obj) {
     if (PyMethod_Check(obj)) {
-        return PyMethodObject_im_self(obj);
+        return GraalPyPrivate_GET_PyMethodObject_im_self(obj);
     } else {
         PyErr_BadInternalCall();
         return NULL;
@@ -61,7 +61,7 @@ PyObject* PyMethod_Self(PyObject* obj) {
 
 PyObject* PyInstanceMethod_Function(PyObject* obj) {
     if (PyInstanceMethod_Check(obj)) {
-        return PyInstanceMethodObject_func(obj);
+        return GraalPyPrivate_GET_PyInstanceMethodObject_func(obj);
     } else {
         PyErr_BadInternalCall();
         return NULL;

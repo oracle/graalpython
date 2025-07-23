@@ -130,7 +130,7 @@ public abstract class DictNodes {
 
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 52 -> 36
+    @GenerateInline(false)       // footprint reduction 52 -> 36
     public abstract static class UpdateNode extends PNodeWithContext {
         public abstract void execute(Frame frame, Object self, Object other);
 

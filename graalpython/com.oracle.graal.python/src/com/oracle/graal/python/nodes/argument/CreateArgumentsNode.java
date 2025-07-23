@@ -418,8 +418,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         @ExplodeLoop
         static Object[] applyCached(Object callee, @SuppressWarnings("unused") Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
                         @Bind Node inliningTarget,
-                        // TODO: GR-46101 make lazy once this Truffle DSL issue is fixed
-                        @Shared @Cached PRaiseNode raise,
+                        @Exclusive @Cached PRaiseNode raise,
                         @Cached("keywords.length") int kwLen,
                         @SuppressWarnings("unused") @Cached("calleeSignature") Signature cachedSignature,
                         @Cached("cachedSignature.takesVarKeywordArgs()") boolean takesVarKwds,
@@ -478,7 +477,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         @Specialization(replaces = "applyCached")
         static Object[] applyUncached(Object callee, Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PRaiseNode raise,
+                        @Exclusive @Cached PRaiseNode raise,
                         @Exclusive @Cached InlinedBranchProfile posArgOnlyPassedAsKeywordProfile,
                         @Exclusive @Cached InlinedBranchProfile kwOnlyIdxFoundProfile,
                         @Exclusive @Cached SearchNamedParameterNode searchParamNode,

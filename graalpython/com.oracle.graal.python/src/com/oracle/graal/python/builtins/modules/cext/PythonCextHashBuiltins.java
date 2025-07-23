@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,7 +68,7 @@ import com.oracle.truffle.api.strings.TruffleString.HashCodeNode;
 public final class PythonCextHashBuiltins {
 
     @CApiBuiltin(ret = Void, args = {INT8_T_PTR}, call = Ignored)
-    abstract static class PyTruffleHash_InitSecret extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Hash_InitSecret extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         Object get(Object secretPtr,
@@ -79,7 +79,7 @@ public final class PythonCextHashBuiltins {
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Long, args = {Int}, call = Ignored)
-    abstract static class PyTruffle_HashConstant extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_HashConstant extends CApiUnaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
@@ -99,7 +99,7 @@ public final class PythonCextHashBuiltins {
     }
 
     @CApiBuiltin(ret = Py_hash_t, args = {ArgDescriptor.Double}, call = Ignored)
-    abstract static class _PyTruffle_HashDouble extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_HashDouble extends CApiUnaryBuiltinNode {
 
         @Specialization
         long doFinite(double value) {

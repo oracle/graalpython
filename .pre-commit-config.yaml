@@ -4,17 +4,20 @@ repos:
   - id: checkcopyrights
     name: Copyright check
     language: system
+    require_serial: true
     entry: bash scripts/pre-commit-checkcopyrights.sh
     types: [text]
   - id: eclipseformat
     name: Eclipse formatter
     language: system
+    require_serial: true
     entry: bash scripts/pre-commit-eclipseformat.sh
     types: [text]
     files: '\.java$'
   - id: checkstyle
     name: Checkstyle
     language: system
+    require_serial: true
     entry: bash scripts/pre-commit-checkstyle.sh
     types: [text]
     files: '\.java$'
@@ -22,6 +25,7 @@ repos:
     name: Pylint on mx files
     language: system
     pass_filenames: false
+    require_serial: true
     entry: bash scripts/pre-commit-pylint.sh
     types: [text]
     files: '^mx\.graalpython/.*\.py$'

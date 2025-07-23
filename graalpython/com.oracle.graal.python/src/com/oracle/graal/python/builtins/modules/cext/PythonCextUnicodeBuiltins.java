@@ -317,7 +317,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Ignored)
-    abstract static class PyTruffleUnicode_LookupAndIntern extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Unicode_LookupAndIntern extends CApiUnaryBuiltinNode {
 
         @Specialization
         static Object withPString(PString str,
@@ -814,7 +814,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, Py_ssize_t, PY_UCS4}, call = Ignored)
-    abstract static class PyTruffleUnicode_New extends CApiQuaternaryBuiltinNode {
+    abstract static class GraalPyPrivate_Unicode_New extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object ptr, long elements, long elementSize, int isAscii,
                         @Bind PythonLanguage language) {
@@ -823,7 +823,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, Int}, call = Ignored)
-    abstract static class PyTruffleUnicode_FromUCS extends CApiTernaryBuiltinNode {
+    abstract static class GraalPyPrivate_Unicode_FromUCS extends CApiTernaryBuiltinNode {
 
         private static Encoding encodingFromKind(Node inliningTarget, int kind, PRaiseNode raiseNode) throws PException {
             return switch (kind) {
@@ -882,7 +882,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Ignored)
-    abstract static class PyTruffleUnicode_FSDecoder extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Unicode_FSDecoder extends CApiUnaryBuiltinNode {
 
         @Specialization
         static Object fsDecoder(Object arg,
@@ -892,7 +892,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, Int}, call = Ignored)
-    abstract static class PyTruffleUnicode_FromUTF extends CApiTernaryBuiltinNode {
+    abstract static class GraalPyPrivate_Unicode_FromUTF extends CApiTernaryBuiltinNode {
 
         private static Encoding encodingFromKind(Node inliningTarget, int kind, PRaiseNode raiseNode) throws PException {
             return switch (kind) {
@@ -978,7 +978,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, ConstCharPtrAsTruffleString, Int}, call = Ignored)
-    abstract static class PyTruffleUnicode_DecodeUTF8Stateful extends CApiQuaternaryBuiltinNode {
+    abstract static class GraalPyPrivate_Unicode_DecodeUTF8Stateful extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object doUtf8Decode(Object cByteArray, long size, TruffleString errors, int reportConsumed,
                         @Bind Node inliningTarget,
@@ -998,7 +998,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, ConstCharPtrAsTruffleString, Int, Int}, call = Ignored)
-    abstract static class PyTruffleUnicode_DecodeUTF16Stateful extends CApi5BuiltinNode {
+    abstract static class GraalPyPrivate_Unicode_DecodeUTF16Stateful extends CApi5BuiltinNode {
 
         @Specialization
         static Object decode(Object cByteArray, long size, TruffleString errors, int byteorder, int reportConsumed,
@@ -1027,7 +1027,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, ConstCharPtrAsTruffleString, Int, Int}, call = Ignored)
-    abstract static class PyTruffleUnicode_DecodeUTF32Stateful extends CApi5BuiltinNode {
+    abstract static class GraalPyPrivate_Unicode_DecodeUTF32Stateful extends CApi5BuiltinNode {
 
         @Specialization
         static Object decode(Object cByteArray, long size, TruffleString errors, int byteorder, int reportConsumed,
@@ -1056,7 +1056,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = Ignored)
-    abstract static class PyTruffleUnicode_Decode extends CApiTernaryBuiltinNode {
+    abstract static class GraalPyPrivate_Unicode_Decode extends CApiTernaryBuiltinNode {
 
         @Specialization
         static Object doDecode(PMemoryView mv, TruffleString encoding, TruffleString errors,
@@ -1155,7 +1155,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = ConstCharPtr, args = {PyObject, PY_SSIZE_T_PTR}, call = Ignored)
-    abstract static class PyTruffleUnicode_AsUTF8AndSize extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Unicode_AsUTF8AndSize extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doUnicode(PString s, Object sizePtr,
@@ -1184,7 +1184,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored)
-    abstract static class PyTruffleUnicode_FillUtf8 extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Unicode_FillUtf8 extends CApiUnaryBuiltinNode {
 
         @Specialization
         static Object doNative(PythonAbstractNativeObject s,
@@ -1205,7 +1205,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PY_UNICODE_PTR, args = {PyObject, PY_SSIZE_T_PTR}, call = Ignored)
-    abstract static class PyTruffleUnicode_AsUnicodeAndSize extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Unicode_AsUnicodeAndSize extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doUnicode(PString s, Object sizePtr,
@@ -1235,7 +1235,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored)
-    abstract static class PyTruffleUnicode_IsMaterialized extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Unicode_IsMaterialized extends CApiUnaryBuiltinNode {
 
         @Specialization
         static int pstring(PString s) {
@@ -1252,7 +1252,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored)
-    abstract static class PyTruffleUnicode_FillUnicode extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_Unicode_FillUnicode extends CApiUnaryBuiltinNode {
 
         @Specialization
         static Object doNative(PythonAbstractNativeObject s,
@@ -1272,7 +1272,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int}, call = Ignored)
-    abstract static class PyTruffle_Unicode_AsWideChar extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Unicode_AsWideChar extends CApiBinaryBuiltinNode {
         @Specialization
         static Object doUnicode(Object s, int elementSize,
                         @Bind Node inliningTarget,
@@ -1294,7 +1294,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, VA_LIST_PTR}, call = CApiCallPath.Ignored)
-    abstract static class PyTruffle_Unicode_FromFormat extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_Unicode_FromFormat extends CApiBinaryBuiltinNode {
         @Specialization
         static Object doGeneric(TruffleString format, Object vaList,
                         @Bind Node inliningTarget,
@@ -1339,7 +1339,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, PyObject, Py_ssize_t, Py_ssize_t, Int}, call = Ignored)
-    abstract static class PyTruffle_PyUnicode_Find extends CApi5BuiltinNode {
+    abstract static class GraalPyPrivate_PyUnicode_Find extends CApi5BuiltinNode {
         @Specialization(guards = "direction > 0")
         long find(Object string, Object sub, long start, long end, @SuppressWarnings("unused") int direction,
                         @Cached StringBuiltins.FindNode findNode) {

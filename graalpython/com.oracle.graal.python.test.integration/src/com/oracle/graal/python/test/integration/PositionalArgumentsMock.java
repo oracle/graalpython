@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,76 +38,61 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.python.maven.plugin;
+package com.oracle.graal.python.test.integration;
 
-import org.apache.maven.plugin.logging.Log;
-import org.graalvm.python.embedding.tools.exec.BuildToolLog;
+import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.proxy.ProxyArray;
+import org.graalvm.polyglot.proxy.ProxyObject;
 
-final class MavenDelegateLog implements BuildToolLog {
-    private final Log delegate;
+// This is just a mock for tests, the real API is exposed in the org.graalvm.python.embedding library
+public final class PositionalArgumentsMock implements ProxyArray, ProxyObject {
 
-    MavenDelegateLog(Log delegate) {
-        this.delegate = delegate;
+    public static final String MEMBER_KEY = "org.graalvm.python.embedding.PositionalArguments.is_positional_arguments";
+    private final Object[] values;
+
+    private PositionalArgumentsMock(Object[] values) {
+        this.values = values;
     }
 
     @Override
-    public void info(String txt) {
-        delegate.info(txt);
+    public Object get(long index) {
+        return this.values[(int) index];
     }
 
     @Override
-    public void warning(String txt) {
-        delegate.warn(txt);
+    public void set(long index, Value value) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void warning(String txt, Throwable t) {
-        delegate.warn(txt, t);
+    public long getSize() {
+        return values.length;
     }
 
     @Override
-    public void error(String txt) {
-        delegate.error(txt);
+    public Object getMember(String key) {
+        if (MEMBER_KEY.equals(key)) {
+            return true;
+        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void debug(String txt) {
-        delegate.debug(txt);
+    public Object getMemberKeys() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void subProcessOut(String out) {
-        // don't annotate output with [INFO]
-        System.out.println(out);
+    public boolean hasMember(String key) {
+        return MEMBER_KEY.equals(key);
     }
 
     @Override
-    public void subProcessErr(String err) {
-        delegate.error(err);
+    public void putMember(String key, Value value) {
+        throw new UnsupportedOperationException();
     }
 
-    @Override
-    public boolean isDebugEnabled() {
-        return delegate.isDebugEnabled();
-    }
-
-    @Override
-    public boolean isWarningEnabled() {
-        return delegate.isWarnEnabled();
-    }
-
-    @Override
-    public boolean isErrorEnabled() {
-        return delegate.isErrorEnabled();
-    }
-
-    @Override
-    public boolean isSubprocessOutEnabled() {
-        return delegate.isInfoEnabled();
-    }
-
-    @Override
-    public boolean isInfoEnabled() {
-        return delegate.isInfoEnabled();
+    public static PositionalArgumentsMock of(Object... values) {
+        return new PositionalArgumentsMock(values);
     }
 }

@@ -204,7 +204,7 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
             int i = 0;
             TruffleStringIterator it = ts.createCodePointIteratorUncached(TS_ENCODING);
             while (it.hasNext()) {
-                res[i++] = it.nextUncached();
+                res[i++] = it.nextUncached(TS_ENCODING);
             }
             return res;
         }

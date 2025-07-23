@@ -263,7 +263,7 @@ public abstract class SocketNodes {
     /**
      * Equivalent of CPython's {@code socketmodule.c:setipaddr}.
      */
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 48 -> 29
+    @GenerateInline(false)       // footprint reduction 48 -> 29
     public abstract static class SetIpAddrNode extends Node {
 
         private static final byte[] BROADCAST_IP = "255.255.255.255".getBytes();

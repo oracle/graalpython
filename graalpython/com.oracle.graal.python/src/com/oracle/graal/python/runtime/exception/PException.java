@@ -448,7 +448,7 @@ public final class PException extends AbstractTruffleException {
     @ExportMessage(name = "getSourceLocation")
     SourceSection getExceptionSourceLocation(
                     @Bind Node inliningTarget,
-                    @Cached InlinedBranchProfile unsupportedProfile) throws UnsupportedMessageException {
+                    @Exclusive @Cached InlinedBranchProfile unsupportedProfile) throws UnsupportedMessageException {
         if (hasSourceLocation()) {
             return getLocation().getEncapsulatingSourceSection();
         }
@@ -496,7 +496,7 @@ public final class PException extends AbstractTruffleException {
     int getExceptionExitStatus(
                     @Bind Node inliningTarget,
                     @Shared @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @Cached InlinedBranchProfile unsupportedProfile) throws UnsupportedMessageException {
+                    @Exclusive @Cached InlinedBranchProfile unsupportedProfile) throws UnsupportedMessageException {
         if (pythonException instanceof PBaseException) {
             return lib.getExceptionExitStatus(pythonException);
         }
@@ -540,7 +540,7 @@ public final class PException extends AbstractTruffleException {
                     @Shared @Cached ExceptionNodes.GetContextNode getContextNode,
                     @Shared @Cached ExceptionNodes.GetSuppressContextNode getSuppressContextNode,
                     @Shared @Cached ExceptionNodes.GetCauseNode getCauseNode,
-                    @Cached InlinedBranchProfile unsupportedProfile,
+                    @Exclusive @Cached InlinedBranchProfile unsupportedProfile,
                     @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {

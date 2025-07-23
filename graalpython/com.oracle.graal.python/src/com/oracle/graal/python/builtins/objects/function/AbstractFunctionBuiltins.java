@@ -110,14 +110,14 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonBuiltinNode {
         @Specialization
-        Object doIt(VirtualFrame frame, PFunction self, Object[] arguments, PKeyword[] keywords,
+        static Object doIt(VirtualFrame frame, PFunction self, Object[] arguments, PKeyword[] keywords,
                         @Bind Node inliningTarget,
                         @Cached CallDispatchers.FunctionCachedCallNode callNode) {
             return callNode.execute(frame, inliningTarget, self, arguments, keywords);
         }
 
         @Specialization
-        Object doIt(VirtualFrame frame, PBuiltinFunction self, Object[] arguments, PKeyword[] keywords,
+        static Object doIt(VirtualFrame frame, PBuiltinFunction self, Object[] arguments, PKeyword[] keywords,
                         @Bind Node inliningTarget,
                         @Cached CallDispatchers.BuiltinFunctionCachedCallNode callNode) {
             return callNode.execute(frame, inliningTarget, self, arguments, keywords);

@@ -423,7 +423,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                             PythonModule module = context.lookupBuiltinModule(BuiltinNames.T__SRE);
                             Object errorConstructor = PyObjectLookupAttr.executeUncached(module, T_ERROR);
                             PBaseException exception = (PBaseException) CallNode.executeUncached(errorConstructor, reason, originalPattern, position);
-                            return PRaiseNode.raiseExceptionObject(node, exception);
+                            return PRaiseNode.raiseExceptionObjectStatic(node, exception);
                         }
                     }
                 }
@@ -547,7 +547,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
+    @GenerateInline(false)       // footprint reduction 36 -> 17
     abstract static class RECheckInputTypeNode extends Node {
 
         private static final TruffleString T_UNSUPPORTED_INPUT_TYPE = tsLiteral("expected string or bytes-like object");

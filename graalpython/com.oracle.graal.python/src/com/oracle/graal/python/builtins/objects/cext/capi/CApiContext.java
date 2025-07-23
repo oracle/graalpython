@@ -77,7 +77,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCApiAssertions;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
@@ -497,7 +496,7 @@ public final class CApiContext extends CExtContext {
             if (singletonNativeWrapper.ref != null) {
                 CApiTransitions.nativeStubLookupRemove(handleContext, singletonNativeWrapper.ref);
             }
-            PyTruffleObjectFree.releaseNativeWrapperUncached(singletonNativeWrapper);
+            CApiTransitions.releaseNativeWrapperUncached(singletonNativeWrapper);
         }
     }
 
@@ -561,7 +560,7 @@ public final class CApiContext extends CExtContext {
             if (wrapper.ref != null) {
                 CApiTransitions.nativeStubLookupRemove(handleContext, wrapper.ref);
             }
-            PyTruffleObjectFree.releaseNativeWrapperUncached(wrapper);
+            CApiTransitions.releaseNativeWrapperUncached(wrapper);
         }
     }
 
@@ -977,7 +976,7 @@ public final class CApiContext extends CExtContext {
                  * scenarios we call it during context exit, but when the VM is terminated by a
                  * signal, the context exit is skipped. For that case we set up the shutdown hook.
                  */
-                Object finalizeFunction = U.readMember(capiLibrary, "GraalPy_get_finalize_capi_pointer");
+                Object finalizeFunction = U.readMember(capiLibrary, "GraalPyPrivate_GetFinalizeCApiPointer");
                 Object finalizeSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
                 Object finalizingPointer = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
                 try {
@@ -1357,7 +1356,6 @@ public final class CApiContext extends CExtContext {
             CompilerAsserts.neverPartOfCompilation();
             try {
                 CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
-                assert builtin.call() == CApiCallPath.Direct || !isAvailable(builtin) : "name clash in builtin vs. CAPI library: " + builtin.name();
                 LOGGER.finer("CApiContext.BuiltinArrayWrapper.get " + id + " / " + builtin.name());
                 return builtin;
             } catch (Throwable e) {
@@ -1410,27 +1408,6 @@ public final class CApiContext extends CExtContext {
         public void close() {
             if (pointer != 0) {
                 FreeNode.executeUncached(pointer);
-            }
-        }
-
-        private static boolean isAvailable(CApiBuiltinExecutable builtin) {
-            CApiContext cApiContext = PythonContext.get(null).getCApiContext();
-            if (cApiContext == null) {
-                return false;
-            }
-            Object library = cApiContext.getLibrary();
-            InteropLibrary lib = InteropLibrary.getUncached(library);
-            if (!lib.isMemberReadable(library, builtin.name())) {
-                return false;
-            }
-            try {
-                lib.readMember(library, builtin.name());
-                return true;
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            } catch (UnknownIdentifierException e) {
-                // NFI lied to us about symbol availability!
-                return false;
             }
         }
     }

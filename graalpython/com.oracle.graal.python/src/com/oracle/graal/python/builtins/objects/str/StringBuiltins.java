@@ -1016,15 +1016,15 @@ public final class StringBuiltins extends PythonBuiltins {
             TruffleStringIterator toIt = createCodePointIteratorNode.execute(toStr, TS_ENCODING);
             while (fromIt.hasNext()) {
                 assert toIt.hasNext();
-                int key = nextNode.execute(fromIt);
-                int value = nextNode.execute(toIt);
+                int key = nextNode.execute(fromIt, TS_ENCODING);
+                int value = nextNode.execute(toIt, TS_ENCODING);
                 storage = setHashingStorageItem.execute(frame, inliningTarget, storage, key, value);
             }
             assert !toIt.hasNext();
             if (hasZ) {
                 TruffleStringIterator zIt = createCodePointIteratorNode.execute(zString, TS_ENCODING);
                 while (zIt.hasNext()) {
-                    int key = nextNode.execute(zIt);
+                    int key = nextNode.execute(zIt, TS_ENCODING);
                     storage = setHashingStorageItem.execute(frame, inliningTarget, storage, key, PNone.NONE);
                 }
             }
@@ -1089,7 +1089,7 @@ public final class StringBuiltins extends PythonBuiltins {
             TruffleStringIterator it = createCodePointIteratorNode.execute(self, TS_ENCODING);
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, self.byteLength(TS_ENCODING));
             while (it.hasNext()) {
-                int cp = nextNode.execute(it);
+                int cp = nextNode.execute(it, TS_ENCODING);
                 if (cp >= 0 && cp < tableLen) {
                     cp = codePointAtIndexNode.execute(table, cp, TS_ENCODING);
                 }
@@ -1114,7 +1114,7 @@ public final class StringBuiltins extends PythonBuiltins {
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, selfStr.byteLength(TS_ENCODING));
             TruffleStringIterator it = createCodePointIteratorNode.execute(selfStr, TS_ENCODING);
             while (it.hasNext()) {
-                int original = nextNode.execute(it);
+                int original = nextNode.execute(it, TS_ENCODING);
                 Object translated = null;
                 try {
                     translated = getItemNode.execute(frame, inliningTarget, table, original);
@@ -1920,7 +1920,7 @@ public final class StringBuiltins extends PythonBuiltins {
             }
             TruffleStringIterator it = createCodePointIteratorNode.execute(self, TS_ENCODING);
             while (it.hasNext()) {
-                int codePoint = nextNode.execute(it);
+                int codePoint = nextNode.execute(it, TS_ENCODING);
                 if (!isCategory(codePoint)) {
                     return false;
                 }
@@ -2056,7 +2056,7 @@ public final class StringBuiltins extends PythonBuiltins {
             boolean hasLower = false;
             TruffleStringIterator it = createCodePointIteratorNode.execute(self, TS_ENCODING);
             while (it.hasNext()) {
-                int codePoint = nextNode.execute(it);
+                int codePoint = nextNode.execute(it, TS_ENCODING);
                 if (isUpper(codePoint)) {
                     return false;
                 }
@@ -2113,7 +2113,7 @@ public final class StringBuiltins extends PythonBuiltins {
             boolean previousIsCased = false;
             TruffleStringIterator it = createCodePointIteratorNode.execute(self, TS_ENCODING);
             while (it.hasNext()) {
-                int codePoint = nextNode.execute(it);
+                int codePoint = nextNode.execute(it, TS_ENCODING);
                 if (isUpper(codePoint)) {
                     if (previousIsCased) {
                         return false;
@@ -2163,7 +2163,7 @@ public final class StringBuiltins extends PythonBuiltins {
             boolean hasUpper = false;
             TruffleStringIterator it = createCodePointIteratorNode.execute(self, TS_ENCODING);
             while (it.hasNext()) {
-                int codePoint = nextNode.execute(it);
+                int codePoint = nextNode.execute(it, TS_ENCODING);
                 if (isLower(codePoint)) {
                     return false;
                 }
@@ -2262,7 +2262,7 @@ public final class StringBuiltins extends PythonBuiltins {
             int start = 0;
             int end = 0;
             while (it.hasNext()) {
-                final int cp = nextNode.execute(it);
+                final int cp = nextNode.execute(it, TS_ENCODING);
                 if (!UCharacter.isLowerCase(cp) && !UCharacter.isUpperCase(cp)) {
                     if (start == end) {
                         appendCodePointNode.execute(sb, cp, 1, true);
@@ -2373,7 +2373,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 52 -> 34
+    @GenerateInline(false)       // footprint reduction 52 -> 34
     public abstract static class StrGetItemNodeWithSlice extends Node {
 
         public abstract TruffleString execute(TruffleString value, SliceInfo info);
@@ -2621,7 +2621,7 @@ public final class StringBuiltins extends PythonBuiltins {
             TruffleStringIterator it = createCodePointIteratorNode.execute(self, TS_ENCODING);
             // It's ok to iterate with charAt, we just pass surrogates through
             while (it.hasNext()) {
-                int cp = nextNode.execute(it);
+                int cp = nextNode.execute(it, TS_ENCODING);
                 if (cp == '\t') {
                     int incr = tabsize - (linePos % tabsize);
                     if (incr > 0) {

@@ -45,7 +45,6 @@ from typing import cast
 
 import downstream_tests
 import mx_graalpython_benchmark
-import mx_graalpython_gradleproject
 import mx_urlrewrites
 
 if sys.version_info[0] < 3:
@@ -468,17 +467,10 @@ def punittest(ars, report=False):
     # Note: we must use filters instead of --regex so that mx correctly processes the unit test configs,
     # but it is OK to apply --regex on top of the filters
     graalpy_tests = ['com.oracle.graal.python.test', 'com.oracle.graal.python.pegparser.test', 'org.graalvm.python.embedding.test']
-    has_compiler = bool(mx.suite('compiler', fatalIfMissing=False))
     configs += [
         TestConfig("junit", vm_args + graalpy_tests + args, True),
         TestConfig("junit", vm_args + graalpy_tests + args, False),
     ]
-    if mx.is_linux():
-        # see GR-60656 and GR-60658 for what's missing in darwin and windows support
-        configs.append(
-            # MultiContext cext tests should run by themselves so they aren't influenced by others
-            TestConfig("multi-cext", vm_args + ['org.graalvm.python.embedding.cext.test'] + args + (["--use-graalvm"] if has_compiler else []), True),
-        )
 
     if '--regex' not in args:
         async_regex = ['--regex', r'com\.oracle\.graal\.python\.test\.integration\.advanced\.AsyncActionThreadingTest']
@@ -546,11 +538,6 @@ class GraalPythonTags(object):
     unittest_hpy_sandboxed = 'python-unittest-hpy-sandboxed'
     unittest_posix = 'python-unittest-posix'
     unittest_standalone = 'python-unittest-standalone'
-    unittest_gradle_plugin = 'python-unittest-gradle-plugin'
-    unittest_gradle_plugin_long_run = 'python-unittest-gradle-plugin-long-run'
-    unittest_maven_plugin = 'python-unittest-maven-plugin'
-    unittest_maven_plugin_long_run = 'python-unittest-maven-plugin-long-run'
-    junit_vfsutils = 'python-junit-vfsutils'
     tagged = 'python-tagged-unittest'
     svmbuild = 'python-svm-build'
     svmunit = 'python-svm-unittest'
@@ -1108,50 +1095,6 @@ def get_wrapper_urls(wrapper_properties_file, keys):
 
     return ret
 
-def setup_graalpy_plugin_tests():
-    gvm_jdk = graalvm_jdk()
-    standalone_home = graalpy_standalone_home('jvm')
-    mvn_repo_path, version, env = deploy_local_maven_repo()
-
-    env['JAVA_HOME'] = gvm_jdk
-    env['PYTHON_STANDALONE_HOME'] = standalone_home
-    env['GRAAL_VERSION'] = GRAAL_VERSION
-    if not IS_RELEASE:
-        env['GRAAL_VERSION'] += '-dev'
-
-    # setup maven downloader overrides
-    env['MAVEN_REPO_OVERRIDE'] = ",".join([
-        f"{pathlib.Path(mvn_repo_path).as_uri()}/",
-        mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
-    ])
-
-    env["org.graalvm.maven.downloader.version"] = version
-    env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
-
-    return standalone_home, env
-
-def setup_maven_plugin_tests():
-    standalone_home, env = setup_graalpy_plugin_tests()
-
-    override_path = os.path.join(SUITE.get_mx_output_dir(), 'maven-properties-override')
-    original_props_file = "graalpython/com.oracle.graal.python.test/src/tests/standalone/mvnw/.mvn/wrapper/maven-wrapper.properties"
-    mx.copyfile(original_props_file, override_path)
-    mx_graalpython_gradleproject.patch_distribution_url(override_path, original_props_file, escape_colon=False)
-    env['MAVEN_PROPERTIES_OVERRIDE'] = override_path
-
-    return standalone_home, env
-
-def setup_gradle_plugin_tests():
-    standalone_home, env = setup_graalpy_plugin_tests()
-
-    override_path = os.path.join(SUITE.get_mx_output_dir(), 'gradle-properties-override')
-    original_props_file = "graalpython/com.oracle.graal.python.test/src/tests/standalone/gradle/gradle-test-project/gradle/wrapper/gradle-wrapper.properties"
-    mx.copyfile(original_props_file, override_path)
-    mx_graalpython_gradleproject.patch_distribution_url(override_path, original_props_file)
-    env['GRADLE_PROPERTIES_OVERRIDE'] = override_path
-
-    return standalone_home, env
-
 def graalpython_gate_runner(args, tasks):
     report = lambda: (not is_collecting_coverage()) and task
     nonZeroIsFatal = not is_collecting_coverage()
@@ -1323,7 +1266,6 @@ def graalpython_gate_runner(args, tasks):
                 # our standalone python binary is meant for standalone graalpy
                 # releases which are only for latest
                 env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
-            env['ENABLE_JBANG_INTEGRATION_UNITTESTS'] ='true'
             env['JAVA_HOME'] = gvm_jdk
             env['PYTHON_STANDALONE_HOME'] = standalone_home
 
@@ -1336,89 +1278,14 @@ def graalpython_gate_runner(args, tasks):
             env["org.graalvm.maven.downloader.version"] = version
             env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
 
-            # setup JBang executable
-            env["JBANG_CMD"] = _prepare_jbang()
-            m2_cache = get_maven_cache()
-            if m2_cache:
-                env["JBANG_REPO"] = m2_cache
-
             # run the test
             mx.logv(f"running with os.environ extended with: {env=}")
             run_python_unittests(
                 os.path.join(standalone_home, 'bin', _graalpy_launcher()),
-                paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone/test_jbang_integration.py",
-                       "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_standalone.py"],
+                paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone/test_standalone.py"],
                 env=env,
                 parallel=3,
             )
-
-    with Task('GraalPython gradle plugin tests', tasks, tags=[GraalPythonTags.unittest_gradle_plugin]) as task:
-        if task:
-            standalone_home, env = setup_gradle_plugin_tests()
-            env['ENABLE_GRADLE_PLUGIN_UNITTESTS'] = 'true'
-
-            # run the test
-            mx.logv(f"running with os.environ extended with: {env=}")
-
-            run_python_unittests(
-                os.path.join(standalone_home, 'bin', _graalpy_launcher()),
-                paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone/test_gradle_plugin.py"],
-                env=env,
-                parallel=3,
-            )
-
-    with Task('GraalPython gradle plugin long running tests', tasks, tags=[GraalPythonTags.unittest_gradle_plugin_long_run]) as task:
-        if task:
-            standalone_home, env = setup_gradle_plugin_tests()
-            env['ENABLE_GRADLE_PLUGIN_LONG_RUNNING_UNITTESTS'] = 'true'
-
-            # run the test
-            mx.logv(f"running with os.environ extended with: {env=}")
-
-            run_python_unittests(
-                os.path.join(standalone_home, 'bin', _graalpy_launcher()),
-                paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone/test_gradle_plugin.py"],
-                env=env,
-                parallel=3,
-            )
-
-    with Task('GraalPython maven plugin tests', tasks, tags=[GraalPythonTags.unittest_maven_plugin]) as task:
-        if task:
-            standalone_home, env = setup_maven_plugin_tests()
-            env['ENABLE_MAVEN_PLUGIN_UNITTESTS'] = 'true'
-
-            # run the test
-            mx.logv(f"running with os.environ extended with: {env=}")
-
-            run_python_unittests(
-                os.path.join(standalone_home, 'bin', _graalpy_launcher()),
-                paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone/test_maven_plugin.py"],
-                env=env,
-                parallel=3,
-            )
-
-    with Task('GraalPython maven plugin long running tests', tasks, tags=[GraalPythonTags.unittest_maven_plugin_long_run]) as task:
-        if task:
-            standalone_home, env = setup_maven_plugin_tests()
-            env['ENABLE_MAVEN_PLUGIN_LONG_RUNNING_UNITTESTS'] = 'true'
-
-            # run the test
-            mx.logv(f"running with os.environ extended with: {env=}")
-
-            run_python_unittests(
-                os.path.join(standalone_home, 'bin', _graalpy_launcher()),
-                paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone/test_maven_plugin.py"],
-                env=env,
-                parallel=3,
-            )
-
-    with Task('GraalPython VFSUtils long running tests', tasks, tags=[GraalPythonTags.junit_vfsutils]) as task:
-        if task:
-            run_mx(["build"], env={**os.environ, **LATEST_JAVA_HOME})
-            args =['--verbose']
-            vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false']
-            has_compiler = bool(mx.suite('compiler', fatalIfMissing=False))
-            mx_unittest.unittest(vm_args + ['org.graalvm.python.embedding.vfs.test'] + args + (["--use-graalvm"] if has_compiler else []))
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:

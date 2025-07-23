@@ -61,10 +61,20 @@ index 2890406..353a657 100644
  #include <feature_detection_misc.h>
  
 diff --git a/numpy/core/src/npymath/ieee754.c.src b/numpy/core/src/npymath/ieee754.c.src
-index 8fccc9a..3bb9cf0 100644
+index 8fccc9a..93ee333 100644
 --- a/numpy/core/src/npymath/ieee754.c.src
 +++ b/numpy/core/src/npymath/ieee754.c.src
-@@ -362,6 +362,11 @@ int npy_get_floatstatus_barrier(char* param)
+@@ -8,6 +8,9 @@
+ #include "npy_math_private.h"
+ #include "numpy/utils.h"
+ 
++// GraalPy change
++#include <graalpy/handles.h>
++
+ /*
+  The below code is provided for compilers which do not yet provide C11 compatibility (gcc 4.5 and older)
+  */
+@@ -362,6 +365,11 @@ int npy_get_floatstatus_barrier(char* param)
       * By using a volatile, the compiler cannot reorder this call
       */
      if (param != NULL) {
@@ -77,10 +87,20 @@ index 8fccc9a..3bb9cf0 100644
      }
  
 diff --git a/numpy/core/src/npymath/ieee754.cpp b/numpy/core/src/npymath/ieee754.cpp
-index 1c59bf3..519fabc 100644
+index 1c59bf3..0d8cb63 100644
 --- a/numpy/core/src/npymath/ieee754.cpp
 +++ b/numpy/core/src/npymath/ieee754.cpp
-@@ -428,6 +428,11 @@ npy_get_floatstatus_barrier(char *param)
+@@ -9,6 +9,9 @@
+ #include "npy_math_common.h"
+ #include "npy_math_private.h"
+ 
++// GraalPy change
++#include <graalpy/handles.h>
++
+ /*
+  The below code is provided for compilers which do not yet provide C11
+  compatibility (gcc 4.5 and older)
+@@ -428,6 +431,11 @@ npy_get_floatstatus_barrier(char *param)
       * By using a volatile, the compiler cannot reorder this call
       */
      if (param != NULL) {

@@ -488,7 +488,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 line += ") {";
                 lines.add(line);
                 if (value.call.equals("Direct")) {
-                    line = "    " + (isVoid(value.returnType) ? "" : "return ") + "Graal" + name + "(";
+                    line = "    " + (isVoid(value.returnType) ? "" : "return ") + "GraalPyPrivate_Upcall_" + name + "(";
                     for (int i = 0; i < value.arguments.length; i++) {
                         line += (i == 0 ? "" : ", ");
                         line += argName(i);
@@ -502,7 +502,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             }
         }
 
-        lines.add("PyAPI_FUNC(int64_t*) PyTruffle_constants() {");
+        lines.add("PyAPI_FUNC(int64_t*) GraalPyPrivate_Constants() {");
         lines.add("    static int64_t constants[] = {");
         for (var constant : constants) {
             lines.add("        (int64_t) " + constant + ",");
@@ -511,7 +511,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("    };");
         lines.add("    return constants;");
         lines.add("}");
-        lines.add("PyAPI_FUNC(Py_ssize_t*) PyTruffle_struct_offsets() {");
+        lines.add("PyAPI_FUNC(Py_ssize_t*) GraalPyPrivate_StructOffsets() {");
         lines.add("    static Py_ssize_t offsets[] = {");
         for (var field : fields) {
             int delim = field.indexOf("__");
@@ -525,7 +525,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("    };");
         lines.add("    return offsets;");
         lines.add("}");
-        lines.add("PyAPI_FUNC(Py_ssize_t*) PyTruffle_struct_sizes() {");
+        lines.add("PyAPI_FUNC(Py_ssize_t*) GraalPyPrivate_StructSizes() {");
         lines.add("    static Py_ssize_t sizes[] = {");
         for (var struct : structs) {
             lines.add("        sizeof(" + struct.replace("__", " ") + "),");
@@ -559,7 +559,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
     /**
      * Generates the builtin specification in capi.h, which includes only the builtins implemented
-     * in Java code. Additionally, it generates helpers for all "Py_get_" and "Py_set_" builtins.
+     * in Java code. Additionally, it generates helpers for all "GraalPyPrivate_Get_" and
+     * "GraalPyPrivate_Set_" builtins.
      */
     private void generateCApiHeader(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
         List<String> lines = new ArrayList<>();
@@ -567,7 +568,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         int id = 0;
         for (var entry : javaBuiltins) {
             assert (id++) == entry.id;
-            String line = "    BUILTIN(" + entry.name + ", " + getCSignature(entry.returnType);
+            String prefix = entry.call.equals("Direct") ? "PUBLIC" : "PRIVATE";
+            String line = "    " + prefix + "_BUILTIN(" + entry.name + ", " + getCSignature(entry.returnType);
             for (var arg : entry.arguments) {
                 line += ", " + getCSignature(arg);
             }
@@ -578,23 +580,28 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
         for (var entry : javaBuiltins) {
             String name = entry.name;
-            if (!name.endsWith("_dummy")) {
-                if (name.startsWith("Py_get_")) {
+            if (entry.origin.getEnclosingElement().getSimpleName().toString().equals("PythonCextSlotBuiltins")) {
+                String getPrefix = "GraalPyPrivate_Get_";
+                String setPrefix = "GraalPyPrivate_Set_";
+                if (name.startsWith(getPrefix)) {
                     assert entry.arguments.length == 1 : name;
                     String type = name(entry.arguments[0]).replace("Wrapper", "");
                     StringBuilder macro = new StringBuilder();
-                    assert name.charAt(7 + type.length()) == '_' : name;
-                    String field = name.substring(7 + type.length() + 1); // after "_"
-                    macro.append("#define " + name.substring(7) + "(OBJ) ( points_to_py_handle_space(OBJ) ? Graal" + name + "((" + type + "*) (OBJ)) : ((" + type + "*) (OBJ))->" + field + " )");
+                    assert name.charAt(getPrefix.length() + type.length()) == '_' : name;
+                    String unprefixed = name.substring(getPrefix.length());
+                    String field = unprefixed.substring(type.length() + 1);
+                    macro.append("#define GraalPyPrivate_GET_" + unprefixed +
+                                    "(OBJ) ( points_to_py_handle_space(OBJ) ? " + name + "((" + type + "*) (OBJ)) : ((" + type + "*) (OBJ))->" + field + ")");
                     lines.add(macro.toString());
-                } else if (name.startsWith("Py_set_")) {
+                } else if (name.startsWith(setPrefix)) {
                     assert entry.arguments.length == 2 : name;
                     String type = name(entry.arguments[0]).replace("Wrapper", "");
                     StringBuilder macro = new StringBuilder();
-                    assert name.charAt(7 + type.length()) == '_' : name;
-                    String field = name.substring(7 + type.length() + 1); // after "_"
-                    macro.append("#define set_" + name.substring(7) + "(OBJ, VALUE) { if (points_to_py_handle_space(OBJ)) Graal" + name + "((" + type + "*) (OBJ), (VALUE)); else  ((" + type +
-                                    "*) (OBJ))->" + field + " = (VALUE); }");
+                    assert name.charAt(setPrefix.length() + type.length()) == '_' : name;
+                    String unprefixed = name.substring(setPrefix.length());
+                    String field = unprefixed.substring(type.length() + 1);
+                    macro.append("#define GraalPyPrivate_SET_" + unprefixed +
+                                    "(OBJ, VALUE) { if (points_to_py_handle_space(OBJ)) " + name + "((" + type + "*) (OBJ), (VALUE)); else  ((" + type + "*) (OBJ))->" + field + " = (VALUE); }");
                     lines.add(macro.toString());
                 }
             }
@@ -666,10 +673,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             lines.add("        hasMember = reallyHasMember(capiLibrary, \"" + builtin.name + "\");");
             if (builtin.call.equals("CImpl") || builtin.call.equals("Direct") || builtin.call.equals("NotImplemented")) {
                 lines.add("        if (!hasMember) messages.add(\"missing implementation: " + builtin.name + "\");");
-            } else if (builtin.call.equals("Ignored")) {
-                lines.add("        if (hasMember) messages.add(\"unexpected C impl: " + builtin.name + "\");");
-            } else {
-                lines.add("        messages.add(hasMember ? \"unexpected C impl: " + builtin.name + "\" : \"missing implementation: " + builtin.name + "\");");
             }
         }
         lines.add("");
@@ -706,9 +709,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                                 }
 
                                 /**
-                                 * Checks whether the "not implemented" state of builtins matches whether they exist in the capi
-                                 * library: CApiCallPath#NotImplemented and CApiCallPath#Ignored builtins cannot have an
-                                 * implementation, and all others need to be present.
+                                 * Checks whether the expected builtins exist in the library.
                                  */
                                 public static boolean assertBuiltins(Object capiLibrary) {
                                     boolean hasMember = false;
@@ -742,12 +743,18 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
      * These are functions that are introduced by GraalPy, mostly auxiliary functions that we added
      * to avoid direct fields accesses:
      */
-    private static final String[] ADDITIONAL = new String[]{"PyCMethod_GetClass", "PyDescrObject_GetName", "PyDescrObject_GetType", "PyInterpreterState_GetIDFromThreadState",
-                    "PyMethodDescrObject_GetMethod", "PyObject_GetDoc", "PyObject_SetDoc", "PySlice_Start", "PySlice_Step", "PySlice_Stop", "_PyFrame_SetLineNumber",
-                    "_PyCFunction_GetModule", "_PyCFunction_GetMethodDef", "PyCode_GetName",
-                    "_PyCFunction_SetModule", "_PyCFunction_SetMethodDef",
-                    "PyCode_GetFileName", "_PyArray_Resize", "_PyArray_Data",
-                    "_PyErr_Occurred", "_PyNamespace_New", "_Py_GetErrorHandler",
+    private static final String[] ADDITIONAL = new String[]{
+                    /*
+                     * These PySlice builtins are deprecated and scheduled for removal once we no
+                     * longer support versions of Cython that use them. Grep all patches before
+                     * removing
+                     */
+                    "PySlice_Start", "PySlice_Step", "PySlice_Stop",
+                    "PyObject_GetDoc", "PyObject_SetDoc",
+                    // Only in include/internal/pycore_namespace.h, not public
+                    "_PyNamespace_New",
+                    // Only in include/internal/pycore_fileutils.h, not public
+                    "_Py_GetErrorHandler",
                     // Not actually additional, only defined on Windows.
                     // TODO: fix generated CAPIFunctions.txt
                     "PyUnicode_AsMBCSString", "PyUnicode_EncodeCodePage", "PyUnicode_DecodeMBCS",
@@ -820,10 +827,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             newBuiltins.stream().forEach(processingEnv.getMessager()::printError);
         }
 
-        names.removeIf(n -> n.startsWith("Py_get_"));
-        names.removeIf(n -> n.startsWith("Py_set_"));
-        names.removeIf(n -> n.startsWith("PyTruffle"));
-        names.removeIf(n -> n.startsWith("_PyTruffle"));
+        names.removeIf(n -> n.startsWith("GraalPy"));
         names.removeAll(Arrays.asList(ADDITIONAL));
         if (!names.isEmpty()) {
             processingEnv.getMessager().printError("extra builtins (defined in GraalPy, but not in CPython - some of these are necessary for internal modules like 'math'):");

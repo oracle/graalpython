@@ -296,7 +296,7 @@ public final class PythonCextListBuiltins {
     }
 
     @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer}, call = Ignored)
-    abstract static class PyTruffleList_ClearManagedOrGetItems extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_List_ClearManagedOrGetItems extends CApiBinaryBuiltinNode {
 
         @Specialization
         static long doGeneric(PList self, Object outItems,
@@ -327,7 +327,7 @@ public final class PythonCextListBuiltins {
     }
 
     @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer}, call = Ignored)
-    abstract static class PyTruffleList_TryGetItems extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_List_TryGetItems extends CApiBinaryBuiltinNode {
 
         @Specialization
         static long doGeneric(PList self, Object outItems,

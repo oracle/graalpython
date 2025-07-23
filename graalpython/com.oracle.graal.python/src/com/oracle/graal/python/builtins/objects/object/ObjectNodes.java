@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_CHECK_BASESIZE_FOR_GETSTATE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_CHECK_BASICSIZE_FOR_GETSTATE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_COPYREG;
 import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_PICKLE_OBJECT_TYPE;
@@ -248,7 +248,7 @@ public abstract class ObjectNodes {
      */
     @ImportStatic({PythonOptions.class, PGuards.class})
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 92 -> 73
+    @GenerateInline(false)       // footprint reduction 92 -> 73
     public abstract static class GetIdNode extends PNodeWithContext {
         public abstract Object execute(Object self);
 
@@ -436,7 +436,7 @@ public abstract class ObjectNodes {
     }
 
     @ImportStatic({PythonOptions.class, PGuards.class})
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 64 -> 45
+    @GenerateInline(false)       // footprint reduction 64 -> 45
     abstract static class GetNewArgsNode extends Node {
         public abstract Pair<Object, Object> execute(VirtualFrame frame, Object obj);
 
@@ -451,6 +451,7 @@ public abstract class ObjectNodes {
         }
 
         @ImportStatic(PGuards.class)
+        @GenerateInline(false) // 32 -> 13
         abstract static class GetNewArgsInternalNode extends Node {
             public abstract Pair<Object, Object> execute(VirtualFrame frame, Object getNewArgsExAttr, Object getNewArgsAttr);
 
@@ -635,7 +636,7 @@ public abstract class ObjectNodes {
         static boolean doNative(@SuppressWarnings("unused") PythonAbstractNativeObject obj, Object type, int slotNum,
                         @Cached(inline = false) PythonToNativeNode toSulongNode,
                         @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
-            Object result = callCapiFunction.call(FUN_CHECK_BASESIZE_FOR_GETSTATE, toSulongNode.execute(type), slotNum);
+            Object result = callCapiFunction.call(FUN_CHECK_BASICSIZE_FOR_GETSTATE, toSulongNode.execute(type), slotNum);
             return (int) result == 0;
         }
 
@@ -742,7 +743,7 @@ public abstract class ObjectNodes {
      */
     @GenerateUncached
     @ImportStatic(SpecialAttributeNames.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 76 -> 57
+    @GenerateInline(false)       // footprint reduction 76 -> 57
     public abstract static class GetFullyQualifiedNameNode extends PNodeWithContext {
         public abstract TruffleString execute(Frame frame, Object cls);
 

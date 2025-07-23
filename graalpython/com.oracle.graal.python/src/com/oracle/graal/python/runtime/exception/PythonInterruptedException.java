@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import com.oracle.truffle.api.library.ExportMessage;
  * If {@link PythonThreadKillException} bubbles up to the top handler in the main thread, we
  * translate it to this exception.
  */
+@SuppressWarnings("serial")
 @ExportLibrary(InteropLibrary.class)
 public class PythonInterruptedException extends AbstractTruffleException {
     @ExportMessage

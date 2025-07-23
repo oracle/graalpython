@@ -256,7 +256,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached("forBytearray()") NormalizeIndexNode normalizeIndexNode,
                         @Cached SequenceStorageNodes.SetItemScalarNode setItemNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached @Exclusive PRaiseNode raiseNode) {
             if (indexCheckNode.execute(inliningTarget, indexObj)) {
                 int index = asSizeNode.executeExact(frame, inliningTarget, indexObj);
                 index = normalizeIndexNode.execute(index, self.getSequenceStorage().length());
@@ -329,7 +329,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         static void doDelete(VirtualFrame frame, PByteArray self, Object key, @SuppressWarnings("unused") Object value,
                         @Bind Node inliningTarget,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             self.checkCanResize(inliningTarget, raiseNode);
             deleteNode.execute(frame, self.getSequenceStorage(), key);
         }

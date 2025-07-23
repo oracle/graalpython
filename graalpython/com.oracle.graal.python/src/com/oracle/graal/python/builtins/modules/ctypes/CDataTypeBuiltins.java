@@ -146,7 +146,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
     protected static final TruffleString T__HANDLE = tsLiteral(J__HANDLE);
 
     @ImportStatic(CDataTypeBuiltins.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 72 -> 53
+    @GenerateInline(false)       // footprint reduction 72 -> 53
     protected abstract static class CDataTypeFromParamNode extends Node {
 
         abstract Object execute(VirtualFrame frame, Object type, Object value);
@@ -352,7 +352,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 21
+    @GenerateInline(false)       // footprint reduction 40 -> 21
     protected abstract static class PyCDataAtAddress extends Node {
 
         abstract CDataObject execute(Object type, Pointer pointer);
@@ -413,7 +413,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
     /*
      * Set a slice in object 'dst', which has the type 'type', to the value 'value'.
      */
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 64 -> 46
+    @GenerateInline(false)       // footprint reduction 64 -> 46
     protected abstract static class PyCDataSetNode extends Node {
 
         abstract void execute(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, Pointer ptr);

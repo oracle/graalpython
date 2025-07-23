@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -374,9 +374,9 @@ PyAPI_FUNC(PyObject *) PyCode_GetCellvars(PyCodeObject *code);
 /* Equivalent to getattr(code, 'co_freevars') in Python. */
 PyAPI_FUNC(PyObject *) PyCode_GetFreevars(PyCodeObject *code);
 
-/* GraalPy specific to avoid direct field access. Used by (at least) pytorch */
-PyAPI_FUNC(PyObject*) PyCode_GetFileName(PyCodeObject* code);
-PyAPI_FUNC(PyObject*) PyCode_GetName(PyCodeObject* code);
+/* GraalPy public API to avoid direct field access. Used by (at least) pytorch patch */
+PyAPI_FUNC(PyObject*) GraalPyCode_GetFileName(PyCodeObject* code);
+PyAPI_FUNC(PyObject*) GraalPyCode_GetName(PyCodeObject* code);
 
 typedef enum _PyCodeLocationInfoKind {
     /* short forms are 0 to 9 */

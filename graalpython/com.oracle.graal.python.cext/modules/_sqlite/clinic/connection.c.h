@@ -60,7 +60,7 @@ pysqlite_connection_init(PyObject *self, PyObject *args, PyObject *kwargs)
     int uri = 0;
     enum autocommit_mode autocommit = LEGACY_TRANSACTION_CONTROL;
 
-    fastargs = _PyArg_UnpackKeywords(PySequence_Fast_ITEMS(args), nargs, kwargs, NULL, &_parser, 1, 8, 0, argsbuf);
+    fastargs = _PyArg_UnpackKeywords(GraalPyTuple_ITEMS(args), nargs, kwargs, NULL, &_parser, 1, 8, 0, argsbuf);
     if (!fastargs) {
         goto exit;
     }

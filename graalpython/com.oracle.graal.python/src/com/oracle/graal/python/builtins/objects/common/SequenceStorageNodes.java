@@ -642,7 +642,7 @@ public abstract class SequenceStorageNodes {
 
     @GenerateUncached
     @ImportStatic(SequenceStorageBaseNode.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 48 -> 30
+    @GenerateInline(false)       // footprint reduction 48 -> 30
     protected abstract static class GetNativeItemScalarNode extends Node {
         public abstract Object execute(NativeSequenceStorage s, int idx);
 
@@ -662,7 +662,7 @@ public abstract class SequenceStorageNodes {
 
     @GenerateUncached
     @ImportStatic({StorageType.class, SequenceStorageBaseNode.class})
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 21
+    @GenerateInline(false)       // footprint reduction 40 -> 21
     public abstract static class GetItemSliceNode extends PNodeWithContext {
 
         public abstract SequenceStorage execute(SequenceStorage s, int start, int stop, int step, int length);
@@ -865,7 +865,7 @@ public abstract class SequenceStorageNodes {
 
     @GenerateUncached
     @ImportStatic(PGuards.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 23
+    @GenerateInline(false)       // footprint reduction 40 -> 23
     public abstract static class SetItemDynamicNode extends Node {
 
         public abstract SequenceStorage execute(Frame frame, GenNodeSupplier generalizationNodeProvider, SequenceStorage s, Object key, Object value);
@@ -1368,7 +1368,7 @@ public abstract class SequenceStorageNodes {
 
     @GenerateUncached
     @ImportStatic(SequenceStorageBaseNode.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 18
+    @GenerateInline(false)       // footprint reduction 36 -> 18
     public abstract static class SetNativeItemScalarNode extends Node {
         public abstract void execute(NativeSequenceStorage s, int idx, Object value);
 
@@ -1394,7 +1394,7 @@ public abstract class SequenceStorageNodes {
 
     @GenerateUncached
     @ImportStatic(SequenceStorageBaseNode.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 18
+    @GenerateInline(false)       // footprint reduction 36 -> 18
     public abstract static class InitializeNativeItemScalarNode extends Node {
         public abstract void execute(NativeSequenceStorage s, int idx, Object value);
 
@@ -1683,7 +1683,7 @@ public abstract class SequenceStorageNodes {
 
     @GenerateUncached
     @ImportStatic(SequenceStorageBaseNode.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 92 -> 75
+    @GenerateInline(false)       // footprint reduction 92 -> 75
     abstract static class SetStorageSliceNode extends Node {
 
         public abstract void execute(SequenceStorage s, SliceInfo info, SequenceStorage iterable, boolean canGeneralize);
@@ -1710,7 +1710,7 @@ public abstract class SequenceStorageNodes {
                         @Exclusive @Cached InlinedConditionProfile memoryError,
                         @Exclusive @Cached InlinedConditionProfile negGrowth,
                         @Exclusive @Cached InlinedConditionProfile posGrowth,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             int start = sinfo.start;
             int stop = sinfo.stop;
             int step = sinfo.step;
@@ -1735,7 +1735,7 @@ public abstract class SequenceStorageNodes {
                         @Exclusive @Cached MemMoveNode memove,
                         @Cached SetItemScalarNode setLeftItemNode,
                         @Cached GetItemScalarNode getRightItemNode,
-                        @Shared @Cached PRaiseNode raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached CopyNode copyNode) {
             int start = sinfo.start;
             int step = sinfo.step;
@@ -2203,7 +2203,7 @@ public abstract class SequenceStorageNodes {
 
     }
 
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 68 -> 49
+    @GenerateInline(false)       // footprint reduction 68 -> 49
     @GenerateUncached
     public abstract static class ConcatBaseNode extends SequenceStorageBaseNode {
 
@@ -2616,7 +2616,7 @@ public abstract class SequenceStorageNodes {
         @SuppressWarnings("truffle-static-method")
         SequenceStorage doGeneric(SequenceStorage s, int times,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PRaiseNode raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached CreateEmptyNode createEmptyNode,
                         @Cached GetItemScalarNode getItemNode,
                         @Cached SetItemScalarNode setItemNode,
@@ -2746,7 +2746,7 @@ public abstract class SequenceStorageNodes {
      * Does not allow any generalization but compatible types.
      */
     @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
+    @GenerateInline(false)       // footprint reduction 36 -> 17
     public abstract static class NoGeneralizationNode extends GeneralizationNode {
 
         public static final GenNodeSupplier DEFAULT = new GenNodeSupplier() {

@@ -94,20 +94,20 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
 
     public abstract Object execute(Frame frame, Node inliningTarget, Object object, Object key);
 
-    @Specialization(guards = "isBuiltinList(object)")
+    @Specialization(guards = "isBuiltinList(object)", excludeForUncached = true)
     static Object doList(VirtualFrame frame, PList object, Object key,
                     @Cached ListBuiltins.GetItemNode getItemNode) {
         return getItemNode.execute(frame, object, key);
     }
 
-    @Specialization(guards = "isBuiltinTuple(object)")
+    @Specialization(guards = "isBuiltinTuple(object)", excludeForUncached = true)
     static Object doTuple(VirtualFrame frame, PTuple object, Object key,
                     @Cached TupleBuiltins.GetItemNode getItemNode) {
         return getItemNode.execute(frame, object, key);
     }
 
     @InliningCutoff // TODO: inline this probably?
-    @Specialization(guards = "isBuiltinDict(object)")
+    @Specialization(guards = "isBuiltinDict(object)", excludeForUncached = true)
     static Object doDict(VirtualFrame frame, PDict object, Object key,
                     @Cached DictBuiltins.GetItemNode getItemNode) {
         return getItemNode.execute(frame, object, key);

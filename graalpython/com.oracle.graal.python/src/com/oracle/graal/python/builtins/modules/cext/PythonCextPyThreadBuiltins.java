@@ -139,7 +139,7 @@ public final class PythonCextPyThreadBuiltins {
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Long, args = {}, call = Ignored)
-    abstract static class PyTruffle_tss_create extends CApiNullaryBuiltinNode {
+    abstract static class GraalPyPrivate_tss_create extends CApiNullaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         long tssCreate() {
@@ -148,7 +148,7 @@ public final class PythonCextPyThreadBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {ArgDescriptor.Long}, call = Ignored)
-    abstract static class PyTruffle_tss_get extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_tss_get extends CApiUnaryBuiltinNode {
         @Specialization
         Object tssGet(long key) {
             Object value = getCApiContext().tssGet(key);
@@ -160,7 +160,7 @@ public final class PythonCextPyThreadBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {ArgDescriptor.Long, Pointer}, call = Ignored)
-    abstract static class PyTruffle_tss_set extends CApiBinaryBuiltinNode {
+    abstract static class GraalPyPrivate_tss_set extends CApiBinaryBuiltinNode {
         @Specialization
         int tssSet(long key, Object value) {
             getCApiContext().tssSet(key, value);
@@ -169,7 +169,7 @@ public final class PythonCextPyThreadBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {ArgDescriptor.Long}, call = Ignored)
-    abstract static class PyTruffle_tss_delete extends CApiUnaryBuiltinNode {
+    abstract static class GraalPyPrivate_tss_delete extends CApiUnaryBuiltinNode {
         @Specialization
         Object tssDelete(long key) {
             getCApiContext().tssDelete(key);
