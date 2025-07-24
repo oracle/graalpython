@@ -52,6 +52,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.strings.TruffleString.CodePointAtByteIndexNode;
 import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
@@ -330,6 +331,32 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return UnicodeDataModuleBuiltinsClinicProviders.CategoryNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    // unicodedata.combining(chr)
+    @Builtin(name = "combining", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"chr"})
+    @GenerateNodeFactory
+    public abstract static class CombiningNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        static Object combining(Object object,
+                        @Bind Node inliningTarget) {
+            final TruffleString chr;
+
+            try {
+                chr = CastToTruffleStringNode.getUncached().execute(inliningTarget, object);
+            } catch (CannotCastException e) {
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "combining()", "a unicode character", object);
+            }
+
+            if (CodePointLengthNode.getUncached().execute(chr, TS_ENCODING) != 1) {
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "combining()", "a unicode character", object);
+            }
+
+            int codepoint = CodePointAtByteIndexNode.getUncached().execute(chr, 0, TS_ENCODING);
+            return UCharacter.getCombiningClass(codepoint);
         }
     }
 

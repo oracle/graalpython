@@ -88,3 +88,17 @@ class TestUnicodedata(unittest.TestCase):
         empty_string = ""
         with self.assertRaisesRegex(TypeError, r"east_asian_width\(\) argument must be a unicode character, not str"):
             unicodedata.east_asian_width(empty_string)
+
+
+    def test_combining(self):
+        list = [1, 2, 3]
+        with self.assertRaisesRegex(TypeError, r"combining\(\) argument must be a unicode character, not list"):
+            unicodedata.combining(list)
+
+        multi_character_string = "abc"
+        with self.assertRaisesRegex(TypeError, r"combining\(\) argument must be a unicode character, not str"):
+            unicodedata.combining(multi_character_string)
+
+        empty_string = ""
+        with self.assertRaisesRegex(TypeError, r"combining\(\) argument must be a unicode character, not str"):
+            unicodedata.combining(empty_string)
