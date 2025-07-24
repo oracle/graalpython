@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_UNICODEDATA;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_UNICODEDATA;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
@@ -50,6 +51,10 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.truffle.api.strings.TruffleString.CodePointAtByteIndexNode;
+import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
 import com.oracle.truffle.api.strings.TruffleString.FromJavaStringNode;
 import com.oracle.truffle.api.strings.TruffleString.ToJavaStringNode;
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
@@ -325,6 +330,54 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return UnicodeDataModuleBuiltinsClinicProviders.CategoryNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    // unicode.east_asia_width(chr)
+    @Builtin(name = "east_asian_width", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"chr"})
+    @GenerateNodeFactory
+    public abstract static class EastAsianWidthNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static TruffleString eastAsianWidth(Object object,
+                        @Bind Node inliningTarget,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached CodePointLengthNode codePointLengthNode,
+                        @Cached CodePointAtByteIndexNode codePointAtByteIndexNode,
+                        @Cached FromJavaStringNode fromJavaStringNode) {
+            final TruffleString chr;
+
+            try {
+                chr = CastToTruffleStringNode.getUncached().execute(inliningTarget, object);
+            } catch (CannotCastException e) {
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "east_asian_width()", "a unicode character", object);
+            }
+
+            if (CodePointLengthNode.getUncached().execute(chr, TS_ENCODING) != 1) {
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "east_asian_width()", "a unicode character", object);
+            }
+
+            int codepoint = CodePointAtByteIndexNode.getUncached().execute(chr, 0, TS_ENCODING);
+            String widthName = getWidthName(codepoint);
+            return fromJavaStringNode.execute(widthName, TS_ENCODING);
+        }
+
+        @TruffleBoundary
+        private static String getWidthName(int codepoint) {
+            int widthNameCode = UCharacter.getIntPropertyValue(codepoint, UProperty.EAST_ASIAN_WIDTH);
+            String widthName;
+
+            switch (widthNameCode) {
+                case UCharacter.EastAsianWidth.AMBIGUOUS -> widthName = "A";
+                case UCharacter.EastAsianWidth.FULLWIDTH -> widthName = "F";
+                case UCharacter.EastAsianWidth.HALFWIDTH -> widthName = "H";
+                case UCharacter.EastAsianWidth.NARROW -> widthName = "Na";
+                case UCharacter.EastAsianWidth.NEUTRAL -> widthName = "N";
+                case UCharacter.EastAsianWidth.WIDE -> widthName = "W";
+                default -> widthName = ""; // EastAsianWidth.COUNT
+            }
+
+            return widthName;
         }
     }
 }
