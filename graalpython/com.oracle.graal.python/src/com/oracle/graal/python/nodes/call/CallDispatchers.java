@@ -166,7 +166,7 @@ public class CallDispatchers {
         static Object doDirect(VirtualFrame frame, Node inliningTarget, RootCallTarget callTarget, Object[] arguments,
                         @Cached InlinedConditionProfile profileIsNullFrame,
                         @Cached ExecutionContext.CallContext callContext,
-                        @Cached(inline = false) IndirectCallNode callNode) {
+                        @Cached IndirectCallNode callNode) {
             if (profileIsNullFrame.profile(inliningTarget, frame == null)) {
                 PythonContext context = PythonContext.get(inliningTarget);
                 PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));

@@ -263,7 +263,7 @@ public final class TpSlotVarargs {
         @Specialization
         static Object call(VirtualFrame frame, Node inliningTarget, TpSlotVarargsBuiltin<?> slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached CreateArgumentsNode createArgumentsNode,
-                        @Cached(value = "createDirectCallNode(slot)", inline = false) DirectCallNode callNode,
+                        @Cached("createDirectCallNode(slot)") DirectCallNode callNode,
                         @Cached CallDispatchers.SimpleDirectInvokeNode invoke) {
             CompilerAsserts.partialEvaluationConstant(slot);
             Object[] arguments = createArgumentsNode.execute(inliningTarget, slot.getName(), args, keywords, slot.getSignature(), self, null, slot.getDefaults(), slot.getKwDefaults(), false);

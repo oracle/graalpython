@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "a180d4f836e7c10201e90c6fc4e06817008b1af7",
+                "version": "c11dd2ea3193b39a64e59133bd36e0bfe780728a",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "a180d4f836e7c10201e90c6fc4e06817008b1af7",
+                "version": "c11dd2ea3193b39a64e59133bd36e0bfe780728a",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -405,8 +405,6 @@ suite = {
             "forceJavac": True, # GRAALPYTHON_PROCESSOR is not compatible with ECJ
             "workingSets": "Truffle,Python",
             "spotbugsIgnoresGenerated": True,
-            # GR-60063: this disables all javac warnings
-            "javac.lint.overrides" : "none",
         },
 
         # GRAALPYTHON_UNIT_TESTS

@@ -408,7 +408,7 @@ public final class PythonCextTypeBuiltins {
 
         @Specialization
         static Object setBuiltinClassType(PythonBuiltinClassType clazz, Object bufferProcs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached HiddenAttr.WriteNode writeAttrNode) {
             writeAttrNode.execute(inliningTarget, PythonContext.get(inliningTarget).lookupType(clazz), AS_BUFFER, bufferProcs);
             return PNone.NO_VALUE;
@@ -416,7 +416,7 @@ public final class PythonCextTypeBuiltins {
 
         @Specialization(guards = "isPythonClass(object)")
         static Object set(PythonAbstractObject object, Object bufferProcs,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached HiddenAttr.WriteNode writeAttrNode) {
             writeAttrNode.execute(inliningTarget, object, AS_BUFFER, bufferProcs);
             return PNone.NO_VALUE;
