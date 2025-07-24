@@ -293,7 +293,7 @@ public class LZMANodes {
                         @Cached InlinedConditionProfile errProfile,
                         @Cached HashingStorageGetItem getItem,
                         @Cached PRaiseNode raise,
-                        @Cached(inline = false) TruffleString.EqualNode equalNode) {
+                        @Cached TruffleString.EqualNode equalNode) {
             Object key = itKey.execute(inliningTarget, storage, it);
             TruffleString skey = strNode.execute(frame, inliningTarget, key);
             int idx = getOptionIndex(skey, s, equalNode);

@@ -165,7 +165,7 @@ public abstract class PyObjectGetMethod extends Node {
                     @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                     @Exclusive @Cached PyObjectGetAttr getAttr,
                     @Cached BuiltinClassProfiles.IsBuiltinObjectProfile isAttrError,
-                    @Cached(inline = false) TruffleString.ToJavaStringNode toJavaString,
+                    @Cached TruffleString.ToJavaStringNode toJavaString,
                     @CachedLibrary("receiver") InteropLibrary lib) {
         try {
             return getGenericAttr(frame, inliningTarget, receiver, name, getAttr);

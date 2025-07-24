@@ -1134,7 +1134,7 @@ public class HashingStorageNodes {
 
         @Specialization
         static long dom(@SuppressWarnings("unused") DynamicObjectStorage self, HashingStorageIterator it,
-                        @Shared("hash") @Cached(inline = false) TruffleString.HashCodeNode hashNode) {
+                        @Shared("hash") @Cached TruffleString.HashCodeNode hashNode) {
             return PyObjectHashNode.hash((TruffleString) it.domKeys[it.index], hashNode);
         }
 
@@ -1146,7 +1146,7 @@ public class HashingStorageNodes {
 
         @Specialization
         static long keywords(KeywordsStorage self, HashingStorageIterator it,
-                        @Shared("hash") @Cached(inline = false) TruffleString.HashCodeNode hashNode) {
+                        @Shared("hash") @Cached TruffleString.HashCodeNode hashNode) {
             return PyObjectHashNode.hash(self.keywords[it.index].getName(), hashNode);
         }
 

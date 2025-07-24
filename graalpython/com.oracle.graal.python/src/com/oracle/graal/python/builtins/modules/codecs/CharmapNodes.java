@@ -117,8 +117,8 @@ public final class CharmapNodes {
 
         @Specialization
         static Object doIt(VirtualFrame frame, Node inliningTarget, TruffleString map,
-                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached(inline = false) HashingStorageSetItem setItemNode,
                         @Cached PRaiseNode raiseNode) {
             int len = Math.min(codePointLengthNode.execute(map, TS_ENCODING), 256);
@@ -203,8 +203,8 @@ public final class CharmapNodes {
 
         @Fallback
         static byte[] doGenericMapping(VirtualFrame frame, Node inliningTarget, TruffleString src, TruffleString errors, Object mapping,
-                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached CharmapEncodeOutputNode charmapEncodeOutputNode,
                         @Cached CharmapEncodingErrorNode charmapEncodingErrorNode) {
             int len = codePointLengthNode.execute(src, TS_ENCODING);
@@ -236,8 +236,8 @@ public final class CharmapNodes {
         @Specialization
         static int doIt(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString src, int pos, int len, TruffleString errors, Object mapping, ByteArrayBuilder builder,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached CharmapEncodeLookupNode charmapEncodeLookupNode,
                         @Cached GetErrorHandlerNode getErrorHandlerNode,
                         @Cached CallEncodingErrorHandlerNode callEncodingErrorHandlerNode,

@@ -181,7 +181,7 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
     @InliningCutoff
     static TruffleString other(Object x,
                     @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
-                    @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode) {
+                    @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
         if (interop.isString(x)) {
             TruffleString truffleString;
             try {

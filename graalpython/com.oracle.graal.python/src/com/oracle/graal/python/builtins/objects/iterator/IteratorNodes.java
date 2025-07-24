@@ -122,7 +122,7 @@ public abstract class IteratorNodes {
 
         @Specialization
         static int doTruffleString(TruffleString str,
-                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode) {
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             return codePointLengthNode.execute(str, TS_ENCODING);
         }
 
@@ -300,7 +300,7 @@ public abstract class IteratorNodes {
 
         @Specialization
         static int doString(PStringIterator it,
-                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode) {
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             return ensurePositive(codePointLengthNode.execute(it.value, TS_ENCODING));
         }
 

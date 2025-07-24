@@ -106,7 +106,7 @@ public class StructModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         static PStruct doCachedString(PythonModule module, TruffleString format, StructBuiltins.ConstructStructNode constructStructNode,
                         @Cached("format") TruffleString cachedFormat,
-                        @Cached(inline = false) TruffleString.EqualNode eqNode,
+                        @Cached TruffleString.EqualNode eqNode,
                         @Cached(value = "getStructInternal(module, format, constructStructNode)", weak = true) PStruct cachedStruct) {
             return cachedStruct;
         }

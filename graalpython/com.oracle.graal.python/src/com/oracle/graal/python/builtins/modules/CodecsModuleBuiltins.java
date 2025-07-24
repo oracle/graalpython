@@ -222,7 +222,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile surrogateescapeProfile,
                         @Cached InlinedConditionProfile xmlcharrefreplaceProfile,
                         @Cached PRaiseNode raiseNode,
-                        @Cached(inline = false) TruffleString.EqualNode equalNode,
+                        @Cached TruffleString.EqualNode equalNode,
                         // TODO: (blocked by GR-46101) make this CallNode.Lazy
                         @Cached(inline = false) CallNode lazyCallNode) {
             boolean fixed;
@@ -398,7 +398,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile backslashreplaceProfile,
                         @Cached InlinedConditionProfile surrogatepassProfile,
                         @Cached InlinedConditionProfile surrogateescapeProfile,
-                        @Cached(inline = false) TruffleString.EqualNode equalNode) {
+                        @Cached TruffleString.EqualNode equalNode) {
             if (strictProfile.profile(inliningTarget, equalNode.execute(T_STRICT, errorAction, TS_ENCODING))) {
                 return T_STRICT;
             } else if (backslashreplaceProfile.profile(inliningTarget, equalNode.execute(T_BACKSLASHREPLACE, errorAction, TS_ENCODING))) {

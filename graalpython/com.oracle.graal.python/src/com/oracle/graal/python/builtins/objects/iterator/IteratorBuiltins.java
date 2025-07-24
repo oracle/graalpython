@@ -215,8 +215,8 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         static Object next(PStringIterator self,
-                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached(inline = false) TruffleString.SubstringNode substringNode) {
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.SubstringNode substringNode) {
             if (self.getIndex() < codePointLengthNode.execute(self.value, TS_ENCODING)) {
                 return substringNode.execute(self.value, self.index++, 1, TS_ENCODING, false);
             }

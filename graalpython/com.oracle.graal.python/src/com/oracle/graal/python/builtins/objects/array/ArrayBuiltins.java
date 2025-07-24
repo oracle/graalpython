@@ -371,8 +371,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
 
                 @Specialization
                 static BufferFormat get(Node inliningTarget, TruffleString typeCode,
-                                @Cached(inline = false) TruffleString.CodePointLengthNode lengthNode,
-                                @Cached(inline = false) TruffleString.CodePointAtIndexNode atIndexNode,
+                                @Cached TruffleString.CodePointLengthNode lengthNode,
+                                @Cached TruffleString.CodePointAtIndexNode atIndexNode,
                                 @Cached PRaiseNode raise,
                                 @Cached(value = "createIdentityProfile()", inline = false) ValueProfile valueProfile) {
                     if (lengthNode.execute(typeCode, TS_ENCODING) != 1) {

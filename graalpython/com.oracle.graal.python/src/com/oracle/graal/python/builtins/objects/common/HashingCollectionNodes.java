@@ -228,10 +228,10 @@ public abstract class HashingCollectionNodes {
         static HashingStorage doString(Node inliningTarget, Object strObj, Object value,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Exclusive @Cached HashingStorageSetItem setStorageItem,
-                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached(inline = false) TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached(inline = false) TruffleStringIterator.NextNode nextNode,
-                        @Cached(inline = false) TruffleString.FromCodePointNode fromCodePointNode) {
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
             TruffleString str = castToStringNode.execute(inliningTarget, strObj);
             HashingStorage storage = PDict.createNewStorage(codePointLengthNode.execute(str, TS_ENCODING));
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;

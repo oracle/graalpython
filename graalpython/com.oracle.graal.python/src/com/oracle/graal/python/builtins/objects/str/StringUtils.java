@@ -315,8 +315,8 @@ public final class StringUtils {
 
         @Specialization
         static boolean doString(TruffleString str,
-                        @Cached(inline = false) TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached(inline = false) TruffleStringIterator.NextNode nextNode) {
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode) {
             if (str.isEmpty()) {
                 return false;
             }

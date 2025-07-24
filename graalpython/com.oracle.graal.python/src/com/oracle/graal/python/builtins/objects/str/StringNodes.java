@@ -127,7 +127,7 @@ public abstract class StringNodes {
         @InliningCutoff
         static TruffleString doNative(Node inliningTarget, PString x,
                         @Cached ReadUnicodeArrayNode readArray,
-                        @Cached(inline = false) TruffleString.FromIntArrayUTF32Node fromArray) {
+                        @Cached TruffleString.FromIntArrayUTF32Node fromArray) {
             NativeCharSequence sequence = x.getNativeCharSequence();
             assert TS_ENCODING == Encoding.UTF_32 : "needs switch_encoding otherwise";
             TruffleString materialized = fromArray.execute(readArray.execute(inliningTarget, sequence.getPtr(), sequence.getElements(), sequence.getElementSize()));
@@ -227,7 +227,7 @@ public abstract class StringNodes {
 
         @Specialization
         static String doConvert(TruffleString self, @SuppressWarnings("unused") TruffleString errMsgFormat, @SuppressWarnings("unused") Object[] errMsgArgs,
-                        @Cached(inline = false) TruffleString.ToJavaStringNode toJavaStringNode) {
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
             return toJavaStringNode.execute(self);
         }
 

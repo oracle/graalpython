@@ -884,8 +884,8 @@ public final class TypeBuiltins extends PythonBuiltins {
                             @Bind PythonLanguage language,
                             @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
                             @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObject,
-                            @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
-                            @Cached(inline = false) TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+                            @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                            @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
                 value = switchEncodingNode.execute(value, TruffleString.Encoding.UTF_8);
                 byte[] bytes = copyToByteArrayNode.execute(value, TruffleString.Encoding.UTF_8);
                 PBytes bytesObject = PFactory.createBytes(language, bytes);

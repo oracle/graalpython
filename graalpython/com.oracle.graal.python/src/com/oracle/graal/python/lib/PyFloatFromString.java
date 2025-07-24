@@ -80,7 +80,7 @@ public abstract class PyFloatFromString extends PNodeWithContext {
 
     @Specialization
     static double doString(VirtualFrame frame, Node inliningTarget, TruffleString object,
-                    @Cached(inline = false) TruffleString.ToJavaStringNode toJavaStringNode,
+                    @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                     @Shared @Cached PyObjectReprAsTruffleStringNode reprNode,
                     @Shared @Cached PRaiseNode raiseNode) {
         return convertStringToDouble(frame, inliningTarget, toJavaStringNode.execute(object), object, reprNode, raiseNode);

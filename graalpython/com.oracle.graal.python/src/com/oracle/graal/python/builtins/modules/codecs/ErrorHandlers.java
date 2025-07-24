@@ -164,7 +164,7 @@ public final class ErrorHandlers {
 
         @Specialization
         static ErrorHandler doIt(Node inliningTarget, TruffleString errors,
-                        @Cached(inline = false) TruffleString.EqualNode equalNode,
+                        @Cached TruffleString.EqualNode equalNode,
                         @Cached InlinedConditionProfile strictProfile,
                         @Cached InlinedConditionProfile surrogateEscapeProfile,
                         @Cached InlinedConditionProfile replaceProfile,
@@ -763,10 +763,10 @@ public final class ErrorHandlers {
 
         @Specialization
         StandardEncoding doIt(TruffleString encodingName,
-                        @Cached(inline = false) TruffleString.GetCodeRangeNode getCodeRangeNode,
-                        @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached(inline = false) TruffleString.CopyToByteArrayNode copyToByteArrayNode,
-                        @Cached(inline = false) TruffleString.EqualNode equalNode) {
+                        @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
+                        @Cached TruffleString.EqualNode equalNode) {
             if (getCodeRangeNode.execute(encodingName, TS_ENCODING) != CodeRange.ASCII) {
                 return StandardEncoding.UNKNOWN;
             }
@@ -962,7 +962,7 @@ public final class ErrorHandlers {
                         @Cached MakeEncodeExceptionNode makeEncodeExceptionNode,
                         @Cached(inline = false) CallNode callNode,
                         @Cached ParseEncodingErrorHandlerResultNode parseResultNode,
-                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached PRaiseNode raiseNode) {
             cache.errorHandlerObject = cache.errorHandlerObject == null ? lookupErrorNode.execute(inliningTarget, errors) : cache.errorHandlerObject;
             int len = codePointLengthNode.execute(srcObj, TS_ENCODING);

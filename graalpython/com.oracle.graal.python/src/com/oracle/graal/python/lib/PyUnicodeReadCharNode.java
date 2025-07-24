@@ -72,8 +72,8 @@ public abstract class PyUnicodeReadCharNode extends PNodeWithContext {
     @Specialization
     static int doGeneric(Node inliningTarget, Object type, long lindex,
                     @Cached CastToTruffleStringNode castToStringNode,
-                    @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                    @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                     @Cached PRaiseNode raiseNode) {
         try {
             TruffleString s = castToStringNode.execute(inliningTarget, type);

@@ -1732,7 +1732,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached(inline = false) FailedCastCheckNode failedCastCheckNode,
-                        @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
             if (isPtrTypeObject(inliningTarget, arg, pyTypeCheck)) {
                 return;
             }

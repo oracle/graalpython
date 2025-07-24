@@ -344,7 +344,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile exceptionProfile3,
                         @Cached InlinedConditionProfile errorProfile,
                         @Cached(inline = false) GilNode gil,
-                        @Cached(inline = false) TruffleString.FromLongNode fromLongNode,
+                        @Cached TruffleString.FromLongNode fromLongNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             if (self.getFD() >= 0) {

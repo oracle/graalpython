@@ -590,7 +590,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         static TruffleString doL(Node inliningTarget, long x, TruffleString prefix, int radix, LongToString longToString,
                         @Exclusive @Cached InlinedConditionProfile isMinLong,
-                        @Shared @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Shared @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             if (isMinLong.profile(inliningTarget, x == Long.MIN_VALUE)) {
                 return buildString(true, prefix, fromJavaStringNode.execute(bigToString(radix, longMaxPlusOne()), TS_ENCODING));
             }
@@ -599,7 +599,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         static TruffleString doPI(PInt x, TruffleString prefix, int radix, @SuppressWarnings("unused") LongToString longToString,
-                        @Shared @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Shared @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             BigInteger value = x.getValue();
             return buildString(value.signum() < 0, prefix, fromJavaStringNode.execute(bigToString(radix, PInt.abs(value)), TS_ENCODING));
         }
@@ -612,7 +612,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached InlinedBranchProfile isInt,
                         @Cached InlinedBranchProfile isLong,
                         @Cached InlinedBranchProfile isPInt,
-                        @Shared @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Shared @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             Object index = indexNode.execute(frame, inliningTarget, x);
             if (index instanceof Boolean || index instanceof Integer) {
                 isInt.enter(inliningTarget);

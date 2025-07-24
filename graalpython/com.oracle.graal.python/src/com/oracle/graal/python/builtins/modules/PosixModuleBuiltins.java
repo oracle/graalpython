@@ -3062,8 +3062,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static PBytes doString(Node inliningTarget, Object strObj,
                         @Bind PythonLanguage language,
                         @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached(inline = false) TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
             TruffleString str = castToStringNode.execute(inliningTarget, strObj);
             TruffleString utf8 = switchEncodingNode.execute(str, Encoding.UTF_8);
             byte[] bytes = new byte[utf8.byteLength(Encoding.UTF_8)];
