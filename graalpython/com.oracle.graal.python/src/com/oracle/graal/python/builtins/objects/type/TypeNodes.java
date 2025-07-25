@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.type;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBCLASS_CHECK;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_qualname;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_base;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_bases;
@@ -1752,17 +1751,19 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        @InliningCutoff
         static boolean doNativeClass(Node inliningTarget, PythonAbstractNativeObject obj,
                         @Cached IsBuiltinClassProfile profile,
                         @Cached GetPythonObjectClassNode getClassNode,
-                        @Cached(inline = false) CExtNodes.PCallCapiFunction nativeTypeCheck) {
+                        @Cached CStructAccess.ReadI64Node getTpFlagsNode) {
             Object type = getClassNode.execute(inliningTarget, obj);
             if (profile.profileClass(inliningTarget, type, PythonBuiltinClassType.PythonClass)) {
                 return true;
             }
+
             if (PythonNativeClass.isInstance(type)) {
-                return (int) nativeTypeCheck.call(FUN_SUBCLASS_CHECK, obj.getPtr()) == 1;
+                // Equivalent of PyType_FastSubclass(Py_TYPE(type), Py_TPFLAGS_TYPE_SUBCLASS);
+                long tp_flags = getTpFlagsNode.readFromObj(PythonNativeClass.cast(type), PyTypeObject__tp_flags);
+                return (tp_flags & TYPE_SUBCLASS) != 0;
             }
             return false;
         }
