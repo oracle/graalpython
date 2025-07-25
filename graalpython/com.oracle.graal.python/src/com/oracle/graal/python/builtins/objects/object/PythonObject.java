@@ -73,7 +73,7 @@ public class PythonObject extends PythonAbstractObject {
     public PythonObject(Object pythonClass, Shape instanceShape) {
         super(instanceShape);
         assert pythonClass != null;
-        assert getShape().getDynamicType() == null || getShape().getDynamicType() == pythonClass : getShape().getDynamicType() + " vs " + pythonClass;
+        assert !PGuards.isPythonClass(getShape().getDynamicType()) || getShape().getDynamicType() == pythonClass : getShape().getDynamicType() + " vs " + pythonClass;
         this.pythonClass = pythonClass;
     }
 
@@ -87,7 +87,7 @@ public class PythonObject extends PythonAbstractObject {
     }
 
     public void setPythonClass(Object pythonClass) {
-        assert getShape().getDynamicType() == null;
+        assert getShape().getDynamicType() == PNone.NO_VALUE;
         this.pythonClass = pythonClass;
     }
 

@@ -255,6 +255,7 @@ public abstract class PGuards {
         return PythonNativeClass.isInstance(klass);
     }
 
+    @Idempotent
     public static boolean isPythonClass(Object klass) {
         return PythonAbstractClass.isInstance(klass) || klass instanceof PythonBuiltinClassType;
     }

@@ -227,7 +227,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
                             @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
                 // Clear the dynamic type when setting the class, so further class changes do not
                 // create new shapes
-                dylib.setDynamicType(self, null);
+                dylib.setDynamicType(self, PNone.NO_VALUE);
                 self.setPythonClass(newClass);
             }
 
