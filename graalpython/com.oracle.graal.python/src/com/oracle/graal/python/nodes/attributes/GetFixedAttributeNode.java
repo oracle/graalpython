@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,44 +38,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.module;
+package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-/**
- * Eqivalent of {@code PyModule_GetName}.
- */
-@GenerateUncached
-@GenerateInline
-@GenerateCached(false)
-public abstract class ModuleGetNameNode extends Node {
+public abstract class GetFixedAttributeNode extends PNodeWithContext {
+    private final TruffleString key;
 
-    public abstract TruffleString execute(Node inliningTarget, Object module);
+    GetFixedAttributeNode(TruffleString key) {
+        this.key = key;
+    }
+
+    public abstract Object execute(VirtualFrame frame, Object object);
 
     @Specialization
-    static TruffleString doPythonModule(Node inliningTarget, PythonModule module,
-                    @Cached ReadAttributeFromModuleNode readNameNode,
-                    @Cached CastToTruffleStringNode castToTruffleStringNode,
-                    @Cached PRaiseNode raiseNode) {
+    Object doIt(VirtualFrame frame, Object object,
+                    @Bind Node inliningTarget,
+                    @Cached GetClassNode getClassNode,
+                    @Cached GetCachedTpSlotsNode getSlotsNode,
+                    @Cached MergedObjectTypeModuleGetAttributeInnerNode innerNode) {
+        Object type = getClassNode.execute(inliningTarget, object);
+        TpSlots slots = getSlotsNode.execute(inliningTarget, type);
+        return innerNode.execute(frame, inliningTarget, object, key, type, slots);
+    }
 
-        try {
-            Object name = readNameNode.execute(module, SpecialAttributeNames.T___NAME__);
-            return castToTruffleStringNode.execute(inliningTarget, name);
-        } catch (CannotCastException e) {
-            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.NAMELESS_MODULE);
-        }
+    @NeverDefault
+    public static GetFixedAttributeNode create(TruffleString key) {
+        return GetFixedAttributeNodeGen.create(key);
     }
 }

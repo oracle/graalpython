@@ -182,7 +182,7 @@ public class StructSequence {
                 unnamedFields++;
             }
         }
-        WriteAttributeToObjectNode writeAttrNode = WriteAttributeToObjectNode.getUncached(true);
+        WriteAttributeToObjectNode writeAttrNode = WriteAttributeToObjectNode.getUncached();
         if (klass instanceof PythonManagedClass managedClass) {
             /*
              * The methods and slots are already set for each PBCT, but we need to store the field
@@ -220,7 +220,7 @@ public class StructSequence {
     private static void copyMethod(PythonLanguage language, PythonAbstractClass klass, TruffleString name, PythonBuiltinClass template) {
         PBuiltinFunction templateMethod = (PBuiltinFunction) template.getAttribute(name);
         PBuiltinFunction method = PFactory.createBuiltinFunction(language, templateMethod, klass);
-        WriteAttributeToObjectNode.getUncached(true).execute(klass, name, method);
+        WriteAttributeToObjectNode.getUncached().execute(klass, name, method);
     }
 
     private static void createMember(PythonLanguage language, Object klass, TruffleString name, TruffleString doc, int idx) {
@@ -230,7 +230,7 @@ public class StructSequence {
         if (doc != null) {
             callable.setAttribute(T___DOC__, doc);
         }
-        WriteAttributeToObjectNode.getUncached(true).execute(klass, name, callable);
+        WriteAttributeToObjectNode.getUncached().execute(klass, name, callable);
     }
 
     private static class GetStructMemberNode extends PRootNode {

@@ -51,7 +51,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.PyCStructUnionTypeUpdateStgDict;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
@@ -96,7 +96,7 @@ public final class PyCStructTypeBuiltins extends PythonBuiltins {
         @InliningCutoff
         void doGeneric(VirtualFrame frame, Object object, Object keyObject, Object value,
                         @Bind Node inliningTarget,
-                        @Cached CastToTruffleStringCheckedNode castKeyToStringNode,
+                        @Cached CastToTruffleStringChecked1Node castKeyToStringNode,
                         @Shared @Cached TypeBuiltins.SetattrNode typeSetAttr,
                         @Shared @Cached TruffleString.EqualNode equalNode,
                         @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict) {

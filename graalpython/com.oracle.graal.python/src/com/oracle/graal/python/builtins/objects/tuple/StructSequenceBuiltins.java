@@ -133,14 +133,14 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
 
         @Specialization
         static int doPBCT(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType type, TruffleString key,
-                        @Shared @Cached("createForceType()") ReadAttributeFromObjectNode read,
+                        @Shared @Cached ReadAttributeFromObjectNode read,
                         @Shared @Cached PyNumberAsSizeNode asSizeNode) {
             return doGeneric(frame, inliningTarget, PythonContext.get(inliningTarget).lookupType(type), key, read, asSizeNode);
         }
 
         @Fallback
         static int doGeneric(VirtualFrame frame, Node inliningTarget, Object type, TruffleString key,
-                        @Shared @Cached("createForceType()") ReadAttributeFromObjectNode read,
+                        @Shared @Cached ReadAttributeFromObjectNode read,
                         @Shared @Cached PyNumberAsSizeNode asSizeNode) {
             return asSizeNode.executeExact(frame, inliningTarget, read.execute(type, key));
         }

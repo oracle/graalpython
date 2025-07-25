@@ -719,7 +719,7 @@ public final class PythonUtils {
         TruffleString name = toTruffleStringUncached(builtin.name());
         PBuiltinFunction function = PFactory.createBuiltinFunction(PythonLanguage.get(null), name, type, numDefaults, flags, callTarget);
         if (klass != null) {
-            WriteAttributeToObjectNode.getUncached(true).execute(klass, name, function);
+            WriteAttributeToObjectNode.getUncached().execute(klass, name, function);
         }
         return function;
     }

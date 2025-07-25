@@ -344,7 +344,7 @@ public abstract class BufferStorageNodes {
         @Specialization(guards = "format == UNICODE")
         static void packDouble(Node inliningTarget, @SuppressWarnings("unused") BufferFormat format, Object object, Object buffer, int offset,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached StringNodes.CastToTruffleStringCheckedNode cast,
+                        @Cached StringNodes.CastToTruffleStringChecked0Node cast,
                         @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {

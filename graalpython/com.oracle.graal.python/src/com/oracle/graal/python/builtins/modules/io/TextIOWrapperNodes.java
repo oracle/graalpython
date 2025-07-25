@@ -85,7 +85,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -620,7 +620,7 @@ public abstract class TextIOWrapperNodes {
         @Specialization
         static TruffleString decodeGeneric(VirtualFrame frame, Object decoder, Object o, boolean eof,
                         @Bind Node inliningTarget,
-                        @Cached CastToTruffleStringCheckedNode castNode,
+                        @Cached CastToTruffleStringChecked1Node castNode,
                         @Cached PyObjectCallMethodObjArgs callMethodDecode) {
             Object decoded = callMethodDecode.execute(frame, inliningTarget, decoder, T_DECODE, o, eof);
             return castNode.cast(inliningTarget, decoded, DECODER_SHOULD_RETURN_A_STRING_RESULT_NOT_P, decoded);

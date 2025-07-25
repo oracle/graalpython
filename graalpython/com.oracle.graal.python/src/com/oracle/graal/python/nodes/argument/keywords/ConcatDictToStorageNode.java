@@ -100,7 +100,7 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
                     @Cached HashingStorageNodes.HashingStorageIteratorKey iterKey,
                     @Cached HashingStorageNodes.HashingStorageIteratorValue iterValue,
                     @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
-                    @Exclusive @Cached StringNodes.CastToTruffleStringCheckedNode castToStringNode,
+                    @Exclusive @Cached StringNodes.CastToTruffleStringChecked0Node castToStringNode,
                     @Exclusive @Cached InlinedBranchProfile sameKeyProfile) throws SameDictKeyException {
         HashingStorage result = dest;
         HashingStorage otherStorage = other.getDictStorage();
@@ -129,7 +129,7 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
                     @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
                     @SuppressWarnings("unused") @Exclusive @Cached GetCachedTpSlotsNode getSlots,
                     @Exclusive @Cached InlinedBranchProfile sameKeyProfile,
-                    @Exclusive @Cached StringNodes.CastToTruffleStringCheckedNode castToStringNode,
+                    @Exclusive @Cached StringNodes.CastToTruffleStringChecked0Node castToStringNode,
                     @Cached PyObjectCallMethodObjArgs callKeys,
                     @Cached IsBuiltinObjectProfile errorProfile,
                     @Cached ListNodes.FastConstructListNode asList,

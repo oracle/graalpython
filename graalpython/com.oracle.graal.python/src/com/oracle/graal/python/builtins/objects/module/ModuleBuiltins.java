@@ -75,7 +75,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsClinicProviders.ModuleNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
@@ -86,6 +86,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -111,6 +112,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -253,72 +255,16 @@ public final class ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ModuleGetattributeNode extends GetAttrBuiltinNode {
         @Specialization
-        static Object getattributeStr(VirtualFrame frame, PythonModule self, TruffleString key,
-                        @Shared @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
-                        @Shared @Cached HandleGetattrExceptionNode handleException) {
-            try {
-                return objectGetattrNode.execute(frame, self, key);
-            } catch (PException e) {
-                return handleException.execute(frame, self, key, e);
-            }
-        }
-
-        @Specialization(replaces = "getattributeStr")
-        @InliningCutoff
         static Object getattribute(VirtualFrame frame, PythonModule self, Object keyObj,
                         @Bind Node inliningTarget,
-                        @Cached CastToTruffleStringCheckedNode castKeyToStringNode,
-                        @Shared @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
-                        @Shared @Cached HandleGetattrExceptionNode handleException) {
-            TruffleString key = castKeyToStringNode.cast(inliningTarget, keyObj, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+                        @Cached CastToTruffleStringChecked1Node castToString,
+                        @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
+                        @Cached LazyHandleGetattrExceptionNode handleException) {
+            TruffleString key = castToString.cast(inliningTarget, keyObj, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             try {
                 return objectGetattrNode.execute(frame, self, key);
             } catch (PException e) {
-                return handleException.execute(frame, self, key, e);
-            }
-        }
-
-        // Note: this is similar to the "use __getattribute__, if error fallback to __getattr__"
-        // dance that is normally done in the slot wrapper of __getattribute__/__getattr__ Python
-        // level methods. This case is, however, slightly different.
-        @GenerateInline(false) // footprint reduction 56 -> 37
-        protected abstract static class HandleGetattrExceptionNode extends PNodeWithContext {
-            public abstract Object execute(VirtualFrame frame, PythonModule self, TruffleString key, PException e);
-
-            @Specialization
-            static Object getattribute(VirtualFrame frame, PythonModule self, TruffleString key, PException e,
-                            @Bind Node inliningTarget,
-                            @Cached IsBuiltinObjectProfile isAttrError,
-                            @Cached ReadAttributeFromObjectNode readGetattr,
-                            @Cached InlinedConditionProfile customGetAttr,
-                            @Cached CallNode callNode,
-                            @Cached PyObjectIsTrueNode castToBooleanNode,
-                            @Cached CastToTruffleStringNode castNameToStringNode,
-                            @Cached PRaiseNode raiseNode) {
-                e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, isAttrError);
-                Object getAttr = readGetattr.execute(self, T___GETATTR__);
-                if (customGetAttr.profile(inliningTarget, getAttr != PNone.NO_VALUE)) {
-                    return callNode.execute(frame, getAttr, key);
-                } else {
-                    TruffleString moduleName;
-                    try {
-                        moduleName = castNameToStringNode.execute(inliningTarget, readGetattr.execute(self, T___NAME__));
-                    } catch (CannotCastException ce) {
-                        // we just don't have the module name
-                        moduleName = null;
-                    }
-                    if (moduleName != null) {
-                        Object moduleSpec = readGetattr.execute(self, T___SPEC__);
-                        if (moduleSpec != PNone.NO_VALUE) {
-                            Object isInitializing = readGetattr.execute(moduleSpec, T__INITIALIZING);
-                            if (isInitializing != PNone.NO_VALUE && castToBooleanNode.execute(frame, isInitializing)) {
-                                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S, moduleName, key);
-                            }
-                        }
-                        throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.MODULE_S_HAS_NO_ATTR_S, moduleName, key);
-                    }
-                    throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.MODULE_HAS_NO_ATTR_S, key);
-                }
+                return handleException.get(inliningTarget).execute(frame, self, key, e);
             }
         }
 
@@ -326,6 +272,73 @@ public final class ModuleBuiltins extends PythonBuiltins {
         static Object getattribute(Object self, @SuppressWarnings("unused") Object key,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETATTRIBUTE__, "module", self);
+        }
+    }
+
+    // Note: this is similar to the "use __getattribute__, if error fallback to __getattr__"
+    // dance that is normally done in the slot wrapper of __getattribute__/__getattr__ Python
+    // level methods. This case is, however, slightly different.
+    @GenerateInline(false)
+    public abstract static class HandleGetattrExceptionNode extends PNodeWithContext {
+        @InliningCutoff
+        public final Object execute(VirtualFrame frame, PythonModule self, TruffleString key, PException e) {
+            return executeInternal(frame, self, key, e);
+        }
+
+        abstract Object executeInternal(VirtualFrame frame, PythonModule self, TruffleString key, PException e);
+
+        @Specialization
+        static Object getattribute(VirtualFrame frame, PythonModule self, TruffleString key, PException e,
+                        @Bind Node inliningTarget,
+                        @Cached IsBuiltinObjectProfile isAttrError,
+                        @Cached ReadAttributeFromModuleNode readGetattr,
+                        @Cached ReadAttributeFromObjectNode readInitializing,
+                        @Cached InlinedConditionProfile customGetAttr,
+                        @Cached CallNode callNode,
+                        @Cached PyObjectIsTrueNode castToBooleanNode,
+                        @Cached CastToTruffleStringNode castNameToStringNode,
+                        @Cached PRaiseNode raiseNode) {
+            e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, isAttrError);
+            Object getAttr = readGetattr.execute(self, T___GETATTR__);
+            if (customGetAttr.profile(inliningTarget, getAttr != PNone.NO_VALUE)) {
+                return callNode.execute(frame, getAttr, key);
+            } else {
+                TruffleString moduleName;
+                try {
+                    moduleName = castNameToStringNode.execute(inliningTarget, readGetattr.execute(self, T___NAME__));
+                } catch (CannotCastException ce) {
+                    // we just don't have the module name
+                    moduleName = null;
+                }
+                if (moduleName != null) {
+                    Object moduleSpec = readGetattr.execute(self, T___SPEC__);
+                    if (moduleSpec != PNone.NO_VALUE) {
+                        Object isInitializing = readInitializing.execute(moduleSpec, T__INITIALIZING);
+                        if (isInitializing != PNone.NO_VALUE && castToBooleanNode.execute(frame, isInitializing)) {
+                            throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S, moduleName, key);
+                        }
+                    }
+                    throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.MODULE_S_HAS_NO_ATTR_S, moduleName, key);
+                }
+                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.MODULE_HAS_NO_ATTR_S, key);
+            }
+        }
+    }
+
+    // GR-67751: Should be HandleGetattrExceptionNode.Lazy but that fails to compile
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class LazyHandleGetattrExceptionNode extends Node {
+
+        public final HandleGetattrExceptionNode get(Node inliningTarget) {
+            return execute(inliningTarget);
+        }
+
+        abstract HandleGetattrExceptionNode execute(Node inliningTarget);
+
+        @Specialization
+        static HandleGetattrExceptionNode doIt(@Cached(inline = false) HandleGetattrExceptionNode node) {
+            return node;
         }
     }
 

@@ -1001,7 +1001,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
-                        @Cached StringNodes.CastToTruffleStringCheckedNode castToStringChecked,
+                        @Cached StringNodes.CastToTruffleStringChecked1Node castToStringChecked,
                         @Cached PRaiseNode raiseNode,
                         @Cached WarningsModuleNode moduleFunctionsNode) {
             // warnings_warn_impl

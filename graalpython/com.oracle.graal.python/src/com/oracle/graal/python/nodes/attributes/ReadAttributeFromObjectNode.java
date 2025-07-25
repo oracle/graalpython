@@ -40,30 +40,19 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_dict;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.ReadAttributeFromObjectNotTypeNodeGen;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.ReadAttributeFromObjectTpDictNodeGen;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -71,68 +60,30 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@ImportStatic({PGuards.class, PythonOptions.class})
+/**
+ * See {@link ReadAttributeFromModuleNode} which is much simpler for modules.
+ */
 @ReportPolymorphism
+@GenerateUncached
 @GenerateInline(false) // footprint reduction 64 -> 47
 public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
-    @NeverDefault
-    public static ReadAttributeFromObjectNode create() {
-        return ReadAttributeFromObjectNotTypeNodeGen.create();
-    }
 
     @NeverDefault
-    public static ReadAttributeFromObjectNode createForceType() {
-        return ReadAttributeFromObjectTpDictNodeGen.create();
+    public static ReadAttributeFromObjectNode create() {
+        return ReadAttributeFromObjectNodeGen.create();
     }
 
     public static ReadAttributeFromObjectNode getUncached() {
-        return ReadAttributeFromObjectNotTypeNodeGen.getUncached();
-    }
-
-    public static ReadAttributeFromObjectNode getUncachedForceType() {
-        return ReadAttributeFromObjectTpDictNodeGen.getUncached();
+        return ReadAttributeFromObjectNodeGen.getUncached();
     }
 
     public abstract Object execute(Object object, TruffleString key);
 
-    public abstract Object execute(PythonModule object, TruffleString key);
-
-    /**
-     * @param module Non-cached parameter to help the DSL produce a guard, not an assertion
-     */
-    protected static HashingStorage getStorage(Object module, PHashingCollection cachedGlobals) {
-        return cachedGlobals.getDictStorage();
-    }
-
-    protected static PDict getDict(Object object) {
-        return GetDictIfExistsNode.getUncached().execute(object);
-    }
-
-    // special case for the very common module read
-    @Specialization(guards = {"isSingleContext()",
-                    "cachedObject == object",
-                    // no need to check the cachedDict for equality, module.__dict__ is read-only
-                    "getStorage(object, cachedDict) == cachedStorage"
-    }, limit = "1")
-    @SuppressWarnings("unused")
-    protected static Object readFromBuiltinModuleDict(PythonModule object, TruffleString key,
-                    @Bind Node inliningTarget,
-                    @Cached(value = "object", weak = true) PythonModule cachedObject,
-                    @Cached(value = "getDict(object)", weak = true) PHashingCollection cachedDict,
-                    @Cached(value = "getStorage(object, getDict(object))", weak = true) HashingStorage cachedStorage,
-                    @Exclusive @Cached HashingStorageGetItem getItem) {
-        // note that we don't need to pass the state here - string keys are hashable by definition
-        Object value = getItem.execute(inliningTarget, cachedStorage, key);
-        if (value == null) {
-            return PNone.NO_VALUE;
-        } else {
-            return value;
-        }
-    }
+    public abstract Object execute(PythonAbstractNativeObject object, TruffleString key);
 
     // any python object attribute read
     @Specialization
-    protected static Object readObjectAttribute(PythonObject object, TruffleString key,
+    static Object readObjectAttribute(PythonObject object, TruffleString key,
                     @Bind Node inliningTarget,
                     @Cached InlinedConditionProfile profileHasDict,
                     @Exclusive @Cached GetDictIfExistsNode getDict,
@@ -142,9 +93,7 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
         if (profileHasDict.profile(inliningTarget, dict == null)) {
             return readAttributeFromPythonObjectNode.execute(object, key);
         } else {
-            // Note: we should pass the frame. In theory a subclass of a string may override
-            // __hash__ or __eq__ and run some side effects in there.
-            Object value = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
+            Object value = getItem.execute(inliningTarget, dict.getDictStorage(), key);
             if (value == null) {
                 return PNone.NO_VALUE;
             } else {
@@ -153,51 +102,28 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
         }
     }
 
-    // foreign object or primitive
-    @InliningCutoff
-    @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)"})
-    protected static Object readForeignOrPrimitive(Object object, TruffleString key) {
-        // Foreign members are tried after the regular attribute lookup, see
-        // ForeignObjectBuiltins.GetAttributeNode. If we looked them up here
-        // they would get precedence over attributes in the MRO.
-        return PNone.NO_VALUE;
-    }
-
-    // native objects. We distinguish reading at the objects dictoffset or the tp_dict
-    // these are also the two nodes that generate uncached versions, because they encode
-    // the boolean flag forceType for the fallback in their type
-
-    @GenerateUncached
-    @GenerateInline(false) // footprint reduction 64 -> 47
-    protected abstract static class ReadAttributeFromObjectNotTypeNode extends ReadAttributeFromObjectNode {
-        @Specialization(insertBefore = "readForeignOrPrimitive")
-        protected static Object readNativeObject(PythonAbstractNativeObject object, TruffleString key,
-                        @Bind Node inliningTarget,
-                        @Exclusive @Cached GetDictIfExistsNode getDict,
-                        @Exclusive @Cached HashingStorageGetItem getItem) {
-            return readNative(inliningTarget, key, getDict.execute(object), getItem);
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline(false) // footprint reduction 68 -> 51
-    protected abstract static class ReadAttributeFromObjectTpDictNode extends ReadAttributeFromObjectNode {
-        @Specialization(insertBefore = "readForeignOrPrimitive")
-        protected static Object readNativeClass(PythonAbstractNativeObject object, TruffleString key,
-                        @Bind Node inliningTarget,
-                        @Cached CStructAccess.ReadObjectNode getNativeDict,
-                        @Exclusive @Cached HashingStorageGetItem getItem) {
-            return readNative(inliningTarget, key, getNativeDict.readFromObj(object, PyTypeObject__tp_dict), getItem);
-        }
-    }
-
-    private static Object readNative(Node inliningTarget, TruffleString key, Object dict, HashingStorageGetItem getItem) {
-        if (dict instanceof PHashingCollection) {
-            Object result = getItem.execute(null, inliningTarget, ((PHashingCollection) dict).getDictStorage(), key);
+    @Specialization
+    static Object readNativeObject(PythonAbstractNativeObject object, TruffleString key,
+                    @Bind Node inliningTarget,
+                    @Exclusive @Cached GetDictIfExistsNode getDict,
+                    @Exclusive @Cached HashingStorageGetItem getItem) {
+        PDict dict = getDict.execute(object);
+        if (dict != null) {
+            Object result = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
             if (result != null) {
                 return result;
             }
         }
+        return PNone.NO_VALUE;
+    }
+
+    // foreign object or primitive
+    @InliningCutoff
+    @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)"})
+    static Object readForeignOrPrimitive(Object object, TruffleString key) {
+        // Foreign members are tried after the regular attribute lookup, see
+        // ForeignObjectBuiltins.GetAttributeNode. If we looked them up here
+        // they would get precedence over attributes in the MRO.
         return PNone.NO_VALUE;
     }
 

@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -66,7 +67,6 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -104,24 +104,23 @@ public abstract class PyObjectGetMethod extends Node {
     }
 
     // isObjectGetAttribute implies not foreign
-    @Specialization(guards = {"isObjectGetAttribute(inliningTarget, getTypeSlotsNode, lazyClass)", "name == cachedName"}, limit = "1")
-    static Object getFixedAttr(VirtualFrame frame, Node inliningTarget, Object receiver, @SuppressWarnings("unused") TruffleString name,
-                    @SuppressWarnings("unused") /* Truffle bug: @Shared("getClassNode") */ @Exclusive @Cached GetClassNode getClass,
-                    @SuppressWarnings("unused") @Exclusive @Cached GetCachedTpSlotsNode getTypeSlotsNode,
+    @Specialization(guards = "isObjectGetAttribute(inliningTarget, getTypeSlotsNode, lazyClass)", limit = "1")
+    static Object getAttr(VirtualFrame frame, Node inliningTarget, Object receiver, TruffleString name,
+                    @Cached GetClassNode getClass,
+                    @Cached GetCachedTpSlotsNode getTypeSlotsNode,
                     @Bind("getClass.execute(inliningTarget, receiver)") Object lazyClass,
-                    @SuppressWarnings("unused") @Cached("name") TruffleString cachedName,
-                    @Cached("create(name)") LookupAttributeInMRONode lookupNode,
-                    @Exclusive @Cached GetObjectSlotsNode getSlotsNode,
-                    @Exclusive @Cached CallSlotDescrGet callGetNode,
-                    @Shared("readAttr") @Cached(inline = false) ReadAttributeFromObjectNode readAttr,
-                    @Exclusive @Cached PRaiseNode raiseNode,
+                    @Cached LookupAttributeInMRONode.Dynamic lookupNode,
+                    @Cached GetObjectSlotsNode getSlotsNode,
+                    @Cached CallSlotDescrGet callGetNode,
+                    @Cached ReadAttributeFromObjectNode readAttr,
+                    @Cached PRaiseNode raiseNode,
                     @Cached InlinedBranchProfile hasDescr,
                     @Cached InlinedBranchProfile returnDataDescr,
                     @Cached InlinedBranchProfile returnAttr,
                     @Cached InlinedBranchProfile returnUnboundMethod,
                     @Cached InlinedBranchProfile returnBoundDescr) {
         boolean methodFound = false;
-        Object descr = lookupNode.execute(lazyClass);
+        Object descr = lookupNode.execute(lazyClass, name);
         TpSlot getMethod = null;
         if (descr != PNone.NO_VALUE) {
             hasDescr.enter(inliningTarget);
@@ -157,52 +156,7 @@ public abstract class PyObjectGetMethod extends Node {
         if (descr != PNone.NO_VALUE) {
             return new BoundDescriptor(descr);
         }
-        throw raiseNode.raiseAttributeError(inliningTarget, receiver, name);
-    }
-
-    // No explicit branch profiling when we're looking up multiple things
-    // isObjectGetAttribute implies not foreign
-    @Specialization(guards = "isObjectGetAttribute(inliningTarget, getTypeSlotsNode, lazyClass)", replaces = "getFixedAttr", limit = "1")
-    @InliningCutoff
-    static Object getDynamicAttr(Frame frame, Node inliningTarget, Object receiver, TruffleString name,
-                    @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClass,
-                    @SuppressWarnings("unused") @Exclusive @Cached GetCachedTpSlotsNode getTypeSlotsNode,
-                    @Bind("getClass.execute(inliningTarget, receiver)") Object lazyClass,
-                    @Cached(inline = false) LookupAttributeInMRONode.Dynamic lookupNode,
-                    @Exclusive @Cached GetObjectSlotsNode getSlotsNode,
-                    @Exclusive @Cached CallSlotDescrGet callGetNode,
-                    @Shared("readAttr") @Cached(inline = false) ReadAttributeFromObjectNode readAttr,
-                    /* Truffle bug: @Shared("raiseNode") */ @Exclusive @Cached PRaiseNode raiseNode) {
-        boolean methodFound = false;
-        Object descr = lookupNode.execute(lazyClass, name);
-        TpSlot getMethod = null;
-        if (descr != PNone.NO_VALUE) {
-            if (MaybeBindDescriptorNode.isMethodDescriptor(descr)) {
-                methodFound = true;
-            } else {
-                var descrSlots = getSlotsNode.execute(inliningTarget, descr);
-                getMethod = descrSlots.tp_descr_get();
-                if (getMethod != null && TpSlotDescrSet.PyDescr_IsData(descrSlots)) {
-                    return new BoundDescriptor(callGetNode.execute((VirtualFrame) frame, inliningTarget, getMethod, descr, receiver, lazyClass));
-                }
-            }
-        }
-        if (receiver instanceof PythonAbstractObject) {
-            Object attr = readAttr.execute(receiver, name);
-            if (attr != PNone.NO_VALUE) {
-                return new BoundDescriptor(attr);
-            }
-        }
-        if (methodFound) {
-            return descr;
-        }
-        if (getMethod != null) {
-            return new BoundDescriptor(callGetNode.execute((VirtualFrame) frame, inliningTarget, getMethod, descr, receiver, lazyClass));
-        }
-        if (descr != PNone.NO_VALUE) {
-            return new BoundDescriptor(descr);
-        }
-        throw raiseNode.raiseAttributeError(inliningTarget, receiver, name);
+        throw raiseNode.raiseAttributeError(inliningTarget, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
     }
 
     @Specialization(guards = "isForeignObject(inliningTarget, isForeignObjectNode, receiver)", limit = "1")

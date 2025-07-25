@@ -289,7 +289,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         static Object wrap(PSSLContext context, PSocket sock, boolean serverSide, Object serverHostnameObj, Object owner, @SuppressWarnings("unused") PNone session,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached StringNodes.CastToTruffleStringCheckedNode cast,
+                        @Cached StringNodes.CastToTruffleStringChecked2Node cast,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
             TruffleString serverHostname = null;
             if (!(serverHostnameObj instanceof PNone)) {
@@ -326,7 +326,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") PNone session,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached StringNodes.CastToTruffleStringCheckedNode cast,
+                        @Cached StringNodes.CastToTruffleStringChecked2Node cast,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
             TruffleString serverHostname = null;
             if (!(serverHostnameObj instanceof PNone)) {

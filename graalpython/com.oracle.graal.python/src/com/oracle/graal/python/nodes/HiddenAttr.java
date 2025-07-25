@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes;
 
-import static com.oracle.graal.python.builtins.objects.object.PythonObject.CLASS_CHANGED_FLAG;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_MATERIALIZED_DICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON_INTEROP_BEHAVIOR__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASICSIZE__;
@@ -69,7 +68,6 @@ import com.oracle.truffle.api.object.HiddenKey;
 public final class HiddenAttr {
 
     public static final HiddenAttr OBJECT_ID = new HiddenAttr("_id");                   // ObjectNodes
-    public static final HiddenAttr CLASS = new HiddenAttr("ob_type");
     public static final HiddenAttr DICT = new HiddenAttr("ob_dict");
     public static final HiddenAttr DICTOFFSET = new HiddenAttr(J___DICTOFFSET__);
     public static final HiddenAttr WEAKLISTOFFSET = new HiddenAttr(J___WEAKLISTOFFSET__);
@@ -109,11 +107,6 @@ public final class HiddenAttr {
 
     private HiddenAttr(String keyName) {
         key = new HiddenKey(keyName);
-    }
-
-    // temporary, will be removed when we have no DynamicObjects and Shapes
-    public static HiddenKey getClassHiddenKey() {
-        return CLASS.key;
     }
 
     public String getName() {
@@ -178,18 +171,7 @@ public final class HiddenAttr {
             dylib.put(self, DICT.key, value);
         }
 
-        @Specialization(guards = "attr == CLASS")
-        static void doPythonObjectClass(PythonObject self, HiddenAttr attr, Object value,
-                        @Shared @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            // n.b.: the CLASS property is usually a constant property that is stored in the shape
-            // in
-            // single-context-mode. If we change it for the first time, there's an implicit shape
-            // transition
-            dylib.setShapeFlags(self, dylib.getShapeFlags(self) | CLASS_CHANGED_FLAG);
-            dylib.put(self, CLASS.key, value);
-        }
-
-        @Specialization(guards = "!isSpecialCaseAttr(attr) || !isPythonObject(self)")
+        @Specialization(guards = "attr != DICT || !isPythonObject(self)")
         static void doGeneric(PythonAbstractObject self, HiddenAttr attr, Object value,
                         @Shared @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
             dylib.put(self, attr.key, value);
@@ -197,10 +179,6 @@ public final class HiddenAttr {
 
         protected static boolean isPythonObject(Object object) {
             return object instanceof PythonObject;
-        }
-
-        protected static boolean isSpecialCaseAttr(HiddenAttr attr) {
-            return attr == DICT || attr == CLASS;
         }
 
         @NeverDefault
