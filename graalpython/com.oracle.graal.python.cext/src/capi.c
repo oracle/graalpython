@@ -616,10 +616,6 @@ PyAPI_FUNC(void*) GraalPyPrivate_PointerAddOffset(void* x, Py_ssize_t y) {
     return (char *)x + y;
 }
 
-PyAPI_FUNC(int) GraalPyPrivate_SubclassCheck(PyObject* type) {
-    return PyType_FastSubclass(Py_TYPE(type), Py_TPFLAGS_TYPE_SUBCLASS);
-}
-
 // Implements the basesisze check in typeobject.c:_PyObject_GetState
 PyAPI_FUNC(int) GraalPyPrivate_CheckBasicsizeForGetstate(PyTypeObject* type, int slot_num) {
     Py_ssize_t basicsize = PyBaseObject_Type.tp_basicsize;
