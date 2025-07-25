@@ -152,7 +152,7 @@ public abstract class GetClassNode extends PNodeWithContext {
             return shape.getDynamicType();
         }
 
-        @Specialization(guards = {"object.getShape() == cachedShape", "getDynamicType(cachedShape) != null"}, limit = "1")
+        @Specialization(guards = {"object.getShape() == cachedShape", "isPythonClass(getDynamicType(cachedShape))"}, limit = "1")
         static Object doConstantClass(@SuppressWarnings("unused") PythonObject object,
                         @Cached(value = "object.getShape()") Shape cachedShape) {
             return cachedShape.getDynamicType();

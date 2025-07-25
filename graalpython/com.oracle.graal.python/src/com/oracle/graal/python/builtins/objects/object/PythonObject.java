@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -73,7 +74,7 @@ public class PythonObject extends PythonAbstractObject {
     public PythonObject(Object pythonClass, Shape instanceShape) {
         super(instanceShape);
         assert pythonClass != null;
-        assert getShape().getDynamicType() == null || getShape().getDynamicType() == pythonClass : getShape().getDynamicType() + " vs " + pythonClass;
+        assert !PGuards.isPythonClass(getShape().getDynamicType()) || IsSameTypeNode.executeUncached(getShape().getDynamicType(), pythonClass) : getShape().getDynamicType() + " vs " + pythonClass;
         this.pythonClass = pythonClass;
     }
 
@@ -87,7 +88,7 @@ public class PythonObject extends PythonAbstractObject {
     }
 
     public void setPythonClass(Object pythonClass) {
-        assert getShape().getDynamicType() == null;
+        assert getShape().getDynamicType() == PNone.NO_VALUE;
         this.pythonClass = pythonClass;
     }
 
