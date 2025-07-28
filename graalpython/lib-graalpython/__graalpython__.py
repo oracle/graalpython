@@ -68,7 +68,7 @@ def lazy_attributes_from_delegate(module, delegate_name, attributes, owner_modul
     This will only cache the attributes in the caller module.
 
     :param delegate_name: the delegate module
-    :param attributes: a list of attributes names to be loaded lazily from the delagate module
+    :param attributes: a list of attributes names to be loaded lazily from the delegate module
     :param owner_module: the owner module (where this is called from)
     :param on_import_error: a dict of replacement attributes in case of import error
     :return:
