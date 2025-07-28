@@ -807,7 +807,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return PythonLanguage.get(this).isSingleContext();
         }
 
-        @Idempotent // I think this is true, I would just like the assertion
         protected static boolean kwIsCorrect(PKeyword[] kwdefaults, TruffleString kwname, PKeyword result) {
             return doUncached(kwdefaults, kwname, TruffleString.EqualNode.getUncached()) == result;
         }
@@ -817,11 +816,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"kwname == cachedKwName", "kwdefaults == cachedKwdefaults", "isSingleContext()", "kwIsCorrect(cachedKwdefaults, cachedKwName, result)"}, limit = "1")
+        @Specialization(guards = {"kwname == cachedKwName", "kwdefaults == cachedKwdefaults", "isSingleContext()"}, limit = "1")
         PKeyword cachedSingle(PKeyword[] kwdefaults, TruffleString kwname,
                         @Cached("kwname") TruffleString cachedKwName,
                         @Cached(value = "kwdefaults", weak = true, dimensions = 0) PKeyword[] cachedKwdefaults,
                         @Cached(value = "doUncached(kwdefaults, kwname, getUncachedEqualNode())", weak = true) PKeyword result) {
+            assert kwIsCorrect(cachedKwdefaults, cachedKwName, result);
             return result;
         }
 

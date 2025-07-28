@@ -105,16 +105,16 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ResolveHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
@@ -1041,7 +1041,7 @@ public abstract class CExtNodes {
         static int doInt(int errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments,
                         @Bind Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        @Shared("transformExceptionToNativeNode") @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode) {
             raiseNative(inliningTarget, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
             return errorValue;
         }
@@ -1050,13 +1050,13 @@ public abstract class CExtNodes {
         static Object doObject(Object errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments,
                         @Bind Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        @Shared("transformExceptionToNativeNode") @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode) {
             raiseNative(inliningTarget, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
             return errorValue;
         }
 
         private static void raiseNative(Node inliningTarget, PythonBuiltinClassType errType, TruffleString format, Object[] arguments, PRaiseNode raiseNode,
-                        TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        TransformPExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 throw raiseNode.raise(inliningTarget, errType, format, arguments);
             } catch (PException p) {

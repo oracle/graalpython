@@ -58,6 +58,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.HostCompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.ContinuationRootNode;
@@ -461,7 +462,7 @@ public abstract class ExecutionContext {
                 pythonThreadState.setCaughtException(null);
             }
 
-            if (curExc == null && info == null) {
+            if (HostCompilerDirectives.inInterpreterFastPath() && curExc == null && info == null) {
                 return null;
             } else {
                 return new IndirectCallState(info, curExc);
@@ -506,7 +507,9 @@ public abstract class ExecutionContext {
             if (state.info != null) {
                 pythonThreadState.popTopFrameInfo();
             }
-            pythonThreadState.setCaughtException(state.curExc);
+            if (state.curExc != null) {
+                pythonThreadState.setCaughtException(state.curExc);
+            }
         }
     }
 
@@ -566,8 +569,7 @@ public abstract class ExecutionContext {
              * CalleeContext in its RootNode. If this topframeref was marked as escaped, it'll be
              * materialized at the latest needed time
              */
-            if (state instanceof IndirectCallState) {
-                IndirectCallState indirectCallState = (IndirectCallState) state;
+            if (state instanceof IndirectCallState indirectCallState) {
                 threadState.setTopFrameInfo(indirectCallState.info);
                 threadState.setCaughtException(indirectCallState.curExc);
             } else {

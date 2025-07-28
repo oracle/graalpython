@@ -49,7 +49,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -181,7 +181,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallManagedSlotGetAttrNode callGetAttr,
                         @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -228,7 +228,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallBinaryMethodNode executeNode,
                         @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -271,7 +271,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached CallSlotBinaryFuncNode callSlotNode,
                         @Cached NativeToPythonNode selfToJavaNode,
                         @Cached NativeToPythonNode argTtoJavaNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -377,7 +377,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached GetClassNode getOtherClassNode,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached GetCachedTpSlotsNode getOtherSlots,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -430,7 +430,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallUnaryMethodNode executeNode,
                         @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -481,7 +481,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallSlotUnaryNode callNode,
                         @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -525,7 +525,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallSlotTpIterNextNode callNextNode,
                         @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -567,7 +567,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Bind Node inliningTarget,
                         @Cached CallSlotNbBoolNode callSlotNode,
                         @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -612,7 +612,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Bind Node inliningTarget,
                         @Cached CallSlotSqContainsNode callSlotNode,
                         @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -660,7 +660,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached CallSlotMpAssSubscriptNode callNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached InlinedConditionProfile arityProfile,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -702,7 +702,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached CallManagedSlotSetAttrNode callSlotNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached InlinedConditionProfile arityProfile,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -748,7 +748,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Bind Node inliningTarget,
                         @Cached CallSlotDescrSet callSetNode,
                         @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -802,7 +802,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached ExpandKeywordStarargsNode expandKwargsNode,
                         @Cached CallSlotTpInitNode callSlot,
                         @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -855,7 +855,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached CallSlotTpNewNode callNew,
                         @Cached ExecutePositionalStarargsNode posStarargsNode,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
@@ -912,7 +912,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached CallSlotTpCallNode callNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -962,7 +962,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Bind Node inliningTarget,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetClassNode vGetClassNode,
                         @Cached GetClassNode wGetClassNode,
                         @Cached IsSameTypeNode isSameTypeNode,
@@ -1018,7 +1018,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Bind Node inliningTarget,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached CallSlotNbInPlacePowerNode callSlot,
                         @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
@@ -1067,7 +1067,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached CallSlotRichCmpNode callNode,
                         @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @CachedLibrary(limit = "1") InteropLibrary opInterop,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -1115,7 +1115,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallBinaryMethodNode executeNode,
                         @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -1165,7 +1165,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached CallSlotSizeArgFun callSlotNode,
                         @Cached SsizeAsIntNode asIntNode,
                         @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -1247,7 +1247,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached CallSlotSqAssItemNode executeNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached SsizeAsIntNode asIntNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -1292,7 +1292,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Bind Node inliningTarget,
                         @Cached CallSlotLenNode callSlotNode,
                         @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -1338,7 +1338,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Bind Node inliningTarget,
                         @Cached CallSlotHashFunNode callSlotNode,
                         @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -1391,7 +1391,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                             @Cached CallSlotDescrGet callGetNode,
                             @Cached NativeToPythonNode toJavaNode,
                             @Cached PythonToNativeNewRefNode toNativeNode,
-                            @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                            @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
                             @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
                 CApiTiming.enter();

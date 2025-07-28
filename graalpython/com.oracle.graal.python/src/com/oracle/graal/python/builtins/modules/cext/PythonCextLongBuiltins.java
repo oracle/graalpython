@@ -73,9 +73,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeCachedNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntNodes;
@@ -350,7 +349,7 @@ public final class PythonCextLongBuiltins {
     @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct)
     public abstract static class PyLong_AsVoidPtr extends CApiUnaryBuiltinNode {
         @Child private ConvertPIntToPrimitiveNode asPrimitiveNode;
-        @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
+        @Child private TransformPExceptionToNativeCachedNode transformExceptionToNativeNode;
 
         @Specialization
         static long doPointer(int n) {
@@ -374,7 +373,7 @@ public final class PythonCextLongBuiltins {
                 try {
                     throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
                 } catch (PException pe) {
-                    ensureTransformExcNode().executeCached(pe);
+                    ensureTransformExcNode().execute(pe);
                     return 0;
                 }
             }
@@ -400,15 +399,15 @@ public final class PythonCextLongBuiltins {
                     throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
                 }
             } catch (PException e) {
-                ensureTransformExcNode().executeCached(e);
+                ensureTransformExcNode().execute(e);
                 return 0;
             }
         }
 
-        private TransformExceptionToNativeNode ensureTransformExcNode() {
+        private TransformPExceptionToNativeCachedNode ensureTransformExcNode() {
             if (transformExceptionToNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
+                transformExceptionToNativeNode = insert(TransformPExceptionToNativeCachedNode.create());
             }
             return transformExceptionToNativeNode;
         }

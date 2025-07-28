@@ -132,8 +132,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.TransformExceptionToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeCachedNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
@@ -792,7 +791,7 @@ public final class PythonCextBuiltins {
         @Child private CExtToNativeNode retNode;
         @Children private final CExtToJavaNode[] argNodes;
         @Child private CApiBuiltinNode builtinNode;
-        @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
+        @Child private TransformPExceptionToNativeCachedNode transformExceptionToNativeNode;
 
         CachedExecuteCApiBuiltinNode(CApiBuiltinExecutable cachedSelf) {
             assert cachedSelf.ret.createCheckResultNode() == null : "primitive result check types are only intended for ExternalFunctionInvokeNode";
@@ -828,9 +827,9 @@ public final class PythonCextBuiltins {
             } catch (PException e) {
                 if (transformExceptionToNativeNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
+                    transformExceptionToNativeNode = insert(TransformPExceptionToNativeCachedNode.create());
                 }
-                transformExceptionToNativeNode.executeCached(e);
+                transformExceptionToNativeNode.execute(e);
                 if (cachedSelf.getRetDescriptor().isIntType()) {
                     return -1;
                 } else if (cachedSelf.getRetDescriptor().isPyObjectOrPointer()) {
