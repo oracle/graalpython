@@ -277,6 +277,50 @@ def libpythonvm_build_args():
     return build_args
 
 
+def graalpy_native_pgo_build_and_test(args):
+    """
+    Builds a PGO-instrumented GraalPy native standalone, runs the unittests to generate a profile,
+    then builds a PGO-optimized GraalPy native standalone with the collected profile.
+    The profile file will be named 'default.iprof' in native image build directory.
+    """
+    import tempfile
+
+    with set_env(GRAALPY_PGO_PROFILE=""):
+        mx.log(mx.colorize("[PGO] Building PGO-instrumented native image", color="yellow"))
+        native_bin = graalpy_standalone('native', enterprise=True, build=True)
+
+    mx.log(mx.colorize("[PGO] Instrumented build complete.", color="yellow"))
+
+    mx.log(mx.colorize(f"[PGO] Running graalpytest with instrumented binary: {native_bin}", color="yellow"))
+    with tempfile.TemporaryDirectory() as d:
+        with set_env(
+                GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS="true",
+                GRAAL_PYTHON_VM_ARGS=f"--vm.XX:ProfilesDumpFile={os.path.join(d, '$UUID$.iprof')}"
+        ):
+            graalpytest(["--python", native_bin, "."])
+        iprof_path = os.path.join(SUITE.dir, 'default.iprof')
+
+        mx.run([
+            os.path.join(
+                graalvm_jdk(enterprise=True),
+                "bin",
+                f"native-image-configure{'.exe' if mx.is_windows() else ''}",
+            ),
+            "merge-pgo-profiles",
+            f"--input-dir={d}",
+            f"--output-file={iprof_path}"
+        ])
+
+    if not os.path.isfile(iprof_path):
+        mx.abort(f"[PGO] Could not find profile file at expected location: {iprof_path}")
+
+    with set_env(GRAALPY_PGO_PROFILE=iprof_path):
+        mx.log(mx.colorize("[PGO] Building optimized native image with collected profile", color="yellow"))
+        native_bin = graalpy_standalone('native', enterprise=True, build=True)
+
+    mx.log(mx.colorize(f"[PGO] Optimized PGO build complete: {native_bin}", color="yellow"))
+
+
 def full_python(args, env=None):
     """Run python from standalone build (unless kwargs are given). Does not build GraalPython sources automatically."""
 
@@ -667,6 +711,16 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     if BUILD_NATIVE_IMAGE_WITH_ASSERTIONS:
         mx_args.append("--extra-image-builder-argument=-ea")
 
+    pgo_profile = os.environ.get("GRAALPY_PGO_PROFILE")
+    if pgo_profile is not None:
+        if not enterprise or standalone_type != "native":
+            mx.abort("PGO is only supported on enterprise NI")
+        if pgo_profile:
+            mx_args.append(f"--extra-image-builder-argument=--pgo={pgo_profile}")
+            mx_args.append(f"--extra-image-builder-argument=-H:+PGOPrintProfileQuality")
+        else:
+            mx_args.append(f"--extra-image-builder-argument=--pgo-instrument")
+
     if mx_gate.get_jacoco_agent_args() or (build and not DISABLE_REBUILD):
         mx_build_args = mx_args
         if BYTECODE_DSL_INTERPRETER:
@@ -913,7 +967,9 @@ def graalpytest(args):
             python_binary = graalpy_standalone_native()
     elif 'graalpy' in os.path.basename(python_binary) or 'mxbuild' in python_binary:
         is_graalpy = True
-        gp_args = ["--vm.ea", "--vm.esa", "--experimental-options=true", "--python.EnableDebuggingBuiltins"]
+        gp_args = ["--experimental-options=true", "--python.EnableDebuggingBuiltins"]
+        if env.get("GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS") != "true":
+            gp_args += ["--vm.ea", "--vm.esa"]
         mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
         python_args += gp_args
     if is_graalpy and BYTECODE_DSL_INTERPRETER:
@@ -2562,4 +2618,5 @@ mx.update_commands(SUITE, {
     'graalpy-jmh': [graalpy_jmh, ''],
     'deploy-local-maven-repo': [deploy_local_maven_repo_wrapper, ''],
     'downstream-test': [run_downstream_test, ''],
+    'python-native-pgo': [graalpy_native_pgo_build_and_test, 'Build PGO-instrumented native image, run tests, then build PGO-optimized native image'],
 })
