@@ -835,11 +835,7 @@ def make_coverage_launcher_if_needed(launcher):
         # jacoco agent is requested.
         quote = shlex.quote if sys.platform != 'win32' else lambda x: x
         def graalvm_vm_arg(java_arg):
-            if java_arg.startswith("@") and os.path.exists(java_arg[1:]):
-                with open(java_arg[1:], "r") as f:
-                    java_arg = f.read()
-            assert java_arg[0] == "-", java_arg
-            return quote(f'--vm.{java_arg[1:]}')
+            return quote(f'--vm.{java_arg[1:] if java_arg.startswith("-") else java_arg}')
 
         agent_args = ' '.join(graalvm_vm_arg(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
 
