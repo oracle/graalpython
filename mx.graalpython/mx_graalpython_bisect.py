@@ -36,17 +36,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import sys
-
 import abc
 import argparse
 import json
-import mx
 import os
 import re
 import shlex
+import sys
 import types
 from pathlib import Path
+
+import mx
 
 
 def print_line(l):
@@ -267,16 +267,13 @@ def _bisect_benchmark(argv, bisect_id, email_to):
 
     def checkout(repo_path: Path, commit):
         GIT.update_to_branch(repo_path, commit)
-        suite_dir = SUITE_MAPPING.get(repo_path, repo_path)
-        mx.run_mx(['sforceimports'], suite=str(suite_dir))
-        mx.run_mx(['--env', 'ce', 'sforceimports'], suite=str(VM_DIR))
+        if repo_path == DIR:
+            mx.run_mx(['sforceimports'], suite=str(DIR))
         if args.enterprise:
             if repo_path.name != 'graal-enterprise':
                 mx.run_mx(['--quiet', 'checkout-downstream', 'vm', 'vm-enterprise', '--no-fetch'],
                           suite=str(VM_ENTERPRISE_DIR))
-            mx.run_mx(['--env', 'ee', 'sforceimports'], suite=str(VM_ENTERPRISE_DIR))
-        GIT.update_to_branch(repo_path, commit)
-        mx.run_mx(['sforceimports'], suite=str(suite_dir))
+            mx.run_mx(['--dy', 'substratevm-enterprise-gcs', 'sforceimports'], suite=str(VM_ENTERPRISE_DIR))
         debug_str = f"debug: {SUITE.name}={get_commit(SUITE.vc_dir)} graal={get_commit(GRAAL_DIR)}"
         if args.enterprise:
             debug_str += f" graal-enterprise={get_commit(GRAAL_ENTERPRISE_DIR)}"
