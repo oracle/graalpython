@@ -110,4 +110,3 @@ class VenvTest(unittest.TestCase):
                 run_output = err.output.decode(errors="replace")
         assert run, run_output
         assert "pip" in run, run
-        # assert "setuptools" in run, run
