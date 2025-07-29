@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -43,14 +43,32 @@ import pathlib
 from asdl.asdl_java import generate
 
 
+def stamp(sst_path: pathlib.Path, ast_path: pathlib.Path):
+    if sst_path.is_dir() and ast_path.is_dir():
+        return [
+            p.read_text() for p in sorted(sst_path.rglob("*")) if p.is_file()
+        ] + [
+            p.read_text() for p in sorted(ast_path.rglob("*")) if p.is_file()
+        ]
+    else:
+        return []
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("input_file", type=pathlib.Path)
     parser.add_argument("-S", "--sst-path", type=pathlib.Path, required=True)
     parser.add_argument("-A", "--ast-path", type=pathlib.Path, required=True)
+    parser.add_argument("--stamp", type=pathlib.Path, required=True)
 
     args = parser.parse_args()
+
+    old_contents = stamp(args.sst_path, args.ast_path)
     generate(args.input_file, args.sst_path, args.ast_path)
+    if old_contents != stamp(args.sst_path, args.ast_path):
+        args.stamp.touch()
+    else:
+        print(f"{args.sst_path} and {args.ast_path} not modified")
 
 
 if __name__ == '__main__':
